@@ -50,4 +50,24 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has asset probe example job file" {
         Test-Path -LiteralPath "examples/jobs/example-asset-probe-job.json" | Should Be $true
     }
+
+    It "has AP metadata discovery python script" {
+        Test-Path -LiteralPath "tools/asset-resolver/discover_ap_metadata_sources.py" | Should Be $true
+    }
+
+    It "has Find-MaxineApMetadata wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Find-MaxineApMetadata.ps1" | Should Be $true
+    }
+
+    It "has AP metadata candidates file" {
+        Test-Path -LiteralPath "tools/asset-resolver/ap_metadata_candidates.json" | Should Be $true
+    }
+
+    It "has AP metadata discovery example manifest" {
+        Test-Path -LiteralPath "examples/manifests/example-ap-metadata-discovery.manifest.json" | Should Be $true
+    }
+
+    It "has AP metadata discovery example job file" {
+        Test-Path -LiteralPath "examples/jobs/example-ap-metadata-discovery-job.json" | Should Be $true
+    }
 }
