@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.0.0",
+  "proposal_id": "authoritative-write-proposal-authoritative-plan-job-0001",
+  "status": "proposal_only",
+  "source_plan_id": "authoritative-plan-job-0001",
+  "source_plan_status": "dry_run_incomplete",
+  "source_plan_missing_proofs": [
+    "asset_processor_job_success_proof",
+    "platform_proof",
+    "product_freshness_proof",
+    "product_identity_proof"
+  ],
+  "proposed_write_fields": {
+    "manifest.o3de.products.resolved": {
+      "description": "Final authoritative resolution flag.",
+      "type": "boolean",
+      "proposed_value": true,
+      "write_now": false
+    },
+    "manifest.o3de.products.resolution_mode": {
+      "description": "Authoritative resolution mode identifier.",
+      "type": "string",
+      "example_value": "authoritative",
+      "write_now": false
+    },
+    "manifest.o3de.products.resolved_at_utc": {
+      "description": "Timestamp when authoritative resolution is written.",
+      "type": "string",
+      "format": "date-time",
+      "write_now": false
+    },
+    "manifest.o3de.products.source_identity": {
+      "description": "Source identity evidence summary used for authoritative write.",
+      "type": "object",
+      "write_now": false
+    },
+    "manifest.o3de.products.resolved_products[]": {
+      "description": "Resolved product records with platform/type/proof links.",
+      "type": "array",
+      "write_now": false
+    },
+    "manifest.o3de.products.proof_refs": {
+      "description": "Proof artifacts used for write decision.",
+      "type": "array",
+      "write_now": false
+    },
+    "manifest.o3de.products.operator_approval": {
+      "description": "Validated operator approval artifact.",
+      "type": "object",
+      "write_now": false
+    }
+  },
+  "required_approval": {
+    "required_fields": [
+      "approval_id",
+      "approved_by",
+      "approved_at_utc",
+      "approval_reason",
+      "approved_plan_id",
+      "approval_scope"
+    ]
+  },
+  "forbidden_until_approved": [
+    "resolved true",
+    "Asset IDs",
+    "prefab publication",
+    "entity spawn",
+    "product promotion"
+  ],
+  "safety": {
+    "read_only": true,
+    "executes_writes": false,
+    "marks_products_resolved": false,
+    "claims_asset_ids": false,
+    "runs_o3de_editor": false,
+    "runs_asset_processor": false,
+    "spawns_entities": false,
+    "publishes_prefabs": false
+  },
+  "updated_utc": "2026-05-03T00:00:00Z"
+}

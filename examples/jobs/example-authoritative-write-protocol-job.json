@@ -1,0 +1,7 @@
+{
+  "job_type": "authoritative_write_protocol_proposal",
+  "character_name": "Maxine_Authoritative_Write_Protocol_Test_001",
+  "mode": "proposal_only",
+  "source_plan": "examples/manifests/example-authoritative-resolution-plan.json",
+  "notes": "Create a gated write protocol proposal only. Do not execute writes, resolve products, claim Asset IDs, spawn, or publish."
+}
