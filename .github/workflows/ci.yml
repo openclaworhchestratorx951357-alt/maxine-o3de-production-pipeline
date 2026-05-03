@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate example manifest
+        shell: pwsh
+        run: |
+          python tools/manifest-validator/validate_manifest.py examples/manifests/example-draft-mesh.manifest.json
+
+      - name: Run pytest if available, else smoke test
+        shell: pwsh
+        run: |
+          python -c "import importlib.util,sys; sys.exit(0 if importlib.util.find_spec('pytest') else 1)"
+          if ($LASTEXITCODE -eq 0) {
+            python -m pytest tests/pytest
+          }
+          else {
+            python -c "import json, pathlib; p=pathlib.Path('examples/manifests/example-draft-mesh.manifest.json'); d=json.loads(p.read_text(encoding='utf-8')); assert d['job']['job_id']; assert d['job']['lane'] in {'draft_mesh','text_mesh','photo_rig_prep','text_full_rig','external_rig_import','release_character'}; assert d['job']['status'] in {'pass','warn','fail','pending_manual','running','queued'}; print('pytest unavailable; smoke test passed')"
+          }
+
+      - name: PowerShell file existence checks
+        shell: pwsh
+        run: |
+          $required = @(
+            'README.md',
+            '.gitignore',
+            'schemas/maxine_job_manifest.schema.json',
+            'tools/manifest-validator/validate_manifest.py',
+            'examples/manifests/example-draft-mesh.manifest.json',
+            'examples/jobs/example-text-mesh-job.json'
+          )
+          foreach ($path in $required) {
+            if (!(Test-Path -LiteralPath $path)) {
+              throw "Missing required file: $path"
+            }
+          }
+          Write-Host 'File existence checks passed.'

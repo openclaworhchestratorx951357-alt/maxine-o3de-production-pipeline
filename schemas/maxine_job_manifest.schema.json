@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_job_manifest.schema.json",
+  "title": "MAXINE Job Manifest",
+  "description": "Manifest-first contract for M.A.X.I.N.E. O3DE production pipeline jobs.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "job",
+    "identity",
+    "inputs",
+    "qc"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "job": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "job_id",
+        "lane",
+        "status"
+      ],
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lane": {
+          "type": "string",
+          "enum": [
+            "draft_mesh",
+            "text_mesh",
+            "photo_rig_prep",
+            "text_full_rig",
+            "external_rig_import",
+            "release_character"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "warn",
+            "fail",
+            "pending_manual",
+            "running",
+            "queued"
+          ]
+        },
+        "created_utc": {
+          "type": "string"
+        },
+        "updated_utc": {
+          "type": "string"
+        }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "character_id"
+      ],
+      "properties": {
+        "character_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "character_name": {
+          "type": "string"
+        },
+        "release_tag": {
+          "type": "string"
+        }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "generation": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "dcc_conform": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "o3de": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "qc": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "overall"
+      ],
+      "properties": {
+        "overall": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "warn",
+            "fail"
+          ]
+        },
+        "gates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "runtime_validation": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "undo": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

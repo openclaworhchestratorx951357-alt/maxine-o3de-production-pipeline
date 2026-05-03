@@ -1,0 +1,59 @@
+{
+  "schema_version": "1.0.0",
+  "job": {
+    "job_id": "job-20260503-0001",
+    "lane": "draft_mesh",
+    "status": "pass",
+    "created_utc": "2026-05-03T12:00:00Z",
+    "updated_utc": "2026-05-03T12:05:00Z"
+  },
+  "identity": {
+    "character_id": "maxine-test-001",
+    "character_name": "Maxine_Test_001"
+  },
+  "inputs": {
+    "input_type": "text_prompt",
+    "prompt": "Stylized futuristic female AI show host character, clean silhouette, production friendly, O3DE-ready"
+  },
+  "generation": {
+    "generator": "local-draft-lane",
+    "output_source_asset": "assets/characters/maxine_test_001/source/maxine_test_001_scan.obj"
+  },
+  "dcc_conform": {
+    "required": false,
+    "status": "skipped"
+  },
+  "o3de": {
+    "products": {
+      "azmodel": "assets/characters/maxine_test_001/source/maxine_test_001_scan.obj.azmodel"
+    }
+  },
+  "qc": {
+    "overall": "pass",
+    "gates": [
+      {
+        "check": "runtime_smoke",
+        "result": "pass"
+      }
+    ]
+  },
+  "runtime_validation": {
+    "smoke_test": "entity_spawned"
+  },
+  "evidence": {
+    "logs": [
+      "evidence/draft/job-20260503-0001.log"
+    ],
+    "screenshots": []
+  },
+  "provenance": {
+    "submitted_by": "operator",
+    "pipeline_version": "bootstrap"
+  },
+  "undo": {
+    "rollback_plan": "remove entity and staged package"
+  },
+  "cleanup": {
+    "temp_artifacts_removed": true
+  }
+}
