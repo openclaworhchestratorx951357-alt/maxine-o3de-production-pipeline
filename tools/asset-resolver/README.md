@@ -155,3 +155,25 @@ This layer does not:
 - claim product Asset ID truth
 
 Product rows remain candidate rows until later source UUID and product-type proof exists.
+
+## Read-only Source Identity Matching
+
+This layer compares manifest input source asset data against candidate source rows from `manifest.o3de.ap_row_mapping`.
+
+It uses conservative matching heuristics:
+
+- exact normalized path match
+- path suffix match
+- filename match
+- stem match
+- UUID-like field presence
+
+Findings are written to `manifest.o3de.ap_source_identity_match`.
+
+This layer does not:
+
+- update `manifest.o3de.products` as resolved
+- claim product validity
+- claim authoritative source identity
+
+It only emits confidence-ranked candidate source identity evidence.
