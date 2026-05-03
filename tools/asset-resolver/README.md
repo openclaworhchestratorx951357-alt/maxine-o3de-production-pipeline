@@ -199,3 +199,23 @@ This layer does not:
 - publish or spawn entities
 
 Product candidates remain evidence only.
+
+## Read-only Product File Existence Validation
+
+This layer reads candidate products from `manifest.o3de.ap_product_candidate_match`.
+
+It checks possible product path fields from candidate row values under explicitly supplied safe roots only:
+
+- project root
+- cache root
+- optional additional roots
+
+Findings are written to `manifest.o3de.ap_product_file_validation`.
+
+This layer does not:
+
+- update `manifest.o3de.products` as resolved
+- claim Asset IDs
+- treat file existence as product resolution
+
+Existing files remain candidate product files until platform/job-state/source identity validation is added.

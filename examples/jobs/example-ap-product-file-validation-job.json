@@ -1,0 +1,8 @@
+{
+  "job_type": "ap_product_file_validation",
+  "character_name": "Maxine_AP_Product_File_Validation_Test_001",
+  "mode": "read_only_file_existence_validation",
+  "project_root": "C:/Users/topgu/OneDrive/Documents/O3de_GEMS_Research/Projects/MaxineShow",
+  "cache_root": "C:/Users/topgu/OneDrive/Documents/O3de_GEMS_Research/Projects/MaxineShow/Cache",
+  "notes": "Validate candidate product file existence under safe roots only. Do not mark products resolved."
+}
