@@ -1,0 +1,6 @@
+{
+  "job_type": "release_character",
+  "character_name": "Maxine_Release_Test_001",
+  "tier": "release",
+  "notes": "Release publication is expected to become prefab-first in a later slice."
+}

@@ -22,7 +22,7 @@ VALID_QC_OVERALL = {"pass", "warn", "fail"}
 
 
 def load_json(path: Path) -> Dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+    return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
 def minimal_validate(data: Dict[str, Any]) -> List[str]:
