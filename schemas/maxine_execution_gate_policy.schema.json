@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_execution_gate_policy.schema.json",
+  "title": "MAXINE Authoritative Execution Gate Policy Evaluation",
+  "description": "Read-only policy evaluation artifact for future authoritative resolver write execution gates.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "policy_id",
+    "status",
+    "required_preconditions",
+    "manual_command_template",
+    "rollback_requirements",
+    "forbidden_actions",
+    "implementation_available",
+    "write_allowed",
+    "safety"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "policy_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "policy_only",
+        "not_executable"
+      ]
+    },
+    "pre_write_report_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "required_preconditions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "manual_command_template": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rollback_requirements": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "pre_write_snapshot",
+        "previous_manifest_copy",
+        "fields_to_revert",
+        "timestamp",
+        "operator_identity",
+        "rollback_command_proposal"
+      ],
+      "properties": {
+        "pre_write_snapshot": {
+          "type": "boolean"
+        },
+        "previous_manifest_copy": {
+          "type": "boolean"
+        },
+        "fields_to_revert": {
+          "type": "boolean"
+        },
+        "timestamp": {
+          "type": "boolean"
+        },
+        "operator_identity": {
+          "type": "boolean"
+        },
+        "rollback_command_proposal": {
+          "type": "boolean"
+        }
+      }
+    },
+    "forbidden_actions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "implementation_available": {
+      "const": false
+    },
+    "write_allowed": {
+      "const": false
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "read_only",
+        "executes_writes",
+        "marks_products_resolved",
+        "claims_asset_ids",
+        "runs_o3de_editor",
+        "runs_asset_processor",
+        "spawns_entities",
+        "publishes_prefabs"
+      ],
+      "properties": {
+        "read_only": {
+          "const": true
+        },
+        "executes_writes": {
+          "const": false
+        },
+        "marks_products_resolved": {
+          "const": false
+        },
+        "claims_asset_ids": {
+          "const": false
+        },
+        "runs_o3de_editor": {
+          "const": false
+        },
+        "runs_asset_processor": {
+          "const": false
+        },
+        "spawns_entities": {
+          "const": false
+        },
+        "publishes_prefabs": {
+          "const": false
+        }
+      }
+    }
+  }
+}

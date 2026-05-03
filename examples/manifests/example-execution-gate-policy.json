@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0.0",
+  "policy_id": "execution-gate-policy-example-0001",
+  "status": "not_executable",
+  "pre_write_report_id": "pre-write-report-example-0001",
+  "required_preconditions": [
+    "dry_run_plan_status_dry_run_ready",
+    "write_proposal_status_approval_required",
+    "approval_validation_status_approval_valid",
+    "pre_write_report_status_pre_write_ready",
+    "git_working_tree_clean",
+    "protected_branch_policy_expected",
+    "rollback_artifact_prepared",
+    "explicit_manual_operator_command_required"
+  ],
+  "manual_command_template": "Invoke-MaxineAuthoritativeResolverWrite.ps1 -ManifestPath <path> -PreWriteReportPath <path> -RollbackPlanPath <path> -OperatorApprovalId <id> -ConfirmWrite",
+  "rollback_requirements": {
+    "pre_write_snapshot": true,
+    "previous_manifest_copy": true,
+    "fields_to_revert": true,
+    "timestamp": true,
+    "operator_identity": true,
+    "rollback_command_proposal": true
+  },
+  "forbidden_actions": [
+    "resolved_products_write",
+    "asset_id_claims",
+    "prefab_publication",
+    "entity_spawn"
+  ],
+  "implementation_available": false,
+  "write_allowed": false,
+  "safety": {
+    "read_only": true,
+    "executes_writes": false,
+    "marks_products_resolved": false,
+    "claims_asset_ids": false,
+    "runs_o3de_editor": false,
+    "runs_asset_processor": false,
+    "spawns_entities": false,
+    "publishes_prefabs": false
+  },
+  "updated_utc": "2026-05-03T00:00:00Z"
+}
