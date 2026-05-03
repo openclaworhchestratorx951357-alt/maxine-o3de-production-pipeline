@@ -97,3 +97,7 @@ Design AP job-state proof by discovering read-only job/status fields from the AP
 
 Safety note:
 Job-state proof must remain read-only. Do not resolve products from stale or failed AP jobs.
+
+## Next Slice After AP Job-State Proof
+
+Implement platform proof extraction from candidate product/job rows and path evidence, still read-only and still without resolving products.

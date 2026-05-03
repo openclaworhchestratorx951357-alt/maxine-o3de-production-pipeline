@@ -25,11 +25,17 @@ This contract defines what evidence must exist before any future code may write 
 - source identity proof
 - expected product type proof
 - product file existence proof
+- AP job-state proof
 - Asset Processor job success proof
 - platform proof
 - product freshness proof
 - product identity proof
 - no safety violation proof
+
+## Next Missing Proof Contract
+
+The next contract slice is AP job-state proof extraction from read-only row-mapping evidence.
+This contract must remain non-authoritative and must not resolve products.
 
 ## Forbidden Writes Until All Checks Exist
 
