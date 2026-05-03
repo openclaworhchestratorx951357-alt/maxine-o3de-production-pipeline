@@ -101,3 +101,7 @@ Job-state proof must remain read-only. Do not resolve products from stale or fai
 ## Next Slice After AP Job-State Proof
 
 Implement platform proof extraction from candidate product/job rows and path evidence, still read-only and still without resolving products.
+
+## Next Slice After AP Platform Proof
+
+Implement product freshness proof extraction using timestamps from source rows, product rows, file metadata, and job-state evidence, still read-only and still without resolving products.
