@@ -1,13 +1,13 @@
 ﻿{
   "schema_version": "1.0.0",
   "decision_name": "phase-2-acceptance-decision",
-  "decision_status": "hold",
+  "decision_status": "accepted",
   "decision_recorded_by": "operator",
-  "decision_recorded_at_utc": "2026-05-03T23:15:00Z",
+  "decision_recorded_at_utc": "2026-05-03T23:27:01Z",
   "review_package": "docs/reviews/phase2_acceptance_review_package.json",
   "review_document": "docs/reviews/PHASE-2-ACCEPTANCE-REVIEW.md",
-  "accepted_next_step_allowed": false,
-  "sandbox_write_prototype_planning_allowed": false,
+  "accepted_next_step_allowed": true,
+  "sandbox_write_prototype_planning_allowed": true,
   "sandbox_write_implementation_allowed": false,
   "rollback_execution_allowed": false,
   "authoritative_write_allowed": false,
@@ -21,6 +21,6 @@
     "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
   ],
   "notes": [
-    "Default status is hold unless explicit acceptance or rejection is provided."
+    "Phase 2 acceptance authorizes planning only, not write implementation."
   ]
 }

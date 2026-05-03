@@ -14,7 +14,7 @@ This document records the human decision about whether the Phase 2 design-only p
 
 ## 3. Decision
 
-Decision: hold
+Decision: accepted
 
 ## 4. Decision Meaning
 
@@ -47,4 +47,4 @@ For rejected:
 
 ## 6. Next Step
 
-The next step is to list unresolved concerns and revise the Phase 2 design package.
+The next step is to create a separate sandbox-only write prototype planning branch that starts with rollback execution design and still does not implement writes.
