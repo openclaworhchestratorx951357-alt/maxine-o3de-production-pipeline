@@ -173,3 +173,15 @@ Layer 9 is still not product resolution.
 - it only decides whether evidence is complete enough for a future authoritative resolver attempt
 - it does not mark products resolved or claim Asset IDs
 - authoritative resolution must still validate platform, AP job status, source UUID/product identity, and product freshness
+
+## Authoritative Resolution Dry-Run Contract
+
+M.A.X.I.N.E. now explicitly separates readiness from resolution.
+
+- readiness indicates evidence quality and coverage
+- dry-run planning defines remaining required proofs
+- authoritative resolution remains disabled until all proof contracts are specified and validated
+
+This separation protects against false positives from cache files, sampled DB rows, and stale products.
+
+A future write-capable resolver must not write resolved product records until all required proofs exist and pass.

@@ -256,3 +256,23 @@ This layer does not:
 - resolve products
 - claim Asset IDs
 - publish or spawn entities
+
+## Authoritative Resolver Dry-Run Planning
+
+This layer consumes `manifest.o3de.ap_resolver_readiness` and produces a dry-run plan for a future authoritative resolver.
+
+The dry-run planner:
+
+- consumes readiness/source/product/file evidence
+- produces a non-authoritative plan object
+- lists missing future proofs required for write-capable resolution
+- records read-only proposed actions for future slices
+
+This layer does not:
+
+- write resolved products
+- claim Asset IDs
+- run O3DE Editor or Asset Processor
+- spawn entities or publish prefabs
+
+This is the final planning gate before designing a future authoritative resolver implementation.
