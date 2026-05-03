@@ -1,0 +1,7 @@
+{
+  "job_type": "ap_platform_proof",
+  "character_name": "Maxine_AP_Platform_Proof_Test_001",
+  "mode": "read_only_platform_proof_extraction",
+  "target_platform": "pc",
+  "notes": "Extract candidate platform hints from manifest evidence only. Do not resolve products or claim Asset IDs."
+}

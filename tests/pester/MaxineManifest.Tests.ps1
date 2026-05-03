@@ -210,4 +210,24 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has AP job-state proof design document" {
         Test-Path -LiteralPath "docs/o3de-integration/AP-JOB-STATE-PROOF.md" | Should Be $true
     }
+
+    It "has AP platform proof extractor script" {
+        Test-Path -LiteralPath "tools/asset-resolver/extract_ap_platform_proof.py" | Should Be $true
+    }
+
+    It "has Extract-MaxineApPlatformProof wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Extract-MaxineApPlatformProof.ps1" | Should Be $true
+    }
+
+    It "has AP platform proof example manifest" {
+        Test-Path -LiteralPath "examples/manifests/example-ap-platform-proof.manifest.json" | Should Be $true
+    }
+
+    It "has AP platform proof example job file" {
+        Test-Path -LiteralPath "examples/jobs/example-ap-platform-proof-job.json" | Should Be $true
+    }
+
+    It "has AP platform proof design document" {
+        Test-Path -LiteralPath "docs/o3de-integration/AP-PLATFORM-PROOF.md" | Should Be $true
+    }
 }

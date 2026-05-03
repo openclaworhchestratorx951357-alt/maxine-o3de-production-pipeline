@@ -37,6 +37,8 @@ This contract defines what evidence must exist before any future code may write 
 The next contract slice is AP job-state proof extraction from read-only row-mapping evidence.
 This contract must remain non-authoritative and must not resolve products.
 
+After AP job-state proof, the next missing proof contract is read-only platform proof extraction from candidate product/job/path evidence.
+
 ## Forbidden Writes Until All Checks Exist
 
 - no `manifest.o3de.products.resolved = true`
