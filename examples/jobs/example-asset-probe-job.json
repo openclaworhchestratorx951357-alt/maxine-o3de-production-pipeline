@@ -1,0 +1,9 @@
+{
+  "job_type": "asset_probe",
+  "character_name": "Maxine_Asset_Probe_Test_001",
+  "lane": "draft_mesh",
+  "source_asset": "Assets/Characters/Test/source/test.obj",
+  "o3de_project_path": "C:/Users/topgu/OneDrive/Documents/O3de_GEMS_Research/Projects/MaxineShow",
+  "mode": "filesystem_probe",
+  "notes": "This example records filesystem evidence only. It does not prove real O3DE Asset IDs."
+}

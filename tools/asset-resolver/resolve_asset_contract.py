@@ -142,6 +142,9 @@ def main() -> int:
         o3de_obj = {}
         manifest["o3de"] = o3de_obj
 
+    existing_probe = o3de_obj.get("asset_probe")
+    probe_available = isinstance(existing_probe, dict)
+
     o3de_obj["asset_resolution"] = {
         "resolver_version": RESOLVER_VERSION,
         "status": args.status,
@@ -156,6 +159,7 @@ def main() -> int:
         "notes": notes,
         "cache_guessing_used": False,
         "real_o3de_query_used": False,
+        "probe_available": probe_available,
         "updated_utc": utc_now(),
     }
 

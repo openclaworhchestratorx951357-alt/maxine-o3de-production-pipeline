@@ -37,3 +37,7 @@ Wrap the existing Codex-built MaxineShow character factory with a manifest-first
 ## Next Slice After Asset Resolver POC
 
 Implement real O3DE Asset Processor query adapter or CLI-backed product discovery, using source identity and product types, still without spawn/publish side effects.
+
+## Next Slice After Filesystem Probe Adapter
+
+Implement real Asset Processor metadata discovery from official O3DE data sources, starting with read-only discovery of Asset Processor database/log/config locations.

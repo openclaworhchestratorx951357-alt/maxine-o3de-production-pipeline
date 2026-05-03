@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0.0",
+  "job": {
+    "job_id": "job-asset-probe-0001",
+    "lane": "draft_mesh",
+    "status": "queued",
+    "created_utc": "2026-05-03T00:00:00Z",
+    "updated_utc": "2026-05-03T00:00:00Z"
+  },
+  "identity": {
+    "character_id": "maxine-asset-probe-test-001",
+    "character_name": "Maxine_Asset_Probe_Test_001"
+  },
+  "inputs": {
+    "input_type": "mesh_source",
+    "input_path": "Assets/Characters/Test/source/test.obj"
+  },
+  "generation": {
+    "status": "not_started"
+  },
+  "dcc_conform": {
+    "status": "not_started"
+  },
+  "o3de": {
+    "asset_probe": {
+      "mode": "filesystem_probe",
+      "authoritative_resolution": false,
+      "cache_guessing_used": false,
+      "real_o3de_query_used": false,
+      "notes": [
+        "Example only. No real filesystem proof is embedded in this sample manifest."
+      ]
+    }
+  },
+  "qc": {
+    "overall": "warn",
+    "gates": []
+  },
+  "runtime_validation": {},
+  "evidence": {},
+  "provenance": {
+    "submitted_by": "operator",
+    "pipeline_version": "adapter-probe-poc"
+  },
+  "undo": {
+    "rollback_plan": "n/a"
+  },
+  "cleanup": {
+    "temp_artifacts_removed": false
+  }
+}
