@@ -70,4 +70,20 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has AP metadata discovery example job file" {
         Test-Path -LiteralPath "examples/jobs/example-ap-metadata-discovery-job.json" | Should Be $true
     }
+
+    It "has AP DB schema inspection python script" {
+        Test-Path -LiteralPath "tools/asset-resolver/inspect_ap_database_schema.py" | Should Be $true
+    }
+
+    It "has Inspect-MaxineApDatabase wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Inspect-MaxineApDatabase.ps1" | Should Be $true
+    }
+
+    It "has AP DB schema inspection example manifest" {
+        Test-Path -LiteralPath "examples/manifests/example-ap-database-inspection.manifest.json" | Should Be $true
+    }
+
+    It "has AP DB schema inspection example job file" {
+        Test-Path -LiteralPath "examples/jobs/example-ap-database-inspection-job.json" | Should Be $true
+    }
 }

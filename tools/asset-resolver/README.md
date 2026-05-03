@@ -119,3 +119,23 @@ This layer does not write:
 - authoritative source UUIDs
 
 A later slice may use discovered locations to implement read-only database/API queries.
+
+## Asset Processor Database Schema Inspection
+
+This layer opens discovered SQLite database candidates in read-only mode and extracts schema shape only.
+
+Captured schema shape includes:
+
+- table names
+- column names and types
+- indexes
+- row counts when safely requested
+- heuristic source/product/job/dependency/scanfolder/builder table candidates based on table names
+
+This layer does not modify databases.
+
+This layer does not claim source UUID or product resolution.
+
+Findings are written to `manifest.o3de.ap_database_inspection`.
+
+A future slice may map actual source/product rows after schema shape is understood.
