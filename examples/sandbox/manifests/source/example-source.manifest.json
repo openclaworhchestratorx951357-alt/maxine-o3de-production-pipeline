@@ -1,0 +1,25 @@
+﻿{
+  "schema_version": "1.0.0",
+  "job": {
+    "job_id": "job-sandbox-source-0001",
+    "lane": "sandbox_fixture",
+    "status": "queued"
+  },
+  "identity": {
+    "character_id": "maxine-sandbox-fixture-001"
+  },
+  "inputs": {
+    "input_path": "examples/sandbox/manifests/source/example-source.obj"
+  },
+  "o3de": {
+    "sandbox_fixture": true,
+    "fixture_provenance": "design_only_non_executing"
+  },
+  "qc": {
+    "overall": "warn"
+  },
+  "provenance": {
+    "submitted_by": "phase-2-design",
+    "pipeline_version": "sandbox-fixture-path-safety"
+  }
+}

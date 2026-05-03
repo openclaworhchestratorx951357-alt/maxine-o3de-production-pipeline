@@ -201,3 +201,21 @@ After Phase 2 design-only review is accepted, design a rollback artifact schema 
 ## Next Milestone After Rollback Design
 
 After rollback design is accepted, design a sandbox fixture layout and path-safety verifier for a future sandbox-only write prototype. Do not implement write execution yet.
+
+## Phase 2 Sandbox Fixture Path-Safety Complete Criteria
+
+- sandbox fixture layout exists
+- path-safety policy exists
+- path-safety verifier exists
+- phase verifier exists
+- accepted sandbox path test passes
+- rejected production/escape path tests fail as expected
+- sandbox write command remains absent
+- rollback command remains absent
+- authoritative write command remains absent
+- no products are resolved
+- no Asset IDs are claimed
+
+## Next Milestone After Sandbox Fixture Path-Safety Design
+
+After sandbox fixture path-safety design is accepted, create a Phase 2 acceptance review package that summarizes Phase 2 design-only artifacts and explicitly asks for approval before any sandbox write prototype branch is created.
