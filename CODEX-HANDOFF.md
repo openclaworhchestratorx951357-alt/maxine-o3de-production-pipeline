@@ -33,3 +33,7 @@ Wrap the existing Codex-built MaxineShow character factory with a manifest-first
 - DryRun generates manifest and evidence
 - Failures still generate manifest
 - Existing factory scripts were not modified
+
+## Next Slice After Asset Resolver POC
+
+Implement real O3DE Asset Processor query adapter or CLI-backed product discovery, using source identity and product types, still without spawn/publish side effects.

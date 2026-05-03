@@ -22,4 +22,16 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has Invoke-MaxineJob adapter script" {
         Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineJob.ps1" | Should Be $true
     }
+
+    It "has asset resolver python script" {
+        Test-Path -LiteralPath "tools/asset-resolver/resolve_asset_contract.py" | Should Be $true
+    }
+
+    It "has asset resolver product contracts file" {
+        Test-Path -LiteralPath "tools/asset-resolver/product_contracts.json" | Should Be $true
+    }
+
+    It "has Resolve-MaxineAssetContract wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Resolve-MaxineAssetContract.ps1" | Should Be $true
+    }
 }
