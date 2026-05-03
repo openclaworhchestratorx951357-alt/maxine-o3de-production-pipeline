@@ -534,4 +534,32 @@ Describe "Maxine Manifest Repository Baseline" {
     It "does not have authoritative write command implementation (acceptance review phase)" {
         Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
     }
+
+    It "has Phase 2 acceptance decision doc" {
+        Test-Path -LiteralPath "docs/reviews/PHASE-2-ACCEPTANCE-DECISION.md" | Should Be $true
+    }
+
+    It "has Phase 2 acceptance decision JSON" {
+        Test-Path -LiteralPath "docs/reviews/phase2_acceptance_decision.json" | Should Be $true
+    }
+
+    It "has Phase 2 acceptance decision verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_phase2_acceptance_decision.py" | Should Be $true
+    }
+
+    It "has Phase 2 acceptance decision PowerShell wrapper" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxinePhase2AcceptanceDecision.ps1" | Should Be $true
+    }
+
+    It "does not have sandbox write command implementation (acceptance decision phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    }
+
+    It "does not have rollback command implementation (acceptance decision phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    }
+
+    It "does not have authoritative write command implementation (acceptance decision phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
+    }
 }
