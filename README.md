@@ -117,4 +117,19 @@ References:
 - `docs/roadmap/PHASE-2-SANDBOX-FIXTURE-PATH-SAFETY-DESIGN.md`
 - `docs/contracts/SANDBOX-FIXTURE-PATH-SAFETY-CONTRACT.md`
 - `examples/sandbox/README.md`
+
+## Phase 2 Acceptance Review
+
+Phase 2 acceptance review is design-only.
+
+- approval is requested before any sandbox-only write prototype branch is created
+- acceptance does not authorize writes
+- no sandbox write command exists
+- no rollback execution command exists
+- no authoritative write command exists
+
+References:
+
+- `docs/reviews/PHASE-2-ACCEPTANCE-REVIEW.md`
+- `docs/reviews/phase2_acceptance_review_package.json`
 M.A.X.I.N.E. production pipeline for O3DE character, asset, prefab, QC, and automation workflows.
