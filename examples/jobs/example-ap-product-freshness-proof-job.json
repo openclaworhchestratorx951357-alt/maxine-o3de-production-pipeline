@@ -1,0 +1,6 @@
+{
+  "job_type": "ap_product_freshness_proof",
+  "character_name": "Maxine_AP_Product_Freshness_Proof_Test_001",
+  "mode": "read_only_product_freshness_proof_extraction",
+  "notes": "Extract timestamp-based freshness evidence from manifest source/product/job/file blocks only. Do not resolve products or claim Asset IDs."
+}

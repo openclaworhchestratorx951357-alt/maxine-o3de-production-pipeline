@@ -39,6 +39,8 @@ This contract must remain non-authoritative and must not resolve products.
 
 After AP job-state proof, the next missing proof contract is read-only platform proof extraction from candidate product/job/path evidence.
 
+After platform proof, the next missing proof contract is read-only product freshness proof extraction from source/product/job/file timestamp evidence.
+
 ## Forbidden Writes Until All Checks Exist
 
 - no `manifest.o3de.products.resolved = true`

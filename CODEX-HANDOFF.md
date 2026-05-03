@@ -105,3 +105,7 @@ Implement platform proof extraction from candidate product/job rows and path evi
 ## Next Slice After AP Platform Proof
 
 Implement product freshness proof extraction using timestamps from source rows, product rows, file metadata, and job-state evidence, still read-only and still without resolving products.
+
+## Next Slice After AP Product Freshness Proof
+
+Implement product identity proof design using product type, source identity, platform, job-state, freshness, and file evidence, still read-only and still without resolving products.
