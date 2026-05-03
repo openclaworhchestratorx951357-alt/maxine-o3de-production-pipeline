@@ -1,0 +1,7 @@
+{
+  "job_type": "ap_source_identity_match",
+  "character_name": "Maxine_AP_Source_Identity_Test_001",
+  "mode": "read_only_candidate_identity_match",
+  "source_asset": "Assets/Characters/Test/source/test.obj",
+  "notes": "Compare manifest source asset input against sampled AP source rows. Do not claim product resolution."
+}

@@ -62,3 +62,10 @@ Implement source identity matching rules that compare manifest source asset inpu
 
 Safety note:
 Candidate row matches are not product resolution. Require explicit source identity proof before product matching.
+
+## Next Slice After AP Source Identity Matching
+
+Implement candidate product matching for rows linked to a candidate source row, requiring source match evidence plus expected product contract type, still without marking products resolved.
+
+Safety note:
+Source identity candidate match is required before product candidate matching, but it is still not enough to publish or resolve products.

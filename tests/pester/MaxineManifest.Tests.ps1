@@ -102,4 +102,20 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has AP row mapping example job file" {
         Test-Path -LiteralPath "examples/jobs/example-ap-row-mapping-job.json" | Should Be $true
     }
+
+    It "has AP source identity matching python script" {
+        Test-Path -LiteralPath "tools/asset-resolver/match_ap_source_identity.py" | Should Be $true
+    }
+
+    It "has Match-MaxineApSourceIdentity wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Match-MaxineApSourceIdentity.ps1" | Should Be $true
+    }
+
+    It "has AP source identity matching example manifest" {
+        Test-Path -LiteralPath "examples/manifests/example-ap-source-identity-match.manifest.json" | Should Be $true
+    }
+
+    It "has AP source identity matching example job file" {
+        Test-Path -LiteralPath "examples/jobs/example-ap-source-identity-match-job.json" | Should Be $true
+    }
 }
