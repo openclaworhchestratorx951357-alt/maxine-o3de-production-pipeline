@@ -219,3 +219,40 @@ This layer does not:
 - treat file existence as product resolution
 
 Existing files remain candidate product files until platform/job-state/source identity validation is added.
+
+## Non-authoritative Resolver Readiness Gate
+
+This gate combines evidence from:
+
+- `manifest.o3de.asset_resolution`
+- `manifest.o3de.ap_source_identity_match`
+- `manifest.o3de.ap_product_candidate_match`
+- `manifest.o3de.ap_product_file_validation`
+
+It answers one question:
+Is there enough evidence to attempt a future authoritative resolver?
+
+Findings are written to `manifest.o3de.ap_resolver_readiness`.
+
+Required readiness dimensions:
+
+- source identity evidence
+- product candidate evidence
+- file existence evidence
+- required contract coverage
+- safety compliance
+
+Readiness statuses:
+
+- `ready_for_authoritative_resolution_attempt`
+- `blocked_missing_source_identity`
+- `blocked_missing_product_candidates`
+- `blocked_missing_required_product_files`
+- `blocked_safety_violation`
+- `incomplete_evidence`
+
+This layer does not:
+
+- resolve products
+- claim Asset IDs
+- publish or spawn entities

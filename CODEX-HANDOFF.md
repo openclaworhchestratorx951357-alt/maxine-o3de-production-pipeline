@@ -83,3 +83,10 @@ Implement non-authoritative resolver readiness gate that combines source identit
 
 Safety note:
 Readiness is not resolution. A future authoritative resolver must still verify platform, AP job status, and product identity before writing resolved products.
+
+## Next Slice After AP Resolver Readiness Gate
+
+Implement authoritative-resolution design document and dry-run contract for the first future write-capable resolver, but keep implementation read-only until platform/job-state/product freshness checks are defined.
+
+Safety note:
+Do not implement resolved product writes until authoritative AP product identity, platform, job status, and freshness checks are specified and tested.

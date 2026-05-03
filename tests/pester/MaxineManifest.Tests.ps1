@@ -150,4 +150,20 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has AP product file validation example job file" {
         Test-Path -LiteralPath "examples/jobs/example-ap-product-file-validation-job.json" | Should Be $true
     }
+
+    It "has AP resolver readiness python script" {
+        Test-Path -LiteralPath "tools/asset-resolver/evaluate_ap_resolver_readiness.py" | Should Be $true
+    }
+
+    It "has Evaluate-MaxineApResolverReadiness wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Evaluate-MaxineApResolverReadiness.ps1" | Should Be $true
+    }
+
+    It "has AP resolver readiness example manifest" {
+        Test-Path -LiteralPath "examples/manifests/example-ap-resolver-readiness.manifest.json" | Should Be $true
+    }
+
+    It "has AP resolver readiness example job file" {
+        Test-Path -LiteralPath "examples/jobs/example-ap-resolver-readiness-job.json" | Should Be $true
+    }
 }
