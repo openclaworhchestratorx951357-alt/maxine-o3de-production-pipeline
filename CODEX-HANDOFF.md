@@ -236,3 +236,19 @@ After sandbox fixture path-safety design is accepted, create a Phase 2 acceptanc
 ## Next Milestone After Phase 2 Acceptance Review
 
 If Phase 2 is explicitly accepted, create a separate branch for sandbox-only write prototype planning. The first sandbox prototype planning branch must still begin with rollback execution design and must not implement writes until approval is recorded.
+
+## Phase 2 Acceptance Decision Complete Criteria
+
+- acceptance decision doc exists
+- acceptance decision JSON exists
+- acceptance decision verifier exists
+- acceptance decision verifier passes
+- sandbox write command remains absent
+- rollback command remains absent
+- authoritative write command remains absent
+- no products are resolved
+- no Asset IDs are claimed
+
+## Next Milestone After Phase 2 Acceptance Decision
+
+If the decision status is accepted, create a separate sandbox-only write prototype planning branch that starts with rollback execution design and still does not implement writes. If the decision is hold or rejected, revise the Phase 2 design package first.
