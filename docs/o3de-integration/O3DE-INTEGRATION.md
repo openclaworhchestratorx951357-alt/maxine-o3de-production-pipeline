@@ -153,3 +153,23 @@ Layer 8 remains evidence only and is not product resolution.
 
 - existence does not prove freshness, platform correctness, source linkage, or job success
 - a future authoritative resolver must validate platform/job-state/current product records before resolving products
+
+## AP Resolver Readiness Gate
+
+The resolver stack now has nine layers:
+
+1. product contract recording
+2. filesystem evidence probing
+3. AP metadata source discovery
+4. read-only AP database schema inspection
+5. read-only candidate row mapping
+6. read-only source identity candidate matching
+7. read-only candidate product matching
+8. read-only product file existence validation
+9. non-authoritative resolver readiness gate
+
+Layer 9 is still not product resolution.
+
+- it only decides whether evidence is complete enough for a future authoritative resolver attempt
+- it does not mark products resolved or claim Asset IDs
+- authoritative resolution must still validate platform, AP job status, source UUID/product identity, and product freshness

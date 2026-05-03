@@ -1,0 +1,7 @@
+{
+  "job_type": "ap_resolver_readiness",
+  "character_name": "Maxine_AP_Resolver_Readiness_Test_001",
+  "mode": "non_authoritative_readiness_gate",
+  "source_asset": "Assets/Characters/Test/source/test.obj",
+  "notes": "Evaluate whether source identity, product candidate, and file existence evidence is sufficient for a future authoritative resolver attempt. Do not mark products resolved."
+}
