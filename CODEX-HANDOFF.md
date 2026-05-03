@@ -183,3 +183,21 @@ Phase 2 should be design-only review of a sandbox-only write prototype. Do not i
 ## Next Milestone After Phase 2 Design-Only
 
 After Phase 2 design-only review is accepted, design a rollback artifact schema and rollback verifier for a future sandbox-only write prototype. Do not implement write execution yet.
+
+## Phase 2 Rollback Design Complete Criteria
+
+- rollback design document exists
+- rollback contract exists
+- rollback artifact schema exists
+- rollback example exists
+- rollback artifact verifier exists
+- rollback phase verifier exists
+- rollback command remains absent
+- sandbox write command remains absent
+- authoritative write command remains absent
+- no products are resolved
+- no Asset IDs are claimed
+
+## Next Milestone After Rollback Design
+
+After rollback design is accepted, design a sandbox fixture layout and path-safety verifier for a future sandbox-only write prototype. Do not implement write execution yet.
