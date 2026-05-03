@@ -124,3 +124,10 @@ Even `dry_run_ready` does not permit writes. A separate write protocol and expli
 ## Next Slice After Authoritative Write Protocol Proposal
 
 Design operator approval artifact and approval validation for authoritative resolver proposals, still without writes.
+
+## Next Slice After Operator Approval Validation
+
+Design approved-write dry-run merger that combines proposal plus valid approval into a final pre-write report, still without writing resolved products.
+
+Safety note:
+Valid approval still does not execute writes. A final pre-write report and explicit execution gate are required.

@@ -1,0 +1,8 @@
+{
+  "job_type": "operator_approval_validation",
+  "character_name": "Maxine_Operator_Approval_Test_001",
+  "mode": "read_only_approval_validation",
+  "proposal_path": "examples/manifests/example-authoritative-write-protocol-proposal.json",
+  "approval_path": "examples/manifests/example-operator-approval.json",
+  "notes": "Validate operator approval artifact against write proposal requirements. Do not execute writes or resolve products."
+}
