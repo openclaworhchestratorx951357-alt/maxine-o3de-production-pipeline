@@ -54,3 +54,19 @@ Important constraints:
 - findings are evidence of local filesystem state, not proof of O3DE Asset IDs
 - cache guessing is not used as a success condition
 - real product resolution requires official O3DE/AP APIs or tooling in a later slice
+
+## Asset Processor Metadata Discovery
+
+M.A.X.I.N.E. now has three resolver layers:
+
+1. product contract recording
+2. filesystem evidence probing
+3. O3DE-aware metadata source discovery
+
+This slice is layer 3 and remains read-only and non-authoritative.
+
+- records candidate metadata source locations in `manifest.o3de.ap_metadata_discovery`
+- does not run O3DE Editor or Asset Processor
+- does not claim product publication or product validity
+
+This prepares future source UUID and product-type resolution, but it must not be confused with product publication.

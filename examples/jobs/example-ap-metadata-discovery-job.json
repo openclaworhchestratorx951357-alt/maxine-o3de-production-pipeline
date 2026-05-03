@@ -1,0 +1,7 @@
+{
+  "job_type": "ap_metadata_discovery",
+  "character_name": "Maxine_AP_Metadata_Test_001",
+  "o3de_project_path": "C:/Users/topgu/OneDrive/Documents/O3de_GEMS_Research/Projects/MaxineShow",
+  "mode": "read_only_discovery",
+  "notes": "Discovers candidate O3DE Asset Processor metadata sources without running O3DE or Asset Processor."
+}

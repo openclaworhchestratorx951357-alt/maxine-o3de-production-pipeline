@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "project_manifest_candidates": [
+    "project.json"
+  ],
+  "user_project_candidates": [
+    "user/project.json"
+  ],
+  "settings_registry_globs": [
+    "Registry/**/*.setreg",
+    "Registry/**/*.setregpatch",
+    "user/Registry/**/*.setreg",
+    "user/Registry/**/*.setregpatch"
+  ],
+  "log_candidates": [
+    "user/log/AssetProcessor.log",
+    "user/log/AssetProcessorBatch.log",
+    "user/log/Editor.log",
+    "user/log/Editor.log.last",
+    "user/log/Editor.log.bak"
+  ],
+  "cache_dir_candidates": [
+    "Cache",
+    "cache",
+    "user/Cache",
+    "user/cache"
+  ],
+  "database_name_candidates": [
+    "assetdb.sqlite",
+    "AssetProcessor.sqlite",
+    "assetprocessor.sqlite",
+    "assets.sqlite",
+    "AssetDatabase.sqlite"
+  ],
+  "notes": [
+    "These are candidate local discovery paths only.",
+    "Discovery does not prove authoritative product resolution.",
+    "Future slices may refine these candidates after inspecting the actual O3DE project and AP configuration."
+  ]
+}

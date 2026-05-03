@@ -1,0 +1,59 @@
+{
+  "schema_version": "1.0.0",
+  "job": {
+    "job_id": "job-ap-metadata-discovery-0001",
+    "lane": "draft_mesh",
+    "status": "queued",
+    "created_utc": "2026-05-03T00:00:00Z",
+    "updated_utc": "2026-05-03T00:00:00Z"
+  },
+  "identity": {
+    "character_id": "maxine-ap-metadata-test-001",
+    "character_name": "Maxine_AP_Metadata_Test_001"
+  },
+  "inputs": {
+    "input_type": "mesh_source",
+    "input_path": "Assets/Characters/Test/source/test.obj"
+  },
+  "generation": {
+    "status": "not_started"
+  },
+  "dcc_conform": {
+    "status": "not_started"
+  },
+  "o3de": {
+    "ap_metadata_discovery": {
+      "discovery_version": "ap-metadata-discovery-example",
+      "project_path": "C:/Users/topgu/OneDrive/Documents/O3de_GEMS_Research/Projects/MaxineShow",
+      "project_exists": false,
+      "safety": {
+        "read_only": true,
+        "ran_o3de_editor": false,
+        "ran_asset_processor": false,
+        "modified_project": false,
+        "authoritative_resolution": false,
+        "real_o3de_query_used": false,
+        "cache_guessing_used_as_success": false
+      },
+      "notes": [
+        "example only"
+      ]
+    }
+  },
+  "qc": {
+    "overall": "warn",
+    "gates": []
+  },
+  "runtime_validation": {},
+  "evidence": {},
+  "provenance": {
+    "submitted_by": "operator",
+    "pipeline_version": "ap-metadata-discovery-poc"
+  },
+  "undo": {
+    "rollback_plan": "n/a"
+  },
+  "cleanup": {
+    "temp_artifacts_removed": false
+  }
+}

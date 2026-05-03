@@ -94,3 +94,28 @@ This proof-of-concept does **not** query the real O3DE Asset Processor yet. It f
 - `procprefab` required
 - `azmaterial` required
 - `collider` optional depending on policy
+
+## Asset Processor Metadata Discovery
+
+This discovery layer does not query a live Asset Processor process. It records discovered candidate metadata sources only.
+
+Discovery checks candidate locations for:
+
+- `project.json`
+- `user/project.json`
+- `Registry/*.setreg`
+- `Registry/*.setregpatch`
+- project user log files
+- Asset Processor log candidates
+- Asset Processor database/cache candidates
+- cache directory candidates
+
+Findings are written to `manifest.o3de.ap_metadata_discovery`.
+
+This layer does not write:
+
+- `manifest.o3de.products` as resolved
+- real Asset IDs
+- authoritative source UUIDs
+
+A later slice may use discovered locations to implement read-only database/API queries.

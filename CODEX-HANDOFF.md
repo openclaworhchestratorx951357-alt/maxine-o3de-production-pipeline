@@ -41,3 +41,10 @@ Implement real O3DE Asset Processor query adapter or CLI-backed product discover
 ## Next Slice After Filesystem Probe Adapter
 
 Implement real Asset Processor metadata discovery from official O3DE data sources, starting with read-only discovery of Asset Processor database/log/config locations.
+
+## Next Slice After AP Metadata Discovery
+
+Implement read-only Asset Processor database inspection against discovered database candidates, extracting source/product table names and schema shape only, without modifying the database and without claiming product resolution yet.
+
+Safety note:
+Do not open SQLite databases for writes. Use read-only mode only when database inspection begins.
