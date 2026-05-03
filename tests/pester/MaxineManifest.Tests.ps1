@@ -462,4 +462,48 @@ Describe "Maxine Manifest Repository Baseline" {
     It "still does not have authoritative write command implementation (rollback phase)" {
         Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
     }
+
+    It "has sandbox fixture path-safety design doc" {
+        Test-Path -LiteralPath "docs/roadmap/PHASE-2-SANDBOX-FIXTURE-PATH-SAFETY-DESIGN.md" | Should Be $true
+    }
+
+    It "has sandbox fixture path-safety contract" {
+        Test-Path -LiteralPath "docs/contracts/SANDBOX-FIXTURE-PATH-SAFETY-CONTRACT.md" | Should Be $true
+    }
+
+    It "has sandbox README" {
+        Test-Path -LiteralPath "examples/sandbox/README.md" | Should Be $true
+    }
+
+    It "has path safety policy" {
+        Test-Path -LiteralPath "docs/audits/phase2_sandbox_path_safety_policy.json" | Should Be $true
+    }
+
+    It "has path safety verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_sandbox_path_safety.py" | Should Be $true
+    }
+
+    It "has phase verifier for sandbox fixture path safety" {
+        Test-Path -LiteralPath "tools/audit/verify_phase2_sandbox_fixture_design.py" | Should Be $true
+    }
+
+    It "has path safety wrapper" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxPathSafety.ps1" | Should Be $true
+    }
+
+    It "has phase wrapper for sandbox fixture path safety" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxinePhase2SandboxFixtureDesign.ps1" | Should Be $true
+    }
+
+    It "does not have sandbox write command implementation (path-safety phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    }
+
+    It "does not have rollback command implementation (path-safety phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    }
+
+    It "does not have authoritative write command implementation (path-safety phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
+    }
 }

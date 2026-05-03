@@ -102,4 +102,19 @@ References:
 
 - `docs/roadmap/PHASE-2-ROLLBACK-ARTIFACT-DESIGN.md`
 - `docs/contracts/SANDBOX-ROLLBACK-ARTIFACT-CONTRACT.md`
+
+## Phase 2 Sandbox Fixture Path-Safety Design
+
+Phase 2 sandbox fixture layout and path-safety policy are design-only.
+
+- path-safety verification is read-only
+- no sandbox write command exists
+- no rollback execution command exists
+- no authoritative write command exists
+
+References:
+
+- `docs/roadmap/PHASE-2-SANDBOX-FIXTURE-PATH-SAFETY-DESIGN.md`
+- `docs/contracts/SANDBOX-FIXTURE-PATH-SAFETY-CONTRACT.md`
+- `examples/sandbox/README.md`
 M.A.X.I.N.E. production pipeline for O3DE character, asset, prefab, QC, and automation workflows.

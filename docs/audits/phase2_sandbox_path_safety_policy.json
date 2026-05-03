@@ -1,0 +1,39 @@
+﻿{
+  "schema_version": "1.0.0",
+  "phase": "phase-2-sandbox-fixture-path-safety-design",
+  "design_only": true,
+  "sandbox_root": "examples/sandbox",
+  "allowed_relative_roots": [
+    "examples/sandbox"
+  ],
+  "required_fixture_directories": [
+    "examples/sandbox/manifests/source",
+    "examples/sandbox/manifests/working",
+    "examples/sandbox/manifests/snapshots",
+    "examples/sandbox/manifests/proposed",
+    "examples/sandbox/manifests/rollback",
+    "examples/sandbox/manifests/reports",
+    "examples/sandbox/approvals",
+    "examples/sandbox/plans",
+    "examples/sandbox/proposals",
+    "examples/sandbox/policy",
+    "examples/sandbox/logs"
+  ],
+  "forbidden_path_patterns": [
+    "..",
+    "MaxineShow",
+    "O3DE/Projects",
+    "O3de_GEMS_Research/Projects",
+    "Engine",
+    "Cache",
+    "AssetProcessor",
+    ".o3de"
+  ],
+  "required_absent_files": [
+    "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1",
+    "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1",
+    "scripts/powershell/Invoke-MaxineSandboxRollback.ps1"
+  ],
+  "write_capable_code_allowed": false,
+  "path_safety_execution_allowed": false
+}
