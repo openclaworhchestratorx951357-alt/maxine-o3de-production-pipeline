@@ -69,3 +69,10 @@ Implement candidate product matching for rows linked to a candidate source row, 
 
 Safety note:
 Source identity candidate match is required before product candidate matching, but it is still not enough to publish or resolve products.
+
+## Next Slice After AP Product Candidate Matching
+
+Implement product file existence validation for candidate product rows, using safe path normalization and project/cache roots, still without resolving products until file existence plus product type plus source identity are all proven.
+
+Safety note:
+Product candidate rows are not enough. Require file existence and product contract validation before any product can move toward resolved.

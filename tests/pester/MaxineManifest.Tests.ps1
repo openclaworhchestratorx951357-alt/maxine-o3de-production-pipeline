@@ -118,4 +118,20 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has AP source identity matching example job file" {
         Test-Path -LiteralPath "examples/jobs/example-ap-source-identity-match-job.json" | Should Be $true
     }
+
+    It "has AP candidate product matching python script" {
+        Test-Path -LiteralPath "tools/asset-resolver/match_ap_product_candidates.py" | Should Be $true
+    }
+
+    It "has Match-MaxineApProductCandidates wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Match-MaxineApProductCandidates.ps1" | Should Be $true
+    }
+
+    It "has AP candidate product matching example manifest" {
+        Test-Path -LiteralPath "examples/manifests/example-ap-product-candidate-match.manifest.json" | Should Be $true
+    }
+
+    It "has AP candidate product matching example job file" {
+        Test-Path -LiteralPath "examples/jobs/example-ap-product-candidate-match-job.json" | Should Be $true
+    }
 }

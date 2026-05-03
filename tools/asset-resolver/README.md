@@ -177,3 +177,25 @@ This layer does not:
 - claim authoritative source identity
 
 It only emits confidence-ranked candidate source identity evidence.
+
+## Read-only Candidate Product Matching
+
+This layer reads:
+
+- `manifest.o3de.asset_resolution` required/optional/planned products
+- `manifest.o3de.ap_row_mapping` sampled product rows
+- `manifest.o3de.ap_source_identity_match` best/candidate source match
+
+It links candidate product rows to a candidate source row when values suggest shared source identifiers.
+
+It classifies product rows against expected product contract types using conservative filename/extension/name matching.
+
+Findings are written to `manifest.o3de.ap_product_candidate_match`.
+
+This layer does not:
+
+- update `manifest.o3de.products` as resolved
+- claim product Asset IDs
+- publish or spawn entities
+
+Product candidates remain evidence only.
