@@ -322,4 +322,28 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has operator approval protocol document" {
         Test-Path -LiteralPath "docs/o3de-integration/OPERATOR-APPROVAL-PROTOCOL.md" | Should Be $true
     }
+
+    It "has pre-write report builder script" {
+        Test-Path -LiteralPath "tools/asset-resolver/build_pre_write_report.py" | Should Be $true
+    }
+
+    It "has Build-MaxinePreWriteReport wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Build-MaxinePreWriteReport.ps1" | Should Be $true
+    }
+
+    It "has pre-write report schema" {
+        Test-Path -LiteralPath "schemas/maxine_pre_write_report.schema.json" | Should Be $true
+    }
+
+    It "has pre-write report example manifest" {
+        Test-Path -LiteralPath "examples/manifests/example-pre-write-report.json" | Should Be $true
+    }
+
+    It "has pre-write report example job file" {
+        Test-Path -LiteralPath "examples/jobs/example-pre-write-report-job.json" | Should Be $true
+    }
+
+    It "has approved-write dry-run report document" {
+        Test-Path -LiteralPath "docs/o3de-integration/APPROVED-WRITE-DRY-RUN-REPORT.md" | Should Be $true
+    }
 }

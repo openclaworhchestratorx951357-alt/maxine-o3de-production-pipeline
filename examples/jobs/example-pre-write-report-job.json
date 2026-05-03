@@ -1,0 +1,8 @@
+{
+  "job_type": "approved_write_dry_run_pre_write_report",
+  "character_name": "Maxine_Pre_Write_Report_Test_001",
+  "mode": "read_only_pre_write_gate",
+  "proposal_path": "examples/manifests/example-authoritative-write-protocol-proposal.json",
+  "approval_validation_path": "examples/manifests/example-operator-approval-validation.json",
+  "notes": "Build final pre-write dry-run report only. Do not execute writes, resolve products, claim Asset IDs, spawn, or publish."
+}
