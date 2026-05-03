@@ -118,3 +118,20 @@ Layer 6 remains discovery only and is not product resolution.
 - candidate source identity is not proof of products
 - source row matching is not publication readiness
 - product resolution later requires source identity evidence, expected product type, platform, and current AP job/product state
+
+## AP Candidate Product Matching
+
+The resolver stack now has seven layers:
+
+1. product contract recording
+2. filesystem evidence probing
+3. AP metadata source discovery
+4. read-only AP database schema inspection
+5. read-only candidate row mapping
+6. read-only source identity candidate matching
+7. read-only candidate product matching
+
+Layer 7 is still not resolution.
+
+- product candidates are not valid until product type, source identity, platform, job status, and file existence are proven
+- this layer prepares evidence for future resolver decisions only

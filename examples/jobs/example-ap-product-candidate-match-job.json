@@ -1,0 +1,7 @@
+{
+  "job_type": "ap_product_candidate_match",
+  "character_name": "Maxine_AP_Product_Candidate_Test_001",
+  "mode": "read_only_candidate_product_match",
+  "source_asset": "Assets/Characters/Test/source/test.obj",
+  "notes": "Match candidate product rows only after source identity evidence exists. Do not mark products resolved."
+}
