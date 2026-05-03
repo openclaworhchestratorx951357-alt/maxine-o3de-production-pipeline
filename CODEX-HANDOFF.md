@@ -145,3 +145,9 @@ Consolidate PR stack after review/merge, then create a top-level roadmap index s
 
 Safety note:
 Do not implement authoritative writes until the execution gate policy is reviewed and explicitly accepted.
+
+## Post-Consolidation Next Milestone
+
+Review and merge the PR stack, then run the full test suite from `main`.
+
+After that, design a separate experimental branch for a sandbox-only write prototype, but do not implement it until execution-gate policy is explicitly accepted.
