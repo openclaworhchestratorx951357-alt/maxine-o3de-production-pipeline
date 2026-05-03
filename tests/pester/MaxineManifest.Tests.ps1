@@ -166,4 +166,28 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has AP resolver readiness example job file" {
         Test-Path -LiteralPath "examples/jobs/example-ap-resolver-readiness-job.json" | Should Be $true
     }
+
+    It "has authoritative resolver dry-run planner script" {
+        Test-Path -LiteralPath "tools/asset-resolver/plan_authoritative_resolution.py" | Should Be $true
+    }
+
+    It "has Plan-MaxineAuthoritativeResolution wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Plan-MaxineAuthoritativeResolution.ps1" | Should Be $true
+    }
+
+    It "has authoritative resolver plan schema" {
+        Test-Path -LiteralPath "schemas/maxine_authoritative_resolver_plan.schema.json" | Should Be $true
+    }
+
+    It "has authoritative resolver example plan manifest" {
+        Test-Path -LiteralPath "examples/manifests/example-authoritative-resolution-plan.json" | Should Be $true
+    }
+
+    It "has authoritative resolver example plan job file" {
+        Test-Path -LiteralPath "examples/jobs/example-authoritative-resolution-plan-job.json" | Should Be $true
+    }
+
+    It "has authoritative resolver design document" {
+        Test-Path -LiteralPath "docs/o3de-integration/AUTHORITATIVE-RESOLVER-DESIGN.md" | Should Be $true
+    }
 }

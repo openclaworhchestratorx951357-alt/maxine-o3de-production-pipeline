@@ -1,0 +1,6 @@
+{
+  "job_type": "authoritative_resolution_dry_run_plan",
+  "character_name": "Maxine_Authoritative_Resolver_Test_001",
+  "mode": "dry_run_contract_only",
+  "notes": "Build a dry-run plan for future authoritative product resolution. Do not resolve products or write Asset IDs."
+}

@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_authoritative_resolver_plan.schema.json",
+  "title": "MAXINE Authoritative Resolver Dry-Run Plan",
+  "description": "Read-only dry-run contract for future authoritative product resolution.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "plan_id",
+    "status",
+    "source_manifest",
+    "required_proofs",
+    "available_evidence",
+    "missing_proofs",
+    "proposed_actions",
+    "forbidden_actions",
+    "safety"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "plan_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "dry_run_ready",
+        "dry_run_blocked",
+        "dry_run_incomplete"
+      ]
+    },
+    "source_manifest": {
+      "type": "string",
+      "minLength": 1
+    },
+    "required_proofs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "description",
+          "required",
+          "satisfied",
+          "evidence_ref"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "satisfied": {
+            "type": "boolean"
+          },
+          "evidence_ref": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "available_evidence": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "missing_proofs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "proposed_actions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "forbidden_actions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "read_only",
+        "writes_resolved_products",
+        "runs_o3de_editor",
+        "runs_asset_processor",
+        "opens_database",
+        "modifies_database",
+        "spawns_entities",
+        "publishes_prefabs",
+        "claims_asset_ids"
+      ],
+      "properties": {
+        "read_only": {
+          "const": true
+        },
+        "writes_resolved_products": {
+          "const": false
+        },
+        "runs_o3de_editor": {
+          "const": false
+        },
+        "runs_asset_processor": {
+          "const": false
+        },
+        "opens_database": {
+          "const": false
+        },
+        "modifies_database": {
+          "const": false
+        },
+        "spawns_entities": {
+          "const": false
+        },
+        "publishes_prefabs": {
+          "const": false
+        },
+        "claims_asset_ids": {
+          "const": false
+        }
+      }
+    }
+  }
+}

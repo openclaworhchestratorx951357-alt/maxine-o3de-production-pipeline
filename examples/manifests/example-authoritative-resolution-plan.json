@@ -1,0 +1,121 @@
+{
+  "schema_version": "1.0.0",
+  "plan_id": "authoritative-plan-job-ap-resolver-readiness-0001",
+  "status": "dry_run_incomplete",
+  "source_manifest": "examples/manifests/example-ap-resolver-readiness.manifest.json",
+  "required_proofs": [
+    {
+      "id": "source_identity_proof",
+      "description": "Source identity is matched with confidence and readiness pass criteria.",
+      "required": true,
+      "satisfied": true,
+      "evidence_ref": "manifest.o3de.ap_resolver_readiness.dimensions.source_identity_evidence"
+    },
+    {
+      "id": "expected_product_type_proof",
+      "description": "Expected product contract types have candidate support and no missing required types.",
+      "required": true,
+      "satisfied": true,
+      "evidence_ref": "manifest.o3de.ap_resolver_readiness.dimensions.product_candidate_evidence + required_contract_coverage"
+    },
+    {
+      "id": "product_file_existence_proof",
+      "description": "Candidate product files exist according to readiness file evidence.",
+      "required": true,
+      "satisfied": true,
+      "evidence_ref": "manifest.o3de.ap_resolver_readiness.dimensions.file_existence_evidence"
+    },
+    {
+      "id": "asset_processor_job_success_proof",
+      "description": "Asset Processor job status is proven successful for current source/product records.",
+      "required": true,
+      "satisfied": false,
+      "evidence_ref": "not_implemented_yet"
+    },
+    {
+      "id": "platform_proof",
+      "description": "Platform targeting for candidate products is explicitly verified.",
+      "required": true,
+      "satisfied": false,
+      "evidence_ref": "not_implemented_yet"
+    },
+    {
+      "id": "product_freshness_proof",
+      "description": "Candidate products are verified current and not stale.",
+      "required": true,
+      "satisfied": false,
+      "evidence_ref": "not_implemented_yet"
+    },
+    {
+      "id": "product_identity_proof",
+      "description": "Product identity contract is verified without ambiguity.",
+      "required": true,
+      "satisfied": false,
+      "evidence_ref": "not_implemented_yet"
+    },
+    {
+      "id": "safety_compliance_proof",
+      "description": "No safety violations exist in readiness evidence chain.",
+      "required": true,
+      "satisfied": true,
+      "evidence_ref": "manifest.o3de.ap_resolver_readiness.dimensions.safety_compliance"
+    }
+  ],
+  "available_evidence": {
+    "readiness": {
+      "present": true,
+      "status": "ready_for_authoritative_resolution_attempt"
+    },
+    "asset_resolution": {
+      "present": true,
+      "required_products": [
+        "azmodel"
+      ]
+    },
+    "ap_source_identity_match": {
+      "present": true,
+      "status": "candidate_match"
+    },
+    "ap_product_candidate_match": {
+      "present": true,
+      "status": "candidate_products"
+    },
+    "ap_product_file_validation": {
+      "present": true,
+      "status": "file_candidates_found"
+    }
+  },
+  "missing_proofs": [
+    "asset_processor_job_success_proof",
+    "platform_proof",
+    "product_freshness_proof",
+    "product_identity_proof"
+  ],
+  "proposed_actions": [
+    "Define Asset Processor job-state proof contract from read-only evidence.",
+    "Define platform proof contract for product candidate targeting.",
+    "Define product freshness proof contract to reject stale outputs.",
+    "Define product identity proof contract for authoritative matching."
+  ],
+  "forbidden_actions": [
+    "write resolved products",
+    "claim Asset IDs",
+    "spawn entity",
+    "publish prefab",
+    "run O3DE Editor",
+    "run Asset Processor",
+    "modify AP database"
+  ],
+  "safety": {
+    "read_only": true,
+    "writes_resolved_products": false,
+    "runs_o3de_editor": false,
+    "runs_asset_processor": false,
+    "opens_database": false,
+    "modifies_database": false,
+    "spawns_entities": false,
+    "publishes_prefabs": false,
+    "claims_asset_ids": false
+  },
+  "updated_utc": "2026-05-03T00:00:00Z"
+}

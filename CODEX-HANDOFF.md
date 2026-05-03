@@ -90,3 +90,10 @@ Implement authoritative-resolution design document and dry-run contract for the 
 
 Safety note:
 Do not implement resolved product writes until authoritative AP product identity, platform, job status, and freshness checks are specified and tested.
+
+## Next Slice After Authoritative Resolver Dry-Run Contract
+
+Design AP job-state proof by discovering read-only job/status fields from the AP database schema and row samples, without marking products resolved.
+
+Safety note:
+Job-state proof must remain read-only. Do not resolve products from stale or failed AP jobs.
