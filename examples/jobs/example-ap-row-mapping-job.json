@@ -1,0 +1,8 @@
+{
+  "job_type": "ap_source_product_row_mapping",
+  "character_name": "Maxine_AP_Row_Mapping_Test_001",
+  "mode": "read_only_row_mapping",
+  "database_path": "C:/path/to/assetdb.sqlite",
+  "source_asset": "Assets/Characters/Test/source/test.obj",
+  "notes": "Read candidate AP source/product rows only. Do not claim product resolution."
+}

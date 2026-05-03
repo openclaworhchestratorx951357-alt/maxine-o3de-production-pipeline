@@ -85,3 +85,19 @@ Layer 4 remains discovery only and is not product resolution.
 - table names are not proof of product validity
 - schema presence does not prove source/product correctness
 - real product resolution comes later with verified source UUID and product-type matching
+
+## AP Source/Product Row Mapping
+
+The resolver stack now has five layers:
+
+1. product contract recording
+2. filesystem evidence probing
+3. AP metadata source discovery
+4. read-only AP database schema inspection
+5. read-only candidate row mapping
+
+Layer 5 is still not product resolution.
+
+- row presence is not proof of product validity
+- candidate row matches are not source identity proof
+- real product resolution requires expected product type, source identity, platform, and current job-state matching

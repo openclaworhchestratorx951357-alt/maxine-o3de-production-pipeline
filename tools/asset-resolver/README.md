@@ -139,3 +139,19 @@ This layer does not claim source UUID or product resolution.
 Findings are written to `manifest.o3de.ap_database_inspection`.
 
 A future slice may map actual source/product rows after schema shape is understood.
+
+## Read-only Source/Product Row Mapping
+
+This layer reads candidate source/product/job/dependency tables identified by schema inspection.
+
+It samples rows using `SELECT` only and applies conservative mapping hints from table names and column names.
+
+Findings are written to `manifest.o3de.ap_row_mapping`.
+
+This layer does not:
+
+- mark `manifest.o3de.products` as resolved
+- claim source UUID truth
+- claim product Asset ID truth
+
+Product rows remain candidate rows until later source UUID and product-type proof exists.
