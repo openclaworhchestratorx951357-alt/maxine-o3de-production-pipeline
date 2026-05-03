@@ -398,4 +398,32 @@ Describe "Maxine Manifest Repository Baseline" {
     It "does not have authoritative write command implementation" {
         Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
     }
+
+    It "has Phase 2 sandbox write design document" {
+        Test-Path -LiteralPath "docs/roadmap/PHASE-2-SANDBOX-WRITE-PROTOTYPE-DESIGN.md" | Should Be $true
+    }
+
+    It "has sandbox write prototype contract document" {
+        Test-Path -LiteralPath "docs/contracts/SANDBOX-WRITE-PROTOTYPE-CONTRACT.md" | Should Be $true
+    }
+
+    It "has Phase 2 design inventory" {
+        Test-Path -LiteralPath "docs/audits/phase2_sandbox_write_design_inventory.json" | Should Be $true
+    }
+
+    It "has Phase 2 design verifier script" {
+        Test-Path -LiteralPath "tools/audit/verify_phase2_design_only.py" | Should Be $true
+    }
+
+    It "has Phase 2 design PowerShell wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxinePhase2DesignOnly.ps1" | Should Be $true
+    }
+
+    It "does not have sandbox write command implementation" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    }
+
+    It "still does not have authoritative write command implementation" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
+    }
 }
