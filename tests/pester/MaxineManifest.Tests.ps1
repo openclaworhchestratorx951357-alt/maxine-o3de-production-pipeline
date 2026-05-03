@@ -86,4 +86,20 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has AP DB schema inspection example job file" {
         Test-Path -LiteralPath "examples/jobs/example-ap-database-inspection-job.json" | Should Be $true
     }
+
+    It "has AP row mapping python script" {
+        Test-Path -LiteralPath "tools/asset-resolver/map_ap_source_product_rows.py" | Should Be $true
+    }
+
+    It "has Map-MaxineApRows wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Map-MaxineApRows.ps1" | Should Be $true
+    }
+
+    It "has AP row mapping example manifest" {
+        Test-Path -LiteralPath "examples/manifests/example-ap-row-mapping.manifest.json" | Should Be $true
+    }
+
+    It "has AP row mapping example job file" {
+        Test-Path -LiteralPath "examples/jobs/example-ap-row-mapping-job.json" | Should Be $true
+    }
 }

@@ -55,3 +55,10 @@ Implement read-only source/product row mapping for known AP database schema cand
 
 Safety note:
 Do not write to Asset Processor databases. Do not infer product validity from row presence alone.
+
+## Next Slice After AP Row Mapping
+
+Implement source identity matching rules that compare manifest source asset input against AP database source rows, using normalized paths and UUID-like fields, still without resolving products.
+
+Safety note:
+Candidate row matches are not product resolution. Require explicit source identity proof before product matching.

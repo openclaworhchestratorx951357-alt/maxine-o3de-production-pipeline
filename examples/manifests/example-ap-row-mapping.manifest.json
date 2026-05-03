@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0.0",
+  "job": {
+    "job_id": "job-ap-row-mapping-0001",
+    "lane": "draft_mesh",
+    "status": "queued",
+    "created_utc": "2026-05-03T00:00:00Z",
+    "updated_utc": "2026-05-03T00:00:00Z"
+  },
+  "identity": {
+    "character_id": "maxine-ap-row-mapping-test-001",
+    "character_name": "Maxine_AP_Row_Mapping_Test_001"
+  },
+  "inputs": {
+    "input_type": "mesh_source",
+    "input_path": "Assets/Characters/Test/source/test.obj"
+  },
+  "generation": {
+    "status": "not_started"
+  },
+  "dcc_conform": {
+    "status": "not_started"
+  },
+  "o3de": {
+    "ap_row_mapping": {
+      "mapping_version": "ap-row-mapping-example",
+      "status": "example_only",
+      "safety": {
+        "read_only": true,
+        "modified_database": false,
+        "ran_o3de_editor": false,
+        "ran_asset_processor": false,
+        "authoritative_resolution": false,
+        "claimed_asset_ids": false,
+        "claimed_products_resolved": false,
+        "row_presence_is_resolution": false
+      }
+    }
+  },
+  "qc": {
+    "overall": "warn",
+    "gates": []
+  },
+  "runtime_validation": {},
+  "evidence": {},
+  "provenance": {
+    "submitted_by": "operator",
+    "pipeline_version": "ap-row-mapping-poc"
+  },
+  "undo": {
+    "rollback_plan": "n/a"
+  },
+  "cleanup": {
+    "temp_artifacts_removed": false
+  }
+}
