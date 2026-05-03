@@ -59,3 +59,18 @@ flowchart LR
     B --> C["Missing Proofs Report"]
     C --> D["Future Authoritative Resolver (Not Implemented)"]
 ```
+
+## Full Proof Stack Dry-Run Planner
+
+The dry-run planner now consumes these proof contracts directly from manifest evidence:
+
+- AP job-state proof
+- AP platform proof
+- AP product freshness proof
+- AP product identity proof
+
+When all proof contracts are satisfied, planner status can be `dry_run_ready` for a future authoritative resolver attempt.
+
+`dry_run_ready` is still not product resolution.
+
+Resolved product writes remain forbidden in this slice.

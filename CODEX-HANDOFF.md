@@ -113,3 +113,10 @@ Implement product identity proof design using product type, source identity, pla
 ## Next Slice After AP Product Identity Proof
 
 Update authoritative resolver dry-run planner to consume AP job-state, platform, freshness, and product identity proofs, still read-only and still without resolving products.
+
+## Next Slice After Full Proof Stack Authoritative Planner
+
+Design the first authoritative resolver write protocol as a gated proposal only, including exact manifest fields that would be written later, but do not implement writes.
+
+Safety note:
+Even `dry_run_ready` does not permit writes. A separate write protocol and explicit operator approval gate are required.

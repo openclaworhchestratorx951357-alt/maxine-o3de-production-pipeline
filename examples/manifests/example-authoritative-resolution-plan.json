@@ -83,6 +83,33 @@
     "ap_product_file_validation": {
       "present": true,
       "status": "file_candidates_found"
+    },
+    "ap_job_state_proof": {
+      "present": false,
+      "status": "missing",
+      "candidate_job_count": 0,
+      "success_like_job_count": 0,
+      "failure_like_job_count": 0
+    },
+    "ap_platform_proof": {
+      "present": false,
+      "status": "missing",
+      "target_platform": "",
+      "matching_hint_count": 0,
+      "mismatching_hint_count": 0
+    },
+    "ap_product_freshness_proof": {
+      "present": false,
+      "status": "missing",
+      "product_newer_or_equal_source_count": 0,
+      "product_older_than_source_count": 0
+    },
+    "ap_product_identity_proof": {
+      "present": false,
+      "status": "missing",
+      "dimension_count": 0,
+      "all_dimensions_pass": false,
+      "identity_candidate_count": 0
     }
   },
   "missing_proofs": [
