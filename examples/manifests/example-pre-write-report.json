@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0.0",
+  "report_id": "pre-write-report-authoritative-write-proposal-authoritative-plan-job-0001-approval-validation-authoritative-write-proposal-authoritative-plan-job-0001-approval-0001",
+  "status": "pre_write_blocked",
+  "proposal_id": "authoritative-write-proposal-authoritative-plan-job-0001",
+  "approval_validation_id": "approval-validation-authoritative-write-proposal-authoritative-plan-job-0001-approval-0001",
+  "approved_write_fields": [
+    "manifest.o3de.products.resolved",
+    "manifest.o3de.products.resolution_mode",
+    "manifest.o3de.products.resolved_at_utc",
+    "manifest.o3de.products.source_identity",
+    "manifest.o3de.products.resolved_products[]",
+    "manifest.o3de.products.proof_refs",
+    "manifest.o3de.products.operator_approval"
+  ],
+  "blocked_reasons": [
+    "approval_validation_proposal_not_approvable",
+    "proposal_not_approval_required",
+    "approval_validation_not_valid"
+  ],
+  "final_checks": [
+    {
+      "id": "proposal_approval_required",
+      "passed": false,
+      "message": "Proposal status must be approval_required for pre-write readiness."
+    },
+    {
+      "id": "approval_validation_valid",
+      "passed": false,
+      "message": "Approval validation status must be approval_valid for pre-write readiness."
+    },
+    {
+      "id": "safety_non_executing",
+      "passed": true,
+      "message": "Proposal and approval validation safety blocks must remain non-executing."
+    },
+    {
+      "id": "write_fields_declared",
+      "passed": true,
+      "message": "Approved write fields must be declared."
+    }
+  ],
+  "safety": {
+    "read_only": true,
+    "executes_writes": false,
+    "marks_products_resolved": false,
+    "claims_asset_ids": false,
+    "runs_o3de_editor": false,
+    "runs_asset_processor": false,
+    "spawns_entities": false,
+    "publishes_prefabs": false
+  },
+  "updated_utc": "2026-05-03T00:00:00Z"
+}

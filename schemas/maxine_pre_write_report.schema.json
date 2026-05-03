@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_pre_write_report.schema.json",
+  "title": "MAXINE Approved-Write Dry-Run Pre-Write Report",
+  "description": "Read-only merger report for proposal plus approval validation artifacts.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "report_id",
+    "status",
+    "proposal_id",
+    "approval_validation_id",
+    "approved_write_fields",
+    "blocked_reasons",
+    "final_checks",
+    "safety"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "report_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pre_write_ready",
+        "pre_write_blocked",
+        "pre_write_incomplete"
+      ]
+    },
+    "proposal_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approval_validation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approved_write_fields": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "blocked_reasons": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "final_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "passed",
+          "message"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "read_only",
+        "executes_writes",
+        "marks_products_resolved",
+        "claims_asset_ids",
+        "runs_o3de_editor",
+        "runs_asset_processor",
+        "spawns_entities",
+        "publishes_prefabs"
+      ],
+      "properties": {
+        "read_only": {
+          "const": true
+        },
+        "executes_writes": {
+          "const": false
+        },
+        "marks_products_resolved": {
+          "const": false
+        },
+        "claims_asset_ids": {
+          "const": false
+        },
+        "runs_o3de_editor": {
+          "const": false
+        },
+        "runs_asset_processor": {
+          "const": false
+        },
+        "spawns_entities": {
+          "const": false
+        },
+        "publishes_prefabs": {
+          "const": false
+        }
+      }
+    }
+  }
+}

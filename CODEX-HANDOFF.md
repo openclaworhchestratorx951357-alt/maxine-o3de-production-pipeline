@@ -131,3 +131,10 @@ Design approved-write dry-run merger that combines proposal plus valid approval 
 
 Safety note:
 Valid approval still does not execute writes. A final pre-write report and explicit execution gate are required.
+
+## Next Slice After Approved-Write Dry-Run Pre-Write Report
+
+Design final execution gate policy for future authoritative resolver writes, including mandatory manual command, branch protection expectations, and rollback artifact requirements, still without implementing writes.
+
+Safety note:
+Pre-write ready is not execution. A separate execution gate and rollback contract are required before any write-capable resolver exists.
