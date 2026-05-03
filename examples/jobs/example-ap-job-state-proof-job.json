@@ -1,0 +1,6 @@
+{
+  "job_type": "ap_job_state_proof",
+  "character_name": "Maxine_AP_Job_State_Test_001",
+  "mode": "read_only_job_state_proof_extraction",
+  "notes": "Extract candidate AP job-state evidence from manifest row samples only. Do not resolve products or claim Asset IDs."
+}

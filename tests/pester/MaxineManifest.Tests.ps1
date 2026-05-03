@@ -190,4 +190,24 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has authoritative resolver design document" {
         Test-Path -LiteralPath "docs/o3de-integration/AUTHORITATIVE-RESOLVER-DESIGN.md" | Should Be $true
     }
+
+    It "has AP job-state proof extractor script" {
+        Test-Path -LiteralPath "tools/asset-resolver/extract_ap_job_state_proof.py" | Should Be $true
+    }
+
+    It "has Extract-MaxineApJobStateProof wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Extract-MaxineApJobStateProof.ps1" | Should Be $true
+    }
+
+    It "has AP job-state proof example manifest" {
+        Test-Path -LiteralPath "examples/manifests/example-ap-job-state-proof.manifest.json" | Should Be $true
+    }
+
+    It "has AP job-state proof example job file" {
+        Test-Path -LiteralPath "examples/jobs/example-ap-job-state-proof-job.json" | Should Be $true
+    }
+
+    It "has AP job-state proof design document" {
+        Test-Path -LiteralPath "docs/o3de-integration/AP-JOB-STATE-PROOF.md" | Should Be $true
+    }
 }
