@@ -1,0 +1,93 @@
+{
+  "draft_mesh": {
+    "required_products": [
+      "azmodel"
+    ],
+    "optional_products": [
+      "procprefab",
+      "azmaterial"
+    ],
+    "planned_products": [],
+    "notes": [
+      "Draft mesh lane requires model contract only in this POC.",
+      "No real O3DE/AP query is executed in this slice."
+    ]
+  },
+  "text_mesh": {
+    "required_products": [
+      "azmodel"
+    ],
+    "optional_products": [
+      "procprefab",
+      "azmaterial"
+    ],
+    "planned_products": [],
+    "notes": [
+      "Text mesh lane mirrors draft mesh contract at resolver level.",
+      "No cache guessing is allowed."
+    ]
+  },
+  "photo_rig_prep": {
+    "required_products": [
+      "fbx_source"
+    ],
+    "optional_products": [],
+    "planned_products": [
+      "mixamo_handoff_package",
+      "actor"
+    ],
+    "notes": [
+      "Actor remains unresolved until later rig import lane.",
+      "Mixamo handoff package is contract-planned in this phase."
+    ]
+  },
+  "text_full_rig": {
+    "required_products": [
+      "fbx_source"
+    ],
+    "optional_products": [
+      "motion"
+    ],
+    "planned_products": [
+      "actor",
+      "procprefab"
+    ],
+    "notes": [
+      "Text full rig requires DCC + rig handoff in downstream slices."
+    ]
+  },
+  "external_rig_import": {
+    "required_products": [
+      "actor"
+    ],
+    "optional_products": [
+      "motion"
+    ],
+    "planned_products": [
+      "motionset",
+      "animgraph",
+      "procprefab"
+    ],
+    "notes": [
+      "External rig import is the first lane where actor is expected required output."
+    ]
+  },
+  "release_character": {
+    "required_products": [
+      "actor",
+      "motionset",
+      "animgraph",
+      "procprefab",
+      "azmaterial"
+    ],
+    "optional_products": [
+      "motion",
+      "collider"
+    ],
+    "planned_products": [],
+    "notes": [
+      "Release character lane is contract-strict and publication oriented.",
+      "Collider is optional depending on policy/profile."
+    ]
+  }
+}

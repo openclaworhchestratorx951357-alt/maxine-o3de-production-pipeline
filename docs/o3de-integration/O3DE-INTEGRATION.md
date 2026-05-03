@@ -24,3 +24,19 @@ Editor Python Bindings are the likely bridge for automated entity/component/leve
 ## Publication Preference
 
 Prefab-first publication is preferred over only spawning entities into the current editor level. Prefabs are easier to version, validate, promote, and roll back as production artifacts.
+
+## Asset Resolver POC
+
+Current asset resolver behavior is contract-first:
+
+- records expected product contracts into `manifest.o3de.asset_resolution`
+- marks contract state as planned/unresolved unless explicitly allowed in test-only mode
+- does not call real O3DE Asset Processor APIs yet
+
+Guardrails in this slice:
+
+- cache guessing is forbidden
+- source UUID/product type real resolution is not yet implemented
+- unresolved contract entries are explicit and expected
+
+Next target after this proof is a real resolver adapter that queries O3DE/AP by source identity and product types.

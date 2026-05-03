@@ -1,0 +1,88 @@
+{
+  "schema_version": "1.0.0",
+  "job": {
+    "job_id": "job-asset-resolution-0001",
+    "lane": "external_rig_import",
+    "status": "queued",
+    "job_type": "external_rig_import",
+    "created_utc": "2026-05-03T00:00:00Z",
+    "updated_utc": "2026-05-03T00:00:00Z"
+  },
+  "identity": {
+    "character_id": "maxine-asset-resolution-test-001",
+    "character_name": "Maxine_Asset_Resolution_Test_001"
+  },
+  "inputs": {
+    "input_path": "examples/source/Maxine_Test_Rigged.fbx",
+    "prompt": ""
+  },
+  "generation": {
+    "provider": "n/a",
+    "output_sources": []
+  },
+  "dcc_conform": {
+    "status": "not_started",
+    "notes": ""
+  },
+  "o3de": {
+    "source_assets": [],
+    "products": {},
+    "asset_resolution": {
+      "resolver_version": "asset-resolver-poc-1",
+      "status": "planned",
+      "lane": "external_rig_import",
+      "source_asset_input": "examples/source/Maxine_Test_Rigged.fbx",
+      "source_asset_name": "Maxine_Test_Rigged.fbx",
+      "source_asset_extension": ".fbx",
+      "required_products": [
+        "actor"
+      ],
+      "optional_products": [
+        "motion"
+      ],
+      "planned_products": [
+        "motionset",
+        "animgraph",
+        "procprefab"
+      ],
+      "unresolved_products": [
+        "actor",
+        "motionset",
+        "animgraph",
+        "procprefab"
+      ],
+      "notes": [
+        "Contract-only example manifest for asset resolver proof."
+      ],
+      "cache_guessing_used": false,
+      "real_o3de_query_used": false,
+      "updated_utc": "2026-05-03T00:00:00Z"
+    }
+  },
+  "qc": {
+    "overall": "warn",
+    "gates": []
+  },
+  "runtime_validation": {
+    "smoke_status": "not_started",
+    "checks": []
+  },
+  "evidence": {
+    "logs": [],
+    "reports": [],
+    "screenshots": [],
+    "exit_code": null,
+    "message": ""
+  },
+  "provenance": {
+    "adapter_slice": "asset-resolver-poc",
+    "created_by": "example-manifest"
+  },
+  "undo": {
+    "rollback_plan": ""
+  },
+  "cleanup": {
+    "temp_paths": [],
+    "completed": false
+  }
+}
