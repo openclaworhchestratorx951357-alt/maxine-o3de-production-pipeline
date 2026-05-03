@@ -41,6 +41,8 @@ After AP job-state proof, the next missing proof contract is read-only platform 
 
 After platform proof, the next missing proof contract is read-only product freshness proof extraction from source/product/job/file timestamp evidence.
 
+After product freshness proof, the next missing proof contract is read-only product identity proof extraction that combines source, product type, job-state, platform, freshness, and file evidence.
+
 ## Forbidden Writes Until All Checks Exist
 
 - no `manifest.o3de.products.resolved = true`
