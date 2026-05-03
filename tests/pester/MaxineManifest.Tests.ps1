@@ -378,4 +378,24 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has PR stack consolidation guide document" {
         Test-Path -LiteralPath "docs/operator-playbooks/PR-STACK-CONSOLIDATION-GUIDE.md" | Should Be $true
     }
+
+    It "has Phase 1 audit report" {
+        Test-Path -LiteralPath "docs/audits/PHASE-1-OPERATIONAL-BASELINE.md" | Should Be $true
+    }
+
+    It "has Phase 1 baseline inventory" {
+        Test-Path -LiteralPath "docs/audits/phase1_operational_baseline_inventory.json" | Should Be $true
+    }
+
+    It "has Phase 1 baseline verifier script" {
+        Test-Path -LiteralPath "tools/audit/verify_phase1_baseline.py" | Should Be $true
+    }
+
+    It "has Phase 1 baseline wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxinePhase1Baseline.ps1" | Should Be $true
+    }
+
+    It "does not have authoritative write command implementation" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
+    }
 }

@@ -61,4 +61,19 @@ This repository now contains a read-only, manifest-first resolver ladder that pr
 - execution gate policy exists only as a policy artifact
 
 The next major milestone after PR-stack consolidation is review and acceptance of policy/contracts, not write-capable resolver implementation.
+
+## Phase 1 Operational Baseline
+
+Phase 1 is a read-only operational baseline for the production-control repository.
+
+- the resolver ladder is documented and auditable
+- tests pass on consolidated `main`
+- authoritative writes remain unimplemented
+- the final execution command is intentionally absent
+
+References:
+
+- `docs/audits/PHASE-1-OPERATIONAL-BASELINE.md`
+- `docs/roadmap/RESOLVER-LADDER-INDEX.md`
+- `docs/o3de-integration/AUTHORITATIVE-EXECUTION-GATE-POLICY.md`
 M.A.X.I.N.E. production pipeline for O3DE character, asset, prefab, QC, and automation workflows.

@@ -151,3 +151,19 @@ Do not implement authoritative writes until the execution gate policy is reviewe
 Review and merge the PR stack, then run the full test suite from `main`.
 
 After that, design a separate experimental branch for a sandbox-only write prototype, but do not implement it until execution-gate policy is explicitly accepted.
+
+## Phase 1 Operational Baseline Complete Criteria
+
+- baseline audit report exists
+- machine-readable baseline inventory exists
+- baseline verifier exists
+- baseline verifier passes
+- pytest passes
+- pester passes
+- authoritative write command remains absent
+- no products are resolved
+- no Asset IDs are claimed
+
+## Next Milestone
+
+Phase 2 should be design-only review of a sandbox-only write prototype. Do not implement sandbox writes until the Phase 1 baseline and execution-gate policy are accepted.

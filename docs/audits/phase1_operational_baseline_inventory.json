@@ -1,0 +1,268 @@
+{
+  "schema_version": "1.0.0",
+  "baseline_name": "phase-1-operational-baseline",
+  "repository": "openclaworhchestratorx951357-alt/maxine-o3de-production-pipeline",
+  "audited_main_head": "0a0947e1a6fef262b016c41b042c96be939c8d0f",
+  "write_capable_resolver_implemented": false,
+  "authoritative_writes_allowed": false,
+  "o3de_editor_run_required": false,
+  "asset_processor_run_required": false,
+  "database_write_allowed": false,
+  "stages": [
+    {
+      "stage": 1,
+      "name": "manifest-first-adapter",
+      "primary_reference": "scripts/powershell/Invoke-MaxineJob.ps1",
+      "output_field_or_report": "manifest root plus job/evidence blocks",
+      "safety_status": "read_only"
+    },
+    {
+      "stage": 2,
+      "name": "product-contract-resolver",
+      "primary_reference": "tools/asset-resolver/resolve_asset_contract.py",
+      "output_field_or_report": "manifest.o3de.asset_resolution",
+      "safety_status": "read_only"
+    },
+    {
+      "stage": 3,
+      "name": "filesystem-probe",
+      "primary_reference": "tools/asset-resolver/probe_o3de_asset_filesystem.py",
+      "output_field_or_report": "manifest.o3de.asset_probe",
+      "safety_status": "read_only"
+    },
+    {
+      "stage": 4,
+      "name": "ap-metadata-discovery",
+      "primary_reference": "tools/asset-resolver/discover_ap_metadata_sources.py",
+      "output_field_or_report": "manifest.o3de.ap_metadata_discovery",
+      "safety_status": "read_only"
+    },
+    {
+      "stage": 5,
+      "name": "ap-database-schema-inspection",
+      "primary_reference": "tools/asset-resolver/inspect_ap_database_schema.py",
+      "output_field_or_report": "manifest.o3de.ap_database_inspection",
+      "safety_status": "read_only_sqlite"
+    },
+    {
+      "stage": 6,
+      "name": "ap-row-mapping",
+      "primary_reference": "tools/asset-resolver/map_ap_source_product_rows.py",
+      "output_field_or_report": "manifest.o3de.ap_row_mapping",
+      "safety_status": "read_only_sql_select"
+    },
+    {
+      "stage": 7,
+      "name": "source-identity-matching",
+      "primary_reference": "tools/asset-resolver/match_ap_source_identity.py",
+      "output_field_or_report": "manifest.o3de.ap_source_identity_match",
+      "safety_status": "manifest_only"
+    },
+    {
+      "stage": 8,
+      "name": "product-candidate-matching",
+      "primary_reference": "tools/asset-resolver/match_ap_product_candidates.py",
+      "output_field_or_report": "manifest.o3de.ap_product_candidate_match",
+      "safety_status": "manifest_only"
+    },
+    {
+      "stage": 9,
+      "name": "product-file-validation",
+      "primary_reference": "tools/asset-resolver/validate_ap_product_files.py",
+      "output_field_or_report": "manifest.o3de.ap_product_file_validation",
+      "safety_status": "read_only_filesystem"
+    },
+    {
+      "stage": 10,
+      "name": "resolver-readiness-gate",
+      "primary_reference": "tools/asset-resolver/evaluate_ap_resolver_readiness.py",
+      "output_field_or_report": "manifest.o3de.ap_resolver_readiness",
+      "safety_status": "manifest_only"
+    },
+    {
+      "stage": 11,
+      "name": "authoritative-dry-run-plan",
+      "primary_reference": "tools/asset-resolver/plan_authoritative_resolution.py",
+      "output_field_or_report": "authoritative resolution plan json",
+      "safety_status": "read_only_planning"
+    },
+    {
+      "stage": 12,
+      "name": "ap-job-state-proof",
+      "primary_reference": "tools/asset-resolver/extract_ap_job_state_proof.py",
+      "output_field_or_report": "manifest.o3de.ap_job_state_proof",
+      "safety_status": "manifest_only"
+    },
+    {
+      "stage": 13,
+      "name": "ap-platform-proof",
+      "primary_reference": "tools/asset-resolver/extract_ap_platform_proof.py",
+      "output_field_or_report": "manifest.o3de.ap_platform_proof",
+      "safety_status": "manifest_only"
+    },
+    {
+      "stage": 14,
+      "name": "ap-product-freshness-proof",
+      "primary_reference": "tools/asset-resolver/extract_ap_product_freshness_proof.py",
+      "output_field_or_report": "manifest.o3de.ap_product_freshness_proof",
+      "safety_status": "manifest_only"
+    },
+    {
+      "stage": 15,
+      "name": "ap-product-identity-proof",
+      "primary_reference": "tools/asset-resolver/extract_ap_product_identity_proof.py",
+      "output_field_or_report": "manifest.o3de.ap_product_identity_proof",
+      "safety_status": "manifest_only"
+    },
+    {
+      "stage": 16,
+      "name": "updated-authoritative-planner-full-proof-stack",
+      "primary_reference": "tools/asset-resolver/plan_authoritative_resolution.py",
+      "output_field_or_report": "authoritative resolution plan json",
+      "safety_status": "read_only_planning"
+    },
+    {
+      "stage": 17,
+      "name": "authoritative-write-protocol-proposal",
+      "primary_reference": "tools/asset-resolver/propose_authoritative_write_protocol.py",
+      "output_field_or_report": "authoritative write protocol proposal json",
+      "safety_status": "read_only_proposal"
+    },
+    {
+      "stage": 18,
+      "name": "operator-approval-validation",
+      "primary_reference": "tools/asset-resolver/validate_operator_approval.py",
+      "output_field_or_report": "operator approval validation report json",
+      "safety_status": "read_only_validation"
+    },
+    {
+      "stage": 19,
+      "name": "approved-write-pre-write-report",
+      "primary_reference": "tools/asset-resolver/build_pre_write_report.py",
+      "output_field_or_report": "pre-write report json",
+      "safety_status": "read_only_merger"
+    },
+    {
+      "stage": 20,
+      "name": "final-execution-gate-policy",
+      "primary_reference": "tools/asset-resolver/validate_execution_gate_policy.py",
+      "output_field_or_report": "execution gate policy evaluation json",
+      "safety_status": "read_only_policy"
+    }
+  ],
+  "required_absent_files": [
+    "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
+  ],
+  "required_docs": [
+    "README.md",
+    "CODEX-HANDOFF.md",
+    "docs/roadmap/RESOLVER-LADDER-INDEX.md",
+    "docs/operator-playbooks/PR-STACK-CONSOLIDATION-GUIDE.md",
+    "docs/o3de-integration/O3DE-INTEGRATION.md",
+    "docs/o3de-integration/AUTHORITATIVE-RESOLVER-DESIGN.md",
+    "docs/o3de-integration/AUTHORITATIVE-WRITE-PROTOCOL.md",
+    "docs/o3de-integration/OPERATOR-APPROVAL-PROTOCOL.md",
+    "docs/o3de-integration/APPROVED-WRITE-DRY-RUN-REPORT.md",
+    "docs/o3de-integration/AUTHORITATIVE-EXECUTION-GATE-POLICY.md",
+    "docs/o3de-integration/AP-JOB-STATE-PROOF.md",
+    "docs/o3de-integration/AP-PLATFORM-PROOF.md",
+    "docs/o3de-integration/AP-PRODUCT-FRESHNESS-PROOF.md",
+    "docs/o3de-integration/AP-PRODUCT-IDENTITY-PROOF.md",
+    "docs/audits/PHASE-1-OPERATIONAL-BASELINE.md"
+  ],
+  "required_schemas": [
+    "schemas/maxine_job_manifest.schema.json",
+    "schemas/maxine_authoritative_resolver_plan.schema.json",
+    "schemas/maxine_authoritative_write_protocol.schema.json",
+    "schemas/maxine_operator_approval.schema.json",
+    "schemas/maxine_pre_write_report.schema.json",
+    "schemas/maxine_execution_gate_policy.schema.json"
+  ],
+  "required_scripts": [
+    "tools/manifest-validator/validate_manifest.py",
+    "tools/asset-resolver/resolve_asset_contract.py",
+    "tools/asset-resolver/probe_o3de_asset_filesystem.py",
+    "tools/asset-resolver/discover_ap_metadata_sources.py",
+    "tools/asset-resolver/inspect_ap_database_schema.py",
+    "tools/asset-resolver/map_ap_source_product_rows.py",
+    "tools/asset-resolver/match_ap_source_identity.py",
+    "tools/asset-resolver/match_ap_product_candidates.py",
+    "tools/asset-resolver/validate_ap_product_files.py",
+    "tools/asset-resolver/evaluate_ap_resolver_readiness.py",
+    "tools/asset-resolver/plan_authoritative_resolution.py",
+    "tools/asset-resolver/extract_ap_job_state_proof.py",
+    "tools/asset-resolver/extract_ap_platform_proof.py",
+    "tools/asset-resolver/extract_ap_product_freshness_proof.py",
+    "tools/asset-resolver/extract_ap_product_identity_proof.py",
+    "tools/asset-resolver/propose_authoritative_write_protocol.py",
+    "tools/asset-resolver/validate_operator_approval.py",
+    "tools/asset-resolver/build_pre_write_report.py",
+    "tools/asset-resolver/validate_execution_gate_policy.py",
+    "tools/audit/verify_phase1_baseline.py",
+    "scripts/powershell/Invoke-MaxineJob.ps1",
+    "scripts/powershell/New-MaxineManifest.ps1",
+    "scripts/powershell/Write-MaxineEvidence.ps1",
+    "scripts/powershell/Resolve-MaxineAssetContract.ps1",
+    "scripts/powershell/Probe-MaxineO3deAsset.ps1",
+    "scripts/powershell/Find-MaxineApMetadata.ps1",
+    "scripts/powershell/Inspect-MaxineApDatabase.ps1",
+    "scripts/powershell/Map-MaxineApRows.ps1",
+    "scripts/powershell/Match-MaxineApSourceIdentity.ps1",
+    "scripts/powershell/Match-MaxineApProductCandidates.ps1",
+    "scripts/powershell/Validate-MaxineApProductFiles.ps1",
+    "scripts/powershell/Evaluate-MaxineApResolverReadiness.ps1",
+    "scripts/powershell/Plan-MaxineAuthoritativeResolution.ps1",
+    "scripts/powershell/Extract-MaxineApJobStateProof.ps1",
+    "scripts/powershell/Extract-MaxineApPlatformProof.ps1",
+    "scripts/powershell/Extract-MaxineApProductFreshnessProof.ps1",
+    "scripts/powershell/Extract-MaxineApProductIdentityProof.ps1",
+    "scripts/powershell/Propose-MaxineAuthoritativeWriteProtocol.ps1",
+    "scripts/powershell/Validate-MaxineOperatorApproval.ps1",
+    "scripts/powershell/Build-MaxinePreWriteReport.ps1",
+    "scripts/powershell/Validate-MaxineExecutionGatePolicy.ps1",
+    "scripts/powershell/Test-MaxinePhase1Baseline.ps1"
+  ],
+  "required_examples": [
+    "examples/manifests/example-draft-mesh.manifest.json",
+    "examples/manifests/example-asset-resolution.manifest.json",
+    "examples/manifests/example-asset-probe.manifest.json",
+    "examples/manifests/example-ap-metadata-discovery.manifest.json",
+    "examples/manifests/example-ap-database-inspection.manifest.json",
+    "examples/manifests/example-ap-row-mapping.manifest.json",
+    "examples/manifests/example-ap-source-identity-match.manifest.json",
+    "examples/manifests/example-ap-product-candidate-match.manifest.json",
+    "examples/manifests/example-ap-product-file-validation.manifest.json",
+    "examples/manifests/example-ap-resolver-readiness.manifest.json",
+    "examples/manifests/example-authoritative-resolution-plan.json",
+    "examples/manifests/example-ap-job-state-proof.manifest.json",
+    "examples/manifests/example-ap-platform-proof.manifest.json",
+    "examples/manifests/example-ap-product-freshness-proof.manifest.json",
+    "examples/manifests/example-ap-product-identity-proof.manifest.json",
+    "examples/manifests/example-authoritative-write-protocol-proposal.json",
+    "examples/manifests/example-operator-approval.json",
+    "examples/manifests/example-operator-approval-validation.json",
+    "examples/manifests/example-pre-write-report.json",
+    "examples/manifests/example-execution-gate-policy.json",
+    "examples/jobs/example-asset-probe-job.json",
+    "examples/jobs/example-ap-metadata-discovery-job.json",
+    "examples/jobs/example-ap-database-inspection-job.json",
+    "examples/jobs/example-ap-row-mapping-job.json",
+    "examples/jobs/example-ap-source-identity-match-job.json",
+    "examples/jobs/example-ap-product-candidate-match-job.json",
+    "examples/jobs/example-ap-product-file-validation-job.json",
+    "examples/jobs/example-ap-resolver-readiness-job.json",
+    "examples/jobs/example-authoritative-resolution-plan-job.json",
+    "examples/jobs/example-ap-job-state-proof-job.json",
+    "examples/jobs/example-ap-platform-proof-job.json",
+    "examples/jobs/example-ap-product-freshness-proof-job.json",
+    "examples/jobs/example-ap-product-identity-proof-job.json",
+    "examples/jobs/example-authoritative-write-protocol-job.json",
+    "examples/jobs/example-operator-approval-validation-job.json",
+    "examples/jobs/example-pre-write-report-job.json",
+    "examples/jobs/example-execution-gate-policy-job.json"
+  ],
+  "test_expectations": {
+    "pytest_minimum": 102,
+    "pester_minimum": 95
+  }
+}
