@@ -1,0 +1,6 @@
+{
+  "job_type": "ap_product_identity_proof",
+  "character_name": "Maxine_AP_Product_Identity_Proof_Test_001",
+  "mode": "read_only_product_identity_proof_extraction",
+  "notes": "Combine source identity, expected product type, product candidate, file validation, job-state, platform, and freshness evidence without resolving products."
+}

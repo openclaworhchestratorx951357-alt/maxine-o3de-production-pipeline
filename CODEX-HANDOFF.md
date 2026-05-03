@@ -109,3 +109,7 @@ Implement product freshness proof extraction using timestamps from source rows, 
 ## Next Slice After AP Product Freshness Proof
 
 Implement product identity proof design using product type, source identity, platform, job-state, freshness, and file evidence, still read-only and still without resolving products.
+
+## Next Slice After AP Product Identity Proof
+
+Update authoritative resolver dry-run planner to consume AP job-state, platform, freshness, and product identity proofs, still read-only and still without resolving products.

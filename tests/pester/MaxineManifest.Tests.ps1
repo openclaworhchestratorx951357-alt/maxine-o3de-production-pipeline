@@ -250,4 +250,24 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has AP product freshness proof design document" {
         Test-Path -LiteralPath "docs/o3de-integration/AP-PRODUCT-FRESHNESS-PROOF.md" | Should Be $true
     }
+
+    It "has AP product identity proof extractor script" {
+        Test-Path -LiteralPath "tools/asset-resolver/extract_ap_product_identity_proof.py" | Should Be $true
+    }
+
+    It "has Extract-MaxineApProductIdentityProof wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Extract-MaxineApProductIdentityProof.ps1" | Should Be $true
+    }
+
+    It "has AP product identity proof example manifest" {
+        Test-Path -LiteralPath "examples/manifests/example-ap-product-identity-proof.manifest.json" | Should Be $true
+    }
+
+    It "has AP product identity proof example job file" {
+        Test-Path -LiteralPath "examples/jobs/example-ap-product-identity-proof-job.json" | Should Be $true
+    }
+
+    It "has AP product identity proof design document" {
+        Test-Path -LiteralPath "docs/o3de-integration/AP-PRODUCT-IDENTITY-PROOF.md" | Should Be $true
+    }
 }
