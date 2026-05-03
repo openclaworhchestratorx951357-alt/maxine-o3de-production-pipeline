@@ -24,3 +24,12 @@ Wrap the existing Codex-built MaxineShow character factory with a manifest-first
 - `scripts/powershell/Write-MaxineEvidence.ps1`
 - `tools/asset-resolver/README.md`
 - `tools/qc-runner/README.md`
+
+## Slice 2 Complete Criteria
+
+- `Invoke-MaxineJob.ps1` exists
+- `New-MaxineManifest.ps1` exists
+- `Write-MaxineEvidence.ps1` exists
+- DryRun generates manifest and evidence
+- Failures still generate manifest
+- Existing factory scripts were not modified
