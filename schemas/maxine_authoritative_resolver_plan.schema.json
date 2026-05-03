@@ -73,7 +73,25 @@
     },
     "available_evidence": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "ap_job_state_proof": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "ap_platform_proof": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "ap_product_freshness_proof": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "ap_product_identity_proof": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
     },
     "missing_proofs": {
       "type": "array",

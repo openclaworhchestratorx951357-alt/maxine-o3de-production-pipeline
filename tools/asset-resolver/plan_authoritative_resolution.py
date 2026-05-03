@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """Create a read-only dry-run plan for future authoritative product resolution."""
 
 from __future__ import annotations
@@ -86,6 +86,15 @@ def as_bool(value: Any) -> bool:
     return bool(value is True)
 
 
+def as_int(value: Any, default: int = 0) -> int:
+    try:
+        if value is None:
+            return default
+        return int(value)
+    except Exception:
+        return default
+
+
 def minimal_validate_plan(plan: Dict[str, Any]) -> List[str]:
     errors: List[str] = []
     for field in REQUIRED_TOP_LEVEL:
@@ -169,12 +178,7 @@ def jsonschema_validate(plan: Dict[str, Any], schema: Dict[str, Any]) -> Tuple[b
     return False, messages
 
 
-def build_proof(
-    proof_id: str,
-    description: str,
-    satisfied: bool,
-    evidence_ref: str,
-) -> Dict[str, Any]:
+def build_proof(proof_id: str, description: str, satisfied: bool, evidence_ref: str) -> Dict[str, Any]:
     return {
         "id": proof_id,
         "description": description,
@@ -182,6 +186,44 @@ def build_proof(
         "satisfied": bool(satisfied),
         "evidence_ref": evidence_ref,
     }
+
+
+def gather_safety_violations(block_name: str, safety_block: Dict[str, Any]) -> List[str]:
+    hazards = [
+        "authoritative_resolution",
+        "claimed_asset_ids",
+        "claimed_products_resolved",
+        "product_identity_is_resolution",
+        "product_candidate_is_resolution",
+        "file_existence_is_resolution",
+        "freshness_proof_is_resolution",
+        "platform_proof_is_resolution",
+        "source_identity_is_product_resolution",
+        "job_state_is_resolution",
+        "readiness_is_resolution",
+        "published_or_spawned",
+        "ran_o3de_editor",
+        "ran_asset_processor",
+        "opened_database",
+        "modified_database",
+    ]
+    violations: List[str] = []
+    for field in hazards:
+        if bool(safety_block.get(field, False)):
+            violations.append(f"{block_name}.{field}=true")
+    return violations
+
+
+def all_identity_dimensions_pass(identity_block: Dict[str, Any]) -> bool:
+    dimensions = identity_block.get("dimensions", {})
+    if not isinstance(dimensions, dict) or not dimensions:
+        return False
+    for dim_value in dimensions.values():
+        if not isinstance(dim_value, dict):
+            return False
+        if not as_bool(dim_value.get("passes")):
+            return False
+    return True
 
 
 def main() -> int:
@@ -206,7 +248,7 @@ def main() -> int:
         return 2
 
     try:
-        _schema = load_json(schema_path)
+        schema = load_json(schema_path)
     except ValueError as exc:
         print(f"FAIL: {exc}")
         return 2
@@ -221,6 +263,10 @@ def main() -> int:
     source_match = o3de.get("ap_source_identity_match")
     product_match = o3de.get("ap_product_candidate_match")
     file_validation = o3de.get("ap_product_file_validation")
+    job_state = o3de.get("ap_job_state_proof")
+    platform_proof = o3de.get("ap_platform_proof")
+    freshness_proof = o3de.get("ap_product_freshness_proof")
+    product_identity_proof = o3de.get("ap_product_identity_proof")
 
     readiness_status = str(readiness.get("status", "missing")) if isinstance(readiness, dict) else "missing"
     readiness_dims = readiness.get("dimensions", {}) if isinstance(readiness, dict) else {}
@@ -231,7 +277,6 @@ def main() -> int:
     dim_product = readiness_dims.get("product_candidate_evidence", {})
     dim_files = readiness_dims.get("file_existence_evidence", {})
     dim_coverage = readiness_dims.get("required_contract_coverage", {})
-    dim_safety = readiness_dims.get("safety_compliance", {})
     if not isinstance(dim_source, dict):
         dim_source = {}
     if not isinstance(dim_product, dict):
@@ -240,15 +285,75 @@ def main() -> int:
         dim_files = {}
     if not isinstance(dim_coverage, dict):
         dim_coverage = {}
-    if not isinstance(dim_safety, dict):
-        dim_safety = {}
 
     source_identity_satisfied = as_bool(dim_source.get("passes"))
     expected_product_type_satisfied = as_bool(dim_product.get("passes")) and len(
         as_list_of_strings(dim_coverage.get("missing_required_product_types", []))
     ) == 0
     product_file_existence_satisfied = as_bool(dim_files.get("passes"))
-    safety_compliance_satisfied = as_bool(dim_safety.get("passes"))
+
+    job_status = str(job_state.get("status", "missing")) if isinstance(job_state, dict) else "missing"
+    job_summary = job_state.get("summary", {}) if isinstance(job_state, dict) else {}
+    if not isinstance(job_summary, dict):
+        job_summary = {}
+    job_success_like_count = as_int(job_summary.get("success_like_job_count"), 0)
+    job_failure_like_count = as_int(job_summary.get("failure_like_job_count"), 0)
+    asset_processor_job_success_satisfied = (
+        job_status == "candidate_job_state_found"
+        and job_success_like_count >= 1
+        and job_failure_like_count == 0
+    )
+
+    platform_status = str(platform_proof.get("status", "missing")) if isinstance(platform_proof, dict) else "missing"
+    platform_summary = platform_proof.get("summary", {}) if isinstance(platform_proof, dict) else {}
+    if not isinstance(platform_summary, dict):
+        platform_summary = {}
+    matching_hint_count = as_int(platform_summary.get("matching_hint_count"), 0)
+    mismatching_hint_count = as_int(platform_summary.get("mismatching_hint_count"), 0)
+    platform_satisfied = (
+        platform_status == "candidate_platform_found"
+        and matching_hint_count >= 1
+        and mismatching_hint_count == 0
+    )
+
+    freshness_status = str(freshness_proof.get("status", "missing")) if isinstance(freshness_proof, dict) else "missing"
+    freshness_summary = freshness_proof.get("summary", {}) if isinstance(freshness_proof, dict) else {}
+    if not isinstance(freshness_summary, dict):
+        freshness_summary = {}
+    newer_or_equal_count = as_int(freshness_summary.get("product_newer_or_equal_source_count"), 0)
+    older_count = as_int(freshness_summary.get("product_older_than_source_count"), 0)
+    product_freshness_satisfied = (
+        freshness_status == "candidate_freshness_supported"
+        and newer_or_equal_count >= 1
+        and older_count == 0
+    )
+
+    product_identity_status = (
+        str(product_identity_proof.get("status", "missing")) if isinstance(product_identity_proof, dict) else "missing"
+    )
+    product_identity_satisfied = (
+        product_identity_status == "candidate_product_identity_supported"
+        and isinstance(product_identity_proof, dict)
+        and all_identity_dimensions_pass(product_identity_proof)
+    )
+
+    safety_violations: List[str] = []
+    for block_name, block in [
+        ("ap_source_identity_match", source_match),
+        ("ap_product_candidate_match", product_match),
+        ("ap_product_file_validation", file_validation),
+        ("ap_job_state_proof", job_state),
+        ("ap_platform_proof", platform_proof),
+        ("ap_product_freshness_proof", freshness_proof),
+        ("ap_product_identity_proof", product_identity_proof),
+        ("ap_resolver_readiness", readiness),
+    ]:
+        if isinstance(block, dict):
+            safety_block = block.get("safety", {})
+            if isinstance(safety_block, dict):
+                safety_violations.extend(gather_safety_violations(block_name, safety_block))
+
+    safety_compliance_satisfied = len(safety_violations) == 0
 
     required_proofs = [
         build_proof(
@@ -271,49 +376,43 @@ def main() -> int:
         ),
         build_proof(
             "asset_processor_job_success_proof",
-            "Asset Processor job status is proven successful for current source/product records.",
-            False,
-            "not_implemented_yet",
+            "Asset Processor job-state evidence indicates successful candidate job completion.",
+            asset_processor_job_success_satisfied,
+            "manifest.o3de.ap_job_state_proof",
         ),
         build_proof(
             "platform_proof",
-            "Platform targeting for candidate products is explicitly verified.",
-            False,
-            "not_implemented_yet",
+            "Platform evidence confirms matching target platform with no mismatches.",
+            platform_satisfied,
+            "manifest.o3de.ap_platform_proof",
         ),
         build_proof(
             "product_freshness_proof",
-            "Candidate products are verified current and not stale.",
-            False,
-            "not_implemented_yet",
+            "Freshness evidence confirms candidate product timestamps are not older than source timestamps.",
+            product_freshness_satisfied,
+            "manifest.o3de.ap_product_freshness_proof",
         ),
         build_proof(
             "product_identity_proof",
-            "Product identity contract is verified without ambiguity.",
-            False,
-            "not_implemented_yet",
+            "Product identity evidence is candidate-supported across all product identity dimensions.",
+            product_identity_satisfied,
+            "manifest.o3de.ap_product_identity_proof",
         ),
         build_proof(
             "safety_compliance_proof",
-            "No safety violations exist in readiness evidence chain.",
+            "No upstream safety violations exist in evidence chain.",
             safety_compliance_satisfied,
-            "manifest.o3de.ap_resolver_readiness.dimensions.safety_compliance",
+            "manifest.o3de.*.safety",
         ),
     ]
 
     missing_proofs = [proof["id"] for proof in required_proofs if not bool(proof.get("satisfied"))]
     all_required_satisfied = len(missing_proofs) == 0
 
-    blocked_statuses = {
-        "blocked_safety_violation",
-        "blocked_missing_source_identity",
-        "blocked_missing_product_candidates",
-        "blocked_missing_required_product_files",
-    }
-    if all_required_satisfied:
-        status = "dry_run_ready"
-    elif readiness_status in blocked_statuses:
+    if not safety_compliance_satisfied:
         status = "dry_run_blocked"
+    elif all_required_satisfied:
+        status = "dry_run_ready"
     else:
         status = "dry_run_incomplete"
 
@@ -322,6 +421,10 @@ def main() -> int:
     if isinstance(job, dict):
         job_id = str(job.get("job_id", "")).strip()
     plan_id = f"authoritative-plan-{job_id}" if job_id else "authoritative-plan-unknown-job"
+
+    identity_dimensions = product_identity_proof.get("dimensions", {}) if isinstance(product_identity_proof, dict) else {}
+    if not isinstance(identity_dimensions, dict):
+        identity_dimensions = {}
 
     available_evidence = {
         "readiness": {
@@ -346,13 +449,45 @@ def main() -> int:
             "present": isinstance(file_validation, dict),
             "status": str(file_validation.get("status", "missing")) if isinstance(file_validation, dict) else "missing",
         },
+        "ap_job_state_proof": {
+            "present": isinstance(job_state, dict),
+            "status": job_status,
+            "candidate_job_count": as_int(job_summary.get("candidate_job_count"), 0),
+            "success_like_job_count": job_success_like_count,
+            "failure_like_job_count": job_failure_like_count,
+        },
+        "ap_platform_proof": {
+            "present": isinstance(platform_proof, dict),
+            "status": platform_status,
+            "target_platform": str(platform_proof.get("target_platform", "")) if isinstance(platform_proof, dict) else "",
+            "matching_hint_count": matching_hint_count,
+            "mismatching_hint_count": mismatching_hint_count,
+        },
+        "ap_product_freshness_proof": {
+            "present": isinstance(freshness_proof, dict),
+            "status": freshness_status,
+            "product_newer_or_equal_source_count": newer_or_equal_count,
+            "product_older_than_source_count": older_count,
+        },
+        "ap_product_identity_proof": {
+            "present": isinstance(product_identity_proof, dict),
+            "status": product_identity_status,
+            "dimension_count": len(identity_dimensions),
+            "all_dimensions_pass": all_identity_dimensions_pass(product_identity_proof)
+            if isinstance(product_identity_proof, dict)
+            else False,
+            "identity_candidate_count": as_int(
+                len(product_identity_proof.get("identity_candidates", [])) if isinstance(product_identity_proof, dict) else 0,
+                0,
+            ),
+        },
     }
 
     proposed_actions = [
-        "Define Asset Processor job-state proof contract from read-only evidence.",
-        "Define platform proof contract for product candidate targeting.",
-        "Define product freshness proof contract to reject stale outputs.",
-        "Define product identity proof contract for authoritative matching.",
+        "Define explicit write protocol and operator gate for future authoritative resolver.",
+        "Define authoritative AP product identity mapping contract with source/product/platform/job/freshness checks.",
+        "Add strict freshness and platform assertions to authoritative pre-write policy.",
+        "Implement operator-reviewed dry-run to write transition process only after approval.",
     ]
 
     forbidden_actions = [
@@ -411,7 +546,7 @@ def main() -> int:
         has_jsonschema = False
 
     if has_jsonschema:
-        ok, schema_errors = jsonschema_validate(plan, _schema)
+        ok, schema_errors = jsonschema_validate(plan, schema)
         if not ok:
             print("FAIL: schema validation failed for authoritative resolution plan.")
             for error in schema_errors:
