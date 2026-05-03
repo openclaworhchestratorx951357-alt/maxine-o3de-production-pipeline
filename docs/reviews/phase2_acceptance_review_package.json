@@ -1,0 +1,51 @@
+﻿{
+  "schema_version": "1.0.0",
+  "review_name": "phase-2-acceptance-review",
+  "review_type": "design_only_acceptance_request",
+  "approval_requested": true,
+  "approval_question": "Do you accept the Phase 2 design-only package as sufficient to begin a separate sandbox-only write prototype design branch?",
+  "acceptance_does_not_authorize": [
+    "production_writes",
+    "authoritative_writes",
+    "sandbox_writes",
+    "rollback_execution",
+    "o3de_editor_execution",
+    "asset_processor_execution",
+    "product_resolution",
+    "asset_id_claims",
+    "prefab_publication",
+    "entity_spawning"
+  ],
+  "phase2_artifacts": [
+    "docs/roadmap/PHASE-2-SANDBOX-WRITE-PROTOTYPE-DESIGN.md",
+    "docs/contracts/SANDBOX-WRITE-PROTOTYPE-CONTRACT.md",
+    "docs/roadmap/PHASE-2-ROLLBACK-ARTIFACT-DESIGN.md",
+    "docs/contracts/SANDBOX-ROLLBACK-ARTIFACT-CONTRACT.md",
+    "schemas/maxine_sandbox_rollback_artifact.schema.json",
+    "docs/roadmap/PHASE-2-SANDBOX-FIXTURE-PATH-SAFETY-DESIGN.md",
+    "docs/contracts/SANDBOX-FIXTURE-PATH-SAFETY-CONTRACT.md",
+    "docs/audits/phase2_sandbox_path_safety_policy.json",
+    "examples/sandbox/README.md"
+  ],
+  "required_verifiers": [
+    "tools/audit/verify_phase2_design_only.py",
+    "tools/audit/verify_phase2_rollback_design.py",
+    "tools/audit/verify_sandbox_rollback_artifact.py",
+    "tools/audit/verify_sandbox_path_safety.py",
+    "tools/audit/verify_phase2_sandbox_fixture_design.py"
+  ],
+  "required_absent_files": [
+    "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1",
+    "scripts/powershell/Invoke-MaxineSandboxRollback.ps1",
+    "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
+  ],
+  "safety": {
+    "design_only": true,
+    "write_capable_code_allowed": false,
+    "sandbox_write_allowed": false,
+    "rollback_execution_allowed": false,
+    "authoritative_write_allowed": false,
+    "product_resolution_allowed": false,
+    "asset_id_claims_allowed": false
+  }
+}
