@@ -1,0 +1,7 @@
+{
+  "job_type": "sandbox_rollback_artifact_validation",
+  "character_name": "Maxine_Sandbox_Rollback_Test_001",
+  "mode": "design_only_rollback_validation",
+  "rollback_artifact_path": "examples/manifests/example-sandbox-rollback-artifact.json",
+  "notes": "Validate rollback artifact structure only. Do not execute rollback or sandbox writes."
+}

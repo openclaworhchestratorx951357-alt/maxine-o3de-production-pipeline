@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "phase-2-rollback-artifact-design",
+  "design_only": true,
+  "rollback_execution_allowed": false,
+  "sandbox_write_allowed": false,
+  "authoritative_write_allowed": false,
+  "required_absent_files": [
+    "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1",
+    "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1",
+    "scripts/powershell/Invoke-MaxineSandboxRollback.ps1"
+  ],
+  "required_docs": [
+    "docs/roadmap/PHASE-2-ROLLBACK-ARTIFACT-DESIGN.md",
+    "docs/contracts/SANDBOX-ROLLBACK-ARTIFACT-CONTRACT.md"
+  ],
+  "required_schemas": [
+    "schemas/maxine_sandbox_rollback_artifact.schema.json"
+  ],
+  "required_examples": [
+    "examples/manifests/example-sandbox-rollback-artifact.json",
+    "examples/jobs/example-sandbox-rollback-artifact-job.json"
+  ],
+  "required_scripts": [
+    "tools/audit/verify_sandbox_rollback_artifact.py",
+    "tools/audit/verify_phase2_rollback_design.py",
+    "scripts/powershell/Test-MaxineSandboxRollbackArtifact.ps1",
+    "scripts/powershell/Test-MaxinePhase2RollbackDesign.ps1"
+  ]
+}

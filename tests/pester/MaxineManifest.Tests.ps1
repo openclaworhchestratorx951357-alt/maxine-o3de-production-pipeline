@@ -426,4 +426,40 @@ Describe "Maxine Manifest Repository Baseline" {
     It "still does not have authoritative write command implementation" {
         Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
     }
+
+    It "has Phase 2 rollback design doc" {
+        Test-Path -LiteralPath "docs/roadmap/PHASE-2-ROLLBACK-ARTIFACT-DESIGN.md" | Should Be $true
+    }
+
+    It "has sandbox rollback contract" {
+        Test-Path -LiteralPath "docs/contracts/SANDBOX-ROLLBACK-ARTIFACT-CONTRACT.md" | Should Be $true
+    }
+
+    It "has sandbox rollback schema" {
+        Test-Path -LiteralPath "schemas/maxine_sandbox_rollback_artifact.schema.json" | Should Be $true
+    }
+
+    It "has sandbox rollback example" {
+        Test-Path -LiteralPath "examples/manifests/example-sandbox-rollback-artifact.json" | Should Be $true
+    }
+
+    It "has sandbox rollback verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_sandbox_rollback_artifact.py" | Should Be $true
+    }
+
+    It "has Phase 2 rollback verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_phase2_rollback_design.py" | Should Be $true
+    }
+
+    It "does not have rollback command implementation" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    }
+
+    It "still does not have sandbox write command implementation" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    }
+
+    It "still does not have authoritative write command implementation (rollback phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
+    }
 }

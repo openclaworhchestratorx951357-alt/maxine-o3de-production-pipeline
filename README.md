@@ -89,4 +89,17 @@ References:
 
 - `docs/roadmap/PHASE-2-SANDBOX-WRITE-PROTOTYPE-DESIGN.md`
 - `docs/contracts/SANDBOX-WRITE-PROTOTYPE-CONTRACT.md`
+
+## Phase 2 Rollback Artifact Design
+
+Phase 2 rollback artifact design is non-executing.
+
+- no rollback command exists yet
+- no sandbox write command exists
+- rollback artifacts are contract/design only
+
+References:
+
+- `docs/roadmap/PHASE-2-ROLLBACK-ARTIFACT-DESIGN.md`
+- `docs/contracts/SANDBOX-ROLLBACK-ARTIFACT-CONTRACT.md`
 M.A.X.I.N.E. production pipeline for O3DE character, asset, prefab, QC, and automation workflows.

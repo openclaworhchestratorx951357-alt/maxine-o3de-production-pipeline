@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_sandbox_rollback_artifact.schema.json",
+  "title": "MAXINE Sandbox Rollback Artifact",
+  "description": "Design-only rollback artifact contract for a future sandbox-only write prototype.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "rollback_id",
+    "sandbox_id",
+    "source_manifest",
+    "target_manifest_copy",
+    "pre_write_snapshot",
+    "pre_write_snapshot_sha256",
+    "proposed_post_write_state",
+    "proposed_field_changes",
+    "rollback_actions",
+    "rollback_report_path",
+    "operator_approval_ref",
+    "execution_gate_ref",
+    "safety"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rollback_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sandbox_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_manifest": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target_manifest_copy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pre_write_snapshot": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pre_write_snapshot_sha256": {
+      "type": "string",
+      "minLength": 1
+    },
+    "proposed_post_write_state": {
+      "type": "string",
+      "minLength": 1
+    },
+    "proposed_field_changes": {
+      "type": "array"
+    },
+    "rollback_actions": {
+      "type": "array"
+    },
+    "rollback_report_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "operator_approval_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "execution_gate_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "safety": {
+      "type": "object",
+      "required": [
+        "read_only_contract",
+        "rollback_execution_implemented",
+        "sandbox_write_implemented",
+        "production_paths_allowed",
+        "o3de_engine_modification_allowed",
+        "maxineshow_project_modification_allowed",
+        "asset_processor_allowed",
+        "o3de_editor_allowed",
+        "prefab_publication_allowed",
+        "entity_spawn_allowed",
+        "real_asset_ids_allowed"
+      ],
+      "properties": {
+        "read_only_contract": {
+          "const": true
+        },
+        "rollback_execution_implemented": {
+          "const": false
+        },
+        "sandbox_write_implemented": {
+          "const": false
+        },
+        "production_paths_allowed": {
+          "const": false
+        },
+        "o3de_engine_modification_allowed": {
+          "const": false
+        },
+        "maxineshow_project_modification_allowed": {
+          "const": false
+        },
+        "asset_processor_allowed": {
+          "const": false
+        },
+        "o3de_editor_allowed": {
+          "const": false
+        },
+        "prefab_publication_allowed": {
+          "const": false
+        },
+        "entity_spawn_allowed": {
+          "const": false
+        },
+        "real_asset_ids_allowed": {
+          "const": false
+        }
+      }
+    }
+  }
+}
