@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0.0",
+  "validation_id": "approval-validation-authoritative-write-proposal-authoritative-plan-job-0001-approval-0001",
+  "status": "proposal_not_approvable",
+  "proposal_id": "authoritative-write-proposal-authoritative-plan-job-0001",
+  "approval_id": "approval-0001",
+  "checks": [
+    {
+      "id": "proposal_status_approvable",
+      "passed": false,
+      "message": "Proposal status must be approval_required."
+    }
+  ],
+  "blockers": [
+    "proposal_not_approvable"
+  ],
+  "safety": {
+    "read_only": true,
+    "executes_writes": false,
+    "marks_products_resolved": false,
+    "claims_asset_ids": false,
+    "runs_o3de_editor": false,
+    "runs_asset_processor": false,
+    "spawns_entities": false,
+    "publishes_prefabs": false
+  },
+  "updated_utc": "2026-05-03T00:00:00Z"
+}

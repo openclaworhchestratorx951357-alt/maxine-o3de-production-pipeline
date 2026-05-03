@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_operator_approval.schema.json",
+  "title": "MAXINE Operator Approval Artifact",
+  "description": "Read-only operator approval contract for authoritative write proposals.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "approval_id",
+    "proposal_id",
+    "approved_by",
+    "approved_at_utc",
+    "approval_reason",
+    "approved_plan_id",
+    "approval_scope",
+    "approved_write_fields",
+    "expires_at_utc",
+    "safety"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approval_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "proposal_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approved_by": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approved_at_utc": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approval_reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approved_plan_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approval_scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approved_write_fields": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "expires_at_utc": {
+      "type": "string",
+      "minLength": 1
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "read_only",
+        "executes_writes",
+        "marks_products_resolved",
+        "claims_asset_ids",
+        "runs_o3de_editor",
+        "runs_asset_processor",
+        "spawns_entities",
+        "publishes_prefabs"
+      ],
+      "properties": {
+        "read_only": {
+          "const": true
+        },
+        "executes_writes": {
+          "const": false
+        },
+        "marks_products_resolved": {
+          "const": false
+        },
+        "claims_asset_ids": {
+          "const": false
+        },
+        "runs_o3de_editor": {
+          "const": false
+        },
+        "runs_asset_processor": {
+          "const": false
+        },
+        "spawns_entities": {
+          "const": false
+        },
+        "publishes_prefabs": {
+          "const": false
+        }
+      }
+    }
+  }
+}

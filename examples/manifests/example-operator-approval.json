@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0.0",
+  "approval_id": "approval-0001",
+  "proposal_id": "authoritative-write-proposal-authoritative-plan-job-0001",
+  "approved_by": "maxine-operator-1",
+  "approved_at_utc": "2026-05-03T10:00:00Z",
+  "approval_reason": "Dry-run proof stack reviewed; proceed to final pre-write report stage only.",
+  "approved_plan_id": "authoritative-plan-job-0001",
+  "approval_scope": "pre-write-report-only",
+  "approved_write_fields": [
+    "manifest.o3de.products.resolved",
+    "manifest.o3de.products.resolution_mode",
+    "manifest.o3de.products.resolved_at_utc",
+    "manifest.o3de.products.source_identity",
+    "manifest.o3de.products.resolved_products[]",
+    "manifest.o3de.products.proof_refs",
+    "manifest.o3de.products.operator_approval"
+  ],
+  "expires_at_utc": "2099-01-01T00:00:00Z",
+  "safety": {
+    "read_only": true,
+    "executes_writes": false,
+    "marks_products_resolved": false,
+    "claims_asset_ids": false,
+    "runs_o3de_editor": false,
+    "runs_asset_processor": false,
+    "spawns_entities": false,
+    "publishes_prefabs": false
+  }
+}

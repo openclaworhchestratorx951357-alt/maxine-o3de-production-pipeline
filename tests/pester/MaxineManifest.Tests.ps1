@@ -294,4 +294,32 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has authoritative write protocol design document" {
         Test-Path -LiteralPath "docs/o3de-integration/AUTHORITATIVE-WRITE-PROTOCOL.md" | Should Be $true
     }
+
+    It "has operator approval validation script" {
+        Test-Path -LiteralPath "tools/asset-resolver/validate_operator_approval.py" | Should Be $true
+    }
+
+    It "has Validate-MaxineOperatorApproval wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Validate-MaxineOperatorApproval.ps1" | Should Be $true
+    }
+
+    It "has operator approval schema" {
+        Test-Path -LiteralPath "schemas/maxine_operator_approval.schema.json" | Should Be $true
+    }
+
+    It "has operator approval example manifest" {
+        Test-Path -LiteralPath "examples/manifests/example-operator-approval.json" | Should Be $true
+    }
+
+    It "has operator approval validation example manifest" {
+        Test-Path -LiteralPath "examples/manifests/example-operator-approval-validation.json" | Should Be $true
+    }
+
+    It "has operator approval validation example job file" {
+        Test-Path -LiteralPath "examples/jobs/example-operator-approval-validation-job.json" | Should Be $true
+    }
+
+    It "has operator approval protocol document" {
+        Test-Path -LiteralPath "docs/o3de-integration/OPERATOR-APPROVAL-PROTOCOL.md" | Should Be $true
+    }
 }
