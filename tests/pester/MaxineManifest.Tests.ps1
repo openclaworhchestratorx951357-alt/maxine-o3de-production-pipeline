@@ -134,4 +134,20 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has AP candidate product matching example job file" {
         Test-Path -LiteralPath "examples/jobs/example-ap-product-candidate-match-job.json" | Should Be $true
     }
+
+    It "has AP product file validation python script" {
+        Test-Path -LiteralPath "tools/asset-resolver/validate_ap_product_files.py" | Should Be $true
+    }
+
+    It "has Validate-MaxineApProductFiles wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Validate-MaxineApProductFiles.ps1" | Should Be $true
+    }
+
+    It "has AP product file validation example manifest" {
+        Test-Path -LiteralPath "examples/manifests/example-ap-product-file-validation.manifest.json" | Should Be $true
+    }
+
+    It "has AP product file validation example job file" {
+        Test-Path -LiteralPath "examples/jobs/example-ap-product-file-validation-job.json" | Should Be $true
+    }
 }

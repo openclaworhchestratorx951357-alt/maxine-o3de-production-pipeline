@@ -135,3 +135,21 @@ Layer 7 is still not resolution.
 
 - product candidates are not valid until product type, source identity, platform, job status, and file existence are proven
 - this layer prepares evidence for future resolver decisions only
+
+## AP Product File Existence Validation
+
+The resolver stack now has eight layers:
+
+1. product contract recording
+2. filesystem evidence probing
+3. AP metadata source discovery
+4. read-only AP database schema inspection
+5. read-only candidate row mapping
+6. read-only source identity candidate matching
+7. read-only candidate product matching
+8. read-only product file existence validation
+
+Layer 8 remains evidence only and is not product resolution.
+
+- existence does not prove freshness, platform correctness, source linkage, or job success
+- a future authoritative resolver must validate platform/job-state/current product records before resolving products

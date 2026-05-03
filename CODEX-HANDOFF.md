@@ -76,3 +76,10 @@ Implement product file existence validation for candidate product rows, using sa
 
 Safety note:
 Product candidate rows are not enough. Require file existence and product contract validation before any product can move toward resolved.
+
+## Next Slice After AP Product File Validation
+
+Implement non-authoritative resolver readiness gate that combines source identity, product candidate, and file existence evidence into a single readiness report, still without marking products resolved.
+
+Safety note:
+Readiness is not resolution. A future authoritative resolver must still verify platform, AP job status, and product identity before writing resolved products.
