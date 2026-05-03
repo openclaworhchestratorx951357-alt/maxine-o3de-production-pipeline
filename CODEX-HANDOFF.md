@@ -48,3 +48,10 @@ Implement read-only Asset Processor database inspection against discovered datab
 
 Safety note:
 Do not open SQLite databases for writes. Use read-only mode only when database inspection begins.
+
+## Next Slice After AP DB Schema Inspection
+
+Implement read-only source/product row mapping for known AP database schema candidates, still without marking products resolved until source UUID/product type matching is proven.
+
+Safety note:
+Do not write to Asset Processor databases. Do not infer product validity from row presence alone.

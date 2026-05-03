@@ -1,0 +1,7 @@
+{
+  "job_type": "ap_database_schema_inspection",
+  "character_name": "Maxine_AP_DB_Inspection_Test_001",
+  "mode": "read_only_schema_inspection",
+  "database_path": "C:/path/to/assetdb.sqlite",
+  "notes": "Open SQLite database in read-only mode and inspect schema shape only. Do not claim product resolution."
+}

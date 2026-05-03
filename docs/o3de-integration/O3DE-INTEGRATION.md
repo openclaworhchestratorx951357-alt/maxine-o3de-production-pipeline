@@ -70,3 +70,18 @@ This slice is layer 3 and remains read-only and non-authoritative.
 - does not claim product publication or product validity
 
 This prepares future source UUID and product-type resolution, but it must not be confused with product publication.
+
+## AP Database Schema Inspection
+
+The resolver stack now has four layers:
+
+1. product contract recording
+2. filesystem evidence probing
+3. AP metadata source discovery
+4. read-only AP database schema inspection
+
+Layer 4 remains discovery only and is not product resolution.
+
+- table names are not proof of product validity
+- schema presence does not prove source/product correctness
+- real product resolution comes later with verified source UUID and product-type matching
