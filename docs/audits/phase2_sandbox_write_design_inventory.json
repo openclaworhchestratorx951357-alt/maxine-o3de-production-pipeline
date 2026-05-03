@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "phase-2-sandbox-write-prototype-design",
+  "design_only": true,
+  "write_capable_code_allowed": false,
+  "sandbox_write_command_implemented": false,
+  "authoritative_write_command_implemented": false,
+  "production_project_modification_allowed": false,
+  "o3de_editor_run_allowed": false,
+  "asset_processor_run_allowed": false,
+  "database_write_allowed": false,
+  "required_absent_files": [
+    "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1",
+    "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1"
+  ],
+  "required_docs": [
+    "docs/roadmap/PHASE-2-SANDBOX-WRITE-PROTOTYPE-DESIGN.md",
+    "docs/contracts/SANDBOX-WRITE-PROTOTYPE-CONTRACT.md"
+  ],
+  "required_previous_baseline_docs": [
+    "docs/audits/PHASE-1-OPERATIONAL-BASELINE.md",
+    "docs/audits/phase1_operational_baseline_inventory.json",
+    "docs/o3de-integration/AUTHORITATIVE-EXECUTION-GATE-POLICY.md",
+    "docs/roadmap/RESOLVER-LADDER-INDEX.md"
+  ],
+  "future_command_names_reserved_but_absent": [
+    "Invoke-MaxineSandboxResolverWrite.ps1",
+    "Invoke-MaxineAuthoritativeResolverWrite.ps1"
+  ]
+}

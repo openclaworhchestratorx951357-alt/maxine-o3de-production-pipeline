@@ -167,3 +167,19 @@ After that, design a separate experimental branch for a sandbox-only write proto
 ## Next Milestone
 
 Phase 2 should be design-only review of a sandbox-only write prototype. Do not implement sandbox writes until the Phase 1 baseline and execution-gate policy are accepted.
+
+## Phase 2 Design-Only Complete Criteria
+
+- Phase 2 design document exists.
+- Sandbox write prototype contract exists.
+- Phase 2 design inventory exists.
+- Phase 2 verifier exists.
+- Phase 2 verifier passes.
+- Sandbox write command remains absent.
+- Authoritative write command remains absent.
+- No products are resolved.
+- No Asset IDs are claimed.
+
+## Next Milestone After Phase 2 Design-Only
+
+After Phase 2 design-only review is accepted, design a rollback artifact schema and rollback verifier for a future sandbox-only write prototype. Do not implement write execution yet.

@@ -76,4 +76,17 @@ References:
 - `docs/audits/PHASE-1-OPERATIONAL-BASELINE.md`
 - `docs/roadmap/RESOLVER-LADDER-INDEX.md`
 - `docs/o3de-integration/AUTHORITATIVE-EXECUTION-GATE-POLICY.md`
+
+## Phase 2 Sandbox-Only Write Prototype Design
+
+Phase 2 is design-only.
+
+- no sandbox write command exists yet
+- no authoritative write command exists
+- future sandbox writes require separate acceptance
+
+References:
+
+- `docs/roadmap/PHASE-2-SANDBOX-WRITE-PROTOTYPE-DESIGN.md`
+- `docs/contracts/SANDBOX-WRITE-PROTOTYPE-CONTRACT.md`
 M.A.X.I.N.E. production pipeline for O3DE character, asset, prefab, QC, and automation workflows.
