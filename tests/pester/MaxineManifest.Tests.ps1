@@ -230,4 +230,24 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has AP platform proof design document" {
         Test-Path -LiteralPath "docs/o3de-integration/AP-PLATFORM-PROOF.md" | Should Be $true
     }
+
+    It "has AP product freshness proof extractor script" {
+        Test-Path -LiteralPath "tools/asset-resolver/extract_ap_product_freshness_proof.py" | Should Be $true
+    }
+
+    It "has Extract-MaxineApProductFreshnessProof wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Extract-MaxineApProductFreshnessProof.ps1" | Should Be $true
+    }
+
+    It "has AP product freshness proof example manifest" {
+        Test-Path -LiteralPath "examples/manifests/example-ap-product-freshness-proof.manifest.json" | Should Be $true
+    }
+
+    It "has AP product freshness proof example job file" {
+        Test-Path -LiteralPath "examples/jobs/example-ap-product-freshness-proof-job.json" | Should Be $true
+    }
+
+    It "has AP product freshness proof design document" {
+        Test-Path -LiteralPath "docs/o3de-integration/AP-PRODUCT-FRESHNESS-PROOF.md" | Should Be $true
+    }
 }
