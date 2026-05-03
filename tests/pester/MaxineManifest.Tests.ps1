@@ -370,4 +370,12 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has authoritative execution gate policy document" {
         Test-Path -LiteralPath "docs/o3de-integration/AUTHORITATIVE-EXECUTION-GATE-POLICY.md" | Should Be $true
     }
+
+    It "has resolver ladder roadmap index document" {
+        Test-Path -LiteralPath "docs/roadmap/RESOLVER-LADDER-INDEX.md" | Should Be $true
+    }
+
+    It "has PR stack consolidation guide document" {
+        Test-Path -LiteralPath "docs/operator-playbooks/PR-STACK-CONSOLIDATION-GUIDE.md" | Should Be $true
+    }
 }

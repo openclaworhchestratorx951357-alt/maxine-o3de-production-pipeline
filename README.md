@@ -51,4 +51,14 @@ Inspect examples:
 Get-ChildItem .\examples\jobs
 Get-ChildItem .\examples\manifests
 ```
+
+## M.A.X.I.N.E. Resolver Ladder
+
+This repository now contains a read-only, manifest-first resolver ladder that progressively builds non-authoritative evidence from contract recording through final execution gate policy.
+
+- product resolution remains disabled
+- authoritative writes remain unimplemented
+- execution gate policy exists only as a policy artifact
+
+The next major milestone after PR-stack consolidation is review and acceptance of policy/contracts, not write-capable resolver implementation.
 M.A.X.I.N.E. production pipeline for O3DE character, asset, prefab, QC, and automation workflows.
