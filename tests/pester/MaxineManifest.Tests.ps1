@@ -270,4 +270,28 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has AP product identity proof design document" {
         Test-Path -LiteralPath "docs/o3de-integration/AP-PRODUCT-IDENTITY-PROOF.md" | Should Be $true
     }
+
+    It "has authoritative write protocol proposal script" {
+        Test-Path -LiteralPath "tools/asset-resolver/propose_authoritative_write_protocol.py" | Should Be $true
+    }
+
+    It "has Propose-MaxineAuthoritativeWriteProtocol wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Propose-MaxineAuthoritativeWriteProtocol.ps1" | Should Be $true
+    }
+
+    It "has authoritative write protocol proposal schema" {
+        Test-Path -LiteralPath "schemas/maxine_authoritative_write_protocol.schema.json" | Should Be $true
+    }
+
+    It "has authoritative write protocol proposal example manifest" {
+        Test-Path -LiteralPath "examples/manifests/example-authoritative-write-protocol-proposal.json" | Should Be $true
+    }
+
+    It "has authoritative write protocol proposal example job file" {
+        Test-Path -LiteralPath "examples/jobs/example-authoritative-write-protocol-job.json" | Should Be $true
+    }
+
+    It "has authoritative write protocol design document" {
+        Test-Path -LiteralPath "docs/o3de-integration/AUTHORITATIVE-WRITE-PROTOCOL.md" | Should Be $true
+    }
 }

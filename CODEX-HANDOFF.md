@@ -120,3 +120,7 @@ Design the first authoritative resolver write protocol as a gated proposal only,
 
 Safety note:
 Even `dry_run_ready` does not permit writes. A separate write protocol and explicit operator approval gate are required.
+
+## Next Slice After Authoritative Write Protocol Proposal
+
+Design operator approval artifact and approval validation for authoritative resolver proposals, still without writes.
