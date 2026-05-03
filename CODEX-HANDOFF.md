@@ -138,3 +138,10 @@ Design final execution gate policy for future authoritative resolver writes, inc
 
 Safety note:
 Pre-write ready is not execution. A separate execution gate and rollback contract are required before any write-capable resolver exists.
+
+## Next Slice After Final Execution Gate Policy
+
+Consolidate PR stack after review/merge, then create a top-level roadmap index showing the full resolver ladder from manifest adapter through execution gate policy.
+
+Safety note:
+Do not implement authoritative writes until the execution gate policy is reviewed and explicitly accepted.

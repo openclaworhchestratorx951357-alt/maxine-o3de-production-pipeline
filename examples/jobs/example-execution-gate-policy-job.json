@@ -1,0 +1,7 @@
+{
+  "job_type": "execution_gate_policy_validation",
+  "character_name": "Maxine_Execution_Gate_Policy_Test_001",
+  "mode": "read_only_policy_gate",
+  "pre_write_report_path": "examples/manifests/example-pre-write-report.json",
+  "notes": "Build execution gate policy report only. Do not execute writes, resolve products, claim Asset IDs, run O3DE/AP, spawn, or publish."
+}

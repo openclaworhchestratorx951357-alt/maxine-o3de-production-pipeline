@@ -346,4 +346,28 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has approved-write dry-run report document" {
         Test-Path -LiteralPath "docs/o3de-integration/APPROVED-WRITE-DRY-RUN-REPORT.md" | Should Be $true
     }
+
+    It "has execution gate policy validator script" {
+        Test-Path -LiteralPath "tools/asset-resolver/validate_execution_gate_policy.py" | Should Be $true
+    }
+
+    It "has Validate-MaxineExecutionGatePolicy wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Validate-MaxineExecutionGatePolicy.ps1" | Should Be $true
+    }
+
+    It "has execution gate policy schema" {
+        Test-Path -LiteralPath "schemas/maxine_execution_gate_policy.schema.json" | Should Be $true
+    }
+
+    It "has execution gate policy example manifest" {
+        Test-Path -LiteralPath "examples/manifests/example-execution-gate-policy.json" | Should Be $true
+    }
+
+    It "has execution gate policy example job file" {
+        Test-Path -LiteralPath "examples/jobs/example-execution-gate-policy-job.json" | Should Be $true
+    }
+
+    It "has authoritative execution gate policy document" {
+        Test-Path -LiteralPath "docs/o3de-integration/AUTHORITATIVE-EXECUTION-GATE-POLICY.md" | Should Be $true
+    }
 }
