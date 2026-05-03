@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0.0",
+  "plan_name": "sandbox-rollback-execution-design",
+  "phase": "sandbox-write-prototype-planning",
+  "design_only": true,
+  "rollback_execution_implemented": false,
+  "sandbox_write_implemented": false,
+  "authoritative_write_implemented": false,
+  "required_decision_status": "accepted",
+  "required_command_absent": [
+    "scripts/powershell/Invoke-MaxineSandboxRollback.ps1",
+    "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1",
+    "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
+  ],
+  "future_command_shape": "Invoke-MaxineSandboxRollback.ps1 -RollbackArtifactPath <path> -ConfirmRollback",
+  "required_future_preconditions": [
+    "phase2_acceptance_decision_accepted",
+    "sandbox_path_safety_passed",
+    "rollback_artifact_verified",
+    "target_inside_sandbox",
+    "pre_write_snapshot_exists",
+    "snapshot_hash_matches",
+    "confirm_rollback_supplied",
+    "git_working_tree_clean"
+  ],
+  "safety": {
+    "sandbox_only": true,
+    "implementation_available": false,
+    "rollback_execution_allowed": false,
+    "sandbox_write_allowed": false,
+    "authoritative_write_allowed": false,
+    "production_paths_allowed": false,
+    "product_resolution_allowed": false,
+    "asset_id_claims_allowed": false
+  }
+}

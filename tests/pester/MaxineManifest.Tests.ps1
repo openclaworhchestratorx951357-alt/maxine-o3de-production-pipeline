@@ -562,4 +562,36 @@ Describe "Maxine Manifest Repository Baseline" {
     It "does not have authoritative write command implementation (acceptance decision phase)" {
         Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
     }
+
+    It "has sandbox rollback execution design doc" {
+        Test-Path -LiteralPath "docs/roadmap/SANDBOX-PROTOTYPE-ROLLBACK-EXECUTION-DESIGN.md" | Should Be $true
+    }
+
+    It "has sandbox rollback execution contract" {
+        Test-Path -LiteralPath "docs/contracts/SANDBOX-ROLLBACK-EXECUTION-CONTRACT.md" | Should Be $true
+    }
+
+    It "has sandbox rollback execution design plan" {
+        Test-Path -LiteralPath "docs/audits/sandbox_rollback_execution_design_plan.json" | Should Be $true
+    }
+
+    It "has sandbox rollback execution design verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_sandbox_rollback_execution_design.py" | Should Be $true
+    }
+
+    It "has sandbox rollback execution PowerShell wrapper" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxRollbackExecutionDesign.ps1" | Should Be $true
+    }
+
+    It "does not have rollback execution command implementation (sandbox planning phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    }
+
+    It "does not have sandbox write command implementation (sandbox planning phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    }
+
+    It "does not have authoritative write command implementation (sandbox planning phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
+    }
 }

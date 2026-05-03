@@ -252,3 +252,20 @@ If Phase 2 is explicitly accepted, create a separate branch for sandbox-only wri
 ## Next Milestone After Phase 2 Acceptance Decision
 
 If the decision status is accepted, create a separate sandbox-only write prototype planning branch that starts with rollback execution design and still does not implement writes. If the decision is hold or rejected, revise the Phase 2 design package first.
+
+## Sandbox Prototype Rollback Execution Design Complete Criteria
+
+- rollback execution design doc exists
+- rollback execution contract exists
+- rollback execution design plan exists
+- rollback execution design verifier exists
+- rollback execution verifier passes
+- rollback execution command remains absent
+- sandbox write command remains absent
+- authoritative write command remains absent
+- no products are resolved
+- no Asset IDs are claimed
+
+## Next Milestone After Sandbox Rollback Execution Design
+
+Design the sandbox write planning contract that depends on rollback execution design, while still not implementing sandbox writes.

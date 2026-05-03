@@ -147,4 +147,18 @@ References:
 
 - `docs/reviews/PHASE-2-ACCEPTANCE-DECISION.md`
 - `docs/reviews/phase2_acceptance_decision.json`
+
+## Sandbox Prototype Rollback Execution Design
+
+Sandbox prototype rollback execution design is planning only.
+
+- rollback execution command is not implemented
+- sandbox write command is not implemented
+- authoritative write command is not implemented
+- accepted Phase 2 allows planning only
+
+References:
+
+- `docs/roadmap/SANDBOX-PROTOTYPE-ROLLBACK-EXECUTION-DESIGN.md`
+- `docs/contracts/SANDBOX-ROLLBACK-EXECUTION-CONTRACT.md`
 M.A.X.I.N.E. production pipeline for O3DE character, asset, prefab, QC, and automation workflows.
