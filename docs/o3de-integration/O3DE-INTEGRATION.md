@@ -40,3 +40,17 @@ Guardrails in this slice:
 - unresolved contract entries are explicit and expected
 
 Next target after this proof is a real resolver adapter that queries O3DE/AP by source identity and product types.
+
+## Filesystem Probe Adapter
+
+The filesystem probe adapter records local evidence only. It does not provide authoritative product resolution.
+
+- captures project path existence, project.json presence, and source asset file evidence
+- can optionally scan a provided cache path for candidate product-like files
+- records probe findings under `manifest.o3de.asset_probe`
+
+Important constraints:
+
+- findings are evidence of local filesystem state, not proof of O3DE Asset IDs
+- cache guessing is not used as a success condition
+- real product resolution requires official O3DE/AP APIs or tooling in a later slice

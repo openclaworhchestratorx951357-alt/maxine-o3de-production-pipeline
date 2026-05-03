@@ -27,6 +27,29 @@ This proof-of-concept does **not** query the real O3DE Asset Processor yet. It f
 - `external_rig_import`
 - `release_character`
 
+## Resolver Modes
+
+### `contract` mode
+
+- records expected product contract only
+- uses `product_contracts.json`
+- does not inspect local O3DE filesystem
+- never resolves Asset IDs
+
+### `filesystem_probe` mode
+
+- inspects declared O3DE project/source/cache locations
+- records existence, sizes, timestamps, likely source-relative path, and candidate product-like files
+- does not claim authoritative Asset IDs
+- does not use cache guessing as success
+- records all findings under `manifest.o3de.asset_probe`
+
+### future `o3de_api` mode
+
+- will call O3DE Asset Processor / Asset Catalog APIs or official CLI/AP tooling
+- will resolve source UUID and products by product type
+- not implemented in this slice
+
 ## Expected Product Contracts
 
 ### `draft_mesh`

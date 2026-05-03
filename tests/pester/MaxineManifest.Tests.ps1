@@ -34,4 +34,20 @@ Describe "Maxine Manifest Repository Baseline" {
     It "has Resolve-MaxineAssetContract wrapper script" {
         Test-Path -LiteralPath "scripts/powershell/Resolve-MaxineAssetContract.ps1" | Should Be $true
     }
+
+    It "has filesystem probe python script" {
+        Test-Path -LiteralPath "tools/asset-resolver/probe_o3de_asset_filesystem.py" | Should Be $true
+    }
+
+    It "has Probe-MaxineO3deAsset wrapper script" {
+        Test-Path -LiteralPath "scripts/powershell/Probe-MaxineO3deAsset.ps1" | Should Be $true
+    }
+
+    It "has asset probe example manifest" {
+        Test-Path -LiteralPath "examples/manifests/example-asset-probe.manifest.json" | Should Be $true
+    }
+
+    It "has asset probe example job file" {
+        Test-Path -LiteralPath "examples/jobs/example-asset-probe-job.json" | Should Be $true
+    }
 }
