@@ -12,10 +12,14 @@ REQUIRED_FILES = [
     "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1",
     "scripts/powershell/Invoke-MaxineSandboxRollback.ps1",
     "scripts/powershell/Invoke-MaxineSandboxReceiptInspect.ps1",
+    "scripts/powershell/Invoke-MaxineSandboxReviewPacketBuild.ps1",
+    "scripts/powershell/Invoke-MaxineSandboxReviewPacketInspect.ps1",
     "schemas/maxine_sandbox_resolver_write_plan.schema.json",
     "schemas/maxine_sandbox_write_receipt.schema.json",
     "schemas/maxine_sandbox_receipt_index.schema.json",
+    "schemas/maxine_sandbox_review_packet.schema.json",
     "examples/sandbox/receipts/index.json",
+    "examples/sandbox/review-packets/.gitkeep",
     "examples/sandbox/staging/.gitkeep",
 ]
 

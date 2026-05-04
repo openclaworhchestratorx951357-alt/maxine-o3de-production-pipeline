@@ -1,0 +1,116 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_sandbox_review_packet.schema.json",
+  "title": "Maxine Sandbox Review Packet",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "review_packet_id",
+    "source_receipt_id",
+    "sandbox_root",
+    "target_path",
+    "files_written",
+    "write_status",
+    "rollback_status",
+    "sha256_before",
+    "sha256_after",
+    "blocked_reason",
+    "safety_summary",
+    "operator_decision_state",
+    "next_safest_step",
+    "explicit_blocked_capabilities"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "review_packet_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_receipt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sandbox_root": {
+      "type": "string",
+      "const": "examples/sandbox"
+    },
+    "target_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "files_written": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "write_status": {
+      "type": "string",
+      "enum": [
+        "written",
+        "rolled_back",
+        "blocked",
+        "failed"
+      ]
+    },
+    "rollback_status": {
+      "type": "string",
+      "enum": [
+        "not_requested",
+        "rolled_back",
+        "rollback_failed"
+      ]
+    },
+    "sha256_before": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "sha256_after": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "blocked_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "safety_summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "operator_decision_state": {
+      "type": "string",
+      "enum": [
+        "pending_review",
+        "accepted_for_sandbox_only",
+        "request_rollback",
+        "rejected"
+      ]
+    },
+    "next_safest_step": {
+      "type": "string",
+      "minLength": 1
+    },
+    "explicit_blocked_capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "generated_at_utc": {
+      "type": "string"
+    }
+  }
+}

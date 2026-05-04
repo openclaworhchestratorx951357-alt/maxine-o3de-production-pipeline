@@ -9,11 +9,18 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 WRITER_SCRIPT = REPO_ROOT / "scripts" / "powershell" / "Invoke-MaxineSandboxResolverWrite.ps1"
 ROLLBACK_SCRIPT = REPO_ROOT / "scripts" / "powershell" / "Invoke-MaxineSandboxRollback.ps1"
 INSPECT_SCRIPT = REPO_ROOT / "scripts" / "powershell" / "Invoke-MaxineSandboxReceiptInspect.ps1"
+REVIEW_PACKET_BUILD_SCRIPT = (
+    REPO_ROOT / "scripts" / "powershell" / "Invoke-MaxineSandboxReviewPacketBuild.ps1"
+)
+REVIEW_PACKET_INSPECT_SCRIPT = (
+    REPO_ROOT / "scripts" / "powershell" / "Invoke-MaxineSandboxReviewPacketInspect.ps1"
+)
 AUTHORITATIVE_SCRIPT = REPO_ROOT / "scripts" / "powershell" / "Invoke-MaxineAuthoritativeResolverWrite.ps1"
 SANDBOX_ROOT = REPO_ROOT / "examples" / "sandbox"
 STAGING_DIR = SANDBOX_ROOT / "staging"
 LOGS_DIR = SANDBOX_ROOT / "logs"
 RECEIPTS_DIR = SANDBOX_ROOT / "receipts"
+REVIEW_PACKETS_DIR = SANDBOX_ROOT / "review-packets"
 REPORTS_DIR = SANDBOX_ROOT / "manifests" / "reports"
 
 
@@ -286,6 +293,8 @@ def test_receipt_index_cannot_point_outside_sandbox_root(tmp_path: Path):
     receipt_abs = REPO_ROOT / receipt_rel
     plan_path = tmp_path / "blocked-index-plan.json"
     target_rel = f"examples/sandbox/staging/index-test-{uuid.uuid4().hex}.json"
+    default_index_abs = RECEIPTS_DIR / "index.json"
+    before_default_index = default_index_abs.read_bytes()
 
     plan = build_plan(target_rel, receipt_index_path="../outside/index.json", explicit_approval=True)
     write_json(plan_path, plan)
@@ -302,6 +311,8 @@ def test_receipt_index_cannot_point_outside_sandbox_root(tmp_path: Path):
     assert receipt_abs.exists()
     receipt = read_json(receipt_abs)
     assert "receipt_index_path" in receipt["blocked_reason"].lower() or "sandbox root" in receipt["blocked_reason"].lower()
+    assert receipt["receipt_index_path"] in (None, "")
+    assert default_index_abs.read_bytes() == before_default_index
 
     remove_if_exists(receipt_abs)
 
@@ -365,6 +376,230 @@ def test_receipt_inspect_is_read_only_and_can_lookup_receipt(tmp_path: Path):
     remove_if_exists(index_abs)
 
 
+def test_review_packet_can_be_built_from_existing_sandbox_receipt_without_mutating_source(tmp_path: Path):
+    target_name = f"pytest-review-build-{uuid.uuid4().hex}.json"
+    target_rel = f"examples/sandbox/staging/{target_name}"
+    target_abs = REPO_ROOT / target_rel
+    receipt_name = f"pytest-review-build-receipt-{uuid.uuid4().hex}.json"
+    receipt_rel = f"examples/sandbox/logs/{receipt_name}"
+    receipt_abs = REPO_ROOT / receipt_rel
+    index_name = f"pytest-review-build-index-{uuid.uuid4().hex}.json"
+    index_rel = f"examples/sandbox/receipts/{index_name}"
+    index_abs = REPO_ROOT / index_rel
+    packet_name = f"pytest-review-packet-{uuid.uuid4().hex}.json"
+    packet_rel = f"examples/sandbox/review-packets/{packet_name}"
+    packet_abs = REPO_ROOT / packet_rel
+    plan_path = tmp_path / "review-build-plan.json"
+
+    write_json(plan_path, build_plan(target_rel, receipt_index_path=index_rel, explicit_approval=True))
+    remove_if_exists(target_abs)
+    remove_if_exists(receipt_abs)
+    remove_if_exists(index_abs)
+    remove_if_exists(packet_abs)
+
+    write_result = run_powershell_script(
+        WRITER_SCRIPT,
+        "-PlanPath",
+        str(plan_path),
+        "-ReceiptPath",
+        receipt_rel,
+    )
+    assert write_result.returncode == 0, write_result.stderr
+    assert receipt_abs.exists()
+    assert index_abs.exists()
+
+    receipt_before = receipt_abs.read_bytes()
+    index_before = index_abs.read_bytes()
+    source_receipt = read_json(receipt_abs)
+
+    build_result = run_powershell_script(
+        REVIEW_PACKET_BUILD_SCRIPT,
+        "-ReceiptPath",
+        receipt_rel,
+        "-OutputPath",
+        packet_rel,
+        "-OperatorDecisionState",
+        "pending_review",
+    )
+    assert build_result.returncode == 0, build_result.stderr
+    assert packet_abs.exists()
+
+    packet = read_json(packet_abs)
+    for required in [
+        "review_packet_id",
+        "source_receipt_id",
+        "sandbox_root",
+        "target_path",
+        "files_written",
+        "write_status",
+        "rollback_status",
+        "sha256_before",
+        "sha256_after",
+        "blocked_reason",
+        "safety_summary",
+        "operator_decision_state",
+        "next_safest_step",
+        "explicit_blocked_capabilities",
+    ]:
+        assert required in packet, f"review packet missing '{required}'"
+
+    assert packet["source_receipt_id"] == source_receipt["receipt_id"]
+    assert packet["sandbox_root"] == "examples/sandbox"
+    assert packet["operator_decision_state"] == "pending_review"
+    assert "authoritative_writes" in packet["explicit_blocked_capabilities"]
+    assert "asset_processor_execution" in packet["explicit_blocked_capabilities"]
+
+    receipt_after = receipt_abs.read_bytes()
+    index_after = index_abs.read_bytes()
+    assert receipt_before == receipt_after, "review packet build mutated source receipt"
+    assert index_before == index_after, "review packet build mutated source index"
+
+    remove_if_exists(packet_abs)
+    remove_if_exists(target_abs)
+    remove_if_exists(receipt_abs)
+    remove_if_exists(index_abs)
+
+
+def test_review_packet_cannot_be_built_from_receipt_outside_sandbox_root(tmp_path: Path):
+    outside_receipt = tmp_path / "outside-receipt.json"
+    write_json(
+        outside_receipt,
+        {
+            "receipt_id": f"outside-{uuid.uuid4().hex}",
+            "command_name": "Invoke-MaxineSandboxResolverWrite.ps1",
+            "sandbox_root": "examples/sandbox",
+            "target_path": "examples/sandbox/staging/outside.json",
+            "files_written": ["examples/sandbox/staging/outside.json"],
+            "status": "written",
+            "rollback_status": "not_requested",
+        },
+    )
+
+    result = run_powershell_script(
+        REVIEW_PACKET_BUILD_SCRIPT,
+        "-ReceiptPath",
+        str(outside_receipt),
+    )
+    assert result.returncode != 0
+    assert "sandbox root" in (result.stderr + result.stdout).lower()
+
+
+def test_review_packet_forbidden_operator_decisions_are_rejected(tmp_path: Path):
+    target_name = f"pytest-review-forbidden-{uuid.uuid4().hex}.json"
+    target_rel = f"examples/sandbox/staging/{target_name}"
+    target_abs = REPO_ROOT / target_rel
+    receipt_name = f"pytest-review-forbidden-receipt-{uuid.uuid4().hex}.json"
+    receipt_rel = f"examples/sandbox/logs/{receipt_name}"
+    receipt_abs = REPO_ROOT / receipt_rel
+    index_name = f"pytest-review-forbidden-index-{uuid.uuid4().hex}.json"
+    index_rel = f"examples/sandbox/receipts/{index_name}"
+    index_abs = REPO_ROOT / index_rel
+    packet_name = f"pytest-review-forbidden-packet-{uuid.uuid4().hex}.json"
+    packet_rel = f"examples/sandbox/review-packets/{packet_name}"
+    packet_abs = REPO_ROOT / packet_rel
+    plan_path = tmp_path / "review-forbidden-plan.json"
+
+    write_json(plan_path, build_plan(target_rel, receipt_index_path=index_rel, explicit_approval=True))
+    remove_if_exists(target_abs)
+    remove_if_exists(receipt_abs)
+    remove_if_exists(index_abs)
+    remove_if_exists(packet_abs)
+
+    write_result = run_powershell_script(
+        WRITER_SCRIPT,
+        "-PlanPath",
+        str(plan_path),
+        "-ReceiptPath",
+        receipt_rel,
+    )
+    assert write_result.returncode == 0, write_result.stderr
+
+    forbidden = run_powershell_script(
+        REVIEW_PACKET_BUILD_SCRIPT,
+        "-ReceiptPath",
+        receipt_rel,
+        "-OutputPath",
+        packet_rel,
+        "-OperatorDecisionState",
+        "approve_authoritative_write",
+    )
+    assert forbidden.returncode != 0
+    assert not packet_abs.exists()
+    assert "forbidden" in (forbidden.stderr + forbidden.stdout).lower()
+
+    remove_if_exists(target_abs)
+    remove_if_exists(receipt_abs)
+    remove_if_exists(index_abs)
+
+
+def test_review_packet_inspect_is_read_only(tmp_path: Path):
+    target_name = f"pytest-review-inspect-{uuid.uuid4().hex}.json"
+    target_rel = f"examples/sandbox/staging/{target_name}"
+    target_abs = REPO_ROOT / target_rel
+    receipt_name = f"pytest-review-inspect-receipt-{uuid.uuid4().hex}.json"
+    receipt_rel = f"examples/sandbox/logs/{receipt_name}"
+    receipt_abs = REPO_ROOT / receipt_rel
+    index_name = f"pytest-review-inspect-index-{uuid.uuid4().hex}.json"
+    index_rel = f"examples/sandbox/receipts/{index_name}"
+    index_abs = REPO_ROOT / index_rel
+    packet_name = f"pytest-review-inspect-packet-{uuid.uuid4().hex}.json"
+    packet_rel = f"examples/sandbox/review-packets/{packet_name}"
+    packet_abs = REPO_ROOT / packet_rel
+    plan_path = tmp_path / "review-inspect-plan.json"
+
+    write_json(plan_path, build_plan(target_rel, receipt_index_path=index_rel, explicit_approval=True))
+    remove_if_exists(target_abs)
+    remove_if_exists(receipt_abs)
+    remove_if_exists(index_abs)
+    remove_if_exists(packet_abs)
+
+    write_result = run_powershell_script(
+        WRITER_SCRIPT,
+        "-PlanPath",
+        str(plan_path),
+        "-ReceiptPath",
+        receipt_rel,
+    )
+    assert write_result.returncode == 0
+
+    build_result = run_powershell_script(
+        REVIEW_PACKET_BUILD_SCRIPT,
+        "-ReceiptPath",
+        receipt_rel,
+        "-OutputPath",
+        packet_rel,
+    )
+    assert build_result.returncode == 0
+
+    packet = read_json(packet_abs)
+    before = packet_abs.read_bytes()
+
+    inspect_list = run_powershell_script(
+        REVIEW_PACKET_INSPECT_SCRIPT,
+        "-List",
+    )
+    assert inspect_list.returncode == 0
+    list_payload = json.loads(inspect_list.stdout)
+    assert list_payload["packet_count"] >= 1
+
+    inspect_one = run_powershell_script(
+        REVIEW_PACKET_INSPECT_SCRIPT,
+        "-ReviewPacketId",
+        packet["review_packet_id"],
+    )
+    assert inspect_one.returncode == 0
+    one_payload = json.loads(inspect_one.stdout)
+    assert one_payload["review_packet_id"] == packet["review_packet_id"]
+
+    after = packet_abs.read_bytes()
+    assert before == after, "review packet inspect mutated packet content"
+
+    remove_if_exists(packet_abs)
+    remove_if_exists(target_abs)
+    remove_if_exists(receipt_abs)
+    remove_if_exists(index_abs)
+
+
 def test_authoritative_resolver_write_remains_absent():
     assert not AUTHORITATIVE_SCRIPT.exists()
 
@@ -373,7 +608,19 @@ def test_o3de_ap_editor_execution_is_absent_from_new_scripts():
     writer_text = WRITER_SCRIPT.read_text(encoding="utf-8-sig").lower()
     rollback_text = ROLLBACK_SCRIPT.read_text(encoding="utf-8-sig").lower()
     inspect_text = INSPECT_SCRIPT.read_text(encoding="utf-8-sig").lower()
-    combined = writer_text + "\n" + rollback_text + "\n" + inspect_text
+    review_build_text = REVIEW_PACKET_BUILD_SCRIPT.read_text(encoding="utf-8-sig").lower()
+    review_inspect_text = REVIEW_PACKET_INSPECT_SCRIPT.read_text(encoding="utf-8-sig").lower()
+    combined = (
+        writer_text
+        + "\n"
+        + rollback_text
+        + "\n"
+        + inspect_text
+        + "\n"
+        + review_build_text
+        + "\n"
+        + review_inspect_text
+    )
     for forbidden in [
         "o3de editor",
         "asset processor",
