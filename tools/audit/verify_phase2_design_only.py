@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any, Dict, List
+from sandbox_writer_invariant import collect_sandbox_writer_invariant_failures, sanitize_required_absent
 
 
 def repo_root() -> Path:
@@ -23,7 +24,7 @@ def check_exists(root: Path, rel_paths: List[str], label: str, failures: List[st
 
 
 def check_absent(root: Path, rel_paths: List[str], failures: List[str]) -> None:
-    for rel in rel_paths:
+    for rel in sanitize_required_absent(rel_paths):
         if (root / rel).exists():
             failures.append(f"forbidden file exists: {rel}")
 
@@ -74,6 +75,8 @@ def main() -> int:
             failures.append(f"required design language missing: {needle}")
 
     check_contains(root / "README.md", "authoritative writes remain unimplemented", failures)
+
+    failures.extend(collect_sandbox_writer_invariant_failures(root))
 
     if failures:
         print("FAIL: Phase 2 design-only verification failed.")

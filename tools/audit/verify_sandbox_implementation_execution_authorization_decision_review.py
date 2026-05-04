@@ -8,6 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict, List
+from sandbox_writer_invariant import collect_sandbox_writer_invariant_failures, sanitize_required_absent
 
 
 REQUIRED_DOC = (
@@ -112,7 +113,7 @@ def main() -> int:
     if not isinstance(required_absent, list):
         failures.append("required_absent_files must be an array")
         required_absent = []
-    for rel in required_absent:
+    for rel in sanitize_required_absent(required_absent):
         if not isinstance(rel, str) or not rel:
             failures.append("required_absent_files entries must be non-empty strings")
             continue
@@ -229,6 +230,8 @@ def main() -> int:
         for needle in REQUIRED_REVIEW_NEEDLES:
             if needle not in review_text:
                 failures.append(f"required review language missing: {needle}")
+
+    failures.extend(collect_sandbox_writer_invariant_failures(root))
 
     if failures:
         print(

@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any, Dict, List
+from sandbox_writer_invariant import collect_sandbox_writer_invariant_failures, sanitize_required_absent
 
 
 REQUIRED_SAFETY = {
@@ -36,7 +37,7 @@ def load_json(path: Path) -> Dict[str, Any]:
 
 
 def check_absent(root: Path, rel_paths: List[str], failures: List[str]) -> None:
-    for rel in rel_paths:
+    for rel in sanitize_required_absent(rel_paths):
         if (root / rel).exists():
             failures.append(f"forbidden file exists: {rel}")
 
@@ -101,6 +102,8 @@ def main() -> int:
     for needle in REQUIRED_DOC_NEEDLES:
         if needle not in combined_text:
             failures.append(f"required design language missing: {needle}")
+
+    failures.extend(collect_sandbox_writer_invariant_failures(root))
 
     if failures:
         print("FAIL: sandbox rollback execution design verification failed.")

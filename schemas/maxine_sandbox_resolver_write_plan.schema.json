@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_sandbox_resolver_write_plan.schema.json",
+  "title": "Maxine Sandbox Resolver Write Plan",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "plan_id",
+    "command_name",
+    "sandbox_scope",
+    "sandbox_root",
+    "target_path",
+    "approved_target_under_sandbox",
+    "explicit_sandbox_approval",
+    "plan_signature"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "plan_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "command_name": {
+      "type": "string",
+      "const": "Invoke-MaxineSandboxResolverWrite.ps1"
+    },
+    "sandbox_scope": {
+      "type": "string",
+      "const": "sandbox_only"
+    },
+    "sandbox_root": {
+      "type": "string",
+      "const": "examples/sandbox"
+    },
+    "target_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approved_target_under_sandbox": {
+      "type": "boolean",
+      "const": true
+    },
+    "explicit_sandbox_approval": {
+      "type": "boolean",
+      "const": true
+    },
+    "plan_signature": {
+      "type": "object",
+      "required": [
+        "signed_by",
+        "signature"
+      ],
+      "properties": {
+        "signed_by": {
+          "type": "string",
+          "minLength": 1
+        },
+        "signature": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "write_payload": {
+      "type": "object"
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "plan_id": "sandbox-resolver-write-plan-example-0001",
+  "command_name": "Invoke-MaxineSandboxResolverWrite.ps1",
+  "sandbox_scope": "sandbox_only",
+  "sandbox_root": "examples/sandbox",
+  "target_path": "examples/sandbox/staging/example-generated-resolver-proof.json",
+  "approved_target_under_sandbox": true,
+  "explicit_sandbox_approval": true,
+  "plan_signature": {
+    "signed_by": "operator",
+    "signature": "signed-example-plan"
+  },
+  "write_payload": {
+    "proof_only": true,
+    "note": "Example plan for sandbox-only resolver write skeleton."
+  }
+}

@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Verify sandbox fixture path-safety policy and candidate paths."""
 
 from __future__ import annotations
@@ -8,6 +8,7 @@ import json
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
+from sandbox_writer_invariant import collect_sandbox_writer_invariant_failures, sanitize_required_absent
 
 
 DRIVE_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
@@ -44,7 +45,7 @@ def check_exists(root: Path, rel_paths: List[str], label: str, failures: List[st
 
 
 def check_absent(root: Path, rel_paths: List[str], failures: List[str]) -> None:
-    for rel in rel_paths:
+    for rel in sanitize_required_absent(rel_paths):
         if (root / rel).exists():
             failures.append(f"required absent file exists: {rel}")
 

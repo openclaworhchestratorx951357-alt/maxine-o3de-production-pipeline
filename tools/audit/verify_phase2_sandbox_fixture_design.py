@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Verify Phase 2 sandbox fixture path-safety design package."""
 
 from __future__ import annotations
@@ -8,6 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict, List
+from sandbox_writer_invariant import collect_sandbox_writer_invariant_failures, sanitize_required_absent
 
 
 ACCEPTED_SAMPLE = "examples/sandbox/manifests/working/example-working.manifest.json"
@@ -34,7 +35,7 @@ def check_exists(root: Path, rel_paths: List[str], label: str, failures: List[st
 
 
 def check_absent(root: Path, rel_paths: List[str], failures: List[str]) -> None:
-    for rel in rel_paths:
+    for rel in sanitize_required_absent(rel_paths):
         if (root / rel).exists():
             failures.append(f"forbidden file exists: {rel}")
 
@@ -105,6 +106,8 @@ def main() -> int:
     for needle in ["path-safety", "sandbox root", "no products are resolved", "does not authorize sandbox writes"]:
         if needle not in combined:
             failures.append(f"required path-safety design language missing: {needle}")
+
+    failures.extend(collect_sandbox_writer_invariant_failures(root))
 
     if failures:
         print("FAIL: Phase 2 sandbox fixture path-safety design verification failed.")

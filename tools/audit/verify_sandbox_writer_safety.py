@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+"""Verify sandbox writer skeleton safety boundaries."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from sandbox_writer_invariant import collect_sandbox_writer_invariant_failures
+
+
+REQUIRED_FILES = [
+    "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1",
+    "scripts/powershell/Invoke-MaxineSandboxRollback.ps1",
+    "schemas/maxine_sandbox_resolver_write_plan.schema.json",
+    "schemas/maxine_sandbox_write_receipt.schema.json",
+    "examples/sandbox/staging/.gitkeep",
+]
+
+
+def repo_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def check_exists(root: Path, rel_paths: list[str], failures: list[str]) -> None:
+    for rel in rel_paths:
+        if not (root / rel).exists():
+            failures.append(f"missing required file: {rel}")
+
+
+def main() -> int:
+    root = repo_root()
+    failures: list[str] = []
+
+    check_exists(root, REQUIRED_FILES, failures)
+    failures.extend(collect_sandbox_writer_invariant_failures(root))
+
+    if failures:
+        print("FAIL: sandbox writer safety verification failed.")
+        for failure in failures:
+            print(f" - {failure}")
+        return 1
+
+    print("PASS: sandbox writer admitted-only safety verification passed.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
