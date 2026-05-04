@@ -255,6 +255,24 @@ References:
 - `docs/reviews/SANDBOX-PROTOTYPE-IMPLEMENTATION-DECISION-REVIEW.md`
 - `docs/reviews/sandbox_implementation_decision_review_package.json`
 - `docs/reviews/sandbox_implementation_decision_template.json`
+
+## Sandbox Prototype Implementation Decision Record
+
+Sandbox prototype implementation decision record is decision-only.
+
+- decision status is implementation_accepted_for_branch_creation_only
+- this record does not create an implementation branch
+- sandbox write command is not implemented
+- rollback execution command is not implemented
+- authoritative write command is not implemented
+- execution hold remains active
+
+References:
+
+- `docs/reviews/SANDBOX-PROTOTYPE-IMPLEMENTATION-DECISION.md`
+- `docs/reviews/sandbox_implementation_decision.json`
+- `tools/audit/verify_sandbox_implementation_decision.py`
 M.A.X.I.N.E. production pipeline for O3DE character, asset, prefab, QC, and automation workflows.
+
 
 

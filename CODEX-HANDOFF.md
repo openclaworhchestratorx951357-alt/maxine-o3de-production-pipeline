@@ -382,3 +382,22 @@ Create a sandbox prototype implementation-decision review package that asks whet
 ## Next Milestone After Sandbox Prototype Implementation-Decision Review
 
 If the operator explicitly records implementation_accepted_for_branch_creation_only, create a separate implementation-decision record. Do not implement sandbox writes until that accepted decision exists and a later separate implementation branch is opened.
+
+## Sandbox Prototype Implementation Decision Record Complete Criteria
+
+- implementation decision record doc exists
+- implementation decision record JSON exists
+- implementation decision verifier exists
+- implementation decision verifier passes
+- implementation branch creation is allowed by decision status only
+- implementation branch remains not created in this record phase
+- execution hold remains active
+- sandbox write command remains absent
+- rollback execution command remains absent
+- authoritative write command remains absent
+- no products are resolved
+- no Asset IDs are claimed
+
+## Next Milestone After Sandbox Prototype Implementation Decision Record
+
+Create a separate implementation branch only if explicitly instructed. Keep sandbox write and rollback execution implementation gated, and do not implement production writes.
