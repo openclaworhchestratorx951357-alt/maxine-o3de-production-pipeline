@@ -305,3 +305,23 @@ Design the sandbox write dry-run report contract that validates a sandbox write 
 ## Next Milestone After Sandbox Write Dry-Run Report Contract
 
 Design the sandbox write approval gate contract that accepts a dry-run report and operator approval, while still not implementing sandbox writes.
+
+## Sandbox Write Approval Gate Contract Complete Criteria
+
+- sandbox write approval gate design doc exists
+- sandbox write approval gate contract exists
+- sandbox write approval gate report schema exists
+- sandbox write approval artifact example exists
+- sandbox write approval gate report example exists
+- sandbox write approval verifier exists
+- sandbox write approval gate report verifier exists
+- sandbox write approval gate contract verifier exists
+- sandbox write command remains absent
+- rollback execution command remains absent
+- authoritative write command remains absent
+- no products are resolved
+- no Asset IDs are claimed
+
+## Next Milestone After Sandbox Write Approval Gate Contract
+
+Design the sandbox write final preflight contract that combines the write plan, dry-run report, approval gate, and rollback dependency, while still not implementing sandbox writes.
