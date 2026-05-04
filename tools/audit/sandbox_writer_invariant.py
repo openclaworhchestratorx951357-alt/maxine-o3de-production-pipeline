@@ -23,6 +23,15 @@ PROJECT_INVENTORY_READ_REL = "scripts/powershell/Invoke-MaxineProjectInventoryRe
 PROJECT_INVENTORY_INSPECT_REL = "scripts/powershell/Invoke-MaxineProjectInventoryInspect.ps1"
 ASSET_CANDIDATE_INVENTORY_READ_REL = "scripts/powershell/Invoke-MaxineAssetCandidateInventoryRead.ps1"
 ASSET_CANDIDATE_INVENTORY_INSPECT_REL = "scripts/powershell/Invoke-MaxineAssetCandidateInventoryInspect.ps1"
+ASSET_CANDIDATE_REVIEW_PACKET_BUILD_REL = (
+    "scripts/powershell/Invoke-MaxineAssetCandidateReviewPacketBuild.ps1"
+)
+ASSET_CANDIDATE_REVIEW_PACKET_INSPECT_REL = (
+    "scripts/powershell/Invoke-MaxineAssetCandidateReviewPacketInspect.ps1"
+)
+ASSET_CANDIDATE_EVIDENCE_BUNDLE_EXPORT_REL = (
+    "scripts/powershell/Invoke-MaxineAssetCandidateEvidenceBundleExport.ps1"
+)
 AUTHORITATIVE_REL = "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
 RECEIPT_INDEX_REL = "examples/sandbox/receipts/index.json"
 RECEIPT_INDEX_SCHEMA_REL = "schemas/maxine_sandbox_receipt_index.schema.json"
@@ -32,6 +41,12 @@ WORKFLOW_RUN_SCHEMA_REL = "schemas/maxine_sandbox_workflow_run.schema.json"
 EVIDENCE_BUNDLE_SCHEMA_REL = "schemas/maxine_sandbox_evidence_bundle.schema.json"
 CAPABILITY_MATRIX_SCHEMA_REL = "schemas/maxine_capability_matrix.schema.json"
 ASSET_CANDIDATE_SCHEMA_REL = "schemas/maxine_asset_candidate_inventory.schema.json"
+ASSET_CANDIDATE_REVIEW_PACKET_SCHEMA_REL = (
+    "schemas/maxine_asset_candidate_review_packet.schema.json"
+)
+ASSET_CANDIDATE_EVIDENCE_BUNDLE_SCHEMA_REL = (
+    "schemas/maxine_asset_candidate_evidence_bundle.schema.json"
+)
 CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
@@ -40,6 +55,8 @@ EVIDENCE_BUNDLES_DIR_REL = "examples/sandbox/evidence-bundles"
 OPERATOR_REPORTS_DIR_REL = "examples/sandbox/operator-reports"
 PROJECT_INVENTORY_DIR_REL = "examples/sandbox/project-inventory"
 ASSET_CANDIDATES_DIR_REL = "examples/sandbox/asset-candidates"
+ASSET_CANDIDATE_REVIEW_PACKETS_DIR_REL = "examples/sandbox/asset-candidate-review-packets"
+ASSET_CANDIDATE_EVIDENCE_BUNDLES_DIR_REL = "examples/sandbox/asset-candidate-evidence-bundles"
 
 ADMITTED_SANDBOX_COMMANDS = {
     SANDBOX_WRITER_REL,
@@ -57,6 +74,9 @@ ADMITTED_SANDBOX_COMMANDS = {
     PROJECT_INVENTORY_INSPECT_REL,
     ASSET_CANDIDATE_INVENTORY_READ_REL,
     ASSET_CANDIDATE_INVENTORY_INSPECT_REL,
+    ASSET_CANDIDATE_REVIEW_PACKET_BUILD_REL,
+    ASSET_CANDIDATE_REVIEW_PACKET_INSPECT_REL,
+    ASSET_CANDIDATE_EVIDENCE_BUNDLE_EXPORT_REL,
 }
 
 REQUIRED_WRITER_NEEDLES = [
@@ -223,6 +243,46 @@ REQUIRED_ASSET_CANDIDATE_INVENTORY_INSPECT_NEEDLES = [
     "showcandidates",
 ]
 
+REQUIRED_ASSET_CANDIDATE_REVIEW_PACKET_BUILD_NEEDLES = [
+    "asset-candidate-review-packets",
+    "source_inventory_id",
+    "candidate_id",
+    "operator_decision_state",
+    "pending_review",
+    "accepted_for_sandbox_only",
+    "rejected",
+    "needs_more_evidence",
+    "request_candidate_cleanup",
+    "recommended_next_step",
+    "inspect_candidate",
+    "bundle_evidence",
+    "request_more_evidence",
+    "propose_product_resolution_later",
+    "reject_candidate",
+    "request_sandbox_cleanup",
+    "explicit_non_admissions",
+]
+
+REQUIRED_ASSET_CANDIDATE_REVIEW_PACKET_INSPECT_NEEDLES = [
+    "review_packet_count",
+    "review_packet_id",
+    "source_inventory_id",
+    "candidate_id",
+    "showevidencelinks",
+]
+
+REQUIRED_ASSET_CANDIDATE_EVIDENCE_BUNDLE_EXPORT_NEEDLES = [
+    "asset-candidate-evidence-bundles",
+    "source_inventory_id",
+    "source_review_packet_id",
+    "candidate_id",
+    "included_artifacts",
+    "copied_artifact_paths",
+    "artifact_sha256",
+    "linked-sandbox-evidence.snapshot.json",
+    "copies json evidence snapshots only",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -307,6 +367,9 @@ EXPECTED_CAPABILITY_STATES = {
     "project_inventory_inspect": "read_only",
     "asset_candidate_inventory_read": "read_only",
     "asset_candidate_inventory_inspect": "read_only",
+    "asset_candidate_review_packet_build": "sandbox_only",
+    "asset_candidate_review_packet_inspect": "read_only",
+    "asset_candidate_evidence_bundle_export": "sandbox_only",
     "authoritative_resolver_write": "forbidden",
     "o3de_editor_execution": "blocked",
     "asset_processor_execution": "blocked",
@@ -352,6 +415,9 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     project_inventory_inspect = root / PROJECT_INVENTORY_INSPECT_REL
     asset_candidate_inventory_read = root / ASSET_CANDIDATE_INVENTORY_READ_REL
     asset_candidate_inventory_inspect = root / ASSET_CANDIDATE_INVENTORY_INSPECT_REL
+    asset_candidate_review_packet_build = root / ASSET_CANDIDATE_REVIEW_PACKET_BUILD_REL
+    asset_candidate_review_packet_inspect = root / ASSET_CANDIDATE_REVIEW_PACKET_INSPECT_REL
+    asset_candidate_evidence_bundle_export = root / ASSET_CANDIDATE_EVIDENCE_BUNDLE_EXPORT_REL
     authoritative = root / AUTHORITATIVE_REL
     receipt_index = root / RECEIPT_INDEX_REL
     receipt_index_schema = root / RECEIPT_INDEX_SCHEMA_REL
@@ -361,6 +427,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     evidence_bundle_schema = root / EVIDENCE_BUNDLE_SCHEMA_REL
     capability_matrix_schema = root / CAPABILITY_MATRIX_SCHEMA_REL
     asset_candidate_schema = root / ASSET_CANDIDATE_SCHEMA_REL
+    asset_candidate_review_packet_schema = root / ASSET_CANDIDATE_REVIEW_PACKET_SCHEMA_REL
+    asset_candidate_evidence_bundle_schema = root / ASSET_CANDIDATE_EVIDENCE_BUNDLE_SCHEMA_REL
     capability_matrix = root / CAPABILITY_MATRIX_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -369,6 +437,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     operator_reports_dir = root / OPERATOR_REPORTS_DIR_REL
     project_inventory_dir = root / PROJECT_INVENTORY_DIR_REL
     asset_candidates_dir = root / ASSET_CANDIDATES_DIR_REL
+    asset_candidate_review_packets_dir = root / ASSET_CANDIDATE_REVIEW_PACKETS_DIR_REL
+    asset_candidate_evidence_bundles_dir = root / ASSET_CANDIDATE_EVIDENCE_BUNDLES_DIR_REL
 
     if not writer.exists():
         failures.append(f"sandbox writer command missing: {SANDBOX_WRITER_REL}")
@@ -410,6 +480,21 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
             "asset candidate inventory inspect command missing: "
             f"{ASSET_CANDIDATE_INVENTORY_INSPECT_REL}"
         )
+    if not asset_candidate_review_packet_build.exists():
+        failures.append(
+            "asset candidate review packet build command missing: "
+            f"{ASSET_CANDIDATE_REVIEW_PACKET_BUILD_REL}"
+        )
+    if not asset_candidate_review_packet_inspect.exists():
+        failures.append(
+            "asset candidate review packet inspect command missing: "
+            f"{ASSET_CANDIDATE_REVIEW_PACKET_INSPECT_REL}"
+        )
+    if not asset_candidate_evidence_bundle_export.exists():
+        failures.append(
+            "asset candidate evidence bundle export command missing: "
+            f"{ASSET_CANDIDATE_EVIDENCE_BUNDLE_EXPORT_REL}"
+        )
     if authoritative.exists():
         failures.append(f"authoritative command must remain absent: {AUTHORITATIVE_REL}")
     if not receipt_index.exists():
@@ -428,6 +513,16 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(f"capability matrix schema missing: {CAPABILITY_MATRIX_SCHEMA_REL}")
     if not asset_candidate_schema.exists():
         failures.append(f"asset candidate inventory schema missing: {ASSET_CANDIDATE_SCHEMA_REL}")
+    if not asset_candidate_review_packet_schema.exists():
+        failures.append(
+            "asset candidate review packet schema missing: "
+            f"{ASSET_CANDIDATE_REVIEW_PACKET_SCHEMA_REL}"
+        )
+    if not asset_candidate_evidence_bundle_schema.exists():
+        failures.append(
+            "asset candidate evidence bundle schema missing: "
+            f"{ASSET_CANDIDATE_EVIDENCE_BUNDLE_SCHEMA_REL}"
+        )
     if not capability_matrix.exists():
         failures.append(f"capability matrix missing: {CAPABILITY_MATRIX_REL}")
     if not review_packets_dir.exists():
@@ -444,6 +539,16 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(f"project inventory directory missing: {PROJECT_INVENTORY_DIR_REL}")
     if not asset_candidates_dir.exists():
         failures.append(f"asset candidates directory missing: {ASSET_CANDIDATES_DIR_REL}")
+    if not asset_candidate_review_packets_dir.exists():
+        failures.append(
+            "asset candidate review packets directory missing: "
+            f"{ASSET_CANDIDATE_REVIEW_PACKETS_DIR_REL}"
+        )
+    if not asset_candidate_evidence_bundles_dir.exists():
+        failures.append(
+            "asset candidate evidence bundles directory missing: "
+            f"{ASSET_CANDIDATE_EVIDENCE_BUNDLES_DIR_REL}"
+        )
 
     if writer.exists():
         writer_text = _read_text(writer)
@@ -704,6 +809,105 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                 failures.append(
                     "asset candidate inventory inspect command is not read-only; contains mutation "
                     f"needle: {needle}"
+                )
+
+    if asset_candidate_review_packet_build.exists():
+        asset_candidate_review_packet_build_text = _read_text(asset_candidate_review_packet_build)
+        for needle in REQUIRED_ASSET_CANDIDATE_REVIEW_PACKET_BUILD_NEEDLES:
+            if needle not in asset_candidate_review_packet_build_text:
+                failures.append(
+                    "asset candidate review packet build command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in asset_candidate_review_packet_build_text:
+                failures.append(
+                    "asset candidate review packet build command contains forbidden execution "
+                    f"needle: {needle}"
+                )
+        for forbidden_decision in (
+            "approve_product_resolution",
+            "approve_asset_id_claim",
+            "approve_spawn",
+            "approve_publish",
+            "approve_o3de_execution",
+            "approve_asset_processor_execution",
+            "approve_authoritative_write",
+        ):
+            if forbidden_decision not in asset_candidate_review_packet_build_text:
+                failures.append(
+                    "asset candidate review packet build command must explicitly guard forbidden "
+                    f"operator decision state: {forbidden_decision}"
+                )
+        for forbidden_next_step in (
+            "run_asset_processor",
+            "launch_editor",
+            "spawn_entity",
+            "publish_asset",
+            "claim_asset_id",
+        ):
+            if forbidden_next_step not in asset_candidate_review_packet_build_text:
+                failures.append(
+                    "asset candidate review packet build command must explicitly guard forbidden "
+                    f"recommended next step: {forbidden_next_step}"
+                )
+
+    if asset_candidate_review_packet_inspect.exists():
+        asset_candidate_review_packet_inspect_text = _read_text(asset_candidate_review_packet_inspect)
+        for needle in REQUIRED_ASSET_CANDIDATE_REVIEW_PACKET_INSPECT_NEEDLES:
+            if needle not in asset_candidate_review_packet_inspect_text:
+                failures.append(
+                    "asset candidate review packet inspect command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in asset_candidate_review_packet_inspect_text:
+                failures.append(
+                    "asset candidate review packet inspect command contains forbidden execution "
+                    f"needle: {needle}"
+                )
+        for needle in MUTATION_NEEDLES:
+            if needle in asset_candidate_review_packet_inspect_text:
+                failures.append(
+                    "asset candidate review packet inspect command is not read-only; contains "
+                    f"mutation needle: {needle}"
+                )
+
+    if asset_candidate_evidence_bundle_export.exists():
+        asset_candidate_evidence_bundle_export_text = _read_text(
+            asset_candidate_evidence_bundle_export
+        )
+        for needle in REQUIRED_ASSET_CANDIDATE_EVIDENCE_BUNDLE_EXPORT_NEEDLES:
+            if needle not in asset_candidate_evidence_bundle_export_text:
+                failures.append(
+                    "asset candidate evidence bundle export command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in asset_candidate_evidence_bundle_export_text:
+                failures.append(
+                    "asset candidate evidence bundle export command contains forbidden execution "
+                    f"needle: {needle}"
+                )
+        for forbidden_copy in (
+            ".fbx",
+            ".gltf",
+            ".glb",
+            ".obj",
+            ".blend",
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".tiff",
+            ".exr",
+            ".bin",
+            ".dll",
+            ".pdb",
+        ):
+            if f'"{forbidden_copy}"' in asset_candidate_evidence_bundle_export_text:
+                failures.append(
+                    "asset candidate evidence bundle export command should not hardcode copying "
+                    f"binary/source artifact extension: {forbidden_copy}"
                 )
 
     if receipt_index.exists():

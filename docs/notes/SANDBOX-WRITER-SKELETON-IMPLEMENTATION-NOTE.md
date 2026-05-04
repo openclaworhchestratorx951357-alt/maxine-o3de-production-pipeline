@@ -18,6 +18,9 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - `scripts/powershell/Invoke-MaxineProjectInventoryInspect.ps1`
 - `scripts/powershell/Invoke-MaxineAssetCandidateInventoryRead.ps1`
 - `scripts/powershell/Invoke-MaxineAssetCandidateInventoryInspect.ps1`
+- `scripts/powershell/Invoke-MaxineAssetCandidateReviewPacketBuild.ps1`
+- `scripts/powershell/Invoke-MaxineAssetCandidateReviewPacketInspect.ps1`
+- `scripts/powershell/Invoke-MaxineAssetCandidateEvidenceBundleExport.ps1`
 
 ## What This Implementation Does
 - Accepts a structured write plan JSON.
@@ -39,6 +42,10 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - Provides operator summary output with read-only default behavior and optional sandbox-local report output under `examples/sandbox/operator-reports`.
 - Adds read-only project awareness inventory scanning with sandbox-local output under `examples/sandbox/project-inventory`.
 - Adds read-only generated/source asset candidate intelligence with sandbox-local output under `examples/sandbox/asset-candidates`.
+- Adds sandbox-only asset candidate review packet generation under `examples/sandbox/asset-candidate-review-packets`.
+- Adds read-only asset candidate review packet inspection by list, `review_packet_id`, and explicit path.
+- Adds sandbox-only asset candidate evidence bundle export under `examples/sandbox/asset-candidate-evidence-bundles`.
+- Ensures candidate evidence bundles copy JSON evidence snapshots only and do not copy source assets, models, textures, binaries, Cache files, or runtime outputs.
 - Enforces capability-state boundaries via `examples/capabilities/maxine-capability-matrix.json`.
 - Allows rollback only for files listed in the receipt and only under the approved sandbox root.
 
