@@ -21,6 +21,12 @@ REVIEW_DECISION_RECORD_SCRIPT = (
 REVIEW_DECISION_INSPECT_SCRIPT = (
     REPO_ROOT / "scripts" / "powershell" / "Invoke-MaxineSandboxReviewDecisionInspect.ps1"
 )
+WORKFLOW_RUN_SCRIPT = (
+    REPO_ROOT / "scripts" / "powershell" / "Invoke-MaxineSandboxWorkflowRun.ps1"
+)
+WORKFLOW_INSPECT_SCRIPT = (
+    REPO_ROOT / "scripts" / "powershell" / "Invoke-MaxineSandboxWorkflowInspect.ps1"
+)
 AUTHORITATIVE_SCRIPT = REPO_ROOT / "scripts" / "powershell" / "Invoke-MaxineAuthoritativeResolverWrite.ps1"
 SANDBOX_ROOT = REPO_ROOT / "examples" / "sandbox"
 STAGING_DIR = SANDBOX_ROOT / "staging"
@@ -28,6 +34,7 @@ LOGS_DIR = SANDBOX_ROOT / "logs"
 RECEIPTS_DIR = SANDBOX_ROOT / "receipts"
 REVIEW_PACKETS_DIR = SANDBOX_ROOT / "review-packets"
 REVIEW_DECISIONS_DIR = SANDBOX_ROOT / "review-decisions"
+WORKFLOW_RUNS_DIR = SANDBOX_ROOT / "workflow-runs"
 REPORTS_DIR = SANDBOX_ROOT / "manifests" / "reports"
 
 
@@ -909,6 +916,288 @@ def test_review_decision_request_rollback_records_intent_only_and_does_not_execu
         remove_if_exists(path)
 
 
+def test_workflow_write_only_creates_write_receipt_and_workflow_record(tmp_path: Path):
+    target_rel = f"examples/sandbox/staging/pytest-workflow-writeonly-{uuid.uuid4().hex}.json"
+    target_abs = REPO_ROOT / target_rel
+    index_rel = f"examples/sandbox/receipts/pytest-workflow-writeonly-index-{uuid.uuid4().hex}.json"
+    index_abs = REPO_ROOT / index_rel
+    receipt_rel = f"examples/sandbox/logs/pytest-workflow-writeonly-receipt-{uuid.uuid4().hex}.json"
+    receipt_abs = REPO_ROOT / receipt_rel
+    run_rel = f"examples/sandbox/workflow-runs/pytest-workflow-writeonly-{uuid.uuid4().hex}.json"
+    run_abs = REPO_ROOT / run_rel
+    plan_path = tmp_path / "workflow-writeonly-plan.json"
+
+    write_json(plan_path, build_plan(target_rel, receipt_index_path=index_rel, explicit_approval=True))
+    for path in (target_abs, index_abs, receipt_abs, run_abs):
+        remove_if_exists(path)
+
+    result = run_powershell_script(
+        WORKFLOW_RUN_SCRIPT,
+        "-PlanPath",
+        str(plan_path),
+        "-WorkflowMode",
+        "WriteOnly",
+        "-ReceiptPath",
+        receipt_rel,
+        "-WorkflowRunPath",
+        run_rel,
+    )
+    assert result.returncode == 0, result.stderr
+    assert target_abs.exists()
+    assert receipt_abs.exists()
+    assert run_abs.exists()
+
+    run_record = read_json(run_abs)
+    assert run_record["workflow_mode"] == "WriteOnly"
+    assert run_record["workflow_status"] == "completed"
+    assert run_record["receipt_path"] == receipt_rel
+    assert run_record["review_packet_id"] is None
+    assert run_record["decision_id"] is None
+    assert run_record["rollback_execution_admitted"] is False
+
+    for path in (target_abs, index_abs, receipt_abs, run_abs):
+        remove_if_exists(path)
+
+
+def test_workflow_write_and_review_creates_review_packet_and_workflow_record(tmp_path: Path):
+    target_rel = f"examples/sandbox/staging/pytest-workflow-writereview-{uuid.uuid4().hex}.json"
+    target_abs = REPO_ROOT / target_rel
+    index_rel = f"examples/sandbox/receipts/pytest-workflow-writereview-index-{uuid.uuid4().hex}.json"
+    index_abs = REPO_ROOT / index_rel
+    receipt_rel = f"examples/sandbox/logs/pytest-workflow-writereview-receipt-{uuid.uuid4().hex}.json"
+    receipt_abs = REPO_ROOT / receipt_rel
+    packet_rel = f"examples/sandbox/review-packets/pytest-workflow-writereview-packet-{uuid.uuid4().hex}.json"
+    packet_abs = REPO_ROOT / packet_rel
+    run_rel = f"examples/sandbox/workflow-runs/pytest-workflow-writereview-{uuid.uuid4().hex}.json"
+    run_abs = REPO_ROOT / run_rel
+    plan_path = tmp_path / "workflow-writereview-plan.json"
+
+    write_json(plan_path, build_plan(target_rel, receipt_index_path=index_rel, explicit_approval=True))
+    for path in (target_abs, index_abs, receipt_abs, packet_abs, run_abs):
+        remove_if_exists(path)
+
+    result = run_powershell_script(
+        WORKFLOW_RUN_SCRIPT,
+        "-PlanPath",
+        str(plan_path),
+        "-WorkflowMode",
+        "WriteAndReview",
+        "-ReceiptPath",
+        receipt_rel,
+        "-ReviewPacketPath",
+        packet_rel,
+        "-WorkflowRunPath",
+        run_rel,
+    )
+    assert result.returncode == 0, result.stderr
+    assert receipt_abs.exists()
+    assert packet_abs.exists()
+    assert run_abs.exists()
+
+    run_record = read_json(run_abs)
+    assert run_record["workflow_mode"] == "WriteAndReview"
+    assert run_record["workflow_status"] == "completed"
+    assert run_record["receipt_id"]
+    assert run_record["review_packet_id"]
+    assert run_record["decision_id"] is None
+    assert run_record["review_packet_path"] == packet_rel
+
+    for path in (target_abs, index_abs, receipt_abs, packet_abs, run_abs):
+        remove_if_exists(path)
+
+
+def test_workflow_write_review_and_decision_creates_full_chain(tmp_path: Path):
+    target_rel = f"examples/sandbox/staging/pytest-workflow-full-{uuid.uuid4().hex}.json"
+    target_abs = REPO_ROOT / target_rel
+    index_rel = f"examples/sandbox/receipts/pytest-workflow-full-index-{uuid.uuid4().hex}.json"
+    index_abs = REPO_ROOT / index_rel
+    receipt_rel = f"examples/sandbox/logs/pytest-workflow-full-receipt-{uuid.uuid4().hex}.json"
+    receipt_abs = REPO_ROOT / receipt_rel
+    packet_rel = f"examples/sandbox/review-packets/pytest-workflow-full-packet-{uuid.uuid4().hex}.json"
+    packet_abs = REPO_ROOT / packet_rel
+    decision_rel = f"examples/sandbox/review-decisions/pytest-workflow-full-decision-{uuid.uuid4().hex}.json"
+    decision_abs = REPO_ROOT / decision_rel
+    run_rel = f"examples/sandbox/workflow-runs/pytest-workflow-full-{uuid.uuid4().hex}.json"
+    run_abs = REPO_ROOT / run_rel
+    plan_path = tmp_path / "workflow-full-plan.json"
+
+    write_json(plan_path, build_plan(target_rel, receipt_index_path=index_rel, explicit_approval=True))
+    for path in (target_abs, index_abs, receipt_abs, packet_abs, decision_abs, run_abs):
+        remove_if_exists(path)
+
+    result = run_powershell_script(
+        WORKFLOW_RUN_SCRIPT,
+        "-PlanPath",
+        str(plan_path),
+        "-WorkflowMode",
+        "WriteReviewAndDecision",
+        "-ReceiptPath",
+        receipt_rel,
+        "-ReviewPacketPath",
+        packet_rel,
+        "-DecisionPath",
+        decision_rel,
+        "-WorkflowRunPath",
+        run_rel,
+        "-DecisionState",
+        "accepted_for_sandbox_only",
+        "-OperatorId",
+        "pytest-operator",
+        "-DecisionReason",
+        "workflow full chain verification",
+    )
+    assert result.returncode == 0, result.stderr
+    assert receipt_abs.exists()
+    assert packet_abs.exists()
+    assert decision_abs.exists()
+    assert run_abs.exists()
+
+    packet = read_json(packet_abs)
+    decision = read_json(decision_abs)
+    run_record = read_json(run_abs)
+    assert run_record["workflow_mode"] == "WriteReviewAndDecision"
+    assert run_record["workflow_status"] == "completed"
+    assert run_record["receipt_id"] == packet["source_receipt_id"]
+    assert run_record["review_packet_id"] == packet["review_packet_id"]
+    assert run_record["decision_id"] == decision["decision_id"]
+    assert run_record["decision_state"] == "accepted_for_sandbox_only"
+    assert run_record["rollback_execution_admitted"] is False
+
+    for path in (target_abs, index_abs, receipt_abs, packet_abs, decision_abs, run_abs):
+        remove_if_exists(path)
+
+
+def test_workflow_rollback_requested_only_records_intent_without_executing_rollback(tmp_path: Path):
+    target_rel = f"examples/sandbox/staging/pytest-workflow-rollback-request-{uuid.uuid4().hex}.json"
+    target_abs = REPO_ROOT / target_rel
+    index_rel = f"examples/sandbox/receipts/pytest-workflow-rollback-request-index-{uuid.uuid4().hex}.json"
+    index_abs = REPO_ROOT / index_rel
+    receipt_rel = f"examples/sandbox/logs/pytest-workflow-rollback-request-receipt-{uuid.uuid4().hex}.json"
+    receipt_abs = REPO_ROOT / receipt_rel
+    packet_rel = f"examples/sandbox/review-packets/pytest-workflow-rollback-request-packet-{uuid.uuid4().hex}.json"
+    packet_abs = REPO_ROOT / packet_rel
+    decision_rel = f"examples/sandbox/review-decisions/pytest-workflow-rollback-request-decision-{uuid.uuid4().hex}.json"
+    decision_abs = REPO_ROOT / decision_rel
+    run_rel = f"examples/sandbox/workflow-runs/pytest-workflow-rollback-request-{uuid.uuid4().hex}.json"
+    run_abs = REPO_ROOT / run_rel
+    plan_path = tmp_path / "workflow-rollback-request-plan.json"
+    rollback_report_abs = REPORTS_DIR / f"{Path(receipt_rel).stem}.rollback.json"
+
+    write_json(plan_path, build_plan(target_rel, receipt_index_path=index_rel, explicit_approval=True))
+    for path in (target_abs, index_abs, receipt_abs, packet_abs, decision_abs, run_abs, rollback_report_abs):
+        remove_if_exists(path)
+
+    result = run_powershell_script(
+        WORKFLOW_RUN_SCRIPT,
+        "-PlanPath",
+        str(plan_path),
+        "-WorkflowMode",
+        "RollbackRequestedOnly",
+        "-ReceiptPath",
+        receipt_rel,
+        "-ReviewPacketPath",
+        packet_rel,
+        "-DecisionPath",
+        decision_rel,
+        "-WorkflowRunPath",
+        run_rel,
+        "-OperatorId",
+        "pytest-operator",
+        "-DecisionReason",
+        "rollback requested from workflow",
+    )
+    assert result.returncode == 0, result.stderr
+    assert target_abs.exists(), "workflow should not auto-execute rollback"
+    assert not rollback_report_abs.exists(), "workflow unexpectedly executed rollback"
+
+    decision = read_json(decision_abs)
+    run_record = read_json(run_abs)
+    assert decision["decision_state"] == "request_rollback"
+    assert decision["requested_next_action"] == "rollback_requested"
+    assert decision["rollback_execution_admitted"] is False
+    assert run_record["decision_state"] == "request_rollback"
+    assert run_record["requested_next_action"] == "rollback_requested"
+    assert run_record["rollback_execution_admitted"] is False
+
+    for path in (target_abs, index_abs, receipt_abs, packet_abs, decision_abs, run_abs, rollback_report_abs):
+        remove_if_exists(path)
+
+
+def test_workflow_inspect_is_read_only(tmp_path: Path):
+    target_rel = f"examples/sandbox/staging/pytest-workflow-inspect-{uuid.uuid4().hex}.json"
+    target_abs = REPO_ROOT / target_rel
+    index_rel = f"examples/sandbox/receipts/pytest-workflow-inspect-index-{uuid.uuid4().hex}.json"
+    index_abs = REPO_ROOT / index_rel
+    receipt_rel = f"examples/sandbox/logs/pytest-workflow-inspect-receipt-{uuid.uuid4().hex}.json"
+    receipt_abs = REPO_ROOT / receipt_rel
+    run_rel = f"examples/sandbox/workflow-runs/pytest-workflow-inspect-{uuid.uuid4().hex}.json"
+    run_abs = REPO_ROOT / run_rel
+    plan_path = tmp_path / "workflow-inspect-plan.json"
+
+    write_json(plan_path, build_plan(target_rel, receipt_index_path=index_rel, explicit_approval=True))
+    for path in (target_abs, index_abs, receipt_abs, run_abs):
+        remove_if_exists(path)
+
+    assert run_powershell_script(
+        WORKFLOW_RUN_SCRIPT,
+        "-PlanPath",
+        str(plan_path),
+        "-WorkflowMode",
+        "WriteOnly",
+        "-ReceiptPath",
+        receipt_rel,
+        "-WorkflowRunPath",
+        run_rel,
+    ).returncode == 0
+
+    run_record = read_json(run_abs)
+    before = run_abs.read_bytes()
+
+    inspect_list = run_powershell_script(
+        WORKFLOW_INSPECT_SCRIPT,
+        "-List",
+    )
+    assert inspect_list.returncode == 0
+    list_payload = json.loads(inspect_list.stdout)
+    assert list_payload["workflow_run_count"] >= 1
+
+    inspect_one = run_powershell_script(
+        WORKFLOW_INSPECT_SCRIPT,
+        "-WorkflowRunId",
+        run_record["workflow_run_id"],
+    )
+    assert inspect_one.returncode == 0
+    one_payload = json.loads(inspect_one.stdout)
+    assert one_payload["workflow_run_id"] == run_record["workflow_run_id"]
+
+    after = run_abs.read_bytes()
+    assert before == after, "workflow inspect mutated workflow record"
+
+    for path in (target_abs, index_abs, receipt_abs, run_abs):
+        remove_if_exists(path)
+
+
+def test_workflow_run_path_cannot_escape_sandbox_root(tmp_path: Path):
+    target_rel = f"examples/sandbox/staging/pytest-workflow-bad-run-path-{uuid.uuid4().hex}.json"
+    index_rel = f"examples/sandbox/receipts/pytest-workflow-bad-run-index-{uuid.uuid4().hex}.json"
+    plan_path = tmp_path / "workflow-bad-run-path-plan.json"
+    write_json(plan_path, build_plan(target_rel, receipt_index_path=index_rel, explicit_approval=True))
+
+    result = run_powershell_script(
+        WORKFLOW_RUN_SCRIPT,
+        "-PlanPath",
+        str(plan_path),
+        "-WorkflowMode",
+        "WriteOnly",
+        "-WorkflowRunPath",
+        "../outside/workflow-run.json",
+    )
+    assert result.returncode != 0
+    assert "workflow_run_path" in (result.stdout + result.stderr).lower() or "sandbox" in (
+        result.stdout + result.stderr
+    ).lower()
+
+
 def test_authoritative_resolver_write_remains_absent():
     assert not AUTHORITATIVE_SCRIPT.exists()
 
@@ -921,6 +1210,8 @@ def test_o3de_ap_editor_execution_is_absent_from_new_scripts():
     review_inspect_text = REVIEW_PACKET_INSPECT_SCRIPT.read_text(encoding="utf-8-sig").lower()
     review_decision_record_text = REVIEW_DECISION_RECORD_SCRIPT.read_text(encoding="utf-8-sig").lower()
     review_decision_inspect_text = REVIEW_DECISION_INSPECT_SCRIPT.read_text(encoding="utf-8-sig").lower()
+    workflow_run_text = WORKFLOW_RUN_SCRIPT.read_text(encoding="utf-8-sig").lower()
+    workflow_inspect_text = WORKFLOW_INSPECT_SCRIPT.read_text(encoding="utf-8-sig").lower()
     combined = (
         writer_text
         + "\n"
@@ -935,6 +1226,10 @@ def test_o3de_ap_editor_execution_is_absent_from_new_scripts():
         + review_decision_record_text
         + "\n"
         + review_decision_inspect_text
+        + "\n"
+        + workflow_run_text
+        + "\n"
+        + workflow_inspect_text
     )
     for forbidden in [
         "o3de editor",

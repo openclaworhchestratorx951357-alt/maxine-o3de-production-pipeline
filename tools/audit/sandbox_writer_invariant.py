@@ -14,13 +14,17 @@ SANDBOX_REVIEW_BUILD_REL = "scripts/powershell/Invoke-MaxineSandboxReviewPacketB
 SANDBOX_REVIEW_INSPECT_REL = "scripts/powershell/Invoke-MaxineSandboxReviewPacketInspect.ps1"
 SANDBOX_REVIEW_DECISION_RECORD_REL = "scripts/powershell/Invoke-MaxineSandboxReviewDecisionRecord.ps1"
 SANDBOX_REVIEW_DECISION_INSPECT_REL = "scripts/powershell/Invoke-MaxineSandboxReviewDecisionInspect.ps1"
+SANDBOX_WORKFLOW_RUN_REL = "scripts/powershell/Invoke-MaxineSandboxWorkflowRun.ps1"
+SANDBOX_WORKFLOW_INSPECT_REL = "scripts/powershell/Invoke-MaxineSandboxWorkflowInspect.ps1"
 AUTHORITATIVE_REL = "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
 RECEIPT_INDEX_REL = "examples/sandbox/receipts/index.json"
 RECEIPT_INDEX_SCHEMA_REL = "schemas/maxine_sandbox_receipt_index.schema.json"
 REVIEW_PACKET_SCHEMA_REL = "schemas/maxine_sandbox_review_packet.schema.json"
 REVIEW_DECISION_SCHEMA_REL = "schemas/maxine_sandbox_review_decision.schema.json"
+WORKFLOW_RUN_SCHEMA_REL = "schemas/maxine_sandbox_workflow_run.schema.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
+WORKFLOW_RUNS_DIR_REL = "examples/sandbox/workflow-runs"
 
 ADMITTED_SANDBOX_COMMANDS = {
     SANDBOX_WRITER_REL,
@@ -30,6 +34,8 @@ ADMITTED_SANDBOX_COMMANDS = {
     SANDBOX_REVIEW_INSPECT_REL,
     SANDBOX_REVIEW_DECISION_RECORD_REL,
     SANDBOX_REVIEW_DECISION_INSPECT_REL,
+    SANDBOX_WORKFLOW_RUN_REL,
+    SANDBOX_WORKFLOW_INSPECT_REL,
 }
 
 REQUIRED_WRITER_NEEDLES = [
@@ -105,6 +111,31 @@ REQUIRED_REVIEW_DECISION_INSPECT_NEEDLES = [
     "rollback_execution_admitted",
 ]
 
+REQUIRED_WORKFLOW_RUN_NEEDLES = [
+    "writeonly",
+    "writeandreview",
+    "writereviewanddecision",
+    "rollbackrequestedonly",
+    "invoke-maxinesandboxresolverwrite.ps1",
+    "invoke-maxinesandboxreviewpacketbuild.ps1",
+    "invoke-maxinesandboxreviewdecisionrecord.ps1",
+    "workflow-runs",
+    "rollback_execution_admitted",
+    "explicit_non_admissions",
+    "request_rollback",
+    "rollback_requested",
+]
+
+REQUIRED_WORKFLOW_INSPECT_NEEDLES = [
+    "workflow_run_id",
+    "workflow_status",
+    "receipt_id",
+    "review_packet_id",
+    "decision_id",
+    "blocked_reason",
+    "explicit_non_admissions",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -153,6 +184,16 @@ FORBIDDEN_REVIEW_DECISION_INSPECT_MUTATION_NEEDLES = [
     "out-file",
 ]
 
+FORBIDDEN_WORKFLOW_INSPECT_MUTATION_NEEDLES = [
+    "remove-item",
+    "set-content",
+    "add-content",
+    "clear-content",
+    "writealltext",
+    "new-item",
+    "out-file",
+]
+
 
 def _read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8-sig").lower()
@@ -177,13 +218,17 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     review_inspect = root / SANDBOX_REVIEW_INSPECT_REL
     review_decision_record = root / SANDBOX_REVIEW_DECISION_RECORD_REL
     review_decision_inspect = root / SANDBOX_REVIEW_DECISION_INSPECT_REL
+    workflow_run = root / SANDBOX_WORKFLOW_RUN_REL
+    workflow_inspect = root / SANDBOX_WORKFLOW_INSPECT_REL
     authoritative = root / AUTHORITATIVE_REL
     receipt_index = root / RECEIPT_INDEX_REL
     receipt_index_schema = root / RECEIPT_INDEX_SCHEMA_REL
     review_packet_schema = root / REVIEW_PACKET_SCHEMA_REL
     review_decision_schema = root / REVIEW_DECISION_SCHEMA_REL
+    workflow_run_schema = root / WORKFLOW_RUN_SCHEMA_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
+    workflow_runs_dir = root / WORKFLOW_RUNS_DIR_REL
 
     if not writer.exists():
         failures.append(f"sandbox writer command missing: {SANDBOX_WRITER_REL}")
@@ -203,6 +248,10 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(
             f"sandbox review decision inspect command missing: {SANDBOX_REVIEW_DECISION_INSPECT_REL}"
         )
+    if not workflow_run.exists():
+        failures.append(f"sandbox workflow run command missing: {SANDBOX_WORKFLOW_RUN_REL}")
+    if not workflow_inspect.exists():
+        failures.append(f"sandbox workflow inspect command missing: {SANDBOX_WORKFLOW_INSPECT_REL}")
     if authoritative.exists():
         failures.append(f"authoritative command must remain absent: {AUTHORITATIVE_REL}")
     if not receipt_index.exists():
@@ -213,10 +262,14 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(f"review packet schema missing: {REVIEW_PACKET_SCHEMA_REL}")
     if not review_decision_schema.exists():
         failures.append(f"review decision schema missing: {REVIEW_DECISION_SCHEMA_REL}")
+    if not workflow_run_schema.exists():
+        failures.append(f"workflow run schema missing: {WORKFLOW_RUN_SCHEMA_REL}")
     if not review_packets_dir.exists():
         failures.append(f"review packets directory missing: {REVIEW_PACKETS_DIR_REL}")
     if not review_decisions_dir.exists():
         failures.append(f"review decisions directory missing: {REVIEW_DECISIONS_DIR_REL}")
+    if not workflow_runs_dir.exists():
+        failures.append(f"workflow runs directory missing: {WORKFLOW_RUNS_DIR_REL}")
 
     if writer.exists():
         writer_text = _read_text(writer)
@@ -338,6 +391,49 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                 failures.append(
                     "sandbox review decision inspect command is not read-only; contains "
                     f"mutation needle: {needle}"
+                )
+
+    if workflow_run.exists():
+        workflow_run_text = _read_text(workflow_run)
+        for needle in REQUIRED_WORKFLOW_RUN_NEEDLES:
+            if needle not in workflow_run_text:
+                failures.append(f"sandbox workflow run command missing required needle: {needle}")
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in workflow_run_text:
+                failures.append(f"sandbox workflow run command contains forbidden execution needle: {needle}")
+        for forbidden_decision in (
+            "approve_authoritative_write",
+            "approve_asset_id_claim",
+            "approve_product_resolution",
+            "approve_spawn",
+            "approve_publish",
+            "approve_o3de_execution",
+            "approve_asset_processor_execution",
+        ):
+            if forbidden_decision in workflow_run_text:
+                failures.append(
+                    "sandbox workflow run command should not admit forbidden decision state: "
+                    f"{forbidden_decision}"
+                )
+        if "invoke-maxinesandboxrollback.ps1" in workflow_run_text:
+            failures.append(
+                "sandbox workflow run command must not auto-execute rollback in this slice."
+            )
+
+    if workflow_inspect.exists():
+        workflow_inspect_text = _read_text(workflow_inspect)
+        for needle in REQUIRED_WORKFLOW_INSPECT_NEEDLES:
+            if needle not in workflow_inspect_text:
+                failures.append(f"sandbox workflow inspect command missing required needle: {needle}")
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in workflow_inspect_text:
+                failures.append(
+                    f"sandbox workflow inspect command contains forbidden execution needle: {needle}"
+                )
+        for needle in FORBIDDEN_WORKFLOW_INSPECT_MUTATION_NEEDLES:
+            if needle in workflow_inspect_text:
+                failures.append(
+                    f"sandbox workflow inspect command is not read-only; contains mutation needle: {needle}"
                 )
 
     if receipt_index.exists():

@@ -10,6 +10,8 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - `scripts/powershell/Invoke-MaxineSandboxReviewPacketInspect.ps1`
 - `scripts/powershell/Invoke-MaxineSandboxReviewDecisionRecord.ps1`
 - `scripts/powershell/Invoke-MaxineSandboxReviewDecisionInspect.ps1`
+- `scripts/powershell/Invoke-MaxineSandboxWorkflowRun.ps1`
+- `scripts/powershell/Invoke-MaxineSandboxWorkflowInspect.ps1`
 
 ## What This Implementation Does
 - Accepts a structured write plan JSON.
@@ -25,6 +27,8 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - Records sandbox-only review decisions under `examples/sandbox/review-decisions`.
 - Supports read-only review decision inspection by list and `decision_id`.
 - Records rollback requests as intent only (`requested_next_action=rollback_requested`) without auto-executing rollback.
+- Runs end-to-end sandbox workflow modes (WriteOnly, WriteAndReview, WriteReviewAndDecision, RollbackRequestedOnly) and writes workflow records under `examples/sandbox/workflow-runs`.
+- Supports read-only workflow inspection by list and `workflow_run_id`.
 - Allows rollback only for files listed in the receipt and only under the approved sandbox root.
 
 ## What This Implementation Explicitly Does Not Do
