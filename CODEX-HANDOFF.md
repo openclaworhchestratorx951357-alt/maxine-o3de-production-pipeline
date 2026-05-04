@@ -577,3 +577,24 @@ Create an execution-authorization decision review package that asks whether to m
 ## Next Milestone After Sandbox Implementation-Branch Execution-Authorization Decision Review Package
 
 If the operator explicitly records `execution_authorization_decision_review_pending_explicit_authorization_decision`, create an explicit execution-authorization decision record phase. Do not implement sandbox writes or rollback execution in that decision-record phase.
+
+## Sandbox Implementation-Branch Execution-Authorization Decision Record Complete Criteria
+
+- execution-authorization decision doc exists
+- execution-authorization decision JSON exists
+- execution-authorization decision verifier exists
+- execution-authorization decision verifier passes
+- decision_status is execution_authorization_decision_review_pending_explicit_authorization_decision
+- execution_hold_current_status is hold_active
+- execution_hold_next_status is hold_active
+- execution_hold_transition_approved is true
+- explicit_execution_authorization_decision_preparation_allowed is true
+- sandbox write command remains absent
+- rollback execution command remains absent
+- authoritative write command remains absent
+- no products are resolved
+- no Asset IDs are claimed
+
+## Next Milestone After Sandbox Implementation-Branch Execution-Authorization Decision Record
+
+Create an explicit execution-authorization decision review package that asks whether to proceed from decision progression status toward a future implementation-authorizing decision, while keeping execution hold active and keeping sandbox write and rollback execution unimplemented.
