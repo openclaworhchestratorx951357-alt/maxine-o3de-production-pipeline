@@ -1,4 +1,4 @@
-Describe "Maxine Manifest Repository Baseline" {
+﻿Describe "Maxine Manifest Repository Baseline" {
     It "has schema file" {
         Test-Path -LiteralPath "schemas/maxine_job_manifest.schema.json" | Should Be $true
     }
@@ -782,4 +782,65 @@ Describe "Maxine Manifest Repository Baseline" {
     It "does not have authoritative write command implementation (sandbox write final preflight phase)" {
         Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
     }
+
+    It "has sandbox execution intent design doc" {
+        Test-Path -LiteralPath "docs/roadmap/SANDBOX-EXECUTION-INTENT-HOLD-DESIGN.md" | Should Be $true
+    }
+
+    It "has sandbox execution intent contract" {
+        Test-Path -LiteralPath "docs/contracts/SANDBOX-EXECUTION-INTENT-HOLD-CONTRACT.md" | Should Be $true
+    }
+
+    It "has sandbox execution intent schema" {
+        Test-Path -LiteralPath "schemas/maxine_sandbox_execution_intent.schema.json" | Should Be $true
+    }
+
+    It "has sandbox execution hold schema" {
+        Test-Path -LiteralPath "schemas/maxine_sandbox_execution_hold.schema.json" | Should Be $true
+    }
+
+    It "has sandbox execution intent example" {
+        Test-Path -LiteralPath "examples/manifests/example-sandbox-execution-intent.json" | Should Be $true
+    }
+
+    It "has sandbox execution hold example" {
+        Test-Path -LiteralPath "examples/manifests/example-sandbox-execution-hold.json" | Should Be $true
+    }
+
+    It "has sandbox execution intent verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_sandbox_execution_intent.py" | Should Be $true
+    }
+
+    It "has sandbox execution hold verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_sandbox_execution_hold.py" | Should Be $true
+    }
+
+    It "has sandbox execution intent/hold contract verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_sandbox_execution_intent_hold_contract.py" | Should Be $true
+    }
+
+    It "has sandbox execution intent PowerShell wrapper" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxExecutionIntent.ps1" | Should Be $true
+    }
+
+    It "has sandbox execution hold PowerShell wrapper" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxExecutionHold.ps1" | Should Be $true
+    }
+
+    It "has sandbox execution intent/hold contract PowerShell wrapper" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxExecutionIntentHoldContract.ps1" | Should Be $true
+    }
+
+    It "does not have sandbox write command implementation (sandbox execution intent/hold phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    }
+
+    It "does not have rollback execution command implementation (sandbox execution intent/hold phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    }
+
+    It "does not have authoritative write command implementation (sandbox execution intent/hold phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
+    }
 }
+

@@ -1,0 +1,9 @@
+﻿{
+  "job_type": "sandbox_execution_intent_hold_validation",
+  "character_name": "Maxine_Sandbox_Execution_Intent_Hold_Test_001",
+  "mode": "planning_only_execution_intent_hold_validation",
+  "final_preflight_report_path": "examples/manifests/example-sandbox-write-final-preflight-report.json",
+  "execution_intent_path": "examples/manifests/example-sandbox-execution-intent.json",
+  "execution_hold_path": "examples/manifests/example-sandbox-execution-hold.json",
+  "notes": "Validate sandbox execution intent and hold artifacts only. Do not execute sandbox writes."
+}

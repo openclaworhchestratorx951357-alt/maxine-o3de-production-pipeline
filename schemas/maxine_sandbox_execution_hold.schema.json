@@ -1,0 +1,89 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_sandbox_execution_hold.schema.json",
+  "title": "MAXINE Sandbox Execution Hold",
+  "description": "Planning-only execution hold artifact. This does not authorize implementation or execute writes.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "hold_id",
+    "hold_status",
+    "hold_reason",
+    "held_at_utc",
+    "held_by",
+    "blocked_commands",
+    "safety"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "hold_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "hold_status": {
+      "type": "string",
+      "enum": [
+        "hold_active",
+        "hold_released"
+      ]
+    },
+    "hold_reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "held_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "held_by": {
+      "type": "string",
+      "minLength": 1
+    },
+    "blocked_commands": {
+      "type": "array"
+    },
+    "safety": {
+      "type": "object",
+      "required": [
+        "execution_hold_active",
+        "implementation_available",
+        "sandbox_write_allowed",
+        "rollback_execution_allowed",
+        "authoritative_write_allowed",
+        "production_paths_allowed",
+        "product_resolution_allowed",
+        "asset_id_claims_allowed"
+      ],
+      "properties": {
+        "execution_hold_active": {
+          "const": true
+        },
+        "implementation_available": {
+          "const": false
+        },
+        "sandbox_write_allowed": {
+          "const": false
+        },
+        "rollback_execution_allowed": {
+          "const": false
+        },
+        "authoritative_write_allowed": {
+          "const": false
+        },
+        "production_paths_allowed": {
+          "const": false
+        },
+        "product_resolution_allowed": {
+          "const": false
+        },
+        "asset_id_claims_allowed": {
+          "const": false
+        }
+      }
+    }
+  }
+}
