@@ -32,6 +32,15 @@ ASSET_CANDIDATE_REVIEW_PACKET_INSPECT_REL = (
 ASSET_CANDIDATE_EVIDENCE_BUNDLE_EXPORT_REL = (
     "scripts/powershell/Invoke-MaxineAssetCandidateEvidenceBundleExport.ps1"
 )
+PRODUCT_RESOLUTION_PROPOSAL_BUILD_REL = (
+    "scripts/powershell/Invoke-MaxineProductResolutionProposalBuild.ps1"
+)
+PRODUCT_RESOLUTION_PROPOSAL_INSPECT_REL = (
+    "scripts/powershell/Invoke-MaxineProductResolutionProposalInspect.ps1"
+)
+PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_EXPORT_REL = (
+    "scripts/powershell/Invoke-MaxineProductResolutionProposalBundleExport.ps1"
+)
 AUTHORITATIVE_REL = "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
 RECEIPT_INDEX_REL = "examples/sandbox/receipts/index.json"
 RECEIPT_INDEX_SCHEMA_REL = "schemas/maxine_sandbox_receipt_index.schema.json"
@@ -47,6 +56,10 @@ ASSET_CANDIDATE_REVIEW_PACKET_SCHEMA_REL = (
 ASSET_CANDIDATE_EVIDENCE_BUNDLE_SCHEMA_REL = (
     "schemas/maxine_asset_candidate_evidence_bundle.schema.json"
 )
+PRODUCT_RESOLUTION_PROPOSAL_SCHEMA_REL = "schemas/maxine_product_resolution_proposal.schema.json"
+PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_SCHEMA_REL = (
+    "schemas/maxine_product_resolution_proposal_bundle.schema.json"
+)
 CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
@@ -57,6 +70,10 @@ PROJECT_INVENTORY_DIR_REL = "examples/sandbox/project-inventory"
 ASSET_CANDIDATES_DIR_REL = "examples/sandbox/asset-candidates"
 ASSET_CANDIDATE_REVIEW_PACKETS_DIR_REL = "examples/sandbox/asset-candidate-review-packets"
 ASSET_CANDIDATE_EVIDENCE_BUNDLES_DIR_REL = "examples/sandbox/asset-candidate-evidence-bundles"
+PRODUCT_RESOLUTION_PROPOSALS_DIR_REL = "examples/sandbox/product-resolution-proposals"
+PRODUCT_RESOLUTION_PROPOSAL_BUNDLES_DIR_REL = (
+    "examples/sandbox/product-resolution-proposal-bundles"
+)
 
 ADMITTED_SANDBOX_COMMANDS = {
     SANDBOX_WRITER_REL,
@@ -77,6 +94,9 @@ ADMITTED_SANDBOX_COMMANDS = {
     ASSET_CANDIDATE_REVIEW_PACKET_BUILD_REL,
     ASSET_CANDIDATE_REVIEW_PACKET_INSPECT_REL,
     ASSET_CANDIDATE_EVIDENCE_BUNDLE_EXPORT_REL,
+    PRODUCT_RESOLUTION_PROPOSAL_BUILD_REL,
+    PRODUCT_RESOLUTION_PROPOSAL_INSPECT_REL,
+    PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_EXPORT_REL,
 }
 
 REQUIRED_WRITER_NEEDLES = [
@@ -283,6 +303,45 @@ REQUIRED_ASSET_CANDIDATE_EVIDENCE_BUNDLE_EXPORT_NEEDLES = [
     "copies json evidence snapshots only",
 ]
 
+REQUIRED_PRODUCT_RESOLUTION_PROPOSAL_BUILD_NEEDLES = [
+    "product-resolution-proposals",
+    "proposal_only",
+    "product_ids_claimed",
+    "asset_ids_claimed",
+    "source_uuids_claimed",
+    "asset_processor_execution_admitted",
+    "o3de_execution_admitted",
+    "cache_access_admitted",
+    "spawn_admitted",
+    "publish_admitted",
+    "expected_product_classes",
+    "likely_asset_pipeline_requirements",
+    "required_next_evidence",
+    "blocked_missing_evidence",
+    "ready_for_read_only_ap_evidence_import",
+    "rejected",
+]
+
+REQUIRED_PRODUCT_RESOLUTION_PROPOSAL_INSPECT_NEEDLES = [
+    "proposal_count",
+    "proposal_id",
+    "showrequirements",
+    "showblockingreasons",
+]
+
+REQUIRED_PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_EXPORT_NEEDLES = [
+    "product-resolution-proposal-bundles",
+    "source_proposal_id",
+    "source_review_packet_id",
+    "source_inventory_id",
+    "source_project_inventory_id",
+    "candidate_id",
+    "included_artifacts",
+    "copied_artifact_paths",
+    "artifact_sha256",
+    "copies json evidence snapshots only",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -370,12 +429,17 @@ EXPECTED_CAPABILITY_STATES = {
     "asset_candidate_review_packet_build": "sandbox_only",
     "asset_candidate_review_packet_inspect": "read_only",
     "asset_candidate_evidence_bundle_export": "sandbox_only",
+    "product_resolution_proposal_build": "sandbox_only",
+    "product_resolution_proposal_inspect": "read_only",
+    "product_resolution_proposal_bundle_export": "sandbox_only",
     "authoritative_resolver_write": "forbidden",
     "o3de_editor_execution": "blocked",
     "asset_processor_execution": "blocked",
     "o3de_cli_execution": "blocked",
     "product_resolution": "blocked",
     "asset_id_claims": "blocked",
+    "source_uuid_claims": "blocked",
+    "cache_read": "blocked",
     "spawning": "blocked",
     "publishing": "blocked",
     "production_path_write": "forbidden",
@@ -418,6 +482,9 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     asset_candidate_review_packet_build = root / ASSET_CANDIDATE_REVIEW_PACKET_BUILD_REL
     asset_candidate_review_packet_inspect = root / ASSET_CANDIDATE_REVIEW_PACKET_INSPECT_REL
     asset_candidate_evidence_bundle_export = root / ASSET_CANDIDATE_EVIDENCE_BUNDLE_EXPORT_REL
+    product_resolution_proposal_build = root / PRODUCT_RESOLUTION_PROPOSAL_BUILD_REL
+    product_resolution_proposal_inspect = root / PRODUCT_RESOLUTION_PROPOSAL_INSPECT_REL
+    product_resolution_proposal_bundle_export = root / PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_EXPORT_REL
     authoritative = root / AUTHORITATIVE_REL
     receipt_index = root / RECEIPT_INDEX_REL
     receipt_index_schema = root / RECEIPT_INDEX_SCHEMA_REL
@@ -429,6 +496,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     asset_candidate_schema = root / ASSET_CANDIDATE_SCHEMA_REL
     asset_candidate_review_packet_schema = root / ASSET_CANDIDATE_REVIEW_PACKET_SCHEMA_REL
     asset_candidate_evidence_bundle_schema = root / ASSET_CANDIDATE_EVIDENCE_BUNDLE_SCHEMA_REL
+    product_resolution_proposal_schema = root / PRODUCT_RESOLUTION_PROPOSAL_SCHEMA_REL
+    product_resolution_proposal_bundle_schema = root / PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_SCHEMA_REL
     capability_matrix = root / CAPABILITY_MATRIX_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -439,6 +508,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     asset_candidates_dir = root / ASSET_CANDIDATES_DIR_REL
     asset_candidate_review_packets_dir = root / ASSET_CANDIDATE_REVIEW_PACKETS_DIR_REL
     asset_candidate_evidence_bundles_dir = root / ASSET_CANDIDATE_EVIDENCE_BUNDLES_DIR_REL
+    product_resolution_proposals_dir = root / PRODUCT_RESOLUTION_PROPOSALS_DIR_REL
+    product_resolution_proposal_bundles_dir = root / PRODUCT_RESOLUTION_PROPOSAL_BUNDLES_DIR_REL
 
     if not writer.exists():
         failures.append(f"sandbox writer command missing: {SANDBOX_WRITER_REL}")
@@ -495,6 +566,21 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
             "asset candidate evidence bundle export command missing: "
             f"{ASSET_CANDIDATE_EVIDENCE_BUNDLE_EXPORT_REL}"
         )
+    if not product_resolution_proposal_build.exists():
+        failures.append(
+            "product resolution proposal build command missing: "
+            f"{PRODUCT_RESOLUTION_PROPOSAL_BUILD_REL}"
+        )
+    if not product_resolution_proposal_inspect.exists():
+        failures.append(
+            "product resolution proposal inspect command missing: "
+            f"{PRODUCT_RESOLUTION_PROPOSAL_INSPECT_REL}"
+        )
+    if not product_resolution_proposal_bundle_export.exists():
+        failures.append(
+            "product resolution proposal bundle export command missing: "
+            f"{PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_EXPORT_REL}"
+        )
     if authoritative.exists():
         failures.append(f"authoritative command must remain absent: {AUTHORITATIVE_REL}")
     if not receipt_index.exists():
@@ -523,6 +609,16 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
             "asset candidate evidence bundle schema missing: "
             f"{ASSET_CANDIDATE_EVIDENCE_BUNDLE_SCHEMA_REL}"
         )
+    if not product_resolution_proposal_schema.exists():
+        failures.append(
+            "product resolution proposal schema missing: "
+            f"{PRODUCT_RESOLUTION_PROPOSAL_SCHEMA_REL}"
+        )
+    if not product_resolution_proposal_bundle_schema.exists():
+        failures.append(
+            "product resolution proposal bundle schema missing: "
+            f"{PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_SCHEMA_REL}"
+        )
     if not capability_matrix.exists():
         failures.append(f"capability matrix missing: {CAPABILITY_MATRIX_REL}")
     if not review_packets_dir.exists():
@@ -548,6 +644,16 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(
             "asset candidate evidence bundles directory missing: "
             f"{ASSET_CANDIDATE_EVIDENCE_BUNDLES_DIR_REL}"
+        )
+    if not product_resolution_proposals_dir.exists():
+        failures.append(
+            "product resolution proposals directory missing: "
+            f"{PRODUCT_RESOLUTION_PROPOSALS_DIR_REL}"
+        )
+    if not product_resolution_proposal_bundles_dir.exists():
+        failures.append(
+            "product resolution proposal bundles directory missing: "
+            f"{PRODUCT_RESOLUTION_PROPOSAL_BUNDLES_DIR_REL}"
         )
 
     if writer.exists():
@@ -910,6 +1016,108 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                     f"binary/source artifact extension: {forbidden_copy}"
                 )
 
+    if product_resolution_proposal_build.exists():
+        product_resolution_proposal_build_text = _read_text(product_resolution_proposal_build)
+        for needle in REQUIRED_PRODUCT_RESOLUTION_PROPOSAL_BUILD_NEEDLES:
+            if needle not in product_resolution_proposal_build_text:
+                failures.append(
+                    "product resolution proposal build command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in product_resolution_proposal_build_text:
+                failures.append(
+                    "product resolution proposal build command contains forbidden execution "
+                    f"needle: {needle}"
+                )
+        for forbidden_status in (
+            "resolved",
+            "asset_id_resolved",
+            "product_id_resolved",
+            "ap_executed",
+            "spawned",
+            "published",
+            "production_approved",
+        ):
+            if forbidden_status not in product_resolution_proposal_build_text:
+                failures.append(
+                    "product resolution proposal build command must explicitly guard forbidden "
+                    f"proposal_status: {forbidden_status}"
+                )
+        for forbidden_phrase in (
+            "resolved_product_id",
+            "resolved_asset_id",
+            "source_uuid",
+            "asset_processor_executed",
+            "cache_verified",
+            "spawned_entity",
+            "published_asset",
+        ):
+            if forbidden_phrase not in product_resolution_proposal_build_text:
+                failures.append(
+                    "product resolution proposal build command must explicitly guard forbidden "
+                    f"proposal language: {forbidden_phrase}"
+                )
+
+    if product_resolution_proposal_inspect.exists():
+        product_resolution_proposal_inspect_text = _read_text(product_resolution_proposal_inspect)
+        for needle in REQUIRED_PRODUCT_RESOLUTION_PROPOSAL_INSPECT_NEEDLES:
+            if needle not in product_resolution_proposal_inspect_text:
+                failures.append(
+                    "product resolution proposal inspect command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in product_resolution_proposal_inspect_text:
+                failures.append(
+                    "product resolution proposal inspect command contains forbidden execution "
+                    f"needle: {needle}"
+                )
+        for needle in MUTATION_NEEDLES:
+            if needle in product_resolution_proposal_inspect_text:
+                failures.append(
+                    "product resolution proposal inspect command is not read-only; contains "
+                    f"mutation needle: {needle}"
+                )
+
+    if product_resolution_proposal_bundle_export.exists():
+        product_resolution_proposal_bundle_export_text = _read_text(
+            product_resolution_proposal_bundle_export
+        )
+        for needle in REQUIRED_PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_EXPORT_NEEDLES:
+            if needle not in product_resolution_proposal_bundle_export_text:
+                failures.append(
+                    "product resolution proposal bundle export command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in product_resolution_proposal_bundle_export_text:
+                failures.append(
+                    "product resolution proposal bundle export command contains forbidden "
+                    f"execution needle: {needle}"
+                )
+        for forbidden_copy in (
+            ".fbx",
+            ".gltf",
+            ".glb",
+            ".obj",
+            ".blend",
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".tiff",
+            ".exr",
+            ".bin",
+            ".dll",
+            ".pdb",
+            "cache",
+        ):
+            if f'"{forbidden_copy}"' in product_resolution_proposal_bundle_export_text:
+                failures.append(
+                    "product resolution proposal bundle export command should not hardcode "
+                    f"copying binary/source/runtime/cache artifact token: {forbidden_copy}"
+                )
+
     if receipt_index.exists():
         try:
             raw = receipt_index.read_text(encoding="utf-8-sig")
@@ -958,6 +1166,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                     "o3de_cli_execution",
                     "product_resolution",
                     "asset_id_claims",
+                    "source_uuid_claims",
+                    "cache_read",
                     "spawning",
                     "publishing",
                 ):
