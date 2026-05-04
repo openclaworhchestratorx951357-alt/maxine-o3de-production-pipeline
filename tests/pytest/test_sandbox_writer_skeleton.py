@@ -15,12 +15,19 @@ REVIEW_PACKET_BUILD_SCRIPT = (
 REVIEW_PACKET_INSPECT_SCRIPT = (
     REPO_ROOT / "scripts" / "powershell" / "Invoke-MaxineSandboxReviewPacketInspect.ps1"
 )
+REVIEW_DECISION_RECORD_SCRIPT = (
+    REPO_ROOT / "scripts" / "powershell" / "Invoke-MaxineSandboxReviewDecisionRecord.ps1"
+)
+REVIEW_DECISION_INSPECT_SCRIPT = (
+    REPO_ROOT / "scripts" / "powershell" / "Invoke-MaxineSandboxReviewDecisionInspect.ps1"
+)
 AUTHORITATIVE_SCRIPT = REPO_ROOT / "scripts" / "powershell" / "Invoke-MaxineAuthoritativeResolverWrite.ps1"
 SANDBOX_ROOT = REPO_ROOT / "examples" / "sandbox"
 STAGING_DIR = SANDBOX_ROOT / "staging"
 LOGS_DIR = SANDBOX_ROOT / "logs"
 RECEIPTS_DIR = SANDBOX_ROOT / "receipts"
 REVIEW_PACKETS_DIR = SANDBOX_ROOT / "review-packets"
+REVIEW_DECISIONS_DIR = SANDBOX_ROOT / "review-decisions"
 REPORTS_DIR = SANDBOX_ROOT / "manifests" / "reports"
 
 
@@ -600,6 +607,308 @@ def test_review_packet_inspect_is_read_only(tmp_path: Path):
     remove_if_exists(index_abs)
 
 
+def test_review_decision_record_can_be_created_and_preserves_source_ids(tmp_path: Path):
+    target_name = f"pytest-decision-write-{uuid.uuid4().hex}.json"
+    target_rel = f"examples/sandbox/staging/{target_name}"
+    target_abs = REPO_ROOT / target_rel
+    receipt_name = f"pytest-decision-receipt-{uuid.uuid4().hex}.json"
+    receipt_rel = f"examples/sandbox/logs/{receipt_name}"
+    receipt_abs = REPO_ROOT / receipt_rel
+    index_name = f"pytest-decision-index-{uuid.uuid4().hex}.json"
+    index_rel = f"examples/sandbox/receipts/{index_name}"
+    index_abs = REPO_ROOT / index_rel
+    packet_name = f"pytest-decision-packet-{uuid.uuid4().hex}.json"
+    packet_rel = f"examples/sandbox/review-packets/{packet_name}"
+    packet_abs = REPO_ROOT / packet_rel
+    decision_name = f"pytest-decision-{uuid.uuid4().hex}.json"
+    decision_rel = f"examples/sandbox/review-decisions/{decision_name}"
+    decision_abs = REPO_ROOT / decision_rel
+    plan_path = tmp_path / "decision-build-plan.json"
+
+    write_json(plan_path, build_plan(target_rel, receipt_index_path=index_rel, explicit_approval=True))
+    for path in (target_abs, receipt_abs, index_abs, packet_abs, decision_abs):
+        remove_if_exists(path)
+
+    write_result = run_powershell_script(
+        WRITER_SCRIPT,
+        "-PlanPath",
+        str(plan_path),
+        "-ReceiptPath",
+        receipt_rel,
+    )
+    assert write_result.returncode == 0, write_result.stderr
+
+    packet_result = run_powershell_script(
+        REVIEW_PACKET_BUILD_SCRIPT,
+        "-ReceiptPath",
+        receipt_rel,
+        "-OutputPath",
+        packet_rel,
+        "-OperatorDecisionState",
+        "pending_review",
+    )
+    assert packet_result.returncode == 0, packet_result.stderr
+
+    decision_result = run_powershell_script(
+        REVIEW_DECISION_RECORD_SCRIPT,
+        "-ReviewPacketPath",
+        packet_rel,
+        "-DecisionState",
+        "accepted_for_sandbox_only",
+        "-OperatorId",
+        "pytest-operator",
+        "-DecisionReason",
+        "sandbox-safe evidence verified",
+        "-OutputPath",
+        decision_rel,
+    )
+    assert decision_result.returncode == 0, decision_result.stderr
+    assert decision_abs.exists()
+
+    packet = read_json(packet_abs)
+    decision = read_json(decision_abs)
+    assert decision["source_review_packet_id"] == packet["review_packet_id"]
+    assert decision["source_receipt_id"] == packet["source_receipt_id"]
+    assert decision["decision_state"] == "accepted_for_sandbox_only"
+    assert decision["sandbox_root"] == "examples/sandbox"
+    assert decision["rollback_execution_admitted"] is False
+    assert "authoritative_writes" in decision["explicit_non_admissions"]
+
+    for path in (target_abs, receipt_abs, index_abs, packet_abs, decision_abs):
+        remove_if_exists(path)
+
+
+def test_review_decision_forbidden_states_are_rejected(tmp_path: Path):
+    target_name = f"pytest-decision-forbidden-write-{uuid.uuid4().hex}.json"
+    target_rel = f"examples/sandbox/staging/{target_name}"
+    target_abs = REPO_ROOT / target_rel
+    receipt_name = f"pytest-decision-forbidden-receipt-{uuid.uuid4().hex}.json"
+    receipt_rel = f"examples/sandbox/logs/{receipt_name}"
+    receipt_abs = REPO_ROOT / receipt_rel
+    index_name = f"pytest-decision-forbidden-index-{uuid.uuid4().hex}.json"
+    index_rel = f"examples/sandbox/receipts/{index_name}"
+    index_abs = REPO_ROOT / index_rel
+    packet_name = f"pytest-decision-forbidden-packet-{uuid.uuid4().hex}.json"
+    packet_rel = f"examples/sandbox/review-packets/{packet_name}"
+    packet_abs = REPO_ROOT / packet_rel
+    decision_name = f"pytest-decision-forbidden-{uuid.uuid4().hex}.json"
+    decision_rel = f"examples/sandbox/review-decisions/{decision_name}"
+    decision_abs = REPO_ROOT / decision_rel
+    plan_path = tmp_path / "decision-forbidden-plan.json"
+
+    write_json(plan_path, build_plan(target_rel, receipt_index_path=index_rel, explicit_approval=True))
+    for path in (target_abs, receipt_abs, index_abs, packet_abs, decision_abs):
+        remove_if_exists(path)
+
+    assert run_powershell_script(
+        WRITER_SCRIPT,
+        "-PlanPath",
+        str(plan_path),
+        "-ReceiptPath",
+        receipt_rel,
+    ).returncode == 0
+
+    assert run_powershell_script(
+        REVIEW_PACKET_BUILD_SCRIPT,
+        "-ReceiptPath",
+        receipt_rel,
+        "-OutputPath",
+        packet_rel,
+        "-OperatorDecisionState",
+        "pending_review",
+    ).returncode == 0
+
+    forbidden = run_powershell_script(
+        REVIEW_DECISION_RECORD_SCRIPT,
+        "-ReviewPacketPath",
+        packet_rel,
+        "-DecisionState",
+        "approve_authoritative_write",
+        "-OperatorId",
+        "pytest-operator",
+        "-DecisionReason",
+        "forbidden state test",
+        "-OutputPath",
+        decision_rel,
+    )
+    assert forbidden.returncode != 0
+    assert not decision_abs.exists()
+
+    for path in (target_abs, receipt_abs, index_abs, packet_abs):
+        remove_if_exists(path)
+
+
+def test_review_decision_cannot_reference_packet_outside_sandbox(tmp_path: Path):
+    outside_packet = tmp_path / "outside-review-packet.json"
+    write_json(
+        outside_packet,
+        {
+            "schema_version": "1.0.0",
+            "review_packet_id": f"outside-review-packet-{uuid.uuid4().hex}",
+            "source_receipt_id": f"outside-receipt-{uuid.uuid4().hex}",
+            "sandbox_root": "examples/sandbox",
+        },
+    )
+
+    decision_result = run_powershell_script(
+        REVIEW_DECISION_RECORD_SCRIPT,
+        "-ReviewPacketPath",
+        str(outside_packet),
+        "-DecisionState",
+        "accepted_for_sandbox_only",
+        "-OperatorId",
+        "pytest-operator",
+        "-DecisionReason",
+        "outside packet must be blocked",
+    )
+    assert decision_result.returncode != 0
+    combined = (decision_result.stdout + decision_result.stderr).lower()
+    assert "sandbox root" in combined or "review packets root" in combined
+
+
+def test_review_decision_inspect_is_read_only(tmp_path: Path):
+    target_name = f"pytest-decision-inspect-write-{uuid.uuid4().hex}.json"
+    target_rel = f"examples/sandbox/staging/{target_name}"
+    target_abs = REPO_ROOT / target_rel
+    receipt_name = f"pytest-decision-inspect-receipt-{uuid.uuid4().hex}.json"
+    receipt_rel = f"examples/sandbox/logs/{receipt_name}"
+    receipt_abs = REPO_ROOT / receipt_rel
+    index_name = f"pytest-decision-inspect-index-{uuid.uuid4().hex}.json"
+    index_rel = f"examples/sandbox/receipts/{index_name}"
+    index_abs = REPO_ROOT / index_rel
+    packet_name = f"pytest-decision-inspect-packet-{uuid.uuid4().hex}.json"
+    packet_rel = f"examples/sandbox/review-packets/{packet_name}"
+    packet_abs = REPO_ROOT / packet_rel
+    decision_name = f"pytest-decision-inspect-{uuid.uuid4().hex}.json"
+    decision_rel = f"examples/sandbox/review-decisions/{decision_name}"
+    decision_abs = REPO_ROOT / decision_rel
+    plan_path = tmp_path / "decision-inspect-plan.json"
+
+    write_json(plan_path, build_plan(target_rel, receipt_index_path=index_rel, explicit_approval=True))
+    for path in (target_abs, receipt_abs, index_abs, packet_abs, decision_abs):
+        remove_if_exists(path)
+
+    assert run_powershell_script(
+        WRITER_SCRIPT,
+        "-PlanPath",
+        str(plan_path),
+        "-ReceiptPath",
+        receipt_rel,
+    ).returncode == 0
+    assert run_powershell_script(
+        REVIEW_PACKET_BUILD_SCRIPT,
+        "-ReceiptPath",
+        receipt_rel,
+        "-OutputPath",
+        packet_rel,
+        "-OperatorDecisionState",
+        "pending_review",
+    ).returncode == 0
+    assert run_powershell_script(
+        REVIEW_DECISION_RECORD_SCRIPT,
+        "-ReviewPacketPath",
+        packet_rel,
+        "-DecisionState",
+        "needs_more_evidence",
+        "-OperatorId",
+        "pytest-operator",
+        "-DecisionReason",
+        "need more evidence",
+        "-OutputPath",
+        decision_rel,
+    ).returncode == 0
+
+    decision = read_json(decision_abs)
+    before = decision_abs.read_bytes()
+
+    inspect_list = run_powershell_script(
+        REVIEW_DECISION_INSPECT_SCRIPT,
+        "-List",
+    )
+    assert inspect_list.returncode == 0
+    list_payload = json.loads(inspect_list.stdout)
+    assert list_payload["decision_count"] >= 1
+
+    inspect_one = run_powershell_script(
+        REVIEW_DECISION_INSPECT_SCRIPT,
+        "-DecisionId",
+        decision["decision_id"],
+    )
+    assert inspect_one.returncode == 0
+    one_payload = json.loads(inspect_one.stdout)
+    assert one_payload["decision_id"] == decision["decision_id"]
+
+    after = decision_abs.read_bytes()
+    assert before == after, "review decision inspect mutated decision content"
+
+    for path in (target_abs, receipt_abs, index_abs, packet_abs, decision_abs):
+        remove_if_exists(path)
+
+
+def test_review_decision_request_rollback_records_intent_only_and_does_not_execute(tmp_path: Path):
+    target_name = f"pytest-decision-rollback-write-{uuid.uuid4().hex}.json"
+    target_rel = f"examples/sandbox/staging/{target_name}"
+    target_abs = REPO_ROOT / target_rel
+    receipt_name = f"pytest-decision-rollback-receipt-{uuid.uuid4().hex}.json"
+    receipt_rel = f"examples/sandbox/logs/{receipt_name}"
+    receipt_abs = REPO_ROOT / receipt_rel
+    index_name = f"pytest-decision-rollback-index-{uuid.uuid4().hex}.json"
+    index_rel = f"examples/sandbox/receipts/{index_name}"
+    index_abs = REPO_ROOT / index_rel
+    packet_name = f"pytest-decision-rollback-packet-{uuid.uuid4().hex}.json"
+    packet_rel = f"examples/sandbox/review-packets/{packet_name}"
+    packet_abs = REPO_ROOT / packet_rel
+    decision_name = f"pytest-decision-rollback-{uuid.uuid4().hex}.json"
+    decision_rel = f"examples/sandbox/review-decisions/{decision_name}"
+    decision_abs = REPO_ROOT / decision_rel
+    plan_path = tmp_path / "decision-rollback-plan.json"
+    rollback_report_abs = REPORTS_DIR / f"{Path(receipt_name).stem}.rollback.json"
+
+    write_json(plan_path, build_plan(target_rel, receipt_index_path=index_rel, explicit_approval=True))
+    for path in (target_abs, receipt_abs, index_abs, packet_abs, decision_abs, rollback_report_abs):
+        remove_if_exists(path)
+
+    assert run_powershell_script(
+        WRITER_SCRIPT,
+        "-PlanPath",
+        str(plan_path),
+        "-ReceiptPath",
+        receipt_rel,
+    ).returncode == 0
+    assert run_powershell_script(
+        REVIEW_PACKET_BUILD_SCRIPT,
+        "-ReceiptPath",
+        receipt_rel,
+        "-OutputPath",
+        packet_rel,
+    ).returncode == 0
+
+    decision_result = run_powershell_script(
+        REVIEW_DECISION_RECORD_SCRIPT,
+        "-ReviewPacketPath",
+        packet_rel,
+        "-DecisionState",
+        "request_rollback",
+        "-OperatorId",
+        "pytest-operator",
+        "-DecisionReason",
+        "rollback requested by reviewer",
+        "-OutputPath",
+        decision_rel,
+    )
+    assert decision_result.returncode == 0
+
+    decision = read_json(decision_abs)
+    assert decision["decision_state"] == "request_rollback"
+    assert decision["requested_next_action"] == "rollback_requested"
+    assert decision["rollback_execution_admitted"] is False
+    assert target_abs.exists(), "decision recording must not auto-execute rollback"
+    assert not rollback_report_abs.exists(), "decision recording unexpectedly executed rollback"
+
+    for path in (target_abs, receipt_abs, index_abs, packet_abs, decision_abs, rollback_report_abs):
+        remove_if_exists(path)
+
+
 def test_authoritative_resolver_write_remains_absent():
     assert not AUTHORITATIVE_SCRIPT.exists()
 
@@ -610,6 +919,8 @@ def test_o3de_ap_editor_execution_is_absent_from_new_scripts():
     inspect_text = INSPECT_SCRIPT.read_text(encoding="utf-8-sig").lower()
     review_build_text = REVIEW_PACKET_BUILD_SCRIPT.read_text(encoding="utf-8-sig").lower()
     review_inspect_text = REVIEW_PACKET_INSPECT_SCRIPT.read_text(encoding="utf-8-sig").lower()
+    review_decision_record_text = REVIEW_DECISION_RECORD_SCRIPT.read_text(encoding="utf-8-sig").lower()
+    review_decision_inspect_text = REVIEW_DECISION_INSPECT_SCRIPT.read_text(encoding="utf-8-sig").lower()
     combined = (
         writer_text
         + "\n"
@@ -620,6 +931,10 @@ def test_o3de_ap_editor_execution_is_absent_from_new_scripts():
         + review_build_text
         + "\n"
         + review_inspect_text
+        + "\n"
+        + review_decision_record_text
+        + "\n"
+        + review_decision_inspect_text
     )
     for forbidden in [
         "o3de editor",

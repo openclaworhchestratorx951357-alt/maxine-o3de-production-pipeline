@@ -6,6 +6,8 @@
         $inspect = Join-Path $repoRoot "scripts\powershell\Invoke-MaxineSandboxReceiptInspect.ps1"
         $reviewBuild = Join-Path $repoRoot "scripts\powershell\Invoke-MaxineSandboxReviewPacketBuild.ps1"
         $reviewInspect = Join-Path $repoRoot "scripts\powershell\Invoke-MaxineSandboxReviewPacketInspect.ps1"
+        $reviewDecisionRecord = Join-Path $repoRoot "scripts\powershell\Invoke-MaxineSandboxReviewDecisionRecord.ps1"
+        $reviewDecisionInspect = Join-Path $repoRoot "scripts\powershell\Invoke-MaxineSandboxReviewDecisionInspect.ps1"
         $authoritative = Join-Path $repoRoot "scripts\powershell\Invoke-MaxineAuthoritativeResolverWrite.ps1"
     }
 
@@ -406,6 +408,209 @@
         }
     }
 
+    It "records sandbox-only review decisions and preserves source IDs" {
+        $targetName = "pester-decision-build-$([Guid]::NewGuid().ToString('N')).json"
+        $targetRel = "examples/sandbox/staging/$targetName"
+        $targetAbs = Join-Path $repoRoot $targetRel
+        $receiptName = "pester-decision-receipt-$([Guid]::NewGuid().ToString('N')).json"
+        $receiptRel = "examples/sandbox/logs/$receiptName"
+        $receiptAbs = Join-Path $repoRoot $receiptRel
+        $indexName = "pester-decision-index-$([Guid]::NewGuid().ToString('N')).json"
+        $indexRel = "examples/sandbox/receipts/$indexName"
+        $indexAbs = Join-Path $repoRoot $indexRel
+        $packetName = "pester-decision-packet-$([Guid]::NewGuid().ToString('N')).json"
+        $packetRel = "examples/sandbox/review-packets/$packetName"
+        $packetAbs = Join-Path $repoRoot $packetRel
+        $decisionName = "pester-decision-$([Guid]::NewGuid().ToString('N')).json"
+        $decisionRel = "examples/sandbox/review-decisions/$decisionName"
+        $decisionAbs = Join-Path $repoRoot $decisionRel
+
+        $plan = @{
+            schema_version = "1.0.0"
+            plan_id = "pester-plan-$([Guid]::NewGuid().ToString('N'))"
+            command_name = "Invoke-MaxineSandboxResolverWrite.ps1"
+            sandbox_scope = "sandbox_only"
+            sandbox_root = "examples/sandbox"
+            receipt_index_path = $indexRel
+            target_path = $targetRel
+            approved_target_under_sandbox = $true
+            explicit_sandbox_approval = $true
+            plan_signature = @{
+                signed_by = "pester-operator"
+                signature = "pester-signed"
+            }
+        } | ConvertTo-Json -Depth 20
+
+        $planPath = Join-Path $TestDrive "decision-build-plan.json"
+        [System.IO.File]::WriteAllText($planPath, $plan, [System.Text.UTF8Encoding]::new($false))
+
+        foreach ($p in @($targetAbs, $receiptAbs, $indexAbs, $packetAbs, $decisionAbs)) {
+            if (Test-Path -LiteralPath $p) {
+                Remove-Item -LiteralPath $p -Force
+            }
+        }
+
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $writer -PlanPath $planPath -ReceiptPath $receiptRel
+        $LASTEXITCODE | Should Be 0
+
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $reviewBuild -ReceiptPath $receiptRel -OutputPath $packetRel
+        $LASTEXITCODE | Should Be 0
+
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $reviewDecisionRecord -ReviewPacketPath $packetRel -DecisionState accepted_for_sandbox_only -OperatorId pester-operator -DecisionReason "sandbox-safe evidence verified" -OutputPath $decisionRel
+        $LASTEXITCODE | Should Be 0
+        (Test-Path -LiteralPath $decisionAbs) | Should Be $true
+
+        $packet = Get-Content -LiteralPath $packetAbs -Raw | ConvertFrom-Json
+        $decision = Get-Content -LiteralPath $decisionAbs -Raw | ConvertFrom-Json
+        $decision.source_review_packet_id | Should Be $packet.review_packet_id
+        $decision.source_receipt_id | Should Be $packet.source_receipt_id
+        $decision.rollback_execution_admitted | Should Be $false
+
+        foreach ($p in @($targetAbs, $receiptAbs, $indexAbs, $packetAbs, $decisionAbs)) {
+            if (Test-Path -LiteralPath $p) {
+                Remove-Item -LiteralPath $p -Force
+            }
+        }
+    }
+
+    It "rejects forbidden review decision states" {
+        $targetName = "pester-decision-forbidden-$([Guid]::NewGuid().ToString('N')).json"
+        $targetRel = "examples/sandbox/staging/$targetName"
+        $targetAbs = Join-Path $repoRoot $targetRel
+        $receiptName = "pester-decision-forbidden-receipt-$([Guid]::NewGuid().ToString('N')).json"
+        $receiptRel = "examples/sandbox/logs/$receiptName"
+        $receiptAbs = Join-Path $repoRoot $receiptRel
+        $indexName = "pester-decision-forbidden-index-$([Guid]::NewGuid().ToString('N')).json"
+        $indexRel = "examples/sandbox/receipts/$indexName"
+        $indexAbs = Join-Path $repoRoot $indexRel
+        $packetName = "pester-decision-forbidden-packet-$([Guid]::NewGuid().ToString('N')).json"
+        $packetRel = "examples/sandbox/review-packets/$packetName"
+        $packetAbs = Join-Path $repoRoot $packetRel
+        $decisionName = "pester-decision-forbidden-$([Guid]::NewGuid().ToString('N')).json"
+        $decisionRel = "examples/sandbox/review-decisions/$decisionName"
+        $decisionAbs = Join-Path $repoRoot $decisionRel
+
+        $plan = @{
+            schema_version = "1.0.0"
+            plan_id = "pester-plan-$([Guid]::NewGuid().ToString('N'))"
+            command_name = "Invoke-MaxineSandboxResolverWrite.ps1"
+            sandbox_scope = "sandbox_only"
+            sandbox_root = "examples/sandbox"
+            receipt_index_path = $indexRel
+            target_path = $targetRel
+            approved_target_under_sandbox = $true
+            explicit_sandbox_approval = $true
+            plan_signature = @{
+                signed_by = "pester-operator"
+                signature = "pester-signed"
+            }
+        } | ConvertTo-Json -Depth 20
+
+        $planPath = Join-Path $TestDrive "decision-forbidden-plan.json"
+        [System.IO.File]::WriteAllText($planPath, $plan, [System.Text.UTF8Encoding]::new($false))
+
+        foreach ($p in @($targetAbs, $receiptAbs, $indexAbs, $packetAbs, $decisionAbs)) {
+            if (Test-Path -LiteralPath $p) {
+                Remove-Item -LiteralPath $p -Force
+            }
+        }
+
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $writer -PlanPath $planPath -ReceiptPath $receiptRel
+        $LASTEXITCODE | Should Be 0
+
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $reviewBuild -ReceiptPath $receiptRel -OutputPath $packetRel
+        $LASTEXITCODE | Should Be 0
+
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $reviewDecisionRecord -ReviewPacketPath $packetRel -DecisionState approve_authoritative_write -OperatorId pester-operator -DecisionReason "forbidden state" -OutputPath $decisionRel
+        $LASTEXITCODE | Should Not Be 0
+        (Test-Path -LiteralPath $decisionAbs) | Should Be $false
+
+        foreach ($p in @($targetAbs, $receiptAbs, $indexAbs, $packetAbs)) {
+            if (Test-Path -LiteralPath $p) {
+                Remove-Item -LiteralPath $p -Force
+            }
+        }
+    }
+
+    It "review decision inspect is read-only and request_rollback records intent only" {
+        $targetName = "pester-decision-inspect-$([Guid]::NewGuid().ToString('N')).json"
+        $targetRel = "examples/sandbox/staging/$targetName"
+        $targetAbs = Join-Path $repoRoot $targetRel
+        $receiptName = "pester-decision-inspect-receipt-$([Guid]::NewGuid().ToString('N')).json"
+        $receiptRel = "examples/sandbox/logs/$receiptName"
+        $receiptAbs = Join-Path $repoRoot $receiptRel
+        $indexName = "pester-decision-inspect-index-$([Guid]::NewGuid().ToString('N')).json"
+        $indexRel = "examples/sandbox/receipts/$indexName"
+        $indexAbs = Join-Path $repoRoot $indexRel
+        $packetName = "pester-decision-inspect-packet-$([Guid]::NewGuid().ToString('N')).json"
+        $packetRel = "examples/sandbox/review-packets/$packetName"
+        $packetAbs = Join-Path $repoRoot $packetRel
+        $decisionName = "pester-decision-inspect-$([Guid]::NewGuid().ToString('N')).json"
+        $decisionRel = "examples/sandbox/review-decisions/$decisionName"
+        $decisionAbs = Join-Path $repoRoot $decisionRel
+        $rollbackReportAbs = Join-Path $repoRoot ("examples/sandbox/manifests/reports/{0}.rollback.json" -f [System.IO.Path]::GetFileNameWithoutExtension($receiptName))
+
+        $plan = @{
+            schema_version = "1.0.0"
+            plan_id = "pester-plan-$([Guid]::NewGuid().ToString('N'))"
+            command_name = "Invoke-MaxineSandboxResolverWrite.ps1"
+            sandbox_scope = "sandbox_only"
+            sandbox_root = "examples/sandbox"
+            receipt_index_path = $indexRel
+            target_path = $targetRel
+            approved_target_under_sandbox = $true
+            explicit_sandbox_approval = $true
+            plan_signature = @{
+                signed_by = "pester-operator"
+                signature = "pester-signed"
+            }
+        } | ConvertTo-Json -Depth 20
+
+        $planPath = Join-Path $TestDrive "decision-inspect-plan.json"
+        [System.IO.File]::WriteAllText($planPath, $plan, [System.Text.UTF8Encoding]::new($false))
+
+        foreach ($p in @($targetAbs, $receiptAbs, $indexAbs, $packetAbs, $decisionAbs, $rollbackReportAbs)) {
+            if (Test-Path -LiteralPath $p) {
+                Remove-Item -LiteralPath $p -Force
+            }
+        }
+
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $writer -PlanPath $planPath -ReceiptPath $receiptRel
+        $LASTEXITCODE | Should Be 0
+
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $reviewBuild -ReceiptPath $receiptRel -OutputPath $packetRel
+        $LASTEXITCODE | Should Be 0
+
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $reviewDecisionRecord -ReviewPacketPath $packetRel -DecisionState request_rollback -OperatorId pester-operator -DecisionReason "rollback requested" -OutputPath $decisionRel
+        $LASTEXITCODE | Should Be 0
+
+        $decision = Get-Content -LiteralPath $decisionAbs -Raw | ConvertFrom-Json
+        $decision.requested_next_action | Should Be "rollback_requested"
+        $decision.rollback_execution_admitted | Should Be $false
+        (Test-Path -LiteralPath $targetAbs) | Should Be $true
+        (Test-Path -LiteralPath $rollbackReportAbs) | Should Be $false
+
+        $hashBefore = (Get-FileHash -LiteralPath $decisionAbs -Algorithm SHA256).Hash
+        $listOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File $reviewDecisionInspect -List
+        $LASTEXITCODE | Should Be 0
+        $listJson = $listOutput | ConvertFrom-Json
+        $listJson.decision_count | Should BeGreaterThan 0
+
+        $inspectOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File $reviewDecisionInspect -DecisionId $decision.decision_id
+        $LASTEXITCODE | Should Be 0
+        $inspectJson = $inspectOutput | ConvertFrom-Json
+        $inspectJson.decision_id | Should Be $decision.decision_id
+
+        $hashAfter = (Get-FileHash -LiteralPath $decisionAbs -Algorithm SHA256).Hash
+        $hashAfter | Should Be $hashBefore
+
+        foreach ($p in @($targetAbs, $receiptAbs, $indexAbs, $packetAbs, $decisionAbs, $rollbackReportAbs)) {
+            if (Test-Path -LiteralPath $p) {
+                Remove-Item -LiteralPath $p -Force
+            }
+        }
+    }
+
     It "keeps authoritative resolver write absent" {
         Test-Path -LiteralPath $authoritative | Should Be $false
     }
@@ -416,7 +621,9 @@
         $inspectText = (Get-Content -LiteralPath $inspect -Raw).ToLowerInvariant()
         $reviewBuildText = (Get-Content -LiteralPath $reviewBuild -Raw).ToLowerInvariant()
         $reviewInspectText = (Get-Content -LiteralPath $reviewInspect -Raw).ToLowerInvariant()
-        $combined = $writerText + "`n" + $rollbackText + "`n" + $inspectText + "`n" + $reviewBuildText + "`n" + $reviewInspectText
+        $reviewDecisionRecordText = (Get-Content -LiteralPath $reviewDecisionRecord -Raw).ToLowerInvariant()
+        $reviewDecisionInspectText = (Get-Content -LiteralPath $reviewDecisionInspect -Raw).ToLowerInvariant()
+        $combined = $writerText + "`n" + $rollbackText + "`n" + $inspectText + "`n" + $reviewBuildText + "`n" + $reviewInspectText + "`n" + $reviewDecisionRecordText + "`n" + $reviewDecisionInspectText
 
         $combined.Contains("o3de editor") | Should Be $false
         $combined.Contains("asset processor") | Should Be $false

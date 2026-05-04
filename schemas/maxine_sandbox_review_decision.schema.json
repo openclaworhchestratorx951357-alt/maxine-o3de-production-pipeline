@@ -1,0 +1,86 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_sandbox_review_decision.schema.json",
+  "title": "Maxine Sandbox Review Decision",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "decision_id",
+    "source_review_packet_id",
+    "source_receipt_id",
+    "decision_state",
+    "operator_id",
+    "decision_reason",
+    "requested_next_action",
+    "rollback_execution_admitted",
+    "sandbox_root",
+    "decision_path",
+    "explicit_non_admissions",
+    "timestamp_utc"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "decision_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_review_packet_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_receipt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision_state": {
+      "type": "string",
+      "enum": [
+        "accepted_for_sandbox_only",
+        "request_rollback",
+        "rejected",
+        "needs_more_evidence"
+      ]
+    },
+    "operator_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision_reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requested_next_action": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "rollback_execution_admitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "sandbox_root": {
+      "type": "string",
+      "const": "examples/sandbox"
+    },
+    "decision_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "explicit_non_admissions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "timestamp_utc": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}
