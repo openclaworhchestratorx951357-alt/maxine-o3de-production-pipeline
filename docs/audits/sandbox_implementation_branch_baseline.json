@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0.0",
+  "baseline_name": "sandbox-implementation-branch-baseline",
+  "baseline_type": "implementation_branch_safety_baseline",
+  "branch_name": "codex/sandbox-implementation-branch-baseline",
+  "base_branch": "main",
+  "created_from_main_head": "f51cd542422656fc1d4f24d656c611a2314b1555",
+  "decision_record": "docs/reviews/sandbox_implementation_decision.json",
+  "decision_status_required": "implementation_accepted_for_branch_creation_only",
+  "implementation_branch_creation_allowed_required": true,
+  "execution_hold_status_required": "hold_active",
+  "implementation_branch_created_in_decision_record": false,
+  "implementation_branch_created_in_this_baseline": true,
+  "implementation_available": false,
+  "sandbox_write_implementation_allowed": false,
+  "rollback_execution_implementation_allowed": false,
+  "authoritative_write_allowed": false,
+  "production_paths_allowed": false,
+  "product_resolution_allowed": false,
+  "asset_id_claims_allowed": false,
+  "o3de_editor_allowed": false,
+  "asset_processor_allowed": false,
+  "required_docs": [
+    "docs/audits/SANDBOX-IMPLEMENTATION-BRANCH-BASELINE.md",
+    "docs/reviews/SANDBOX-PROTOTYPE-IMPLEMENTATION-DECISION.md",
+    "docs/reviews/SANDBOX-PROTOTYPE-IMPLEMENTATION-DECISION-REVIEW.md"
+  ],
+  "required_absent_files": [
+    "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1",
+    "scripts/powershell/Invoke-MaxineSandboxRollback.ps1",
+    "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
+  ],
+  "notes": [
+    "This baseline confirms branch creation for preparation only.",
+    "Branch creation does not authorize sandbox write or rollback implementation.",
+    "Execution hold remains active."
+  ]
+}
