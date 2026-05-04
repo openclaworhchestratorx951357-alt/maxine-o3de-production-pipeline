@@ -12,11 +12,15 @@ SANDBOX_ROLLBACK_REL = "scripts/powershell/Invoke-MaxineSandboxRollback.ps1"
 SANDBOX_INSPECT_REL = "scripts/powershell/Invoke-MaxineSandboxReceiptInspect.ps1"
 SANDBOX_REVIEW_BUILD_REL = "scripts/powershell/Invoke-MaxineSandboxReviewPacketBuild.ps1"
 SANDBOX_REVIEW_INSPECT_REL = "scripts/powershell/Invoke-MaxineSandboxReviewPacketInspect.ps1"
+SANDBOX_REVIEW_DECISION_RECORD_REL = "scripts/powershell/Invoke-MaxineSandboxReviewDecisionRecord.ps1"
+SANDBOX_REVIEW_DECISION_INSPECT_REL = "scripts/powershell/Invoke-MaxineSandboxReviewDecisionInspect.ps1"
 AUTHORITATIVE_REL = "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
 RECEIPT_INDEX_REL = "examples/sandbox/receipts/index.json"
 RECEIPT_INDEX_SCHEMA_REL = "schemas/maxine_sandbox_receipt_index.schema.json"
 REVIEW_PACKET_SCHEMA_REL = "schemas/maxine_sandbox_review_packet.schema.json"
+REVIEW_DECISION_SCHEMA_REL = "schemas/maxine_sandbox_review_decision.schema.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
+REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
 
 ADMITTED_SANDBOX_COMMANDS = {
     SANDBOX_WRITER_REL,
@@ -24,6 +28,8 @@ ADMITTED_SANDBOX_COMMANDS = {
     SANDBOX_INSPECT_REL,
     SANDBOX_REVIEW_BUILD_REL,
     SANDBOX_REVIEW_INSPECT_REL,
+    SANDBOX_REVIEW_DECISION_RECORD_REL,
+    SANDBOX_REVIEW_DECISION_INSPECT_REL,
 }
 
 REQUIRED_WRITER_NEEDLES = [
@@ -78,6 +84,27 @@ REQUIRED_REVIEW_INSPECT_NEEDLES = [
     "operator_decision_state",
 ]
 
+REQUIRED_REVIEW_DECISION_RECORD_NEEDLES = [
+    "accepted_for_sandbox_only",
+    "request_rollback",
+    "rejected",
+    "needs_more_evidence",
+    "rollback_requested",
+    "rollback_execution_admitted",
+    "review-decisions",
+    "examples/sandbox",
+    "explicit_non_admissions",
+]
+
+REQUIRED_REVIEW_DECISION_INSPECT_NEEDLES = [
+    "decision_id",
+    "source_review_packet_id",
+    "source_receipt_id",
+    "decision_state",
+    "requested_next_action",
+    "rollback_execution_admitted",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -116,6 +143,16 @@ FORBIDDEN_REVIEW_INSPECT_MUTATION_NEEDLES = [
     "out-file",
 ]
 
+FORBIDDEN_REVIEW_DECISION_INSPECT_MUTATION_NEEDLES = [
+    "remove-item",
+    "set-content",
+    "add-content",
+    "clear-content",
+    "writealltext",
+    "new-item",
+    "out-file",
+]
+
 
 def _read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8-sig").lower()
@@ -138,11 +175,15 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     inspect = root / SANDBOX_INSPECT_REL
     review_build = root / SANDBOX_REVIEW_BUILD_REL
     review_inspect = root / SANDBOX_REVIEW_INSPECT_REL
+    review_decision_record = root / SANDBOX_REVIEW_DECISION_RECORD_REL
+    review_decision_inspect = root / SANDBOX_REVIEW_DECISION_INSPECT_REL
     authoritative = root / AUTHORITATIVE_REL
     receipt_index = root / RECEIPT_INDEX_REL
     receipt_index_schema = root / RECEIPT_INDEX_SCHEMA_REL
     review_packet_schema = root / REVIEW_PACKET_SCHEMA_REL
+    review_decision_schema = root / REVIEW_DECISION_SCHEMA_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
+    review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
 
     if not writer.exists():
         failures.append(f"sandbox writer command missing: {SANDBOX_WRITER_REL}")
@@ -154,6 +195,14 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(f"sandbox review packet build command missing: {SANDBOX_REVIEW_BUILD_REL}")
     if not review_inspect.exists():
         failures.append(f"sandbox review packet inspect command missing: {SANDBOX_REVIEW_INSPECT_REL}")
+    if not review_decision_record.exists():
+        failures.append(
+            f"sandbox review decision record command missing: {SANDBOX_REVIEW_DECISION_RECORD_REL}"
+        )
+    if not review_decision_inspect.exists():
+        failures.append(
+            f"sandbox review decision inspect command missing: {SANDBOX_REVIEW_DECISION_INSPECT_REL}"
+        )
     if authoritative.exists():
         failures.append(f"authoritative command must remain absent: {AUTHORITATIVE_REL}")
     if not receipt_index.exists():
@@ -162,8 +211,12 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(f"receipt index schema missing: {RECEIPT_INDEX_SCHEMA_REL}")
     if not review_packet_schema.exists():
         failures.append(f"review packet schema missing: {REVIEW_PACKET_SCHEMA_REL}")
+    if not review_decision_schema.exists():
+        failures.append(f"review decision schema missing: {REVIEW_DECISION_SCHEMA_REL}")
     if not review_packets_dir.exists():
         failures.append(f"review packets directory missing: {REVIEW_PACKETS_DIR_REL}")
+    if not review_decisions_dir.exists():
+        failures.append(f"review decisions directory missing: {REVIEW_DECISIONS_DIR_REL}")
 
     if writer.exists():
         writer_text = _read_text(writer)
@@ -239,6 +292,52 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
             if needle in review_inspect_text:
                 failures.append(
                     f"sandbox review inspect command is not read-only; contains mutation needle: {needle}"
+                )
+
+    if review_decision_record.exists():
+        review_decision_record_text = _read_text(review_decision_record)
+        for needle in REQUIRED_REVIEW_DECISION_RECORD_NEEDLES:
+            if needle not in review_decision_record_text:
+                failures.append(
+                    f"sandbox review decision record command missing required needle: {needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in review_decision_record_text:
+                failures.append(
+                    f"sandbox review decision record command contains forbidden execution needle: {needle}"
+                )
+        for forbidden_decision in (
+            "approve_authoritative_write",
+            "approve_asset_id_claim",
+            "approve_product_resolution",
+            "approve_spawn",
+            "approve_publish",
+            "approve_o3de_execution",
+            "approve_asset_processor_execution",
+        ):
+            if forbidden_decision not in review_decision_record_text:
+                failures.append(
+                    "sandbox review decision record command must explicitly guard forbidden "
+                    f"decision state: {forbidden_decision}"
+                )
+
+    if review_decision_inspect.exists():
+        review_decision_inspect_text = _read_text(review_decision_inspect)
+        for needle in REQUIRED_REVIEW_DECISION_INSPECT_NEEDLES:
+            if needle not in review_decision_inspect_text:
+                failures.append(
+                    f"sandbox review decision inspect command missing required needle: {needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in review_decision_inspect_text:
+                failures.append(
+                    f"sandbox review decision inspect command contains forbidden execution needle: {needle}"
+                )
+        for needle in FORBIDDEN_REVIEW_DECISION_INSPECT_MUTATION_NEEDLES:
+            if needle in review_decision_inspect_text:
+                failures.append(
+                    "sandbox review decision inspect command is not read-only; contains "
+                    f"mutation needle: {needle}"
                 )
 
     if receipt_index.exists():
