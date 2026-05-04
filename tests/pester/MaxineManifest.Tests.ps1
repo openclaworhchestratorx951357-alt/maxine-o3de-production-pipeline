@@ -930,5 +930,33 @@
     It "does not have authoritative write command implementation (sandbox implementation branch baseline phase)" {
         Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
     }
+
+    It "has sandbox implementation branch kickoff safety package doc" {
+        Test-Path -LiteralPath "docs/audits/SANDBOX-IMPLEMENTATION-BRANCH-KICKOFF-SAFETY-PACKAGE.md" | Should Be $true
+    }
+
+    It "has sandbox implementation branch kickoff safety package JSON" {
+        Test-Path -LiteralPath "docs/audits/sandbox_implementation_branch_kickoff_safety_package.json" | Should Be $true
+    }
+
+    It "has sandbox implementation branch kickoff safety package verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_sandbox_implementation_branch_kickoff_safety_package.py" | Should Be $true
+    }
+
+    It "has sandbox implementation branch kickoff safety package PowerShell wrapper" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxImplementationBranchKickoffSafetyPackage.ps1" | Should Be $true
+    }
+
+    It "does not have sandbox write command implementation (sandbox implementation branch kickoff safety package phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    }
+
+    It "does not have rollback execution command implementation (sandbox implementation branch kickoff safety package phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    }
+
+    It "does not have authoritative write command implementation (sandbox implementation branch kickoff safety package phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
+    }
 }
 

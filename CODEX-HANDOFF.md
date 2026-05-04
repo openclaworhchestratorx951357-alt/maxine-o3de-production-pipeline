@@ -420,3 +420,22 @@ Create a separate implementation branch only if explicitly instructed. Keep sand
 ## Next Milestone After Sandbox Implementation Branch Baseline
 
 Create an implementation-branch kickoff safety package that defines the first non-executing implementation checklist and gating proofs, still without implementing sandbox writes or rollback execution.
+
+## Sandbox Implementation-Branch Kickoff Safety Package Complete Criteria
+
+- kickoff safety package doc exists
+- kickoff safety package JSON exists
+- kickoff safety package verifier exists
+- kickoff safety package verifier passes
+- kickoff safety package PowerShell wrapper exists
+- required gating proof verifiers pass
+- execution hold remains active
+- sandbox write command remains absent
+- rollback execution command remains absent
+- authoritative write command remains absent
+- no products are resolved
+- no Asset IDs are claimed
+
+## Next Milestone After Sandbox Implementation-Branch Kickoff Safety Package
+
+Create an implementation-branch execution-readiness review package that asks whether execution hold can move from hold_active to review_pending while still not implementing sandbox writes or rollback execution.
