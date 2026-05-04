@@ -364,3 +364,21 @@ Design the sandbox execution intent contract and explicit operator execution-hol
 ## Next Milestone After Sandbox Execution Intent and Hold Contract
 
 Create a sandbox prototype implementation-decision review package that asks whether to allow a separate implementation branch. Do not implement sandbox writes.
+
+## Sandbox Prototype Implementation-Decision Review Complete Criteria
+
+- implementation decision review doc exists
+- implementation decision review package JSON exists
+- implementation decision template exists
+- implementation decision review verifier exists
+- implementation decision review verifier passes
+- execution hold remains active
+- sandbox write command remains absent
+- rollback execution command remains absent
+- authoritative write command remains absent
+- no products are resolved
+- no Asset IDs are claimed
+
+## Next Milestone After Sandbox Prototype Implementation-Decision Review
+
+If the operator explicitly records implementation_accepted_for_branch_creation_only, create a separate implementation-decision record. Do not implement sandbox writes until that accepted decision exists and a later separate implementation branch is opened.
