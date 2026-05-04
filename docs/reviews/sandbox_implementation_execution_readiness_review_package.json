@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0.0",
+  "review_name": "sandbox-implementation-execution-readiness-review",
+  "review_type": "execution_readiness_request",
+  "decision_requested": true,
+  "decision_question": "Do you approve moving execution hold from hold_active to review_pending for a future execution-readiness decision phase, while sandbox write and rollback implementations remain unimplemented?",
+  "default_decision_status": "execution_readiness_hold",
+  "allowed_decision_statuses": [
+    "execution_readiness_hold",
+    "execution_readiness_rejected",
+    "execution_readiness_review_pending"
+  ],
+  "review_does_not_authorize": [
+    "sandbox_write_execution",
+    "rollback_execution",
+    "authoritative_writes",
+    "production_project_mutation",
+    "o3de_editor_execution",
+    "asset_processor_execution",
+    "product_resolution",
+    "asset_id_claims",
+    "prefab_publication",
+    "entity_spawning"
+  ],
+  "required_stack_artifacts": [
+    "docs/reviews/sandbox_implementation_decision.json",
+    "docs/audits/sandbox_implementation_branch_baseline.json",
+    "docs/audits/sandbox_implementation_branch_kickoff_safety_package.json",
+    "docs/contracts/SANDBOX-WRITE-FINAL-PREFLIGHT-CONTRACT.md",
+    "docs/contracts/SANDBOX-EXECUTION-INTENT-HOLD-CONTRACT.md",
+    "examples/manifests/example-sandbox-execution-hold.json"
+  ],
+  "required_verifiers": [
+    "tools/audit/verify_sandbox_implementation_decision.py",
+    "tools/audit/verify_sandbox_implementation_branch_baseline.py",
+    "tools/audit/verify_sandbox_implementation_branch_kickoff_safety_package.py",
+    "tools/audit/verify_sandbox_write_final_preflight_contract.py",
+    "tools/audit/verify_sandbox_execution_intent_hold_contract.py"
+  ],
+  "required_absent_files": [
+    "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1",
+    "scripts/powershell/Invoke-MaxineSandboxRollback.ps1",
+    "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
+  ],
+  "safety": {
+    "review_only": true,
+    "execution_hold_transition_allowed_by_default": false,
+    "implementation_available": false,
+    "sandbox_write_allowed": false,
+    "rollback_execution_allowed": false,
+    "authoritative_write_allowed": false,
+    "production_paths_allowed": false,
+    "product_resolution_allowed": false,
+    "asset_id_claims_allowed": false
+  }
+}
