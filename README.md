@@ -289,6 +289,22 @@ References:
 - `docs/audits/SANDBOX-IMPLEMENTATION-BRANCH-BASELINE.md`
 - `docs/audits/sandbox_implementation_branch_baseline.json`
 - `tools/audit/verify_sandbox_implementation_branch_baseline.py`
+
+## Sandbox Implementation-Branch Kickoff Safety Package
+
+Sandbox implementation-branch kickoff safety package is non-executing checklist validation only.
+
+- it defines first implementation kickoff safety checklist and gating proofs
+- sandbox write command is not implemented
+- rollback execution command is not implemented
+- authoritative write command is not implemented
+- execution hold remains active
+
+References:
+
+- `docs/audits/SANDBOX-IMPLEMENTATION-BRANCH-KICKOFF-SAFETY-PACKAGE.md`
+- `docs/audits/sandbox_implementation_branch_kickoff_safety_package.json`
+- `tools/audit/verify_sandbox_implementation_branch_kickoff_safety_package.py`
 M.A.X.I.N.E. production pipeline for O3DE character, asset, prefab, QC, and automation workflows.
 
 

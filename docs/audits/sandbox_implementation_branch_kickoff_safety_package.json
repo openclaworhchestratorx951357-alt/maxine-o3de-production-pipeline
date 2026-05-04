@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0.0",
+  "package_name": "sandbox-implementation-branch-kickoff-safety-package",
+  "package_type": "implementation_branch_kickoff_safety",
+  "branch_name": "codex/sandbox-implementation-kickoff-safety-package",
+  "base_branch": "main",
+  "design_only": true,
+  "checklist_only": true,
+  "execution_hold_must_remain_active": true,
+  "decision_record": "docs/reviews/sandbox_implementation_decision.json",
+  "baseline_record": "docs/audits/sandbox_implementation_branch_baseline.json",
+  "required_decision_status": "implementation_accepted_for_branch_creation_only",
+  "required_execution_hold_status": "hold_active",
+  "required_artifacts": [
+    "docs/audits/SANDBOX-IMPLEMENTATION-BRANCH-KICKOFF-SAFETY-PACKAGE.md",
+    "docs/reviews/sandbox_implementation_decision.json",
+    "docs/audits/sandbox_implementation_branch_baseline.json",
+    "docs/contracts/SANDBOX-WRITE-FINAL-PREFLIGHT-CONTRACT.md",
+    "docs/contracts/SANDBOX-EXECUTION-INTENT-HOLD-CONTRACT.md"
+  ],
+  "required_verifiers": [
+    "tools/audit/verify_sandbox_implementation_decision.py",
+    "tools/audit/verify_sandbox_implementation_branch_baseline.py",
+    "tools/audit/verify_sandbox_write_final_preflight_contract.py",
+    "tools/audit/verify_sandbox_execution_intent_hold_contract.py"
+  ],
+  "required_absent_files": [
+    "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1",
+    "scripts/powershell/Invoke-MaxineSandboxRollback.ps1",
+    "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
+  ],
+  "required_gating_proofs": [
+    {
+      "proof_id": "implementation_decision",
+      "source": "docs/reviews/sandbox_implementation_decision.json",
+      "status_expected": "implementation_accepted_for_branch_creation_only"
+    },
+    {
+      "proof_id": "branch_baseline",
+      "source": "tools/audit/verify_sandbox_implementation_branch_baseline.py",
+      "status_expected": "pass"
+    },
+    {
+      "proof_id": "final_preflight_contract",
+      "source": "tools/audit/verify_sandbox_write_final_preflight_contract.py",
+      "status_expected": "pass"
+    },
+    {
+      "proof_id": "execution_intent_hold_contract",
+      "source": "tools/audit/verify_sandbox_execution_intent_hold_contract.py",
+      "status_expected": "pass"
+    }
+  ],
+  "safety": {
+    "implementation_available": false,
+    "sandbox_write_implementation_allowed": false,
+    "rollback_execution_implementation_allowed": false,
+    "authoritative_write_allowed": false,
+    "production_paths_allowed": false,
+    "product_resolution_allowed": false,
+    "asset_id_claims_allowed": false,
+    "o3de_editor_allowed": false,
+    "asset_processor_allowed": false
+  },
+  "notes": [
+    "This kickoff package is non-executing and checklist-only.",
+    "Execution hold remains active in this phase.",
+    "No write-capable commands are implemented."
+  ]
+}
