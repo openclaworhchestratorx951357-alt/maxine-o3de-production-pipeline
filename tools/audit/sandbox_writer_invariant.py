@@ -44,6 +44,15 @@ PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_EXPORT_REL = (
 AP_EVIDENCE_IMPORT_REL = "scripts/powershell/Invoke-MaxineApEvidenceImport.ps1"
 AP_EVIDENCE_INSPECT_REL = "scripts/powershell/Invoke-MaxineApEvidenceInspect.ps1"
 AP_EVIDENCE_BUNDLE_EXPORT_REL = "scripts/powershell/Invoke-MaxineApEvidenceBundleExport.ps1"
+AP_EXECUTION_PREFLIGHT_BUILD_REL = (
+    "scripts/powershell/Invoke-MaxineApExecutionPreflightBuild.ps1"
+)
+AP_EXECUTION_PREFLIGHT_INSPECT_REL = (
+    "scripts/powershell/Invoke-MaxineApExecutionPreflightInspect.ps1"
+)
+AP_EXECUTION_PREFLIGHT_BUNDLE_EXPORT_REL = (
+    "scripts/powershell/Invoke-MaxineApExecutionPreflightBundleExport.ps1"
+)
 AUTHORITATIVE_REL = "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
 RECEIPT_INDEX_REL = "examples/sandbox/receipts/index.json"
 RECEIPT_INDEX_SCHEMA_REL = "schemas/maxine_sandbox_receipt_index.schema.json"
@@ -65,6 +74,10 @@ PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_SCHEMA_REL = (
 )
 AP_EVIDENCE_IMPORT_SCHEMA_REL = "schemas/maxine_ap_evidence_import.schema.json"
 AP_EVIDENCE_BUNDLE_SCHEMA_REL = "schemas/maxine_ap_evidence_bundle.schema.json"
+AP_EXECUTION_PREFLIGHT_SCHEMA_REL = "schemas/maxine_ap_execution_preflight.schema.json"
+AP_EXECUTION_PREFLIGHT_BUNDLE_SCHEMA_REL = (
+    "schemas/maxine_ap_execution_preflight_bundle.schema.json"
+)
 CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
@@ -81,6 +94,10 @@ PRODUCT_RESOLUTION_PROPOSAL_BUNDLES_DIR_REL = (
 )
 AP_EVIDENCE_IMPORTS_DIR_REL = "examples/sandbox/ap-evidence-imports"
 AP_EVIDENCE_BUNDLES_DIR_REL = "examples/sandbox/ap-evidence-bundles"
+AP_EXECUTION_PREFLIGHTS_DIR_REL = "examples/sandbox/ap-execution-preflights"
+AP_EXECUTION_PREFLIGHT_BUNDLES_DIR_REL = (
+    "examples/sandbox/ap-execution-preflight-bundles"
+)
 
 ADMITTED_SANDBOX_COMMANDS = {
     SANDBOX_WRITER_REL,
@@ -107,6 +124,9 @@ ADMITTED_SANDBOX_COMMANDS = {
     AP_EVIDENCE_IMPORT_REL,
     AP_EVIDENCE_INSPECT_REL,
     AP_EVIDENCE_BUNDLE_EXPORT_REL,
+    AP_EXECUTION_PREFLIGHT_BUILD_REL,
+    AP_EXECUTION_PREFLIGHT_INSPECT_REL,
+    AP_EXECUTION_PREFLIGHT_BUNDLE_EXPORT_REL,
 }
 
 REQUIRED_WRITER_NEEDLES = [
@@ -396,6 +416,42 @@ REQUIRED_AP_EVIDENCE_BUNDLE_EXPORT_NEEDLES = [
     "does not copy logs directly",
 ]
 
+REQUIRED_AP_EXECUTION_PREFLIGHT_BUILD_NEEDLES = [
+    "ap-execution-preflights",
+    "proposed_ap_command_display",
+    "required_manual_confirmation",
+    "local_only",
+    "execution_admitted",
+    "ready_for_future_execution_request",
+    "blocked_missing_evidence",
+    "blocked_safety_boundary",
+    "ready_for_future_execution_request",
+    "rejected",
+    "ap_batch_display_only",
+    "preflight_display_only",
+    "no_execution",
+    "contains parent traversal and is blocked",
+]
+
+REQUIRED_AP_EXECUTION_PREFLIGHT_INSPECT_NEEDLES = [
+    "preflight_count",
+    "preflight_id",
+    "showblockingreasons",
+    "showwarnings",
+]
+
+REQUIRED_AP_EXECUTION_PREFLIGHT_BUNDLE_EXPORT_NEEDLES = [
+    "ap-execution-preflight-bundles",
+    "source_preflight_id",
+    "source_ap_evidence_import_id",
+    "source_proposal_id",
+    "source_project_inventory_id",
+    "included_artifacts",
+    "copied_artifact_paths",
+    "artifact_sha256",
+    "copies json snapshots only",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -489,6 +545,9 @@ EXPECTED_CAPABILITY_STATES = {
     "ap_evidence_import": "read_only",
     "ap_evidence_inspect": "read_only",
     "ap_evidence_bundle_export": "sandbox_only",
+    "ap_execution_preflight_build": "sandbox_only",
+    "ap_execution_preflight_inspect": "read_only",
+    "ap_execution_preflight_bundle_export": "sandbox_only",
     "authoritative_resolver_write": "forbidden",
     "o3de_editor_execution": "blocked",
     "asset_processor_execution": "blocked",
@@ -547,6 +606,9 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     ap_evidence_import = root / AP_EVIDENCE_IMPORT_REL
     ap_evidence_inspect = root / AP_EVIDENCE_INSPECT_REL
     ap_evidence_bundle_export = root / AP_EVIDENCE_BUNDLE_EXPORT_REL
+    ap_execution_preflight_build = root / AP_EXECUTION_PREFLIGHT_BUILD_REL
+    ap_execution_preflight_inspect = root / AP_EXECUTION_PREFLIGHT_INSPECT_REL
+    ap_execution_preflight_bundle_export = root / AP_EXECUTION_PREFLIGHT_BUNDLE_EXPORT_REL
     authoritative = root / AUTHORITATIVE_REL
     receipt_index = root / RECEIPT_INDEX_REL
     receipt_index_schema = root / RECEIPT_INDEX_SCHEMA_REL
@@ -562,6 +624,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     product_resolution_proposal_bundle_schema = root / PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_SCHEMA_REL
     ap_evidence_import_schema = root / AP_EVIDENCE_IMPORT_SCHEMA_REL
     ap_evidence_bundle_schema = root / AP_EVIDENCE_BUNDLE_SCHEMA_REL
+    ap_execution_preflight_schema = root / AP_EXECUTION_PREFLIGHT_SCHEMA_REL
+    ap_execution_preflight_bundle_schema = root / AP_EXECUTION_PREFLIGHT_BUNDLE_SCHEMA_REL
     capability_matrix = root / CAPABILITY_MATRIX_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -576,6 +640,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     product_resolution_proposal_bundles_dir = root / PRODUCT_RESOLUTION_PROPOSAL_BUNDLES_DIR_REL
     ap_evidence_imports_dir = root / AP_EVIDENCE_IMPORTS_DIR_REL
     ap_evidence_bundles_dir = root / AP_EVIDENCE_BUNDLES_DIR_REL
+    ap_execution_preflights_dir = root / AP_EXECUTION_PREFLIGHTS_DIR_REL
+    ap_execution_preflight_bundles_dir = root / AP_EXECUTION_PREFLIGHT_BUNDLES_DIR_REL
 
     if not writer.exists():
         failures.append(f"sandbox writer command missing: {SANDBOX_WRITER_REL}")
@@ -656,6 +722,21 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
             "AP evidence bundle export command missing: "
             f"{AP_EVIDENCE_BUNDLE_EXPORT_REL}"
         )
+    if not ap_execution_preflight_build.exists():
+        failures.append(
+            "AP execution preflight build command missing: "
+            f"{AP_EXECUTION_PREFLIGHT_BUILD_REL}"
+        )
+    if not ap_execution_preflight_inspect.exists():
+        failures.append(
+            "AP execution preflight inspect command missing: "
+            f"{AP_EXECUTION_PREFLIGHT_INSPECT_REL}"
+        )
+    if not ap_execution_preflight_bundle_export.exists():
+        failures.append(
+            "AP execution preflight bundle export command missing: "
+            f"{AP_EXECUTION_PREFLIGHT_BUNDLE_EXPORT_REL}"
+        )
     if authoritative.exists():
         failures.append(f"authoritative command must remain absent: {AUTHORITATIVE_REL}")
     if not receipt_index.exists():
@@ -698,6 +779,16 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(f"AP evidence import schema missing: {AP_EVIDENCE_IMPORT_SCHEMA_REL}")
     if not ap_evidence_bundle_schema.exists():
         failures.append(f"AP evidence bundle schema missing: {AP_EVIDENCE_BUNDLE_SCHEMA_REL}")
+    if not ap_execution_preflight_schema.exists():
+        failures.append(
+            "AP execution preflight schema missing: "
+            f"{AP_EXECUTION_PREFLIGHT_SCHEMA_REL}"
+        )
+    if not ap_execution_preflight_bundle_schema.exists():
+        failures.append(
+            "AP execution preflight bundle schema missing: "
+            f"{AP_EXECUTION_PREFLIGHT_BUNDLE_SCHEMA_REL}"
+        )
     if not capability_matrix.exists():
         failures.append(f"capability matrix missing: {CAPABILITY_MATRIX_REL}")
     if not review_packets_dir.exists():
@@ -741,6 +832,16 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     if not ap_evidence_bundles_dir.exists():
         failures.append(
             f"AP evidence bundles directory missing: {AP_EVIDENCE_BUNDLES_DIR_REL}"
+        )
+    if not ap_execution_preflights_dir.exists():
+        failures.append(
+            "AP execution preflights directory missing: "
+            f"{AP_EXECUTION_PREFLIGHTS_DIR_REL}"
+        )
+    if not ap_execution_preflight_bundles_dir.exists():
+        failures.append(
+            "AP execution preflight bundles directory missing: "
+            f"{AP_EXECUTION_PREFLIGHT_BUNDLES_DIR_REL}"
         )
 
     if writer.exists():
@@ -1304,6 +1405,115 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
             if f'"{forbidden_copy}"' in ap_evidence_bundle_export_text:
                 failures.append(
                     "AP evidence bundle export command should not hardcode copying "
+                    f"binary/source/runtime/cache/database token: {forbidden_copy}"
+                )
+
+    if ap_execution_preflight_build.exists():
+        ap_execution_preflight_build_text = _read_text(ap_execution_preflight_build)
+        for needle in REQUIRED_AP_EXECUTION_PREFLIGHT_BUILD_NEEDLES:
+            if needle not in ap_execution_preflight_build_text:
+                failures.append(
+                    "AP execution preflight build command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in ap_execution_preflight_build_text:
+                failures.append(
+                    "AP execution preflight build command contains forbidden execution needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "start-process",
+            "invoke-expression",
+            "invoke-maxineauthoritativeresolverwrite.ps1",
+        ):
+            if forbidden_phrase in ap_execution_preflight_build_text:
+                failures.append(
+                    "AP execution preflight build command must remain non-executing; "
+                    f"forbidden phrase present: {forbidden_phrase}"
+                )
+        for forbidden_status in (
+            "executed",
+            "ap_executed",
+            "product_resolved",
+            "asset_id_resolved",
+            "spawned",
+            "published",
+        ):
+            if forbidden_status not in ap_execution_preflight_build_text:
+                failures.append(
+                    "AP execution preflight build command must explicitly guard forbidden "
+                    f"readiness_status: {forbidden_status}"
+                )
+        for forbidden_admission in (
+            "execution_admitted = $true",
+            "required_manual_confirmation = $false",
+            "local_only = $false",
+        ):
+            if forbidden_admission in ap_execution_preflight_build_text:
+                failures.append(
+                    "AP execution preflight build command widens forbidden admission: "
+                    f"{forbidden_admission}"
+                )
+
+    if ap_execution_preflight_inspect.exists():
+        ap_execution_preflight_inspect_text = _read_text(ap_execution_preflight_inspect)
+        for needle in REQUIRED_AP_EXECUTION_PREFLIGHT_INSPECT_NEEDLES:
+            if needle not in ap_execution_preflight_inspect_text:
+                failures.append(
+                    "AP execution preflight inspect command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in ap_execution_preflight_inspect_text:
+                failures.append(
+                    "AP execution preflight inspect command contains forbidden execution needle: "
+                    f"{needle}"
+                )
+        for needle in MUTATION_NEEDLES:
+            if needle in ap_execution_preflight_inspect_text:
+                failures.append(
+                    "AP execution preflight inspect command is not read-only; contains mutation "
+                    f"needle: {needle}"
+                )
+
+    if ap_execution_preflight_bundle_export.exists():
+        ap_execution_preflight_bundle_export_text = _read_text(
+            ap_execution_preflight_bundle_export
+        )
+        for needle in REQUIRED_AP_EXECUTION_PREFLIGHT_BUNDLE_EXPORT_NEEDLES:
+            if needle not in ap_execution_preflight_bundle_export_text:
+                failures.append(
+                    "AP execution preflight bundle export command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in ap_execution_preflight_bundle_export_text:
+                failures.append(
+                    "AP execution preflight bundle export command contains forbidden execution needle: "
+                    f"{needle}"
+                )
+        for forbidden_copy in (
+            ".fbx",
+            ".gltf",
+            ".glb",
+            ".obj",
+            ".blend",
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".tiff",
+            ".exr",
+            ".bin",
+            ".dll",
+            ".pdb",
+            ".sqlite",
+            "assetdb.sqlite",
+            "cache",
+        ):
+            if f'"{forbidden_copy}"' in ap_execution_preflight_bundle_export_text:
+                failures.append(
+                    "AP execution preflight bundle export command should not hardcode copying "
                     f"binary/source/runtime/cache/database token: {forbidden_copy}"
                 )
 
