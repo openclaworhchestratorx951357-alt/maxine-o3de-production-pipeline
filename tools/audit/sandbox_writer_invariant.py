@@ -41,6 +41,9 @@ PRODUCT_RESOLUTION_PROPOSAL_INSPECT_REL = (
 PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_EXPORT_REL = (
     "scripts/powershell/Invoke-MaxineProductResolutionProposalBundleExport.ps1"
 )
+AP_EVIDENCE_IMPORT_REL = "scripts/powershell/Invoke-MaxineApEvidenceImport.ps1"
+AP_EVIDENCE_INSPECT_REL = "scripts/powershell/Invoke-MaxineApEvidenceInspect.ps1"
+AP_EVIDENCE_BUNDLE_EXPORT_REL = "scripts/powershell/Invoke-MaxineApEvidenceBundleExport.ps1"
 AUTHORITATIVE_REL = "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
 RECEIPT_INDEX_REL = "examples/sandbox/receipts/index.json"
 RECEIPT_INDEX_SCHEMA_REL = "schemas/maxine_sandbox_receipt_index.schema.json"
@@ -60,6 +63,8 @@ PRODUCT_RESOLUTION_PROPOSAL_SCHEMA_REL = "schemas/maxine_product_resolution_prop
 PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_SCHEMA_REL = (
     "schemas/maxine_product_resolution_proposal_bundle.schema.json"
 )
+AP_EVIDENCE_IMPORT_SCHEMA_REL = "schemas/maxine_ap_evidence_import.schema.json"
+AP_EVIDENCE_BUNDLE_SCHEMA_REL = "schemas/maxine_ap_evidence_bundle.schema.json"
 CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
@@ -74,6 +79,8 @@ PRODUCT_RESOLUTION_PROPOSALS_DIR_REL = "examples/sandbox/product-resolution-prop
 PRODUCT_RESOLUTION_PROPOSAL_BUNDLES_DIR_REL = (
     "examples/sandbox/product-resolution-proposal-bundles"
 )
+AP_EVIDENCE_IMPORTS_DIR_REL = "examples/sandbox/ap-evidence-imports"
+AP_EVIDENCE_BUNDLES_DIR_REL = "examples/sandbox/ap-evidence-bundles"
 
 ADMITTED_SANDBOX_COMMANDS = {
     SANDBOX_WRITER_REL,
@@ -97,6 +104,9 @@ ADMITTED_SANDBOX_COMMANDS = {
     PRODUCT_RESOLUTION_PROPOSAL_BUILD_REL,
     PRODUCT_RESOLUTION_PROPOSAL_INSPECT_REL,
     PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_EXPORT_REL,
+    AP_EVIDENCE_IMPORT_REL,
+    AP_EVIDENCE_INSPECT_REL,
+    AP_EVIDENCE_BUNDLE_EXPORT_REL,
 }
 
 REQUIRED_WRITER_NEEDLES = [
@@ -342,6 +352,50 @@ REQUIRED_PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_EXPORT_NEEDLES = [
     "copies json evidence snapshots only",
 ]
 
+REQUIRED_AP_EVIDENCE_IMPORT_NEEDLES = [
+    "ap-evidence-imports",
+    "read_only",
+    "imported_log_paths",
+    "imported_snapshot_metadata_paths",
+    "observed_product_like_mentions",
+    "observed_warning_mentions",
+    "observed_error_mentions",
+    "asset_processor_execution_admitted",
+    "o3de_execution_admitted",
+    "cache_access_admitted",
+    "live_database_access_admitted",
+    "product_ids_claimed",
+    "asset_ids_claimed",
+    "source_uuids_claimed",
+    "product_resolution_claimed",
+    "spawn_admitted",
+    "publish_admitted",
+    "live cache directory evidence inputs are blocked",
+    "live asset database evidence inputs are blocked",
+    "only .json, .txt, and .log are allowed",
+]
+
+REQUIRED_AP_EVIDENCE_INSPECT_NEEDLES = [
+    "evidence_import_count",
+    "ap_evidence_import_id",
+    "showwarnings",
+    "showerrors",
+    "showobservedmentions",
+]
+
+REQUIRED_AP_EVIDENCE_BUNDLE_EXPORT_NEEDLES = [
+    "ap-evidence-bundles",
+    "source_ap_evidence_import_id",
+    "source_proposal_id",
+    "source_project_inventory_id",
+    "source_asset_candidate_inventory_id",
+    "included_artifacts",
+    "copied_artifact_paths",
+    "artifact_sha256",
+    "copies json snapshots only",
+    "does not copy logs directly",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -432,14 +486,19 @@ EXPECTED_CAPABILITY_STATES = {
     "product_resolution_proposal_build": "sandbox_only",
     "product_resolution_proposal_inspect": "read_only",
     "product_resolution_proposal_bundle_export": "sandbox_only",
+    "ap_evidence_import": "read_only",
+    "ap_evidence_inspect": "read_only",
+    "ap_evidence_bundle_export": "sandbox_only",
     "authoritative_resolver_write": "forbidden",
     "o3de_editor_execution": "blocked",
     "asset_processor_execution": "blocked",
     "o3de_cli_execution": "blocked",
     "product_resolution": "blocked",
+    "product_id_claims": "blocked",
     "asset_id_claims": "blocked",
     "source_uuid_claims": "blocked",
     "cache_read": "blocked",
+    "live_asset_database_read": "blocked",
     "spawning": "blocked",
     "publishing": "blocked",
     "production_path_write": "forbidden",
@@ -485,6 +544,9 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     product_resolution_proposal_build = root / PRODUCT_RESOLUTION_PROPOSAL_BUILD_REL
     product_resolution_proposal_inspect = root / PRODUCT_RESOLUTION_PROPOSAL_INSPECT_REL
     product_resolution_proposal_bundle_export = root / PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_EXPORT_REL
+    ap_evidence_import = root / AP_EVIDENCE_IMPORT_REL
+    ap_evidence_inspect = root / AP_EVIDENCE_INSPECT_REL
+    ap_evidence_bundle_export = root / AP_EVIDENCE_BUNDLE_EXPORT_REL
     authoritative = root / AUTHORITATIVE_REL
     receipt_index = root / RECEIPT_INDEX_REL
     receipt_index_schema = root / RECEIPT_INDEX_SCHEMA_REL
@@ -498,6 +560,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     asset_candidate_evidence_bundle_schema = root / ASSET_CANDIDATE_EVIDENCE_BUNDLE_SCHEMA_REL
     product_resolution_proposal_schema = root / PRODUCT_RESOLUTION_PROPOSAL_SCHEMA_REL
     product_resolution_proposal_bundle_schema = root / PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_SCHEMA_REL
+    ap_evidence_import_schema = root / AP_EVIDENCE_IMPORT_SCHEMA_REL
+    ap_evidence_bundle_schema = root / AP_EVIDENCE_BUNDLE_SCHEMA_REL
     capability_matrix = root / CAPABILITY_MATRIX_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -510,6 +574,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     asset_candidate_evidence_bundles_dir = root / ASSET_CANDIDATE_EVIDENCE_BUNDLES_DIR_REL
     product_resolution_proposals_dir = root / PRODUCT_RESOLUTION_PROPOSALS_DIR_REL
     product_resolution_proposal_bundles_dir = root / PRODUCT_RESOLUTION_PROPOSAL_BUNDLES_DIR_REL
+    ap_evidence_imports_dir = root / AP_EVIDENCE_IMPORTS_DIR_REL
+    ap_evidence_bundles_dir = root / AP_EVIDENCE_BUNDLES_DIR_REL
 
     if not writer.exists():
         failures.append(f"sandbox writer command missing: {SANDBOX_WRITER_REL}")
@@ -581,6 +647,15 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
             "product resolution proposal bundle export command missing: "
             f"{PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_EXPORT_REL}"
         )
+    if not ap_evidence_import.exists():
+        failures.append(f"AP evidence import command missing: {AP_EVIDENCE_IMPORT_REL}")
+    if not ap_evidence_inspect.exists():
+        failures.append(f"AP evidence inspect command missing: {AP_EVIDENCE_INSPECT_REL}")
+    if not ap_evidence_bundle_export.exists():
+        failures.append(
+            "AP evidence bundle export command missing: "
+            f"{AP_EVIDENCE_BUNDLE_EXPORT_REL}"
+        )
     if authoritative.exists():
         failures.append(f"authoritative command must remain absent: {AUTHORITATIVE_REL}")
     if not receipt_index.exists():
@@ -619,6 +694,10 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
             "product resolution proposal bundle schema missing: "
             f"{PRODUCT_RESOLUTION_PROPOSAL_BUNDLE_SCHEMA_REL}"
         )
+    if not ap_evidence_import_schema.exists():
+        failures.append(f"AP evidence import schema missing: {AP_EVIDENCE_IMPORT_SCHEMA_REL}")
+    if not ap_evidence_bundle_schema.exists():
+        failures.append(f"AP evidence bundle schema missing: {AP_EVIDENCE_BUNDLE_SCHEMA_REL}")
     if not capability_matrix.exists():
         failures.append(f"capability matrix missing: {CAPABILITY_MATRIX_REL}")
     if not review_packets_dir.exists():
@@ -654,6 +733,14 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(
             "product resolution proposal bundles directory missing: "
             f"{PRODUCT_RESOLUTION_PROPOSAL_BUNDLES_DIR_REL}"
+        )
+    if not ap_evidence_imports_dir.exists():
+        failures.append(
+            f"AP evidence imports directory missing: {AP_EVIDENCE_IMPORTS_DIR_REL}"
+        )
+    if not ap_evidence_bundles_dir.exists():
+        failures.append(
+            f"AP evidence bundles directory missing: {AP_EVIDENCE_BUNDLES_DIR_REL}"
         )
 
     if writer.exists():
@@ -1118,6 +1205,108 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                     f"copying binary/source/runtime/cache artifact token: {forbidden_copy}"
                 )
 
+    if ap_evidence_import.exists():
+        ap_evidence_import_text = _read_text(ap_evidence_import)
+        for needle in REQUIRED_AP_EVIDENCE_IMPORT_NEEDLES:
+            if needle not in ap_evidence_import_text:
+                failures.append(
+                    "AP evidence import command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in ap_evidence_import_text:
+                failures.append(
+                    "AP evidence import command contains forbidden execution needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "launch assetprocessor",
+            "assetprocessorbatch.exe",
+            "invoke-expression",
+            "start-process",
+        ):
+            if forbidden_phrase in ap_evidence_import_text:
+                failures.append(
+                    "AP evidence import command must remain read-only and non-executing; "
+                    f"forbidden phrase present: {forbidden_phrase}"
+                )
+        for forbidden_admission in (
+            "product_resolution_claimed = $true",
+            "product_ids_claimed = $true",
+            "asset_ids_claimed = $true",
+            "source_uuids_claimed = $true",
+            "cache_access_admitted = $true",
+            "live_database_access_admitted = $true",
+            "asset_processor_execution_admitted = $true",
+            "o3de_execution_admitted = $true",
+            "spawn_admitted = $true",
+            "publish_admitted = $true",
+        ):
+            if forbidden_admission in ap_evidence_import_text:
+                failures.append(
+                    "AP evidence import command widens forbidden admission: "
+                    f"{forbidden_admission}"
+                )
+
+    if ap_evidence_inspect.exists():
+        ap_evidence_inspect_text = _read_text(ap_evidence_inspect)
+        for needle in REQUIRED_AP_EVIDENCE_INSPECT_NEEDLES:
+            if needle not in ap_evidence_inspect_text:
+                failures.append(
+                    "AP evidence inspect command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in ap_evidence_inspect_text:
+                failures.append(
+                    "AP evidence inspect command contains forbidden execution needle: "
+                    f"{needle}"
+                )
+        for needle in MUTATION_NEEDLES:
+            if needle in ap_evidence_inspect_text:
+                failures.append(
+                    "AP evidence inspect command is not read-only; contains mutation needle: "
+                    f"{needle}"
+                )
+
+    if ap_evidence_bundle_export.exists():
+        ap_evidence_bundle_export_text = _read_text(ap_evidence_bundle_export)
+        for needle in REQUIRED_AP_EVIDENCE_BUNDLE_EXPORT_NEEDLES:
+            if needle not in ap_evidence_bundle_export_text:
+                failures.append(
+                    "AP evidence bundle export command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in ap_evidence_bundle_export_text:
+                failures.append(
+                    "AP evidence bundle export command contains forbidden execution needle: "
+                    f"{needle}"
+                )
+        for forbidden_copy in (
+            ".fbx",
+            ".gltf",
+            ".glb",
+            ".obj",
+            ".blend",
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".tiff",
+            ".exr",
+            ".bin",
+            ".dll",
+            ".pdb",
+            ".sqlite",
+            "assetdb.sqlite",
+            "cache",
+        ):
+            if f'"{forbidden_copy}"' in ap_evidence_bundle_export_text:
+                failures.append(
+                    "AP evidence bundle export command should not hardcode copying "
+                    f"binary/source/runtime/cache/database token: {forbidden_copy}"
+                )
+
     if receipt_index.exists():
         try:
             raw = receipt_index.read_text(encoding="utf-8-sig")
@@ -1165,9 +1354,11 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                     "asset_processor_execution",
                     "o3de_cli_execution",
                     "product_resolution",
+                    "product_id_claims",
                     "asset_id_claims",
                     "source_uuid_claims",
                     "cache_read",
+                    "live_asset_database_read",
                     "spawning",
                     "publishing",
                 ):
