@@ -357,6 +357,23 @@ References:
 - `docs/reviews/sandbox_implementation_execution_readiness_follow_on_review_package.json`
 - `docs/reviews/sandbox_implementation_execution_readiness_follow_on_decision_template.json`
 - `tools/audit/verify_sandbox_implementation_execution_readiness_follow_on_review.py`
+
+## Sandbox Implementation-Branch Execution-Readiness Follow-On Decision Record
+
+Sandbox implementation-branch execution-readiness follow-on decision record is decision-only.
+
+- decision status is `execution_readiness_review_pending_accepted_for_decision_preparation_only`
+- execution hold remains `hold_active`
+- sandbox write command is not implemented
+- rollback execution command is not implemented
+- authoritative write command is not implemented
+- this phase does not authorize execution
+
+References:
+
+- `docs/reviews/SANDBOX-IMPLEMENTATION-EXECUTION-READINESS-FOLLOW-ON-DECISION.md`
+- `docs/reviews/sandbox_implementation_execution_readiness_follow_on_decision.json`
+- `tools/audit/verify_sandbox_implementation_execution_readiness_follow_on_decision.py`
 M.A.X.I.N.E. production pipeline for O3DE character, asset, prefab, QC, and automation workflows.
 
 
