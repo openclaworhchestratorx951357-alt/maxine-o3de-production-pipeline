@@ -1,0 +1,220 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_asset_candidate_inventory.schema.json",
+  "title": "M.A.X.I.N.E. Sandbox Asset Candidate Inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "inventory_id",
+    "source_project_inventory_id",
+    "project_root",
+    "sandbox_root",
+    "scanned_roots",
+    "generated_candidate_folders",
+    "source_asset_candidates",
+    "material_texture_candidates",
+    "metadata_provenance_candidates",
+    "linked_sandbox_evidence",
+    "warnings",
+    "explicit_non_admissions",
+    "output_path",
+    "created_utc"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "inventory_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_project_inventory_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "project_root": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sandbox_root": {
+      "type": "string",
+      "const": "examples/sandbox"
+    },
+    "scanned_roots": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "generated_candidate_folders": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "source_asset_candidates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/sourceAssetCandidate"
+      }
+    },
+    "material_texture_candidates": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "metadata_provenance_candidates": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "linked_sandbox_evidence": {
+      "$ref": "#/$defs/linkedSandboxEvidence"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "explicit_non_admissions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "output_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_utc": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T"
+    }
+  },
+  "$defs": {
+    "linkedSandboxEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receipt_ids",
+        "review_packet_ids",
+        "decision_ids",
+        "workflow_run_ids",
+        "evidence_bundle_ids"
+      ],
+      "properties": {
+        "receipt_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "review_packet_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "decision_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "workflow_run_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence_bundle_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "sourceAssetCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "relative_path",
+        "extension",
+        "category",
+        "size_bytes",
+        "sha256",
+        "last_write_time_utc",
+        "evidence_links",
+        "confidence",
+        "notes"
+      ],
+      "properties": {
+        "candidate_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relative_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "extension": {
+          "type": "string",
+          "minLength": 1
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "character_source",
+            "mesh_source",
+            "scene_source",
+            "material_source",
+            "texture_source",
+            "metadata_source",
+            "unknown_source"
+          ]
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "last_write_time_utc": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T"
+        },
+        "evidence_links": {
+          "$ref": "#/$defs/linkedSandboxEvidence"
+        },
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,9 +1,10 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [switch]$List,
     [string]$InventoryId,
     [string]$InventoryPath,
-    [string]$InventoryRoot = "examples/sandbox/project-inventory"
+    [switch]$ShowCandidates,
+    [string]$InventoryRoot = "examples/sandbox/asset-candidates"
 )
 
 Set-StrictMode -Version Latest
@@ -66,24 +67,26 @@ function Get-SafeRelativePathAbs {
     return $candidateAbs
 }
 
-function Get-PropertyValue {
+function Get-InventorySummary {
     param(
         [Parameter(Mandatory = $true)]
-        [object]$InputObject,
-        [Parameter(Mandatory = $true)]
-        [string]$PropertyName
+        [object]$InventoryObject
     )
 
-    if ($null -eq $InputObject) {
-        return $null
+    $sourceCandidates = @($InventoryObject.source_asset_candidates)
+    return [ordered]@{
+        inventory_id = [string]$InventoryObject.inventory_id
+        source_project_inventory_id = [string]$InventoryObject.source_project_inventory_id
+        created_utc = [string]$InventoryObject.created_utc
+        project_root = [string]$InventoryObject.project_root
+        sandbox_root = [string]$InventoryObject.sandbox_root
+        output_path = [string]$InventoryObject.output_path
+        candidate_count = @($sourceCandidates).Count
+        generated_candidate_folder_count = @($InventoryObject.generated_candidate_folders).Count
+        scanned_root_count = @($InventoryObject.scanned_roots).Count
+        warning_count = @($InventoryObject.warnings).Count
+        linked_sandbox_evidence = $InventoryObject.linked_sandbox_evidence
     }
-
-    $prop = $InputObject.PSObject.Properties[$PropertyName]
-    if ($null -eq $prop) {
-        return $null
-    }
-
-    return $prop.Value
 }
 
 $inventoryRootAbs = Get-SafeRelativePathAbs -RelativePath $InventoryRoot -AllowedRootAbs $sandboxAnchorAbs -Label "inventory_root"
@@ -117,31 +120,11 @@ foreach ($file in Get-ChildItem -LiteralPath $inventoryRootAbs -File -Filter *.j
 }
 
 if ($List) {
-    $summary = @($inventories | ForEach-Object {
-        $item = $_.item
-        $metadata = Get-PropertyValue -InputObject $item -PropertyName "o3de_project_path_metadata"
-        $projectJsonExistingCount = $null
-        if ($null -ne $metadata) {
-            $projectJsonExistingCount = Get-PropertyValue -InputObject $metadata -PropertyName "project_json_existing_count"
-        }
-
-        [ordered]@{
-            inventory_id = [string](Get-PropertyValue -InputObject $item -PropertyName "inventory_id")
-            generated_at_utc = [string](Get-PropertyValue -InputObject $item -PropertyName "generated_at_utc")
-            project_root = [string](Get-PropertyValue -InputObject $item -PropertyName "project_root")
-            project_json_existing_count = $projectJsonExistingCount
-            gem_count = @((Get-PropertyValue -InputObject $item -PropertyName "gem_names")).Count
-            known_asset_folder_count = @((Get-PropertyValue -InputObject $item -PropertyName "known_asset_folders")).Count
-            generated_asset_candidate_folder_count = @((Get-PropertyValue -InputObject $item -PropertyName "generated_asset_candidate_folders")).Count
-            path = [string](Get-PropertyValue -InputObject $item -PropertyName "inventory_path")
-        }
-    })
-
+    $summary = @($inventories | ForEach-Object { Get-InventorySummary -InventoryObject $_.item })
     [ordered]@{
         inventory_count = @($summary).Count
         inventories = @($summary)
-    } | ConvertTo-Json -Depth 50
-
+    } | ConvertTo-Json -Depth 100
     exit 0
 }
 
@@ -151,7 +134,12 @@ if (-not [string]::IsNullOrWhiteSpace($InventoryPath)) {
         throw "inventory_path not found: $InventoryPath"
     }
 
-    Get-Content -LiteralPath $inventoryAbs -Raw
+    $payload = Get-Content -LiteralPath $inventoryAbs -Raw | ConvertFrom-Json
+    if ($ShowCandidates) {
+        $payload | ConvertTo-Json -Depth 100
+    } else {
+        Get-InventorySummary -InventoryObject $payload | ConvertTo-Json -Depth 100
+    }
     exit 0
 }
 
@@ -160,4 +148,8 @@ if (-not $match) {
     throw "inventory_id '$InventoryId' not found."
 }
 
-$match.item | ConvertTo-Json -Depth 100
+if ($ShowCandidates) {
+    $match.item | ConvertTo-Json -Depth 100
+} else {
+    Get-InventorySummary -InventoryObject $match.item | ConvertTo-Json -Depth 100
+}

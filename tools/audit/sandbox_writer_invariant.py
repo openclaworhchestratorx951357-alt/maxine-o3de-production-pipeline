@@ -21,6 +21,8 @@ SANDBOX_EVIDENCE_EXPORT_REL = "scripts/powershell/Invoke-MaxineSandboxEvidenceBu
 SANDBOX_OPERATOR_SUMMARY_REL = "scripts/powershell/Invoke-MaxineSandboxOperatorSummary.ps1"
 PROJECT_INVENTORY_READ_REL = "scripts/powershell/Invoke-MaxineProjectInventoryRead.ps1"
 PROJECT_INVENTORY_INSPECT_REL = "scripts/powershell/Invoke-MaxineProjectInventoryInspect.ps1"
+ASSET_CANDIDATE_INVENTORY_READ_REL = "scripts/powershell/Invoke-MaxineAssetCandidateInventoryRead.ps1"
+ASSET_CANDIDATE_INVENTORY_INSPECT_REL = "scripts/powershell/Invoke-MaxineAssetCandidateInventoryInspect.ps1"
 AUTHORITATIVE_REL = "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
 RECEIPT_INDEX_REL = "examples/sandbox/receipts/index.json"
 RECEIPT_INDEX_SCHEMA_REL = "schemas/maxine_sandbox_receipt_index.schema.json"
@@ -29,6 +31,7 @@ REVIEW_DECISION_SCHEMA_REL = "schemas/maxine_sandbox_review_decision.schema.json
 WORKFLOW_RUN_SCHEMA_REL = "schemas/maxine_sandbox_workflow_run.schema.json"
 EVIDENCE_BUNDLE_SCHEMA_REL = "schemas/maxine_sandbox_evidence_bundle.schema.json"
 CAPABILITY_MATRIX_SCHEMA_REL = "schemas/maxine_capability_matrix.schema.json"
+ASSET_CANDIDATE_SCHEMA_REL = "schemas/maxine_asset_candidate_inventory.schema.json"
 CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
@@ -36,6 +39,7 @@ WORKFLOW_RUNS_DIR_REL = "examples/sandbox/workflow-runs"
 EVIDENCE_BUNDLES_DIR_REL = "examples/sandbox/evidence-bundles"
 OPERATOR_REPORTS_DIR_REL = "examples/sandbox/operator-reports"
 PROJECT_INVENTORY_DIR_REL = "examples/sandbox/project-inventory"
+ASSET_CANDIDATES_DIR_REL = "examples/sandbox/asset-candidates"
 
 ADMITTED_SANDBOX_COMMANDS = {
     SANDBOX_WRITER_REL,
@@ -51,6 +55,8 @@ ADMITTED_SANDBOX_COMMANDS = {
     SANDBOX_OPERATOR_SUMMARY_REL,
     PROJECT_INVENTORY_READ_REL,
     PROJECT_INVENTORY_INSPECT_REL,
+    ASSET_CANDIDATE_INVENTORY_READ_REL,
+    ASSET_CANDIDATE_INVENTORY_INSPECT_REL,
 }
 
 REQUIRED_WRITER_NEEDLES = [
@@ -196,6 +202,27 @@ REQUIRED_PROJECT_INVENTORY_INSPECT_NEEDLES = [
     "project_json_existing_count",
 ]
 
+REQUIRED_ASSET_CANDIDATE_INVENTORY_READ_NEEDLES = [
+    "source_project_inventory_id",
+    "generated_candidate_folders",
+    "source_asset_candidates",
+    "material_texture_candidates",
+    "metadata_provenance_candidates",
+    "linked_sandbox_evidence",
+    "explicit_non_admissions",
+    "output_path",
+    "asset-candidates",
+    "cache is not an allowed scan root",
+]
+
+REQUIRED_ASSET_CANDIDATE_INVENTORY_INSPECT_NEEDLES = [
+    "inventory_count",
+    "inventory_id",
+    "source_project_inventory_id",
+    "candidate_count",
+    "showcandidates",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -276,8 +303,10 @@ EXPECTED_CAPABILITY_STATES = {
     "sandbox_workflow_inspect": "read_only",
     "sandbox_evidence_bundle_export": "sandbox_only",
     "sandbox_operator_summary": "read_only",
-    "project_inventory_read": "sandbox_only",
+    "project_inventory_read": "read_only",
     "project_inventory_inspect": "read_only",
+    "asset_candidate_inventory_read": "read_only",
+    "asset_candidate_inventory_inspect": "read_only",
     "authoritative_resolver_write": "forbidden",
     "o3de_editor_execution": "blocked",
     "asset_processor_execution": "blocked",
@@ -321,6 +350,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     operator_summary = root / SANDBOX_OPERATOR_SUMMARY_REL
     project_inventory_read = root / PROJECT_INVENTORY_READ_REL
     project_inventory_inspect = root / PROJECT_INVENTORY_INSPECT_REL
+    asset_candidate_inventory_read = root / ASSET_CANDIDATE_INVENTORY_READ_REL
+    asset_candidate_inventory_inspect = root / ASSET_CANDIDATE_INVENTORY_INSPECT_REL
     authoritative = root / AUTHORITATIVE_REL
     receipt_index = root / RECEIPT_INDEX_REL
     receipt_index_schema = root / RECEIPT_INDEX_SCHEMA_REL
@@ -329,6 +360,7 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     workflow_run_schema = root / WORKFLOW_RUN_SCHEMA_REL
     evidence_bundle_schema = root / EVIDENCE_BUNDLE_SCHEMA_REL
     capability_matrix_schema = root / CAPABILITY_MATRIX_SCHEMA_REL
+    asset_candidate_schema = root / ASSET_CANDIDATE_SCHEMA_REL
     capability_matrix = root / CAPABILITY_MATRIX_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -336,6 +368,7 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     evidence_bundles_dir = root / EVIDENCE_BUNDLES_DIR_REL
     operator_reports_dir = root / OPERATOR_REPORTS_DIR_REL
     project_inventory_dir = root / PROJECT_INVENTORY_DIR_REL
+    asset_candidates_dir = root / ASSET_CANDIDATES_DIR_REL
 
     if not writer.exists():
         failures.append(f"sandbox writer command missing: {SANDBOX_WRITER_REL}")
@@ -367,6 +400,16 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(f"project inventory read command missing: {PROJECT_INVENTORY_READ_REL}")
     if not project_inventory_inspect.exists():
         failures.append(f"project inventory inspect command missing: {PROJECT_INVENTORY_INSPECT_REL}")
+    if not asset_candidate_inventory_read.exists():
+        failures.append(
+            "asset candidate inventory read command missing: "
+            f"{ASSET_CANDIDATE_INVENTORY_READ_REL}"
+        )
+    if not asset_candidate_inventory_inspect.exists():
+        failures.append(
+            "asset candidate inventory inspect command missing: "
+            f"{ASSET_CANDIDATE_INVENTORY_INSPECT_REL}"
+        )
     if authoritative.exists():
         failures.append(f"authoritative command must remain absent: {AUTHORITATIVE_REL}")
     if not receipt_index.exists():
@@ -383,6 +426,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(f"evidence bundle schema missing: {EVIDENCE_BUNDLE_SCHEMA_REL}")
     if not capability_matrix_schema.exists():
         failures.append(f"capability matrix schema missing: {CAPABILITY_MATRIX_SCHEMA_REL}")
+    if not asset_candidate_schema.exists():
+        failures.append(f"asset candidate inventory schema missing: {ASSET_CANDIDATE_SCHEMA_REL}")
     if not capability_matrix.exists():
         failures.append(f"capability matrix missing: {CAPABILITY_MATRIX_REL}")
     if not review_packets_dir.exists():
@@ -397,6 +442,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(f"operator reports directory missing: {OPERATOR_REPORTS_DIR_REL}")
     if not project_inventory_dir.exists():
         failures.append(f"project inventory directory missing: {PROJECT_INVENTORY_DIR_REL}")
+    if not asset_candidates_dir.exists():
+        failures.append(f"asset candidates directory missing: {ASSET_CANDIDATES_DIR_REL}")
 
     if writer.exists():
         writer_text = _read_text(writer)
@@ -620,6 +667,42 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
             if needle in project_inventory_inspect_text:
                 failures.append(
                     "project inventory inspect command is not read-only; contains mutation "
+                    f"needle: {needle}"
+                )
+
+    if asset_candidate_inventory_read.exists():
+        asset_candidate_inventory_read_text = _read_text(asset_candidate_inventory_read)
+        for needle in REQUIRED_ASSET_CANDIDATE_INVENTORY_READ_NEEDLES:
+            if needle not in asset_candidate_inventory_read_text:
+                failures.append(
+                    "asset candidate inventory read command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in asset_candidate_inventory_read_text:
+                failures.append(
+                    "asset candidate inventory read command contains forbidden execution needle: "
+                    f"{needle}"
+                )
+
+    if asset_candidate_inventory_inspect.exists():
+        asset_candidate_inventory_inspect_text = _read_text(asset_candidate_inventory_inspect)
+        for needle in REQUIRED_ASSET_CANDIDATE_INVENTORY_INSPECT_NEEDLES:
+            if needle not in asset_candidate_inventory_inspect_text:
+                failures.append(
+                    "asset candidate inventory inspect command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in asset_candidate_inventory_inspect_text:
+                failures.append(
+                    "asset candidate inventory inspect command contains forbidden execution needle: "
+                    f"{needle}"
+                )
+        for needle in MUTATION_NEEDLES:
+            if needle in asset_candidate_inventory_inspect_text:
+                failures.append(
+                    "asset candidate inventory inspect command is not read-only; contains mutation "
                     f"needle: {needle}"
                 )
 
