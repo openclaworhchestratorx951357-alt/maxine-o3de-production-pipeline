@@ -26,6 +26,10 @@
 - Read-only asset candidate inventory is implemented:
   - `scripts/powershell/Invoke-MaxineAssetCandidateInventoryRead.ps1`
   - `scripts/powershell/Invoke-MaxineAssetCandidateInventoryInspect.ps1`
+- Asset candidate review packet and candidate evidence bundle commands are implemented:
+  - `scripts/powershell/Invoke-MaxineAssetCandidateReviewPacketBuild.ps1`
+  - `scripts/powershell/Invoke-MaxineAssetCandidateReviewPacketInspect.ps1`
+  - `scripts/powershell/Invoke-MaxineAssetCandidateEvidenceBundleExport.ps1`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -41,6 +45,8 @@
 - Operator summary reports are restricted to `examples/sandbox/operator-reports` when `-WriteReport` is explicitly used.
 - Project inventory output is restricted to `examples/sandbox/project-inventory`.
 - Asset candidate inventory output is restricted to `examples/sandbox/asset-candidates`.
+- Asset candidate review packet output is restricted to `examples/sandbox/asset-candidate-review-packets`.
+- Asset candidate evidence bundle output is restricted to `examples/sandbox/asset-candidate-evidence-bundles`.
 - Explicit sandbox approval is required in the input plan.
 - Production paths, engine paths, Cache paths, and parent traversal paths are blocked.
 - `scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1` remains absent.

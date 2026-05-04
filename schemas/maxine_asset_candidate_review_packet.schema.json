@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_asset_candidate_review_packet.schema.json",
+  "title": "Maxine Asset Candidate Review Packet",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "review_packet_id",
+    "source_inventory_id",
+    "candidate_id",
+    "project_root",
+    "sandbox_root",
+    "candidate_relative_path",
+    "candidate_extension",
+    "candidate_category",
+    "size_bytes",
+    "sha256",
+    "last_write_time_utc",
+    "confidence",
+    "evidence_links",
+    "provenance_links",
+    "material_texture_links",
+    "warnings",
+    "safety_summary",
+    "recommended_next_step",
+    "operator_decision_state",
+    "explicit_non_admissions",
+    "output_path",
+    "created_utc"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "review_packet_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_inventory_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidate_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "project_root": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sandbox_root": {
+      "type": "string",
+      "const": "examples/sandbox"
+    },
+    "candidate_relative_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidate_extension": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidate_category": {
+      "type": "string",
+      "enum": [
+        "character_source",
+        "mesh_source",
+        "scene_source",
+        "material_source",
+        "texture_source",
+        "metadata_source",
+        "unknown_source"
+      ]
+    },
+    "size_bytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{64}$"
+    },
+    "last_write_time_utc": {
+      "type": "string",
+      "minLength": 1
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "evidence_links": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "provenance_links": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "material_texture_links": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "safety_summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "recommended_next_step": {
+      "type": "string",
+      "enum": [
+        "inspect_candidate",
+        "bundle_evidence",
+        "request_more_evidence",
+        "propose_product_resolution_later",
+        "reject_candidate",
+        "request_sandbox_cleanup"
+      ]
+    },
+    "operator_decision_state": {
+      "type": "string",
+      "enum": [
+        "pending_review",
+        "accepted_for_sandbox_only",
+        "rejected",
+        "needs_more_evidence",
+        "request_candidate_cleanup"
+      ]
+    },
+    "explicit_non_admissions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "output_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_utc": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}
