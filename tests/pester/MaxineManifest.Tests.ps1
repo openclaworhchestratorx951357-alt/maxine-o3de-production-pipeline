@@ -1110,5 +1110,33 @@
     It "does not have authoritative write command implementation (sandbox implementation execution-readiness authorization review phase)" {
         Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
     }
+
+    It "has sandbox implementation execution-readiness authorization decision doc" {
+        Test-Path -LiteralPath "docs/reviews/SANDBOX-IMPLEMENTATION-EXECUTION-READINESS-AUTHORIZATION-DECISION.md" | Should Be $true
+    }
+
+    It "has sandbox implementation execution-readiness authorization decision JSON" {
+        Test-Path -LiteralPath "docs/reviews/sandbox_implementation_execution_readiness_authorization_decision.json" | Should Be $true
+    }
+
+    It "has sandbox implementation execution-readiness authorization decision verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_sandbox_implementation_execution_readiness_authorization_decision.py" | Should Be $true
+    }
+
+    It "has sandbox implementation execution-readiness authorization decision PowerShell wrapper" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxImplementationExecutionReadinessAuthorizationDecision.ps1" | Should Be $true
+    }
+
+    It "does not have sandbox write command implementation (sandbox implementation execution-readiness authorization decision phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    }
+
+    It "does not have rollback execution command implementation (sandbox implementation execution-readiness authorization decision phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    }
+
+    It "does not have authoritative write command implementation (sandbox implementation execution-readiness authorization decision phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
+    }
 }
 
