@@ -1,0 +1,11 @@
+{
+  "job_type": "sandbox_write_final_preflight_validation",
+  "character_name": "Maxine_Sandbox_Write_Final_Preflight_Test_001",
+  "mode": "planning_only_final_preflight_validation",
+  "sandbox_write_plan_path": "examples/manifests/example-sandbox-write-plan.json",
+  "dry_run_report_path": "examples/manifests/example-sandbox-write-dry-run-report.json",
+  "approval_gate_report_path": "examples/manifests/example-sandbox-write-approval-gate-report.json",
+  "rollback_artifact_path": "examples/manifests/example-sandbox-rollback-artifact.json",
+  "final_preflight_report_path": "examples/manifests/example-sandbox-write-final-preflight-report.json",
+  "notes": "Validate sandbox write final preflight structure only. Do not execute sandbox writes."
+}

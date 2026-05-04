@@ -738,4 +738,48 @@ Describe "Maxine Manifest Repository Baseline" {
     It "does not have authoritative write command implementation (sandbox write approval gate phase)" {
         Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
     }
+
+    It "has sandbox write final preflight design doc" {
+        Test-Path -LiteralPath "docs/roadmap/SANDBOX-WRITE-FINAL-PREFLIGHT-CONTRACT-DESIGN.md" | Should Be $true
+    }
+
+    It "has sandbox write final preflight contract" {
+        Test-Path -LiteralPath "docs/contracts/SANDBOX-WRITE-FINAL-PREFLIGHT-CONTRACT.md" | Should Be $true
+    }
+
+    It "has sandbox write final preflight report schema" {
+        Test-Path -LiteralPath "schemas/maxine_sandbox_write_final_preflight_report.schema.json" | Should Be $true
+    }
+
+    It "has sandbox write final preflight report example" {
+        Test-Path -LiteralPath "examples/manifests/example-sandbox-write-final-preflight-report.json" | Should Be $true
+    }
+
+    It "has sandbox write final preflight report verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_sandbox_write_final_preflight_report.py" | Should Be $true
+    }
+
+    It "has sandbox write final preflight contract verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_sandbox_write_final_preflight_contract.py" | Should Be $true
+    }
+
+    It "has sandbox write final preflight report PowerShell wrapper" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxWriteFinalPreflightReport.ps1" | Should Be $true
+    }
+
+    It "has sandbox write final preflight contract PowerShell wrapper" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxWriteFinalPreflightContract.ps1" | Should Be $true
+    }
+
+    It "does not have sandbox write command implementation (sandbox write final preflight phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    }
+
+    It "does not have rollback execution command implementation (sandbox write final preflight phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    }
+
+    It "does not have authoritative write command implementation (sandbox write final preflight phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
+    }
 }
