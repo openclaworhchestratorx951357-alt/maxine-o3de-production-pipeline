@@ -439,3 +439,21 @@ Create an implementation-branch kickoff safety package that defines the first no
 ## Next Milestone After Sandbox Implementation-Branch Kickoff Safety Package
 
 Create an implementation-branch execution-readiness review package that asks whether execution hold can move from hold_active to review_pending while still not implementing sandbox writes or rollback execution.
+
+## Sandbox Implementation-Branch Execution-Readiness Review Complete Criteria
+
+- execution-readiness review doc exists
+- execution-readiness review package JSON exists
+- execution-readiness decision template exists
+- execution-readiness review verifier exists
+- execution-readiness review verifier passes
+- execution hold remains active by default
+- sandbox write command remains absent
+- rollback execution command remains absent
+- authoritative write command remains absent
+- no products are resolved
+- no Asset IDs are claimed
+
+## Next Milestone After Sandbox Implementation-Branch Execution-Readiness Review
+
+If the operator explicitly records `execution_readiness_review_pending`, create an execution-readiness decision record phase. Do not implement sandbox writes or rollback execution in that record phase.
