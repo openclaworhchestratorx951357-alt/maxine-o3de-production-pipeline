@@ -19,6 +19,8 @@ SANDBOX_WORKFLOW_RUN_REL = "scripts/powershell/Invoke-MaxineSandboxWorkflowRun.p
 SANDBOX_WORKFLOW_INSPECT_REL = "scripts/powershell/Invoke-MaxineSandboxWorkflowInspect.ps1"
 SANDBOX_EVIDENCE_EXPORT_REL = "scripts/powershell/Invoke-MaxineSandboxEvidenceBundleExport.ps1"
 SANDBOX_OPERATOR_SUMMARY_REL = "scripts/powershell/Invoke-MaxineSandboxOperatorSummary.ps1"
+PROJECT_INVENTORY_READ_REL = "scripts/powershell/Invoke-MaxineProjectInventoryRead.ps1"
+PROJECT_INVENTORY_INSPECT_REL = "scripts/powershell/Invoke-MaxineProjectInventoryInspect.ps1"
 AUTHORITATIVE_REL = "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
 RECEIPT_INDEX_REL = "examples/sandbox/receipts/index.json"
 RECEIPT_INDEX_SCHEMA_REL = "schemas/maxine_sandbox_receipt_index.schema.json"
@@ -33,6 +35,7 @@ REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
 WORKFLOW_RUNS_DIR_REL = "examples/sandbox/workflow-runs"
 EVIDENCE_BUNDLES_DIR_REL = "examples/sandbox/evidence-bundles"
 OPERATOR_REPORTS_DIR_REL = "examples/sandbox/operator-reports"
+PROJECT_INVENTORY_DIR_REL = "examples/sandbox/project-inventory"
 
 ADMITTED_SANDBOX_COMMANDS = {
     SANDBOX_WRITER_REL,
@@ -46,6 +49,8 @@ ADMITTED_SANDBOX_COMMANDS = {
     SANDBOX_WORKFLOW_INSPECT_REL,
     SANDBOX_EVIDENCE_EXPORT_REL,
     SANDBOX_OPERATOR_SUMMARY_REL,
+    PROJECT_INVENTORY_READ_REL,
+    PROJECT_INVENTORY_INSPECT_REL,
 }
 
 REQUIRED_WRITER_NEEDLES = [
@@ -172,6 +177,25 @@ REQUIRED_OPERATOR_SUMMARY_NEEDLES = [
     "operator-reports",
 ]
 
+REQUIRED_PROJECT_INVENTORY_READ_NEEDLES = [
+    "project.json",
+    "gem_names",
+    "known_asset_folders",
+    "generated_asset_candidate_folders",
+    "sandbox_evidence_folders",
+    "o3de_project_path_metadata",
+    "configured_non_executed_path_hints",
+    "project-inventory",
+    "read_only_project_scan",
+]
+
+REQUIRED_PROJECT_INVENTORY_INSPECT_NEEDLES = [
+    "inventory_count",
+    "inventory_id",
+    "inventory_path",
+    "project_json_existing_count",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -252,6 +276,8 @@ EXPECTED_CAPABILITY_STATES = {
     "sandbox_workflow_inspect": "read_only",
     "sandbox_evidence_bundle_export": "sandbox_only",
     "sandbox_operator_summary": "read_only",
+    "project_inventory_read": "sandbox_only",
+    "project_inventory_inspect": "read_only",
     "authoritative_resolver_write": "forbidden",
     "o3de_editor_execution": "blocked",
     "asset_processor_execution": "blocked",
@@ -293,6 +319,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     workflow_inspect = root / SANDBOX_WORKFLOW_INSPECT_REL
     evidence_export = root / SANDBOX_EVIDENCE_EXPORT_REL
     operator_summary = root / SANDBOX_OPERATOR_SUMMARY_REL
+    project_inventory_read = root / PROJECT_INVENTORY_READ_REL
+    project_inventory_inspect = root / PROJECT_INVENTORY_INSPECT_REL
     authoritative = root / AUTHORITATIVE_REL
     receipt_index = root / RECEIPT_INDEX_REL
     receipt_index_schema = root / RECEIPT_INDEX_SCHEMA_REL
@@ -307,6 +335,7 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     workflow_runs_dir = root / WORKFLOW_RUNS_DIR_REL
     evidence_bundles_dir = root / EVIDENCE_BUNDLES_DIR_REL
     operator_reports_dir = root / OPERATOR_REPORTS_DIR_REL
+    project_inventory_dir = root / PROJECT_INVENTORY_DIR_REL
 
     if not writer.exists():
         failures.append(f"sandbox writer command missing: {SANDBOX_WRITER_REL}")
@@ -334,6 +363,10 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(f"sandbox evidence bundle export command missing: {SANDBOX_EVIDENCE_EXPORT_REL}")
     if not operator_summary.exists():
         failures.append(f"sandbox operator summary command missing: {SANDBOX_OPERATOR_SUMMARY_REL}")
+    if not project_inventory_read.exists():
+        failures.append(f"project inventory read command missing: {PROJECT_INVENTORY_READ_REL}")
+    if not project_inventory_inspect.exists():
+        failures.append(f"project inventory inspect command missing: {PROJECT_INVENTORY_INSPECT_REL}")
     if authoritative.exists():
         failures.append(f"authoritative command must remain absent: {AUTHORITATIVE_REL}")
     if not receipt_index.exists():
@@ -362,6 +395,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(f"evidence bundles directory missing: {EVIDENCE_BUNDLES_DIR_REL}")
     if not operator_reports_dir.exists():
         failures.append(f"operator reports directory missing: {OPERATOR_REPORTS_DIR_REL}")
+    if not project_inventory_dir.exists():
+        failures.append(f"project inventory directory missing: {PROJECT_INVENTORY_DIR_REL}")
 
     if writer.exists():
         writer_text = _read_text(writer)
@@ -558,6 +593,34 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                 failures.append(
                     "sandbox operator summary command contains mutation behavior without explicit "
                     "-WriteReport gating."
+                )
+
+    if project_inventory_read.exists():
+        project_inventory_read_text = _read_text(project_inventory_read)
+        for needle in REQUIRED_PROJECT_INVENTORY_READ_NEEDLES:
+            if needle not in project_inventory_read_text:
+                failures.append(f"project inventory read command missing required needle: {needle}")
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in project_inventory_read_text:
+                failures.append(
+                    f"project inventory read command contains forbidden execution needle: {needle}"
+                )
+
+    if project_inventory_inspect.exists():
+        project_inventory_inspect_text = _read_text(project_inventory_inspect)
+        for needle in REQUIRED_PROJECT_INVENTORY_INSPECT_NEEDLES:
+            if needle not in project_inventory_inspect_text:
+                failures.append(f"project inventory inspect command missing required needle: {needle}")
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in project_inventory_inspect_text:
+                failures.append(
+                    f"project inventory inspect command contains forbidden execution needle: {needle}"
+                )
+        for needle in MUTATION_NEEDLES:
+            if needle in project_inventory_inspect_text:
+                failures.append(
+                    "project inventory inspect command is not read-only; contains mutation "
+                    f"needle: {needle}"
                 )
 
     if receipt_index.exists():
