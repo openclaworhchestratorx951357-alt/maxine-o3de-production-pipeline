@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0.0",
+  "sandbox_write_plan_id": "sandbox-write-plan-example-0001",
+  "sandbox_id": "sandbox-example-0001",
+  "design_only": true,
+  "target_manifest_copy": "examples/sandbox/manifests/working/example-working.manifest.json",
+  "pre_write_snapshot": "examples/sandbox/manifests/snapshots/example-working.prewrite.manifest.json",
+  "rollback_artifact": "examples/manifests/example-sandbox-rollback-artifact.json",
+  "operator_approval_ref": "approval-example-0001",
+  "execution_gate_ref": "execution-gate-example-0001",
+  "proposed_changes": [
+    {
+      "field": "o3de.sandbox_proposed.review_only_flag",
+      "value": true,
+      "proposed_only": true
+    }
+  ],
+  "forbidden_changes": [
+    "o3de.products.resolved",
+    "o3de.products.asset_id",
+    "o3de.products.resolved_products"
+  ],
+  "safety": {
+    "sandbox_only": true,
+    "implementation_available": false,
+    "sandbox_write_allowed": false,
+    "rollback_execution_required": true,
+    "rollback_execution_implemented": false,
+    "authoritative_write_allowed": false,
+    "production_paths_allowed": false,
+    "product_resolution_allowed": false,
+    "asset_id_claims_allowed": false
+  }
+}

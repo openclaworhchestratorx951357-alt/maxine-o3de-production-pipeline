@@ -269,3 +269,21 @@ If the decision status is accepted, create a separate sandbox-only write prototy
 ## Next Milestone After Sandbox Rollback Execution Design
 
 Design the sandbox write planning contract that depends on rollback execution design, while still not implementing sandbox writes.
+
+## Sandbox Write Planning Contract Complete Criteria
+
+- sandbox write planning design doc exists
+- sandbox write planning contract exists
+- sandbox write planning plan JSON exists
+- sandbox write plan example exists
+- sandbox write plan verifier exists
+- sandbox write planning contract verifier exists
+- sandbox write command remains absent
+- rollback execution command remains absent
+- authoritative write command remains absent
+- no products are resolved
+- no Asset IDs are claimed
+
+## Next Milestone After Sandbox Write Planning Contract
+
+Design the sandbox write dry-run report contract that validates a sandbox write plan and rollback dependency, while still not implementing sandbox writes.
