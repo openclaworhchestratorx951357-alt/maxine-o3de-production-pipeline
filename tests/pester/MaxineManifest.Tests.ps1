@@ -1258,5 +1258,37 @@
     It "does not have authoritative write command implementation (sandbox implementation explicit execution-authorization decision phase)" {
         Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
     }
+
+    It "has sandbox implementation implementation-authorizing decision review doc" {
+        Test-Path -LiteralPath "docs/reviews/SANDBOX-IMPLEMENTATION-AUTHORIZING-DECISION-REVIEW.md" | Should Be $true
+    }
+
+    It "has sandbox implementation implementation-authorizing decision review package JSON" {
+        Test-Path -LiteralPath "docs/reviews/sandbox_implementation_authorizing_decision_review_package.json" | Should Be $true
+    }
+
+    It "has sandbox implementation implementation-authorizing decision template" {
+        Test-Path -LiteralPath "docs/reviews/sandbox_implementation_authorizing_decision_template.json" | Should Be $true
+    }
+
+    It "has sandbox implementation implementation-authorizing decision review verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_sandbox_implementation_authorizing_decision_review.py" | Should Be $true
+    }
+
+    It "has sandbox implementation implementation-authorizing decision review PowerShell wrapper" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxImplementationAuthorizingDecisionReview.ps1" | Should Be $true
+    }
+
+    It "does not have sandbox write command implementation (sandbox implementation implementation-authorizing decision review phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    }
+
+    It "does not have rollback execution command implementation (sandbox implementation implementation-authorizing decision review phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    }
+
+    It "does not have authoritative write command implementation (sandbox implementation implementation-authorizing decision review phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
+    }
 }
 
