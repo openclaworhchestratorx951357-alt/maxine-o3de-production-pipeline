@@ -27,6 +27,9 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - `scripts/powershell/Invoke-MaxineApEvidenceImport.ps1`
 - `scripts/powershell/Invoke-MaxineApEvidenceInspect.ps1`
 - `scripts/powershell/Invoke-MaxineApEvidenceBundleExport.ps1`
+- `scripts/powershell/Invoke-MaxineApExecutionPreflightBuild.ps1`
+- `scripts/powershell/Invoke-MaxineApExecutionPreflightInspect.ps1`
+- `scripts/powershell/Invoke-MaxineApExecutionPreflightBundleExport.ps1`
 
 ## What This Implementation Does
 - Accepts a structured write plan JSON.
@@ -60,6 +63,10 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - Adds read-only AP evidence inspection by list, `evidence_import_id`, and explicit path.
 - Adds sandbox-only AP evidence bundle export under `examples/sandbox/ap-evidence-bundles` that copies JSON snapshots only.
 - Blocks live Cache directory inputs, `assetdb.sqlite`/database inputs, binary/source/runtime evidence inputs, and all Product ID/Asset ID/source UUID claims.
+- Adds sandbox-only AP execution preflight packet generation under `examples/sandbox/ap-execution-preflights`.
+- Adds read-only AP execution preflight inspection by list, `preflight_id`, and explicit path.
+- Adds sandbox-only AP execution preflight bundle export under `examples/sandbox/ap-execution-preflight-bundles` with JSON snapshots only.
+- Keeps AP execution unadmitted by enforcing `required_manual_confirmation=true`, `local_only=true`, and `execution_admitted=false`.
 - Enforces capability-state boundaries via `examples/capabilities/maxine-capability-matrix.json`.
 - Allows rollback only for files listed in the receipt and only under the approved sandbox root.
 

@@ -38,6 +38,10 @@
   - `scripts/powershell/Invoke-MaxineApEvidenceImport.ps1`
   - `scripts/powershell/Invoke-MaxineApEvidenceInspect.ps1`
   - `scripts/powershell/Invoke-MaxineApEvidenceBundleExport.ps1`
+- AP execution preflight packet commands are implemented:
+  - `scripts/powershell/Invoke-MaxineApExecutionPreflightBuild.ps1`
+  - `scripts/powershell/Invoke-MaxineApExecutionPreflightInspect.ps1`
+  - `scripts/powershell/Invoke-MaxineApExecutionPreflightBundleExport.ps1`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -59,6 +63,8 @@
 - Product-resolution proposal bundle output is restricted to `examples/sandbox/product-resolution-proposal-bundles`.
 - AP evidence import output is restricted to `examples/sandbox/ap-evidence-imports`.
 - AP evidence bundle output is restricted to `examples/sandbox/ap-evidence-bundles`.
+- AP execution preflight output is restricted to `examples/sandbox/ap-execution-preflights`.
+- AP execution preflight bundle output is restricted to `examples/sandbox/ap-execution-preflight-bundles`.
 - Explicit sandbox approval is required in the input plan.
 - Production paths, engine paths, Cache paths, and parent traversal paths are blocked.
 - `scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1` remains absent.
@@ -67,6 +73,11 @@
   - no live Cache read
   - no live asset database read
   - no Product ID, Asset ID, or source UUID claims
+- AP execution preflight remains non-executing:
+  - `proposed_ap_command_display` is display-only
+  - `required_manual_confirmation` is true
+  - `local_only` is true
+  - `execution_admitted` is false
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
 
 ## Verification Entry Points
