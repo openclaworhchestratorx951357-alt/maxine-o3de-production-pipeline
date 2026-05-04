@@ -39,6 +39,8 @@
         "sandbox_operator_summary",
         "project_inventory_read",
         "project_inventory_inspect",
+        "asset_candidate_inventory_read",
+        "asset_candidate_inventory_inspect",
         "authoritative_resolver_write",
         "o3de_editor_execution",
         "asset_processor_execution",
