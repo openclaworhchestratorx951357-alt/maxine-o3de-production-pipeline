@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0.0",
+  "decision_name": "sandbox-implementation-execution-authorization-decision",
+  "decision_status": "execution_authorization_decision_review_pending_explicit_authorization_decision",
+  "decision_recorded_by": "operator",
+  "decision_recorded_at_utc": "2026-05-04T00:00:00Z",
+  "review_package": "docs/reviews/sandbox_implementation_execution_authorization_decision_review_package.json",
+  "review_document": "docs/reviews/SANDBOX-IMPLEMENTATION-EXECUTION-AUTHORIZATION-DECISION-REVIEW.md",
+  "execution_hold_current_status": "hold_active",
+  "execution_hold_next_status": "hold_active",
+  "execution_hold_transition_approved": true,
+  "execution_hold_must_remain_active": true,
+  "explicit_execution_authorization_decision_preparation_allowed": true,
+  "sandbox_write_implementation_allowed": false,
+  "rollback_execution_implementation_allowed": false,
+  "authoritative_write_allowed": false,
+  "production_project_mutation_allowed": false,
+  "o3de_editor_allowed": false,
+  "asset_processor_allowed": false,
+  "product_resolution_allowed": false,
+  "asset_id_claims_allowed": false,
+  "required_absent_files": [
+    "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1",
+    "scripts/powershell/Invoke-MaxineSandboxRollback.ps1",
+    "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
+  ],
+  "notes": [
+    "Execution-authorization decision progression status does not authorize sandbox write execution.",
+    "Execution hold remains active until a later explicit execution-authorization decision exists."
+  ]
+}
