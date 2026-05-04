@@ -30,6 +30,10 @@
   - `scripts/powershell/Invoke-MaxineAssetCandidateReviewPacketBuild.ps1`
   - `scripts/powershell/Invoke-MaxineAssetCandidateReviewPacketInspect.ps1`
   - `scripts/powershell/Invoke-MaxineAssetCandidateEvidenceBundleExport.ps1`
+- Product-resolution proposal commands are implemented:
+  - `scripts/powershell/Invoke-MaxineProductResolutionProposalBuild.ps1`
+  - `scripts/powershell/Invoke-MaxineProductResolutionProposalInspect.ps1`
+  - `scripts/powershell/Invoke-MaxineProductResolutionProposalBundleExport.ps1`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -47,6 +51,8 @@
 - Asset candidate inventory output is restricted to `examples/sandbox/asset-candidates`.
 - Asset candidate review packet output is restricted to `examples/sandbox/asset-candidate-review-packets`.
 - Asset candidate evidence bundle output is restricted to `examples/sandbox/asset-candidate-evidence-bundles`.
+- Product-resolution proposal output is restricted to `examples/sandbox/product-resolution-proposals`.
+- Product-resolution proposal bundle output is restricted to `examples/sandbox/product-resolution-proposal-bundles`.
 - Explicit sandbox approval is required in the input plan.
 - Production paths, engine paths, Cache paths, and parent traversal paths are blocked.
 - `scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1` remains absent.
