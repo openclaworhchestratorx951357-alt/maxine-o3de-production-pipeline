@@ -497,3 +497,24 @@ Create an execution-readiness follow-on review package that asks whether to prog
 ## Next Milestone After Sandbox Implementation-Branch Execution-Readiness Follow-On Review
 
 If the operator explicitly records `execution_readiness_review_pending_accepted_for_decision_preparation_only`, create an execution-readiness follow-on decision record phase. Do not implement sandbox writes or rollback execution in that record phase.
+
+## Sandbox Implementation-Branch Execution-Readiness Follow-On Decision Record Complete Criteria
+
+- execution-readiness follow-on decision doc exists
+- execution-readiness follow-on decision JSON exists
+- execution-readiness follow-on decision verifier exists
+- execution-readiness follow-on decision verifier passes
+- decision_status is execution_readiness_review_pending_accepted_for_decision_preparation_only
+- execution_hold_current_status is hold_active
+- execution_hold_next_status is hold_active
+- execution_hold_transition_approved is true
+- execution_readiness_decision_preparation_allowed is true
+- sandbox write command remains absent
+- rollback execution command remains absent
+- authoritative write command remains absent
+- no products are resolved
+- no Asset IDs are claimed
+
+## Next Milestone After Sandbox Implementation-Branch Execution-Readiness Follow-On Decision Record
+
+Create an execution-readiness authorization review package that asks whether to begin execution-authorization decision preparation while keeping execution hold active and keeping sandbox write and rollback execution unimplemented.
