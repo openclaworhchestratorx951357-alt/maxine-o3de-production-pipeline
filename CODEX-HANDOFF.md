@@ -343,3 +343,24 @@ Design the sandbox write final preflight contract that combines the write plan, 
 ## Next Milestone After Sandbox Write Final Preflight Contract
 
 Design the sandbox execution intent contract and explicit operator execution-hold record, while still not implementing sandbox writes.
+
+## Sandbox Execution Intent and Hold Contract Complete Criteria
+
+- sandbox execution intent design doc exists
+- sandbox execution intent contract exists
+- sandbox execution intent schema exists
+- sandbox execution hold schema exists
+- sandbox execution intent example exists
+- sandbox execution hold example exists
+- sandbox execution intent verifier exists
+- sandbox execution hold verifier exists
+- sandbox execution intent/hold contract verifier exists
+- sandbox write command remains absent
+- rollback execution command remains absent
+- authoritative write command remains absent
+- no products are resolved
+- no Asset IDs are claimed
+
+## Next Milestone After Sandbox Execution Intent and Hold Contract
+
+Create a sandbox prototype implementation-decision review package that asks whether to allow a separate implementation branch. Do not implement sandbox writes.

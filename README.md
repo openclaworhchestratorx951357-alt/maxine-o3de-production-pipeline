@@ -1,4 +1,4 @@
-# M.A.X.I.N.E. O3DE Production Pipeline
+﻿# M.A.X.I.N.E. O3DE Production Pipeline
 
 M.A.X.I.N.E. means **Multimodal Autonomous eXpressive Intelligence and Narrative Entity**.
 
@@ -223,4 +223,21 @@ References:
 - `docs/contracts/SANDBOX-WRITE-FINAL-PREFLIGHT-CONTRACT.md`
 - `examples/manifests/example-sandbox-write-final-preflight-report.json`
 
+## Sandbox Execution Intent and Hold Contract
+
+Sandbox execution intent and hold contract is execution-intent validation only.
+
+- execution hold remains active
+- sandbox write command is not implemented
+- rollback execution command is not implemented
+- authoritative write command is not implemented
+- intent recorded does not authorize execution
+
+References:
+
+- `docs/roadmap/SANDBOX-EXECUTION-INTENT-HOLD-DESIGN.md`
+- `docs/contracts/SANDBOX-EXECUTION-INTENT-HOLD-CONTRACT.md`
+- `examples/manifests/example-sandbox-execution-intent.json`
+- `examples/manifests/example-sandbox-execution-hold.json`
 M.A.X.I.N.E. production pipeline for O3DE character, asset, prefab, QC, and automation workflows.
+
