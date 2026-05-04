@@ -4,6 +4,7 @@
   "command_name": "Invoke-MaxineSandboxResolverWrite.ps1",
   "sandbox_scope": "sandbox_only",
   "sandbox_root": "examples/sandbox",
+  "receipt_index_path": "examples/sandbox/receipts/index.json",
   "target_path": "examples/sandbox/staging/example-generated-resolver-proof.json",
   "approved_target_under_sandbox": true,
   "explicit_sandbox_approval": true,

@@ -11,8 +11,11 @@ from sandbox_writer_invariant import collect_sandbox_writer_invariant_failures
 REQUIRED_FILES = [
     "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1",
     "scripts/powershell/Invoke-MaxineSandboxRollback.ps1",
+    "scripts/powershell/Invoke-MaxineSandboxReceiptInspect.ps1",
     "schemas/maxine_sandbox_resolver_write_plan.schema.json",
     "schemas/maxine_sandbox_write_receipt.schema.json",
+    "schemas/maxine_sandbox_receipt_index.schema.json",
+    "examples/sandbox/receipts/index.json",
     "examples/sandbox/staging/.gitkeep",
 ]
 

@@ -1,0 +1,127 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_sandbox_receipt_index.schema.json",
+  "title": "Maxine Sandbox Receipt Index",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "sandbox_root",
+    "receipts"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "sandbox_root": {
+      "type": "string",
+      "const": "examples/sandbox"
+    },
+    "receipts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "receipt_id",
+          "status",
+          "rollback_status",
+          "command_name",
+          "receipt_path",
+          "target_path",
+          "files_written",
+          "sha256_before",
+          "sha256_after",
+          "blocked_reason",
+          "mutation_scope",
+          "timestamp_utc",
+          "last_updated_utc"
+        ],
+        "properties": {
+          "receipt_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "written",
+              "rolled_back",
+              "blocked",
+              "failed"
+            ]
+          },
+          "rollback_status": {
+            "type": "string",
+            "enum": [
+              "not_requested",
+              "rolled_back",
+              "rollback_failed"
+            ]
+          },
+          "command_name": {
+            "type": "string"
+          },
+          "input_plan_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "receipt_path": {
+            "type": "string"
+          },
+          "target_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "files_written": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sha256_before": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sha256_after": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "blocked_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "write_attempted": {
+            "type": "boolean"
+          },
+          "write_succeeded": {
+            "type": "boolean"
+          },
+          "mutation_scope": {
+            "type": "string",
+            "const": "sandbox_only"
+          },
+          "timestamp_utc": {
+            "type": "string",
+            "minLength": 1
+          },
+          "last_updated_utc": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

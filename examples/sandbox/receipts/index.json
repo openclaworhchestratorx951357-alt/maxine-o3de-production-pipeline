@@ -1,0 +1,26 @@
+{
+    "schema_version":  "1.0.0",
+    "sandbox_root":  "examples/sandbox",
+    "receipts":  [
+                     {
+                         "receipt_id":  "sandbox-write-receipt-e726777a9d184528869a8ec380fbf40f",
+                         "status":  "blocked",
+                         "rollback_status":  "not_requested",
+                         "command_name":  "Invoke-MaxineSandboxResolverWrite.ps1",
+                         "input_plan_path":  "C:\\Users\\topgu\\AppData\\Local\\Temp\\pytest-of-topgu\\pytest-262\\test_receipt_index_cannot_poin0\\blocked-index-plan.json",
+                         "receipt_path":  "examples/sandbox/logs/pytest-blocked-receipt-e13d3637ca1242a9ba535895ed1d5e7a.json",
+                         "target_path":  null,
+                         "files_written":  [
+
+                                           ],
+                         "sha256_before":  null,
+                         "sha256_after":  null,
+                         "blocked_reason":  "receipt_index_path contains parent traversal and is blocked.",
+                         "write_attempted":  false,
+                         "write_succeeded":  false,
+                         "mutation_scope":  "sandbox_only",
+                         "timestamp_utc":  "2026-05-04T15:13:02Z",
+                         "last_updated_utc":  "2026-05-04T15:13:02Z"
+                     }
+                 ]
+}
