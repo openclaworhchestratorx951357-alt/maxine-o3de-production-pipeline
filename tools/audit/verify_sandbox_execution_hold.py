@@ -8,6 +8,11 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List
 
+from sandbox_writer_invariant import (
+    ADMITTED_SANDBOX_COMMANDS,
+    collect_sandbox_writer_invariant_failures,
+)
+
 
 REQUIRED_HOLD_FIELDS = [
     "schema_version",
@@ -91,6 +96,8 @@ def main() -> int:
             failures.append(f"blocked_commands missing required value: {required_command}")
 
     for required_command in REQUIRED_BLOCKED_COMMANDS:
+        if required_command in ADMITTED_SANDBOX_COMMANDS:
+            continue
         if (root / required_command).exists():
             failures.append(f"blocked command file must be absent: {required_command}")
 
@@ -102,6 +109,7 @@ def main() -> int:
             if safety.get(key) is not expected:
                 failures.append(f"safety.{key} must be {str(expected).lower()}")
 
+    failures.extend(collect_sandbox_writer_invariant_failures(root))
     if failures:
         print("FAIL: sandbox execution hold verification failed.")
         for item in failures:

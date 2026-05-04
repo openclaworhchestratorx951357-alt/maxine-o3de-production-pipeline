@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_sandbox_write_receipt.schema.json",
+  "title": "Maxine Sandbox Write Receipt",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "command_name",
+    "input_plan_path",
+    "sandbox_root",
+    "target_path",
+    "write_attempted",
+    "write_succeeded",
+    "mutation_scope",
+    "blocked_reason",
+    "files_written",
+    "sha256_before",
+    "sha256_after",
+    "rollback_receipt_hint",
+    "timestamp_utc"
+  ],
+  "properties": {
+    "command_name": {
+      "type": "string",
+      "const": "Invoke-MaxineSandboxResolverWrite.ps1"
+    },
+    "input_plan_path": {
+      "type": "string"
+    },
+    "sandbox_root": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "target_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "write_attempted": {
+      "type": "boolean"
+    },
+    "write_succeeded": {
+      "type": "boolean"
+    },
+    "mutation_scope": {
+      "type": "string",
+      "const": "sandbox_only"
+    },
+    "blocked_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "files_written": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "sha256_before": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "sha256_after": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "rollback_receipt_hint": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "timestamp_utc": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

@@ -33,16 +33,38 @@ def test_rollback_execution_design_wrapper_exists():
     assert path.exists()
 
 
-def test_invoke_sandbox_rollback_absent():
+def test_invoke_sandbox_rollback_admitted_under_safety_contract():
     repo_root = Path(__file__).resolve().parents[2]
     path = repo_root / "scripts" / "powershell" / "Invoke-MaxineSandboxRollback.ps1"
-    assert not path.exists()
+    assert path.exists()
+    safety = repo_root / "tools" / "audit" / "verify_sandbox_writer_safety.py"
+    result = subprocess.run(
+        [sys.executable, str(safety)],
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, (
+        "Sandbox writer safety verification failed.\n"
+        f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+    )
 
 
-def test_invoke_sandbox_write_absent():
+def test_invoke_sandbox_write_admitted_under_safety_contract():
     repo_root = Path(__file__).resolve().parents[2]
     path = repo_root / "scripts" / "powershell" / "Invoke-MaxineSandboxResolverWrite.ps1"
-    assert not path.exists()
+    assert path.exists()
+    safety = repo_root / "tools" / "audit" / "verify_sandbox_writer_safety.py"
+    result = subprocess.run(
+        [sys.executable, str(safety)],
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, (
+        "Sandbox writer safety verification failed.\n"
+        f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+    )
 
 
 def test_invoke_authoritative_write_absent():

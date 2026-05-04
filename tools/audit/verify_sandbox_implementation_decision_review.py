@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Verify sandbox implementation-decision review package artifacts (review-only)."""
 
 from __future__ import annotations
@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any, Dict, List
+from sandbox_writer_invariant import collect_sandbox_writer_invariant_failures, sanitize_required_absent
 
 
 REQUIRED_DOC = "docs/reviews/SANDBOX-PROTOTYPE-IMPLEMENTATION-DECISION-REVIEW.md"
@@ -82,7 +83,7 @@ def main() -> int:
         failures.append("required_absent_files must be an array")
         required_absent = []
 
-    for rel in required_absent:
+    for rel in sanitize_required_absent(required_absent):
         if not isinstance(rel, str) or not rel:
             failures.append("required_absent_files entries must be non-empty strings")
             continue
@@ -123,6 +124,8 @@ def main() -> int:
         for needle in REQUIRED_REVIEW_NEEDLES:
             if needle not in review_text:
                 failures.append(f"required review language missing: {needle}")
+
+    failures.extend(collect_sandbox_writer_invariant_failures(root))
 
     if failures:
         print("FAIL: sandbox implementation-decision review verification failed.")

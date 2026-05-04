@@ -1,4 +1,11 @@
-﻿Describe "Maxine Manifest Repository Baseline" {
+function Assert-SandboxWriterAdmittedOnly {
+    Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $true
+    Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $true
+
+    & python "tools/audit/verify_sandbox_writer_safety.py"
+    $LASTEXITCODE | Should Be 0
+}
+Describe "Maxine Manifest Repository Baseline" {
     It "has schema file" {
         Test-Path -LiteralPath "schemas/maxine_job_manifest.schema.json" | Should Be $true
     }
@@ -419,8 +426,8 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxinePhase2DesignOnly.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "still does not have authoritative write command implementation" {
@@ -451,12 +458,12 @@
         Test-Path -LiteralPath "tools/audit/verify_phase2_rollback_design.py" | Should Be $true
     }
 
-    It "does not have rollback command implementation" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "still does not have sandbox write command implementation" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "still admits sandbox write command only under sandbox safety contract" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "still does not have authoritative write command implementation (rollback phase)" {
@@ -495,12 +502,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxinePhase2SandboxFixtureDesign.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (path-safety phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (path-safety phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback command implementation (path-safety phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (path-safety phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (path-safety phase)" {
@@ -523,12 +530,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxinePhase2AcceptanceReview.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (acceptance review phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (acceptance review phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback command implementation (acceptance review phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (acceptance review phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (acceptance review phase)" {
@@ -551,12 +558,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxinePhase2AcceptanceDecision.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (acceptance decision phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (acceptance decision phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback command implementation (acceptance decision phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (acceptance decision phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (acceptance decision phase)" {
@@ -583,12 +590,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxRollbackExecutionDesign.ps1" | Should Be $true
     }
 
-    It "does not have rollback execution command implementation (sandbox planning phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox planning phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have sandbox write command implementation (sandbox planning phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox planning phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox planning phase)" {
@@ -627,12 +634,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxWritePlanningContract.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox write planning contract phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox write planning contract phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox write planning contract phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox write planning contract phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox write planning contract phase)" {
@@ -671,12 +678,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxWriteDryRunContract.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox write dry-run phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox write dry-run phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox write dry-run phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox write dry-run phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox write dry-run phase)" {
@@ -727,12 +734,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxWriteApprovalGateContract.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox write approval gate phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox write approval gate phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox write approval gate phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox write approval gate phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox write approval gate phase)" {
@@ -771,12 +778,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxWriteFinalPreflightContract.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox write final preflight phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox write final preflight phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox write final preflight phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox write final preflight phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox write final preflight phase)" {
@@ -831,12 +838,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxExecutionIntentHoldContract.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox execution intent/hold phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox execution intent/hold phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox execution intent/hold phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox execution intent/hold phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox execution intent/hold phase)" {
@@ -863,12 +870,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxImplementationDecisionReview.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox implementation decision review phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox implementation decision review phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox implementation decision review phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox implementation decision review phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox implementation decision review phase)" {
@@ -891,12 +898,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxImplementationDecision.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox implementation decision record phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox implementation decision record phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox implementation decision record phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox implementation decision record phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox implementation decision record phase)" {
@@ -919,12 +926,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxImplementationBranchBaseline.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox implementation branch baseline phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox implementation branch baseline phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox implementation branch baseline phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox implementation branch baseline phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox implementation branch baseline phase)" {
@@ -947,12 +954,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxImplementationBranchKickoffSafetyPackage.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox implementation branch kickoff safety package phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox implementation branch kickoff safety package phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox implementation branch kickoff safety package phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox implementation branch kickoff safety package phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox implementation branch kickoff safety package phase)" {
@@ -979,12 +986,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxImplementationExecutionReadinessReview.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox implementation execution-readiness review phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox implementation execution-readiness review phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox implementation execution-readiness review phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox implementation execution-readiness review phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox implementation execution-readiness review phase)" {
@@ -1007,12 +1014,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxImplementationExecutionReadinessDecision.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox implementation execution-readiness decision phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox implementation execution-readiness decision phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox implementation execution-readiness decision phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox implementation execution-readiness decision phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox implementation execution-readiness decision phase)" {
@@ -1039,12 +1046,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxImplementationExecutionReadinessFollowOnReview.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox implementation execution-readiness follow-on review phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox implementation execution-readiness follow-on review phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox implementation execution-readiness follow-on review phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox implementation execution-readiness follow-on review phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox implementation execution-readiness follow-on review phase)" {
@@ -1067,12 +1074,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxImplementationExecutionReadinessFollowOnDecision.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox implementation execution-readiness follow-on decision phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox implementation execution-readiness follow-on decision phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox implementation execution-readiness follow-on decision phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox implementation execution-readiness follow-on decision phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox implementation execution-readiness follow-on decision phase)" {
@@ -1099,12 +1106,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxImplementationExecutionReadinessAuthorizationReview.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox implementation execution-readiness authorization review phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox implementation execution-readiness authorization review phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox implementation execution-readiness authorization review phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox implementation execution-readiness authorization review phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox implementation execution-readiness authorization review phase)" {
@@ -1127,12 +1134,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxImplementationExecutionReadinessAuthorizationDecision.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox implementation execution-readiness authorization decision phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox implementation execution-readiness authorization decision phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox implementation execution-readiness authorization decision phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox implementation execution-readiness authorization decision phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox implementation execution-readiness authorization decision phase)" {
@@ -1159,12 +1166,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxImplementationExecutionAuthorizationDecisionReview.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox implementation execution-authorization decision review phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox implementation execution-authorization decision review phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox implementation execution-authorization decision review phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox implementation execution-authorization decision review phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox implementation execution-authorization decision review phase)" {
@@ -1187,12 +1194,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxImplementationExecutionAuthorizationDecision.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox implementation execution-authorization decision phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox implementation execution-authorization decision phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox implementation execution-authorization decision phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox implementation execution-authorization decision phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox implementation execution-authorization decision phase)" {
@@ -1219,12 +1226,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxImplementationExplicitExecutionAuthorizationDecisionReview.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox implementation explicit execution-authorization decision review phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox implementation explicit execution-authorization decision review phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox implementation explicit execution-authorization decision review phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox implementation explicit execution-authorization decision review phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox implementation explicit execution-authorization decision review phase)" {
@@ -1247,12 +1254,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxImplementationExplicitExecutionAuthorizationDecision.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox implementation explicit execution-authorization decision phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox implementation explicit execution-authorization decision phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox implementation explicit execution-authorization decision phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox implementation explicit execution-authorization decision phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox implementation explicit execution-authorization decision phase)" {
@@ -1279,12 +1286,12 @@
         Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxImplementationAuthorizingDecisionReview.ps1" | Should Be $true
     }
 
-    It "does not have sandbox write command implementation (sandbox implementation implementation-authorizing decision review phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    It "admits sandbox write command only under sandbox safety contract (sandbox implementation implementation-authorizing decision review phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
-    It "does not have rollback execution command implementation (sandbox implementation implementation-authorizing decision review phase)" {
-        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    It "admits sandbox rollback command only under sandbox safety contract (sandbox implementation implementation-authorizing decision review phase)" {
+        Assert-SandboxWriterAdmittedOnly
     }
 
     It "does not have authoritative write command implementation (sandbox implementation implementation-authorizing decision review phase)" {
