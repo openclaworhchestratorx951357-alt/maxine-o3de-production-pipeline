@@ -13,6 +13,9 @@
 - Sandbox review decision recording is implemented:
   - `scripts/powershell/Invoke-MaxineSandboxReviewDecisionRecord.ps1`
   - `scripts/powershell/Invoke-MaxineSandboxReviewDecisionInspect.ps1`
+- Sandbox workflow runner is implemented:
+  - `scripts/powershell/Invoke-MaxineSandboxWorkflowRun.ps1`
+  - `scripts/powershell/Invoke-MaxineSandboxWorkflowInspect.ps1`
 - Compatibility note: the repository invariant moved from "sandbox writer/rollback command absent" to "sandbox writer/rollback admitted only under strict sandbox-only safety contract."
 
 ## Safety Boundary (Still Active)
@@ -20,6 +23,7 @@
 - Receipt history is restricted to `examples/sandbox/receipts` and preserved across rollback.
 - Review packets are restricted to `examples/sandbox/review-packets`.
 - Review decisions are restricted to `examples/sandbox/review-decisions`.
+- Workflow run records are restricted to `examples/sandbox/workflow-runs`.
 - Explicit sandbox approval is required in the input plan.
 - Production paths, engine paths, Cache paths, and parent traversal paths are blocked.
 - `scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1` remains absent.

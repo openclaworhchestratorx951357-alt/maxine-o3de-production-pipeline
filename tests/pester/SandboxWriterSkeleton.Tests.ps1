@@ -8,6 +8,8 @@
         $reviewInspect = Join-Path $repoRoot "scripts\powershell\Invoke-MaxineSandboxReviewPacketInspect.ps1"
         $reviewDecisionRecord = Join-Path $repoRoot "scripts\powershell\Invoke-MaxineSandboxReviewDecisionRecord.ps1"
         $reviewDecisionInspect = Join-Path $repoRoot "scripts\powershell\Invoke-MaxineSandboxReviewDecisionInspect.ps1"
+        $workflowRun = Join-Path $repoRoot "scripts\powershell\Invoke-MaxineSandboxWorkflowRun.ps1"
+        $workflowInspect = Join-Path $repoRoot "scripts\powershell\Invoke-MaxineSandboxWorkflowInspect.ps1"
         $authoritative = Join-Path $repoRoot "scripts\powershell\Invoke-MaxineAuthoritativeResolverWrite.ps1"
     }
 
@@ -611,6 +613,175 @@
         }
     }
 
+    It "workflow runner WriteOnly writes sandbox receipt and workflow record" {
+        $targetName = "pester-workflow-writeonly-$([Guid]::NewGuid().ToString('N')).json"
+        $targetRel = "examples/sandbox/staging/$targetName"
+        $targetAbs = Join-Path $repoRoot $targetRel
+        $receiptName = "pester-workflow-writeonly-receipt-$([Guid]::NewGuid().ToString('N')).json"
+        $receiptRel = "examples/sandbox/logs/$receiptName"
+        $receiptAbs = Join-Path $repoRoot $receiptRel
+        $indexName = "pester-workflow-writeonly-index-$([Guid]::NewGuid().ToString('N')).json"
+        $indexRel = "examples/sandbox/receipts/$indexName"
+        $indexAbs = Join-Path $repoRoot $indexRel
+        $runName = "pester-workflow-writeonly-run-$([Guid]::NewGuid().ToString('N')).json"
+        $runRel = "examples/sandbox/workflow-runs/$runName"
+        $runAbs = Join-Path $repoRoot $runRel
+
+        $plan = @{
+            schema_version = "1.0.0"
+            plan_id = "pester-plan-$([Guid]::NewGuid().ToString('N'))"
+            command_name = "Invoke-MaxineSandboxResolverWrite.ps1"
+            sandbox_scope = "sandbox_only"
+            sandbox_root = "examples/sandbox"
+            receipt_index_path = $indexRel
+            target_path = $targetRel
+            approved_target_under_sandbox = $true
+            explicit_sandbox_approval = $true
+            plan_signature = @{
+                signed_by = "pester-operator"
+                signature = "pester-signed"
+            }
+        } | ConvertTo-Json -Depth 20
+
+        $planPath = Join-Path $TestDrive "workflow-writeonly-plan.json"
+        [System.IO.File]::WriteAllText($planPath, $plan, [System.Text.UTF8Encoding]::new($false))
+
+        foreach ($p in @($targetAbs, $receiptAbs, $indexAbs, $runAbs)) {
+            if (Test-Path -LiteralPath $p) {
+                Remove-Item -LiteralPath $p -Force
+            }
+        }
+
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $workflowRun -PlanPath $planPath -WorkflowMode WriteOnly -ReceiptPath $receiptRel -WorkflowRunPath $runRel
+        $LASTEXITCODE | Should Be 0
+        (Test-Path -LiteralPath $targetAbs) | Should Be $true
+        (Test-Path -LiteralPath $receiptAbs) | Should Be $true
+        (Test-Path -LiteralPath $runAbs) | Should Be $true
+
+        $run = Get-Content -LiteralPath $runAbs -Raw | ConvertFrom-Json
+        $run.workflow_status | Should Be "completed"
+        $run.review_packet_id | Should Be $null
+        $run.decision_id | Should Be $null
+
+        foreach ($p in @($targetAbs, $receiptAbs, $indexAbs, $runAbs)) {
+            if (Test-Path -LiteralPath $p) {
+                Remove-Item -LiteralPath $p -Force
+            }
+        }
+    }
+
+    It "workflow inspect is read-only and RollbackRequestedOnly records intent only" {
+        $targetName = "pester-workflow-rollback-intent-$([Guid]::NewGuid().ToString('N')).json"
+        $targetRel = "examples/sandbox/staging/$targetName"
+        $targetAbs = Join-Path $repoRoot $targetRel
+        $receiptName = "pester-workflow-rollback-intent-receipt-$([Guid]::NewGuid().ToString('N')).json"
+        $receiptRel = "examples/sandbox/logs/$receiptName"
+        $receiptAbs = Join-Path $repoRoot $receiptRel
+        $indexName = "pester-workflow-rollback-intent-index-$([Guid]::NewGuid().ToString('N')).json"
+        $indexRel = "examples/sandbox/receipts/$indexName"
+        $indexAbs = Join-Path $repoRoot $indexRel
+        $packetName = "pester-workflow-rollback-intent-packet-$([Guid]::NewGuid().ToString('N')).json"
+        $packetRel = "examples/sandbox/review-packets/$packetName"
+        $packetAbs = Join-Path $repoRoot $packetRel
+        $decisionName = "pester-workflow-rollback-intent-decision-$([Guid]::NewGuid().ToString('N')).json"
+        $decisionRel = "examples/sandbox/review-decisions/$decisionName"
+        $decisionAbs = Join-Path $repoRoot $decisionRel
+        $runName = "pester-workflow-rollback-intent-run-$([Guid]::NewGuid().ToString('N')).json"
+        $runRel = "examples/sandbox/workflow-runs/$runName"
+        $runAbs = Join-Path $repoRoot $runRel
+        $rollbackReportAbs = Join-Path $repoRoot ("examples/sandbox/manifests/reports/{0}.rollback.json" -f [System.IO.Path]::GetFileNameWithoutExtension($receiptName))
+
+        $plan = @{
+            schema_version = "1.0.0"
+            plan_id = "pester-plan-$([Guid]::NewGuid().ToString('N'))"
+            command_name = "Invoke-MaxineSandboxResolverWrite.ps1"
+            sandbox_scope = "sandbox_only"
+            sandbox_root = "examples/sandbox"
+            receipt_index_path = $indexRel
+            target_path = $targetRel
+            approved_target_under_sandbox = $true
+            explicit_sandbox_approval = $true
+            plan_signature = @{
+                signed_by = "pester-operator"
+                signature = "pester-signed"
+            }
+        } | ConvertTo-Json -Depth 20
+
+        $planPath = Join-Path $TestDrive "workflow-rollback-intent-plan.json"
+        [System.IO.File]::WriteAllText($planPath, $plan, [System.Text.UTF8Encoding]::new($false))
+
+        foreach ($p in @($targetAbs, $receiptAbs, $indexAbs, $packetAbs, $decisionAbs, $runAbs, $rollbackReportAbs)) {
+            if (Test-Path -LiteralPath $p) {
+                Remove-Item -LiteralPath $p -Force
+            }
+        }
+
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $workflowRun -PlanPath $planPath -WorkflowMode RollbackRequestedOnly -ReceiptPath $receiptRel -ReviewPacketPath $packetRel -DecisionPath $decisionRel -WorkflowRunPath $runRel -OperatorId pester-operator -DecisionReason "rollback requested by workflow"
+        $LASTEXITCODE | Should Be 0
+
+        (Test-Path -LiteralPath $targetAbs) | Should Be $true
+        (Test-Path -LiteralPath $rollbackReportAbs) | Should Be $false
+
+        $decision = Get-Content -LiteralPath $decisionAbs -Raw | ConvertFrom-Json
+        $decision.decision_state | Should Be "request_rollback"
+        $decision.requested_next_action | Should Be "rollback_requested"
+        $decision.rollback_execution_admitted | Should Be $false
+
+        $runHashBefore = (Get-FileHash -LiteralPath $runAbs -Algorithm SHA256).Hash
+        $run = Get-Content -LiteralPath $runAbs -Raw | ConvertFrom-Json
+        $run.workflow_status | Should Be "completed"
+        $run.rollback_execution_admitted | Should Be $false
+        $run.requested_next_action | Should Be "rollback_requested"
+
+        $listOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File $workflowInspect -List
+        $LASTEXITCODE | Should Be 0
+        $listJson = $listOutput | ConvertFrom-Json
+        $listJson.workflow_run_count | Should BeGreaterThan 0
+
+        $inspectOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File $workflowInspect -WorkflowRunId $run.workflow_run_id
+        $LASTEXITCODE | Should Be 0
+        $inspectJson = $inspectOutput | ConvertFrom-Json
+        $inspectJson.workflow_run_id | Should Be $run.workflow_run_id
+
+        $runHashAfter = (Get-FileHash -LiteralPath $runAbs -Algorithm SHA256).Hash
+        $runHashAfter | Should Be $runHashBefore
+
+        foreach ($p in @($targetAbs, $receiptAbs, $indexAbs, $packetAbs, $decisionAbs, $runAbs, $rollbackReportAbs)) {
+            if (Test-Path -LiteralPath $p) {
+                Remove-Item -LiteralPath $p -Force
+            }
+        }
+    }
+
+    It "workflow run path cannot escape sandbox root" {
+        $targetName = "pester-workflow-bad-path-$([Guid]::NewGuid().ToString('N')).json"
+        $targetRel = "examples/sandbox/staging/$targetName"
+        $indexName = "pester-workflow-bad-path-index-$([Guid]::NewGuid().ToString('N')).json"
+        $indexRel = "examples/sandbox/receipts/$indexName"
+
+        $plan = @{
+            schema_version = "1.0.0"
+            plan_id = "pester-plan-$([Guid]::NewGuid().ToString('N'))"
+            command_name = "Invoke-MaxineSandboxResolverWrite.ps1"
+            sandbox_scope = "sandbox_only"
+            sandbox_root = "examples/sandbox"
+            receipt_index_path = $indexRel
+            target_path = $targetRel
+            approved_target_under_sandbox = $true
+            explicit_sandbox_approval = $true
+            plan_signature = @{
+                signed_by = "pester-operator"
+                signature = "pester-signed"
+            }
+        } | ConvertTo-Json -Depth 20
+
+        $planPath = Join-Path $TestDrive "workflow-bad-path-plan.json"
+        [System.IO.File]::WriteAllText($planPath, $plan, [System.Text.UTF8Encoding]::new($false))
+
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $workflowRun -PlanPath $planPath -WorkflowMode WriteOnly -WorkflowRunPath "../outside/workflow.json"
+        $LASTEXITCODE | Should Not Be 0
+    }
+
     It "keeps authoritative resolver write absent" {
         Test-Path -LiteralPath $authoritative | Should Be $false
     }
@@ -623,7 +794,9 @@
         $reviewInspectText = (Get-Content -LiteralPath $reviewInspect -Raw).ToLowerInvariant()
         $reviewDecisionRecordText = (Get-Content -LiteralPath $reviewDecisionRecord -Raw).ToLowerInvariant()
         $reviewDecisionInspectText = (Get-Content -LiteralPath $reviewDecisionInspect -Raw).ToLowerInvariant()
-        $combined = $writerText + "`n" + $rollbackText + "`n" + $inspectText + "`n" + $reviewBuildText + "`n" + $reviewInspectText + "`n" + $reviewDecisionRecordText + "`n" + $reviewDecisionInspectText
+        $workflowRunText = (Get-Content -LiteralPath $workflowRun -Raw).ToLowerInvariant()
+        $workflowInspectText = (Get-Content -LiteralPath $workflowInspect -Raw).ToLowerInvariant()
+        $combined = $writerText + "`n" + $rollbackText + "`n" + $inspectText + "`n" + $reviewBuildText + "`n" + $reviewInspectText + "`n" + $reviewDecisionRecordText + "`n" + $reviewDecisionInspectText + "`n" + $workflowRunText + "`n" + $workflowInspectText
 
         $combined.Contains("o3de editor") | Should Be $false
         $combined.Contains("asset processor") | Should Be $false
