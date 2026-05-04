@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_sandbox_write_dry_run_report.schema.json",
+  "title": "MAXINE Sandbox Write Dry-Run Report",
+  "description": "Planning-only sandbox write dry-run report contract. This does not execute writes.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "dry_run_report_id",
+    "sandbox_write_plan_id",
+    "sandbox_id",
+    "status",
+    "checks",
+    "blockers",
+    "warnings",
+    "target_manifest_copy",
+    "rollback_artifact",
+    "proposed_changes_count",
+    "forbidden_changes_count",
+    "safety",
+    "generated_at_utc"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "dry_run_report_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sandbox_write_plan_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sandbox_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "dry_run_ready",
+        "dry_run_blocked",
+        "dry_run_incomplete"
+      ]
+    },
+    "checks": {
+      "type": "array"
+    },
+    "blockers": {
+      "type": "array"
+    },
+    "warnings": {
+      "type": "array"
+    },
+    "target_manifest_copy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rollback_artifact": {
+      "type": "string",
+      "minLength": 1
+    },
+    "proposed_changes_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "forbidden_changes_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "generated_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "safety": {
+      "type": "object",
+      "required": [
+        "dry_run_only",
+        "implementation_available",
+        "sandbox_write_allowed",
+        "rollback_execution_allowed",
+        "authoritative_write_allowed",
+        "production_paths_allowed",
+        "product_resolution_allowed",
+        "asset_id_claims_allowed"
+      ],
+      "properties": {
+        "dry_run_only": {
+          "const": true
+        },
+        "implementation_available": {
+          "const": false
+        },
+        "sandbox_write_allowed": {
+          "const": false
+        },
+        "rollback_execution_allowed": {
+          "const": false
+        },
+        "authoritative_write_allowed": {
+          "const": false
+        },
+        "production_paths_allowed": {
+          "const": false
+        },
+        "product_resolution_allowed": {
+          "const": false
+        },
+        "asset_id_claims_allowed": {
+          "const": false
+        }
+      }
+    }
+  }
+}

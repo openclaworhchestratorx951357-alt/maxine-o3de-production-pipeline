@@ -1,0 +1,8 @@
+{
+  "job_type": "sandbox_write_dry_run_report_validation",
+  "character_name": "Maxine_Sandbox_Write_Dry_Run_Test_001",
+  "mode": "planning_only_dry_run_report_validation",
+  "sandbox_write_plan_path": "examples/manifests/example-sandbox-write-plan.json",
+  "dry_run_report_path": "examples/manifests/example-sandbox-write-dry-run-report.json",
+  "notes": "Validate sandbox write dry-run report structure only. Do not execute sandbox writes."
+}

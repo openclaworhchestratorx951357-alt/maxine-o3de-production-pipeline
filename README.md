@@ -178,4 +178,19 @@ References:
 - `docs/contracts/SANDBOX-WRITE-PLANNING-CONTRACT.md`
 - `examples/manifests/example-sandbox-write-plan.json`
 
+## Sandbox Write Dry-Run Report Contract
+
+Sandbox write dry-run report contract is dry-run reporting only.
+
+- sandbox write command is not implemented
+- rollback execution command is not implemented
+- authoritative write command is not implemented
+- dry-run ready does not authorize execution
+
+References:
+
+- `docs/roadmap/SANDBOX-WRITE-DRY-RUN-REPORT-DESIGN.md`
+- `docs/contracts/SANDBOX-WRITE-DRY-RUN-REPORT-CONTRACT.md`
+- `examples/manifests/example-sandbox-write-dry-run-report.json`
+
 M.A.X.I.N.E. production pipeline for O3DE character, asset, prefab, QC, and automation workflows.

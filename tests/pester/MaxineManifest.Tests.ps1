@@ -638,4 +638,48 @@ Describe "Maxine Manifest Repository Baseline" {
     It "does not have authoritative write command implementation (sandbox write planning contract phase)" {
         Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
     }
+
+    It "has sandbox write dry-run design doc" {
+        Test-Path -LiteralPath "docs/roadmap/SANDBOX-WRITE-DRY-RUN-REPORT-DESIGN.md" | Should Be $true
+    }
+
+    It "has sandbox write dry-run contract" {
+        Test-Path -LiteralPath "docs/contracts/SANDBOX-WRITE-DRY-RUN-REPORT-CONTRACT.md" | Should Be $true
+    }
+
+    It "has sandbox write dry-run report schema" {
+        Test-Path -LiteralPath "schemas/maxine_sandbox_write_dry_run_report.schema.json" | Should Be $true
+    }
+
+    It "has sandbox write dry-run report example" {
+        Test-Path -LiteralPath "examples/manifests/example-sandbox-write-dry-run-report.json" | Should Be $true
+    }
+
+    It "has sandbox write dry-run report verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_sandbox_write_dry_run_report.py" | Should Be $true
+    }
+
+    It "has sandbox write dry-run contract verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_sandbox_write_dry_run_contract.py" | Should Be $true
+    }
+
+    It "has sandbox write dry-run report PowerShell wrapper" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxWriteDryRunReport.ps1" | Should Be $true
+    }
+
+    It "has sandbox write dry-run contract PowerShell wrapper" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxWriteDryRunContract.ps1" | Should Be $true
+    }
+
+    It "does not have sandbox write command implementation (sandbox write dry-run phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    }
+
+    It "does not have rollback execution command implementation (sandbox write dry-run phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    }
+
+    It "does not have authoritative write command implementation (sandbox write dry-run phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
+    }
 }

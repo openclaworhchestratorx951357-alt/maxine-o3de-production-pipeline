@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0.0",
+  "dry_run_report_id": "sandbox-write-dry-run-example-0001",
+  "sandbox_write_plan_id": "sandbox-write-plan-example-0001",
+  "sandbox_id": "sandbox-example-0001",
+  "status": "dry_run_ready",
+  "checks": [
+    {
+      "id": "accepted_decision",
+      "passed": true
+    },
+    {
+      "id": "sandbox_write_plan_valid",
+      "passed": true
+    },
+    {
+      "id": "target_path_safe",
+      "passed": true
+    },
+    {
+      "id": "rollback_artifact_valid",
+      "passed": true
+    },
+    {
+      "id": "rollback_execution_design_valid",
+      "passed": true
+    },
+    {
+      "id": "forbidden_fields_absent_from_proposed_changes",
+      "passed": true
+    },
+    {
+      "id": "implementation_commands_absent",
+      "passed": true
+    }
+  ],
+  "blockers": [],
+  "warnings": [
+    "Dry-run ready does not authorize execution."
+  ],
+  "target_manifest_copy": "examples/sandbox/manifests/working/example-working.manifest.json",
+  "rollback_artifact": "examples/manifests/example-sandbox-rollback-artifact.json",
+  "proposed_changes_count": 1,
+  "forbidden_changes_count": 3,
+  "safety": {
+    "dry_run_only": true,
+    "implementation_available": false,
+    "sandbox_write_allowed": false,
+    "rollback_execution_allowed": false,
+    "authoritative_write_allowed": false,
+    "production_paths_allowed": false,
+    "product_resolution_allowed": false,
+    "asset_id_claims_allowed": false
+  },
+  "generated_at_utc": "2026-05-04T00:00:00Z"
+}

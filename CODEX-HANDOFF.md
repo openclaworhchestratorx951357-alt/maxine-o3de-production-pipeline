@@ -287,3 +287,21 @@ Design the sandbox write planning contract that depends on rollback execution de
 ## Next Milestone After Sandbox Write Planning Contract
 
 Design the sandbox write dry-run report contract that validates a sandbox write plan and rollback dependency, while still not implementing sandbox writes.
+
+## Sandbox Write Dry-Run Report Contract Complete Criteria
+
+- sandbox write dry-run design doc exists
+- sandbox write dry-run contract exists
+- sandbox write dry-run report schema exists
+- sandbox write dry-run report example exists
+- sandbox write dry-run report verifier exists
+- sandbox write dry-run contract verifier exists
+- sandbox write command remains absent
+- rollback execution command remains absent
+- authoritative write command remains absent
+- no products are resolved
+- no Asset IDs are claimed
+
+## Next Milestone After Sandbox Write Dry-Run Report Contract
+
+Design the sandbox write approval gate contract that accepts a dry-run report and operator approval, while still not implementing sandbox writes.
