@@ -12,6 +12,8 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - `scripts/powershell/Invoke-MaxineSandboxReviewDecisionInspect.ps1`
 - `scripts/powershell/Invoke-MaxineSandboxWorkflowRun.ps1`
 - `scripts/powershell/Invoke-MaxineSandboxWorkflowInspect.ps1`
+- `scripts/powershell/Invoke-MaxineSandboxEvidenceBundleExport.ps1`
+- `scripts/powershell/Invoke-MaxineSandboxOperatorSummary.ps1`
 
 ## What This Implementation Does
 - Accepts a structured write plan JSON.
@@ -29,6 +31,9 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - Records rollback requests as intent only (`requested_next_action=rollback_requested`) without auto-executing rollback.
 - Runs end-to-end sandbox workflow modes (WriteOnly, WriteAndReview, WriteReviewAndDecision, RollbackRequestedOnly) and writes workflow records under `examples/sandbox/workflow-runs`.
 - Supports read-only workflow inspection by list and `workflow_run_id`.
+- Exports sandbox-local evidence bundles under `examples/sandbox/evidence-bundles` with copied JSON snapshots for workflow/receipt/review/decision metadata.
+- Provides operator summary output with read-only default behavior and optional sandbox-local report output under `examples/sandbox/operator-reports`.
+- Enforces capability-state boundaries via `examples/capabilities/maxine-capability-matrix.json`.
 - Allows rollback only for files listed in the receipt and only under the approved sandbox root.
 
 ## What This Implementation Explicitly Does Not Do

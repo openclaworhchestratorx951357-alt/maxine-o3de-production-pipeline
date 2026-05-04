@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import List
 
@@ -16,15 +17,22 @@ SANDBOX_REVIEW_DECISION_RECORD_REL = "scripts/powershell/Invoke-MaxineSandboxRev
 SANDBOX_REVIEW_DECISION_INSPECT_REL = "scripts/powershell/Invoke-MaxineSandboxReviewDecisionInspect.ps1"
 SANDBOX_WORKFLOW_RUN_REL = "scripts/powershell/Invoke-MaxineSandboxWorkflowRun.ps1"
 SANDBOX_WORKFLOW_INSPECT_REL = "scripts/powershell/Invoke-MaxineSandboxWorkflowInspect.ps1"
+SANDBOX_EVIDENCE_EXPORT_REL = "scripts/powershell/Invoke-MaxineSandboxEvidenceBundleExport.ps1"
+SANDBOX_OPERATOR_SUMMARY_REL = "scripts/powershell/Invoke-MaxineSandboxOperatorSummary.ps1"
 AUTHORITATIVE_REL = "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
 RECEIPT_INDEX_REL = "examples/sandbox/receipts/index.json"
 RECEIPT_INDEX_SCHEMA_REL = "schemas/maxine_sandbox_receipt_index.schema.json"
 REVIEW_PACKET_SCHEMA_REL = "schemas/maxine_sandbox_review_packet.schema.json"
 REVIEW_DECISION_SCHEMA_REL = "schemas/maxine_sandbox_review_decision.schema.json"
 WORKFLOW_RUN_SCHEMA_REL = "schemas/maxine_sandbox_workflow_run.schema.json"
+EVIDENCE_BUNDLE_SCHEMA_REL = "schemas/maxine_sandbox_evidence_bundle.schema.json"
+CAPABILITY_MATRIX_SCHEMA_REL = "schemas/maxine_capability_matrix.schema.json"
+CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
 WORKFLOW_RUNS_DIR_REL = "examples/sandbox/workflow-runs"
+EVIDENCE_BUNDLES_DIR_REL = "examples/sandbox/evidence-bundles"
+OPERATOR_REPORTS_DIR_REL = "examples/sandbox/operator-reports"
 
 ADMITTED_SANDBOX_COMMANDS = {
     SANDBOX_WRITER_REL,
@@ -36,6 +44,8 @@ ADMITTED_SANDBOX_COMMANDS = {
     SANDBOX_REVIEW_DECISION_INSPECT_REL,
     SANDBOX_WORKFLOW_RUN_REL,
     SANDBOX_WORKFLOW_INSPECT_REL,
+    SANDBOX_EVIDENCE_EXPORT_REL,
+    SANDBOX_OPERATOR_SUMMARY_REL,
 }
 
 REQUIRED_WRITER_NEEDLES = [
@@ -136,6 +146,32 @@ REQUIRED_WORKFLOW_INSPECT_NEEDLES = [
     "explicit_non_admissions",
 ]
 
+REQUIRED_EVIDENCE_EXPORT_NEEDLES = [
+    "evidence-bundles",
+    "source_workflow_run_id",
+    "source_receipt_id",
+    "included_artifacts",
+    "copied_artifact_paths",
+    "artifact_sha256",
+    "explicit_non_admissions",
+    "safety_summary",
+    "source-plan-metadata.snapshot.json",
+]
+
+REQUIRED_OPERATOR_SUMMARY_NEEDLES = [
+    "total_workflow_runs",
+    "workflow_status_counts",
+    "pending_review_packets",
+    "decision_counts",
+    "rollback_requested_decisions",
+    "accepted_for_sandbox_only_decisions",
+    "blocked_reasons",
+    "latest_evidence_bundles",
+    "next_safest_step",
+    "writereport",
+    "operator-reports",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -194,6 +230,41 @@ FORBIDDEN_WORKFLOW_INSPECT_MUTATION_NEEDLES = [
     "out-file",
 ]
 
+MUTATION_NEEDLES = [
+    "remove-item",
+    "set-content",
+    "add-content",
+    "clear-content",
+    "writealltext",
+    "new-item",
+    "out-file",
+]
+
+EXPECTED_CAPABILITY_STATES = {
+    "sandbox_resolver_write": "sandbox_only",
+    "sandbox_rollback": "sandbox_only",
+    "sandbox_receipt_inspect": "read_only",
+    "sandbox_review_packet_build": "sandbox_only",
+    "sandbox_review_packet_inspect": "read_only",
+    "sandbox_review_decision_record": "sandbox_only",
+    "sandbox_review_decision_inspect": "read_only",
+    "sandbox_workflow_run": "sandbox_only",
+    "sandbox_workflow_inspect": "read_only",
+    "sandbox_evidence_bundle_export": "sandbox_only",
+    "sandbox_operator_summary": "read_only",
+    "authoritative_resolver_write": "forbidden",
+    "o3de_editor_execution": "blocked",
+    "asset_processor_execution": "blocked",
+    "o3de_cli_execution": "blocked",
+    "product_resolution": "blocked",
+    "asset_id_claims": "blocked",
+    "spawning": "blocked",
+    "publishing": "blocked",
+    "production_path_write": "forbidden",
+    "cache_path_write": "forbidden",
+    "engine_path_write": "forbidden",
+}
+
 
 def _read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8-sig").lower()
@@ -220,15 +291,22 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     review_decision_inspect = root / SANDBOX_REVIEW_DECISION_INSPECT_REL
     workflow_run = root / SANDBOX_WORKFLOW_RUN_REL
     workflow_inspect = root / SANDBOX_WORKFLOW_INSPECT_REL
+    evidence_export = root / SANDBOX_EVIDENCE_EXPORT_REL
+    operator_summary = root / SANDBOX_OPERATOR_SUMMARY_REL
     authoritative = root / AUTHORITATIVE_REL
     receipt_index = root / RECEIPT_INDEX_REL
     receipt_index_schema = root / RECEIPT_INDEX_SCHEMA_REL
     review_packet_schema = root / REVIEW_PACKET_SCHEMA_REL
     review_decision_schema = root / REVIEW_DECISION_SCHEMA_REL
     workflow_run_schema = root / WORKFLOW_RUN_SCHEMA_REL
+    evidence_bundle_schema = root / EVIDENCE_BUNDLE_SCHEMA_REL
+    capability_matrix_schema = root / CAPABILITY_MATRIX_SCHEMA_REL
+    capability_matrix = root / CAPABILITY_MATRIX_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
     workflow_runs_dir = root / WORKFLOW_RUNS_DIR_REL
+    evidence_bundles_dir = root / EVIDENCE_BUNDLES_DIR_REL
+    operator_reports_dir = root / OPERATOR_REPORTS_DIR_REL
 
     if not writer.exists():
         failures.append(f"sandbox writer command missing: {SANDBOX_WRITER_REL}")
@@ -252,6 +330,10 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(f"sandbox workflow run command missing: {SANDBOX_WORKFLOW_RUN_REL}")
     if not workflow_inspect.exists():
         failures.append(f"sandbox workflow inspect command missing: {SANDBOX_WORKFLOW_INSPECT_REL}")
+    if not evidence_export.exists():
+        failures.append(f"sandbox evidence bundle export command missing: {SANDBOX_EVIDENCE_EXPORT_REL}")
+    if not operator_summary.exists():
+        failures.append(f"sandbox operator summary command missing: {SANDBOX_OPERATOR_SUMMARY_REL}")
     if authoritative.exists():
         failures.append(f"authoritative command must remain absent: {AUTHORITATIVE_REL}")
     if not receipt_index.exists():
@@ -264,12 +346,22 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(f"review decision schema missing: {REVIEW_DECISION_SCHEMA_REL}")
     if not workflow_run_schema.exists():
         failures.append(f"workflow run schema missing: {WORKFLOW_RUN_SCHEMA_REL}")
+    if not evidence_bundle_schema.exists():
+        failures.append(f"evidence bundle schema missing: {EVIDENCE_BUNDLE_SCHEMA_REL}")
+    if not capability_matrix_schema.exists():
+        failures.append(f"capability matrix schema missing: {CAPABILITY_MATRIX_SCHEMA_REL}")
+    if not capability_matrix.exists():
+        failures.append(f"capability matrix missing: {CAPABILITY_MATRIX_REL}")
     if not review_packets_dir.exists():
         failures.append(f"review packets directory missing: {REVIEW_PACKETS_DIR_REL}")
     if not review_decisions_dir.exists():
         failures.append(f"review decisions directory missing: {REVIEW_DECISIONS_DIR_REL}")
     if not workflow_runs_dir.exists():
         failures.append(f"workflow runs directory missing: {WORKFLOW_RUNS_DIR_REL}")
+    if not evidence_bundles_dir.exists():
+        failures.append(f"evidence bundles directory missing: {EVIDENCE_BUNDLES_DIR_REL}")
+    if not operator_reports_dir.exists():
+        failures.append(f"operator reports directory missing: {OPERATOR_REPORTS_DIR_REL}")
 
     if writer.exists():
         writer_text = _read_text(writer)
@@ -436,11 +528,41 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                     f"sandbox workflow inspect command is not read-only; contains mutation needle: {needle}"
                 )
 
+    if evidence_export.exists():
+        evidence_export_text = _read_text(evidence_export)
+        for needle in REQUIRED_EVIDENCE_EXPORT_NEEDLES:
+            if needle not in evidence_export_text:
+                failures.append(f"sandbox evidence export command missing required needle: {needle}")
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in evidence_export_text:
+                failures.append(
+                    f"sandbox evidence export command contains forbidden execution needle: {needle}"
+                )
+        if "cache" in evidence_export_text and "production_cache_engine_writes" not in evidence_export_text:
+            failures.append("sandbox evidence export command must not admit cache-path evidence expansion.")
+
+    if operator_summary.exists():
+        operator_summary_text = _read_text(operator_summary)
+        for needle in REQUIRED_OPERATOR_SUMMARY_NEEDLES:
+            if needle not in operator_summary_text:
+                failures.append(f"sandbox operator summary command missing required needle: {needle}")
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in operator_summary_text:
+                failures.append(
+                    f"sandbox operator summary command contains forbidden execution needle: {needle}"
+                )
+        if "if ($writereport)" not in operator_summary_text:
+            failures.append("sandbox operator summary command must gate file writes behind -WriteReport.")
+        for needle in MUTATION_NEEDLES:
+            if needle in operator_summary_text and "writereport" not in operator_summary_text:
+                failures.append(
+                    "sandbox operator summary command contains mutation behavior without explicit "
+                    "-WriteReport gating."
+                )
+
     if receipt_index.exists():
         try:
             raw = receipt_index.read_text(encoding="utf-8-sig")
-            import json
-
             parsed = json.loads(raw)
             if parsed.get("sandbox_root") != "examples/sandbox":
                 failures.append("receipt index sandbox_root must be examples/sandbox.")
@@ -448,5 +570,54 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                 failures.append("receipt index receipts field must be an array.")
         except Exception as exc:  # pragma: no cover - defensive failure surface
             failures.append(f"receipt index is not valid JSON: {exc}")
+
+    if capability_matrix.exists():
+        try:
+            matrix = json.loads(capability_matrix.read_text(encoding="utf-8-sig"))
+            if matrix.get("schema_version") != "1.0.0":
+                failures.append("capability matrix schema_version must be 1.0.0.")
+
+            capabilities = matrix.get("capabilities")
+            if not isinstance(capabilities, dict):
+                failures.append("capability matrix capabilities field must be an object.")
+            else:
+                for capability, expected_state in EXPECTED_CAPABILITY_STATES.items():
+                    actual = capabilities.get(capability)
+                    if actual != expected_state:
+                        failures.append(
+                            "capability matrix state mismatch for "
+                            f"{capability}: expected {expected_state}, found {actual}"
+                        )
+
+                for forbidden_capability in (
+                    "authoritative_resolver_write",
+                    "production_path_write",
+                    "cache_path_write",
+                    "engine_path_write",
+                ):
+                    actual_state = capabilities.get(forbidden_capability)
+                    if actual_state in {"admitted", "sandbox_only", "read_only", "proof_only"}:
+                        failures.append(
+                            "capability matrix widened forbidden capability "
+                            f"{forbidden_capability} to {actual_state}"
+                        )
+
+                for blocked_capability in (
+                    "o3de_editor_execution",
+                    "asset_processor_execution",
+                    "o3de_cli_execution",
+                    "product_resolution",
+                    "asset_id_claims",
+                    "spawning",
+                    "publishing",
+                ):
+                    actual_state = capabilities.get(blocked_capability)
+                    if actual_state not in {"blocked", "forbidden"}:
+                        failures.append(
+                            "capability matrix widened blocked capability "
+                            f"{blocked_capability} to {actual_state}"
+                        )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(f"capability matrix is not valid JSON: {exc}")
 
     return failures

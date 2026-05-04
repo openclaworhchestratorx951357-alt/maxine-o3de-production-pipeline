@@ -1,0 +1,28 @@
+﻿{
+  "schema_version": "1.0.0",
+  "generated_at_utc": "2026-05-04T00:00:00Z",
+  "capabilities": {
+    "sandbox_resolver_write": "sandbox_only",
+    "sandbox_rollback": "sandbox_only",
+    "sandbox_receipt_inspect": "read_only",
+    "sandbox_review_packet_build": "sandbox_only",
+    "sandbox_review_packet_inspect": "read_only",
+    "sandbox_review_decision_record": "sandbox_only",
+    "sandbox_review_decision_inspect": "read_only",
+    "sandbox_workflow_run": "sandbox_only",
+    "sandbox_workflow_inspect": "read_only",
+    "sandbox_evidence_bundle_export": "sandbox_only",
+    "sandbox_operator_summary": "read_only",
+    "authoritative_resolver_write": "forbidden",
+    "o3de_editor_execution": "blocked",
+    "asset_processor_execution": "blocked",
+    "o3de_cli_execution": "blocked",
+    "product_resolution": "blocked",
+    "asset_id_claims": "blocked",
+    "spawning": "blocked",
+    "publishing": "blocked",
+    "production_path_write": "forbidden",
+    "cache_path_write": "forbidden",
+    "engine_path_write": "forbidden"
+  }
+}
