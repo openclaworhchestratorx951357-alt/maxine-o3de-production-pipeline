@@ -275,27 +275,42 @@ function Finalize-Receipt {
     }
 
     $receipt.receipt_path = Get-RepoRelativePath -AbsolutePath $resolvedReceiptAbs
-    $receipt.receipt_index_path = $resolvedReceiptIndexRel
 
     if (-not $receipt.rollback_receipt_hint) {
         $receipt.rollback_receipt_hint = "Invoke-MaxineSandboxRollback.ps1 -ReceiptPath `"$($receipt.receipt_path)`" -ConfirmRollback"
     }
 
-    $receipt.timestamp_utc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-    Write-JsonFile -InputObject $receipt -OutputPath $resolvedReceiptAbs
-
+    $writeIndex = $true
     if (-not $resolvedReceiptIndexAbs) {
-        $resolvedReceiptIndexAbs = Get-SafeRelativePathAbs -RelativePath $defaultReceiptIndexRel -AllowedRootAbs $sandboxAnchorAbs -Label "receipt_index_path"
-        $resolvedReceiptIndexRel = $defaultReceiptIndexRel
+        if ($ExitCode -ne 0) {
+            # If validation failed before the index path was safely resolved, do not
+            # mutate the default index as a fallback.
+            $writeIndex = $false
+            $receipt.receipt_index_path = $null
+        } else {
+            $resolvedReceiptIndexAbs = Get-SafeRelativePathAbs -RelativePath $defaultReceiptIndexRel -AllowedRootAbs $sandboxAnchorAbs -Label "receipt_index_path"
+            $resolvedReceiptIndexRel = $defaultReceiptIndexRel
+            $receipt.receipt_index_path = $resolvedReceiptIndexRel
+        }
+    } else {
         $receipt.receipt_index_path = $resolvedReceiptIndexRel
     }
 
-    $index = Load-ReceiptIndex -IndexAbs $resolvedReceiptIndexAbs -SandboxRootRel "examples/sandbox"
-    $index = Upsert-ReceiptIndexEntry -Index $index -ReceiptObject $receipt
-    Write-JsonFile -InputObject $index -OutputPath $resolvedReceiptIndexAbs
+    $receipt.timestamp_utc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+    Write-JsonFile -InputObject $receipt -OutputPath $resolvedReceiptAbs
+
+    if ($writeIndex) {
+        $index = Load-ReceiptIndex -IndexAbs $resolvedReceiptIndexAbs -SandboxRootRel "examples/sandbox"
+        $index = Upsert-ReceiptIndexEntry -Index $index -ReceiptObject $receipt
+        Write-JsonFile -InputObject $index -OutputPath $resolvedReceiptIndexAbs
+    }
 
     Write-Host "Receipt: $resolvedReceiptAbs"
-    Write-Host "Receipt index: $resolvedReceiptIndexAbs"
+    if ($writeIndex) {
+        Write-Host "Receipt index: $resolvedReceiptIndexAbs"
+    } else {
+        Write-Host "Receipt index: skipped (blocked before safe index resolution)"
+    }
 
     if ($ExitCode -eq 0) {
         Write-Host "PASS: sandbox-only write skeleton completed."
