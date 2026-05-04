@@ -464,6 +464,23 @@ References:
 - `docs/reviews/sandbox_implementation_explicit_execution_authorization_decision_review_package.json`
 - `docs/reviews/sandbox_implementation_explicit_execution_authorization_decision_template.json`
 - `tools/audit/verify_sandbox_implementation_explicit_execution_authorization_decision_review.py`
+
+## Sandbox Implementation-Branch Explicit Execution-Authorization Decision Record
+
+Sandbox implementation-branch explicit execution-authorization decision record is decision-only.
+
+- decision status is `explicit_execution_authorization_review_pending_implementation_authorization_decision`
+- execution hold remains `hold_active`
+- sandbox write command is not implemented
+- rollback execution command is not implemented
+- authoritative write command is not implemented
+- this phase does not authorize execution
+
+References:
+
+- `docs/reviews/SANDBOX-IMPLEMENTATION-EXPLICIT-EXECUTION-AUTHORIZATION-DECISION.md`
+- `docs/reviews/sandbox_implementation_explicit_execution_authorization_decision.json`
+- `tools/audit/verify_sandbox_implementation_explicit_execution_authorization_decision.py`
 M.A.X.I.N.E. production pipeline for O3DE character, asset, prefab, QC, and automation workflows.
 
 
