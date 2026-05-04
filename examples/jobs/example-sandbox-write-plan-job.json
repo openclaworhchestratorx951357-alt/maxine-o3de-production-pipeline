@@ -1,0 +1,7 @@
+{
+  "job_type": "sandbox_write_plan_validation",
+  "character_name": "Maxine_Sandbox_Write_Plan_Test_001",
+  "mode": "planning_only_sandbox_write_validation",
+  "sandbox_write_plan_path": "examples/manifests/example-sandbox-write-plan.json",
+  "notes": "Validate sandbox write plan structure only. Do not execute sandbox writes."
+}

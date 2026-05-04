@@ -594,4 +594,48 @@ Describe "Maxine Manifest Repository Baseline" {
     It "does not have authoritative write command implementation (sandbox planning phase)" {
         Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
     }
+
+    It "has sandbox write planning design doc" {
+        Test-Path -LiteralPath "docs/roadmap/SANDBOX-WRITE-PLANNING-CONTRACT-DESIGN.md" | Should Be $true
+    }
+
+    It "has sandbox write planning contract" {
+        Test-Path -LiteralPath "docs/contracts/SANDBOX-WRITE-PLANNING-CONTRACT.md" | Should Be $true
+    }
+
+    It "has sandbox write planning plan JSON" {
+        Test-Path -LiteralPath "docs/audits/sandbox_write_planning_contract_plan.json" | Should Be $true
+    }
+
+    It "has sandbox write plan example" {
+        Test-Path -LiteralPath "examples/manifests/example-sandbox-write-plan.json" | Should Be $true
+    }
+
+    It "has sandbox write plan verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_sandbox_write_plan.py" | Should Be $true
+    }
+
+    It "has sandbox write planning contract verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_sandbox_write_planning_contract.py" | Should Be $true
+    }
+
+    It "has sandbox write plan PowerShell wrapper" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxWritePlan.ps1" | Should Be $true
+    }
+
+    It "has sandbox write planning contract PowerShell wrapper" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxWritePlanningContract.ps1" | Should Be $true
+    }
+
+    It "does not have sandbox write command implementation (sandbox write planning contract phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    }
+
+    It "does not have rollback execution command implementation (sandbox write planning contract phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    }
+
+    It "does not have authoritative write command implementation (sandbox write planning contract phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
+    }
 }

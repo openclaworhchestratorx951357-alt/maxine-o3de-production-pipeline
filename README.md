@@ -161,4 +161,21 @@ References:
 
 - `docs/roadmap/SANDBOX-PROTOTYPE-ROLLBACK-EXECUTION-DESIGN.md`
 - `docs/contracts/SANDBOX-ROLLBACK-EXECUTION-CONTRACT.md`
+
+## Sandbox Write Planning Contract
+
+Sandbox write planning contract is planning only.
+
+- sandbox write command is not implemented
+- rollback execution command is not implemented
+- authoritative write command is not implemented
+- accepted Phase 2 allows planning only
+- sandbox write planning depends on rollback execution design
+
+References:
+
+- `docs/roadmap/SANDBOX-WRITE-PLANNING-CONTRACT-DESIGN.md`
+- `docs/contracts/SANDBOX-WRITE-PLANNING-CONTRACT.md`
+- `examples/manifests/example-sandbox-write-plan.json`
+
 M.A.X.I.N.E. production pipeline for O3DE character, asset, prefab, QC, and automation workflows.
