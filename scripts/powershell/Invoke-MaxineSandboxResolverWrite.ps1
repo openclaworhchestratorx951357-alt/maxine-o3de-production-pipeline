@@ -1,9 +1,11 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
     [string]$PlanPath,
 
-    [string]$ReceiptPath
+    [string]$ReceiptPath,
+
+    [string]$ReceiptIndexPath
 )
 
 Set-StrictMode -Version Latest
@@ -14,10 +16,16 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = (Resolve-Path (Join-Path $scriptDir "..\..")).Path
 $sandboxAnchorAbs = [System.IO.Path]::GetFullPath((Join-Path $repoRoot "examples\sandbox"))
 $defaultReceiptDirAbs = [System.IO.Path]::GetFullPath((Join-Path $repoRoot "examples\sandbox\manifests\reports"))
+$defaultReceiptIndexRel = "examples/sandbox/receipts/index.json"
 $planSchemaPath = Join-Path $repoRoot "schemas\maxine_sandbox_resolver_write_plan.schema.json"
 
+$resolvedReceiptIndexAbs = $null
+$resolvedReceiptIndexRel = $defaultReceiptIndexRel
+
 $timestampUtc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+$receiptId = "sandbox-write-receipt-$([System.Guid]::NewGuid().ToString('N'))"
 $receipt = [ordered]@{
+    receipt_id = $receiptId
     command_name = $commandName
     input_plan_path = $PlanPath
     sandbox_root = $null
@@ -26,10 +34,14 @@ $receipt = [ordered]@{
     write_succeeded = $false
     mutation_scope = "sandbox_only"
     blocked_reason = $null
+    status = "failed"
+    rollback_status = "not_requested"
     files_written = @()
     sha256_before = $null
     sha256_after = $null
     rollback_receipt_hint = $null
+    receipt_path = $null
+    receipt_index_path = $resolvedReceiptIndexRel
     timestamp_utc = $timestampUtc
 }
 
@@ -67,6 +79,20 @@ function Test-IsPathWithin {
 
     $prefix = $parentAbs.TrimEnd("\") + "\"
     return $candidateAbs.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)
+}
+
+function Get-RepoRelativePath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$AbsolutePath
+    )
+
+    $abs = [System.IO.Path]::GetFullPath($AbsolutePath)
+    if (-not (Test-IsPathWithin -CandidatePath $abs -ParentPath $repoRoot)) {
+        return $abs
+    }
+
+    return $abs.Substring($repoRoot.Length).TrimStart("\").Replace("\", "/")
 }
 
 function Get-SafeRelativePathAbs {
@@ -143,6 +169,78 @@ function Has-Property {
     return $InputObject.PSObject.Properties.Name -contains $PropertyName
 }
 
+function Load-ReceiptIndex {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$IndexAbs,
+        [Parameter(Mandatory = $true)]
+        [string]$SandboxRootRel
+    )
+
+    if (Test-Path -LiteralPath $IndexAbs -PathType Leaf) {
+        $existing = Get-Content -LiteralPath $IndexAbs -Raw | ConvertFrom-Json
+        if (-not (Has-Property -InputObject $existing -PropertyName "receipts")) {
+            throw "receipt index is missing receipts array."
+        }
+        if ($existing.receipts -eq $null) {
+            $existing | Add-Member -MemberType NoteProperty -Name receipts -Value @() -Force
+        }
+        return $existing
+    }
+
+    return [ordered]@{
+        schema_version = "1.0.0"
+        sandbox_root = $SandboxRootRel
+        receipts = @()
+    }
+}
+
+function Upsert-ReceiptIndexEntry {
+    param(
+        [Parameter(Mandatory = $true)]
+        [object]$Index,
+        [Parameter(Mandatory = $true)]
+        [hashtable]$ReceiptObject
+    )
+
+    $entry = [ordered]@{
+        receipt_id = $ReceiptObject.receipt_id
+        status = $ReceiptObject.status
+        rollback_status = $ReceiptObject.rollback_status
+        command_name = $ReceiptObject.command_name
+        input_plan_path = $ReceiptObject.input_plan_path
+        receipt_path = $ReceiptObject.receipt_path
+        target_path = $ReceiptObject.target_path
+        files_written = @($ReceiptObject.files_written)
+        sha256_before = $ReceiptObject.sha256_before
+        sha256_after = $ReceiptObject.sha256_after
+        blocked_reason = $ReceiptObject.blocked_reason
+        write_attempted = $ReceiptObject.write_attempted
+        write_succeeded = $ReceiptObject.write_succeeded
+        mutation_scope = $ReceiptObject.mutation_scope
+        timestamp_utc = $ReceiptObject.timestamp_utc
+        last_updated_utc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+    }
+
+    $replaced = $false
+    $newReceipts = @()
+    foreach ($existing in $Index.receipts) {
+        if ($existing.receipt_id -eq $entry.receipt_id) {
+            $newReceipts += $entry
+            $replaced = $true
+        } else {
+            $newReceipts += $existing
+        }
+    }
+
+    if (-not $replaced) {
+        $newReceipts += $entry
+    }
+
+    $Index.receipts = $newReceipts
+    return $Index
+}
+
 function Finalize-Receipt {
     param(
         [Parameter(Mandatory = $true)]
@@ -152,6 +250,14 @@ function Finalize-Receipt {
 
     if ($BlockedReason) {
         $receipt.blocked_reason = $BlockedReason
+    }
+
+    if ($receipt.write_succeeded -eq $true) {
+        $receipt.status = "written"
+    } elseif ($receipt.blocked_reason) {
+        $receipt.status = "blocked"
+    } else {
+        $receipt.status = "failed"
     }
 
     $resolvedReceiptAbs = $null
@@ -164,17 +270,32 @@ function Finalize-Receipt {
             $receipt.blocked_reason = (($receipt.blocked_reason + "; ") -replace '^\s*;\s*', '') + "unsafe receipt_path supplied; fallback receipt path used."
         }
     } else {
-        $receiptName = "sandbox-write-receipt-$([System.Guid]::NewGuid().ToString('N')).json"
+        $receiptName = "sandbox-write-receipt-$($receipt.receipt_id).json"
         $resolvedReceiptAbs = Join-Path $defaultReceiptDirAbs $receiptName
     }
 
+    $receipt.receipt_path = Get-RepoRelativePath -AbsolutePath $resolvedReceiptAbs
+    $receipt.receipt_index_path = $resolvedReceiptIndexRel
+
     if (-not $receipt.rollback_receipt_hint) {
-        $receipt.rollback_receipt_hint = "Invoke-MaxineSandboxRollback.ps1 -ReceiptPath `"$resolvedReceiptAbs`" -ConfirmRollback"
+        $receipt.rollback_receipt_hint = "Invoke-MaxineSandboxRollback.ps1 -ReceiptPath `"$($receipt.receipt_path)`" -ConfirmRollback"
     }
 
     $receipt.timestamp_utc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
     Write-JsonFile -InputObject $receipt -OutputPath $resolvedReceiptAbs
+
+    if (-not $resolvedReceiptIndexAbs) {
+        $resolvedReceiptIndexAbs = Get-SafeRelativePathAbs -RelativePath $defaultReceiptIndexRel -AllowedRootAbs $sandboxAnchorAbs -Label "receipt_index_path"
+        $resolvedReceiptIndexRel = $defaultReceiptIndexRel
+        $receipt.receipt_index_path = $resolvedReceiptIndexRel
+    }
+
+    $index = Load-ReceiptIndex -IndexAbs $resolvedReceiptIndexAbs -SandboxRootRel "examples/sandbox"
+    $index = Upsert-ReceiptIndexEntry -Index $index -ReceiptObject $receipt
+    Write-JsonFile -InputObject $index -OutputPath $resolvedReceiptIndexAbs
+
     Write-Host "Receipt: $resolvedReceiptAbs"
+    Write-Host "Receipt index: $resolvedReceiptIndexAbs"
 
     if ($ExitCode -eq 0) {
         Write-Host "PASS: sandbox-only write skeleton completed."
@@ -214,12 +335,6 @@ try {
     if ($plan.sandbox_scope -ne "sandbox_only") {
         throw "plan.sandbox_scope must be sandbox_only."
     }
-    if ($plan.explicit_sandbox_approval -ne $true) {
-        throw "plan.explicit_sandbox_approval must be true."
-    }
-    if ($plan.approved_target_under_sandbox -ne $true) {
-        throw "plan.approved_target_under_sandbox must be true."
-    }
     if (-not (Has-Property -InputObject $plan -PropertyName "plan_signature")) {
         throw "plan.plan_signature is required."
     }
@@ -237,11 +352,30 @@ try {
         throw "sandbox_root must resolve to examples/sandbox."
     }
 
+    $indexRel = $ReceiptIndexPath
+    if ([string]::IsNullOrWhiteSpace($indexRel) -and (Has-Property -InputObject $plan -PropertyName "receipt_index_path") -and -not [string]::IsNullOrWhiteSpace([string]$plan.receipt_index_path)) {
+        $indexRel = [string]$plan.receipt_index_path
+    }
+    if ([string]::IsNullOrWhiteSpace($indexRel)) {
+        $indexRel = $defaultReceiptIndexRel
+    }
+
+    $resolvedReceiptIndexAbs = Get-SafeRelativePathAbs -RelativePath $indexRel -AllowedRootAbs $sandboxRootAbs -Label "receipt_index_path"
+    $resolvedReceiptIndexRel = Get-RepoRelativePath -AbsolutePath $resolvedReceiptIndexAbs
+
+    if ($plan.explicit_sandbox_approval -ne $true) {
+        throw "plan.explicit_sandbox_approval must be true."
+    }
+    if ($plan.approved_target_under_sandbox -ne $true) {
+        throw "plan.approved_target_under_sandbox must be true."
+    }
+
     $targetRel = [string]$plan.target_path
     $targetAbs = Get-SafeRelativePathAbs -RelativePath $targetRel -AllowedRootAbs $sandboxRootAbs -Label "target_path" -RequireStaging
 
     $receipt.sandbox_root = $sandboxRootRel
     $receipt.target_path = $targetRel
+    $receipt.receipt_index_path = $resolvedReceiptIndexRel
 
     $payload = @{}
     if ((Has-Property -InputObject $plan -PropertyName "write_payload") -and $null -ne $plan.write_payload) {

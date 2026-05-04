@@ -5,6 +5,7 @@
   "type": "object",
   "additionalProperties": true,
   "required": [
+    "receipt_id",
     "command_name",
     "input_plan_path",
     "sandbox_root",
@@ -13,13 +14,21 @@
     "write_succeeded",
     "mutation_scope",
     "blocked_reason",
+    "status",
+    "rollback_status",
     "files_written",
     "sha256_before",
     "sha256_after",
     "rollback_receipt_hint",
+    "receipt_path",
+    "receipt_index_path",
     "timestamp_utc"
   ],
   "properties": {
+    "receipt_id": {
+      "type": "string",
+      "minLength": 1
+    },
     "command_name": {
       "type": "string",
       "const": "Invoke-MaxineSandboxResolverWrite.ps1"
@@ -55,6 +64,23 @@
         "null"
       ]
     },
+    "status": {
+      "type": "string",
+      "enum": [
+        "written",
+        "rolled_back",
+        "blocked",
+        "failed"
+      ]
+    },
+    "rollback_status": {
+      "type": "string",
+      "enum": [
+        "not_requested",
+        "rolled_back",
+        "rollback_failed"
+      ]
+    },
     "files_written": {
       "type": "array",
       "items": {
@@ -74,6 +100,18 @@
       ]
     },
     "rollback_receipt_hint": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "receipt_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "receipt_index_path": {
       "type": [
         "string",
         "null"

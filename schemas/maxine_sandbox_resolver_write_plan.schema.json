@@ -67,6 +67,10 @@
     },
     "write_payload": {
       "type": "object"
+    },
+    "receipt_index_path": {
+      "type": "string",
+      "minLength": 1
     }
   }
 }
