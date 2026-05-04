@@ -682,4 +682,60 @@ Describe "Maxine Manifest Repository Baseline" {
     It "does not have authoritative write command implementation (sandbox write dry-run phase)" {
         Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
     }
+
+    It "has sandbox write approval gate design doc" {
+        Test-Path -LiteralPath "docs/roadmap/SANDBOX-WRITE-APPROVAL-GATE-DESIGN.md" | Should Be $true
+    }
+
+    It "has sandbox write approval gate contract" {
+        Test-Path -LiteralPath "docs/contracts/SANDBOX-WRITE-APPROVAL-GATE-CONTRACT.md" | Should Be $true
+    }
+
+    It "has sandbox write approval gate report schema" {
+        Test-Path -LiteralPath "schemas/maxine_sandbox_write_approval_gate_report.schema.json" | Should Be $true
+    }
+
+    It "has sandbox write approval artifact example" {
+        Test-Path -LiteralPath "examples/manifests/example-sandbox-write-approval.json" | Should Be $true
+    }
+
+    It "has sandbox write approval gate report example" {
+        Test-Path -LiteralPath "examples/manifests/example-sandbox-write-approval-gate-report.json" | Should Be $true
+    }
+
+    It "has sandbox write approval verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_sandbox_write_approval.py" | Should Be $true
+    }
+
+    It "has sandbox write approval gate report verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_sandbox_write_approval_gate_report.py" | Should Be $true
+    }
+
+    It "has sandbox write approval gate contract verifier" {
+        Test-Path -LiteralPath "tools/audit/verify_sandbox_write_approval_gate_contract.py" | Should Be $true
+    }
+
+    It "has sandbox write approval PowerShell wrapper" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxWriteApproval.ps1" | Should Be $true
+    }
+
+    It "has sandbox write approval gate report PowerShell wrapper" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxWriteApprovalGateReport.ps1" | Should Be $true
+    }
+
+    It "has sandbox write approval gate contract PowerShell wrapper" {
+        Test-Path -LiteralPath "scripts/powershell/Test-MaxineSandboxWriteApprovalGateContract.ps1" | Should Be $true
+    }
+
+    It "does not have sandbox write command implementation (sandbox write approval gate phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1" | Should Be $false
+    }
+
+    It "does not have rollback execution command implementation (sandbox write approval gate phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineSandboxRollback.ps1" | Should Be $false
+    }
+
+    It "does not have authoritative write command implementation (sandbox write approval gate phase)" {
+        Test-Path -LiteralPath "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1" | Should Be $false
+    }
 }

@@ -1,0 +1,9 @@
+{
+  "job_type": "sandbox_write_approval_gate_validation",
+  "character_name": "Maxine_Sandbox_Write_Approval_Gate_Test_001",
+  "mode": "planning_only_approval_gate_validation",
+  "dry_run_report_path": "examples/manifests/example-sandbox-write-dry-run-report.json",
+  "approval_path": "examples/manifests/example-sandbox-write-approval.json",
+  "approval_gate_report_path": "examples/manifests/example-sandbox-write-approval-gate-report.json",
+  "notes": "Validate sandbox write approval gate structure only. Do not execute sandbox writes."
+}
