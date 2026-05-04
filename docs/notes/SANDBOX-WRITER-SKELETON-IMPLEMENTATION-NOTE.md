@@ -24,6 +24,9 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - `scripts/powershell/Invoke-MaxineProductResolutionProposalBuild.ps1`
 - `scripts/powershell/Invoke-MaxineProductResolutionProposalInspect.ps1`
 - `scripts/powershell/Invoke-MaxineProductResolutionProposalBundleExport.ps1`
+- `scripts/powershell/Invoke-MaxineApEvidenceImport.ps1`
+- `scripts/powershell/Invoke-MaxineApEvidenceInspect.ps1`
+- `scripts/powershell/Invoke-MaxineApEvidenceBundleExport.ps1`
 
 ## What This Implementation Does
 - Accepts a structured write plan JSON.
@@ -53,6 +56,10 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - Adds read-only product-resolution proposal inspection by list, `proposal_id`, and explicit path.
 - Adds sandbox-only product-resolution proposal bundle export under `examples/sandbox/product-resolution-proposal-bundles`.
 - Ensures proposal bundles copy JSON evidence snapshots only and do not copy source assets, models, textures, binaries, Cache files, AP outputs, model weights, or runtime outputs.
+- Adds read-only AP evidence import under `examples/sandbox/ap-evidence-imports` from explicit evidence inputs only (`.json`, `.txt`, `.log`).
+- Adds read-only AP evidence inspection by list, `evidence_import_id`, and explicit path.
+- Adds sandbox-only AP evidence bundle export under `examples/sandbox/ap-evidence-bundles` that copies JSON snapshots only.
+- Blocks live Cache directory inputs, `assetdb.sqlite`/database inputs, binary/source/runtime evidence inputs, and all Product ID/Asset ID/source UUID claims.
 - Enforces capability-state boundaries via `examples/capabilities/maxine-capability-matrix.json`.
 - Allows rollback only for files listed in the receipt and only under the approved sandbox root.
 

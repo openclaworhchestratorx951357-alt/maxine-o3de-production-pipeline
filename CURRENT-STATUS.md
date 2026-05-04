@@ -34,6 +34,10 @@
   - `scripts/powershell/Invoke-MaxineProductResolutionProposalBuild.ps1`
   - `scripts/powershell/Invoke-MaxineProductResolutionProposalInspect.ps1`
   - `scripts/powershell/Invoke-MaxineProductResolutionProposalBundleExport.ps1`
+- Read-only AP evidence import commands are implemented:
+  - `scripts/powershell/Invoke-MaxineApEvidenceImport.ps1`
+  - `scripts/powershell/Invoke-MaxineApEvidenceInspect.ps1`
+  - `scripts/powershell/Invoke-MaxineApEvidenceBundleExport.ps1`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -53,9 +57,16 @@
 - Asset candidate evidence bundle output is restricted to `examples/sandbox/asset-candidate-evidence-bundles`.
 - Product-resolution proposal output is restricted to `examples/sandbox/product-resolution-proposals`.
 - Product-resolution proposal bundle output is restricted to `examples/sandbox/product-resolution-proposal-bundles`.
+- AP evidence import output is restricted to `examples/sandbox/ap-evidence-imports`.
+- AP evidence bundle output is restricted to `examples/sandbox/ap-evidence-bundles`.
 - Explicit sandbox approval is required in the input plan.
 - Production paths, engine paths, Cache paths, and parent traversal paths are blocked.
 - `scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1` remains absent.
+- AP evidence import remains read-only and proposal-only:
+  - no AP/AP Batch/O3DE/Editor execution
+  - no live Cache read
+  - no live asset database read
+  - no Product ID, Asset ID, or source UUID claims
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
 
 ## Verification Entry Points
