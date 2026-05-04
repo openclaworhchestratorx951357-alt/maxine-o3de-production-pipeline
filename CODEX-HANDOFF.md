@@ -537,3 +537,24 @@ Create an execution-readiness authorization review package that asks whether to 
 ## Next Milestone After Sandbox Implementation-Branch Execution-Readiness Authorization Review
 
 If the operator explicitly records `execution_authorization_review_pending_decision_preparation_only`, create an execution-readiness authorization decision record phase. Do not implement sandbox writes or rollback execution in that record phase.
+
+## Sandbox Implementation-Branch Execution-Readiness Authorization Decision Record Complete Criteria
+
+- execution-readiness authorization decision doc exists
+- execution-readiness authorization decision JSON exists
+- execution-readiness authorization decision verifier exists
+- execution-readiness authorization decision verifier passes
+- decision_status is execution_authorization_review_pending_decision_preparation_only
+- execution_hold_current_status is hold_active
+- execution_hold_next_status is hold_active
+- execution_hold_transition_approved is true
+- execution_authorization_decision_preparation_allowed is true
+- sandbox write command remains absent
+- rollback execution command remains absent
+- authoritative write command remains absent
+- no products are resolved
+- no Asset IDs are claimed
+
+## Next Milestone After Sandbox Implementation-Branch Execution-Readiness Authorization Decision Record
+
+Create an execution-authorization decision review package that asks whether to move from decision-preparation status toward a future explicit execution-authorization decision, while keeping execution hold active and keeping sandbox write and rollback execution unimplemented.
