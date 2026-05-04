@@ -14,6 +14,8 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - `scripts/powershell/Invoke-MaxineSandboxWorkflowInspect.ps1`
 - `scripts/powershell/Invoke-MaxineSandboxEvidenceBundleExport.ps1`
 - `scripts/powershell/Invoke-MaxineSandboxOperatorSummary.ps1`
+- `scripts/powershell/Invoke-MaxineProjectInventoryRead.ps1`
+- `scripts/powershell/Invoke-MaxineProjectInventoryInspect.ps1`
 
 ## What This Implementation Does
 - Accepts a structured write plan JSON.
@@ -33,6 +35,7 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - Supports read-only workflow inspection by list and `workflow_run_id`.
 - Exports sandbox-local evidence bundles under `examples/sandbox/evidence-bundles` with copied JSON snapshots for workflow/receipt/review/decision metadata.
 - Provides operator summary output with read-only default behavior and optional sandbox-local report output under `examples/sandbox/operator-reports`.
+- Adds read-only project awareness inventory scanning with sandbox-local output under `examples/sandbox/project-inventory`.
 - Enforces capability-state boundaries via `examples/capabilities/maxine-capability-matrix.json`.
 - Allows rollback only for files listed in the receipt and only under the approved sandbox root.
 

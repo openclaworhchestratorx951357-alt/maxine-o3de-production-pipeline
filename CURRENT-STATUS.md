@@ -20,6 +20,9 @@
   - `scripts/powershell/Invoke-MaxineSandboxEvidenceBundleExport.ps1`
 - Sandbox operator summary is implemented:
   - `scripts/powershell/Invoke-MaxineSandboxOperatorSummary.ps1`
+- Read-only project inventory is implemented:
+  - `scripts/powershell/Invoke-MaxineProjectInventoryRead.ps1`
+  - `scripts/powershell/Invoke-MaxineProjectInventoryInspect.ps1`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -33,6 +36,7 @@
 - Workflow run records are restricted to `examples/sandbox/workflow-runs`.
 - Evidence bundles are restricted to `examples/sandbox/evidence-bundles`.
 - Operator summary reports are restricted to `examples/sandbox/operator-reports` when `-WriteReport` is explicitly used.
+- Project inventory output is restricted to `examples/sandbox/project-inventory`.
 - Explicit sandbox approval is required in the input plan.
 - Production paths, engine paths, Cache paths, and parent traversal paths are blocked.
 - `scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1` remains absent.
