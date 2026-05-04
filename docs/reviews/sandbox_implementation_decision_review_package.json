@@ -1,0 +1,51 @@
+﻿{
+  "schema_version": "1.0.0",
+  "review_name": "sandbox-prototype-implementation-decision-review",
+  "review_type": "implementation_decision_request",
+  "decision_requested": true,
+  "decision_question": "Do you approve creating a separate sandbox-only implementation prototype branch, with execution still limited to disposable sandbox fixtures and with production/O3DE writes still forbidden?",
+  "default_decision_status": "implementation_hold",
+  "allowed_decision_statuses": [
+    "implementation_hold",
+    "implementation_rejected",
+    "implementation_accepted_for_branch_creation_only"
+  ],
+  "review_does_not_authorize": [
+    "sandbox_write_execution",
+    "rollback_execution",
+    "authoritative_writes",
+    "production_project_mutation",
+    "o3de_editor_execution",
+    "asset_processor_execution",
+    "product_resolution",
+    "asset_id_claims",
+    "prefab_publication",
+    "entity_spawning"
+  ],
+  "required_stack_artifacts": [
+    "docs/reviews/phase2_acceptance_decision.json",
+    "docs/roadmap/SANDBOX-PROTOTYPE-ROLLBACK-EXECUTION-DESIGN.md",
+    "docs/contracts/SANDBOX-WRITE-PLANNING-CONTRACT.md",
+    "docs/contracts/SANDBOX-WRITE-DRY-RUN-REPORT-CONTRACT.md",
+    "docs/contracts/SANDBOX-WRITE-APPROVAL-GATE-CONTRACT.md",
+    "docs/contracts/SANDBOX-WRITE-FINAL-PREFLIGHT-CONTRACT.md",
+    "docs/contracts/SANDBOX-EXECUTION-INTENT-HOLD-CONTRACT.md",
+    "examples/manifests/example-sandbox-execution-hold.json"
+  ],
+  "required_absent_files": [
+    "scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1",
+    "scripts/powershell/Invoke-MaxineSandboxRollback.ps1",
+    "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
+  ],
+  "safety": {
+    "review_only": true,
+    "implementation_branch_creation_allowed_by_default": false,
+    "implementation_available": false,
+    "sandbox_write_allowed": false,
+    "rollback_execution_allowed": false,
+    "authoritative_write_allowed": false,
+    "production_paths_allowed": false,
+    "product_resolution_allowed": false,
+    "asset_id_claims_allowed": false
+  }
+}

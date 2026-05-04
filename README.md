@@ -239,5 +239,22 @@ References:
 - `docs/contracts/SANDBOX-EXECUTION-INTENT-HOLD-CONTRACT.md`
 - `examples/manifests/example-sandbox-execution-intent.json`
 - `examples/manifests/example-sandbox-execution-hold.json`
+
+## Sandbox Prototype Implementation-Decision Review
+
+Sandbox prototype implementation-decision review is review-only.
+
+- default decision is implementation_hold
+- no implementation branch is authorized by default
+- sandbox write command is not implemented
+- rollback execution command is not implemented
+- authoritative write command is not implemented
+
+References:
+
+- `docs/reviews/SANDBOX-PROTOTYPE-IMPLEMENTATION-DECISION-REVIEW.md`
+- `docs/reviews/sandbox_implementation_decision_review_package.json`
+- `docs/reviews/sandbox_implementation_decision_template.json`
 M.A.X.I.N.E. production pipeline for O3DE character, asset, prefab, QC, and automation workflows.
+
 
