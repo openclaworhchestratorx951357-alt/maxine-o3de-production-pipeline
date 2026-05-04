@@ -401,3 +401,22 @@ If the operator explicitly records implementation_accepted_for_branch_creation_o
 ## Next Milestone After Sandbox Prototype Implementation Decision Record
 
 Create a separate implementation branch only if explicitly instructed. Keep sandbox write and rollback execution implementation gated, and do not implement production writes.
+
+## Sandbox Implementation Branch Baseline Complete Criteria
+
+- implementation branch baseline doc exists
+- implementation branch baseline JSON exists
+- implementation branch baseline verifier exists
+- implementation branch baseline verifier passes
+- implementation branch baseline PowerShell wrapper exists
+- implementation branch is preparation-only with no write execution authorization
+- execution hold remains active
+- sandbox write command remains absent
+- rollback execution command remains absent
+- authoritative write command remains absent
+- no products are resolved
+- no Asset IDs are claimed
+
+## Next Milestone After Sandbox Implementation Branch Baseline
+
+Create an implementation-branch kickoff safety package that defines the first non-executing implementation checklist and gating proofs, still without implementing sandbox writes or rollback execution.

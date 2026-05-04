@@ -272,6 +272,23 @@ References:
 - `docs/reviews/SANDBOX-PROTOTYPE-IMPLEMENTATION-DECISION.md`
 - `docs/reviews/sandbox_implementation_decision.json`
 - `tools/audit/verify_sandbox_implementation_decision.py`
+
+## Sandbox Implementation Branch Baseline
+
+Sandbox implementation branch baseline is safety-only.
+
+- separate implementation branch is created for non-executing preparation only
+- execution hold remains active
+- sandbox write command is not implemented
+- rollback execution command is not implemented
+- authoritative write command is not implemented
+- implementation execution remains disallowed
+
+References:
+
+- `docs/audits/SANDBOX-IMPLEMENTATION-BRANCH-BASELINE.md`
+- `docs/audits/sandbox_implementation_branch_baseline.json`
+- `tools/audit/verify_sandbox_implementation_branch_baseline.py`
 M.A.X.I.N.E. production pipeline for O3DE character, asset, prefab, QC, and automation workflows.
 
 
