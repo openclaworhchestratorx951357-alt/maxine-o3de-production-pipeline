@@ -16,6 +16,13 @@
 - Sandbox workflow runner is implemented:
   - `scripts/powershell/Invoke-MaxineSandboxWorkflowRun.ps1`
   - `scripts/powershell/Invoke-MaxineSandboxWorkflowInspect.ps1`
+- Sandbox evidence bundle export is implemented:
+  - `scripts/powershell/Invoke-MaxineSandboxEvidenceBundleExport.ps1`
+- Sandbox operator summary is implemented:
+  - `scripts/powershell/Invoke-MaxineSandboxOperatorSummary.ps1`
+- Capability matrix is implemented:
+  - `examples/capabilities/maxine-capability-matrix.json`
+  - `schemas/maxine_capability_matrix.schema.json`
 - Compatibility note: the repository invariant moved from "sandbox writer/rollback command absent" to "sandbox writer/rollback admitted only under strict sandbox-only safety contract."
 
 ## Safety Boundary (Still Active)
@@ -24,6 +31,8 @@
 - Review packets are restricted to `examples/sandbox/review-packets`.
 - Review decisions are restricted to `examples/sandbox/review-decisions`.
 - Workflow run records are restricted to `examples/sandbox/workflow-runs`.
+- Evidence bundles are restricted to `examples/sandbox/evidence-bundles`.
+- Operator summary reports are restricted to `examples/sandbox/operator-reports` when `-WriteReport` is explicitly used.
 - Explicit sandbox approval is required in the input plan.
 - Production paths, engine paths, Cache paths, and parent traversal paths are blocked.
 - `scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1` remains absent.

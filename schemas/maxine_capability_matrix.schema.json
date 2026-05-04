@@ -1,0 +1,54 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_capability_matrix.schema.json",
+  "title": "Maxine Capability Matrix",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "generated_at_utc",
+    "capabilities"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "generated_at_utc": { "type": "string", "minLength": 1 },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "enum": [
+          "admitted",
+          "sandbox_only",
+          "read_only",
+          "proof_only",
+          "blocked",
+          "forbidden"
+        ]
+      },
+      "required": [
+        "sandbox_resolver_write",
+        "sandbox_rollback",
+        "sandbox_receipt_inspect",
+        "sandbox_review_packet_build",
+        "sandbox_review_packet_inspect",
+        "sandbox_review_decision_record",
+        "sandbox_review_decision_inspect",
+        "sandbox_workflow_run",
+        "sandbox_workflow_inspect",
+        "sandbox_evidence_bundle_export",
+        "sandbox_operator_summary",
+        "authoritative_resolver_write",
+        "o3de_editor_execution",
+        "asset_processor_execution",
+        "o3de_cli_execution",
+        "product_resolution",
+        "asset_id_claims",
+        "spawning",
+        "publishing",
+        "production_path_write",
+        "cache_path_write",
+        "engine_path_write"
+      ]
+    }
+  }
+}
