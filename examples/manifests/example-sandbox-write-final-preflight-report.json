@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0.0",
+  "preflight_report_id": "sandbox-write-final-preflight-example-0001",
+  "sandbox_write_plan_id": "sandbox-write-plan-example-0001",
+  "dry_run_report_id": "sandbox-write-dry-run-example-0001",
+  "approval_gate_report_id": "sandbox-write-approval-gate-example-0001",
+  "sandbox_id": "sandbox-example-0001",
+  "status": "preflight_ready",
+  "checks": [
+    {
+      "id": "accepted_decision",
+      "passed": true
+    },
+    {
+      "id": "sandbox_write_plan_valid",
+      "passed": true
+    },
+    {
+      "id": "dry_run_report_ready",
+      "passed": true
+    },
+    {
+      "id": "approval_gate_report_ready",
+      "passed": true
+    },
+    {
+      "id": "approval_references_consistent",
+      "passed": true
+    },
+    {
+      "id": "rollback_artifact_valid",
+      "passed": true
+    },
+    {
+      "id": "implementation_commands_absent",
+      "passed": true
+    }
+  ],
+  "blockers": [],
+  "warnings": [
+    "Preflight ready does not authorize execution."
+  ],
+  "rollback_artifact": "examples/manifests/example-sandbox-rollback-artifact.json",
+  "safety": {
+    "preflight_only": true,
+    "implementation_available": false,
+    "sandbox_write_allowed": false,
+    "rollback_execution_allowed": false,
+    "authoritative_write_allowed": false,
+    "production_paths_allowed": false,
+    "product_resolution_allowed": false,
+    "asset_id_claims_allowed": false
+  },
+  "generated_at_utc": "2026-05-04T00:00:00Z"
+}

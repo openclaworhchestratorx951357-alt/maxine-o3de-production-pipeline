@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_sandbox_write_final_preflight_report.schema.json",
+  "title": "MAXINE Sandbox Write Final Preflight Report",
+  "description": "Planning-only final preflight report contract for a future sandbox write attempt. This does not execute writes.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "preflight_report_id",
+    "sandbox_write_plan_id",
+    "dry_run_report_id",
+    "approval_gate_report_id",
+    "sandbox_id",
+    "status",
+    "checks",
+    "blockers",
+    "warnings",
+    "rollback_artifact",
+    "safety",
+    "generated_at_utc"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "preflight_report_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sandbox_write_plan_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "dry_run_report_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approval_gate_report_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sandbox_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "preflight_ready",
+        "preflight_blocked",
+        "preflight_incomplete"
+      ]
+    },
+    "checks": {
+      "type": "array"
+    },
+    "blockers": {
+      "type": "array"
+    },
+    "warnings": {
+      "type": "array"
+    },
+    "rollback_artifact": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generated_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "safety": {
+      "type": "object",
+      "required": [
+        "preflight_only",
+        "implementation_available",
+        "sandbox_write_allowed",
+        "rollback_execution_allowed",
+        "authoritative_write_allowed",
+        "production_paths_allowed",
+        "product_resolution_allowed",
+        "asset_id_claims_allowed"
+      ],
+      "properties": {
+        "preflight_only": {
+          "const": true
+        },
+        "implementation_available": {
+          "const": false
+        },
+        "sandbox_write_allowed": {
+          "const": false
+        },
+        "rollback_execution_allowed": {
+          "const": false
+        },
+        "authoritative_write_allowed": {
+          "const": false
+        },
+        "production_paths_allowed": {
+          "const": false
+        },
+        "product_resolution_allowed": {
+          "const": false
+        },
+        "asset_id_claims_allowed": {
+          "const": false
+        }
+      }
+    }
+  }
+}
