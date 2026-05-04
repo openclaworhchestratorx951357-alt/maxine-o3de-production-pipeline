@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "decision_name": "sandbox-implementation-explicit-execution-authorization-decision",
+  "decision_status": "explicit_execution_authorization_review_hold",
+  "decision_recorded_by": "operator",
+  "decision_recorded_at_utc": "2026-05-04T00:00:00Z",
+  "review_package": "docs/reviews/sandbox_implementation_explicit_execution_authorization_decision_review_package.json",
+  "execution_hold_current_status": "hold_active",
+  "execution_hold_next_status": "hold_active",
+  "execution_hold_must_remain_active": true,
+  "explicit_execution_authorization_progression_allowed": false,
+  "sandbox_write_implementation_allowed": false,
+  "rollback_execution_implementation_allowed": false,
+  "authoritative_write_allowed": false,
+  "production_project_mutation_allowed": false,
+  "o3de_editor_allowed": false,
+  "asset_processor_allowed": false,
+  "product_resolution_allowed": false,
+  "asset_id_claims_allowed": false,
+  "notes": [
+    "Default status is explicit_execution_authorization_review_hold until explicit operator decision is recorded.",
+    "This template does not authorize execution implementation."
+  ]
+}
