@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "DCC_CONFORM_v1_REPORT",
+  "job_id": "job-release-character-warn-001",
+  "package_id": "char.maxine.guard_mira",
+  "lane": "release_character",
+  "status": "warn",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-warn-001/o3de/source/guard_mira.fbx",
+    "source_kind": "fbx",
+    "sha256": "a3f6ec041fd131ef8b73844d0f35533aaf95f535b8d3e2f85d5494ad6b0f3559"
+  },
+  "target": {
+    "skeleton_contract_id": "MAX_BIPED_v1",
+    "expected_skeleton_contract_id": "MAX_BIPED_v1",
+    "package_tier": "npc"
+  },
+  "dcc": {
+    "tool_name": "Blender",
+    "tool_version": "4.2.0",
+    "export_preset": "MAXINE_FBX_RELEASE_v1",
+    "intended_output_path": "artifacts/jobs/job-release-character-warn-001/o3de/source/guard_mira_conformed.fbx",
+    "evidence_only": true
+  },
+  "transform": {
+    "units": "meters",
+    "units_normalized": true,
+    "origin_centered": true,
+    "up_axis": "Z",
+    "forward_axis": "Y",
+    "handedness": "right",
+    "bounds": {
+      "min": [
+        -0.38,
+        -0.35,
+        0.0
+      ],
+      "max": [
+        0.36,
+        0.39,
+        1.68
+      ],
+      "size": [
+        0.74,
+        0.74,
+        1.68
+      ]
+    }
+  },
+  "skeleton": {
+    "root_bone_present": true,
+    "skeleton_contract_result": "warn",
+    "skeleton_validator_output_ref": "examples/skeletons/max_biped_v1_warn.json"
+  },
+  "findings": [
+    {
+      "id": "non_blocking_finger_roll_variance",
+      "severity": "warning",
+      "status": "open",
+      "message": "Finger roll helper bones vary from preferred naming convention but remain deterministic."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "dcc_conform_v1",
+      "result": "warn",
+      "severity": "warning",
+      "details": {
+        "summary": "Conform metadata accepted with non-blocking warning."
+      }
+    }
+  }
+}

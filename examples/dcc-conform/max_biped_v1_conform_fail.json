@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "DCC_CONFORM_v1_REPORT",
+  "job_id": "job-release-character-fail-001",
+  "package_id": "char.maxine.raider_khal",
+  "lane": "release_character",
+  "status": "fail",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-fail-001/o3de/source/raider_khal.fbx",
+    "source_kind": "fbx"
+  },
+  "target": {
+    "skeleton_contract_id": "MAX_BIPED_v1",
+    "expected_skeleton_contract_id": "MAX_BIPED_v1",
+    "package_tier": "hero"
+  },
+  "dcc": {
+    "tool_name": "Blender",
+    "export_preset": "MAXINE_FBX_RELEASE_v1",
+    "intended_output_path": "artifacts/jobs/job-release-character-fail-001/o3de/source/raider_khal_conformed.fbx",
+    "evidence_only": true
+  },
+  "transform": {
+    "units": "centimeters",
+    "units_normalized": false,
+    "origin_centered": false,
+    "up_axis": "Y",
+    "forward_axis": "Z",
+    "handedness": "left",
+    "bounds": {
+      "min": [
+        -0.35,
+        -0.33,
+        0.0
+      ],
+      "max": [
+        0.34,
+        0.37,
+        1.73
+      ],
+      "size": [
+        0.69,
+        0.7,
+        1.73
+      ]
+    }
+  },
+  "skeleton": {
+    "root_bone_present": false,
+    "skeleton_contract_result": "fail"
+  },
+  "findings": [
+    {
+      "id": "root_missing",
+      "severity": "error",
+      "status": "open",
+      "message": "Root bone was not detected in the normalized inventory."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "dcc_conform_v1",
+      "result": "fail",
+      "severity": "error",
+      "details": {
+        "summary": "Conform report failed hard requirements."
+      }
+    }
+  }
+}

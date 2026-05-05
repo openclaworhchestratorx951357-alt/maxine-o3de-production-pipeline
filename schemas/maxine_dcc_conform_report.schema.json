@@ -1,0 +1,320 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_dcc_conform_report.schema.json",
+  "title": "MAXINE DCC Conform Report",
+  "description": "Evidence-only DCC conform report contract for MAX_BIPED_v1 alignment.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "report_type",
+    "job_id",
+    "package_id",
+    "lane",
+    "status",
+    "source",
+    "target",
+    "dcc",
+    "transform",
+    "skeleton",
+    "findings",
+    "manifest_attachment"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "report_type": {
+      "type": "string",
+      "const": "DCC_CONFORM_v1_REPORT"
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "package_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lane": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "source_path",
+        "source_kind"
+      ],
+      "properties": {
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "skeleton_contract_id",
+        "expected_skeleton_contract_id",
+        "package_tier"
+      ],
+      "properties": {
+        "skeleton_contract_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_skeleton_contract_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "package_tier": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "dcc": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "tool_name",
+        "export_preset",
+        "intended_output_path",
+        "evidence_only"
+      ],
+      "properties": {
+        "tool_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tool_version": {
+          "type": "string"
+        },
+        "export_preset": {
+          "type": "string",
+          "minLength": 1
+        },
+        "intended_output_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_only": {
+          "type": "boolean",
+          "const": true
+        }
+      }
+    },
+    "transform": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "units",
+        "units_normalized",
+        "origin_centered",
+        "up_axis",
+        "forward_axis",
+        "handedness",
+        "bounds"
+      ],
+      "properties": {
+        "units": {
+          "type": "string",
+          "minLength": 1
+        },
+        "units_normalized": {
+          "type": "boolean"
+        },
+        "origin_centered": {
+          "type": "boolean"
+        },
+        "up_axis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "forward_axis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "handedness": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bounds": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "min",
+            "max",
+            "size"
+          ],
+          "properties": {
+            "min": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number"
+              }
+            },
+            "max": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number"
+              }
+            },
+            "size": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    },
+    "skeleton": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "root_bone_present",
+        "skeleton_contract_result"
+      ],
+      "properties": {
+        "root_bone_present": {
+          "type": "boolean"
+        },
+        "skeleton_contract_result": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "warn",
+            "fail",
+            "pending_manual"
+          ]
+        },
+        "skeleton_validator_output_ref": {
+          "type": "string"
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "severity",
+          "status",
+          "message"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "error",
+              "manual_review"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "manifest_attachment": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "target_path",
+        "future_target_path",
+        "qc_check"
+      ],
+      "properties": {
+        "target_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "future_target_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "qc_check": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "check_id",
+            "result",
+            "severity",
+            "details"
+          ],
+          "properties": {
+            "check_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "result": {
+              "type": "string",
+              "enum": [
+                "pass",
+                "warn",
+                "fail",
+                "pending_manual"
+              ]
+            },
+            "severity": {
+              "type": "string",
+              "enum": [
+                "info",
+                "warning",
+                "error",
+                "manual_review"
+              ]
+            },
+            "details": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      }
+    }
+  }
+}

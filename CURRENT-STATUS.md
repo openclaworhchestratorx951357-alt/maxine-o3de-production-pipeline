@@ -59,6 +59,13 @@
   - `schemas/maxine_skeleton_contract.schema.json`
   - `examples/skeleton-contracts/MAX_BIPED_v1.json`
   - `tools/skeleton-validator/validate_skeleton_contract.py`
+- DCC conform v1 evidence report validation is implemented (contract-first, non-executing evidence only):
+  - `schemas/maxine_dcc_conform_report.schema.json`
+  - `tools/dcc-conform/validate_dcc_conform_report.py`
+  - `examples/dcc-conform/max_biped_v1_conform_pass.json`
+  - `examples/dcc-conform/max_biped_v1_conform_warn.json`
+  - `examples/dcc-conform/max_biped_v1_conform_fail.json`
+  - `docs/maxine/specs/dcc-conform-v1.md`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -123,6 +130,10 @@
   - validates normalized skeleton inventory JSON against contract rules
   - emits manifest-attachable QC check payloads
   - does not execute O3DE/AP, spawn, publish, or Cache/live DB access
+- DCC conform v1 report validation remains non-executing evidence-only:
+  - validates DCC conform report JSON against `MAX_BIPED_v1` and manifest attachment rules
+  - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
 
 ## Verification Entry Points

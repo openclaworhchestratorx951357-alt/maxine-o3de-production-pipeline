@@ -67,6 +67,7 @@ REQUIRED_FILES = [
     "schemas/maxine_ap_binary_preflight.schema.json",
     "schemas/maxine_ap_real_binary_diagnostic_execution.schema.json",
     "schemas/maxine_ap_real_binary_diagnostic_bundle.schema.json",
+    "schemas/maxine_dcc_conform_report.schema.json",
     "schemas/maxine_capability_matrix.schema.json",
     "examples/sandbox/receipts/index.json",
     "examples/sandbox/evidence-bundles/.gitkeep",
@@ -87,11 +88,16 @@ REQUIRED_FILES = [
     "examples/sandbox/ap-binary-preflights/.gitkeep",
     "examples/sandbox/ap-real-binary-diagnostic-executions/.gitkeep",
     "examples/sandbox/ap-real-binary-diagnostic-bundles/.gitkeep",
+    "examples/dcc-conform/max_biped_v1_conform_pass.json",
+    "examples/dcc-conform/max_biped_v1_conform_warn.json",
+    "examples/dcc-conform/max_biped_v1_conform_fail.json",
     "examples/capabilities/maxine-capability-matrix.json",
     "examples/sandbox/review-packets/.gitkeep",
     "examples/sandbox/review-decisions/.gitkeep",
     "examples/sandbox/workflow-runs/.gitkeep",
     "examples/sandbox/staging/.gitkeep",
+    "tools/dcc-conform/validate_dcc_conform_report.py",
+    "docs/maxine/specs/dcc-conform-v1.md",
 ]
 
 

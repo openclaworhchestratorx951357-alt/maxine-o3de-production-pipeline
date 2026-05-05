@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "DCC_CONFORM_v1_REPORT",
+  "job_id": "job-release-character-pass-001",
+  "package_id": "char.maxine.knight_arden",
+  "lane": "release_character",
+  "status": "pass",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-pass-001/o3de/source/knight_arden.fbx",
+    "source_kind": "fbx",
+    "sha256": "f2e0f4db7be4f4f6a6c9e4d46b5e7d7bb5f7cc8e23f8599d0d3ad6cfd2a7b3d2"
+  },
+  "target": {
+    "skeleton_contract_id": "MAX_BIPED_v1",
+    "expected_skeleton_contract_id": "MAX_BIPED_v1",
+    "package_tier": "hero"
+  },
+  "dcc": {
+    "tool_name": "Blender",
+    "tool_version": "4.2.0",
+    "export_preset": "MAXINE_FBX_RELEASE_v1",
+    "intended_output_path": "artifacts/jobs/job-release-character-pass-001/o3de/source/knight_arden_conformed.fbx",
+    "evidence_only": true
+  },
+  "transform": {
+    "units": "meters",
+    "units_normalized": true,
+    "origin_centered": true,
+    "up_axis": "Z",
+    "forward_axis": "Y",
+    "handedness": "right",
+    "bounds": {
+      "min": [
+        -0.46,
+        -0.41,
+        0.0
+      ],
+      "max": [
+        0.44,
+        0.43,
+        1.84
+      ],
+      "size": [
+        0.9,
+        0.84,
+        1.84
+      ]
+    }
+  },
+  "skeleton": {
+    "root_bone_present": true,
+    "skeleton_contract_result": "pass",
+    "skeleton_validator_output_ref": "examples/skeletons/max_biped_v1_pass.json"
+  },
+  "findings": [],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "dcc_conform_v1",
+      "result": "pass",
+      "severity": "info",
+      "details": {
+        "summary": "MAX_BIPED_v1 conform metadata satisfied."
+      }
+    }
+  }
+}
