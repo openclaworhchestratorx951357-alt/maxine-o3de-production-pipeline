@@ -223,6 +223,8 @@
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
+  - `release_publication_execution_window_ticket_report_validation=proof_only`
+  - `release_publication_execution_window_state_report_validation=proof_only`
 - Compatibility note: the repository invariant moved from "sandbox writer/rollback command absent" to "sandbox writer/rollback admitted only under strict sandbox-only safety contract."
 
 ## Safety Boundary (Still Active)
