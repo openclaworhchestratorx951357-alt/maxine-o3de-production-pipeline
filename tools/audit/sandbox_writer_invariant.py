@@ -60,6 +60,9 @@ AP_DIAGNOSTIC_EXECUTION_INSPECT_REL = (
 AP_DIAGNOSTIC_EXECUTION_BUNDLE_EXPORT_REL = (
     "scripts/powershell/Invoke-MaxineApDiagnosticExecutionBundleExport.ps1"
 )
+AP_BINARY_DISCOVERY_READ_REL = "scripts/powershell/Invoke-MaxineApBinaryDiscoveryRead.ps1"
+AP_BINARY_DISCOVERY_INSPECT_REL = "scripts/powershell/Invoke-MaxineApBinaryDiscoveryInspect.ps1"
+AP_BINARY_PREFLIGHT_BUILD_REL = "scripts/powershell/Invoke-MaxineApBinaryPreflightBuild.ps1"
 AUTHORITATIVE_REL = "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
 RECEIPT_INDEX_REL = "examples/sandbox/receipts/index.json"
 RECEIPT_INDEX_SCHEMA_REL = "schemas/maxine_sandbox_receipt_index.schema.json"
@@ -89,6 +92,8 @@ AP_DIAGNOSTIC_EXECUTION_SCHEMA_REL = "schemas/maxine_ap_diagnostic_execution.sch
 AP_DIAGNOSTIC_EXECUTION_BUNDLE_SCHEMA_REL = (
     "schemas/maxine_ap_diagnostic_execution_bundle.schema.json"
 )
+AP_BINARY_DISCOVERY_SCHEMA_REL = "schemas/maxine_ap_binary_discovery.schema.json"
+AP_BINARY_PREFLIGHT_SCHEMA_REL = "schemas/maxine_ap_binary_preflight.schema.json"
 CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
@@ -113,6 +118,8 @@ AP_DIAGNOSTIC_EXECUTIONS_DIR_REL = "examples/sandbox/ap-diagnostic-executions"
 AP_DIAGNOSTIC_EXECUTION_BUNDLES_DIR_REL = (
     "examples/sandbox/ap-diagnostic-execution-bundles"
 )
+AP_BINARY_DISCOVERY_DIR_REL = "examples/sandbox/ap-binary-discovery"
+AP_BINARY_PREFLIGHTS_DIR_REL = "examples/sandbox/ap-binary-preflights"
 
 ADMITTED_SANDBOX_COMMANDS = {
     SANDBOX_WRITER_REL,
@@ -145,6 +152,9 @@ ADMITTED_SANDBOX_COMMANDS = {
     AP_DIAGNOSTIC_EXECUTION_REL,
     AP_DIAGNOSTIC_EXECUTION_INSPECT_REL,
     AP_DIAGNOSTIC_EXECUTION_BUNDLE_EXPORT_REL,
+    AP_BINARY_DISCOVERY_READ_REL,
+    AP_BINARY_DISCOVERY_INSPECT_REL,
+    AP_BINARY_PREFLIGHT_BUILD_REL,
 }
 
 REQUIRED_WRITER_NEEDLES = [
@@ -516,6 +526,47 @@ REQUIRED_AP_DIAGNOSTIC_EXECUTION_BUNDLE_EXPORT_NEEDLES = [
     "json",
 ]
 
+REQUIRED_AP_BINARY_DISCOVERY_READ_NEEDLES = [
+    "ap-binary-discovery",
+    "candidate_paths",
+    "normalized_candidate_paths",
+    "existing_candidates",
+    "rejected_candidates",
+    "path_source",
+    "read_only = $true",
+    "execution_admitted = $false",
+    "cache_access_admitted = $false",
+    "live_database_access_admitted = $false",
+    "contains parent traversal and is blocked",
+    "cache paths are blocked as binary candidates",
+    "assetdb.sqlite paths are blocked as binary candidates",
+]
+
+REQUIRED_AP_BINARY_DISCOVERY_INSPECT_NEEDLES = [
+    "discovery_count",
+    "discovery_id",
+    "showcandidates",
+    "showrejected",
+]
+
+REQUIRED_AP_BINARY_PREFLIGHT_BUILD_NEEDLES = [
+    "ap-binary-preflights",
+    "source_discovery_id",
+    "source_ap_execution_preflight_id",
+    "selected_binary_path",
+    "binary_kind",
+    "binary_exists",
+    "binary_allowed_for_future_execution_request",
+    "execution_admitted = $false",
+    "required_manual_confirmation = $true",
+    "local_only = $true",
+    "blocked_missing_binary",
+    "blocked_unsupported_binary",
+    "ready_for_future_real_ap_execution_request",
+    "rejected",
+    "source ap execution preflight readiness_status is not ready_for_future_execution_request",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -613,6 +664,10 @@ EXPECTED_CAPABILITY_STATES = {
     "ap_execution_preflight_inspect": "read_only",
     "ap_execution_preflight_bundle_export": "sandbox_only",
     "ap_diagnostic_execution": "sandbox_only",
+    "ap_binary_discovery_read": "read_only",
+    "ap_binary_discovery_inspect": "read_only",
+    "ap_binary_preflight_build": "sandbox_only",
+    "real_asset_processor_execution": "blocked",
     "authoritative_resolver_write": "forbidden",
     "o3de_editor_execution": "blocked",
     "asset_processor_execution": "blocked",
@@ -677,6 +732,9 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     ap_diagnostic_execution = root / AP_DIAGNOSTIC_EXECUTION_REL
     ap_diagnostic_execution_inspect = root / AP_DIAGNOSTIC_EXECUTION_INSPECT_REL
     ap_diagnostic_execution_bundle_export = root / AP_DIAGNOSTIC_EXECUTION_BUNDLE_EXPORT_REL
+    ap_binary_discovery_read = root / AP_BINARY_DISCOVERY_READ_REL
+    ap_binary_discovery_inspect = root / AP_BINARY_DISCOVERY_INSPECT_REL
+    ap_binary_preflight_build = root / AP_BINARY_PREFLIGHT_BUILD_REL
     authoritative = root / AUTHORITATIVE_REL
     receipt_index = root / RECEIPT_INDEX_REL
     receipt_index_schema = root / RECEIPT_INDEX_SCHEMA_REL
@@ -696,6 +754,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     ap_execution_preflight_bundle_schema = root / AP_EXECUTION_PREFLIGHT_BUNDLE_SCHEMA_REL
     ap_diagnostic_execution_schema = root / AP_DIAGNOSTIC_EXECUTION_SCHEMA_REL
     ap_diagnostic_execution_bundle_schema = root / AP_DIAGNOSTIC_EXECUTION_BUNDLE_SCHEMA_REL
+    ap_binary_discovery_schema = root / AP_BINARY_DISCOVERY_SCHEMA_REL
+    ap_binary_preflight_schema = root / AP_BINARY_PREFLIGHT_SCHEMA_REL
     capability_matrix = root / CAPABILITY_MATRIX_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -714,6 +774,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     ap_execution_preflight_bundles_dir = root / AP_EXECUTION_PREFLIGHT_BUNDLES_DIR_REL
     ap_diagnostic_executions_dir = root / AP_DIAGNOSTIC_EXECUTIONS_DIR_REL
     ap_diagnostic_execution_bundles_dir = root / AP_DIAGNOSTIC_EXECUTION_BUNDLES_DIR_REL
+    ap_binary_discovery_dir = root / AP_BINARY_DISCOVERY_DIR_REL
+    ap_binary_preflights_dir = root / AP_BINARY_PREFLIGHTS_DIR_REL
 
     if not writer.exists():
         failures.append(f"sandbox writer command missing: {SANDBOX_WRITER_REL}")
@@ -824,6 +886,21 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
             "AP diagnostic execution bundle export command missing: "
             f"{AP_DIAGNOSTIC_EXECUTION_BUNDLE_EXPORT_REL}"
         )
+    if not ap_binary_discovery_read.exists():
+        failures.append(
+            "AP binary discovery read command missing: "
+            f"{AP_BINARY_DISCOVERY_READ_REL}"
+        )
+    if not ap_binary_discovery_inspect.exists():
+        failures.append(
+            "AP binary discovery inspect command missing: "
+            f"{AP_BINARY_DISCOVERY_INSPECT_REL}"
+        )
+    if not ap_binary_preflight_build.exists():
+        failures.append(
+            "AP binary preflight build command missing: "
+            f"{AP_BINARY_PREFLIGHT_BUILD_REL}"
+        )
     if authoritative.exists():
         failures.append(f"authoritative command must remain absent: {AUTHORITATIVE_REL}")
     if not receipt_index.exists():
@@ -885,6 +962,16 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(
             "AP diagnostic execution bundle schema missing: "
             f"{AP_DIAGNOSTIC_EXECUTION_BUNDLE_SCHEMA_REL}"
+        )
+    if not ap_binary_discovery_schema.exists():
+        failures.append(
+            "AP binary discovery schema missing: "
+            f"{AP_BINARY_DISCOVERY_SCHEMA_REL}"
+        )
+    if not ap_binary_preflight_schema.exists():
+        failures.append(
+            "AP binary preflight schema missing: "
+            f"{AP_BINARY_PREFLIGHT_SCHEMA_REL}"
         )
     if not capability_matrix.exists():
         failures.append(f"capability matrix missing: {CAPABILITY_MATRIX_REL}")
@@ -949,6 +1036,16 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(
             "AP diagnostic execution bundles directory missing: "
             f"{AP_DIAGNOSTIC_EXECUTION_BUNDLES_DIR_REL}"
+        )
+    if not ap_binary_discovery_dir.exists():
+        failures.append(
+            "AP binary discovery directory missing: "
+            f"{AP_BINARY_DISCOVERY_DIR_REL}"
+        )
+    if not ap_binary_preflights_dir.exists():
+        failures.append(
+            "AP binary preflights directory missing: "
+            f"{AP_BINARY_PREFLIGHTS_DIR_REL}"
         )
 
     if writer.exists():
@@ -1732,6 +1829,114 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                     f"binary/source/runtime/cache/database token: {forbidden_copy}"
                 )
 
+    if ap_binary_discovery_read.exists():
+        ap_binary_discovery_read_text = _read_text(ap_binary_discovery_read)
+        for needle in REQUIRED_AP_BINARY_DISCOVERY_READ_NEEDLES:
+            if needle not in ap_binary_discovery_read_text:
+                failures.append(
+                    "AP binary discovery read command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in (
+            "o3de editor",
+            "asset processor",
+            "o3de.exe",
+            "editor.exe",
+            "invoke-maxineauthoritativeresolverwrite.ps1",
+        ):
+            if needle in ap_binary_discovery_read_text:
+                failures.append(
+                    "AP binary discovery read command contains forbidden execution needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "-recurse",
+            "start-process",
+            "invoke-expression",
+            "editor.exe",
+            "o3de.exe",
+        ):
+            if forbidden_phrase in ap_binary_discovery_read_text:
+                failures.append(
+                    "AP binary discovery read command must remain non-executing and "
+                    f"non-recursive; forbidden phrase present: {forbidden_phrase}"
+                )
+        for forbidden_admission in (
+            "execution_admitted = $true",
+            "cache_access_admitted = $true",
+            "live_database_access_admitted = $true",
+        ):
+            if forbidden_admission in ap_binary_discovery_read_text:
+                failures.append(
+                    "AP binary discovery read command widens forbidden admission: "
+                    f"{forbidden_admission}"
+                )
+
+    if ap_binary_discovery_inspect.exists():
+        ap_binary_discovery_inspect_text = _read_text(ap_binary_discovery_inspect)
+        for needle in REQUIRED_AP_BINARY_DISCOVERY_INSPECT_NEEDLES:
+            if needle not in ap_binary_discovery_inspect_text:
+                failures.append(
+                    "AP binary discovery inspect command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in ap_binary_discovery_inspect_text:
+                failures.append(
+                    "AP binary discovery inspect command contains forbidden execution needle: "
+                    f"{needle}"
+                )
+        for needle in MUTATION_NEEDLES:
+            if needle in ap_binary_discovery_inspect_text:
+                failures.append(
+                    "AP binary discovery inspect command is not read-only; contains mutation "
+                    f"needle: {needle}"
+                )
+
+    if ap_binary_preflight_build.exists():
+        ap_binary_preflight_build_text = _read_text(ap_binary_preflight_build)
+        for needle in REQUIRED_AP_BINARY_PREFLIGHT_BUILD_NEEDLES:
+            if needle not in ap_binary_preflight_build_text:
+                failures.append(
+                    "AP binary preflight build command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in (
+            "o3de editor",
+            "asset processor",
+            "o3de.exe",
+            "editor.exe",
+            "invoke-maxineauthoritativeresolverwrite.ps1",
+        ):
+            if needle in ap_binary_preflight_build_text:
+                failures.append(
+                    "AP binary preflight build command contains forbidden execution needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "-recurse",
+            "start-process",
+            "invoke-expression",
+            "editor.exe",
+            "o3de.exe",
+        ):
+            if forbidden_phrase in ap_binary_preflight_build_text:
+                failures.append(
+                    "AP binary preflight build command must remain non-executing and "
+                    f"non-recursive; forbidden phrase present: {forbidden_phrase}"
+                )
+        for forbidden_admission in (
+            "execution_admitted = $true",
+            "required_manual_confirmation = $false",
+            "local_only = $false",
+            "binary_allowed_for_future_execution_request = $true",
+        ):
+            if forbidden_admission in ap_binary_preflight_build_text:
+                failures.append(
+                    "AP binary preflight build command widens forbidden admission: "
+                    f"{forbidden_admission}"
+                )
+
     if receipt_index.exists():
         try:
             raw = receipt_index.read_text(encoding="utf-8-sig")
@@ -1777,6 +1982,7 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                 for blocked_capability in (
                     "o3de_editor_execution",
                     "asset_processor_execution",
+                    "real_asset_processor_execution",
                     "o3de_cli_execution",
                     "product_resolution",
                     "product_id_claims",

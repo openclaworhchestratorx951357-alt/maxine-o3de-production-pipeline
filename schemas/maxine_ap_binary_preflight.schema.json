@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_ap_binary_preflight.schema.json",
+  "title": "Maxine AP Binary Preflight",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "ap_binary_preflight_id",
+    "source_discovery_id",
+    "source_ap_execution_preflight_id",
+    "sandbox_root",
+    "selected_binary_path",
+    "binary_kind",
+    "binary_exists",
+    "binary_allowed_for_future_execution_request",
+    "execution_admitted",
+    "required_manual_confirmation",
+    "local_only",
+    "readiness_status",
+    "blocking_reasons",
+    "warnings",
+    "safety_summary",
+    "explicit_non_admissions",
+    "output_path",
+    "created_utc"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "ap_binary_preflight_id": { "type": "string", "minLength": 1 },
+    "source_discovery_id": { "type": "string", "minLength": 1 },
+    "source_ap_execution_preflight_id": { "type": "string", "minLength": 1 },
+    "sandbox_root": { "type": "string", "const": "examples/sandbox" },
+    "selected_binary_path": { "type": "string" },
+    "binary_kind": {
+      "type": "string",
+      "enum": ["AssetProcessorBatch", "AssetProcessor", "unknown"]
+    },
+    "binary_exists": { "type": "boolean" },
+    "binary_allowed_for_future_execution_request": { "type": "boolean" },
+    "execution_admitted": { "type": "boolean", "const": false },
+    "required_manual_confirmation": { "type": "boolean", "const": true },
+    "local_only": { "type": "boolean", "const": true },
+    "readiness_status": {
+      "type": "string",
+      "enum": [
+        "blocked_missing_binary",
+        "blocked_unsupported_binary",
+        "ready_for_future_real_ap_execution_request",
+        "rejected"
+      ]
+    },
+    "blocking_reasons": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "safety_summary": { "type": "string", "minLength": 1 },
+    "explicit_non_admissions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "output_path": { "type": "string", "minLength": 1 },
+    "created_utc": { "type": "string", "minLength": 1 },
+    "operator_id": { "type": "string", "minLength": 1 },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

@@ -33,6 +33,9 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - `scripts/powershell/Invoke-MaxineApDiagnosticExecution.ps1`
 - `scripts/powershell/Invoke-MaxineApDiagnosticExecutionInspect.ps1`
 - `scripts/powershell/Invoke-MaxineApDiagnosticExecutionBundleExport.ps1`
+- `scripts/powershell/Invoke-MaxineApBinaryDiscoveryRead.ps1`
+- `scripts/powershell/Invoke-MaxineApBinaryDiscoveryInspect.ps1`
+- `scripts/powershell/Invoke-MaxineApBinaryPreflightBuild.ps1`
 
 ## What This Implementation Does
 - Accepts a structured write plan JSON.
@@ -75,6 +78,10 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - Uses allowlisted mock diagnostic command only in this slice (`-UseMockDiagnosticCommand`) and captures stdout/stderr/hash evidence.
 - Adds read-only AP diagnostic execution inspection by list, `diagnostic_execution_id`, and explicit path.
 - Adds sandbox-only AP diagnostic execution bundle export under `examples/sandbox/ap-diagnostic-execution-bundles` with JSON + stdout/stderr text snapshots only.
+- Adds read-only AP binary discovery output under `examples/sandbox/ap-binary-discovery` from explicit candidate-path metadata only.
+- Adds read-only AP binary discovery inspection by list, `discovery_id`, and explicit path.
+- Adds non-executing AP binary preflight packets under `examples/sandbox/ap-binary-preflights` derived from binary discovery plus AP execution preflight evidence.
+- Keeps AP binary preflight non-executing with `required_manual_confirmation=true`, `local_only=true`, and `execution_admitted=false`.
 - Enforces capability-state boundaries via `examples/capabilities/maxine-capability-matrix.json`.
 - Allows rollback only for files listed in the receipt and only under the approved sandbox root.
 
@@ -84,5 +91,6 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - No O3DE Editor execution.
 - No Asset Processor execution.
 - No broad AP binary execution admission (`asset_processor_execution` remains blocked).
+- No real AP execution admission (`real_asset_processor_execution` remains blocked).
 - No product resolution or Asset ID claims.
 - No spawn/publish operations.

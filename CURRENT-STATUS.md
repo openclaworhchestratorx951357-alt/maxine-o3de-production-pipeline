@@ -46,6 +46,10 @@
   - `scripts/powershell/Invoke-MaxineApDiagnosticExecution.ps1`
   - `scripts/powershell/Invoke-MaxineApDiagnosticExecutionInspect.ps1`
   - `scripts/powershell/Invoke-MaxineApDiagnosticExecutionBundleExport.ps1`
+- AP real-binary discovery and preflight commands are implemented (read-only discovery, non-executing preflight):
+  - `scripts/powershell/Invoke-MaxineApBinaryDiscoveryRead.ps1`
+  - `scripts/powershell/Invoke-MaxineApBinaryDiscoveryInspect.ps1`
+  - `scripts/powershell/Invoke-MaxineApBinaryPreflightBuild.ps1`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -71,6 +75,8 @@
 - AP execution preflight bundle output is restricted to `examples/sandbox/ap-execution-preflight-bundles`.
 - AP diagnostic execution output is restricted to `examples/sandbox/ap-diagnostic-executions`.
 - AP diagnostic execution bundle output is restricted to `examples/sandbox/ap-diagnostic-execution-bundles`.
+- AP binary discovery output is restricted to `examples/sandbox/ap-binary-discovery`.
+- AP binary preflight output is restricted to `examples/sandbox/ap-binary-preflights`.
 - Explicit sandbox approval is required in the input plan.
 - Production paths, engine paths, Cache paths, and parent traversal paths are blocked.
 - `scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1` remains absent.
@@ -90,6 +96,11 @@
   - uses allowlisted mock diagnostic command only in this slice
   - captures stdout/stderr and execution record under sandbox-only paths
   - keeps broad `asset_processor_execution` blocked
+- AP binary discovery and preflight remain non-executing:
+  - discovery reads explicit candidate metadata only
+  - no recursive search is performed
+  - `execution_admitted` remains `false`
+  - `real_asset_processor_execution` remains blocked
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
 
 ## Verification Entry Points

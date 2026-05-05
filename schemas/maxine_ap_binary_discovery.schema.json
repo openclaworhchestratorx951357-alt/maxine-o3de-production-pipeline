@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_ap_binary_discovery.schema.json",
+  "title": "Maxine AP Binary Discovery",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "discovery_id",
+    "sandbox_root",
+    "candidate_paths",
+    "normalized_candidate_paths",
+    "existing_candidates",
+    "rejected_candidates",
+    "path_source",
+    "read_only",
+    "execution_admitted",
+    "cache_access_admitted",
+    "live_database_access_admitted",
+    "explicit_non_admissions",
+    "output_path",
+    "created_utc"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "discovery_id": { "type": "string", "minLength": 1 },
+    "sandbox_root": { "type": "string", "const": "examples/sandbox" },
+    "candidate_paths": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "normalized_candidate_paths": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "existing_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["candidate_path", "binary_kind"],
+        "properties": {
+          "candidate_path": { "type": "string", "minLength": 1 },
+          "binary_kind": {
+            "type": "string",
+            "enum": ["AssetProcessorBatch", "AssetProcessor", "unknown"]
+          }
+        }
+      }
+    },
+    "rejected_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["candidate_path", "reason"],
+        "properties": {
+          "candidate_path": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "path_source": { "type": "string", "minLength": 1 },
+    "read_only": { "type": "boolean", "const": true },
+    "execution_admitted": { "type": "boolean", "const": false },
+    "cache_access_admitted": { "type": "boolean", "const": false },
+    "live_database_access_admitted": { "type": "boolean", "const": false },
+    "explicit_non_admissions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "output_path": { "type": "string", "minLength": 1 },
+    "created_utc": { "type": "string", "minLength": 1 }
+  }
+}
