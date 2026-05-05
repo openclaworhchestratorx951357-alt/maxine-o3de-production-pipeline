@@ -32,3 +32,10 @@ Every manifest structure is expected to include these sections:
 - Release jobs require stricter and more complete fields, including canonical source identity, product resolution, QC gate outcomes, and rollback/cleanup data.
 
 The contract is designed so automation, operators, and CI can evaluate a job state from the manifest alone.
+
+## Skeleton QC Attachment Point
+
+- `MAX_BIPED_v1` skeleton validation output is attachable to manifest QC.
+- Current manifest attachment path: `qc.gates[]`.
+- Future-compatible path: `qc.checks[]`.
+- Suggested check id: `max_biped_v1_skeleton_contract`.

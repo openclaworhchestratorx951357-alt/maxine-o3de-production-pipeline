@@ -1,0 +1,391 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_skeleton_contract.schema.json",
+  "title": "MAXINE Skeleton Contract",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "contract_id",
+    "release_lane_scope",
+    "allowed_tiers",
+    "coordinate_assumptions",
+    "unit_assumptions",
+    "required_bones",
+    "optional_bones",
+    "required_hierarchy_edges",
+    "naming_rules",
+    "validation_rules",
+    "severity_mapping",
+    "manifest_integration"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contract_id": {
+      "type": "string",
+      "enum": [
+        "MAX_BIPED_v1"
+      ]
+    },
+    "release_lane_scope": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "primary_lane",
+        "execution_admitted"
+      ],
+      "properties": {
+        "primary_lane": {
+          "type": "string"
+        },
+        "execution_admitted": {
+          "type": "boolean"
+        }
+      }
+    },
+    "allowed_tiers": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "npc",
+        "hero",
+        "draft",
+        "test"
+      ],
+      "properties": {
+        "npc": {
+          "type": "string"
+        },
+        "hero": {
+          "type": "string"
+        },
+        "draft": {
+          "type": "string"
+        },
+        "test": {
+          "type": "string"
+        }
+      }
+    },
+    "coordinate_assumptions": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "up_axis",
+        "forward_axis",
+        "handedness"
+      ],
+      "properties": {
+        "up_axis": {
+          "type": "string"
+        },
+        "forward_axis": {
+          "type": "string"
+        },
+        "handedness": {
+          "type": "string"
+        }
+      }
+    },
+    "unit_assumptions": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "linear_unit"
+      ],
+      "properties": {
+        "linear_unit": {
+          "type": "string"
+        }
+      }
+    },
+    "required_bones": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "optional_bones": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required_hierarchy_edges": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "parent",
+          "child",
+          "severity"
+        ],
+        "properties": {
+          "parent": {
+            "type": "string",
+            "minLength": 1
+          },
+          "child": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "warn",
+              "fail",
+              "pending_manual"
+            ]
+          },
+          "rule_id": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "naming_rules": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "side_suffixes",
+        "required_sided_bases",
+        "optional_mirror_pairs",
+        "forbidden_name_patterns",
+        "severity_on_forbidden_pattern"
+      ],
+      "properties": {
+        "side_suffixes": {
+          "type": "object",
+          "required": [
+            "left",
+            "right"
+          ],
+          "properties": {
+            "left": {
+              "type": "string"
+            },
+            "right": {
+              "type": "string"
+            }
+          }
+        },
+        "required_sided_bases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "optional_mirror_pairs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "left",
+              "right",
+              "severity_on_missing_mirror"
+            ],
+            "properties": {
+              "left": {
+                "type": "string"
+              },
+              "right": {
+                "type": "string"
+              },
+              "severity_on_missing_mirror": {
+                "type": "string",
+                "enum": [
+                  "warn",
+                  "fail",
+                  "pending_manual"
+                ]
+              }
+            }
+          }
+        },
+        "forbidden_name_patterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "severity_on_forbidden_pattern": {
+          "type": "string",
+          "enum": [
+            "warn",
+            "fail",
+            "pending_manual"
+          ]
+        }
+      }
+    },
+    "validation_rules": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "root_bone",
+        "pelvis_relationship",
+        "coordinate_metadata",
+        "unit_metadata"
+      ],
+      "properties": {
+        "root_bone": {
+          "type": "object",
+          "required": [
+            "required_name",
+            "severity_if_missing"
+          ],
+          "properties": {
+            "required_name": {
+              "type": "string"
+            },
+            "severity_if_missing": {
+              "type": "string",
+              "enum": [
+                "warn",
+                "fail",
+                "pending_manual"
+              ]
+            }
+          }
+        },
+        "pelvis_relationship": {
+          "type": "object",
+          "required": [
+            "accepted_names",
+            "required_parent",
+            "severity_if_missing",
+            "severity_if_parent_mismatch",
+            "severity_if_ambiguous"
+          ],
+          "properties": {
+            "accepted_names": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "required_parent": {
+              "type": "string"
+            },
+            "severity_if_missing": {
+              "type": "string",
+              "enum": [
+                "warn",
+                "fail",
+                "pending_manual"
+              ]
+            },
+            "severity_if_parent_mismatch": {
+              "type": "string",
+              "enum": [
+                "warn",
+                "fail",
+                "pending_manual"
+              ]
+            },
+            "severity_if_ambiguous": {
+              "type": "string",
+              "enum": [
+                "warn",
+                "fail",
+                "pending_manual"
+              ]
+            }
+          }
+        },
+        "coordinate_metadata": {
+          "type": "object",
+          "required": [
+            "severity_if_missing_or_mismatch"
+          ],
+          "properties": {
+            "severity_if_missing_or_mismatch": {
+              "type": "string",
+              "enum": [
+                "warn",
+                "fail",
+                "pending_manual"
+              ]
+            }
+          }
+        },
+        "unit_metadata": {
+          "type": "object",
+          "required": [
+            "severity_if_missing_or_mismatch"
+          ],
+          "properties": {
+            "severity_if_missing_or_mismatch": {
+              "type": "string",
+              "enum": [
+                "warn",
+                "fail",
+                "pending_manual"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "severity_mapping": {
+      "type": "object",
+      "required": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ],
+      "properties": {
+        "pass": {
+          "type": "string"
+        },
+        "warn": {
+          "type": "string"
+        },
+        "fail": {
+          "type": "string"
+        },
+        "pending_manual": {
+          "type": "string"
+        }
+      }
+    },
+    "manifest_integration": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "contract_check_id",
+        "manifest_target_path",
+        "future_manifest_target_path",
+        "qc_status_field"
+      ],
+      "properties": {
+        "contract_check_id": {
+          "type": "string"
+        },
+        "manifest_target_path": {
+          "type": "string"
+        },
+        "future_manifest_target_path": {
+          "type": "string"
+        },
+        "qc_status_field": {
+          "type": "string"
+        },
+        "details_field": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

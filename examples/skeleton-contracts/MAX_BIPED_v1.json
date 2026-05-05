@@ -1,0 +1,141 @@
+{
+  "schema_version": "1.0.0",
+  "contract_id": "MAX_BIPED_v1",
+  "release_lane_scope": {
+    "primary_lane": "release_character",
+    "execution_admitted": false,
+    "notes": "Skeleton contract evidence only. No AP/O3DE runtime execution in this slice."
+  },
+  "allowed_tiers": {
+    "npc": "supported",
+    "hero": "supported",
+    "draft": "allowed_for_early_qc",
+    "test": "allowed_for_ci"
+  },
+  "coordinate_assumptions": {
+    "up_axis": "Z",
+    "forward_axis": "Y",
+    "handedness": "right"
+  },
+  "unit_assumptions": {
+    "linear_unit": "meters"
+  },
+  "required_bones": [
+    "root",
+    "pelvis",
+    "spine_01",
+    "spine_02",
+    "neck",
+    "head",
+    "clavicle_l",
+    "upperarm_l",
+    "lowerarm_l",
+    "hand_l",
+    "clavicle_r",
+    "upperarm_r",
+    "lowerarm_r",
+    "hand_r",
+    "thigh_l",
+    "calf_l",
+    "foot_l",
+    "thigh_r",
+    "calf_r",
+    "foot_r"
+  ],
+  "optional_bones": [
+    "upperarm_twist_01_l",
+    "upperarm_twist_01_r",
+    "lowerarm_twist_01_l",
+    "lowerarm_twist_01_r",
+    "thigh_twist_01_l",
+    "thigh_twist_01_r",
+    "calf_twist_01_l",
+    "calf_twist_01_r",
+    "jaw",
+    "eye_l",
+    "eye_r"
+  ],
+  "required_hierarchy_edges": [
+    { "rule_id": "edge_root_pelvis", "parent": "root", "child": "pelvis", "severity": "fail" },
+    { "rule_id": "edge_pelvis_spine01", "parent": "pelvis", "child": "spine_01", "severity": "fail" },
+    { "rule_id": "edge_spine01_spine02", "parent": "spine_01", "child": "spine_02", "severity": "fail" },
+    { "rule_id": "edge_spine02_neck", "parent": "spine_02", "child": "neck", "severity": "fail" },
+    { "rule_id": "edge_neck_head", "parent": "neck", "child": "head", "severity": "fail" },
+    { "rule_id": "edge_l_arm_chain_1", "parent": "clavicle_l", "child": "upperarm_l", "severity": "fail" },
+    { "rule_id": "edge_l_arm_chain_2", "parent": "upperarm_l", "child": "lowerarm_l", "severity": "fail" },
+    { "rule_id": "edge_l_arm_chain_3", "parent": "lowerarm_l", "child": "hand_l", "severity": "fail" },
+    { "rule_id": "edge_r_arm_chain_1", "parent": "clavicle_r", "child": "upperarm_r", "severity": "fail" },
+    { "rule_id": "edge_r_arm_chain_2", "parent": "upperarm_r", "child": "lowerarm_r", "severity": "fail" },
+    { "rule_id": "edge_r_arm_chain_3", "parent": "lowerarm_r", "child": "hand_r", "severity": "fail" },
+    { "rule_id": "edge_l_leg_chain_1", "parent": "pelvis", "child": "thigh_l", "severity": "fail" },
+    { "rule_id": "edge_l_leg_chain_2", "parent": "thigh_l", "child": "calf_l", "severity": "fail" },
+    { "rule_id": "edge_l_leg_chain_3", "parent": "calf_l", "child": "foot_l", "severity": "fail" },
+    { "rule_id": "edge_r_leg_chain_1", "parent": "pelvis", "child": "thigh_r", "severity": "fail" },
+    { "rule_id": "edge_r_leg_chain_2", "parent": "thigh_r", "child": "calf_r", "severity": "fail" },
+    { "rule_id": "edge_r_leg_chain_3", "parent": "calf_r", "child": "foot_r", "severity": "fail" }
+  ],
+  "naming_rules": {
+    "side_suffixes": {
+      "left": "_l",
+      "right": "_r"
+    },
+    "required_sided_bases": [
+      "clavicle",
+      "upperarm",
+      "lowerarm",
+      "hand",
+      "thigh",
+      "calf",
+      "foot"
+    ],
+    "optional_mirror_pairs": [
+      { "left": "upperarm_twist_01_l", "right": "upperarm_twist_01_r", "severity_on_missing_mirror": "warn" },
+      { "left": "lowerarm_twist_01_l", "right": "lowerarm_twist_01_r", "severity_on_missing_mirror": "warn" },
+      { "left": "thigh_twist_01_l", "right": "thigh_twist_01_r", "severity_on_missing_mirror": "warn" },
+      { "left": "calf_twist_01_l", "right": "calf_twist_01_r", "severity_on_missing_mirror": "warn" }
+    ],
+    "forbidden_name_patterns": [
+      ".*\\s+.*",
+      ".*[A-Z].*",
+      ".*\\/.*",
+      ".*\\\\\\\\.*",
+      ".*\\.\\..*"
+    ],
+    "severity_on_forbidden_pattern": "fail"
+  },
+  "validation_rules": {
+    "root_bone": {
+      "required_name": "root",
+      "severity_if_missing": "fail"
+    },
+    "pelvis_relationship": {
+      "accepted_names": [
+        "pelvis",
+        "hip"
+      ],
+      "required_parent": "root",
+      "severity_if_missing": "fail",
+      "severity_if_parent_mismatch": "fail",
+      "severity_if_ambiguous": "pending_manual"
+    },
+    "coordinate_metadata": {
+      "severity_if_missing_or_mismatch": "warn"
+    },
+    "unit_metadata": {
+      "severity_if_missing_or_mismatch": "warn"
+    }
+  },
+  "severity_mapping": {
+    "pass": "No findings.",
+    "warn": "Warning findings only; candidate may proceed with caution.",
+    "fail": "One or more hard contract violations.",
+    "pending_manual": "Manual review is required due to ambiguity or policy."
+  },
+  "manifest_integration": {
+    "contract_check_id": "max_biped_v1_skeleton_contract",
+    "manifest_target_path": "qc.gates[]",
+    "future_manifest_target_path": "qc.checks[]",
+    "qc_status_field": "result",
+    "details_field": "details"
+  }
+}

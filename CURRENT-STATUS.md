@@ -54,6 +54,11 @@
   - `scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticExecution.ps1`
   - `scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticInspect.ps1`
   - `scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticBundleExport.ps1`
+- MAX_BIPED_v1 skeleton contract foundation is implemented (manifest-attachable QC evidence only):
+  - `docs/maxine/specs/MAX_BIPED_v1.md`
+  - `schemas/maxine_skeleton_contract.schema.json`
+  - `examples/skeleton-contracts/MAX_BIPED_v1.json`
+  - `tools/skeleton-validator/validate_skeleton_contract.py`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -114,6 +119,10 @@
   - diagnostic argument is allowlisted (`--help`, `-help`, `/?`, `--version`, `-version`)
   - captures stdout/stderr and execution record under sandbox-only paths
   - keeps broad `asset_processor_execution` and `real_asset_processor_execution` blocked
+- MAX_BIPED_v1 skeleton contract validation remains non-executing evidence-only:
+  - validates normalized skeleton inventory JSON against contract rules
+  - emits manifest-attachable QC check payloads
+  - does not execute O3DE/AP, spawn, publish, or Cache/live DB access
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
 
 ## Verification Entry Points

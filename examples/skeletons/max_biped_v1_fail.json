@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0.0",
+  "skeleton_id": "max-biped-v1-fail",
+  "tier": "hero",
+  "metadata": {
+    "coordinate_system": {
+      "up_axis": "Y",
+      "forward_axis": "Z",
+      "handedness": "left"
+    },
+    "units": {
+      "linear_unit": "meters"
+    }
+  },
+  "bones": [
+    { "name": "pelvis", "parent": "spine_01" },
+    { "name": "spine_01", "parent": "pelvis" },
+    { "name": "spine_02", "parent": "spine_01" },
+    { "name": "neck", "parent": "spine_02" },
+    { "name": "head", "parent": "neck" },
+
+    { "name": "clavicle_l", "parent": "spine_02" },
+    { "name": "upperarm_l", "parent": "clavicle_l" },
+    { "name": "lowerarm_l", "parent": "upperarm_l" },
+    { "name": "hand_l", "parent": "lowerarm_l" },
+
+    { "name": "clavicle_r", "parent": "spine_02" },
+    { "name": "upperarm_r", "parent": "clavicle_r" },
+    { "name": "lowerarm_r", "parent": "upperarm_r" },
+    { "name": "hand_r", "parent": "lowerarm_r" },
+
+    { "name": "thigh_l", "parent": "pelvis" },
+    { "name": "calf_l", "parent": "thigh_l" },
+    { "name": "foot_l", "parent": "calf_l" },
+
+    { "name": "thigh_r", "parent": "pelvis" },
+    { "name": "calf_r", "parent": "thigh_r" },
+    { "name": "foot_r", "parent": "calf_r" },
+
+    { "name": "Bad Bone", "parent": "head" }
+  ]
+}
