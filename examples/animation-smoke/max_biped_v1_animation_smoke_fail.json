@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "ANIMATION_SMOKE_v1_REPORT",
+  "job_id": "job-release-character-animation-smoke-fail-001",
+  "package_id": "char.maxine.raider_khal",
+  "lane": "release_character",
+  "status": "fail",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-animation-smoke-fail-001/o3de/source/raider_khal_conformed.fbx",
+    "source_kind": "fbx"
+  },
+  "smoke_profile": {
+    "smoke_contract_id": "ANIMATION_SMOKE_v1",
+    "target_skeleton_contract_id": "MAX_BIPED_v1",
+    "package_tier": "hero",
+    "evidence_only": true,
+    "runtime_execution_admitted": false
+  },
+  "animation_summary": {
+    "required_clips": [
+      "idle",
+      "walk",
+      "run"
+    ],
+    "present_clips": [
+      "idle",
+      "run"
+    ],
+    "missing_clips": [
+      "walk"
+    ],
+    "clip_count": 2,
+    "loop_playback_status": "fail",
+    "pose_stability_status": "warn",
+    "root_motion_status": "fail",
+    "warning_status_values": [
+      "warn",
+      "unknown"
+    ]
+  },
+  "findings": [
+    {
+      "id": "missing_required_clip_walk",
+      "severity": "error",
+      "status": "open",
+      "message": "Required clip 'walk' is missing."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "animation_smoke_v1",
+      "result": "fail",
+      "severity": "error",
+      "details": {
+        "summary": "Animation smoke failed required clip and playback status checks."
+      }
+    }
+  }
+}

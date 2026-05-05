@@ -69,6 +69,7 @@ REQUIRED_FILES = [
     "schemas/maxine_ap_real_binary_diagnostic_bundle.schema.json",
     "schemas/maxine_dcc_conform_report.schema.json",
     "schemas/maxine_material_uv_qc_report.schema.json",
+    "schemas/maxine_animation_smoke_report.schema.json",
     "schemas/maxine_capability_matrix.schema.json",
     "examples/sandbox/receipts/index.json",
     "examples/sandbox/evidence-bundles/.gitkeep",
@@ -95,6 +96,9 @@ REQUIRED_FILES = [
     "examples/material-uv-qc/max_biped_v1_material_uv_pass.json",
     "examples/material-uv-qc/max_biped_v1_material_uv_warn.json",
     "examples/material-uv-qc/max_biped_v1_material_uv_fail.json",
+    "examples/animation-smoke/max_biped_v1_animation_smoke_pass.json",
+    "examples/animation-smoke/max_biped_v1_animation_smoke_warn.json",
+    "examples/animation-smoke/max_biped_v1_animation_smoke_fail.json",
     "examples/capabilities/maxine-capability-matrix.json",
     "examples/sandbox/review-packets/.gitkeep",
     "examples/sandbox/review-decisions/.gitkeep",
@@ -104,6 +108,8 @@ REQUIRED_FILES = [
     "docs/maxine/specs/dcc-conform-v1.md",
     "tools/material-uv-qc/validate_material_uv_qc_report.py",
     "docs/maxine/specs/material-uv-qc-v1.md",
+    "tools/animation-smoke/validate_animation_smoke_report.py",
+    "docs/maxine/specs/animation-smoke-v1.md",
 ]
 
 

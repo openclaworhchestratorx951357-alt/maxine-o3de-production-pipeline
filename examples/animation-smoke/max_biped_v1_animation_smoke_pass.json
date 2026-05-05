@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "ANIMATION_SMOKE_v1_REPORT",
+  "job_id": "job-release-character-animation-smoke-pass-001",
+  "package_id": "char.maxine.knight_arden",
+  "lane": "release_character",
+  "status": "pass",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-animation-smoke-pass-001/o3de/source/knight_arden_conformed.fbx",
+    "source_kind": "fbx",
+    "sha256": "07cbcde7f424d29cf3c969743601ab6f787e27435dfcff9b212fce15dc9eef37"
+  },
+  "smoke_profile": {
+    "smoke_contract_id": "ANIMATION_SMOKE_v1",
+    "target_skeleton_contract_id": "MAX_BIPED_v1",
+    "package_tier": "hero",
+    "evidence_only": true,
+    "runtime_execution_admitted": false
+  },
+  "animation_summary": {
+    "required_clips": [
+      "idle",
+      "walk",
+      "run"
+    ],
+    "present_clips": [
+      "idle",
+      "walk",
+      "run",
+      "turn_left"
+    ],
+    "missing_clips": [],
+    "clip_count": 4,
+    "loop_playback_status": "pass",
+    "pose_stability_status": "pass",
+    "root_motion_status": "pass",
+    "warning_status_values": [
+      "warn",
+      "unknown"
+    ]
+  },
+  "findings": [],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "animation_smoke_v1",
+      "result": "pass",
+      "severity": "info",
+      "details": {
+        "summary": "Animation smoke report meets v1 required clip and status rules."
+      }
+    }
+  }
+}

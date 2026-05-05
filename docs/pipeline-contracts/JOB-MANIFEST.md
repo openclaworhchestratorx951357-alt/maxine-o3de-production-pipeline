@@ -53,3 +53,10 @@ The contract is designed so automation, operators, and CI can evaluate a job sta
 - Current manifest attachment path: `qc.gates[]`.
 - Future-compatible path: `qc.checks[]`.
 - Suggested check id: `material_uv_qc_v1`.
+
+## Animation Smoke QC Attachment Point
+
+- `ANIMATION_SMOKE_v1` report validation output is attachable to manifest QC.
+- Current manifest attachment path: `qc.gates[]`.
+- Future-compatible path: `qc.checks[]`.
+- Suggested check id: `animation_smoke_v1`.

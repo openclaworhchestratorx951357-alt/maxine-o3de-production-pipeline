@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "ANIMATION_SMOKE_v1_REPORT",
+  "job_id": "job-release-character-animation-smoke-warn-001",
+  "package_id": "char.maxine.guard_mira",
+  "lane": "release_character",
+  "status": "warn",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-animation-smoke-warn-001/o3de/source/guard_mira_conformed.fbx",
+    "source_kind": "fbx",
+    "sha256": "5af2e716d51d743f4f0f44ec30cb8cf59f0c29b6ffceff1a2e47d2ef4f9a12aa"
+  },
+  "smoke_profile": {
+    "smoke_contract_id": "ANIMATION_SMOKE_v1",
+    "target_skeleton_contract_id": "MAX_BIPED_v1",
+    "package_tier": "npc",
+    "evidence_only": true,
+    "runtime_execution_admitted": false
+  },
+  "animation_summary": {
+    "required_clips": [
+      "idle",
+      "walk",
+      "run"
+    ],
+    "present_clips": [
+      "idle",
+      "walk",
+      "run"
+    ],
+    "missing_clips": [],
+    "clip_count": 3,
+    "loop_playback_status": "warn",
+    "pose_stability_status": "pass",
+    "root_motion_status": "unknown",
+    "warning_status_values": [
+      "warn",
+      "unknown"
+    ]
+  },
+  "findings": [
+    {
+      "id": "loop_playback_minor_variance",
+      "severity": "warning",
+      "status": "open",
+      "message": "Loop playback has minor interpolation drift near clip seam."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "animation_smoke_v1",
+      "result": "warn",
+      "severity": "warning",
+      "details": {
+        "summary": "Animation smoke accepted with non-blocking warnings."
+      }
+    }
+  }
+}
