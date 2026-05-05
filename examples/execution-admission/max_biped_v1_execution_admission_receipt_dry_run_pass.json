@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "EXECUTION_ADMISSION_RECEIPT_DRY_RUN_v1_REPORT",
+  "status": "pass",
+  "generated_utc": "2026-05-05T00:00:00Z",
+  "decision_record_path": "examples/execution-admission/max_biped_v1_execution_admission_decision_approved.json",
+  "candidate_id": "max_biped_v1_ap_diag_candidate_002",
+  "decision_id": "dec-max-biped-ap-diag-002",
+  "decision_state": "approved",
+  "admission_scope": "bounded_candidate_only",
+  "execution_mode": "no_op_dry_run",
+  "execution_performed": false,
+  "approval_phrase_required": "APPROVE EXECUTION ADMISSION <candidate_id>",
+  "approval_phrase_received": "APPROVE EXECUTION ADMISSION max_biped_v1_ap_diag_candidate_002",
+  "bounded_surface_id": "asset_processor_execution",
+  "command_or_tool_path": "scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticExecution.ps1",
+  "allowed_input_paths": [
+    "examples/sandbox/ap-binary-preflights/max_biped_v1_real_binary_preflight.json"
+  ],
+  "allowed_output_paths": [
+    "examples/sandbox/ap-real-binary-diagnostic-executions/",
+    "examples/sandbox/ap-real-binary-diagnostic-bundles/"
+  ],
+  "blocked_surfaces_confirmed": [
+    "o3de_editor_execution",
+    "o3de_cli_execution",
+    "blender_or_dcc_execution",
+    "spawn_or_publish_execution",
+    "cache_read",
+    "live_asset_database_read",
+    "authoritative_source_uuid_claims",
+    "authoritative_asset_id_claims",
+    "authoritative_product_id_claims",
+    "production_path_write",
+    "engine_path_write"
+  ],
+  "dry_run_receipt": {
+    "receipt_id": "dryrun-max_biped_v1_ap_diag_candidate_002-0001",
+    "receipt_kind": "execution_admission_receipt_dry_run",
+    "no_command_execution_recorded": true,
+    "command_display": "DisplayOnly: scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticExecution.ps1 --version",
+    "recorded_by": "proof_flow"
+  },
+  "failures": []
+}

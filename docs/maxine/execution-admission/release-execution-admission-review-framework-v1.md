@@ -69,6 +69,12 @@ This slice does not:
 - modify execution-capability matrix states
 - widen any blocked surface
 
+## Related Next Step
+
+Execution receipt dry-run framework:
+
+- `docs/maxine/execution-admission/release-execution-receipt-dry-run-framework-v1.md`
+
 ## Verification
 
 Pytest schema coverage for this framework:

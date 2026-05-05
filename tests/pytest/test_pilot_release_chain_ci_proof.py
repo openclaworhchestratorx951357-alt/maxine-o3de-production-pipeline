@@ -52,3 +52,10 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
     assert evidence_status["overall_release_lane_state"] == "evidence_only_pre_production"
     assert evidence_status["reporter_return_code"] == 0
     assert Path(evidence_status["output_path"]).exists()
+    receipt_status = payload["details"]["execution_admission_receipt_dry_run_report"]
+    assert receipt_status["status"] == "pass"
+    assert receipt_status["report_type"] == "EXECUTION_ADMISSION_RECEIPT_DRY_RUN_v1_REPORT"
+    assert receipt_status["execution_mode"] == "no_op_dry_run"
+    assert receipt_status["execution_performed"] is False
+    assert receipt_status["reporter_return_code"] == 0
+    assert Path(receipt_status["output_path"]).exists()

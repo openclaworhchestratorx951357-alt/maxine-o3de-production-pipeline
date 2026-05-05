@@ -8,6 +8,14 @@
   - `examples/execution-admission/max_biped_v1_execution_admission_decision_approved.json`
   - `examples/execution-admission/max_biped_v1_execution_admission_decision_rejected.json`
   - `tests/pytest/test_execution_admission_decision_record_schema.py`
+- Execution-admission receipt dry-run framework v1 is implemented (non-destructive, no-op proof artifact only):
+  - `docs/maxine/execution-admission/release-execution-receipt-dry-run-framework-v1.md`
+  - `schemas/maxine_execution_admission_receipt_dry_run_report.schema.json`
+  - `examples/execution-admission/max_biped_v1_execution_admission_receipt_dry_run_pass.json`
+  - `tools/release-lane/generate_execution_admission_receipt_dry_run.py`
+  - integrated into `tools/release-lane/prove_pilot_release_chain.py`
+  - `tests/pytest/test_execution_admission_receipt_dry_run_report_schema.py`
+  - `tests/pytest/test_execution_admission_receipt_dry_run_proof.py`
 - Execution admission remains future work requiring explicit operator approval.
 - No execution surfaces are newly admitted in this slice.
 - Sandbox-only writer skeleton is implemented for generated-asset resolver placeholders.

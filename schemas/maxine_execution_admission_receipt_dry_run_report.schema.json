@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
+  "title": "MAXINE Execution Admission Receipt Dry-Run Report",
+  "description": "Non-executing receipt proof artifact generated from an execution-admission decision record. This contract preserves evidence-only behavior and records no-op execution intent evidence.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "report_type",
+    "status",
+    "generated_utc",
+    "decision_record_path",
+    "candidate_id",
+    "decision_id",
+    "decision_state",
+    "admission_scope",
+    "execution_mode",
+    "execution_performed",
+    "approval_phrase_required",
+    "approval_phrase_received",
+    "bounded_surface_id",
+    "command_or_tool_path",
+    "allowed_input_paths",
+    "allowed_output_paths",
+    "blocked_surfaces_confirmed",
+    "dry_run_receipt",
+    "failures"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "report_type": {
+      "type": "string",
+      "const": "EXECUTION_ADMISSION_RECEIPT_DRY_RUN_v1_REPORT"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "fail"
+      ]
+    },
+    "generated_utc": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision_record_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidate_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision_state": {
+      "type": "string",
+      "enum": [
+        "approved",
+        "pending_review",
+        "rejected"
+      ]
+    },
+    "admission_scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "execution_mode": {
+      "type": "string",
+      "const": "no_op_dry_run"
+    },
+    "execution_performed": {
+      "type": "boolean",
+      "const": false
+    },
+    "approval_phrase_required": {
+      "type": "string",
+      "const": "APPROVE EXECUTION ADMISSION <candidate_id>"
+    },
+    "approval_phrase_received": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bounded_surface_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "command_or_tool_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "allowed_input_paths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "allowed_output_paths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "blocked_surfaces_confirmed": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "dry_run_receipt": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "receipt_id",
+        "receipt_kind",
+        "no_command_execution_recorded",
+        "command_display",
+        "recorded_by"
+      ],
+      "properties": {
+        "receipt_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "receipt_kind": {
+          "type": "string",
+          "const": "execution_admission_receipt_dry_run"
+        },
+        "no_command_execution_recorded": {
+          "type": "boolean",
+          "const": true
+        },
+        "command_display": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recorded_by": {
+          "type": "string",
+          "const": "proof_flow"
+        }
+      }
+    },
+    "failures": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
