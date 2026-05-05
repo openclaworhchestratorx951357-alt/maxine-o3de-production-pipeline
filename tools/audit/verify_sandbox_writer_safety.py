@@ -119,6 +119,10 @@ REQUIRED_FILES = [
     "examples/release-promotion-decision/max_biped_v1_release_promotion_decision_pass.json",
     "examples/release-promotion-decision/max_biped_v1_release_promotion_decision_warn.json",
     "examples/release-promotion-decision/max_biped_v1_release_promotion_decision_fail.json",
+    "schemas/maxine_release_publication_preflight_report.schema.json",
+    "examples/release-publication-preflight/max_biped_v1_release_publication_preflight_pass.json",
+    "examples/release-publication-preflight/max_biped_v1_release_publication_preflight_warn.json",
+    "examples/release-publication-preflight/max_biped_v1_release_publication_preflight_fail.json",
     "examples/capabilities/maxine-capability-matrix.json",
     "examples/sandbox/review-packets/.gitkeep",
     "examples/sandbox/review-decisions/.gitkeep",
@@ -140,6 +144,8 @@ REQUIRED_FILES = [
     "docs/maxine/specs/release-package-bundle-v1.md",
     "tools/release-promotion-decision/validate_release_promotion_decision_report.py",
     "docs/maxine/specs/release-promotion-decision-v1.md",
+    "tools/release-publication-preflight/validate_release_publication_preflight_report.py",
+    "docs/maxine/specs/release-publication-preflight-v1.md",
 ]
 
 
