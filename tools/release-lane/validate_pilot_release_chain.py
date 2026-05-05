@@ -35,6 +35,7 @@ REQUIRED_IMPLEMENTED_GATE_IDS = {
     "release_publication_chain_audit_bundle_v1",
     "release_publication_ready_for_execution_request_v1",
     "release_publication_execution_handoff_v1",
+    "release_publication_execution_admission_request_packet_v1",
 }
 
 

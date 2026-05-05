@@ -129,7 +129,7 @@
       "order": 21,
       "check_id": "release_publication_execution_admission_request_packet_v1",
       "required": true,
-      "implemented": false
+      "implemented": true
     },
     {
       "order": 22,

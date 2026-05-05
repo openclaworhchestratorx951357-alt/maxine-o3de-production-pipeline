@@ -94,4 +94,5 @@ def test_release_pilot_chain_manifest_contains_required_gate_ids():
     assert "release_publication_evidence_integrity_index_v1" in gate_ids
     assert "release_publication_chain_audit_bundle_v1" in gate_ids
     assert "release_publication_execution_handoff_v1" in gate_ids
+    assert "release_publication_execution_admission_request_packet_v1" in gate_ids
     assert "release_publication_gate_set_v1" in gate_ids

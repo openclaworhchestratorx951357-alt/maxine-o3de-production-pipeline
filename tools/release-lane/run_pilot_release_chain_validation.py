@@ -43,6 +43,7 @@ REQUIRED_IMPLEMENTED_CHECK_IDS = [
     "release_publication_chain_audit_bundle_v1",
     "release_publication_ready_for_execution_request_v1",
     "release_publication_execution_handoff_v1",
+    "release_publication_execution_admission_request_packet_v1",
 ]
 
 
@@ -378,6 +379,16 @@ def main() -> int:
                 "examples/release-publication-execution-handoff/max_biped_v1_release_publication_execution_handoff_pass.json",
             ],
             "payload_path": attachment_dir / "release_publication_execution_handoff_v1.json",
+        },
+        {
+            "name": "release_publication_execution_admission_request_packet",
+            "mode": "override_existing_gate",
+            "command": [
+                sys.executable,
+                "tools/release-publication-execution-admission-request-packet/validate_release_publication_execution_admission_request_packet_report.py",
+                "examples/release-publication-execution-admission-request-packet/max_biped_v1_release_publication_execution_admission_request_packet_pass.json",
+            ],
+            "payload_path": attachment_dir / "release_publication_execution_admission_request_packet_v1.json",
         },
     ]
 

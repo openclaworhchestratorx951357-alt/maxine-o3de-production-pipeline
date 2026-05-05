@@ -40,6 +40,8 @@
   - `release_publication_ready_for_execution_request_v1`
 - runs release publication execution handoff validator evidence:
   - `release_publication_execution_handoff_v1`
+- runs release publication execution admission request packet validator evidence:
+  - `release_publication_execution_admission_request_packet_v1`
 - writes each validator payload snapshot
 - attaches payloads into an output manifest using `attach_qc_gate.py`
 - runs `pilot_release_chain_v1` validation on the generated manifest
@@ -94,6 +96,7 @@ python tools/release-lane/run_pilot_release_chain_validation.py --strict-chain
   - `release_publication_rollback_drill_v1`
   - `release_publication_ready_for_execution_request_v1`
   - `release_publication_execution_handoff_v1`
+  - `release_publication_execution_admission_request_packet_v1`
   - `pilot_release_chain_v1`
 
 ## Safety Boundaries
