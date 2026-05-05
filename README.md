@@ -59,7 +59,7 @@ Get-ChildItem .\examples\manifests
 - AAA-quality output is not yet fully operational.
 - Execution admission remains future work requiring explicit approval.
 
-Start here for review readiness details:
+Start here for PR readiness, review, and merge details:
 
 - `docs/maxine/release-lane-pilot-readiness-report-v1.md`
 - `docs/maxine/release-lane-gate-chain-v1.md`
