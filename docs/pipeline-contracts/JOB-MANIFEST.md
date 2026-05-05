@@ -159,6 +159,13 @@ The contract is designed so automation, operators, and CI can evaluate a job sta
 - Future-compatible path: `qc.checks[]`.
 - Suggested check id: `release_publication_ready_for_execution_request_v1`.
 
+## Release Publication Execution Handoff QC Attachment Point
+
+- `RELEASE_PUBLICATION_EXECUTION_HANDOFF_v1` report validation output is attachable to manifest QC.
+- Current manifest attachment path: `qc.gates[]`.
+- Future-compatible path: `qc.checks[]`.
+- Suggested check id: `release_publication_execution_handoff_v1`.
+
 ## Pilot Chain Proof Attachment Flow
 
 - `pilot_release_chain_ci_proof_v1` validates that implemented validator outputs are attachable in deterministic sequence.
