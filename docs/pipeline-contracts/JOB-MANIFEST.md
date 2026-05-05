@@ -144,3 +144,10 @@ The contract is designed so automation, operators, and CI can evaluate a job sta
 - Current manifest attachment path: `qc.gates[]`.
 - Future-compatible path: `qc.checks[]`.
 - Suggested check id: `release_publication_evidence_integrity_index_v1`.
+
+## Release Publication Chain Audit Bundle QC Attachment Point
+
+- `RELEASE_PUBLICATION_CHAIN_AUDIT_BUNDLE_v1` report validation output is attachable to manifest QC.
+- Current manifest attachment path: `qc.gates[]`.
+- Future-compatible path: `qc.checks[]`.
+- Suggested check id: `release_publication_chain_audit_bundle_v1`.
