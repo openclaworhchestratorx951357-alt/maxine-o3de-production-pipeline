@@ -147,12 +147,12 @@ def main() -> int:
     failures: List[str] = []
     if normal_code != 0:
         failures.append("normal run must return 0.")
-    if normal_payload.get("pilot_chain_status") != "warn":
-        failures.append("normal run must produce pilot_chain_status=warn for current fixture chain.")
-    if strict_code == 0:
-        failures.append("strict run must return nonzero while chain remains warn.")
-    if strict_payload.get("pilot_chain_status") != "warn":
-        failures.append("strict run must produce pilot_chain_status=warn for current fixture chain.")
+    if normal_payload.get("pilot_chain_status") != "pass":
+        failures.append("normal run must produce pilot_chain_status=pass for current fixture chain.")
+    if strict_code != 0:
+        failures.append("strict run must return 0 when chain is pass.")
+    if strict_payload.get("pilot_chain_status") != "pass":
+        failures.append("strict run must produce pilot_chain_status=pass for current fixture chain.")
 
     summary: Dict[str, Any] = {
         "status": "pass" if not failures else "fail",

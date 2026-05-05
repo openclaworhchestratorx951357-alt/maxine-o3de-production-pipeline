@@ -31,7 +31,7 @@
     "products": []
   },
   "qc": {
-    "overall": "warn",
+    "overall": "pass",
     "gates": [
       {
         "check_id": "max_biped_v1_skeleton_contract",
@@ -240,11 +240,12 @@
       },
       {
         "check_id": "release_publication_gate_set_v1",
-        "result": "pending_manual",
-        "severity": "manual_review",
+        "result": "pass",
+        "severity": "info",
         "details": {
-          "implemented_on_main": false,
-          "evidence_source": "future_gate_set_validator"
+          "implemented_in_stack": true,
+          "evidence_source": "fixture",
+          "summary": "Release publication gate-set evidence validates deterministic gate completeness/order before publication-ready chain sign-off."
         }
       }
     ],

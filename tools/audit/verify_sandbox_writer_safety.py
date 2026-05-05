@@ -164,6 +164,13 @@ REQUIRED_FILES = [
     "examples/release-publication-execution-admission-request-packet/max_biped_v1_release_publication_execution_admission_request_packet_pass.json",
     "examples/release-publication-execution-admission-request-packet/max_biped_v1_release_publication_execution_admission_request_packet_warn.json",
     "examples/release-publication-execution-admission-request-packet/max_biped_v1_release_publication_execution_admission_request_packet_fail.json",
+    "schemas/maxine_release_publication_gate_set_report.schema.json",
+    "examples/release-publication-gate-set/max_biped_v1_release_publication_gate_set_pass.json",
+    "examples/release-publication-gate-set/max_biped_v1_release_publication_gate_set_warn.json",
+    "examples/release-publication-gate-set/max_biped_v1_release_publication_gate_set_fail.json",
+    "examples/manifests/example-release-publication-gate-set-pass.manifest.json",
+    "examples/manifests/example-release-publication-gate-set-warn.manifest.json",
+    "examples/manifests/example-release-publication-gate-set-fail.manifest.json",
     "examples/capabilities/maxine-capability-matrix.json",
     "examples/sandbox/review-packets/.gitkeep",
     "examples/sandbox/review-decisions/.gitkeep",
@@ -217,6 +224,8 @@ REQUIRED_FILES = [
     "docs/maxine/specs/release-publication-execution-handoff-v1.md",
     "tools/release-publication-execution-admission-request-packet/validate_release_publication_execution_admission_request_packet_report.py",
     "docs/maxine/specs/release-publication-execution-admission-request-packet-v1.md",
+    "tools/release-publication-gate-set/validate_release_publication_gate_set_report.py",
+    "docs/maxine/specs/release-publication-gate-set-v1.md",
 ]
 
 

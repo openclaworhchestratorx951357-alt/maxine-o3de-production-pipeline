@@ -135,7 +135,7 @@
       "order": 22,
       "check_id": "release_publication_gate_set_v1",
       "required": true,
-      "implemented": false
+      "implemented": true
     }
   ]
 }

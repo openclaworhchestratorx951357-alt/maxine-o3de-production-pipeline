@@ -33,17 +33,17 @@ def _payload(stdout: str) -> dict:
     return json.loads(stdout[start:])
 
 
-def test_pilot_manifest_warn_without_allow_warn():
+def test_pilot_manifest_pass_without_allow_warn():
     result = _run(_manifest_fixture(), _chain_fixture(), allow_warn=False)
     payload = _payload(result.stdout)
-    assert payload["status"] == "warn"
-    assert result.returncode != 0
+    assert payload["status"] == "pass"
+    assert result.returncode == 0
 
 
-def test_pilot_manifest_warn_with_allow_warn_exit_zero():
+def test_pilot_manifest_pass_with_allow_warn_exit_zero():
     result = _run(_manifest_fixture(), _chain_fixture(), allow_warn=True)
     payload = _payload(result.stdout)
-    assert payload["status"] == "warn"
+    assert payload["status"] == "pass"
     assert result.returncode == 0
 
 
@@ -88,20 +88,20 @@ def test_duplicate_check_id_fails(tmp_path: Path):
     assert any(item.get("id") == "duplicate_check_id" for item in payload["findings"])
 
 
-def test_unimplemented_gate_marked_pass_fails(tmp_path: Path):
+def test_implemented_gate_pending_manual_fails(tmp_path: Path):
     manifest = json.loads(_manifest_fixture().read_text(encoding="utf-8-sig"))
     for gate in manifest["qc"]["gates"]:
         if gate.get("check_id") == "release_publication_gate_set_v1":
-            gate["result"] = "pass"
-            gate["severity"] = "info"
+            gate["result"] = "pending_manual"
+            gate["severity"] = "manual_review"
             break
-    path = tmp_path / "unimplemented-pass.manifest.json"
+    path = tmp_path / "implemented-pending-manual-gate-set.manifest.json"
     path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     result = _run(path, _chain_fixture())
     payload = _payload(result.stdout)
     assert payload["status"] == "fail"
-    assert any(item.get("id") == "unimplemented_gate_marked_pass" for item in payload["findings"])
+    assert any(item.get("id") == "implemented_gate_pending_manual" for item in payload["findings"])
 
 
 def test_implemented_rollback_or_readiness_gate_pending_manual_fails(tmp_path: Path):

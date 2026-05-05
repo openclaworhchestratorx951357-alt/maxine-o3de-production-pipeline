@@ -44,6 +44,7 @@ REQUIRED_IMPLEMENTED_CHECK_IDS = [
     "release_publication_ready_for_execution_request_v1",
     "release_publication_execution_handoff_v1",
     "release_publication_execution_admission_request_packet_v1",
+    "release_publication_gate_set_v1",
 ]
 
 
@@ -548,6 +549,8 @@ def main() -> int:
         gate_id = str(gate.get("check_id", "")).strip()
         if not gate_id or gate_id in attached_ids:
             continue
+        if gate_id == "release_publication_gate_set_v1":
+            continue
         gates_after_attachments.append(gate)
 
     missing_overrides: List[str] = []
@@ -574,6 +577,87 @@ def main() -> int:
         )
         return 1
     write_json(output_manifest_path, manifest_after_attachments)
+
+    gate_set_cmd: List[str] = [
+        sys.executable,
+        "tools/release-publication-gate-set/validate_release_publication_gate_set_report.py",
+        str(output_manifest_path),
+        "--allow-warn",
+    ]
+    gate_set_proc = run_command(repo_root, gate_set_cmd)
+    if gate_set_proc.returncode != 0:
+        print(
+            json.dumps(
+                {
+                    "status": "failed",
+                    "failed_step": "release_publication_gate_set",
+                    "command": gate_set_cmd,
+                    "stdout": gate_set_proc.stdout,
+                    "stderr": gate_set_proc.stderr,
+                },
+                indent=2,
+            )
+        )
+        return 1
+    try:
+        gate_set_payload = parse_payload_from_stdout(gate_set_proc.stdout)
+        ensure_attachment_paths(gate_set_payload, "release_publication_gate_set")
+    except Exception as exc:
+        print(
+            json.dumps(
+                {
+                    "status": "failed",
+                    "failed_step": "release_publication_gate_set",
+                    "reason": f"payload_parse_error: {exc}",
+                    "stdout": gate_set_proc.stdout,
+                },
+                indent=2,
+            )
+        )
+        return 1
+    gate_set_payload_path = attachment_dir / "release_publication_gate_set_v1.json"
+    write_json(gate_set_payload_path, gate_set_payload)
+    snapshot_paths.append(str(gate_set_payload_path))
+
+    gate_set_attach_cmd = [
+        sys.executable,
+        "tools/manifest-validator/attach_qc_gate.py",
+        "--manifest",
+        str(output_manifest_path),
+        "--attachment",
+        str(gate_set_payload_path),
+    ]
+    gate_set_attach_proc = run_command(repo_root, gate_set_attach_cmd)
+    if gate_set_attach_proc.returncode != 0:
+        print(
+            json.dumps(
+                {
+                    "status": "failed",
+                    "failed_step": "attach_release_publication_gate_set_payload",
+                    "command": gate_set_attach_cmd,
+                    "stdout": gate_set_attach_proc.stdout,
+                    "stderr": gate_set_attach_proc.stderr,
+                },
+                indent=2,
+            )
+        )
+        return 1
+
+    gate_set_check_id = (
+        gate_set_payload.get("manifest_attachment", {})
+        .get("qc_check", {})
+        .get("check_id", "")
+    )
+    if isinstance(gate_set_check_id, str) and gate_set_check_id.strip():
+        attached_check_ids.append(gate_set_check_id.strip())
+    step_results.append(
+        {
+            "step": "release_publication_gate_set",
+            "status": gate_set_payload.get("status"),
+            "payload_path": str(gate_set_payload_path),
+            "check_id": gate_set_check_id,
+        }
+    )
 
     chain_cmd: List[str] = [
         sys.executable,

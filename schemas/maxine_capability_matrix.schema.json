@@ -62,6 +62,7 @@
         "manifest_qc_attachment_pipeline",
         "pilot_release_chain_validation",
         "pilot_release_chain_attachment_run",
+        "release_publication_gate_set_report_validation",
         "real_asset_processor_execution",
         "authoritative_resolver_write",
         "o3de_editor_execution",

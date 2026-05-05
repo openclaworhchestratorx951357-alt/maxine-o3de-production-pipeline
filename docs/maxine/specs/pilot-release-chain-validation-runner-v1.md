@@ -42,6 +42,8 @@
   - `release_publication_execution_handoff_v1`
 - runs release publication execution admission request packet validator evidence:
   - `release_publication_execution_admission_request_packet_v1`
+- runs release publication gate-set validator evidence:
+  - `release_publication_gate_set_v1`
 - writes each validator payload snapshot
 - attaches payloads into an output manifest using `attach_qc_gate.py`
 - runs `pilot_release_chain_v1` validation on the generated manifest
@@ -56,7 +58,7 @@ This is integration execution for evidence payload processing only. It does not 
 python tools/release-lane/run_pilot_release_chain_validation.py
 ```
 
-Strict mode (expected nonzero while chain remains warn):
+Strict mode (expected zero when chain remains pass):
 
 ```powershell
 python tools/release-lane/run_pilot_release_chain_validation.py --strict-chain
@@ -97,6 +99,7 @@ python tools/release-lane/run_pilot_release_chain_validation.py --strict-chain
   - `release_publication_ready_for_execution_request_v1`
   - `release_publication_execution_handoff_v1`
   - `release_publication_execution_admission_request_packet_v1`
+  - `release_publication_gate_set_v1`
   - `pilot_release_chain_v1`
 
 ## Safety Boundaries

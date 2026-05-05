@@ -214,9 +214,20 @@
   - `examples/release-publication-execution-admission-request-packet/max_biped_v1_release_publication_execution_admission_request_packet_warn.json`
   - `examples/release-publication-execution-admission-request-packet/max_biped_v1_release_publication_execution_admission_request_packet_fail.json`
   - `docs/maxine/specs/release-publication-execution-admission-request-packet-v1.md`
+- Release publication gate-set v1 report validation is implemented (contract-first, non-executing evidence only):
+  - `schemas/maxine_release_publication_gate_set_report.schema.json`
+  - `tools/release-publication-gate-set/validate_release_publication_gate_set_report.py`
+  - `examples/release-publication-gate-set/max_biped_v1_release_publication_gate_set_pass.json`
+  - `examples/release-publication-gate-set/max_biped_v1_release_publication_gate_set_warn.json`
+  - `examples/release-publication-gate-set/max_biped_v1_release_publication_gate_set_fail.json`
+  - `examples/manifests/example-release-publication-gate-set-pass.manifest.json`
+  - `examples/manifests/example-release-publication-gate-set-warn.manifest.json`
+  - `examples/manifests/example-release-publication-gate-set-fail.manifest.json`
+  - `docs/maxine/specs/release-publication-gate-set-v1.md`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
+  - `release_publication_gate_set_report_validation=proof_only`
 - Compatibility note: the repository invariant moved from "sandbox writer/rollback command absent" to "sandbox writer/rollback admitted only under strict sandbox-only safety contract."
 
 ## Safety Boundary (Still Active)
@@ -370,6 +381,10 @@
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - Release publication execution admission request packet v1 report validation remains non-executing evidence-only:
   - validates immutable execution-admission-request-packet completeness plus required link to execution-handoff evidence
+  - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Release publication gate-set v1 report validation remains non-executing evidence-only:
+  - validates deterministic completeness/order of required release publication gate evidence already attached to the manifest
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.

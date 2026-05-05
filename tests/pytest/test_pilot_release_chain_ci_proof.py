@@ -27,7 +27,7 @@ def repo_tmp_dir() -> Path:
         shutil.rmtree(run_dir, ignore_errors=True)
 
 
-def test_pilot_chain_proof_command_passes_expected_warn_baseline(repo_tmp_dir: Path):
+def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: Path):
     cmd = [
         sys.executable,
         str(_proof_script()),
@@ -42,7 +42,7 @@ def test_pilot_chain_proof_command_passes_expected_warn_baseline(repo_tmp_dir: P
     payload = json.loads(result.stdout[start:])
     assert payload["status"] == "pass"
     assert payload["check_id"] == "pilot_release_chain_ci_proof_v1"
-    assert payload["details"]["normal_run"]["pilot_chain_status"] == "warn"
-    assert payload["details"]["strict_run"]["pilot_chain_status"] == "warn"
+    assert payload["details"]["normal_run"]["pilot_chain_status"] == "pass"
+    assert payload["details"]["strict_run"]["pilot_chain_status"] == "pass"
     assert payload["details"]["normal_run"]["runner_return_code"] == 0
-    assert payload["details"]["strict_run"]["runner_return_code"] != 0
+    assert payload["details"]["strict_run"]["runner_return_code"] == 0

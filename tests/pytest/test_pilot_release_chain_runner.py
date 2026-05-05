@@ -58,7 +58,7 @@ def test_runner_builds_generated_manifest_and_attaches_expected_checks(repo_tmp_
     assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
     payload = _extract_payload(result.stdout)
     assert payload["status"] == "completed"
-    assert payload["pilot_chain_status"] == "warn"
+    assert payload["pilot_chain_status"] == "pass"
 
     manifest = json.loads(output_manifest.read_text(encoding="utf-8-sig"))
     gate_ids = {
@@ -87,10 +87,11 @@ def test_runner_builds_generated_manifest_and_attaches_expected_checks(repo_tmp_
     assert "release_publication_ready_for_execution_request_v1" in gate_ids
     assert "release_publication_execution_handoff_v1" in gate_ids
     assert "release_publication_execution_admission_request_packet_v1" in gate_ids
+    assert "release_publication_gate_set_v1" in gate_ids
     assert "pilot_release_chain_v1" in gate_ids
 
 
-def test_runner_strict_chain_returns_nonzero_for_warn(repo_tmp_dir: Path):
+def test_runner_strict_chain_passes_for_pass_chain(repo_tmp_dir: Path):
     output_manifest = repo_tmp_dir / "generated-strict.manifest.json"
     output_dir = repo_tmp_dir / "reports-strict"
     result = _run(
@@ -104,6 +105,6 @@ def test_runner_strict_chain_returns_nonzero_for_warn(repo_tmp_dir: Path):
             "--strict-chain",
         ]
     )
-    assert result.returncode != 0
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
     payload = _extract_payload(result.stdout)
-    assert payload["pilot_chain_status"] == "warn"
+    assert payload["pilot_chain_status"] == "pass"
