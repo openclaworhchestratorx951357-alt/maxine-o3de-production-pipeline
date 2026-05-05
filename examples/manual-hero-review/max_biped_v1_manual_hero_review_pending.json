@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "MANUAL_HERO_REVIEW_v1_REPORT",
+  "job_id": "job-release-character-review-pending-001",
+  "package_id": "char.maxine.guard_mira",
+  "lane": "release_character",
+  "status": "pending_manual",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-review-pending-001/manifest.json",
+    "source_kind": "manifest",
+    "sha256": "c7a1fef3a7a7f9082b64f92ef2e7a36225f772f3f7dc61059c8f9a25ca8f6537"
+  },
+  "review_scope": {
+    "review_contract_id": "MANUAL_HERO_REVIEW_v1",
+    "target_tier": "hero",
+    "required_reviewers": 2,
+    "required_evidence_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1"
+    ],
+    "evidence_only": true,
+    "runtime_execution_admitted": false
+  },
+  "review_decision": {
+    "review_required": true,
+    "review_state": "pending",
+    "reviewer_count": 1,
+    "approver_ids": [],
+    "missing_evidence_ids": [
+      "screenshot_evidence_v1"
+    ],
+    "attached_evidence_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1"
+    ],
+    "rejection_reasons": [],
+    "notes": "Waiting for final screenshot evidence and second reviewer sign-off."
+  },
+  "findings": [
+    {
+      "id": "manual_review_pending",
+      "severity": "manual_review",
+      "status": "open",
+      "message": "Hero package remains pending manual review."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "manual_hero_review_v1",
+      "result": "pending_manual",
+      "severity": "manual_review",
+      "details": {
+        "summary": "Hero manual review still pending."
+      }
+    }
+  }
+}

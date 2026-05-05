@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "MANUAL_HERO_REVIEW_v1_REPORT",
+  "job_id": "job-release-character-review-pass-001",
+  "package_id": "char.maxine.knight_arden",
+  "lane": "release_character",
+  "status": "pass",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-review-pass-001/manifest.json",
+    "source_kind": "manifest",
+    "sha256": "f670a27cbf4f6b87f850f8939f62b5ed1a30fd9354ea343ddf6d8825ef0cdad7"
+  },
+  "review_scope": {
+    "review_contract_id": "MANUAL_HERO_REVIEW_v1",
+    "target_tier": "hero",
+    "required_reviewers": 2,
+    "required_evidence_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1"
+    ],
+    "evidence_only": true,
+    "runtime_execution_admitted": false
+  },
+  "review_decision": {
+    "review_required": true,
+    "review_state": "approved",
+    "reviewer_count": 2,
+    "approver_ids": [
+      "ops.lead_a",
+      "art.lead_b"
+    ],
+    "missing_evidence_ids": [],
+    "attached_evidence_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1"
+    ],
+    "rejection_reasons": [],
+    "approved_at_utc": "2026-05-05T00:00:00Z",
+    "notes": "Hero release gate approved with complete evidence."
+  },
+  "findings": [],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "manual_hero_review_v1",
+      "result": "pass",
+      "severity": "info",
+      "details": {
+        "summary": "Hero manual review approved with complete evidence."
+      }
+    }
+  }
+}

@@ -68,6 +68,13 @@ The contract is designed so automation, operators, and CI can evaluate a job sta
 - Future-compatible path: `qc.checks[]`.
 - Suggested check id: `screenshot_evidence_v1`.
 
+## Manual Hero Review QC Attachment Point
+
+- `MANUAL_HERO_REVIEW_v1` report validation output is attachable to manifest QC.
+- Current manifest attachment path: `qc.gates[]`.
+- Future-compatible path: `qc.checks[]`.
+- Suggested check id: `manual_hero_review_v1`.
+
 ## Rollback Drill QC Attachment Point
 
 - `RELEASE_PUBLICATION_ROLLBACK_DRILL_v1` evidence payload is attachable to manifest QC.

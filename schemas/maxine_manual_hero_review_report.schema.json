@@ -1,0 +1,280 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_manual_hero_review_report.schema.json",
+  "title": "MAXINE Manual Hero Review Report",
+  "description": "Evidence-only manual hero review gate report contract for release-lane readiness.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "report_type",
+    "job_id",
+    "package_id",
+    "lane",
+    "status",
+    "source",
+    "review_scope",
+    "review_decision",
+    "findings",
+    "manifest_attachment"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "report_type": {
+      "type": "string",
+      "const": "MANUAL_HERO_REVIEW_v1_REPORT"
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "package_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lane": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "source_path",
+        "source_kind"
+      ],
+      "properties": {
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "review_scope": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "review_contract_id",
+        "target_tier",
+        "required_reviewers",
+        "required_evidence_ids",
+        "evidence_only",
+        "runtime_execution_admitted"
+      ],
+      "properties": {
+        "review_contract_id": {
+          "type": "string",
+          "const": "MANUAL_HERO_REVIEW_v1"
+        },
+        "target_tier": {
+          "type": "string",
+          "enum": [
+            "hero",
+            "npc",
+            "draft",
+            "test",
+            "unknown"
+          ]
+        },
+        "required_reviewers": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "required_evidence_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidence_only": {
+          "type": "boolean",
+          "const": true
+        },
+        "runtime_execution_admitted": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    },
+    "review_decision": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "review_required",
+        "review_state",
+        "reviewer_count",
+        "approver_ids",
+        "missing_evidence_ids",
+        "attached_evidence_ids",
+        "rejection_reasons"
+      ],
+      "properties": {
+        "review_required": {
+          "type": "boolean"
+        },
+        "review_state": {
+          "type": "string",
+          "enum": [
+            "not_required",
+            "pending",
+            "approved",
+            "rejected"
+          ]
+        },
+        "reviewer_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "approver_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "missing_evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "attached_evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "rejection_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "approved_at_utc": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "severity",
+          "status",
+          "message"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "error",
+              "manual_review"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "manifest_attachment": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "target_path",
+        "future_target_path",
+        "qc_check"
+      ],
+      "properties": {
+        "target_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "future_target_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "qc_check": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "check_id",
+            "result",
+            "severity",
+            "details"
+          ],
+          "properties": {
+            "check_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "result": {
+              "type": "string",
+              "enum": [
+                "pass",
+                "warn",
+                "fail",
+                "pending_manual"
+              ]
+            },
+            "severity": {
+              "type": "string",
+              "enum": [
+                "info",
+                "warning",
+                "error",
+                "manual_review"
+              ]
+            },
+            "details": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      }
+    }
+  }
+}
