@@ -199,6 +199,13 @@
   - `examples/release-publication-execution-admission-review/max_biped_v1_release_publication_execution_admission_review_warn.json`
   - `examples/release-publication-execution-admission-review/max_biped_v1_release_publication_execution_admission_review_fail.json`
   - `docs/maxine/specs/release-publication-execution-admission-review-v1.md`
+- Release publication execution authorization record v1 report validation is implemented (contract-first, non-executing evidence only):
+  - `schemas/maxine_release_publication_execution_authorization_record_report.schema.json`
+  - `tools/release-publication-execution-authorization-record/validate_release_publication_execution_authorization_record_report.py`
+  - `examples/release-publication-execution-authorization-record/max_biped_v1_release_publication_execution_authorization_record_pass.json`
+  - `examples/release-publication-execution-authorization-record/max_biped_v1_release_publication_execution_authorization_record_warn.json`
+  - `examples/release-publication-execution-authorization-record/max_biped_v1_release_publication_execution_authorization_record_fail.json`
+  - `docs/maxine/specs/release-publication-execution-authorization-record-v1.md`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`

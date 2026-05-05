@@ -167,6 +167,10 @@ REQUIRED_FILES = [
     "examples/release-publication-execution-admission-review/max_biped_v1_release_publication_execution_admission_review_pass.json",
     "examples/release-publication-execution-admission-review/max_biped_v1_release_publication_execution_admission_review_warn.json",
     "examples/release-publication-execution-admission-review/max_biped_v1_release_publication_execution_admission_review_fail.json",
+    "schemas/maxine_release_publication_execution_authorization_record_report.schema.json",
+    "examples/release-publication-execution-authorization-record/max_biped_v1_release_publication_execution_authorization_record_pass.json",
+    "examples/release-publication-execution-authorization-record/max_biped_v1_release_publication_execution_authorization_record_warn.json",
+    "examples/release-publication-execution-authorization-record/max_biped_v1_release_publication_execution_authorization_record_fail.json",
     "examples/capabilities/maxine-capability-matrix.json",
     "examples/sandbox/review-packets/.gitkeep",
     "examples/sandbox/review-decisions/.gitkeep",
@@ -212,6 +216,8 @@ REQUIRED_FILES = [
     "docs/maxine/specs/release-publication-execution-admission-request-packet-v1.md",
     "tools/release-publication-execution-admission-review/validate_release_publication_execution_admission_review_report.py",
     "docs/maxine/specs/release-publication-execution-admission-review-v1.md",
+    "tools/release-publication-execution-authorization-record/validate_release_publication_execution_authorization_record_report.py",
+    "docs/maxine/specs/release-publication-execution-authorization-record-v1.md",
 ]
 
 
