@@ -53,6 +53,13 @@ AP_EXECUTION_PREFLIGHT_INSPECT_REL = (
 AP_EXECUTION_PREFLIGHT_BUNDLE_EXPORT_REL = (
     "scripts/powershell/Invoke-MaxineApExecutionPreflightBundleExport.ps1"
 )
+AP_DIAGNOSTIC_EXECUTION_REL = "scripts/powershell/Invoke-MaxineApDiagnosticExecution.ps1"
+AP_DIAGNOSTIC_EXECUTION_INSPECT_REL = (
+    "scripts/powershell/Invoke-MaxineApDiagnosticExecutionInspect.ps1"
+)
+AP_DIAGNOSTIC_EXECUTION_BUNDLE_EXPORT_REL = (
+    "scripts/powershell/Invoke-MaxineApDiagnosticExecutionBundleExport.ps1"
+)
 AUTHORITATIVE_REL = "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
 RECEIPT_INDEX_REL = "examples/sandbox/receipts/index.json"
 RECEIPT_INDEX_SCHEMA_REL = "schemas/maxine_sandbox_receipt_index.schema.json"
@@ -78,6 +85,10 @@ AP_EXECUTION_PREFLIGHT_SCHEMA_REL = "schemas/maxine_ap_execution_preflight.schem
 AP_EXECUTION_PREFLIGHT_BUNDLE_SCHEMA_REL = (
     "schemas/maxine_ap_execution_preflight_bundle.schema.json"
 )
+AP_DIAGNOSTIC_EXECUTION_SCHEMA_REL = "schemas/maxine_ap_diagnostic_execution.schema.json"
+AP_DIAGNOSTIC_EXECUTION_BUNDLE_SCHEMA_REL = (
+    "schemas/maxine_ap_diagnostic_execution_bundle.schema.json"
+)
 CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
@@ -97,6 +108,10 @@ AP_EVIDENCE_BUNDLES_DIR_REL = "examples/sandbox/ap-evidence-bundles"
 AP_EXECUTION_PREFLIGHTS_DIR_REL = "examples/sandbox/ap-execution-preflights"
 AP_EXECUTION_PREFLIGHT_BUNDLES_DIR_REL = (
     "examples/sandbox/ap-execution-preflight-bundles"
+)
+AP_DIAGNOSTIC_EXECUTIONS_DIR_REL = "examples/sandbox/ap-diagnostic-executions"
+AP_DIAGNOSTIC_EXECUTION_BUNDLES_DIR_REL = (
+    "examples/sandbox/ap-diagnostic-execution-bundles"
 )
 
 ADMITTED_SANDBOX_COMMANDS = {
@@ -127,6 +142,9 @@ ADMITTED_SANDBOX_COMMANDS = {
     AP_EXECUTION_PREFLIGHT_BUILD_REL,
     AP_EXECUTION_PREFLIGHT_INSPECT_REL,
     AP_EXECUTION_PREFLIGHT_BUNDLE_EXPORT_REL,
+    AP_DIAGNOSTIC_EXECUTION_REL,
+    AP_DIAGNOSTIC_EXECUTION_INSPECT_REL,
+    AP_DIAGNOSTIC_EXECUTION_BUNDLE_EXPORT_REL,
 }
 
 REQUIRED_WRITER_NEEDLES = [
@@ -452,6 +470,52 @@ REQUIRED_AP_EXECUTION_PREFLIGHT_BUNDLE_EXPORT_NEEDLES = [
     "copies json snapshots only",
 ]
 
+REQUIRED_AP_DIAGNOSTIC_EXECUTION_NEEDLES = [
+    "ap-diagnostic-executions",
+    "approvelocaldiagnosticexecution",
+    "diagnosticonly",
+    "usemockdiagnosticcommand",
+    "simulatetimeout",
+    "command_allowlisted",
+    "command_executed",
+    "execution_status",
+    "timed_out",
+    "blocked",
+    "succeeded",
+    "failed",
+    "source_preflight_id",
+    "stdout_sha256",
+    "stderr_sha256",
+    "product_ids_claimed = $false",
+    "asset_ids_claimed = $false",
+    "source_uuids_claimed = $false",
+    "product_resolution_claimed = $false",
+    "cache_access_admitted = $false",
+    "live_database_access_admitted = $false",
+    "spawn_admitted = $false",
+    "publish_admitted = $false",
+    "command source is arbitrary user text and is blocked",
+    "contains shell operators/pipelines/redirection/traversal",
+]
+
+REQUIRED_AP_DIAGNOSTIC_EXECUTION_INSPECT_NEEDLES = [
+    "diagnostic_execution_count",
+    "diagnostic_execution_id",
+    "showoutputrefs",
+    "showblockedreason",
+]
+
+REQUIRED_AP_DIAGNOSTIC_EXECUTION_BUNDLE_EXPORT_NEEDLES = [
+    "ap-diagnostic-execution-bundles",
+    "source_diagnostic_execution_id",
+    "source_preflight_id",
+    "included_artifacts",
+    "copied_artifact_paths",
+    "artifact_sha256",
+    ".txt",
+    "json",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -548,6 +612,7 @@ EXPECTED_CAPABILITY_STATES = {
     "ap_execution_preflight_build": "sandbox_only",
     "ap_execution_preflight_inspect": "read_only",
     "ap_execution_preflight_bundle_export": "sandbox_only",
+    "ap_diagnostic_execution": "sandbox_only",
     "authoritative_resolver_write": "forbidden",
     "o3de_editor_execution": "blocked",
     "asset_processor_execution": "blocked",
@@ -609,6 +674,9 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     ap_execution_preflight_build = root / AP_EXECUTION_PREFLIGHT_BUILD_REL
     ap_execution_preflight_inspect = root / AP_EXECUTION_PREFLIGHT_INSPECT_REL
     ap_execution_preflight_bundle_export = root / AP_EXECUTION_PREFLIGHT_BUNDLE_EXPORT_REL
+    ap_diagnostic_execution = root / AP_DIAGNOSTIC_EXECUTION_REL
+    ap_diagnostic_execution_inspect = root / AP_DIAGNOSTIC_EXECUTION_INSPECT_REL
+    ap_diagnostic_execution_bundle_export = root / AP_DIAGNOSTIC_EXECUTION_BUNDLE_EXPORT_REL
     authoritative = root / AUTHORITATIVE_REL
     receipt_index = root / RECEIPT_INDEX_REL
     receipt_index_schema = root / RECEIPT_INDEX_SCHEMA_REL
@@ -626,6 +694,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     ap_evidence_bundle_schema = root / AP_EVIDENCE_BUNDLE_SCHEMA_REL
     ap_execution_preflight_schema = root / AP_EXECUTION_PREFLIGHT_SCHEMA_REL
     ap_execution_preflight_bundle_schema = root / AP_EXECUTION_PREFLIGHT_BUNDLE_SCHEMA_REL
+    ap_diagnostic_execution_schema = root / AP_DIAGNOSTIC_EXECUTION_SCHEMA_REL
+    ap_diagnostic_execution_bundle_schema = root / AP_DIAGNOSTIC_EXECUTION_BUNDLE_SCHEMA_REL
     capability_matrix = root / CAPABILITY_MATRIX_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -642,6 +712,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     ap_evidence_bundles_dir = root / AP_EVIDENCE_BUNDLES_DIR_REL
     ap_execution_preflights_dir = root / AP_EXECUTION_PREFLIGHTS_DIR_REL
     ap_execution_preflight_bundles_dir = root / AP_EXECUTION_PREFLIGHT_BUNDLES_DIR_REL
+    ap_diagnostic_executions_dir = root / AP_DIAGNOSTIC_EXECUTIONS_DIR_REL
+    ap_diagnostic_execution_bundles_dir = root / AP_DIAGNOSTIC_EXECUTION_BUNDLES_DIR_REL
 
     if not writer.exists():
         failures.append(f"sandbox writer command missing: {SANDBOX_WRITER_REL}")
@@ -737,6 +809,21 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
             "AP execution preflight bundle export command missing: "
             f"{AP_EXECUTION_PREFLIGHT_BUNDLE_EXPORT_REL}"
         )
+    if not ap_diagnostic_execution.exists():
+        failures.append(
+            "AP diagnostic execution command missing: "
+            f"{AP_DIAGNOSTIC_EXECUTION_REL}"
+        )
+    if not ap_diagnostic_execution_inspect.exists():
+        failures.append(
+            "AP diagnostic execution inspect command missing: "
+            f"{AP_DIAGNOSTIC_EXECUTION_INSPECT_REL}"
+        )
+    if not ap_diagnostic_execution_bundle_export.exists():
+        failures.append(
+            "AP diagnostic execution bundle export command missing: "
+            f"{AP_DIAGNOSTIC_EXECUTION_BUNDLE_EXPORT_REL}"
+        )
     if authoritative.exists():
         failures.append(f"authoritative command must remain absent: {AUTHORITATIVE_REL}")
     if not receipt_index.exists():
@@ -788,6 +875,16 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(
             "AP execution preflight bundle schema missing: "
             f"{AP_EXECUTION_PREFLIGHT_BUNDLE_SCHEMA_REL}"
+        )
+    if not ap_diagnostic_execution_schema.exists():
+        failures.append(
+            "AP diagnostic execution schema missing: "
+            f"{AP_DIAGNOSTIC_EXECUTION_SCHEMA_REL}"
+        )
+    if not ap_diagnostic_execution_bundle_schema.exists():
+        failures.append(
+            "AP diagnostic execution bundle schema missing: "
+            f"{AP_DIAGNOSTIC_EXECUTION_BUNDLE_SCHEMA_REL}"
         )
     if not capability_matrix.exists():
         failures.append(f"capability matrix missing: {CAPABILITY_MATRIX_REL}")
@@ -842,6 +939,16 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(
             "AP execution preflight bundles directory missing: "
             f"{AP_EXECUTION_PREFLIGHT_BUNDLES_DIR_REL}"
+        )
+    if not ap_diagnostic_executions_dir.exists():
+        failures.append(
+            "AP diagnostic executions directory missing: "
+            f"{AP_DIAGNOSTIC_EXECUTIONS_DIR_REL}"
+        )
+    if not ap_diagnostic_execution_bundles_dir.exists():
+        failures.append(
+            "AP diagnostic execution bundles directory missing: "
+            f"{AP_DIAGNOSTIC_EXECUTION_BUNDLES_DIR_REL}"
         )
 
     if writer.exists():
@@ -1514,6 +1621,114 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
             if f'"{forbidden_copy}"' in ap_execution_preflight_bundle_export_text:
                 failures.append(
                     "AP execution preflight bundle export command should not hardcode copying "
+                    f"binary/source/runtime/cache/database token: {forbidden_copy}"
+                )
+
+    if ap_diagnostic_execution.exists():
+        ap_diagnostic_execution_text = _read_text(ap_diagnostic_execution)
+        for needle in REQUIRED_AP_DIAGNOSTIC_EXECUTION_NEEDLES:
+            if needle not in ap_diagnostic_execution_text:
+                failures.append(
+                    "AP diagnostic execution command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in ap_diagnostic_execution_text:
+                failures.append(
+                    "AP diagnostic execution command contains forbidden execution needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "assetprocessor.exe",
+            "assetprocessorbatch.exe",
+            "editor.exe",
+            "o3de.exe",
+            "invoke-expression",
+            "start-process",
+        ):
+            if forbidden_phrase in ap_diagnostic_execution_text:
+                failures.append(
+                    "AP diagnostic execution command must remain mock/allowlist bounded; "
+                    f"forbidden phrase present: {forbidden_phrase}"
+                )
+        for forbidden_admission in (
+            "product_ids_claimed = $true",
+            "asset_ids_claimed = $true",
+            "source_uuids_claimed = $true",
+            "product_resolution_claimed = $true",
+            "cache_access_admitted = $true",
+            "live_database_access_admitted = $true",
+            "spawn_admitted = $true",
+            "publish_admitted = $true",
+        ):
+            if forbidden_admission in ap_diagnostic_execution_text:
+                failures.append(
+                    "AP diagnostic execution command widens forbidden admission: "
+                    f"{forbidden_admission}"
+                )
+        if "-command" in ap_diagnostic_execution_text and "valuefromremainingarguments" in ap_diagnostic_execution_text:
+            failures.append(
+                "AP diagnostic execution command must not accept arbitrary command text arguments."
+            )
+
+    if ap_diagnostic_execution_inspect.exists():
+        ap_diagnostic_execution_inspect_text = _read_text(ap_diagnostic_execution_inspect)
+        for needle in REQUIRED_AP_DIAGNOSTIC_EXECUTION_INSPECT_NEEDLES:
+            if needle not in ap_diagnostic_execution_inspect_text:
+                failures.append(
+                    "AP diagnostic execution inspect command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in ap_diagnostic_execution_inspect_text:
+                failures.append(
+                    "AP diagnostic execution inspect command contains forbidden execution needle: "
+                    f"{needle}"
+                )
+        for needle in MUTATION_NEEDLES:
+            if needle in ap_diagnostic_execution_inspect_text:
+                failures.append(
+                    "AP diagnostic execution inspect command is not read-only; contains mutation "
+                    f"needle: {needle}"
+                )
+
+    if ap_diagnostic_execution_bundle_export.exists():
+        ap_diagnostic_execution_bundle_export_text = _read_text(
+            ap_diagnostic_execution_bundle_export
+        )
+        for needle in REQUIRED_AP_DIAGNOSTIC_EXECUTION_BUNDLE_EXPORT_NEEDLES:
+            if needle not in ap_diagnostic_execution_bundle_export_text:
+                failures.append(
+                    "AP diagnostic execution bundle export command missing required needle: "
+                    f"{needle}"
+                )
+        for needle in FORBIDDEN_EXECUTION_NEEDLES:
+            if needle in ap_diagnostic_execution_bundle_export_text:
+                failures.append(
+                    "AP diagnostic execution bundle export command contains forbidden execution "
+                    f"needle: {needle}"
+                )
+        for forbidden_copy in (
+            ".fbx",
+            ".gltf",
+            ".glb",
+            ".obj",
+            ".blend",
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".tiff",
+            ".exr",
+            ".bin",
+            ".dll",
+            ".pdb",
+            ".sqlite",
+            "assetdb.sqlite",
+            "cache",
+        ):
+            if f'"{forbidden_copy}"' in ap_diagnostic_execution_bundle_export_text:
+                failures.append(
+                    "AP diagnostic execution bundle export command should not hardcode copying "
                     f"binary/source/runtime/cache/database token: {forbidden_copy}"
                 )
 

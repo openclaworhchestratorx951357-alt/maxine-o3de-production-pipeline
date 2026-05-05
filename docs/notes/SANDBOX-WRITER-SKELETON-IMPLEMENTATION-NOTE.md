@@ -30,6 +30,9 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - `scripts/powershell/Invoke-MaxineApExecutionPreflightBuild.ps1`
 - `scripts/powershell/Invoke-MaxineApExecutionPreflightInspect.ps1`
 - `scripts/powershell/Invoke-MaxineApExecutionPreflightBundleExport.ps1`
+- `scripts/powershell/Invoke-MaxineApDiagnosticExecution.ps1`
+- `scripts/powershell/Invoke-MaxineApDiagnosticExecutionInspect.ps1`
+- `scripts/powershell/Invoke-MaxineApDiagnosticExecutionBundleExport.ps1`
 
 ## What This Implementation Does
 - Accepts a structured write plan JSON.
@@ -67,6 +70,11 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - Adds read-only AP execution preflight inspection by list, `preflight_id`, and explicit path.
 - Adds sandbox-only AP execution preflight bundle export under `examples/sandbox/ap-execution-preflight-bundles` with JSON snapshots only.
 - Keeps AP execution unadmitted by enforcing `required_manual_confirmation=true`, `local_only=true`, and `execution_admitted=false`.
+- Adds bounded sandbox-only AP diagnostic execution under `examples/sandbox/ap-diagnostic-executions`.
+- Requires explicit approval (`-ApproveLocalDiagnosticExecution`) plus ready preflight status.
+- Uses allowlisted mock diagnostic command only in this slice (`-UseMockDiagnosticCommand`) and captures stdout/stderr/hash evidence.
+- Adds read-only AP diagnostic execution inspection by list, `diagnostic_execution_id`, and explicit path.
+- Adds sandbox-only AP diagnostic execution bundle export under `examples/sandbox/ap-diagnostic-execution-bundles` with JSON + stdout/stderr text snapshots only.
 - Enforces capability-state boundaries via `examples/capabilities/maxine-capability-matrix.json`.
 - Allows rollback only for files listed in the receipt and only under the approved sandbox root.
 
@@ -75,5 +83,6 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - No sandbox write to production paths.
 - No O3DE Editor execution.
 - No Asset Processor execution.
+- No broad AP binary execution admission (`asset_processor_execution` remains blocked).
 - No product resolution or Asset ID claims.
 - No spawn/publish operations.

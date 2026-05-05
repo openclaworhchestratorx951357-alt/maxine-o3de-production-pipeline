@@ -53,6 +53,7 @@
         "ap_execution_preflight_build",
         "ap_execution_preflight_inspect",
         "ap_execution_preflight_bundle_export",
+        "ap_diagnostic_execution",
         "authoritative_resolver_write",
         "o3de_editor_execution",
         "asset_processor_execution",

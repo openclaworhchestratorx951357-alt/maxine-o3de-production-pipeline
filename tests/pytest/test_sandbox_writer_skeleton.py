@@ -1182,6 +1182,7 @@ def test_workflow_run_path_cannot_escape_sandbox_root(tmp_path: Path):
     index_rel = f"examples/sandbox/receipts/pytest-workflow-bad-run-index-{uuid.uuid4().hex}.json"
     plan_path = tmp_path / "workflow-bad-run-path-plan.json"
     write_json(plan_path, build_plan(target_rel, receipt_index_path=index_rel, explicit_approval=True))
+    before_blocked = set(WORKFLOW_RUNS_DIR.glob("sandbox-workflow-run-*.blocked.json"))
 
     result = run_powershell_script(
         WORKFLOW_RUN_SCRIPT,
@@ -1196,6 +1197,9 @@ def test_workflow_run_path_cannot_escape_sandbox_root(tmp_path: Path):
     assert "workflow_run_path" in (result.stdout + result.stderr).lower() or "sandbox" in (
         result.stdout + result.stderr
     ).lower()
+    after_blocked = set(WORKFLOW_RUNS_DIR.glob("sandbox-workflow-run-*.blocked.json"))
+    for path in after_blocked - before_blocked:
+        remove_if_exists(path)
 
 
 def test_authoritative_resolver_write_remains_absent():

@@ -42,6 +42,10 @@
   - `scripts/powershell/Invoke-MaxineApExecutionPreflightBuild.ps1`
   - `scripts/powershell/Invoke-MaxineApExecutionPreflightInspect.ps1`
   - `scripts/powershell/Invoke-MaxineApExecutionPreflightBundleExport.ps1`
+- AP local diagnostic execution commands are implemented (approval-gated and mock/allowlist bounded):
+  - `scripts/powershell/Invoke-MaxineApDiagnosticExecution.ps1`
+  - `scripts/powershell/Invoke-MaxineApDiagnosticExecutionInspect.ps1`
+  - `scripts/powershell/Invoke-MaxineApDiagnosticExecutionBundleExport.ps1`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -65,6 +69,8 @@
 - AP evidence bundle output is restricted to `examples/sandbox/ap-evidence-bundles`.
 - AP execution preflight output is restricted to `examples/sandbox/ap-execution-preflights`.
 - AP execution preflight bundle output is restricted to `examples/sandbox/ap-execution-preflight-bundles`.
+- AP diagnostic execution output is restricted to `examples/sandbox/ap-diagnostic-executions`.
+- AP diagnostic execution bundle output is restricted to `examples/sandbox/ap-diagnostic-execution-bundles`.
 - Explicit sandbox approval is required in the input plan.
 - Production paths, engine paths, Cache paths, and parent traversal paths are blocked.
 - `scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1` remains absent.
@@ -78,6 +84,12 @@
   - `required_manual_confirmation` is true
   - `local_only` is true
   - `execution_admitted` is false
+- AP diagnostic execution is narrowly admitted as sandbox-only:
+  - requires `-ApproveLocalDiagnosticExecution`
+  - requires a preflight with `readiness_status=ready_for_future_execution_request`
+  - uses allowlisted mock diagnostic command only in this slice
+  - captures stdout/stderr and execution record under sandbox-only paths
+  - keeps broad `asset_processor_execution` blocked
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
 
 ## Verification Entry Points
