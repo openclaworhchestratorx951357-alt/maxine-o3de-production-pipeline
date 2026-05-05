@@ -705,6 +705,8 @@ REQUIRED_PILOT_RELEASE_CHAIN_VALIDATOR_NEEDLES = [
     "source_product_evidence_resolver_v1",
     "material_uv_qc_v1",
     "animation_smoke_v1",
+    "release_publication_execution_handoff_v1",
+    "release_publication_execution_admission_request_packet_v1",
     "release_publication_gate_set_v1",
     "qc.gates[]",
     "qc.checks[]",
@@ -719,6 +721,8 @@ REQUIRED_PILOT_RELEASE_CHAIN_RUNNER_NEEDLES = [
     "source_product_evidence_resolver_v1",
     "material_uv_qc_v1",
     "animation_smoke_v1",
+    "release_publication_execution_handoff_v1",
+    "release_publication_execution_admission_request_packet_v1",
     "release_publication_gate_set_v1",
     "pilot_release_chain_v1",
     "attach_qc_gate.py",
@@ -2571,6 +2575,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                     "source_product_evidence_resolver_v1",
                     "material_uv_qc_v1",
                     "animation_smoke_v1",
+                    "release_publication_execution_handoff_v1",
+                    "release_publication_execution_admission_request_packet_v1",
                     "release_publication_gate_set_v1",
                 ):
                     if required_check not in gate_ids:
@@ -2616,6 +2622,15 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                         "Pilot release chain base manifest must retain downstream gate "
                         "release_publication_gate_set_v1."
                     )
+                for required_downstream_gate in (
+                    "release_publication_execution_handoff_v1",
+                    "release_publication_execution_admission_request_packet_v1",
+                ):
+                    if required_downstream_gate not in gate_ids:
+                        failures.append(
+                            "Pilot release chain base manifest must retain downstream gate "
+                            f"{required_downstream_gate}."
+                        )
         except Exception as exc:  # pragma: no cover - defensive failure surface
             failures.append(
                 "Pilot release chain base manifest fixture is not valid JSON: "

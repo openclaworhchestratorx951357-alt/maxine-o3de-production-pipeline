@@ -224,6 +224,11 @@
   - `examples/manifests/example-release-publication-gate-set-warn.manifest.json`
   - `examples/manifests/example-release-publication-gate-set-fail.manifest.json`
   - `docs/maxine/specs/release-publication-gate-set-v1.md`
+- Sandbox safety invariant now enforces final pilot release-chain gate coverage for:
+  - `release_publication_execution_handoff_v1`
+  - `release_publication_execution_admission_request_packet_v1`
+  - `release_publication_gate_set_v1`
+  - Coverage is verified in chain validator/runner needles plus pilot/base manifest gate presence checks.
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
