@@ -72,6 +72,7 @@ REQUIRED_FILES = [
     "schemas/maxine_animation_smoke_report.schema.json",
     "schemas/maxine_screenshot_evidence_report.schema.json",
     "schemas/maxine_manual_hero_review_report.schema.json",
+    "schemas/maxine_ci_artifact_retention_report.schema.json",
     "schemas/maxine_capability_matrix.schema.json",
     "examples/sandbox/receipts/index.json",
     "examples/sandbox/evidence-bundles/.gitkeep",
@@ -107,6 +108,9 @@ REQUIRED_FILES = [
     "examples/manual-hero-review/max_biped_v1_manual_hero_review_pass.json",
     "examples/manual-hero-review/max_biped_v1_manual_hero_review_pending.json",
     "examples/manual-hero-review/max_biped_v1_manual_hero_review_fail.json",
+    "examples/ci-artifact-retention/max_biped_v1_ci_artifact_retention_pass.json",
+    "examples/ci-artifact-retention/max_biped_v1_ci_artifact_retention_warn.json",
+    "examples/ci-artifact-retention/max_biped_v1_ci_artifact_retention_fail.json",
     "examples/capabilities/maxine-capability-matrix.json",
     "examples/sandbox/review-packets/.gitkeep",
     "examples/sandbox/review-decisions/.gitkeep",
@@ -122,6 +126,8 @@ REQUIRED_FILES = [
     "docs/maxine/specs/screenshot-evidence-v1.md",
     "tools/manual-hero-review/validate_manual_hero_review_report.py",
     "docs/maxine/specs/manual-hero-review-v1.md",
+    "tools/ci-artifact-retention/validate_ci_artifact_retention_report.py",
+    "docs/maxine/specs/ci-artifact-retention-v1.md",
 ]
 
 

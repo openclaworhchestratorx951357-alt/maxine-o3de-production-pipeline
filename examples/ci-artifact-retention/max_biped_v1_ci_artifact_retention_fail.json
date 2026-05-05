@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "CI_ARTIFACT_RETENTION_v1_REPORT",
+  "job_id": "job-release-character-retention-fail-001",
+  "package_id": "char.maxine.raider_khal",
+  "lane": "release_character",
+  "status": "fail",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-retention-fail-001/manifest.json",
+    "source_kind": "manifest"
+  },
+  "retention_policy": {
+    "policy_id": "CI_ARTIFACT_RETENTION_v1",
+    "retention_class": "release-365d",
+    "min_required_days": 365,
+    "recommended_days": 400,
+    "actual_retention_days": 90,
+    "evidence_only": true,
+    "runtime_execution_admitted": false
+  },
+  "artifact_inventory": {
+    "artifact_root": "artifacts/jobs/job-release-character-retention-fail-001",
+    "required_artifact_paths": [
+      "artifacts/jobs/job-release-character-retention-fail-001/manifest.json",
+      "artifacts/jobs/job-release-character-retention-fail-001/logs/pipeline.log",
+      "artifacts/jobs/job-release-character-retention-fail-001/qc/dcc-conform.json",
+      "artifacts/jobs/job-release-character-retention-fail-001/qc/material-uv.json"
+    ],
+    "present_artifact_paths": [
+      "artifacts/jobs/job-release-character-retention-fail-001/manifest.json",
+      "artifacts/jobs/job-release-character-retention-fail-001/logs/pipeline.log"
+    ],
+    "missing_artifacts": [
+      "artifacts/jobs/job-release-character-retention-fail-001/qc/dcc-conform.json",
+      "artifacts/jobs/job-release-character-retention-fail-001/qc/material-uv.json"
+    ],
+    "disallowed_artifact_paths": [
+      "artifacts/jobs/job-release-character-retention-fail-001/cache/assetdb.sqlite"
+    ],
+    "total_size_bytes": 320544
+  },
+  "release_validation": {
+    "required_qc_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1"
+    ],
+    "present_qc_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "manual_hero_review_v1"
+    ],
+    "missing_qc_gate_ids": [
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1"
+    ],
+    "release_readiness_state": "blocked_missing_evidence",
+    "manual_review_required": true
+  },
+  "findings": [
+    {
+      "id": "retention_too_short",
+      "severity": "error",
+      "status": "open",
+      "message": "Retention duration is below required policy threshold."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "ci_artifact_retention_v1",
+      "result": "fail",
+      "severity": "error",
+      "details": {
+        "summary": "Retention and release validation requirements are not satisfied."
+      }
+    }
+  }
+}

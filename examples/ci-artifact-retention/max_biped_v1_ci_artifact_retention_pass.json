@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "CI_ARTIFACT_RETENTION_v1_REPORT",
+  "job_id": "job-release-character-retention-pass-001",
+  "package_id": "char.maxine.knight_arden",
+  "lane": "release_character",
+  "status": "pass",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-retention-pass-001/manifest.json",
+    "source_kind": "manifest",
+    "sha256": "ab50fcb7c8c0636ef00ccb4f0b28f4e51b1f99e4af5ee33f689775684d6dcf48"
+  },
+  "retention_policy": {
+    "policy_id": "CI_ARTIFACT_RETENTION_v1",
+    "retention_class": "release-365d",
+    "min_required_days": 365,
+    "recommended_days": 400,
+    "actual_retention_days": 400,
+    "evidence_only": true,
+    "runtime_execution_admitted": false
+  },
+  "artifact_inventory": {
+    "artifact_root": "artifacts/jobs/job-release-character-retention-pass-001",
+    "required_artifact_paths": [
+      "artifacts/jobs/job-release-character-retention-pass-001/manifest.json",
+      "artifacts/jobs/job-release-character-retention-pass-001/logs/pipeline.log",
+      "artifacts/jobs/job-release-character-retention-pass-001/qc/dcc-conform.json",
+      "artifacts/jobs/job-release-character-retention-pass-001/qc/material-uv.json",
+      "artifacts/jobs/job-release-character-retention-pass-001/qc/animation-smoke.json",
+      "artifacts/jobs/job-release-character-retention-pass-001/qc/screenshot-evidence.json"
+    ],
+    "present_artifact_paths": [
+      "artifacts/jobs/job-release-character-retention-pass-001/manifest.json",
+      "artifacts/jobs/job-release-character-retention-pass-001/logs/pipeline.log",
+      "artifacts/jobs/job-release-character-retention-pass-001/qc/dcc-conform.json",
+      "artifacts/jobs/job-release-character-retention-pass-001/qc/material-uv.json",
+      "artifacts/jobs/job-release-character-retention-pass-001/qc/animation-smoke.json",
+      "artifacts/jobs/job-release-character-retention-pass-001/qc/screenshot-evidence.json"
+    ],
+    "missing_artifacts": [],
+    "disallowed_artifact_paths": [],
+    "total_size_bytes": 1542346
+  },
+  "release_validation": {
+    "required_qc_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1"
+    ],
+    "present_qc_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1"
+    ],
+    "missing_qc_gate_ids": [],
+    "release_readiness_state": "ready_for_manual_release_review",
+    "manual_review_required": true
+  },
+  "findings": [],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "ci_artifact_retention_v1",
+      "result": "pass",
+      "severity": "info",
+      "details": {
+        "summary": "CI artifacts and release-lane evidence retention checks passed."
+      }
+    }
+  }
+}
