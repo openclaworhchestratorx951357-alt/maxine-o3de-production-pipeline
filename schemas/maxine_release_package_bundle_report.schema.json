@@ -1,0 +1,376 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_release_package_bundle_report.schema.json",
+  "title": "MAXINE Release Package Bundle Report",
+  "description": "Evidence-only deterministic release package bundle and rollback-instruction validation report.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "report_type",
+    "job_id",
+    "package_id",
+    "lane",
+    "status",
+    "source",
+    "bundle_contract",
+    "bundle_inventory",
+    "determinism",
+    "rollback",
+    "release_readiness",
+    "findings",
+    "manifest_attachment"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "report_type": {
+      "type": "string",
+      "const": "RELEASE_PACKAGE_BUNDLE_v1_REPORT"
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "package_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lane": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "source_path",
+        "source_kind"
+      ],
+      "properties": {
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "bundle_contract": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "contract_id",
+        "bundle_root",
+        "expected_manifest_path",
+        "expected_artifact_index_path",
+        "expected_rollback_plan_path",
+        "expected_cleanup_plan_path",
+        "deterministic_layout",
+        "evidence_only",
+        "runtime_execution_admitted"
+      ],
+      "properties": {
+        "contract_id": {
+          "type": "string",
+          "const": "RELEASE_PACKAGE_BUNDLE_v1"
+        },
+        "bundle_root": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_manifest_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_artifact_index_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_rollback_plan_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_cleanup_plan_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "deterministic_layout": {
+          "type": "boolean",
+          "const": true
+        },
+        "evidence_only": {
+          "type": "boolean",
+          "const": true
+        },
+        "runtime_execution_admitted": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    },
+    "bundle_inventory": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "manifest_path",
+        "artifact_index_path",
+        "rollback_plan_path",
+        "cleanup_plan_path",
+        "included_paths",
+        "missing_paths",
+        "disallowed_paths"
+      ],
+      "properties": {
+        "manifest_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifact_index_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rollback_plan_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cleanup_plan_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "included_paths": {
+          "type": "array",
+          "minItems": 4,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "missing_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "disallowed_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "package_hash_sha256": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "determinism": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "package_id_stable",
+        "input_provenance_recorded",
+        "source_product_tracking_recorded",
+        "product_resolution_mode",
+        "checksum_index_present"
+      ],
+      "properties": {
+        "package_id_stable": {
+          "type": "boolean"
+        },
+        "input_provenance_recorded": {
+          "type": "boolean"
+        },
+        "source_product_tracking_recorded": {
+          "type": "boolean"
+        },
+        "product_resolution_mode": {
+          "type": "string",
+          "enum": [
+            "deterministic",
+            "proposal_only"
+          ]
+        },
+        "checksum_index_present": {
+          "type": "boolean"
+        }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "undo_available",
+        "rollback_step_count",
+        "rollback_instruction_paths",
+        "cleanup_step_count",
+        "cleanup_instruction_paths",
+        "destructive_cleanup_admitted"
+      ],
+      "properties": {
+        "undo_available": {
+          "type": "boolean"
+        },
+        "rollback_step_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rollback_instruction_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "cleanup_step_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cleanup_instruction_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "destructive_cleanup_admitted": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    },
+    "release_readiness": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "readiness_state",
+        "manual_review_required"
+      ],
+      "properties": {
+        "readiness_state": {
+          "type": "string",
+          "enum": [
+            "ready_for_manual_release_review",
+            "blocked_missing_evidence",
+            "blocked_safety_boundary"
+          ]
+        },
+        "manual_review_required": {
+          "type": "boolean"
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "severity",
+          "status",
+          "message"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "error",
+              "manual_review"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "manifest_attachment": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "target_path",
+        "future_target_path",
+        "qc_check"
+      ],
+      "properties": {
+        "target_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "future_target_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "qc_check": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "check_id",
+            "result",
+            "severity",
+            "details"
+          ],
+          "properties": {
+            "check_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "result": {
+              "type": "string",
+              "enum": [
+                "pass",
+                "warn",
+                "fail",
+                "pending_manual"
+              ]
+            },
+            "severity": {
+              "type": "string",
+              "enum": [
+                "info",
+                "warning",
+                "error",
+                "manual_review"
+              ]
+            },
+            "details": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      }
+    }
+  }
+}

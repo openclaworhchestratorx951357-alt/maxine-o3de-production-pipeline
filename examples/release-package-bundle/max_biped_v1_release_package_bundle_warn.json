@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "RELEASE_PACKAGE_BUNDLE_v1_REPORT",
+  "job_id": "job-release-package-warn-001",
+  "package_id": "char.maxine.guard_mira",
+  "lane": "release_character",
+  "status": "warn",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-package-warn-001/manifest.json",
+    "source_kind": "manifest",
+    "sha256": "03736ef2544ab8021ff4f8dfd3c4a4fca2e2332c252efce89d764cf3d9261b4a"
+  },
+  "bundle_contract": {
+    "contract_id": "RELEASE_PACKAGE_BUNDLE_v1",
+    "bundle_root": "artifacts/jobs/job-release-package-warn-001/release-bundle",
+    "expected_manifest_path": "artifacts/jobs/job-release-package-warn-001/release-bundle/manifest.json",
+    "expected_artifact_index_path": "artifacts/jobs/job-release-package-warn-001/release-bundle/artifact-index.json",
+    "expected_rollback_plan_path": "artifacts/jobs/job-release-package-warn-001/release-bundle/undo/rollback-plan.json",
+    "expected_cleanup_plan_path": "artifacts/jobs/job-release-package-warn-001/release-bundle/cleanup/cleanup-plan.json",
+    "deterministic_layout": true,
+    "evidence_only": true,
+    "runtime_execution_admitted": false
+  },
+  "bundle_inventory": {
+    "manifest_path": "artifacts/jobs/job-release-package-warn-001/release-bundle/manifest.json",
+    "artifact_index_path": "artifacts/jobs/job-release-package-warn-001/release-bundle/artifact-index.json",
+    "rollback_plan_path": "artifacts/jobs/job-release-package-warn-001/release-bundle/undo/rollback-plan.json",
+    "cleanup_plan_path": "artifacts/jobs/job-release-package-warn-001/release-bundle/cleanup/cleanup-plan.json",
+    "included_paths": [
+      "artifacts/jobs/job-release-package-warn-001/release-bundle/manifest.json",
+      "artifacts/jobs/job-release-package-warn-001/release-bundle/artifact-index.json",
+      "artifacts/jobs/job-release-package-warn-001/release-bundle/undo/rollback-plan.json",
+      "artifacts/jobs/job-release-package-warn-001/release-bundle/cleanup/cleanup-plan.json"
+    ],
+    "missing_paths": [],
+    "disallowed_paths": [],
+    "package_hash_sha256": "bcf84dc846c56c61375a7e43e6af533f0e379f2bc50f4c7f2d69f5b4302144f8"
+  },
+  "determinism": {
+    "package_id_stable": true,
+    "input_provenance_recorded": true,
+    "source_product_tracking_recorded": true,
+    "product_resolution_mode": "proposal_only",
+    "checksum_index_present": true
+  },
+  "rollback": {
+    "undo_available": true,
+    "rollback_step_count": 2,
+    "rollback_instruction_paths": [
+      "artifacts/jobs/job-release-package-warn-001/release-bundle/undo/rollback-plan.json"
+    ],
+    "cleanup_step_count": 2,
+    "cleanup_instruction_paths": [
+      "artifacts/jobs/job-release-package-warn-001/release-bundle/cleanup/cleanup-plan.json"
+    ],
+    "destructive_cleanup_admitted": false
+  },
+  "release_readiness": {
+    "readiness_state": "ready_for_manual_release_review",
+    "manual_review_required": true
+  },
+  "findings": [
+    {
+      "id": "resolution_mode_proposal_only",
+      "severity": "warning",
+      "status": "open",
+      "message": "Product resolution remains proposal_only and should be upgraded to deterministic."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "release_package_bundle_v1",
+      "result": "warn",
+      "severity": "warning",
+      "details": {
+        "summary": "Bundle is complete, but resolution mode remains proposal_only."
+      }
+    }
+  }
+}

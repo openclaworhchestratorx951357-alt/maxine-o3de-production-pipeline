@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "RELEASE_PACKAGE_BUNDLE_v1_REPORT",
+  "job_id": "job-release-package-fail-001",
+  "package_id": "char.maxine.raider_khal",
+  "lane": "release_character",
+  "status": "fail",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-package-fail-001/manifest.json",
+    "source_kind": "manifest"
+  },
+  "bundle_contract": {
+    "contract_id": "RELEASE_PACKAGE_BUNDLE_v1",
+    "bundle_root": "artifacts/jobs/job-release-package-fail-001/release-bundle",
+    "expected_manifest_path": "artifacts/jobs/job-release-package-fail-001/release-bundle/manifest.json",
+    "expected_artifact_index_path": "artifacts/jobs/job-release-package-fail-001/release-bundle/artifact-index.json",
+    "expected_rollback_plan_path": "artifacts/jobs/job-release-package-fail-001/release-bundle/undo/rollback-plan.json",
+    "expected_cleanup_plan_path": "artifacts/jobs/job-release-package-fail-001/release-bundle/cleanup/cleanup-plan.json",
+    "deterministic_layout": true,
+    "evidence_only": true,
+    "runtime_execution_admitted": false
+  },
+  "bundle_inventory": {
+    "manifest_path": "artifacts/jobs/job-release-package-fail-001/release-bundle/manifest.json",
+    "artifact_index_path": "artifacts/jobs/job-release-package-fail-001/release-bundle/artifact-index.json",
+    "rollback_plan_path": "artifacts/jobs/job-release-package-fail-001/release-bundle/undo/rollback-plan.json",
+    "cleanup_plan_path": "artifacts/jobs/job-release-package-fail-001/release-bundle/cleanup/cleanup-plan.json",
+    "included_paths": [
+      "artifacts/jobs/job-release-package-fail-001/release-bundle/manifest.json",
+      "artifacts/jobs/job-release-package-fail-001/release-bundle/qc/dcc-conform.json"
+    ],
+    "missing_paths": [
+      "artifacts/jobs/job-release-package-fail-001/release-bundle/artifact-index.json",
+      "artifacts/jobs/job-release-package-fail-001/release-bundle/undo/rollback-plan.json",
+      "artifacts/jobs/job-release-package-fail-001/release-bundle/cleanup/cleanup-plan.json"
+    ],
+    "disallowed_paths": [
+      "artifacts/jobs/job-release-package-fail-001/release-bundle/cache/assetdb.sqlite"
+    ],
+    "package_hash_sha256": "9dc8f13c2c2d8a2f2d8a2f2d8a2f2d8a2f2d8a2f2d8a2f2d8a2f2d8a2f2d8a2f"
+  },
+  "determinism": {
+    "package_id_stable": false,
+    "input_provenance_recorded": true,
+    "source_product_tracking_recorded": false,
+    "product_resolution_mode": "proposal_only",
+    "checksum_index_present": false
+  },
+  "rollback": {
+    "undo_available": false,
+    "rollback_step_count": 0,
+    "rollback_instruction_paths": [],
+    "cleanup_step_count": 0,
+    "cleanup_instruction_paths": [],
+    "destructive_cleanup_admitted": false
+  },
+  "release_readiness": {
+    "readiness_state": "blocked_missing_evidence",
+    "manual_review_required": true
+  },
+  "findings": [
+    {
+      "id": "bundle_missing_required_artifacts",
+      "severity": "error",
+      "status": "open",
+      "message": "Required release bundle artifacts are missing."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "release_package_bundle_v1",
+      "result": "fail",
+      "severity": "error",
+      "details": {
+        "summary": "Release package bundle evidence is incomplete and blocked."
+      }
+    }
+  }
+}

@@ -57,7 +57,7 @@
       "order": 9,
       "check_id": "release_package_bundle_v1",
       "required": true,
-      "implemented": false
+      "implemented": true
     },
     {
       "order": 10,

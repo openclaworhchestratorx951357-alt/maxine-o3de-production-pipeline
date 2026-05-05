@@ -31,6 +31,7 @@ REQUIRED_IMPLEMENTED_CHECK_IDS = [
     "screenshot_evidence_v1",
     "manual_hero_review_v1",
     "ci_artifact_retention_v1",
+    "release_package_bundle_v1",
     "release_publication_rollback_drill_v1",
     "release_publication_ready_for_execution_request_v1",
 ]
@@ -263,6 +264,15 @@ def main() -> int:
                 "examples/ci-artifact-retention/max_biped_v1_ci_artifact_retention_pass.json",
             ],
             "payload_path": attachment_dir / "ci_artifact_retention_v1.json",
+        },
+        {
+            "name": "release_package_bundle",
+            "command": [
+                sys.executable,
+                "tools/release-package-bundle/validate_release_package_bundle_report.py",
+                "examples/release-package-bundle/max_biped_v1_release_package_bundle_pass.json",
+            ],
+            "payload_path": attachment_dir / "release_package_bundle_v1.json",
         },
         {
             "name": "release_publication_rollback_drill_fixture",

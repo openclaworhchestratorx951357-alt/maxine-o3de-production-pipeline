@@ -17,6 +17,8 @@
   - `manual_hero_review_v1`
 - runs CI artifact retention validator evidence:
   - `ci_artifact_retention_v1`
+- runs release package bundle validator evidence:
+  - `release_package_bundle_v1`
 - attaches fixture-backed rollback/readiness evidence payloads:
   - `release_publication_rollback_drill_v1`
   - `release_publication_ready_for_execution_request_v1`
@@ -62,6 +64,7 @@ python tools/release-lane/run_pilot_release_chain_validation.py --strict-chain
   - `screenshot_evidence_v1`
   - `manual_hero_review_v1`
   - `ci_artifact_retention_v1`
+  - `release_package_bundle_v1`
   - `release_publication_rollback_drill_v1`
   - `release_publication_ready_for_execution_request_v1`
   - `pilot_release_chain_v1`
