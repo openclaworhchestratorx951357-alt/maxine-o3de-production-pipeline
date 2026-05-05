@@ -1,0 +1,136 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "RELEASE_PUBLICATION_ROLLBACK_DRILL_v1_REPORT",
+  "job_id": "job-maxine-release-001",
+  "package_id": "maxine.character.max_biped_v1",
+  "lane": "release_character",
+  "status": "fail",
+  "source": {
+    "source_path": "evidence/jobs/job-maxine-release-001/manifest.json",
+    "source_kind": "manifest_v1",
+    "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "rollback_contract": {
+    "contract_id": "RELEASE_PUBLICATION_ROLLBACK_DRILL_v1",
+    "required_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1",
+      "release_promotion_decision_v1",
+      "release_publication_preflight_v1",
+      "release_publication_request_approval_v1",
+      "release_publication_execution_admission_gate_v1",
+      "release_publication_execution_request_ledger_v1",
+      "release_publication_execution_receipt_v1"
+    ],
+    "required_approvals": 2,
+    "manual_review_required": true,
+    "immutable_audit_bundle_required": true,
+    "external_execution_evidence_required": true,
+    "evidence_only": true,
+    "execution_admitted": false
+  },
+  "rollback_drill": {
+    "drill_id": "rollback-drill-20260505-0003",
+    "drill_recorded_utc": "2026-05-05T09:30:00Z",
+    "recorded_by": "ops.release_manager",
+    "drill_action": "record_manual_publication_rollback_drill",
+    "rollback_result": "manual_rollback_reported_success",
+    "execution_receipt_id": "receipt-20260505-0001",
+    "publish_command_display": "DisplayOnly: publish_release_bundle --manifest evidence/jobs/job-maxine-release-001/manifest.json | Invoke-Expression",
+    "rollback_command_display": "DisplayOnly: rollback_release_bundle --manifest evidence/jobs/job-maxine-release-001/manifest.json",
+    "target_environment": "release_candidate",
+    "no_command_execution_recorded": true,
+    "rollback_drill_log_path": "evidence/jobs/job-maxine-release-001/logs/rollback-drill-manual.log",
+    "rollback_drill_log_sha256": "invalid-sha",
+    "post_rollback_validation_log_path": "evidence/jobs/job-maxine-release-001/logs/post-rollback-validation.log",
+    "post_rollback_validation_log_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+    "evidence_bundle_path": "../outside/release-publication-rollback-drill-bundle.json",
+    "evidence_bundle_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+    "evidence_bundle_artifacts": [
+      "evidence/jobs/job-maxine-release-001/manifest.json",
+      "evidence/jobs/job-maxine-release-001/qc/release-publication-request-ledger.json",
+      "evidence/jobs/job-maxine-release-001/logs/rollback-drill-manual.log",
+      "Cache/game/runtime.bin"
+    ],
+    "evidence_bundle_immutable": false
+  },
+  "approval_state": {
+    "decision": "rollback_drill_recorded_for_audit",
+    "approver_ids": [
+      "ops.release_manager"
+    ],
+    "blocked_reason_codes": [
+      "missing_qc_gate_evidence"
+    ],
+    "rollback_plan_verified": false,
+    "cleanup_plan_verified": false,
+    "publish_execution_admitted": true,
+    "o3de_execution_admitted": false,
+    "asset_processor_execution_admitted": false,
+    "spawn_execution_admitted": false,
+    "notes": "Invalid fail fixture."
+  },
+  "readiness": {
+    "required_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1",
+      "release_promotion_decision_v1",
+      "release_publication_preflight_v1",
+      "release_publication_request_approval_v1",
+      "release_publication_execution_admission_gate_v1",
+      "release_publication_execution_request_ledger_v1",
+      "release_publication_execution_receipt_v1"
+    ],
+    "present_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "release_promotion_decision_v1"
+    ],
+    "missing_gate_ids": [
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1",
+      "release_publication_preflight_v1",
+      "release_publication_request_approval_v1",
+      "release_publication_execution_admission_gate_v1",
+      "release_publication_execution_request_ledger_v1",
+      "release_publication_execution_receipt_v1"
+    ],
+    "rollback_readiness_state": "blocked_missing_evidence"
+  },
+  "findings": [
+    {
+      "id": "invalid_rollback_drill_fixture",
+      "severity": "error",
+      "status": "open",
+      "message": "Fail fixture intentionally violates rollback drill safety and evidence requirements."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "release_publication_rollback_drill_v1",
+      "result": "fail",
+      "severity": "error",
+      "details": {
+        "summary": "Rollback drill fixture intentionally fails validation."
+      }
+    }
+  }
+}
