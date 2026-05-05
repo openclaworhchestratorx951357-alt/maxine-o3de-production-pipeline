@@ -80,6 +80,13 @@
   - `examples/animation-smoke/max_biped_v1_animation_smoke_warn.json`
   - `examples/animation-smoke/max_biped_v1_animation_smoke_fail.json`
   - `docs/maxine/specs/animation-smoke-v1.md`
+- Screenshot evidence v1 report validation is implemented (contract-first, non-executing evidence only):
+  - `schemas/maxine_screenshot_evidence_report.schema.json`
+  - `tools/screenshot-evidence/validate_screenshot_evidence_report.py`
+  - `examples/screenshot-evidence/max_biped_v1_screenshot_evidence_pass.json`
+  - `examples/screenshot-evidence/max_biped_v1_screenshot_evidence_warn.json`
+  - `examples/screenshot-evidence/max_biped_v1_screenshot_evidence_fail.json`
+  - `docs/maxine/specs/screenshot-evidence-v1.md`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -154,6 +161,10 @@
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - Animation smoke v1 report validation remains non-executing evidence-only:
   - validates animation smoke report JSON against required clip and status rules
+  - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Screenshot evidence v1 report validation remains non-executing evidence-only:
+  - validates screenshot evidence report JSON against required views, path safety, and resolution policy
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.

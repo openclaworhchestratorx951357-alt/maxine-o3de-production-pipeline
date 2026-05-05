@@ -70,6 +70,7 @@ REQUIRED_FILES = [
     "schemas/maxine_dcc_conform_report.schema.json",
     "schemas/maxine_material_uv_qc_report.schema.json",
     "schemas/maxine_animation_smoke_report.schema.json",
+    "schemas/maxine_screenshot_evidence_report.schema.json",
     "schemas/maxine_capability_matrix.schema.json",
     "examples/sandbox/receipts/index.json",
     "examples/sandbox/evidence-bundles/.gitkeep",
@@ -99,6 +100,9 @@ REQUIRED_FILES = [
     "examples/animation-smoke/max_biped_v1_animation_smoke_pass.json",
     "examples/animation-smoke/max_biped_v1_animation_smoke_warn.json",
     "examples/animation-smoke/max_biped_v1_animation_smoke_fail.json",
+    "examples/screenshot-evidence/max_biped_v1_screenshot_evidence_pass.json",
+    "examples/screenshot-evidence/max_biped_v1_screenshot_evidence_warn.json",
+    "examples/screenshot-evidence/max_biped_v1_screenshot_evidence_fail.json",
     "examples/capabilities/maxine-capability-matrix.json",
     "examples/sandbox/review-packets/.gitkeep",
     "examples/sandbox/review-decisions/.gitkeep",
@@ -110,6 +114,8 @@ REQUIRED_FILES = [
     "docs/maxine/specs/material-uv-qc-v1.md",
     "tools/animation-smoke/validate_animation_smoke_report.py",
     "docs/maxine/specs/animation-smoke-v1.md",
+    "tools/screenshot-evidence/validate_screenshot_evidence_report.py",
+    "docs/maxine/specs/screenshot-evidence-v1.md",
 ]
 
 

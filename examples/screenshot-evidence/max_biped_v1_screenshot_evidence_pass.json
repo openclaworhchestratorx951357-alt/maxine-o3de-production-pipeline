@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "SCREENSHOT_EVIDENCE_v1_REPORT",
+  "job_id": "job-release-character-screenshot-pass-001",
+  "package_id": "char.maxine.knight_arden",
+  "lane": "release_character",
+  "status": "pass",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-screenshot-pass-001/manifest.json",
+    "source_kind": "manifest",
+    "sha256": "06634a9f67e6e6efd00e587e8ceb2e450f5c0f6cdc16e07e8325f3152a130b8f"
+  },
+  "capture_profile": {
+    "capture_contract_id": "SCREENSHOT_EVIDENCE_v1",
+    "target_skeleton_contract_id": "MAX_BIPED_v1",
+    "required_view_ids": [
+      "front",
+      "left",
+      "right",
+      "back"
+    ],
+    "evidence_only": true,
+    "runtime_execution_admitted": false,
+    "min_width": 1280,
+    "min_height": 720,
+    "low_resolution_severity": "warning"
+  },
+  "screenshot_summary": {
+    "captured_view_ids": [
+      "front",
+      "left",
+      "right",
+      "back"
+    ],
+    "missing_view_ids": [],
+    "screenshot_paths": [
+      {
+        "view_id": "front",
+        "path": "artifacts/jobs/job-release-character-screenshot-pass-001/screenshots/front.png",
+        "width": 1920,
+        "height": 1080,
+        "format": "png"
+      },
+      {
+        "view_id": "left",
+        "path": "artifacts/jobs/job-release-character-screenshot-pass-001/screenshots/left.png",
+        "width": 1920,
+        "height": 1080,
+        "format": "png"
+      },
+      {
+        "view_id": "right",
+        "path": "artifacts/jobs/job-release-character-screenshot-pass-001/screenshots/right.png",
+        "width": 1920,
+        "height": 1080,
+        "format": "png"
+      },
+      {
+        "view_id": "back",
+        "path": "artifacts/jobs/job-release-character-screenshot-pass-001/screenshots/back.png",
+        "width": 1920,
+        "height": 1080,
+        "format": "png"
+      }
+    ],
+    "invalid_screenshot_paths": []
+  },
+  "findings": [],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "screenshot_evidence_v1",
+      "result": "pass",
+      "severity": "info",
+      "details": {
+        "summary": "Required screenshot views and resolution thresholds satisfied."
+      }
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "SCREENSHOT_EVIDENCE_v1_REPORT",
+  "job_id": "job-release-character-screenshot-fail-001",
+  "package_id": "char.maxine.raider_khal",
+  "lane": "release_character",
+  "status": "fail",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-screenshot-fail-001/manifest.json",
+    "source_kind": "manifest"
+  },
+  "capture_profile": {
+    "capture_contract_id": "SCREENSHOT_EVIDENCE_v1",
+    "target_skeleton_contract_id": "MAX_BIPED_v1",
+    "required_view_ids": [
+      "front",
+      "left",
+      "right",
+      "back"
+    ],
+    "evidence_only": true,
+    "runtime_execution_admitted": false,
+    "min_width": 1280,
+    "min_height": 720,
+    "low_resolution_severity": "warning"
+  },
+  "screenshot_summary": {
+    "captured_view_ids": [
+      "front",
+      "left",
+      "right"
+    ],
+    "missing_view_ids": [
+      "back"
+    ],
+    "screenshot_paths": [
+      {
+        "view_id": "front",
+        "path": "artifacts/jobs/job-release-character-screenshot-fail-001/screenshots/front.png",
+        "width": 800,
+        "height": 450,
+        "format": "png"
+      }
+    ],
+    "invalid_screenshot_paths": [
+      "C:\\temp\\outside\\back.png"
+    ]
+  },
+  "findings": [
+    {
+      "id": "missing_back_view",
+      "severity": "error",
+      "status": "open",
+      "message": "Required back view screenshot is missing."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "screenshot_evidence_v1",
+      "result": "fail",
+      "severity": "error",
+      "details": {
+        "summary": "Required screenshot views are incomplete."
+      }
+    }
+  }
+}
