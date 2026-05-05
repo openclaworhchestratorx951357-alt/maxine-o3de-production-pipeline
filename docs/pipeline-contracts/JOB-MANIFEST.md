@@ -61,6 +61,14 @@ The contract is designed so automation, operators, and CI can evaluate a job sta
 - Future-compatible path: `qc.checks[]`.
 - Suggested check id: `animation_smoke_v1`.
 
+## Pilot Chain Integration Runner
+
+Deterministic local integration command:
+
+- `python tools/release-lane/run_pilot_release_chain_validation.py`
+
+It runs implemented validators, writes payload snapshots, attaches QC payloads into one manifest, validates `pilot_release_chain_v1`, and attaches that chain result payload.
+
 ## Source Product Evidence Resolver QC Attachment Point
 
 - `SOURCE_PRODUCT_EVIDENCE_RESOLVER_v1` report validation output is attachable to manifest QC.

@@ -126,6 +126,12 @@ PILOT_RELEASE_CHAIN_FIXTURE_REL = (
 PILOT_RELEASE_CHAIN_MANIFEST_REL = (
     "examples/manifests/example-release-character-pilot-chain.manifest.json"
 )
+PILOT_RELEASE_CHAIN_BASE_MANIFEST_REL = (
+    "examples/manifests/example-release-character-pilot-chain-base.manifest.json"
+)
+PILOT_RELEASE_CHAIN_RUNNER_REL = (
+    "tools/release-lane/run_pilot_release_chain_validation.py"
+)
 CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
@@ -701,6 +707,20 @@ REQUIRED_PILOT_RELEASE_CHAIN_VALIDATOR_NEEDLES = [
     "--allow-warn",
 ]
 
+REQUIRED_PILOT_RELEASE_CHAIN_RUNNER_NEEDLES = [
+    "run_pilot_release_chain_validation.py",
+    "example-release-character-pilot-chain-base.manifest.json",
+    "max_biped_v1_skeleton_contract",
+    "dcc_conform_v1",
+    "source_product_evidence_resolver_v1",
+    "material_uv_qc_v1",
+    "animation_smoke_v1",
+    "pilot_release_chain_v1",
+    "attach_qc_gate.py",
+    "qc.gates[]",
+    "qc.checks[]",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -805,6 +825,7 @@ EXPECTED_CAPABILITY_STATES = {
     "source_product_evidence_resolver_validate": "read_only",
     "manifest_qc_attachment_pipeline": "sandbox_only",
     "pilot_release_chain_validation": "read_only",
+    "pilot_release_chain_attachment_run": "sandbox_only",
     "real_asset_processor_execution": "blocked",
     "authoritative_resolver_write": "forbidden",
     "o3de_editor_execution": "blocked",
@@ -916,6 +937,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     pilot_release_chain_validator = root / PILOT_RELEASE_CHAIN_VALIDATOR_REL
     pilot_release_chain_fixture = root / PILOT_RELEASE_CHAIN_FIXTURE_REL
     pilot_release_chain_manifest = root / PILOT_RELEASE_CHAIN_MANIFEST_REL
+    pilot_release_chain_base_manifest = root / PILOT_RELEASE_CHAIN_BASE_MANIFEST_REL
+    pilot_release_chain_runner = root / PILOT_RELEASE_CHAIN_RUNNER_REL
     capability_matrix = root / CAPABILITY_MATRIX_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -1183,6 +1206,31 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(
             "Manifest QC attachment tool missing: "
             f"{MANIFEST_QC_ATTACH_TOOL_REL}"
+        )
+    if not pilot_release_chain_validator.exists():
+        failures.append(
+            "Pilot release chain validator missing: "
+            f"{PILOT_RELEASE_CHAIN_VALIDATOR_REL}"
+        )
+    if not pilot_release_chain_fixture.exists():
+        failures.append(
+            "Pilot release chain fixture missing: "
+            f"{PILOT_RELEASE_CHAIN_FIXTURE_REL}"
+        )
+    if not pilot_release_chain_manifest.exists():
+        failures.append(
+            "Pilot release chain manifest fixture missing: "
+            f"{PILOT_RELEASE_CHAIN_MANIFEST_REL}"
+        )
+    if not pilot_release_chain_base_manifest.exists():
+        failures.append(
+            "Pilot release chain base manifest fixture missing: "
+            f"{PILOT_RELEASE_CHAIN_BASE_MANIFEST_REL}"
+        )
+    if not pilot_release_chain_runner.exists():
+        failures.append(
+            "Pilot release chain runner missing: "
+            f"{PILOT_RELEASE_CHAIN_RUNNER_REL}"
         )
     if not capability_matrix.exists():
         failures.append(f"capability matrix missing: {CAPABILITY_MATRIX_REL}")
@@ -2411,6 +2459,31 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                     f"{forbidden_phrase}"
                 )
 
+    if pilot_release_chain_runner.exists():
+        pilot_chain_runner_text = _read_text(pilot_release_chain_runner)
+        for needle in REQUIRED_PILOT_RELEASE_CHAIN_RUNNER_NEEDLES:
+            if needle not in pilot_chain_runner_text:
+                failures.append(
+                    "Pilot release chain runner missing required needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "start-process",
+            "invoke-expression",
+            "subprocess.popen(",
+            "shell=true",
+            "assetdb.sqlite",
+            "sqlite3.connect(",
+            "o3de.exe",
+            "editor.exe",
+            "assetprocessorbatch",
+        ):
+            if forbidden_phrase in pilot_chain_runner_text:
+                failures.append(
+                    "Pilot release chain runner contains forbidden phrase: "
+                    f"{forbidden_phrase}"
+                )
+
     if pilot_release_chain_fixture.exists():
         try:
             fixture = json.loads(
@@ -2461,6 +2534,44 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         except Exception as exc:  # pragma: no cover - defensive failure surface
             failures.append(
                 "Pilot release chain manifest fixture is not valid JSON: "
+                f"{exc}"
+            )
+
+    if pilot_release_chain_base_manifest.exists():
+        try:
+            base_manifest = json.loads(
+                pilot_release_chain_base_manifest.read_text(encoding="utf-8-sig")
+            )
+            qc = base_manifest.get("qc", {})
+            gates = qc.get("gates", []) if isinstance(qc, dict) else []
+            if not isinstance(gates, list):
+                failures.append("Pilot release chain base manifest qc.gates must be an array.")
+            else:
+                gate_ids = {
+                    str(item.get("check_id", "")).strip()
+                    for item in gates
+                    if isinstance(item, dict)
+                }
+                for implemented_gate in (
+                    "max_biped_v1_skeleton_contract",
+                    "dcc_conform_v1",
+                    "source_product_evidence_resolver_v1",
+                    "material_uv_qc_v1",
+                    "animation_smoke_v1",
+                ):
+                    if implemented_gate in gate_ids:
+                        failures.append(
+                            "Pilot release chain base manifest must not pre-attach implemented "
+                            f"gate check_id: {implemented_gate}"
+                        )
+                if "release_publication_gate_set_v1" not in gate_ids:
+                    failures.append(
+                        "Pilot release chain base manifest must retain downstream gate "
+                        "release_publication_gate_set_v1."
+                    )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "Pilot release chain base manifest fixture is not valid JSON: "
                 f"{exc}"
             )
 

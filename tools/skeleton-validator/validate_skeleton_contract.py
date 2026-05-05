@@ -143,6 +143,16 @@ def finding_counts(findings: List[Dict[str, Any]]) -> Dict[str, int]:
     return counts
 
 
+def status_to_attachment_severity(status: str) -> str:
+    if status == "pass":
+        return "info"
+    if status == "warn":
+        return "warning"
+    if status == "pending_manual":
+        return "manual_review"
+    return "error"
+
+
 def main() -> int:
     args = parse_args()
     repo_root = Path(__file__).resolve().parents[2]
@@ -435,7 +445,7 @@ def main() -> int:
         "check_id": check_id,
         "check_name": f"{contract_id} skeleton contract",
         qc_status_field: status,
-        "severity": status,
+        "severity": status_to_attachment_severity(status),
         "contract_id": contract_id,
         "skeleton_id": skeleton_id,
         "finding_counts": counts,

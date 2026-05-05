@@ -41,6 +41,9 @@ AAA-quality output is still not fully operational. Before that state, the projec
 - pilot chain fixture + validator are now available:
   - `examples/manifests/example-release-character-pilot-chain.manifest.json`
   - `tools/release-lane/validate_pilot_release_chain.py`
+- deterministic pilot attachment runner is now available:
+  - `tools/release-lane/run_pilot_release_chain_validation.py`
+  - `examples/manifests/example-release-character-pilot-chain-base.manifest.json`
 - bounded real evidence extraction from controlled sources
 - controlled O3DE/AP evidence integration (still blocked today)
 - promotion from fixture proof to controlled real evidence across the chain

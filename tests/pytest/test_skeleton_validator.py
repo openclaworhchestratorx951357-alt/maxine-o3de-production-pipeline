@@ -115,3 +115,4 @@ def test_validator_output_has_manifest_attachable_qc_fields():
     assert attachment["future_target_path"] == "qc.checks[]"
     assert qc_check.get("check_id") == "max_biped_v1_skeleton_contract"
     assert qc_check.get("result") == "pass"
+    assert qc_check.get("severity") == "info"

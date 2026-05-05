@@ -99,6 +99,10 @@
   - `examples/release-lane-gate-chain/max_biped_v1_release_lane_gate_chain.json`
   - `examples/manifests/example-release-character-pilot-chain.manifest.json`
   - `docs/maxine/specs/pilot-release-package-chain-v1.md`
+- Pilot release chain validation runner v1 is implemented (deterministic manifest QC attachment flow, non-executing evidence integration only):
+  - `tools/release-lane/run_pilot_release_chain_validation.py`
+  - `examples/manifests/example-release-character-pilot-chain-base.manifest.json`
+  - `docs/maxine/specs/pilot-release-chain-validation-runner-v1.md`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -189,6 +193,11 @@
   - validates required gate presence/order for pilot release manifests
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - rejects duplicate gate IDs and invalid implemented/unimplemented gate state claims
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Pilot release chain validation runner remains non-executing evidence integration only:
+  - runs implemented validators and attaches their payloads into a generated pilot manifest
+  - attaches pilot chain validation payload into the same manifest
+  - writes artifacts only under approved repo/sandbox paths
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
 
