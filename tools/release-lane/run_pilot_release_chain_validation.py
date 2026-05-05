@@ -39,6 +39,7 @@ REQUIRED_IMPLEMENTED_CHECK_IDS = [
     "release_publication_execution_request_ledger_v1",
     "release_publication_execution_receipt_v1",
     "release_publication_rollback_drill_v1",
+    "release_publication_evidence_integrity_index_v1",
     "release_publication_ready_for_execution_request_v1",
 ]
 
@@ -333,6 +334,16 @@ def main() -> int:
                 "examples/release-publication-execution-receipt/max_biped_v1_release_publication_execution_receipt_pass.json",
             ],
             "payload_path": attachment_dir / "release_publication_execution_receipt_v1.json",
+        },
+        {
+            "name": "release_publication_evidence_integrity_index",
+            "mode": "override_existing_gate",
+            "command": [
+                sys.executable,
+                "tools/release-publication-evidence-integrity-index/validate_release_publication_evidence_integrity_index_report.py",
+                "examples/release-publication-evidence-integrity-index/max_biped_v1_release_publication_evidence_integrity_index_pass.json",
+            ],
+            "payload_path": attachment_dir / "release_publication_evidence_integrity_index_v1.json",
         },
         {
             "name": "release_publication_rollback_drill_fixture",

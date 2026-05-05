@@ -190,11 +190,12 @@
       },
       {
         "check_id": "release_publication_evidence_integrity_index_v1",
-        "result": "pending_manual",
-        "severity": "manual_review",
+        "result": "pass",
+        "severity": "info",
         "details": {
-          "implemented_on_main": false,
-          "evidence_source": "future_integrity_index"
+          "implemented_in_stack": true,
+          "evidence_source": "fixture",
+          "summary": "Evidence integrity index validates immutable hash coverage and complete artifact indexing for publication evidence."
         }
       },
       {
