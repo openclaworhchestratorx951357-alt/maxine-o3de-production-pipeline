@@ -149,6 +149,13 @@
   - `examples/release-publication-execution-receipt/max_biped_v1_release_publication_execution_receipt_warn.json`
   - `examples/release-publication-execution-receipt/max_biped_v1_release_publication_execution_receipt_fail.json`
   - `docs/maxine/specs/release-publication-execution-receipt-v1.md`
+- Release publication evidence integrity index v1 report validation is implemented (contract-first, non-executing evidence only):
+  - `schemas/maxine_release_publication_evidence_integrity_index_report.schema.json`
+  - `tools/release-publication-evidence-integrity-index/validate_release_publication_evidence_integrity_index_report.py`
+  - `examples/release-publication-evidence-integrity-index/max_biped_v1_release_publication_evidence_integrity_index_pass.json`
+  - `examples/release-publication-evidence-integrity-index/max_biped_v1_release_publication_evidence_integrity_index_warn.json`
+  - `examples/release-publication-evidence-integrity-index/max_biped_v1_release_publication_evidence_integrity_index_fail.json`
+  - `docs/maxine/specs/release-publication-evidence-integrity-index-v1.md`
 - Source Product Evidence Resolver v1 evidence report validation is implemented (deterministic evidence bridge, non-executing evidence only):
   - `schemas/maxine_source_product_evidence_resolver_report.schema.json`
   - `tools/source-product-evidence-resolver/validate_source_product_evidence_resolver_report.py`
@@ -322,6 +329,10 @@
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - Release publication execution receipt v1 report validation remains non-executing evidence-only:
   - validates manual execution receipt evidence while keeping execution unadmitted
+  - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Release publication evidence integrity index v1 report validation remains non-executing evidence-only:
+  - validates immutable release publication evidence hash-index and artifact-completeness evidence
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
