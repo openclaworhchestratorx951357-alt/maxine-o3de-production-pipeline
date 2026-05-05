@@ -28,6 +28,8 @@ REQUIRED_IMPLEMENTED_CHECK_IDS = [
     "source_product_evidence_resolver_v1",
     "material_uv_qc_v1",
     "animation_smoke_v1",
+    "release_publication_rollback_drill_v1",
+    "release_publication_ready_for_execution_request_v1",
 ]
 
 
@@ -231,55 +233,120 @@ def main() -> int:
             ],
             "payload_path": attachment_dir / "animation_smoke_v1.json",
         },
+        {
+            "name": "release_publication_rollback_drill_fixture",
+            "mode": "override_existing_gate",
+            "attachment_fixture": "examples/manifest-qc-attachments/max_biped_v1_release_publication_rollback_drill_attach_pass.json",
+            "payload_path": attachment_dir / "release_publication_rollback_drill_v1.json",
+        },
+        {
+            "name": "release_publication_ready_for_execution_request_fixture",
+            "mode": "override_existing_gate",
+            "attachment_fixture": "examples/manifest-qc-attachments/max_biped_v1_release_publication_ready_for_execution_request_attach_pass.json",
+            "payload_path": attachment_dir / "release_publication_ready_for_execution_request_v1.json",
+        },
     ]
 
     step_results: List[Dict[str, Any]] = []
     attachment_paths: List[str] = []
+    snapshot_paths: List[str] = []
     attached_check_ids: List[str] = []
+    gate_override_payloads: Dict[str, Dict[str, Any]] = {}
 
     for step in validator_steps:
-        proc = run_command(repo_root, step["command"])
-        if proc.returncode != 0:
-            print(
-                json.dumps(
-                    {
-                        "status": "failed",
-                        "failed_step": step["name"],
-                        "command": step["command"],
-                        "stdout": proc.stdout,
-                        "stderr": proc.stderr,
-                    },
-                    indent=2,
+        if "attachment_fixture" in step:
+            fixture_path = repo_root / str(step["attachment_fixture"])
+            if not fixture_path.exists():
+                print(
+                    json.dumps(
+                        {
+                            "status": "failed",
+                            "failed_step": step["name"],
+                            "reason": f"attachment_fixture_missing: {fixture_path}",
+                        },
+                        indent=2,
+                    )
                 )
-            )
-            return 1
+                return 1
+            try:
+                payload = load_json(fixture_path)
+                ensure_attachment_paths(payload, step["name"])
+            except Exception as exc:
+                print(
+                    json.dumps(
+                        {
+                            "status": "failed",
+                            "failed_step": step["name"],
+                            "reason": f"attachment_fixture_invalid: {exc}",
+                            "fixture_path": str(fixture_path),
+                        },
+                        indent=2,
+                    )
+                )
+                return 1
+        else:
+            proc = run_command(repo_root, step["command"])
+            if proc.returncode != 0:
+                print(
+                    json.dumps(
+                        {
+                            "status": "failed",
+                            "failed_step": step["name"],
+                            "command": step["command"],
+                            "stdout": proc.stdout,
+                            "stderr": proc.stderr,
+                        },
+                        indent=2,
+                    )
+                )
+                return 1
 
-        try:
-            payload = parse_payload_from_stdout(proc.stdout)
-            ensure_attachment_paths(payload, step["name"])
-        except Exception as exc:
-            print(
-                json.dumps(
-                    {
-                        "status": "failed",
-                        "failed_step": step["name"],
-                        "reason": f"payload_parse_error: {exc}",
-                        "stdout": proc.stdout,
-                    },
-                    indent=2,
+            try:
+                payload = parse_payload_from_stdout(proc.stdout)
+                ensure_attachment_paths(payload, step["name"])
+            except Exception as exc:
+                print(
+                    json.dumps(
+                        {
+                            "status": "failed",
+                            "failed_step": step["name"],
+                            "reason": f"payload_parse_error: {exc}",
+                            "stdout": proc.stdout,
+                        },
+                        indent=2,
+                    )
                 )
-            )
-            return 1
+                return 1
 
         payload_path: Path = step["payload_path"]
         write_json(payload_path, payload)
-        attachment_paths.append(str(payload_path))
+        snapshot_paths.append(str(payload_path))
 
         check_id = (
             payload.get("manifest_attachment", {})
             .get("qc_check", {})
             .get("check_id", "")
         )
+        check_id_str = check_id.strip() if isinstance(check_id, str) else ""
+        if step.get("mode") == "override_existing_gate":
+            qc_check = payload.get("manifest_attachment", {}).get("qc_check", {})
+            if not check_id_str or not isinstance(qc_check, dict):
+                print(
+                    json.dumps(
+                        {
+                            "status": "failed",
+                            "failed_step": step["name"],
+                            "reason": "override_fixture_missing_qc_check",
+                            "payload_path": str(payload_path),
+                        },
+                        indent=2,
+                    )
+                )
+                return 1
+            gate_override_payloads[check_id_str] = qc_check
+        else:
+            attachment_paths.append(str(payload_path))
+
         if isinstance(check_id, str) and check_id.strip():
             attached_check_ids.append(check_id.strip())
 
@@ -337,6 +404,30 @@ def main() -> int:
         if not gate_id or gate_id in attached_ids:
             continue
         gates_after_attachments.append(gate)
+
+    missing_overrides: List[str] = []
+    for check_id, qc_check in gate_override_payloads.items():
+        replaced = False
+        for idx, gate in enumerate(gates_after_attachments):
+            gate_id = str(gate.get("check_id", "")).strip() if isinstance(gate, dict) else ""
+            if gate_id == check_id:
+                gates_after_attachments[idx] = qc_check
+                replaced = True
+                break
+        if not replaced:
+            missing_overrides.append(check_id)
+    if missing_overrides:
+        print(
+            json.dumps(
+                {
+                    "status": "failed",
+                    "failed_step": "apply_gate_overrides",
+                    "missing_override_check_ids": missing_overrides,
+                },
+                indent=2,
+            )
+        )
+        return 1
     write_json(output_manifest_path, manifest_after_attachments)
 
     chain_cmd: List[str] = [
@@ -420,7 +511,7 @@ def main() -> int:
         "output_manifest_path": str(output_manifest_path),
         "base_manifest_path": str(base_manifest_path),
         "chain_path": str(chain_path),
-        "attachment_paths": attachment_paths + [str(chain_payload_path)],
+        "attachment_paths": snapshot_paths + [str(chain_payload_path)],
         "validator_steps": step_results,
         "pilot_chain_status": chain_payload.get("status"),
         "pilot_chain_exit_code": chain_proc.returncode,

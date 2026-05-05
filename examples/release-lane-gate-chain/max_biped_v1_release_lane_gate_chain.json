@@ -99,7 +99,7 @@
       "order": 16,
       "check_id": "release_publication_rollback_drill_v1",
       "required": true,
-      "implemented": false
+      "implemented": true
     },
     {
       "order": 17,
@@ -117,7 +117,7 @@
       "order": 19,
       "check_id": "release_publication_ready_for_execution_request_v1",
       "required": true,
-      "implemented": false
+      "implemented": true
     },
     {
       "order": 20,

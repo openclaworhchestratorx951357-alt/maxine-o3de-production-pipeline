@@ -1,0 +1,20 @@
+{
+  "status": "pass",
+  "check_id": "release_publication_rollback_drill_v1",
+  "contract_id": "RELEASE_PUBLICATION_ROLLBACK_DRILL_v1",
+  "findings": [],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "release_publication_rollback_drill_v1",
+      "result": "pass",
+      "severity": "info",
+      "details": {
+        "evidence_source": "fixture",
+        "drill_mode": "non_executing_evidence_only",
+        "rollback_plan_reference": "examples/sandbox/manifests/rollback/.gitkeep"
+      }
+    }
+  }
+}

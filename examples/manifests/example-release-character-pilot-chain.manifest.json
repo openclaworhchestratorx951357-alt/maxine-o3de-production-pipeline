@@ -170,11 +170,12 @@
       },
       {
         "check_id": "release_publication_rollback_drill_v1",
-        "result": "pending_manual",
-        "severity": "manual_review",
+        "result": "pass",
+        "severity": "info",
         "details": {
-          "implemented_on_main": false,
-          "evidence_source": "future_rollback_drill"
+          "implemented_in_stack": true,
+          "evidence_source": "fixture",
+          "drill_mode": "non_executing_evidence_only"
         }
       },
       {
@@ -197,11 +198,12 @@
       },
       {
         "check_id": "release_publication_ready_for_execution_request_v1",
-        "result": "pending_manual",
-        "severity": "manual_review",
+        "result": "pass",
+        "severity": "info",
         "details": {
-          "implemented_on_main": false,
-          "evidence_source": "future_ready_for_execution"
+          "implemented_in_stack": true,
+          "evidence_source": "fixture",
+          "request_mode": "non_executing_evidence_only"
         }
       },
       {

@@ -104,6 +104,22 @@ def test_unimplemented_gate_marked_pass_fails(tmp_path: Path):
     assert any(item.get("id") == "unimplemented_gate_marked_pass" for item in payload["findings"])
 
 
+def test_implemented_rollback_or_readiness_gate_pending_manual_fails(tmp_path: Path):
+    manifest = json.loads(_manifest_fixture().read_text(encoding="utf-8-sig"))
+    for gate in manifest["qc"]["gates"]:
+        if gate.get("check_id") == "release_publication_rollback_drill_v1":
+            gate["result"] = "pending_manual"
+            gate["severity"] = "manual_review"
+            break
+    path = tmp_path / "implemented-pending-manual.manifest.json"
+    path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+    result = _run(path, _chain_fixture())
+    payload = _payload(result.stdout)
+    assert payload["status"] == "fail"
+    assert any(item.get("id") == "implemented_gate_pending_manual" for item in payload["findings"])
+
+
 def test_output_contains_manifest_attachable_payload():
     result = _run(_manifest_fixture(), _chain_fixture(), allow_warn=True)
     payload = _payload(result.stdout)

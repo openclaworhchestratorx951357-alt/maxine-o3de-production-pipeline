@@ -1,0 +1,20 @@
+{
+  "status": "pass",
+  "check_id": "release_publication_ready_for_execution_request_v1",
+  "contract_id": "RELEASE_PUBLICATION_READY_FOR_EXECUTION_REQUEST_v1",
+  "findings": [],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "release_publication_ready_for_execution_request_v1",
+      "result": "pass",
+      "severity": "info",
+      "details": {
+        "evidence_source": "fixture",
+        "request_mode": "non_executing_evidence_only",
+        "admission_status": "execution_not_admitted"
+      }
+    }
+  }
+}

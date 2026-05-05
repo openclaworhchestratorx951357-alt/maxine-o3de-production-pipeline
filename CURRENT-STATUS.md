@@ -102,6 +102,8 @@
 - Pilot release chain validation runner v1 is implemented (deterministic manifest QC attachment flow, non-executing evidence integration only):
   - `tools/release-lane/run_pilot_release_chain_validation.py`
   - `examples/manifests/example-release-character-pilot-chain-base.manifest.json`
+  - `examples/manifest-qc-attachments/max_biped_v1_release_publication_rollback_drill_attach_pass.json`
+  - `examples/manifest-qc-attachments/max_biped_v1_release_publication_ready_for_execution_request_attach_pass.json`
   - `docs/maxine/specs/pilot-release-chain-validation-runner-v1.md`
 - Pilot release-chain CI proof v1 is implemented (single-command local/CI integration proof, non-executing evidence integration only):
   - `tools/release-lane/prove_pilot_release_chain.py`
@@ -199,6 +201,7 @@
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - Pilot release chain validation runner remains non-executing evidence integration only:
   - runs implemented validators and attaches their payloads into a generated pilot manifest
+  - attaches rollback/readiness fixture evidence payloads for pilot release-chain continuity
   - attaches pilot chain validation payload into the same manifest
   - writes artifacts only under approved repo/sandbox paths
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access

@@ -20,6 +20,8 @@ REQUIRED_IMPLEMENTED_GATE_IDS = {
     "source_product_evidence_resolver_v1",
     "material_uv_qc_v1",
     "animation_smoke_v1",
+    "release_publication_rollback_drill_v1",
+    "release_publication_ready_for_execution_request_v1",
 }
 
 

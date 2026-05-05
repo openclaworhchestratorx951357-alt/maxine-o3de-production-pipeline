@@ -61,6 +61,20 @@ The contract is designed so automation, operators, and CI can evaluate a job sta
 - Future-compatible path: `qc.checks[]`.
 - Suggested check id: `animation_smoke_v1`.
 
+## Rollback Drill QC Attachment Point
+
+- `RELEASE_PUBLICATION_ROLLBACK_DRILL_v1` evidence payload is attachable to manifest QC.
+- Current manifest attachment path: `qc.gates[]`.
+- Future-compatible path: `qc.checks[]`.
+- Suggested check id: `release_publication_rollback_drill_v1`.
+
+## Ready-for-Execution Request QC Attachment Point
+
+- `RELEASE_PUBLICATION_READY_FOR_EXECUTION_REQUEST_v1` evidence payload is attachable to manifest QC.
+- Current manifest attachment path: `qc.gates[]`.
+- Future-compatible path: `qc.checks[]`.
+- Suggested check id: `release_publication_ready_for_execution_request_v1`.
+
 ## Pilot Chain Proof Attachment Flow
 
 - `pilot_release_chain_ci_proof_v1` validates that implemented validator outputs are attachable in deterministic sequence.
