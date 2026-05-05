@@ -1,0 +1,158 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "RELEASE_PUBLICATION_EVIDENCE_INTEGRITY_INDEX_v1_REPORT",
+  "job_id": "job-maxine-release-001",
+  "package_id": "maxine.character.max_biped_v1",
+  "lane": "release_character",
+  "status": "warn",
+  "source": {
+    "source_path": "evidence/jobs/job-maxine-release-001/manifest.json",
+    "source_kind": "manifest_v1",
+    "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "index_contract": {
+    "contract_id": "RELEASE_PUBLICATION_EVIDENCE_INTEGRITY_INDEX_v1",
+    "required_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1",
+      "release_promotion_decision_v1",
+      "release_publication_preflight_v1",
+      "release_publication_request_approval_v1",
+      "release_publication_execution_admission_gate_v1",
+      "release_publication_execution_request_ledger_v1",
+      "release_publication_execution_receipt_v1",
+      "release_publication_rollback_drill_v1"
+    ],
+    "required_artifact_ids": [
+      "manifest",
+      "request_ledger",
+      "execution_receipt",
+      "rollback_drill",
+      "publication_log",
+      "rollback_drill_log",
+      "post_rollback_validation_log"
+    ],
+    "required_approvals": 2,
+    "manual_review_required": true,
+    "immutable_index_required": true,
+    "hash_verification_required": true,
+    "evidence_only": true,
+    "execution_admitted": false
+  },
+  "evidence_integrity_index": {
+    "index_id": "integrity-index-20260505-0002",
+    "index_recorded_utc": "2026-05-05T10:15:00Z",
+    "recorded_by": "ops.release_manager",
+    "index_action": "record_release_publication_evidence_integrity_index",
+    "index_scope": "release_publication_chain",
+    "execution_receipt_id": "receipt-20260505-0001",
+    "rollback_drill_id": "rollback-drill-20260505-0001",
+    "hash_algorithm": "sha256",
+    "artifact_hash_index": {
+      "manifest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "request_ledger": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "execution_receipt": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "rollback_drill": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "publication_log": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "rollback_drill_log": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "post_rollback_validation_log": "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+    },
+    "artifact_count": 7,
+    "hash_verification_status": "warn",
+    "missing_artifact_ids": [],
+    "hash_mismatch_artifact_ids": [],
+    "manifest_reference_path": "evidence/jobs/job-maxine-release-001/manifest.json",
+    "no_command_execution_recorded": true,
+    "evidence_bundle_path": "evidence/jobs/job-maxine-release-001/qc/release-publication-evidence-integrity-index-bundle.json",
+    "evidence_bundle_sha256": "9999999999999999999999999999999999999999999999999999999999999999",
+    "evidence_bundle_artifacts": [
+      "evidence/jobs/job-maxine-release-001/manifest.json",
+      "evidence/jobs/job-maxine-release-001/qc/release-publication-request-ledger.json",
+      "evidence/jobs/job-maxine-release-001/qc/release-publication-receipt.json",
+      "evidence/jobs/job-maxine-release-001/qc/release-publication-rollback-drill.json",
+      "evidence/jobs/job-maxine-release-001/logs/publication-manual.log",
+      "evidence/jobs/job-maxine-release-001/logs/rollback-drill-manual.log",
+      "evidence/jobs/job-maxine-release-001/logs/post-rollback-validation.log"
+    ],
+    "evidence_bundle_immutable": true
+  },
+  "approval_state": {
+    "decision": "integrity_index_recorded_for_audit",
+    "approver_ids": [
+      "ops.release_manager",
+      "qa.release_approver"
+    ],
+    "blocked_reason_codes": [],
+    "rollback_plan_verified": true,
+    "cleanup_plan_verified": true,
+    "publish_execution_admitted": false,
+    "o3de_execution_admitted": false,
+    "asset_processor_execution_admitted": false,
+    "spawn_execution_admitted": false,
+    "notes": "Integrity index recorded with warning-level staleness review pending."
+  },
+  "readiness": {
+    "required_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1",
+      "release_promotion_decision_v1",
+      "release_publication_preflight_v1",
+      "release_publication_request_approval_v1",
+      "release_publication_execution_admission_gate_v1",
+      "release_publication_execution_request_ledger_v1",
+      "release_publication_execution_receipt_v1",
+      "release_publication_rollback_drill_v1"
+    ],
+    "present_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1",
+      "release_promotion_decision_v1",
+      "release_publication_preflight_v1",
+      "release_publication_request_approval_v1",
+      "release_publication_execution_admission_gate_v1",
+      "release_publication_execution_request_ledger_v1",
+      "release_publication_execution_receipt_v1",
+      "release_publication_rollback_drill_v1"
+    ],
+    "missing_gate_ids": [],
+    "integrity_readiness_state": "integrity_index_recorded_for_audit"
+  },
+  "findings": [
+    {
+      "id": "hash_staleness_review_required",
+      "severity": "warning",
+      "status": "open",
+      "message": "One or more evidence hashes require freshness re-check before promotion."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "release_publication_evidence_integrity_index_v1",
+      "result": "warn",
+      "severity": "warning",
+      "details": {
+        "summary": "Integrity index recorded with warning-level evidence staleness note."
+      }
+    }
+  }
+}

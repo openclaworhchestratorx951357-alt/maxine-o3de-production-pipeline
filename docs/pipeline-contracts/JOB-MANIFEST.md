@@ -137,3 +137,10 @@ The contract is designed so automation, operators, and CI can evaluate a job sta
 - Current manifest attachment path: `qc.gates[]`.
 - Future-compatible path: `qc.checks[]`.
 - Suggested check id: `release_publication_rollback_drill_v1`.
+
+## Release Publication Evidence Integrity Index QC Attachment Point
+
+- `RELEASE_PUBLICATION_EVIDENCE_INTEGRITY_INDEX_v1` report validation output is attachable to manifest QC.
+- Current manifest attachment path: `qc.gates[]`.
+- Future-compatible path: `qc.checks[]`.
+- Suggested check id: `release_publication_evidence_integrity_index_v1`.
