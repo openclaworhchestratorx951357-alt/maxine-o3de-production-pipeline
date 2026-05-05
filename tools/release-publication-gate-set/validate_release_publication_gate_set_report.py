@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate release-publication gate completeness/order from a manifest."""
+"""Validate release-publication gate-set evidence from manifest or report JSON."""
 
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ RELEASE_LANE = "release_character"
 ALLOWED_RESULT = {"pass", "warn", "fail", "pending_manual"}
 ALLOWED_SEVERITY = {"info", "warning", "error", "manual_review"}
 ALLOWED_TIER = {"draft", "npc", "hero", "test", "unknown"}
+BLOCKING_GATE_RESULT = {"warn", "fail", "pending_manual"}
 
 REQUIRED_RELEASE_GATES: List[str] = [
     "dcc_conform_v1",
@@ -75,13 +76,16 @@ def write_json(path: Path, payload: Dict[str, Any]) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Validate release-publication gate-set completeness/order from manifest qc.gates[]."
+        description=(
+            "Validate release-publication gate-set report evidence. "
+            "Input may be a manifest (qc.gates) or a prebuilt gate-set report."
+        )
     )
-    parser.add_argument("manifest_path", help="Path to manifest JSON")
+    parser.add_argument("input_path", help="Path to manifest or gate-set report JSON")
     parser.add_argument(
         "--output",
         default="",
-        help="Optional path to write structured report JSON.",
+        help="Optional path to write structured gate-set report JSON.",
     )
     parser.add_argument(
         "--allow-warn",
@@ -111,7 +115,7 @@ def add_finding(
 
 
 def derive_status(findings: List[Dict[str, Any]]) -> str:
-    severities = {str(item.get("severity", "")) for item in findings}
+    severities = {str(item.get("severity", "")) for item in findings if isinstance(item, dict)}
     if "error" in severities:
         return "fail"
     if "manual_review" in severities:
@@ -156,26 +160,15 @@ def normalize_tier(raw: Any) -> str:
     return "unknown"
 
 
-def main() -> int:
-    args = parse_args()
-    repo_root = Path(__file__).resolve().parents[2]
-    manifest_path = resolve_path(repo_root, args.manifest_path)
-    schema_path = repo_root / "schemas" / "maxine_release_publication_gate_set_report.schema.json"
-
-    if not manifest_path.exists():
-        print(f"FAIL: manifest not found: {manifest_path}")
-        return 2
-    if not schema_path.exists():
-        print(f"FAIL: schema not found: {schema_path}")
-        return 2
-
+def has_jsonschema() -> bool:
     try:
-        manifest = load_json(manifest_path)
-        schema = load_json(schema_path)
-    except ValueError as exc:
-        print(f"FAIL: {exc}")
-        return 2
+        import jsonschema  # noqa: F401
+    except Exception:
+        return False
+    return True
 
+
+def build_report_from_manifest(manifest: Dict[str, Any], source_path: Path) -> Dict[str, Any]:
     findings: List[Dict[str, Any]] = []
     observed_gates: List[Dict[str, Any]] = []
     missing_required_gates: List[str] = []
@@ -342,7 +335,7 @@ def main() -> int:
     status = derive_status(findings)
     qc_severity = status_to_qc_severity(status)
 
-    report: Dict[str, Any] = {
+    return {
         "schema_version": EXPECTED_SCHEMA_VERSION,
         "report_type": EXPECTED_REPORT_TYPE,
         "job_id": job_id,
@@ -371,36 +364,393 @@ def main() -> int:
                     "missing_gate_count": len(missing_required_gates),
                     "out_of_order_gate_count": len(out_of_order_gates),
                     "blocked_by_status_count": len(blocked_by_status),
-                    "manifest_path": str(manifest_path),
+                    "manifest_path": str(source_path),
                 },
             },
         },
         "generated_utc": utc_now(),
     }
 
-    has_jsonschema = False
+
+def validate_existing_report(report: Dict[str, Any], source_path: Path) -> Dict[str, Any]:
+    findings: List[Dict[str, Any]]
+    if isinstance(report.get("findings"), list):
+        findings = [x for x in report["findings"] if isinstance(x, dict)]
+    else:
+        findings = []
+        add_finding(
+            findings,
+            "findings_field_invalid",
+            "error",
+            "open",
+            "findings must be an array.",
+        )
+
+    declared_status = str(report.get("status", "")).strip()
+    if declared_status not in ALLOWED_RESULT:
+        add_finding(
+            findings,
+            "status_invalid",
+            "error",
+            "open",
+            "status must be one of pass|warn|fail|pending_manual.",
+            {"actual": declared_status},
+        )
+        declared_status = "fail"
+
+    if str(report.get("schema_version", "")).strip() != EXPECTED_SCHEMA_VERSION:
+        add_finding(
+            findings,
+            "schema_version_mismatch",
+            "error",
+            "open",
+            f"schema_version must be {EXPECTED_SCHEMA_VERSION}.",
+            {"actual": report.get("schema_version")},
+        )
+    if str(report.get("report_type", "")).strip() != EXPECTED_REPORT_TYPE:
+        add_finding(
+            findings,
+            "report_type_mismatch",
+            "error",
+            "open",
+            f"report_type must be {EXPECTED_REPORT_TYPE}.",
+            {"actual": report.get("report_type")},
+        )
+
+    required_gate_order = report.get("required_gate_order", [])
+    if not isinstance(required_gate_order, list) or not required_gate_order:
+        add_finding(
+            findings,
+            "required_gate_order_invalid",
+            "error",
+            "open",
+            "required_gate_order must be a non-empty array.",
+        )
+        required_gate_order = []
+
+    if str(report.get("target_path", "")).strip() != TARGET_PATH:
+        add_finding(
+            findings,
+            "target_path_invalid",
+            "error",
+            "open",
+            f"target_path must be {TARGET_PATH}.",
+            {"actual": report.get("target_path")},
+        )
+
+    observed_gates = report.get("observed_gates", [])
+    if not isinstance(observed_gates, list):
+        add_finding(
+            findings,
+            "observed_gates_invalid",
+            "error",
+            "open",
+            "observed_gates must be an array.",
+        )
+        observed_gates = []
+
+    for index, gate in enumerate(observed_gates):
+        if not isinstance(gate, dict):
+            add_finding(
+                findings,
+                "observed_gate_entry_invalid",
+                "error",
+                "open",
+                "Each observed gate entry must be an object.",
+                {"index": index},
+            )
+            continue
+        check_id = str(gate.get("check_id", "")).strip()
+        result = str(gate.get("result", "")).strip()
+        if not check_id:
+            add_finding(
+                findings,
+                "observed_gate_check_id_missing",
+                "error",
+                "open",
+                "Each observed gate must provide check_id.",
+                {"index": index},
+            )
+        if result not in ALLOWED_RESULT:
+            add_finding(
+                findings,
+                "observed_gate_result_invalid",
+                "error",
+                "open",
+                "Each observed gate result must be pass|warn|fail|pending_manual.",
+                {"index": index, "result": result},
+            )
+
+    missing_required_gates = report.get("missing_required_gates", [])
+    if not isinstance(missing_required_gates, list):
+        add_finding(
+            findings,
+            "missing_required_gates_invalid",
+            "error",
+            "open",
+            "missing_required_gates must be an array.",
+        )
+        missing_required_gates = []
+
+    out_of_order_gates = report.get("out_of_order_gates", [])
+    if not isinstance(out_of_order_gates, list):
+        add_finding(
+            findings,
+            "out_of_order_gates_invalid",
+            "error",
+            "open",
+            "out_of_order_gates must be an array.",
+        )
+        out_of_order_gates = []
+
+    blocked_by_status = report.get("blocked_by_status", [])
+    if not isinstance(blocked_by_status, list):
+        add_finding(
+            findings,
+            "blocked_by_status_invalid",
+            "error",
+            "open",
+            "blocked_by_status must be an array.",
+        )
+        blocked_by_status = []
+
+    for index, item in enumerate(blocked_by_status):
+        if not isinstance(item, dict):
+            add_finding(
+                findings,
+                "blocked_by_status_entry_invalid",
+                "error",
+                "open",
+                "Each blocked_by_status entry must be an object.",
+                {"index": index},
+            )
+            continue
+        result = str(item.get("result", "")).strip()
+        if result not in BLOCKING_GATE_RESULT:
+            add_finding(
+                findings,
+                "blocked_by_status_result_invalid",
+                "error",
+                "open",
+                "blocked_by_status result must be warn|fail|pending_manual.",
+                {"index": index, "result": result},
+            )
+
+    manifest_attachment = report.get("manifest_attachment", {})
+    if not isinstance(manifest_attachment, dict):
+        manifest_attachment = {}
+        add_finding(
+            findings,
+            "manifest_attachment_invalid",
+            "error",
+            "open",
+            "manifest_attachment must be an object.",
+        )
+    if str(manifest_attachment.get("target_path", "")).strip() != TARGET_PATH:
+        add_finding(
+            findings,
+            "manifest_attachment_target_invalid",
+            "error",
+            "open",
+            f"manifest_attachment.target_path must be {TARGET_PATH}.",
+            {"actual": manifest_attachment.get("target_path")},
+        )
+    if str(manifest_attachment.get("future_target_path", "")).strip() != FUTURE_TARGET_PATH:
+        add_finding(
+            findings,
+            "manifest_attachment_future_target_invalid",
+            "error",
+            "open",
+            f"manifest_attachment.future_target_path must be {FUTURE_TARGET_PATH}.",
+            {"actual": manifest_attachment.get("future_target_path")},
+        )
+
+    qc_check = manifest_attachment.get("qc_check", {})
+    if not isinstance(qc_check, dict):
+        qc_check = {}
+        add_finding(
+            findings,
+            "manifest_attachment_qc_check_invalid",
+            "error",
+            "open",
+            "manifest_attachment.qc_check must be an object.",
+        )
+
+    qc_check_id = str(qc_check.get("check_id", "")).strip()
+    if qc_check_id != CHECK_ID:
+        add_finding(
+            findings,
+            "manifest_attachment_qc_check_id_invalid",
+            "error",
+            "open",
+            f"manifest_attachment.qc_check.check_id must be {CHECK_ID}.",
+            {"actual": qc_check_id},
+        )
+
+    qc_check_result = str(qc_check.get("result", "")).strip()
+    if qc_check_result and qc_check_result != declared_status:
+        add_finding(
+            findings,
+            "manifest_attachment_qc_result_mismatch",
+            "error",
+            "open",
+            "manifest_attachment.qc_check.result must match report status.",
+            {"status": declared_status, "qc_check_result": qc_check_result},
+        )
+
+    qc_severity = str(qc_check.get("severity", "")).strip()
+    if qc_severity and qc_severity not in ALLOWED_SEVERITY:
+        add_finding(
+            findings,
+            "manifest_attachment_qc_severity_invalid",
+            "error",
+            "open",
+            "manifest_attachment.qc_check.severity must be info|warning|error|manual_review.",
+            {"actual": qc_severity},
+        )
+
+    if declared_status == "pass":
+        if missing_required_gates:
+            add_finding(
+                findings,
+                "pass_with_missing_gates",
+                "error",
+                "open",
+                "status pass is invalid when missing_required_gates is non-empty.",
+            )
+        if out_of_order_gates:
+            add_finding(
+                findings,
+                "pass_with_out_of_order_gates",
+                "error",
+                "open",
+                "status pass is invalid when out_of_order_gates is non-empty.",
+            )
+        if blocked_by_status:
+            add_finding(
+                findings,
+                "pass_with_blocked_by_status",
+                "error",
+                "open",
+                "status pass is invalid when blocked_by_status is non-empty.",
+            )
+
+    if declared_status == "warn" and not blocked_by_status:
+        add_finding(
+            findings,
+            "warn_without_blocking_gate_status",
+            "warning",
+            "open",
+            "status warn typically expects blocked_by_status evidence.",
+        )
+
+    if declared_status == "fail" and not findings:
+        add_finding(
+            findings,
+            "fail_without_findings",
+            "error",
+            "open",
+            "status fail requires at least one finding.",
+        )
+
+    derived = derive_status(findings)
+    final_status = declared_status
+    if derived == "fail":
+        final_status = "fail"
+    elif derived == "pending_manual" and declared_status == "pass":
+        final_status = "pending_manual"
+    elif derived == "warn" and declared_status == "pass":
+        final_status = "warn"
+
+    report["status"] = final_status
+    report["findings"] = findings
+    if not isinstance(manifest_attachment, dict):
+        manifest_attachment = {}
+    if not isinstance(qc_check, dict):
+        qc_check = {}
+    qc_check["check_id"] = CHECK_ID
+    qc_check["result"] = final_status
+    qc_check["severity"] = status_to_qc_severity(final_status)
+    details = qc_check.get("details", {})
+    if not isinstance(details, dict):
+        details = {}
+    details["contract_id"] = CONTRACT_ID
+    details.setdefault("source_path", str(source_path))
+    qc_check["details"] = details
+    manifest_attachment["target_path"] = TARGET_PATH
+    manifest_attachment["future_target_path"] = FUTURE_TARGET_PATH
+    manifest_attachment["qc_check"] = qc_check
+    report["manifest_attachment"] = manifest_attachment
+    report.setdefault("generated_utc", utc_now())
+    report["target_path"] = TARGET_PATH
+
+    return report
+
+
+def is_report_payload(payload: Dict[str, Any]) -> bool:
+    return str(payload.get("report_type", "")).strip() == EXPECTED_REPORT_TYPE
+
+
+def main() -> int:
+    args = parse_args()
+    repo_root = Path(__file__).resolve().parents[2]
+    input_path = resolve_path(repo_root, args.input_path)
+    schema_path = repo_root / "schemas" / "maxine_release_publication_gate_set_report.schema.json"
+
+    if not input_path.exists():
+        print(f"FAIL: input not found: {input_path}")
+        return 2
+    if not schema_path.exists():
+        print(f"FAIL: schema not found: {schema_path}")
+        return 2
+
     try:
-        import jsonschema  # noqa: F401
+        payload = load_json(input_path)
+        schema = load_json(schema_path)
+    except ValueError as exc:
+        print(f"FAIL: {exc}")
+        return 2
 
-        has_jsonschema = True
-    except Exception:
-        has_jsonschema = False
+    if is_report_payload(payload):
+        report = validate_existing_report(payload, input_path)
+    else:
+        report = build_report_from_manifest(payload, input_path)
 
-    if has_jsonschema:
+    if has_jsonschema():
         ok, errors = validate_schema_with_jsonschema(report, schema)
         if not ok:
+            report_findings = report.get("findings", [])
+            if not isinstance(report_findings, list):
+                report_findings = []
+                report["findings"] = report_findings
             for error in errors:
                 add_finding(
-                    report["findings"],
+                    report_findings,
                     "report_schema_validation_error",
                     "error",
                     "open",
                     "Generated gate-set report failed schema validation.",
                     {"error": error},
                 )
-            report["status"] = derive_status(report["findings"])
-            report["manifest_attachment"]["qc_check"]["result"] = report["status"]
-            report["manifest_attachment"]["qc_check"]["severity"] = status_to_qc_severity(report["status"])
+            report["status"] = "fail"
+            attachment = report.get("manifest_attachment", {})
+            if not isinstance(attachment, dict):
+                attachment = {}
+                report["manifest_attachment"] = attachment
+            qc_check = attachment.get("qc_check", {})
+            if not isinstance(qc_check, dict):
+                qc_check = {}
+                attachment["qc_check"] = qc_check
+            qc_check["check_id"] = CHECK_ID
+            qc_check["result"] = "fail"
+            qc_check["severity"] = "error"
+            details = qc_check.get("details", {})
+            if not isinstance(details, dict):
+                details = {}
+            details["contract_id"] = CONTRACT_ID
+            qc_check["details"] = details
+            attachment["target_path"] = TARGET_PATH
+            attachment["future_target_path"] = FUTURE_TARGET_PATH
     else:
         print("INFO: jsonschema not available; skipping report schema validation.")
 

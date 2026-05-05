@@ -13,7 +13,8 @@ This slice is evidence-only:
 
 ## Inputs
 
-- Manifest JSON path (`job.lane`, `identity`, `qc.gates[]`).
+- Manifest JSON path (`job.lane`, `identity`, `qc.gates[]`) to derive a gate-set report.
+- Or a prebuilt gate-set report JSON (`report_type = RELEASE_PUBLICATION_GATE_SET_v1_REPORT`) for report-only validation.
 
 ## Validator
 
@@ -26,6 +27,7 @@ The validator:
 - enforces hero-tier inclusion of `manual_hero_review_v1`
 - surfaces warn/fail/pending_manual gate results as blocking evidence
 - emits a structured report and manifest-attachable payload
+- accepts either manifest input (derive + validate) or report input (validate-only)
 
 ## Report Contract
 

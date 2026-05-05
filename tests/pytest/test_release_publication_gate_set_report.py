@@ -29,6 +29,24 @@ FAIL_MANIFEST = (
     / "manifests"
     / "example-release-publication-gate-set-fail.manifest.json"
 )
+PASS_REPORT = (
+    REPO_ROOT
+    / "examples"
+    / "release-publication-gate-set"
+    / "max_biped_v1_release_publication_gate_set_pass.json"
+)
+WARN_REPORT = (
+    REPO_ROOT
+    / "examples"
+    / "release-publication-gate-set"
+    / "max_biped_v1_release_publication_gate_set_warn.json"
+)
+FAIL_REPORT = (
+    REPO_ROOT
+    / "examples"
+    / "release-publication-gate-set"
+    / "max_biped_v1_release_publication_gate_set_fail.json"
+)
 
 
 def _run(manifest_path: Path, *extra: str) -> subprocess.CompletedProcess[str]:
@@ -114,3 +132,29 @@ def test_report_output_is_manifest_attachable():
     assert attachment["target_path"] == "qc.gates[]"
     assert attachment["future_target_path"] == "qc.checks[]"
     assert attachment["qc_check"]["check_id"] == "release_publication_gate_set_v1"
+
+
+def test_pass_report_fixture_is_accepted():
+    result = _run(PASS_REPORT)
+    assert result.returncode == 0, result.stdout + result.stderr
+    report = _parse_report(result.stdout)
+    assert report["status"] == "pass"
+
+
+def test_warn_report_fixture_respects_allow_warn():
+    result = _run(WARN_REPORT)
+    assert result.returncode != 0
+    report = _parse_report(result.stdout)
+    assert report["status"] == "warn"
+
+    result_allow = _run(WARN_REPORT, "--allow-warn")
+    assert result_allow.returncode == 0, result_allow.stdout + result_allow.stderr
+    report_allow = _parse_report(result_allow.stdout)
+    assert report_allow["status"] == "warn"
+
+
+def test_fail_report_fixture_returns_nonzero():
+    result = _run(FAIL_REPORT)
+    assert result.returncode != 0
+    report = _parse_report(result.stdout)
+    assert report["status"] == "fail"
