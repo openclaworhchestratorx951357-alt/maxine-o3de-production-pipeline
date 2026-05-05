@@ -1,0 +1,285 @@
+﻿import json
+import subprocess
+import sys
+from pathlib import Path
+
+
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def _validator_script() -> Path:
+    return (
+        _repo_root()
+        / "tools"
+        / "release-publication-execution-window-state"
+        / "validate_release_publication_execution_window_state_report.py"
+    )
+
+
+def _report_path(name: str) -> Path:
+    return _repo_root() / "examples" / "release-publication-execution-window-state" / name
+
+
+def _run_validator(report_path: Path, allow_warn: bool = False) -> subprocess.CompletedProcess[str]:
+    cmd = [sys.executable, str(_validator_script()), str(report_path)]
+    if allow_warn:
+        cmd.append("--allow-warn")
+    return subprocess.run(cmd, capture_output=True, text=True, cwd=str(_repo_root()))
+
+
+def _extract_payload(stdout: str) -> dict:
+    start = stdout.find("{")
+    assert start >= 0, f"Validator stdout did not include JSON payload:\n{stdout}"
+    return json.loads(stdout[start:])
+
+
+def _load_pass() -> dict:
+    return json.loads(
+        _report_path("max_biped_v1_release_publication_execution_window_state_pass.json").read_text(
+            encoding="utf-8-sig"
+        )
+    )
+
+
+def test_pass_report_returns_pass_and_exit_zero():
+    result = _run_validator(
+        _report_path("max_biped_v1_release_publication_execution_window_state_pass.json")
+    )
+    assert result.returncode == 0, f"Unexpected failure:\n{result.stdout}\n{result.stderr}"
+    payload = _extract_payload(result.stdout)
+    assert payload["status"] == "pass"
+
+
+def test_warn_report_returns_warn_and_exit_zero_with_allow_warn():
+    result = _run_validator(
+        _report_path("max_biped_v1_release_publication_execution_window_state_warn.json"),
+        allow_warn=True,
+    )
+    assert result.returncode == 0, f"Warn should pass with --allow-warn:\n{result.stdout}\n{result.stderr}"
+    payload = _extract_payload(result.stdout)
+    assert payload["status"] == "warn"
+
+
+def test_warn_report_returns_nonzero_without_allow_warn():
+    result = _run_validator(
+        _report_path("max_biped_v1_release_publication_execution_window_state_warn.json"),
+        allow_warn=False,
+    )
+    assert result.returncode != 0, "Warn should return nonzero without --allow-warn"
+    payload = _extract_payload(result.stdout)
+    assert payload["status"] == "warn"
+
+
+def test_fail_report_returns_fail_and_nonzero():
+    result = _run_validator(
+        _report_path("max_biped_v1_release_publication_execution_window_state_fail.json")
+    )
+    assert result.returncode != 0, "Fail report must return nonzero"
+    payload = _extract_payload(result.stdout)
+    assert payload["status"] == "fail"
+
+
+def test_missing_required_report_artifact_hash_fails(tmp_path: Path):
+    report = _load_pass()
+    report["status"] = "fail"
+    report["execution_window_state"]["window_state_verification_status"] = "fail"
+    report["execution_window_state"]["window_state_artifact_hashes"].pop(
+        "release_publication_execution_receipt", None
+    )
+    report["execution_window_state"]["artifact_count"] = len(
+        report["execution_window_state"]["window_state_artifact_hashes"]
+    )
+    report["execution_window_state"]["missing_window_state_artifact_ids"] = [
+        "release_publication_execution_receipt"
+    ]
+    report["approval_state"]["decision"] = "rejected"
+    report["approval_state"]["blocked_reason_codes"] = ["missing_report_artifact_hash"]
+    report["readiness"]["present_gate_ids"] = ["max_biped_v1_skeleton_contract"]
+    report["readiness"]["missing_gate_ids"] = sorted(
+        list(
+            set(report["readiness"]["required_gate_ids"])
+            - set(report["readiness"]["present_gate_ids"])
+        )
+    )
+    report["readiness"]["execution_window_state_readiness_state"] = "blocked_missing_evidence"
+    test_file = tmp_path / "missing-report-artifact-hash.json"
+    test_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+    result = _run_validator(test_file)
+    payload = _extract_payload(result.stdout)
+    assert result.returncode != 0
+    assert payload["status"] == "fail"
+    assert any(
+        item.get("id") == "required_window_state_artifacts_missing"
+        for item in payload["findings"]
+    )
+
+
+def test_unsafe_window_state_path_fails(tmp_path: Path):
+    report = _load_pass()
+    report["status"] = "fail"
+    report["execution_window_state"]["window_state_verification_status"] = "fail"
+    report["execution_window_state"]["window_state_path"] = "..\\outside\\audit-bundle.json"
+    report["approval_state"]["decision"] = "rejected"
+    report["approval_state"]["blocked_reason_codes"] = ["unsafe_bundle_path"]
+    report["readiness"]["execution_window_state_readiness_state"] = "blocked_safety_boundary"
+    test_file = tmp_path / "unsafe-audit-bundle-path.json"
+    test_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+    result = _run_validator(test_file)
+    payload = _extract_payload(result.stdout)
+    assert result.returncode != 0
+    assert payload["status"] == "fail"
+    assert any(item.get("id") == "window_state_path_unsafe" for item in payload["findings"])
+
+
+def test_publish_execution_admitted_true_fails(tmp_path: Path):
+    report = _load_pass()
+    report["status"] = "fail"
+    report["execution_window_state"]["window_state_verification_status"] = "fail"
+    report["approval_state"]["decision"] = "rejected"
+    report["approval_state"]["publish_execution_admitted"] = True
+    report["approval_state"]["blocked_reason_codes"] = ["publish_admission_not_allowed"]
+    report["readiness"]["execution_window_state_readiness_state"] = "blocked_safety_boundary"
+    test_file = tmp_path / "publish-admitted-true.json"
+    test_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+    result = _run_validator(test_file)
+    payload = _extract_payload(result.stdout)
+    assert result.returncode != 0
+    assert payload["status"] == "fail"
+    assert any(
+        item.get("id") == "publish_execution_admitted_must_be_false"
+        for item in payload["findings"]
+    )
+
+
+def test_source_execution_authorization_record_reference_must_point_to_authorization_record(tmp_path: Path):
+    report = _load_pass()
+    report["status"] = "fail"
+    report["execution_window_state"]["window_state_verification_status"] = "fail"
+    report["execution_window_state"]["source_execution_authorization_record_id"] = (
+        "ready-for-execution-request-20260505-0001"
+    )
+    report["execution_window_state"]["source_execution_authorization_record_path"] = (
+        "evidence/jobs/job-maxine-release-001/qc/release-publication-ready-for-execution-request-report.json"
+    )
+    report["approval_state"]["decision"] = "rejected"
+    report["approval_state"]["blocked_reason_codes"] = ["invalid_source_authorization_record_reference"]
+    report["readiness"]["execution_window_state_readiness_state"] = "blocked_safety_boundary"
+    test_file = tmp_path / "invalid-source-authorization-record-reference.json"
+    test_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+    result = _run_validator(test_file)
+    payload = _extract_payload(result.stdout)
+    assert result.returncode != 0
+    assert payload["status"] == "fail"
+    assert any(item.get("id") == "source_execution_authorization_record_id_invalid" for item in payload["findings"])
+
+
+def test_required_execution_authorization_record_gate_must_be_declared(tmp_path: Path):
+    report = _load_pass()
+    report["status"] = "fail"
+    report["execution_window_state"]["window_state_verification_status"] = "fail"
+    report["readiness_contract"]["required_gate_ids"] = [
+        x for x in report["readiness_contract"]["required_gate_ids"] if x != "release_publication_execution_authorization_record_v1"
+    ]
+    report["approval_state"]["decision"] = "rejected"
+    report["approval_state"]["blocked_reason_codes"] = ["missing_required_execution_authorization_record_gate"]
+    report["readiness"]["execution_window_state_readiness_state"] = "blocked_safety_boundary"
+    test_file = tmp_path / "missing-required-execution-authorization-gate.json"
+    test_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+    result = _run_validator(test_file)
+    payload = _extract_payload(result.stdout)
+    assert result.returncode != 0
+    assert payload["status"] == "fail"
+    assert any(item.get("id") == "required_execution_authorization_record_gate_missing" for item in payload["findings"])
+
+
+def test_invalid_window_state_lifecycle_fails(tmp_path: Path):
+    report = _load_pass()
+    report["status"] = "fail"
+    report["execution_window_state"]["window_state_verification_status"] = "fail"
+    report["execution_window_state"]["window_state"] = "unknown_state"
+    report["approval_state"]["decision"] = "rejected"
+    report["approval_state"]["blocked_reason_codes"] = ["invalid_window_state"]
+    report["readiness"]["execution_window_state_readiness_state"] = "blocked_safety_boundary"
+    test_file = tmp_path / "invalid-window-state.json"
+    test_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+    result = _run_validator(test_file)
+    payload = _extract_payload(result.stdout)
+    assert result.returncode != 0
+    assert payload["status"] == "fail"
+    assert any(item.get("id") == "window_state_lifecycle_invalid" for item in payload["findings"])
+
+
+def test_window_bounds_must_be_ordered(tmp_path: Path):
+    report = _load_pass()
+    report["status"] = "fail"
+    report["execution_window_state"]["window_state_verification_status"] = "fail"
+    report["execution_window_state"]["window_start_utc"] = "2026-05-06T12:00:00Z"
+    report["execution_window_state"]["window_end_utc"] = "2026-05-06T11:00:00Z"
+    report["approval_state"]["decision"] = "rejected"
+    report["approval_state"]["blocked_reason_codes"] = ["window_bounds_invalid"]
+    report["readiness"]["execution_window_state_readiness_state"] = "blocked_safety_boundary"
+    test_file = tmp_path / "invalid-window-bounds.json"
+    test_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+    result = _run_validator(test_file)
+    payload = _extract_payload(result.stdout)
+    assert result.returncode != 0
+    assert payload["status"] == "fail"
+    assert any(item.get("id") == "window_state_window_bounds_invalid" for item in payload["findings"])
+
+
+def test_revoked_window_cannot_be_ready(tmp_path: Path):
+    report = _load_pass()
+    report["status"] = "fail"
+    report["execution_window_state"]["window_state_verification_status"] = "fail"
+    report["execution_window_state"]["window_state"] = "revoked"
+    report["approval_state"]["decision"] = (
+        "execution_window_state_recorded_for_future_manual_execution_window"
+    )
+    report["approval_state"]["blocked_reason_codes"] = []
+    report["readiness"]["execution_window_state_readiness_state"] = (
+        "execution_window_state_recorded_for_future_manual_execution_window"
+    )
+    test_file = tmp_path / "revoked-window-ready-state.json"
+    test_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+    result = _run_validator(test_file)
+    payload = _extract_payload(result.stdout)
+    assert result.returncode != 0
+    assert payload["status"] == "fail"
+    finding_ids = {item.get("id") for item in payload["findings"]}
+    assert "ready_with_non_active_window_state" in finding_ids
+    assert "ready_state_with_non_active_window_state" in finding_ids
+
+
+def test_output_contains_manifest_attachable_qc_payload():
+    result = _run_validator(
+        _report_path("max_biped_v1_release_publication_execution_window_state_pass.json")
+    )
+    payload = _extract_payload(result.stdout)
+    attachment = payload.get("manifest_attachment", {})
+    qc_check = attachment.get("qc_check", {})
+    assert qc_check.get("check_id") == "release_publication_execution_window_state_v1"
+
+
+def test_output_target_path_is_qc_gates():
+    result = _run_validator(
+        _report_path("max_biped_v1_release_publication_execution_window_state_pass.json")
+    )
+    payload = _extract_payload(result.stdout)
+    assert payload["manifest_attachment"]["target_path"] == "qc.gates[]"
+
+
+def test_output_future_target_path_is_qc_checks():
+    result = _run_validator(
+        _report_path("max_biped_v1_release_publication_execution_window_state_pass.json")
+    )
+    payload = _extract_payload(result.stdout)
+    assert payload["manifest_attachment"]["future_target_path"] == "qc.checks[]"

@@ -213,6 +213,13 @@
   - `examples/release-publication-execution-window-ticket/max_biped_v1_release_publication_execution_window_ticket_warn.json`
   - `examples/release-publication-execution-window-ticket/max_biped_v1_release_publication_execution_window_ticket_fail.json`
   - `docs/maxine/specs/release-publication-execution-window-ticket-v1.md`
+- Release publication execution window state v1 report validation is implemented (contract-first, non-executing evidence only):
+  - `schemas/maxine_release_publication_execution_window_state_report.schema.json`
+  - `tools/release-publication-execution-window-state/validate_release_publication_execution_window_state_report.py`
+  - `examples/release-publication-execution-window-state/max_biped_v1_release_publication_execution_window_state_pass.json`
+  - `examples/release-publication-execution-window-state/max_biped_v1_release_publication_execution_window_state_warn.json`
+  - `examples/release-publication-execution-window-state/max_biped_v1_release_publication_execution_window_state_fail.json`
+  - `docs/maxine/specs/release-publication-execution-window-state-v1.md`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -355,6 +362,10 @@
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - Release publication execution admission review v1 report validation remains non-executing evidence-only:
   - validates immutable execution-admission-review completeness plus required link to execution-admission-request-packet evidence
+  - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Release publication execution window state v1 report validation remains non-executing evidence-only:
+  - validates immutable execution-window-state evidence, timestamp ordering, and lifecycle readiness boundaries
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.

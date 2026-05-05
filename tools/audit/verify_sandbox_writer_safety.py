@@ -175,6 +175,10 @@ REQUIRED_FILES = [
     "examples/release-publication-execution-window-ticket/max_biped_v1_release_publication_execution_window_ticket_pass.json",
     "examples/release-publication-execution-window-ticket/max_biped_v1_release_publication_execution_window_ticket_warn.json",
     "examples/release-publication-execution-window-ticket/max_biped_v1_release_publication_execution_window_ticket_fail.json",
+    "schemas/maxine_release_publication_execution_window_state_report.schema.json",
+    "examples/release-publication-execution-window-state/max_biped_v1_release_publication_execution_window_state_pass.json",
+    "examples/release-publication-execution-window-state/max_biped_v1_release_publication_execution_window_state_warn.json",
+    "examples/release-publication-execution-window-state/max_biped_v1_release_publication_execution_window_state_fail.json",
     "examples/capabilities/maxine-capability-matrix.json",
     "examples/sandbox/review-packets/.gitkeep",
     "examples/sandbox/review-decisions/.gitkeep",
@@ -224,6 +228,8 @@ REQUIRED_FILES = [
     "docs/maxine/specs/release-publication-execution-authorization-record-v1.md",
     "tools/release-publication-execution-window-ticket/validate_release_publication_execution_window_ticket_report.py",
     "docs/maxine/specs/release-publication-execution-window-ticket-v1.md",
+    "tools/release-publication-execution-window-state/validate_release_publication_execution_window_state_report.py",
+    "docs/maxine/specs/release-publication-execution-window-state-v1.md",
 ]
 
 
