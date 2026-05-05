@@ -155,6 +155,10 @@ REQUIRED_FILES = [
     "examples/release-publication-ready-for-execution-request/max_biped_v1_release_publication_ready_for_execution_request_pass.json",
     "examples/release-publication-ready-for-execution-request/max_biped_v1_release_publication_ready_for_execution_request_warn.json",
     "examples/release-publication-ready-for-execution-request/max_biped_v1_release_publication_ready_for_execution_request_fail.json",
+    "schemas/maxine_release_publication_execution_handoff_report.schema.json",
+    "examples/release-publication-execution-handoff/max_biped_v1_release_publication_execution_handoff_pass.json",
+    "examples/release-publication-execution-handoff/max_biped_v1_release_publication_execution_handoff_warn.json",
+    "examples/release-publication-execution-handoff/max_biped_v1_release_publication_execution_handoff_fail.json",
     "examples/capabilities/maxine-capability-matrix.json",
     "examples/sandbox/review-packets/.gitkeep",
     "examples/sandbox/review-decisions/.gitkeep",
@@ -194,6 +198,8 @@ REQUIRED_FILES = [
     "docs/maxine/specs/release-publication-chain-audit-bundle-v1.md",
     "tools/release-publication-ready-for-execution-request/validate_release_publication_ready_for_execution_request_report.py",
     "docs/maxine/specs/release-publication-ready-for-execution-request-v1.md",
+    "tools/release-publication-execution-handoff/validate_release_publication_execution_handoff_report.py",
+    "docs/maxine/specs/release-publication-execution-handoff-v1.md",
 ]
 
 
