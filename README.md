@@ -63,6 +63,7 @@ Start here for review readiness details:
 
 - `docs/maxine/release-lane-pilot-readiness-report-v1.md`
 - `docs/maxine/release-lane-gate-chain-v1.md`
+- `docs/maxine/workflows/release-lane-pr-readiness-workflow-v1.md`
 
 ## M.A.X.I.N.E. Resolver Ladder
 
