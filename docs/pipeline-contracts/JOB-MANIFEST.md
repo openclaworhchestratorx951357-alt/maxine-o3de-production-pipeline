@@ -63,6 +63,28 @@ The contract is designed so automation, operators, and CI can evaluate a job sta
 
 ## Source Product Evidence Resolver QC Attachment Point
 
+- `SOURCE_PRODUCT_EVIDENCE_RESOLVER_v1` report validation output is attachable to manifest QC.
+- Current manifest attachment path: `qc.gates[]`.
+- Future-compatible path: `qc.checks[]`.
+- Suggested check id: `source_product_evidence_resolver_v1`.
+
+## Deterministic QC Attachment Pipeline
+
+Manifest QC payload attachment is deterministic and script-driven:
+
+- script: `tools/manifest-validator/attach_qc_gate.py`
+- input: one manifest path and one-or-more validator attachment payload JSON files
+- behavior:
+  - validates attachment payload shape
+  - appends `qc_check` payloads to `qc.gates[]` or `qc.checks[]`
+  - blocks duplicate `check_id` by default
+  - preserves unknown manifest fields
+  - writes atomically
+
+This is evidence integration only. It does not admit O3DE/AP execution, spawn/publish, or live Cache/DB access.
+
+## Source Product Evidence Resolver QC Attachment Point
+
 - `SOURCE_PRODUCT_EVIDENCE_RESOLVER_v1` validation output is attachable to manifest QC.
 - Current manifest attachment path: `qc.gates[]`.
 - Future-compatible path: `qc.checks[]`.

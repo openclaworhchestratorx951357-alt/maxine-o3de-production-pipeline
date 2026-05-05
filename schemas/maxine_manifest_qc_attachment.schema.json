@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_manifest_qc_attachment.schema.json",
+  "title": "MAXINE Manifest QC Attachment Payload",
+  "description": "Attachment payload emitted by validator contracts for deterministic manifest QC integration.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "status",
+    "check_id",
+    "contract_id",
+    "findings",
+    "manifest_attachment"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ]
+    },
+    "check_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contract_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "manifest_attachment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target_path",
+        "future_target_path",
+        "qc_check"
+      ],
+      "properties": {
+        "target_path": {
+          "type": "string",
+          "enum": [
+            "qc.gates[]",
+            "qc.checks[]"
+          ]
+        },
+        "future_target_path": {
+          "type": "string",
+          "const": "qc.checks[]"
+        },
+        "qc_check": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "check_id",
+            "result",
+            "severity",
+            "details"
+          ],
+          "properties": {
+            "check_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "result": {
+              "type": "string",
+              "enum": [
+                "pass",
+                "warn",
+                "fail",
+                "pending_manual"
+              ]
+            },
+            "severity": {
+              "type": "string",
+              "enum": [
+                "info",
+                "warning",
+                "error",
+                "manual_review"
+              ]
+            },
+            "details": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -115,6 +115,8 @@ SOURCE_PRODUCT_EVIDENCE_RESOLVER_SCHEMA_REL = (
 SOURCE_PRODUCT_EVIDENCE_RESOLVER_VALIDATOR_REL = (
     "tools/source-product-evidence-resolver/validate_source_product_evidence_resolver_report.py"
 )
+MANIFEST_QC_ATTACHMENT_SCHEMA_REL = "schemas/maxine_manifest_qc_attachment.schema.json"
+MANIFEST_QC_ATTACH_TOOL_REL = "tools/manifest-validator/attach_qc_gate.py"
 CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
@@ -667,6 +669,17 @@ REQUIRED_SOURCE_PRODUCT_EVIDENCE_RESOLVER_VALIDATOR_NEEDLES = [
     "--allow-warn",
 ]
 
+REQUIRED_MANIFEST_QC_ATTACH_TOOL_NEEDLES = [
+    "manifest_attachment",
+    "qc.gates[]",
+    "qc.checks[]",
+    "allow-duplicate-check-id",
+    "atomic_write_json",
+    "os.replace(",
+    "inside repository root",
+    "duplicate check_id",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -769,6 +782,7 @@ EXPECTED_CAPABILITY_STATES = {
     "ap_binary_preflight_build": "sandbox_only",
     "ap_real_binary_diagnostic_execution": "sandbox_only",
     "source_product_evidence_resolver_validate": "read_only",
+    "manifest_qc_attachment_pipeline": "sandbox_only",
     "real_asset_processor_execution": "blocked",
     "authoritative_resolver_write": "forbidden",
     "o3de_editor_execution": "blocked",
@@ -875,6 +889,8 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     source_product_evidence_resolver_validator = (
         root / SOURCE_PRODUCT_EVIDENCE_RESOLVER_VALIDATOR_REL
     )
+    manifest_qc_attachment_schema = root / MANIFEST_QC_ATTACHMENT_SCHEMA_REL
+    manifest_qc_attach_tool = root / MANIFEST_QC_ATTACH_TOOL_REL
     capability_matrix = root / CAPABILITY_MATRIX_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -1132,6 +1148,16 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(
             "Source product evidence resolver validator missing: "
             f"{SOURCE_PRODUCT_EVIDENCE_RESOLVER_VALIDATOR_REL}"
+        )
+    if not manifest_qc_attachment_schema.exists():
+        failures.append(
+            "Manifest QC attachment schema missing: "
+            f"{MANIFEST_QC_ATTACHMENT_SCHEMA_REL}"
+        )
+    if not manifest_qc_attach_tool.exists():
+        failures.append(
+            "Manifest QC attachment tool missing: "
+            f"{MANIFEST_QC_ATTACH_TOOL_REL}"
         )
     if not capability_matrix.exists():
         failures.append(f"capability matrix missing: {CAPABILITY_MATRIX_REL}")
@@ -2284,6 +2310,54 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         except Exception as exc:  # pragma: no cover - defensive failure surface
             failures.append(
                 "Source product evidence resolver schema is not valid JSON: "
+                f"{exc}"
+            )
+
+    if manifest_qc_attach_tool.exists():
+        manifest_qc_attach_text = _read_text(manifest_qc_attach_tool)
+        for needle in REQUIRED_MANIFEST_QC_ATTACH_TOOL_NEEDLES:
+            if needle not in manifest_qc_attach_text:
+                failures.append(
+                    "Manifest QC attachment tool missing required needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "start-process",
+            "invoke-expression",
+            "subprocess.popen(",
+            "shell=true",
+            "assetdb.sqlite",
+            "sqlite3.connect(",
+        ):
+            if forbidden_phrase in manifest_qc_attach_text:
+                failures.append(
+                    "Manifest QC attachment tool contains forbidden phrase: "
+                    f"{forbidden_phrase}"
+                )
+
+    if manifest_qc_attachment_schema.exists():
+        try:
+            attach_schema = json.loads(
+                manifest_qc_attachment_schema.read_text(encoding="utf-8-sig")
+            )
+            attachment_props = (
+                attach_schema.get("properties", {})
+                .get("manifest_attachment", {})
+                .get("properties", {})
+            )
+            target_schema = attachment_props.get("target_path", {})
+            future_schema = attachment_props.get("future_target_path", {})
+            if "qc.gates[]" not in target_schema.get("enum", []):
+                failures.append(
+                    "Manifest QC attachment schema target_path must allow qc.gates[]."
+                )
+            if future_schema.get("const") != "qc.checks[]":
+                failures.append(
+                    "Manifest QC attachment schema future_target_path must remain qc.checks[]."
+                )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "Manifest QC attachment schema is not valid JSON: "
                 f"{exc}"
             )
 

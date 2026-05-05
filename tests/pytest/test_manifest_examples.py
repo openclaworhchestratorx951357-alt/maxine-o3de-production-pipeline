@@ -48,3 +48,19 @@ def test_example_manifest_job_constraints():
     assert job.get("job_id"), "job_id must exist"
     assert job.get("lane") in VALID_LANES, "lane must be valid"
     assert job.get("status") in VALID_STATUSES, "status must be valid"
+
+
+def test_release_qc_attach_base_manifest_has_qc_arrays():
+    repo_root = Path(__file__).resolve().parents[2]
+    manifest_path = (
+        repo_root
+        / "examples"
+        / "manifests"
+        / "example-release-character-qc-attach-base.manifest.json"
+    )
+    data = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    qc = data.get("qc", {})
+    assert isinstance(qc, dict)
+    assert isinstance(qc.get("gates"), list)
+    assert isinstance(qc.get("checks"), list)

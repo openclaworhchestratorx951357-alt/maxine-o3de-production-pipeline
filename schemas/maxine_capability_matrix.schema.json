@@ -59,6 +59,7 @@
         "ap_binary_preflight_build",
         "ap_real_binary_diagnostic_execution",
         "source_product_evidence_resolver_validate",
+        "manifest_qc_attachment_pipeline",
         "real_asset_processor_execution",
         "authoritative_resolver_write",
         "o3de_editor_execution",

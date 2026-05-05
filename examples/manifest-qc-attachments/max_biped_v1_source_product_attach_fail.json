@@ -1,0 +1,26 @@
+{
+  "status": "fail",
+  "check_id": "source_product_evidence_resolver_v1",
+  "contract_id": "SOURCE_PRODUCT_EVIDENCE_RESOLVER_v1",
+  "findings": [
+    {
+      "id": "required_expected_product_missing",
+      "severity": "error",
+      "status": "open",
+      "message": "Required actor evidence is missing."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "source_product_evidence_resolver_v1",
+      "result": "fail",
+      "severity": "error",
+      "details": {
+        "source_report": "examples/source-product-evidence-resolver/max_biped_v1_source_product_resolver_fail.json",
+        "summary": "Source-product evidence failed required coverage."
+      }
+    }
+  }
+}

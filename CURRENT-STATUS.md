@@ -87,6 +87,13 @@
   - `examples/source-product-evidence-resolver/max_biped_v1_source_product_resolver_warn.json`
   - `examples/source-product-evidence-resolver/max_biped_v1_source_product_resolver_fail.json`
   - `docs/maxine/specs/source-product-evidence-resolver-v1.md`
+- Manifest QC attachment pipeline v1 is implemented (deterministic manifest integration, non-executing evidence integration only):
+  - `tools/manifest-validator/attach_qc_gate.py`
+  - `schemas/maxine_manifest_qc_attachment.schema.json`
+  - `examples/manifest-qc-attachments/max_biped_v1_skeleton_attach_pass.json`
+  - `examples/manifest-qc-attachments/max_biped_v1_dcc_conform_attach_warn.json`
+  - `examples/manifest-qc-attachments/max_biped_v1_source_product_attach_fail.json`
+  - `examples/manifests/example-release-character-qc-attach-base.manifest.json`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -168,6 +175,11 @@
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - keeps Source UUID/Asset ID/Product ID claim surfaces blocked in this slice
   - keeps Cache/live DB access blocked and does not execute Blender/O3DE/AP, spawn, or publish
+- Manifest QC attachment pipeline remains non-executing evidence integration only:
+  - appends validator QC payloads into manifest `qc.gates[]` or `qc.checks[]`
+  - blocks duplicate gate IDs by default
+  - preserves unknown manifest fields and writes atomically
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
 
 ## Verification Entry Points
