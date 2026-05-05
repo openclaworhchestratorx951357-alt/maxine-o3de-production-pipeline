@@ -132,6 +132,9 @@ PILOT_RELEASE_CHAIN_BASE_MANIFEST_REL = (
 PILOT_RELEASE_CHAIN_RUNNER_REL = (
     "tools/release-lane/run_pilot_release_chain_validation.py"
 )
+PILOT_RELEASE_CHAIN_CI_PROOF_REL = (
+    "tools/release-lane/prove_pilot_release_chain.py"
+)
 CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
@@ -721,6 +724,16 @@ REQUIRED_PILOT_RELEASE_CHAIN_RUNNER_NEEDLES = [
     "qc.checks[]",
 ]
 
+REQUIRED_PILOT_RELEASE_CHAIN_CI_PROOF_NEEDLES = [
+    "prove_pilot_release_chain.py",
+    "run_pilot_release_chain_validation.py",
+    "pilot_release_chain_ci_proof_v1",
+    "pilot_chain_status",
+    "--strict-chain",
+    "qc.gates[]",
+    "qc.checks[]",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -939,6 +952,7 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     pilot_release_chain_manifest = root / PILOT_RELEASE_CHAIN_MANIFEST_REL
     pilot_release_chain_base_manifest = root / PILOT_RELEASE_CHAIN_BASE_MANIFEST_REL
     pilot_release_chain_runner = root / PILOT_RELEASE_CHAIN_RUNNER_REL
+    pilot_release_chain_ci_proof = root / PILOT_RELEASE_CHAIN_CI_PROOF_REL
     capability_matrix = root / CAPABILITY_MATRIX_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -1231,6 +1245,11 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(
             "Pilot release chain runner missing: "
             f"{PILOT_RELEASE_CHAIN_RUNNER_REL}"
+        )
+    if not pilot_release_chain_ci_proof.exists():
+        failures.append(
+            "Pilot release chain CI proof command missing: "
+            f"{PILOT_RELEASE_CHAIN_CI_PROOF_REL}"
         )
     if not capability_matrix.exists():
         failures.append(f"capability matrix missing: {CAPABILITY_MATRIX_REL}")
@@ -2481,6 +2500,31 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
             if forbidden_phrase in pilot_chain_runner_text:
                 failures.append(
                     "Pilot release chain runner contains forbidden phrase: "
+                    f"{forbidden_phrase}"
+                )
+
+    if pilot_release_chain_ci_proof.exists():
+        pilot_chain_ci_proof_text = _read_text(pilot_release_chain_ci_proof)
+        for needle in REQUIRED_PILOT_RELEASE_CHAIN_CI_PROOF_NEEDLES:
+            if needle not in pilot_chain_ci_proof_text:
+                failures.append(
+                    "Pilot release chain CI proof command missing required needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "start-process",
+            "invoke-expression",
+            "subprocess.popen(",
+            "shell=true",
+            "assetdb.sqlite",
+            "sqlite3.connect(",
+            "o3de.exe",
+            "editor.exe",
+            "assetprocessorbatch",
+        ):
+            if forbidden_phrase in pilot_chain_ci_proof_text:
+                failures.append(
+                    "Pilot release chain CI proof command contains forbidden phrase: "
                     f"{forbidden_phrase}"
                 )
 

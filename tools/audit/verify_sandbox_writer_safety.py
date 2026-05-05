@@ -128,8 +128,10 @@ REQUIRED_FILES = [
     "examples/manifests/example-release-character-pilot-chain.manifest.json",
     "docs/maxine/specs/pilot-release-package-chain-v1.md",
     "tools/release-lane/run_pilot_release_chain_validation.py",
+    "tools/release-lane/prove_pilot_release_chain.py",
     "examples/manifests/example-release-character-pilot-chain-base.manifest.json",
     "docs/maxine/specs/pilot-release-chain-validation-runner-v1.md",
+    "docs/maxine/specs/pilot-release-chain-ci-proof-v1.md",
     "docs/maxine/release-lane-gate-chain-v1.md",
 ]
 

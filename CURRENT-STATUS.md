@@ -103,6 +103,9 @@
   - `tools/release-lane/run_pilot_release_chain_validation.py`
   - `examples/manifests/example-release-character-pilot-chain-base.manifest.json`
   - `docs/maxine/specs/pilot-release-chain-validation-runner-v1.md`
+- Pilot release-chain CI proof v1 is implemented (single-command local/CI integration proof, non-executing evidence integration only):
+  - `tools/release-lane/prove_pilot_release_chain.py`
+  - `docs/maxine/specs/pilot-release-chain-ci-proof-v1.md`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -198,6 +201,11 @@
   - runs implemented validators and attaches their payloads into a generated pilot manifest
   - attaches pilot chain validation payload into the same manifest
   - writes artifacts only under approved repo/sandbox paths
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Pilot release-chain CI proof remains non-executing evidence integration only:
+  - runs pilot release-chain validation runner in normal and strict modes
+  - verifies deterministic warn-baseline behavior for current fixture chain
+  - writes proof artifacts only under approved repo/sandbox paths
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
 

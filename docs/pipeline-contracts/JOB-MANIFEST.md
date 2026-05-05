@@ -61,6 +61,12 @@ The contract is designed so automation, operators, and CI can evaluate a job sta
 - Future-compatible path: `qc.checks[]`.
 - Suggested check id: `animation_smoke_v1`.
 
+## Pilot Chain Proof Attachment Flow
+
+- `pilot_release_chain_ci_proof_v1` validates that implemented validator outputs are attachable in deterministic sequence.
+- Local/CI proof command: `python tools/release-lane/prove_pilot_release_chain.py`.
+- Current attachment path remains `qc.gates[]` and future-compatible path remains `qc.checks[]`.
+
 ## Pilot Chain Integration Runner
 
 Deterministic local integration command:
