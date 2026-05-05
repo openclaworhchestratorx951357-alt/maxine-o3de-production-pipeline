@@ -80,6 +80,13 @@
   - `examples/animation-smoke/max_biped_v1_animation_smoke_warn.json`
   - `examples/animation-smoke/max_biped_v1_animation_smoke_fail.json`
   - `docs/maxine/specs/animation-smoke-v1.md`
+- Source Product Evidence Resolver v1 evidence report validation is implemented (deterministic evidence bridge, non-executing evidence only):
+  - `schemas/maxine_source_product_evidence_resolver_report.schema.json`
+  - `tools/source-product-evidence-resolver/validate_source_product_evidence_resolver_report.py`
+  - `examples/source-product-evidence-resolver/max_biped_v1_source_product_resolver_pass.json`
+  - `examples/source-product-evidence-resolver/max_biped_v1_source_product_resolver_warn.json`
+  - `examples/source-product-evidence-resolver/max_biped_v1_source_product_resolver_fail.json`
+  - `docs/maxine/specs/source-product-evidence-resolver-v1.md`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -156,6 +163,11 @@
   - validates animation smoke report JSON against required clip and status rules
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Source Product Evidence Resolver v1 remains non-executing evidence-only:
+  - validates source-asset to expected/observed product evidence mapping
+  - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - keeps Source UUID/Asset ID/Product ID claim surfaces blocked in this slice
+  - keeps Cache/live DB access blocked and does not execute Blender/O3DE/AP, spawn, or publish
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
 
 ## Verification Entry Points

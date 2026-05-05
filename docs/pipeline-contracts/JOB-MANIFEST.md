@@ -60,3 +60,10 @@ The contract is designed so automation, operators, and CI can evaluate a job sta
 - Current manifest attachment path: `qc.gates[]`.
 - Future-compatible path: `qc.checks[]`.
 - Suggested check id: `animation_smoke_v1`.
+
+## Source Product Evidence Resolver QC Attachment Point
+
+- `SOURCE_PRODUCT_EVIDENCE_RESOLVER_v1` validation output is attachable to manifest QC.
+- Current manifest attachment path: `qc.gates[]`.
+- Future-compatible path: `qc.checks[]`.
+- Suggested check id: `source_product_evidence_resolver_v1`.

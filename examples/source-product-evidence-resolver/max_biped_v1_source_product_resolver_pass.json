@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "SOURCE_PRODUCT_EVIDENCE_RESOLVER_v1_REPORT",
+  "job_id": "job-release-20260505-1001",
+  "package_id": "maxine-release-npc-001",
+  "lane": "release_character",
+  "status": "pass",
+  "source_asset_reference": "character/maxine_release_npc_001.fbx",
+  "source_asset_path": "assets/characters/maxine_release_npc_001/source/maxine_release_npc_001.fbx",
+  "evidence_source_type": "imported_ap_evidence",
+  "expected_products": [
+    { "product_type": "actor", "required": true },
+    { "product_type": "motion", "required": true },
+    { "product_type": "procprefab", "required": true },
+    { "product_type": "azmodel", "required": true },
+    { "product_type": "material", "required": false },
+    { "product_type": "texture", "required": false },
+    { "product_type": "pxmesh", "required": false }
+  ],
+  "observed_products": [
+    {
+      "product_type": "actor",
+      "product_path_or_hint": "evidence-hint://ap-import/objects/maxine_release_npc_001.actor",
+      "evidence_status": "observed",
+      "evidence_source": "imported_ap_evidence",
+      "confidence": 0.95
+    },
+    {
+      "product_type": "motion",
+      "product_path_or_hint": "evidence-hint://ap-import/objects/maxine_release_npc_001.motion",
+      "evidence_status": "observed",
+      "evidence_source": "imported_ap_evidence",
+      "confidence": 0.94
+    },
+    {
+      "product_type": "procprefab",
+      "product_path_or_hint": "evidence-hint://ap-import/prefabs/maxine_release_npc_001.procprefab",
+      "evidence_status": "observed",
+      "evidence_source": "imported_ap_evidence",
+      "confidence": 0.91
+    },
+    {
+      "product_type": "azmodel",
+      "product_path_or_hint": "evidence-hint://ap-import/objects/maxine_release_npc_001.azmodel",
+      "evidence_status": "observed",
+      "evidence_source": "imported_ap_evidence",
+      "confidence": 0.9
+    },
+    {
+      "product_type": "material",
+      "product_path_or_hint": "evidence-hint://ap-import/materials/maxine_release_npc_001.material",
+      "evidence_status": "observed",
+      "evidence_source": "imported_ap_evidence",
+      "confidence": 0.85
+    },
+    {
+      "product_type": "texture",
+      "product_path_or_hint": "evidence-hint://ap-import/textures/maxine_release_npc_001_basecolor.tex",
+      "evidence_status": "observed",
+      "evidence_source": "imported_ap_evidence",
+      "confidence": 0.88
+    },
+    {
+      "product_type": "pxmesh",
+      "product_path_or_hint": "evidence-hint://ap-import/physics/maxine_release_npc_001.pxmesh",
+      "evidence_status": "observed",
+      "evidence_source": "imported_ap_evidence",
+      "confidence": 0.82
+    }
+  ],
+  "source_uuid_claim_status": "not_claimed",
+  "asset_id_claim_status": "not_claimed",
+  "product_id_claim_status": "not_claimed",
+  "cache_access_status": "blocked",
+  "live_db_access_status": "blocked",
+  "findings": [],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "source_product_evidence_resolver_v1",
+      "result": "pass",
+      "severity": "info",
+      "details": {
+        "source": "example"
+      }
+    }
+  },
+  "safety_summary": "Evidence-only source-to-product mapping from imported AP evidence with no live cache/db reads and no ID claims.",
+  "explicit_non_admissions": [
+    "no live cache read",
+    "no live db read",
+    "no source uuid claim",
+    "no asset id claim",
+    "no product id claim",
+    "no asset processor execution",
+    "no o3de execution",
+    "no spawn",
+    "no publish"
+  ],
+  "generated_utc": "2026-05-05T00:00:00Z"
+}

@@ -109,6 +109,12 @@ AP_REAL_BINARY_DIAGNOSTIC_EXECUTION_SCHEMA_REL = (
 AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_SCHEMA_REL = (
     "schemas/maxine_ap_real_binary_diagnostic_bundle.schema.json"
 )
+SOURCE_PRODUCT_EVIDENCE_RESOLVER_SCHEMA_REL = (
+    "schemas/maxine_source_product_evidence_resolver_report.schema.json"
+)
+SOURCE_PRODUCT_EVIDENCE_RESOLVER_VALIDATOR_REL = (
+    "tools/source-product-evidence-resolver/validate_source_product_evidence_resolver_report.py"
+)
 CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
@@ -645,6 +651,22 @@ REQUIRED_AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_EXPORT_NEEDLES = [
     "does not copy ap binaries",
 ]
 
+REQUIRED_SOURCE_PRODUCT_EVIDENCE_RESOLVER_VALIDATOR_NEEDLES = [
+    "source_product_evidence_resolver_v1",
+    "source_product_evidence_resolver_v1_report",
+    "expected_products",
+    "observed_products",
+    "source_uuid_claim_status",
+    "asset_id_claim_status",
+    "product_id_claim_status",
+    "cache_access_status",
+    "live_db_access_status",
+    "future_admitted",
+    "qc.gates[]",
+    "qc.checks[]",
+    "--allow-warn",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -746,6 +768,7 @@ EXPECTED_CAPABILITY_STATES = {
     "ap_binary_discovery_inspect": "read_only",
     "ap_binary_preflight_build": "sandbox_only",
     "ap_real_binary_diagnostic_execution": "sandbox_only",
+    "source_product_evidence_resolver_validate": "read_only",
     "real_asset_processor_execution": "blocked",
     "authoritative_resolver_write": "forbidden",
     "o3de_editor_execution": "blocked",
@@ -845,6 +868,12 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     )
     ap_real_binary_diagnostic_bundle_schema = (
         root / AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_SCHEMA_REL
+    )
+    source_product_evidence_resolver_schema = (
+        root / SOURCE_PRODUCT_EVIDENCE_RESOLVER_SCHEMA_REL
+    )
+    source_product_evidence_resolver_validator = (
+        root / SOURCE_PRODUCT_EVIDENCE_RESOLVER_VALIDATOR_REL
     )
     capability_matrix = root / CAPABILITY_MATRIX_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
@@ -1093,6 +1122,16 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(
             "AP real binary diagnostic bundle schema missing: "
             f"{AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_SCHEMA_REL}"
+        )
+    if not source_product_evidence_resolver_schema.exists():
+        failures.append(
+            "Source product evidence resolver schema missing: "
+            f"{SOURCE_PRODUCT_EVIDENCE_RESOLVER_SCHEMA_REL}"
+        )
+    if not source_product_evidence_resolver_validator.exists():
+        failures.append(
+            "Source product evidence resolver validator missing: "
+            f"{SOURCE_PRODUCT_EVIDENCE_RESOLVER_VALIDATOR_REL}"
         )
     if not capability_matrix.exists():
         failures.append(f"capability matrix missing: {CAPABILITY_MATRIX_REL}")
@@ -2201,6 +2240,52 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                     "copying binary/source/runtime/cache/database token: "
                     f"{forbidden_copy}"
                 )
+
+    if source_product_evidence_resolver_validator.exists():
+        source_product_validator_text = _read_text(
+            source_product_evidence_resolver_validator
+        )
+        for needle in REQUIRED_SOURCE_PRODUCT_EVIDENCE_RESOLVER_VALIDATOR_NEEDLES:
+            if needle not in source_product_validator_text:
+                failures.append(
+                    "Source product evidence resolver validator missing required needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "start-process",
+            "invoke-expression",
+            "subprocess.popen(",
+            "shell=true",
+            "assetdb.sqlite",
+            "sqlite3.connect(",
+        ):
+            if forbidden_phrase in source_product_validator_text:
+                failures.append(
+                    "Source product evidence resolver validator contains forbidden phrase: "
+                    f"{forbidden_phrase}"
+                )
+
+    if source_product_evidence_resolver_schema.exists():
+        try:
+            source_product_schema = json.loads(
+                source_product_evidence_resolver_schema.read_text(encoding="utf-8-sig")
+            )
+            properties = source_product_schema.get("properties", {})
+            cache_status = properties.get("cache_access_status", {})
+            live_db_status = properties.get("live_db_access_status", {})
+            if cache_status.get("const") != "blocked":
+                failures.append(
+                    "Source product evidence resolver schema must keep cache_access_status const blocked."
+                )
+            if live_db_status.get("const") != "blocked":
+                failures.append(
+                    "Source product evidence resolver schema must keep live_db_access_status const blocked."
+                )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "Source product evidence resolver schema is not valid JSON: "
+                f"{exc}"
+            )
 
     if receipt_index.exists():
         try:
