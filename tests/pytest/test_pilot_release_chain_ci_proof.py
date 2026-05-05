@@ -46,3 +46,9 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
     assert payload["details"]["strict_run"]["pilot_chain_status"] == "pass"
     assert payload["details"]["normal_run"]["runner_return_code"] == 0
     assert payload["details"]["strict_run"]["runner_return_code"] == 0
+    evidence_status = payload["details"]["evidence_admission_report"]
+    assert evidence_status["status"] == "pass"
+    assert evidence_status["report_type"] == "RELEASE_LANE_EVIDENCE_ADMISSION_STATUS_v1_REPORT"
+    assert evidence_status["overall_release_lane_state"] == "evidence_only_pre_production"
+    assert evidence_status["reporter_return_code"] == 0
+    assert Path(evidence_status["output_path"]).exists()

@@ -14,11 +14,18 @@ python tools/release-lane/prove_pilot_release_chain.py
 
 - runs `run_pilot_release_chain_validation.py` once in normal mode
 - runs `run_pilot_release_chain_validation.py` once in `--strict-chain` mode
+- runs `report_release_lane_evidence_admission_status.py` against the strict-run generated manifest
 - verifies expected behavior for the current fixture baseline:
   - normal mode succeeds with `pilot_chain_status=pass`
   - strict mode also succeeds when `pilot_chain_status=pass`
+  - evidence-admission status report succeeds with `status=pass`
 - writes proof summary JSON under sandbox-local report paths
 - treats `examples/sandbox/manifests/reports/**` as runtime-only artifacts (gitignored except `.gitkeep`)
+
+Proof artifacts include:
+
+- `examples/sandbox/manifests/reports/pilot-release-chain-proof/proof-summary.json`
+- `examples/sandbox/manifests/reports/pilot-release-chain-proof/release-lane-evidence-admission-status.json`
 
 ## Safety Boundaries
 

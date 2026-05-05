@@ -39,3 +39,11 @@ For the representative pilot fixture:
 - explicit approved execution-admission remains missing
 
 This report provides the deterministic status statement required before any execution-admission discussion.
+
+## CI Proof Integration
+
+`python tools/release-lane/prove_pilot_release_chain.py` now runs this reporter against the strict-run generated pilot manifest and records the artifact at:
+
+- `examples/sandbox/manifests/reports/pilot-release-chain-proof/release-lane-evidence-admission-status.json`
+
+This keeps pilot-chain proof and evidence/admission posture in one deterministic validation command.

@@ -18,6 +18,7 @@ ATTACHMENT_TARGET_PATH = "qc.gates[]"
 ATTACHMENT_FUTURE_TARGET_PATH = "qc.checks[]"
 DEFAULT_OUTPUT_ROOT = "examples/sandbox/manifests/reports/pilot-release-chain-proof"
 RUNNER_REL = "tools/release-lane/run_pilot_release_chain_validation.py"
+EVIDENCE_ADMISSION_STATUS_REL = "tools/release-lane/report_release_lane_evidence_admission_status.py"
 BASE_MANIFEST_REL = "examples/manifests/example-release-character-pilot-chain-base.manifest.json"
 CHAIN_REL = "examples/release-lane-gate-chain/max_biped_v1_release_lane_gate_chain.json"
 
@@ -112,6 +113,32 @@ def run_runner(
     return proc.returncode, payload
 
 
+def run_evidence_admission_status(
+    repo_root: Path,
+    output_root: Path,
+    manifest_path: Path,
+) -> Tuple[int, Dict[str, Any]]:
+    output_path = output_root / "release-lane-evidence-admission-status.json"
+    cmd: List[str] = [
+        sys.executable,
+        str((repo_root / EVIDENCE_ADMISSION_STATUS_REL).resolve()),
+        "--manifest",
+        str(manifest_path),
+        "--output",
+        str(output_path),
+    ]
+    proc = subprocess.run(
+        cmd,
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+    )
+    payload = parse_payload_from_stdout(proc.stdout)
+    payload["output_path"] = str(output_path)
+    payload["reporter_return_code"] = proc.returncode
+    return proc.returncode, payload
+
+
 def write_json(path: Path, payload: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2) + os.linesep, encoding="utf-8")
@@ -140,6 +167,11 @@ def main() -> int:
             run_name="strict",
             strict=True,
         )
+        evidence_code, evidence_payload = run_evidence_admission_status(
+            repo_root=repo_root,
+            output_root=output_root,
+            manifest_path=Path(strict_payload["output_manifest"]),
+        )
     except Exception as exc:
         print(f"FAIL: pilot chain proof runner execution failed: {exc}")
         return 1
@@ -153,6 +185,14 @@ def main() -> int:
         failures.append("strict run must return 0 when chain is pass.")
     if strict_payload.get("pilot_chain_status") != "pass":
         failures.append("strict run must produce pilot_chain_status=pass for current fixture chain.")
+    if evidence_code != 0:
+        failures.append("evidence admission status report command must return 0.")
+    if evidence_payload.get("report_type") != "RELEASE_LANE_EVIDENCE_ADMISSION_STATUS_v1_REPORT":
+        failures.append(
+            "evidence admission status report must emit RELEASE_LANE_EVIDENCE_ADMISSION_STATUS_v1_REPORT."
+        )
+    if evidence_payload.get("status") != "pass":
+        failures.append("evidence admission status report status must be pass.")
 
     summary: Dict[str, Any] = {
         "status": "pass" if not failures else "fail",
@@ -163,6 +203,7 @@ def main() -> int:
         "details": {
             "normal_run": normal_payload,
             "strict_run": strict_payload,
+            "evidence_admission_report": evidence_payload,
             "failures": failures,
         },
     }

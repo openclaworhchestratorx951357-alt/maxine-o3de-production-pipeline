@@ -193,9 +193,11 @@
 - Pilot release-chain CI proof v1 is implemented (single-command local/CI integration proof, non-executing evidence integration only):
   - `tools/release-lane/prove_pilot_release_chain.py`
   - `docs/maxine/specs/pilot-release-chain-ci-proof-v1.md`
+  - proof command now also emits release-lane evidence/admission status artifact from strict-run generated manifest
 - Release-lane evidence-admission status reporting v1 is implemented (integration status reporting only, non-executing evidence-only posture):
   - `tools/release-lane/report_release_lane_evidence_admission_status.py`
   - `docs/maxine/specs/release-lane-evidence-admission-status-v1.md`
+  - integrated into CI proof flow artifact output under `examples/sandbox/manifests/reports/pilot-release-chain-proof/`
 - Release publication chain audit bundle v1 report validation is implemented (contract-first, non-executing evidence only):
   - `schemas/maxine_release_publication_chain_audit_bundle_report.schema.json`
   - `tools/release-publication-chain-audit-bundle/validate_release_publication_chain_audit_bundle_report.py`
