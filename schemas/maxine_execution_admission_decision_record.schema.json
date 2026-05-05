@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine/schemas/maxine_execution_admission_decision_record.schema.json",
+  "title": "MAXINE Execution Admission Decision Record v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_type",
+    "decision_id",
+    "candidate_id",
+    "decision_state",
+    "requested_execution",
+    "scope",
+    "approval",
+    "references",
+    "post_execution_validation_commands",
+    "admission_outcome"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "record_type": {
+      "type": "string",
+      "const": "EXECUTION_ADMISSION_DECISION_v1"
+    },
+    "decision_id": {
+      "type": "string",
+      "minLength": 3
+    },
+    "candidate_id": {
+      "type": "string",
+      "minLength": 3
+    },
+    "decision_state": {
+      "type": "string",
+      "enum": [
+        "pending_review",
+        "approved",
+        "rejected"
+      ]
+    },
+    "requested_execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "surface_id",
+        "command_or_tool_path",
+        "arguments"
+      ],
+      "properties": {
+        "surface_id": {
+          "type": "string",
+          "enum": [
+            "asset_processor_execution",
+            "o3de_editor_execution",
+            "o3de_cli_execution",
+            "blender_or_dcc_execution",
+            "spawn_or_publish_execution"
+          ]
+        },
+        "command_or_tool_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowed_input_paths",
+        "allowed_output_paths",
+        "blocked_surfaces_confirmed"
+      ],
+      "properties": {
+        "allowed_input_paths": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "allowed_output_paths": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "blocked_surfaces_confirmed": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": [
+              "o3de_editor_execution",
+              "asset_processor_execution",
+              "o3de_cli_execution",
+              "blender_or_dcc_execution",
+              "spawn_or_publish_execution",
+              "cache_read",
+              "live_asset_database_read",
+              "authoritative_source_uuid_claims",
+              "authoritative_asset_id_claims",
+              "authoritative_product_id_claims",
+              "production_path_write",
+              "engine_path_write"
+            ]
+          }
+        }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_phrase_format",
+        "approval_received",
+        "approval_phrase_received"
+      ],
+      "properties": {
+        "required_phrase_format": {
+          "type": "string",
+          "const": "APPROVE EXECUTION ADMISSION <candidate_id>"
+        },
+        "approval_received": {
+          "type": "boolean"
+        },
+        "approval_phrase_received": {
+          "type": "string"
+        }
+      }
+    },
+    "references": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_review_report_path",
+        "receipt_contract_reference",
+        "rollback_readiness_reference",
+        "safety_verifier_reference"
+      ],
+      "properties": {
+        "decision_review_report_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "receipt_contract_reference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rollback_readiness_reference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "safety_verifier_reference": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "post_execution_validation_commands": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "admission_outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "execution_admitted",
+        "admission_scope",
+        "notes"
+      ],
+      "properties": {
+        "execution_admitted": {
+          "type": "boolean"
+        },
+        "admission_scope": {
+          "type": "string",
+          "enum": [
+            "none",
+            "bounded_candidate_only"
+          ]
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision_state": {
+            "const": "approved"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "approval": {
+            "properties": {
+              "approval_received": {
+                "const": true
+              },
+              "approval_phrase_received": {
+                "pattern": "^APPROVE EXECUTION ADMISSION\\s+.+$"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "decision_state": {
+            "enum": [
+              "pending_review",
+              "rejected"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "approval": {
+            "properties": {
+              "approval_received": {
+                "const": false
+              }
+            }
+          },
+          "admission_outcome": {
+            "properties": {
+              "execution_admitted": {
+                "const": false
+              },
+              "admission_scope": {
+                "const": "none"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

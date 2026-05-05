@@ -1,6 +1,15 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- Execution-admission review/decision framework v1 is implemented (review-only, non-executing policy framework):
+  - `docs/maxine/execution-admission/release-execution-admission-review-framework-v1.md`
+  - `schemas/maxine_execution_admission_decision_record.schema.json`
+  - `examples/execution-admission/max_biped_v1_execution_admission_decision_pending.json`
+  - `examples/execution-admission/max_biped_v1_execution_admission_decision_approved.json`
+  - `examples/execution-admission/max_biped_v1_execution_admission_decision_rejected.json`
+  - `tests/pytest/test_execution_admission_decision_record_schema.py`
+- Execution admission remains future work requiring explicit operator approval.
+- No execution surfaces are newly admitted in this slice.
 - Sandbox-only writer skeleton is implemented for generated-asset resolver placeholders.
 - Command: `scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1`
 - Paired rollback skeleton: `scripts/powershell/Invoke-MaxineSandboxRollback.ps1`
