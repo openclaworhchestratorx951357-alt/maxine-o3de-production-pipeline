@@ -92,4 +92,5 @@ def test_release_pilot_chain_manifest_contains_required_gate_ids():
     assert "release_publication_execution_request_ledger_v1" in gate_ids
     assert "release_publication_execution_receipt_v1" in gate_ids
     assert "release_publication_evidence_integrity_index_v1" in gate_ids
+    assert "release_publication_chain_audit_bundle_v1" in gate_ids
     assert "release_publication_gate_set_v1" in gate_ids

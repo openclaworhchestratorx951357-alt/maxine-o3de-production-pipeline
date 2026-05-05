@@ -111,7 +111,7 @@
       "order": 18,
       "check_id": "release_publication_chain_audit_bundle_v1",
       "required": true,
-      "implemented": false
+      "implemented": true
     },
     {
       "order": 19,

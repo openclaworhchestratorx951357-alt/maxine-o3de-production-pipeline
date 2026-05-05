@@ -184,6 +184,7 @@
   - `examples/release-publication-execution-request-ledger/max_biped_v1_release_publication_execution_request_ledger_pass.json`
   - `examples/release-publication-execution-receipt/max_biped_v1_release_publication_execution_receipt_pass.json`
   - `examples/release-publication-evidence-integrity-index/max_biped_v1_release_publication_evidence_integrity_index_pass.json`
+  - `examples/release-publication-chain-audit-bundle/max_biped_v1_release_publication_chain_audit_bundle_pass.json`
   - `examples/manifest-qc-attachments/max_biped_v1_release_publication_rollback_drill_attach_pass.json`
   - `examples/manifest-qc-attachments/max_biped_v1_release_publication_ready_for_execution_request_attach_pass.json`
   - `docs/maxine/specs/pilot-release-chain-validation-runner-v1.md`

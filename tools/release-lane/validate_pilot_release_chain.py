@@ -32,6 +32,7 @@ REQUIRED_IMPLEMENTED_GATE_IDS = {
     "release_publication_execution_receipt_v1",
     "release_publication_rollback_drill_v1",
     "release_publication_evidence_integrity_index_v1",
+    "release_publication_chain_audit_bundle_v1",
     "release_publication_ready_for_execution_request_v1",
 }
 

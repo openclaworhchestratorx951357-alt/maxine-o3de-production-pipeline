@@ -33,6 +33,8 @@
   - `release_publication_execution_receipt_v1`
 - runs release publication evidence integrity index validator evidence:
   - `release_publication_evidence_integrity_index_v1`
+- runs release publication chain audit bundle validator evidence:
+  - `release_publication_chain_audit_bundle_v1`
 - attaches fixture-backed rollback/readiness evidence payloads:
   - `release_publication_rollback_drill_v1`
   - `release_publication_ready_for_execution_request_v1`
@@ -86,6 +88,7 @@ python tools/release-lane/run_pilot_release_chain_validation.py --strict-chain
   - `release_publication_execution_request_ledger_v1`
   - `release_publication_execution_receipt_v1`
   - `release_publication_evidence_integrity_index_v1`
+  - `release_publication_chain_audit_bundle_v1`
   - `release_publication_rollback_drill_v1`
   - `release_publication_ready_for_execution_request_v1`
   - `pilot_release_chain_v1`
