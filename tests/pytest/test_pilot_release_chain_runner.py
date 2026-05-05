@@ -85,6 +85,7 @@ def test_runner_builds_generated_manifest_and_attaches_expected_checks(repo_tmp_
     assert "release_publication_chain_audit_bundle_v1" in gate_ids
     assert "release_publication_rollback_drill_v1" in gate_ids
     assert "release_publication_ready_for_execution_request_v1" in gate_ids
+    assert "release_publication_execution_handoff_v1" in gate_ids
     assert "pilot_release_chain_v1" in gate_ids
 
 

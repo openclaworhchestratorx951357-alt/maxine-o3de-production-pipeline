@@ -42,6 +42,7 @@ REQUIRED_IMPLEMENTED_CHECK_IDS = [
     "release_publication_evidence_integrity_index_v1",
     "release_publication_chain_audit_bundle_v1",
     "release_publication_ready_for_execution_request_v1",
+    "release_publication_execution_handoff_v1",
 ]
 
 
@@ -367,6 +368,16 @@ def main() -> int:
             "mode": "override_existing_gate",
             "attachment_fixture": "examples/manifest-qc-attachments/max_biped_v1_release_publication_ready_for_execution_request_attach_pass.json",
             "payload_path": attachment_dir / "release_publication_ready_for_execution_request_v1.json",
+        },
+        {
+            "name": "release_publication_execution_handoff",
+            "mode": "override_existing_gate",
+            "command": [
+                sys.executable,
+                "tools/release-publication-execution-handoff/validate_release_publication_execution_handoff_report.py",
+                "examples/release-publication-execution-handoff/max_biped_v1_release_publication_execution_handoff_pass.json",
+            ],
+            "payload_path": attachment_dir / "release_publication_execution_handoff_v1.json",
         },
     ]
 

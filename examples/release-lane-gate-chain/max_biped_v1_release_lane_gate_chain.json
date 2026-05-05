@@ -123,7 +123,7 @@
       "order": 20,
       "check_id": "release_publication_execution_handoff_v1",
       "required": true,
-      "implemented": false
+      "implemented": true
     },
     {
       "order": 21,

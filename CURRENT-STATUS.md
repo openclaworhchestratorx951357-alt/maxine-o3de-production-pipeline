@@ -187,6 +187,7 @@
   - `examples/release-publication-chain-audit-bundle/max_biped_v1_release_publication_chain_audit_bundle_pass.json`
   - `examples/manifest-qc-attachments/max_biped_v1_release_publication_rollback_drill_attach_pass.json`
   - `examples/manifest-qc-attachments/max_biped_v1_release_publication_ready_for_execution_request_attach_pass.json`
+  - `examples/release-publication-execution-handoff/max_biped_v1_release_publication_execution_handoff_pass.json`
   - `docs/maxine/specs/pilot-release-chain-validation-runner-v1.md`
 - Pilot release-chain CI proof v1 is implemented (single-command local/CI integration proof, non-executing evidence integration only):
   - `tools/release-lane/prove_pilot_release_chain.py`
