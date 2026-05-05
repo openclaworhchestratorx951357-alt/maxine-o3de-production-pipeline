@@ -91,7 +91,7 @@ def test_duplicate_check_id_fails(tmp_path: Path):
 def test_unimplemented_gate_marked_pass_fails(tmp_path: Path):
     manifest = json.loads(_manifest_fixture().read_text(encoding="utf-8-sig"))
     for gate in manifest["qc"]["gates"]:
-        if gate.get("check_id") == "release_publication_execution_receipt_v1":
+        if gate.get("check_id") == "release_publication_evidence_integrity_index_v1":
             gate["result"] = "pass"
             gate["severity"] = "info"
             break

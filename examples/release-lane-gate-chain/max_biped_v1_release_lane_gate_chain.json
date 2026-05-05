@@ -93,7 +93,7 @@
       "order": 15,
       "check_id": "release_publication_execution_receipt_v1",
       "required": true,
-      "implemented": false
+      "implemented": true
     },
     {
       "order": 16,

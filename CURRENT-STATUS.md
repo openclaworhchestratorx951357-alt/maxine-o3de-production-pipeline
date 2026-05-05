@@ -175,6 +175,7 @@
   - `examples/release-publication-request-approval/max_biped_v1_release_publication_request_approval_pass.json`
   - `examples/release-publication-execution-admission-gate/max_biped_v1_release_publication_execution_admission_gate_pass.json`
   - `examples/release-publication-execution-request-ledger/max_biped_v1_release_publication_execution_request_ledger_pass.json`
+  - `examples/release-publication-execution-receipt/max_biped_v1_release_publication_execution_receipt_pass.json`
   - `examples/manifest-qc-attachments/max_biped_v1_release_publication_rollback_drill_attach_pass.json`
   - `examples/manifest-qc-attachments/max_biped_v1_release_publication_ready_for_execution_request_attach_pass.json`
   - `docs/maxine/specs/pilot-release-chain-validation-runner-v1.md`
