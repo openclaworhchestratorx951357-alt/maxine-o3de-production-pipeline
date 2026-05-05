@@ -33,6 +33,12 @@ Every manifest structure is expected to include these sections:
 
 The contract is designed so automation, operators, and CI can evaluate a job state from the manifest alone.
 
+## QC Gate Attachment Helper
+
+- `tools/manifest-validator/attach_qc_gate.py` attaches validator `manifest_attachment.qc_check` payloads to `qc.gates[]`.
+- The helper only accepts `manifest_attachment.target_path = qc.gates[]`.
+- `future_target_path = qc.checks[]` is retained for forward compatibility but not written as an execution surface.
+
 ## Skeleton QC Attachment Point
 
 - `MAX_BIPED_v1` skeleton validation output is attachable to manifest QC.

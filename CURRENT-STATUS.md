@@ -54,6 +54,8 @@
   - `scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticExecution.ps1`
   - `scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticInspect.ps1`
   - `scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticBundleExport.ps1`
+- Manifest QC gate attachment helper is implemented (manifest-first, evidence-only update):
+  - `tools/manifest-validator/attach_qc_gate.py`
 - MAX_BIPED_v1 skeleton contract foundation is implemented (manifest-attachable QC evidence only):
   - `docs/maxine/specs/MAX_BIPED_v1.md`
   - `schemas/maxine_skeleton_contract.schema.json`

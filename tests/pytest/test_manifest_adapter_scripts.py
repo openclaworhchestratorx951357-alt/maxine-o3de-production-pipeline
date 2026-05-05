@@ -8,6 +8,7 @@ def test_adapter_scripts_exist():
         repo_root / "scripts" / "powershell" / "New-MaxineManifest.ps1",
         repo_root / "scripts" / "powershell" / "Write-MaxineEvidence.ps1",
         repo_root / "scripts" / "powershell" / "Invoke-MaxineJob.ps1",
+        repo_root / "tools" / "manifest-validator" / "attach_qc_gate.py",
     ]
     for path in required:
         assert path.exists(), f"Missing adapter script: {path}"

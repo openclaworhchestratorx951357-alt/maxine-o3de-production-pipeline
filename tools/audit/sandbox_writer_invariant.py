@@ -109,6 +109,7 @@ AP_REAL_BINARY_DIAGNOSTIC_EXECUTION_SCHEMA_REL = (
 AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_SCHEMA_REL = (
     "schemas/maxine_ap_real_binary_diagnostic_bundle.schema.json"
 )
+MANIFEST_QC_GATE_ATTACH_REL = "tools/manifest-validator/attach_qc_gate.py"
 CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
@@ -645,6 +646,15 @@ REQUIRED_AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_EXPORT_NEEDLES = [
     "does not copy ap binaries",
 ]
 
+REQUIRED_MANIFEST_QC_GATE_ATTACH_NEEDLES = [
+    "manifest_attachment",
+    "qc.gates[]",
+    "qc.checks[]",
+    "unsupported manifest target path",
+    "write_json_atomic",
+    "os.replace",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -848,6 +858,7 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     ap_real_binary_diagnostic_bundle_schema = (
         root / AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_SCHEMA_REL
     )
+    manifest_qc_gate_attach = root / MANIFEST_QC_GATE_ATTACH_REL
     capability_matrix = root / CAPABILITY_MATRIX_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -2202,6 +2213,29 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                     "AP real binary diagnostic bundle export command should not hardcode "
                     "copying binary/source/runtime/cache/database token: "
                     f"{forbidden_copy}"
+                )
+
+    if manifest_qc_gate_attach.exists():
+        manifest_qc_gate_attach_text = _read_text(manifest_qc_gate_attach)
+        for needle in REQUIRED_MANIFEST_QC_GATE_ATTACH_NEEDLES:
+            if needle not in manifest_qc_gate_attach_text:
+                failures.append(
+                    "Manifest QC gate attach helper missing required safety/contract needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "invoke-expression",
+            "start-process",
+            "o3de.exe",
+            "editor.exe",
+            "assetprocessor.exe",
+            "assetprocessorbatch.exe",
+            "valuefromremainingarguments",
+        ):
+            if forbidden_phrase in manifest_qc_gate_attach_text:
+                failures.append(
+                    "Manifest QC gate attach helper contains forbidden execution phrase: "
+                    f"{forbidden_phrase}"
                 )
 
     if receipt_index.exists():

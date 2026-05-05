@@ -230,6 +230,7 @@ REQUIRED_FILES = [
     "docs/maxine/specs/release-publication-execution-window-ticket-v1.md",
     "tools/release-publication-execution-window-state/validate_release_publication_execution_window_state_report.py",
     "docs/maxine/specs/release-publication-execution-window-state-v1.md",
+    "tools/manifest-validator/attach_qc_gate.py",
 ]
 
 
