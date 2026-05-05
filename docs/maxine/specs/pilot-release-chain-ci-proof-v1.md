@@ -18,6 +18,7 @@ python tools/release-lane/prove_pilot_release_chain.py
   - normal mode succeeds with `pilot_chain_status=pass`
   - strict mode also succeeds when `pilot_chain_status=pass`
 - writes proof summary JSON under sandbox-local report paths
+- treats `examples/sandbox/manifests/reports/**` as runtime-only artifacts (gitignored except `.gitkeep`)
 
 ## Safety Boundaries
 

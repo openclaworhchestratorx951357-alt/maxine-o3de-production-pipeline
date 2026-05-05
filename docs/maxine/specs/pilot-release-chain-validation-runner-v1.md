@@ -72,6 +72,8 @@ python tools/release-lane/run_pilot_release_chain_validation.py --strict-chain
   - `examples/sandbox/manifests/reports/example-release-character-pilot-chain.generated.manifest.json`
 - payload snapshots and summary:
   - `examples/sandbox/manifests/reports/pilot-release-chain-validation/`
+- runtime-artifact policy:
+  - `examples/sandbox/manifests/reports/**` is runtime-only and gitignored (except `.gitkeep`)
 
 ## Manifest Integration Point
 

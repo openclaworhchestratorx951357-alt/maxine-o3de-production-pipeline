@@ -44,3 +44,7 @@ credentials/
 *.mp3
 *.mp4
 *.mov
+
+# Runtime artifacts produced by pilot release-chain integration/proof commands.
+examples/sandbox/manifests/reports/*
+!examples/sandbox/manifests/reports/.gitkeep
