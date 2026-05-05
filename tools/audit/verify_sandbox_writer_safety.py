@@ -71,6 +71,7 @@ REQUIRED_FILES = [
     "schemas/maxine_material_uv_qc_report.schema.json",
     "schemas/maxine_animation_smoke_report.schema.json",
     "schemas/maxine_screenshot_evidence_report.schema.json",
+    "schemas/maxine_manual_hero_review_report.schema.json",
     "schemas/maxine_capability_matrix.schema.json",
     "examples/sandbox/receipts/index.json",
     "examples/sandbox/evidence-bundles/.gitkeep",
@@ -103,6 +104,9 @@ REQUIRED_FILES = [
     "examples/screenshot-evidence/max_biped_v1_screenshot_evidence_pass.json",
     "examples/screenshot-evidence/max_biped_v1_screenshot_evidence_warn.json",
     "examples/screenshot-evidence/max_biped_v1_screenshot_evidence_fail.json",
+    "examples/manual-hero-review/max_biped_v1_manual_hero_review_pass.json",
+    "examples/manual-hero-review/max_biped_v1_manual_hero_review_pending.json",
+    "examples/manual-hero-review/max_biped_v1_manual_hero_review_fail.json",
     "examples/capabilities/maxine-capability-matrix.json",
     "examples/sandbox/review-packets/.gitkeep",
     "examples/sandbox/review-decisions/.gitkeep",
@@ -116,6 +120,8 @@ REQUIRED_FILES = [
     "docs/maxine/specs/animation-smoke-v1.md",
     "tools/screenshot-evidence/validate_screenshot_evidence_report.py",
     "docs/maxine/specs/screenshot-evidence-v1.md",
+    "tools/manual-hero-review/validate_manual_hero_review_report.py",
+    "docs/maxine/specs/manual-hero-review-v1.md",
 ]
 
 
