@@ -25,9 +25,11 @@ When PR-readiness mode applies, Codex must:
 - do not create more standalone validators
 - do not add new release gates
 - do not widen execution surfaces
-- validate current state
+- execution remains future work requiring explicit approval
+- run required validation commands before opening/updating PR
 - prepare/open PR
 - report merge recommendation
+- start future capability/execution-admission work only from updated `main` after merge
 
 ## Required validation commands
 
