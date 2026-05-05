@@ -180,7 +180,7 @@
                 Remove-Item -LiteralPath $Context.generatedAbs -Recurse -Force
             }
 
-            $diagFiles = Get-ChildItem -LiteralPath (Join-Path $repoRoot "examples/sandbox/ap-diagnostic-executions") -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*${($Context.suffix)}*" }
+            $diagFiles = Get-ChildItem -LiteralPath (Join-Path $repoRoot "examples/sandbox/ap-diagnostic-executions") -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*${($Context.suffix)}*" -and $_.Name -ne ".gitkeep" }
             foreach ($diag in $diagFiles) {
                 if (Test-Path -LiteralPath $diag.FullName) { Remove-Item -LiteralPath $diag.FullName -Force }
             }

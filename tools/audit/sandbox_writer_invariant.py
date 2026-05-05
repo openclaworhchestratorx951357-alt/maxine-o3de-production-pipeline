@@ -63,6 +63,15 @@ AP_DIAGNOSTIC_EXECUTION_BUNDLE_EXPORT_REL = (
 AP_BINARY_DISCOVERY_READ_REL = "scripts/powershell/Invoke-MaxineApBinaryDiscoveryRead.ps1"
 AP_BINARY_DISCOVERY_INSPECT_REL = "scripts/powershell/Invoke-MaxineApBinaryDiscoveryInspect.ps1"
 AP_BINARY_PREFLIGHT_BUILD_REL = "scripts/powershell/Invoke-MaxineApBinaryPreflightBuild.ps1"
+AP_REAL_BINARY_DIAGNOSTIC_EXECUTION_REL = (
+    "scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticExecution.ps1"
+)
+AP_REAL_BINARY_DIAGNOSTIC_INSPECT_REL = (
+    "scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticInspect.ps1"
+)
+AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_EXPORT_REL = (
+    "scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticBundleExport.ps1"
+)
 AUTHORITATIVE_REL = "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
 RECEIPT_INDEX_REL = "examples/sandbox/receipts/index.json"
 RECEIPT_INDEX_SCHEMA_REL = "schemas/maxine_sandbox_receipt_index.schema.json"
@@ -94,6 +103,12 @@ AP_DIAGNOSTIC_EXECUTION_BUNDLE_SCHEMA_REL = (
 )
 AP_BINARY_DISCOVERY_SCHEMA_REL = "schemas/maxine_ap_binary_discovery.schema.json"
 AP_BINARY_PREFLIGHT_SCHEMA_REL = "schemas/maxine_ap_binary_preflight.schema.json"
+AP_REAL_BINARY_DIAGNOSTIC_EXECUTION_SCHEMA_REL = (
+    "schemas/maxine_ap_real_binary_diagnostic_execution.schema.json"
+)
+AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_SCHEMA_REL = (
+    "schemas/maxine_ap_real_binary_diagnostic_bundle.schema.json"
+)
 CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
@@ -120,6 +135,12 @@ AP_DIAGNOSTIC_EXECUTION_BUNDLES_DIR_REL = (
 )
 AP_BINARY_DISCOVERY_DIR_REL = "examples/sandbox/ap-binary-discovery"
 AP_BINARY_PREFLIGHTS_DIR_REL = "examples/sandbox/ap-binary-preflights"
+AP_REAL_BINARY_DIAGNOSTIC_EXECUTIONS_DIR_REL = (
+    "examples/sandbox/ap-real-binary-diagnostic-executions"
+)
+AP_REAL_BINARY_DIAGNOSTIC_BUNDLES_DIR_REL = (
+    "examples/sandbox/ap-real-binary-diagnostic-bundles"
+)
 
 ADMITTED_SANDBOX_COMMANDS = {
     SANDBOX_WRITER_REL,
@@ -155,6 +176,9 @@ ADMITTED_SANDBOX_COMMANDS = {
     AP_BINARY_DISCOVERY_READ_REL,
     AP_BINARY_DISCOVERY_INSPECT_REL,
     AP_BINARY_PREFLIGHT_BUILD_REL,
+    AP_REAL_BINARY_DIAGNOSTIC_EXECUTION_REL,
+    AP_REAL_BINARY_DIAGNOSTIC_INSPECT_REL,
+    AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_EXPORT_REL,
 }
 
 REQUIRED_WRITER_NEEDLES = [
@@ -567,6 +591,60 @@ REQUIRED_AP_BINARY_PREFLIGHT_BUILD_NEEDLES = [
     "source ap execution preflight readiness_status is not ready_for_future_execution_request",
 ]
 
+REQUIRED_AP_REAL_BINARY_DIAGNOSTIC_EXECUTION_NEEDLES = [
+    "ap-real-binary-diagnostic-executions",
+    "approverealbinarydiagnosticexecution",
+    "realbinarydiagnosticonly",
+    "diagnosticargument",
+    "usesimulatedcommandmode",
+    "simulatetimeout",
+    "command_allowlisted",
+    "command_executed",
+    "execution_status",
+    "timed_out",
+    "blocked",
+    "succeeded",
+    "failed",
+    "source_ap_binary_preflight_id",
+    "stdout_sha256",
+    "stderr_sha256",
+    "product_ids_claimed = $false",
+    "asset_ids_claimed = $false",
+    "source_uuids_claimed = $false",
+    "product_resolution_claimed = $false",
+    "cache_access_admitted = $false",
+    "live_database_access_admitted = $false",
+    "spawn_admitted = $false",
+    "publish_admitted = $false",
+    "binary_kind",
+    "assetprocessorbatch",
+    "assetprocessor",
+    "diagnostic_argument '$diagnosticargument' is not allowlisted",
+    "contains shell operators/pipelines/redirection/traversal",
+    "ready_for_future_real_ap_execution_request",
+]
+
+REQUIRED_AP_REAL_BINARY_DIAGNOSTIC_INSPECT_NEEDLES = [
+    "execution_count",
+    "real_binary_diagnostic_execution_id",
+    "executionid",
+    "executionpath",
+    "showoutputrefs",
+    "showblockedreason",
+]
+
+REQUIRED_AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_EXPORT_NEEDLES = [
+    "ap-real-binary-diagnostic-bundles",
+    "source_execution_id",
+    "source_ap_binary_preflight_id",
+    "included_artifacts",
+    "copied_artifact_paths",
+    "artifact_sha256",
+    ".txt",
+    "json",
+    "does not copy ap binaries",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -667,6 +745,7 @@ EXPECTED_CAPABILITY_STATES = {
     "ap_binary_discovery_read": "read_only",
     "ap_binary_discovery_inspect": "read_only",
     "ap_binary_preflight_build": "sandbox_only",
+    "ap_real_binary_diagnostic_execution": "sandbox_only",
     "real_asset_processor_execution": "blocked",
     "authoritative_resolver_write": "forbidden",
     "o3de_editor_execution": "blocked",
@@ -735,6 +814,11 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     ap_binary_discovery_read = root / AP_BINARY_DISCOVERY_READ_REL
     ap_binary_discovery_inspect = root / AP_BINARY_DISCOVERY_INSPECT_REL
     ap_binary_preflight_build = root / AP_BINARY_PREFLIGHT_BUILD_REL
+    ap_real_binary_diagnostic_execution = root / AP_REAL_BINARY_DIAGNOSTIC_EXECUTION_REL
+    ap_real_binary_diagnostic_inspect = root / AP_REAL_BINARY_DIAGNOSTIC_INSPECT_REL
+    ap_real_binary_diagnostic_bundle_export = (
+        root / AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_EXPORT_REL
+    )
     authoritative = root / AUTHORITATIVE_REL
     receipt_index = root / RECEIPT_INDEX_REL
     receipt_index_schema = root / RECEIPT_INDEX_SCHEMA_REL
@@ -756,6 +840,12 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     ap_diagnostic_execution_bundle_schema = root / AP_DIAGNOSTIC_EXECUTION_BUNDLE_SCHEMA_REL
     ap_binary_discovery_schema = root / AP_BINARY_DISCOVERY_SCHEMA_REL
     ap_binary_preflight_schema = root / AP_BINARY_PREFLIGHT_SCHEMA_REL
+    ap_real_binary_diagnostic_execution_schema = (
+        root / AP_REAL_BINARY_DIAGNOSTIC_EXECUTION_SCHEMA_REL
+    )
+    ap_real_binary_diagnostic_bundle_schema = (
+        root / AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_SCHEMA_REL
+    )
     capability_matrix = root / CAPABILITY_MATRIX_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -776,6 +866,12 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     ap_diagnostic_execution_bundles_dir = root / AP_DIAGNOSTIC_EXECUTION_BUNDLES_DIR_REL
     ap_binary_discovery_dir = root / AP_BINARY_DISCOVERY_DIR_REL
     ap_binary_preflights_dir = root / AP_BINARY_PREFLIGHTS_DIR_REL
+    ap_real_binary_diagnostic_executions_dir = (
+        root / AP_REAL_BINARY_DIAGNOSTIC_EXECUTIONS_DIR_REL
+    )
+    ap_real_binary_diagnostic_bundles_dir = (
+        root / AP_REAL_BINARY_DIAGNOSTIC_BUNDLES_DIR_REL
+    )
 
     if not writer.exists():
         failures.append(f"sandbox writer command missing: {SANDBOX_WRITER_REL}")
@@ -901,6 +997,21 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
             "AP binary preflight build command missing: "
             f"{AP_BINARY_PREFLIGHT_BUILD_REL}"
         )
+    if not ap_real_binary_diagnostic_execution.exists():
+        failures.append(
+            "AP real binary diagnostic execution command missing: "
+            f"{AP_REAL_BINARY_DIAGNOSTIC_EXECUTION_REL}"
+        )
+    if not ap_real_binary_diagnostic_inspect.exists():
+        failures.append(
+            "AP real binary diagnostic inspect command missing: "
+            f"{AP_REAL_BINARY_DIAGNOSTIC_INSPECT_REL}"
+        )
+    if not ap_real_binary_diagnostic_bundle_export.exists():
+        failures.append(
+            "AP real binary diagnostic bundle export command missing: "
+            f"{AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_EXPORT_REL}"
+        )
     if authoritative.exists():
         failures.append(f"authoritative command must remain absent: {AUTHORITATIVE_REL}")
     if not receipt_index.exists():
@@ -972,6 +1083,16 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(
             "AP binary preflight schema missing: "
             f"{AP_BINARY_PREFLIGHT_SCHEMA_REL}"
+        )
+    if not ap_real_binary_diagnostic_execution_schema.exists():
+        failures.append(
+            "AP real binary diagnostic execution schema missing: "
+            f"{AP_REAL_BINARY_DIAGNOSTIC_EXECUTION_SCHEMA_REL}"
+        )
+    if not ap_real_binary_diagnostic_bundle_schema.exists():
+        failures.append(
+            "AP real binary diagnostic bundle schema missing: "
+            f"{AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_SCHEMA_REL}"
         )
     if not capability_matrix.exists():
         failures.append(f"capability matrix missing: {CAPABILITY_MATRIX_REL}")
@@ -1046,6 +1167,16 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(
             "AP binary preflights directory missing: "
             f"{AP_BINARY_PREFLIGHTS_DIR_REL}"
+        )
+    if not ap_real_binary_diagnostic_executions_dir.exists():
+        failures.append(
+            "AP real binary diagnostic executions directory missing: "
+            f"{AP_REAL_BINARY_DIAGNOSTIC_EXECUTIONS_DIR_REL}"
+        )
+    if not ap_real_binary_diagnostic_bundles_dir.exists():
+        failures.append(
+            "AP real binary diagnostic bundles directory missing: "
+            f"{AP_REAL_BINARY_DIAGNOSTIC_BUNDLES_DIR_REL}"
         )
 
     if writer.exists():
@@ -1935,6 +2066,140 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                 failures.append(
                     "AP binary preflight build command widens forbidden admission: "
                     f"{forbidden_admission}"
+                )
+
+    if ap_real_binary_diagnostic_execution.exists():
+        ap_real_binary_diagnostic_execution_text = _read_text(
+            ap_real_binary_diagnostic_execution
+        )
+        for needle in REQUIRED_AP_REAL_BINARY_DIAGNOSTIC_EXECUTION_NEEDLES:
+            if needle not in ap_real_binary_diagnostic_execution_text:
+                failures.append(
+                    "AP real binary diagnostic execution command missing required needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "o3de.exe",
+            "editor.exe",
+            "invoke-expression",
+            "start-process",
+            "invoke-maxineauthoritativeresolverwrite.ps1",
+        ):
+            if forbidden_phrase in ap_real_binary_diagnostic_execution_text:
+                failures.append(
+                    "AP real binary diagnostic execution command contains forbidden phrase: "
+                    f"{forbidden_phrase}"
+                )
+        for allowed_arg in ("--help", "-help", "/?", "--version", "-version"):
+            if allowed_arg not in ap_real_binary_diagnostic_execution_text:
+                failures.append(
+                    "AP real binary diagnostic execution command must explicitly include "
+                    f"allowlisted argument token: {allowed_arg}"
+                )
+        for forbidden_admission in (
+            "product_ids_claimed = $true",
+            "asset_ids_claimed = $true",
+            "source_uuids_claimed = $true",
+            "product_resolution_claimed = $true",
+            "cache_access_admitted = $true",
+            "live_database_access_admitted = $true",
+            "spawn_admitted = $true",
+            "publish_admitted = $true",
+            "local_only = $false",
+            "execution_admitted = $true",
+            "required_manual_confirmation = $false",
+            "binary_allowed_for_future_execution_request = $false",
+            "binary_exists = $false",
+        ):
+            if forbidden_admission in ap_real_binary_diagnostic_execution_text:
+                failures.append(
+                    "AP real binary diagnostic execution command widens forbidden admission: "
+                    f"{forbidden_admission}"
+                )
+        if (
+            "-command" in ap_real_binary_diagnostic_execution_text
+            and "valuefromremainingarguments" in ap_real_binary_diagnostic_execution_text
+        ):
+            failures.append(
+                "AP real binary diagnostic execution command must not accept arbitrary "
+                "command text arguments."
+            )
+
+    if ap_real_binary_diagnostic_inspect.exists():
+        ap_real_binary_diagnostic_inspect_text = _read_text(
+            ap_real_binary_diagnostic_inspect
+        )
+        for needle in REQUIRED_AP_REAL_BINARY_DIAGNOSTIC_INSPECT_NEEDLES:
+            if needle not in ap_real_binary_diagnostic_inspect_text:
+                failures.append(
+                    "AP real binary diagnostic inspect command missing required needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "o3de.exe",
+            "editor.exe",
+            "invoke-expression",
+            "start-process",
+            "invoke-maxineauthoritativeresolverwrite.ps1",
+        ):
+            if forbidden_phrase in ap_real_binary_diagnostic_inspect_text:
+                failures.append(
+                    "AP real binary diagnostic inspect command contains forbidden phrase: "
+                    f"{forbidden_phrase}"
+                )
+        for needle in MUTATION_NEEDLES:
+            if needle in ap_real_binary_diagnostic_inspect_text:
+                failures.append(
+                    "AP real binary diagnostic inspect command is not read-only; contains "
+                    f"mutation needle: {needle}"
+                )
+
+    if ap_real_binary_diagnostic_bundle_export.exists():
+        ap_real_binary_diagnostic_bundle_export_text = _read_text(
+            ap_real_binary_diagnostic_bundle_export
+        )
+        for needle in REQUIRED_AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_EXPORT_NEEDLES:
+            if needle not in ap_real_binary_diagnostic_bundle_export_text:
+                failures.append(
+                    "AP real binary diagnostic bundle export command missing required needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "o3de.exe",
+            "editor.exe",
+            "invoke-expression",
+            "start-process",
+            "invoke-maxineauthoritativeresolverwrite.ps1",
+        ):
+            if forbidden_phrase in ap_real_binary_diagnostic_bundle_export_text:
+                failures.append(
+                    "AP real binary diagnostic bundle export command contains forbidden phrase: "
+                    f"{forbidden_phrase}"
+                )
+        for forbidden_copy in (
+            ".fbx",
+            ".gltf",
+            ".glb",
+            ".obj",
+            ".blend",
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".tiff",
+            ".exr",
+            ".bin",
+            ".dll",
+            ".pdb",
+            ".sqlite",
+            ".exe",
+            "assetdb.sqlite",
+            "cache",
+        ):
+            if f'"{forbidden_copy}"' in ap_real_binary_diagnostic_bundle_export_text:
+                failures.append(
+                    "AP real binary diagnostic bundle export command should not hardcode "
+                    "copying binary/source/runtime/cache/database token: "
+                    f"{forbidden_copy}"
                 )
 
     if receipt_index.exists():

@@ -36,6 +36,9 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - `scripts/powershell/Invoke-MaxineApBinaryDiscoveryRead.ps1`
 - `scripts/powershell/Invoke-MaxineApBinaryDiscoveryInspect.ps1`
 - `scripts/powershell/Invoke-MaxineApBinaryPreflightBuild.ps1`
+- `scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticExecution.ps1`
+- `scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticInspect.ps1`
+- `scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticBundleExport.ps1`
 
 ## What This Implementation Does
 - Accepts a structured write plan JSON.
@@ -82,6 +85,11 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - Adds read-only AP binary discovery inspection by list, `discovery_id`, and explicit path.
 - Adds non-executing AP binary preflight packets under `examples/sandbox/ap-binary-preflights` derived from binary discovery plus AP execution preflight evidence.
 - Keeps AP binary preflight non-executing with `required_manual_confirmation=true`, `local_only=true`, and `execution_admitted=false`.
+- Adds sandbox-only real AP binary diagnostic execution under `examples/sandbox/ap-real-binary-diagnostic-executions`.
+- Requires explicit approval (`-ApproveRealBinaryDiagnosticExecution`) plus AP binary preflight readiness `ready_for_future_real_ap_execution_request`.
+- Restricts diagnostic execution to allowlisted args only (`--help`, `-help`, `/?`, `--version`, `-version`) and blocks shell operators, traversal, Cache paths, and `assetdb.sqlite` references.
+- Captures sandbox-local stdout/stderr/hash evidence and supports read-only inspection.
+- Adds sandbox-only real binary diagnostic bundle export under `examples/sandbox/ap-real-binary-diagnostic-bundles` with JSON + stdout/stderr text only.
 - Enforces capability-state boundaries via `examples/capabilities/maxine-capability-matrix.json`.
 - Allows rollback only for files listed in the receipt and only under the approved sandbox root.
 

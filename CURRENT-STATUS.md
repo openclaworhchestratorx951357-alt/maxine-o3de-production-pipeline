@@ -50,6 +50,10 @@
   - `scripts/powershell/Invoke-MaxineApBinaryDiscoveryRead.ps1`
   - `scripts/powershell/Invoke-MaxineApBinaryDiscoveryInspect.ps1`
   - `scripts/powershell/Invoke-MaxineApBinaryPreflightBuild.ps1`
+- AP real-binary diagnostic execution commands are implemented (local-only, approval-gated, diagnostic-only):
+  - `scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticExecution.ps1`
+  - `scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticInspect.ps1`
+  - `scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticBundleExport.ps1`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -77,6 +81,8 @@
 - AP diagnostic execution bundle output is restricted to `examples/sandbox/ap-diagnostic-execution-bundles`.
 - AP binary discovery output is restricted to `examples/sandbox/ap-binary-discovery`.
 - AP binary preflight output is restricted to `examples/sandbox/ap-binary-preflights`.
+- AP real-binary diagnostic execution output is restricted to `examples/sandbox/ap-real-binary-diagnostic-executions`.
+- AP real-binary diagnostic bundle output is restricted to `examples/sandbox/ap-real-binary-diagnostic-bundles`.
 - Explicit sandbox approval is required in the input plan.
 - Production paths, engine paths, Cache paths, and parent traversal paths are blocked.
 - `scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1` remains absent.
@@ -101,6 +107,13 @@
   - no recursive search is performed
   - `execution_admitted` remains `false`
   - `real_asset_processor_execution` remains blocked
+- AP real-binary diagnostic execution is narrowly admitted as sandbox-only:
+  - requires `-ApproveRealBinaryDiagnosticExecution`
+  - requires AP binary preflight readiness `ready_for_future_real_ap_execution_request`
+  - execution mode is fixed to `RealBinaryDiagnosticOnly`
+  - diagnostic argument is allowlisted (`--help`, `-help`, `/?`, `--version`, `-version`)
+  - captures stdout/stderr and execution record under sandbox-only paths
+  - keeps broad `asset_processor_execution` and `real_asset_processor_execution` blocked
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
 
 ## Verification Entry Points

@@ -1,0 +1,96 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_ap_real_binary_diagnostic_execution.schema.json",
+  "title": "Maxine AP Real Binary Diagnostic Execution",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "real_binary_diagnostic_execution_id",
+    "source_ap_binary_preflight_id",
+    "sandbox_root",
+    "selected_binary_path",
+    "binary_kind",
+    "execution_mode",
+    "approved_by_flag",
+    "diagnostic_argument",
+    "command_display",
+    "command_executed",
+    "command_allowlisted",
+    "local_only",
+    "timeout_seconds",
+    "exit_code",
+    "stdout_path",
+    "stderr_path",
+    "stdout_sha256",
+    "stderr_sha256",
+    "execution_status",
+    "blocked_reason",
+    "product_ids_claimed",
+    "asset_ids_claimed",
+    "source_uuids_claimed",
+    "product_resolution_claimed",
+    "cache_access_admitted",
+    "live_database_access_admitted",
+    "spawn_admitted",
+    "publish_admitted",
+    "explicit_non_admissions",
+    "output_path",
+    "started_utc",
+    "completed_utc"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "real_binary_diagnostic_execution_id": { "type": "string", "minLength": 1 },
+    "source_ap_binary_preflight_id": { "type": "string", "minLength": 1 },
+    "sandbox_root": { "type": "string", "const": "examples/sandbox" },
+    "selected_binary_path": { "type": "string", "minLength": 1 },
+    "binary_kind": {
+      "type": "string",
+      "enum": ["AssetProcessorBatch", "AssetProcessor"]
+    },
+    "execution_mode": { "type": "string", "const": "RealBinaryDiagnosticOnly" },
+    "approved_by_flag": { "type": "boolean" },
+    "diagnostic_argument": {
+      "type": "string",
+      "enum": ["--help", "-help", "/?", "--version", "-version"]
+    },
+    "command_display": { "type": "string", "minLength": 1 },
+    "command_executed": { "type": "boolean" },
+    "command_allowlisted": { "type": "boolean" },
+    "local_only": { "type": "boolean", "const": true },
+    "timeout_seconds": { "type": "integer", "minimum": 1, "maximum": 600 },
+    "exit_code": { "type": ["integer", "null"] },
+    "stdout_path": { "type": "string" },
+    "stderr_path": { "type": "string" },
+    "stdout_sha256": {
+      "type": "string",
+      "pattern": "^$|^[a-fA-F0-9]{64}$"
+    },
+    "stderr_sha256": {
+      "type": "string",
+      "pattern": "^$|^[a-fA-F0-9]{64}$"
+    },
+    "execution_status": {
+      "type": "string",
+      "enum": ["succeeded", "failed", "blocked", "timed_out"]
+    },
+    "blocked_reason": { "type": "string" },
+    "product_ids_claimed": { "type": "boolean", "const": false },
+    "asset_ids_claimed": { "type": "boolean", "const": false },
+    "source_uuids_claimed": { "type": "boolean", "const": false },
+    "product_resolution_claimed": { "type": "boolean", "const": false },
+    "cache_access_admitted": { "type": "boolean", "const": false },
+    "live_database_access_admitted": { "type": "boolean", "const": false },
+    "spawn_admitted": { "type": "boolean", "const": false },
+    "publish_admitted": { "type": "boolean", "const": false },
+    "explicit_non_admissions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "output_path": { "type": "string", "minLength": 1 },
+    "started_utc": { "type": "string", "minLength": 1 },
+    "completed_utc": { "type": "string", "minLength": 1 }
+  }
+}
