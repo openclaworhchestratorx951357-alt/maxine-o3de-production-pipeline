@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "MATERIAL_UV_QC_v1_REPORT",
+  "job_id": "job-release-character-material-uv-fail-001",
+  "package_id": "char.maxine.raider_khal",
+  "lane": "release_character",
+  "status": "fail",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-material-uv-fail-001/o3de/source/raider_khal_conformed.fbx",
+    "source_kind": "fbx"
+  },
+  "target": {
+    "package_tier": "hero",
+    "material_profile": "StandardPBR"
+  },
+  "material_summary": {
+    "material_slot_count": 7,
+    "material_slot_budget": 10,
+    "slot_budget_exceeded_severity": "warning",
+    "missing_materials": [
+      "body"
+    ],
+    "unsupported_materials": [
+      "LegacyPhongSkin"
+    ],
+    "texture_references": [],
+    "missing_textures": [
+      "textures/raider_khal/body_albedo.png"
+    ]
+  },
+  "uv_summary": {
+    "required_uv_sets": [
+      "UV0",
+      "UV1"
+    ],
+    "present_uv_sets": [
+      "UV0"
+    ],
+    "missing_uv_sets": [
+      "UV1"
+    ],
+    "overlapping_uvs_status": "major",
+    "out_of_bounds_uvs_status": "major"
+  },
+  "texture_budget": {
+    "max_texture_resolution": 2048,
+    "oversized_textures": [],
+    "oversized_textures_severity": "warning",
+    "texture_count": 9
+  },
+  "findings": [
+    {
+      "id": "missing_required_uv",
+      "severity": "error",
+      "status": "open",
+      "message": "Required UV set UV1 is missing."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "material_uv_qc_v1",
+      "result": "fail",
+      "severity": "error",
+      "details": {
+        "summary": "Required material and UV requirements not met."
+      }
+    }
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "MATERIAL_UV_QC_v1_REPORT",
+  "job_id": "job-release-character-material-uv-pass-001",
+  "package_id": "char.maxine.knight_arden",
+  "lane": "release_character",
+  "status": "pass",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-material-uv-pass-001/o3de/source/knight_arden_conformed.fbx",
+    "source_kind": "fbx",
+    "sha256": "495243f4cb52c5a6051f4dbfe5a66f5ea1258e0c26a56ece02db23e0378742be"
+  },
+  "target": {
+    "package_tier": "hero",
+    "material_profile": "StandardPBR"
+  },
+  "material_summary": {
+    "material_slot_count": 8,
+    "material_slot_budget": 10,
+    "slot_budget_exceeded_severity": "warning",
+    "missing_materials": [],
+    "unsupported_materials": [],
+    "texture_references": [
+      {
+        "material_slot": "body",
+        "texture_path": "textures/knight_arden/body_albedo.png",
+        "texture_kind": "albedo",
+        "resolution": 2048
+      },
+      {
+        "material_slot": "body",
+        "texture_path": "textures/knight_arden/body_normal.png",
+        "texture_kind": "normal",
+        "resolution": 2048
+      }
+    ],
+    "missing_textures": []
+  },
+  "uv_summary": {
+    "required_uv_sets": [
+      "UV0"
+    ],
+    "present_uv_sets": [
+      "UV0",
+      "UV1"
+    ],
+    "missing_uv_sets": [],
+    "overlapping_uvs_status": "none",
+    "out_of_bounds_uvs_status": "none"
+  },
+  "texture_budget": {
+    "max_texture_resolution": 2048,
+    "oversized_textures": [],
+    "oversized_textures_severity": "warning",
+    "texture_count": 16
+  },
+  "findings": [],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "material_uv_qc_v1",
+      "result": "pass",
+      "severity": "info",
+      "details": {
+        "summary": "Material slots, UV sets, and texture references satisfy v1 policy."
+      }
+    }
+  }
+}

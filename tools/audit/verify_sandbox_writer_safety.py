@@ -68,6 +68,7 @@ REQUIRED_FILES = [
     "schemas/maxine_ap_real_binary_diagnostic_execution.schema.json",
     "schemas/maxine_ap_real_binary_diagnostic_bundle.schema.json",
     "schemas/maxine_dcc_conform_report.schema.json",
+    "schemas/maxine_material_uv_qc_report.schema.json",
     "schemas/maxine_capability_matrix.schema.json",
     "examples/sandbox/receipts/index.json",
     "examples/sandbox/evidence-bundles/.gitkeep",
@@ -91,6 +92,9 @@ REQUIRED_FILES = [
     "examples/dcc-conform/max_biped_v1_conform_pass.json",
     "examples/dcc-conform/max_biped_v1_conform_warn.json",
     "examples/dcc-conform/max_biped_v1_conform_fail.json",
+    "examples/material-uv-qc/max_biped_v1_material_uv_pass.json",
+    "examples/material-uv-qc/max_biped_v1_material_uv_warn.json",
+    "examples/material-uv-qc/max_biped_v1_material_uv_fail.json",
     "examples/capabilities/maxine-capability-matrix.json",
     "examples/sandbox/review-packets/.gitkeep",
     "examples/sandbox/review-decisions/.gitkeep",
@@ -98,6 +102,8 @@ REQUIRED_FILES = [
     "examples/sandbox/staging/.gitkeep",
     "tools/dcc-conform/validate_dcc_conform_report.py",
     "docs/maxine/specs/dcc-conform-v1.md",
+    "tools/material-uv-qc/validate_material_uv_qc_report.py",
+    "docs/maxine/specs/material-uv-qc-v1.md",
 ]
 
 

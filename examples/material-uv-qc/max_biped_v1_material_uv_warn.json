@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "MATERIAL_UV_QC_v1_REPORT",
+  "job_id": "job-release-character-material-uv-warn-001",
+  "package_id": "char.maxine.guard_mira",
+  "lane": "release_character",
+  "status": "warn",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-material-uv-warn-001/o3de/source/guard_mira_conformed.fbx",
+    "source_kind": "fbx",
+    "sha256": "5a87e89d62ebf6b6c7c8f8a5ed1455c4da88c6db3f4ffc04532c811d7e569fb4"
+  },
+  "target": {
+    "package_tier": "npc",
+    "material_profile": "StandardPBR"
+  },
+  "material_summary": {
+    "material_slot_count": 11,
+    "material_slot_budget": 10,
+    "slot_budget_exceeded_severity": "warning",
+    "missing_materials": [],
+    "unsupported_materials": [],
+    "texture_references": [
+      {
+        "material_slot": "cape",
+        "texture_path": "textures/guard_mira/cape_albedo.png",
+        "texture_kind": "albedo",
+        "resolution": 4096
+      }
+    ],
+    "missing_textures": []
+  },
+  "uv_summary": {
+    "required_uv_sets": [
+      "UV0"
+    ],
+    "present_uv_sets": [
+      "UV0"
+    ],
+    "missing_uv_sets": [],
+    "overlapping_uvs_status": "minor",
+    "out_of_bounds_uvs_status": "unknown"
+  },
+  "texture_budget": {
+    "max_texture_resolution": 2048,
+    "oversized_textures": [
+      {
+        "texture_path": "textures/guard_mira/cape_albedo.png",
+        "actual_resolution": 4096
+      }
+    ],
+    "oversized_textures_severity": "warning",
+    "texture_count": 14
+  },
+  "findings": [
+    {
+      "id": "texture_over_budget",
+      "severity": "warning",
+      "status": "open",
+      "message": "One texture exceeds recommended max resolution."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "material_uv_qc_v1",
+      "result": "warn",
+      "severity": "warning",
+      "details": {
+        "summary": "Material/UV readiness acceptable with non-blocking warnings."
+      }
+    }
+  }
+}

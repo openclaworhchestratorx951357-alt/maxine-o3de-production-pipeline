@@ -46,3 +46,10 @@ The contract is designed so automation, operators, and CI can evaluate a job sta
 - Current manifest attachment path: `qc.gates[]`.
 - Future-compatible path: `qc.checks[]`.
 - Suggested check id: `dcc_conform_v1`.
+
+## Material/UV QC Attachment Point
+
+- `MATERIAL_UV_QC_v1` report validation output is attachable to manifest QC.
+- Current manifest attachment path: `qc.gates[]`.
+- Future-compatible path: `qc.checks[]`.
+- Suggested check id: `material_uv_qc_v1`.

@@ -66,6 +66,13 @@
   - `examples/dcc-conform/max_biped_v1_conform_warn.json`
   - `examples/dcc-conform/max_biped_v1_conform_fail.json`
   - `docs/maxine/specs/dcc-conform-v1.md`
+- Material/UV QC v1 evidence report validation is implemented (contract-first, non-executing evidence only):
+  - `schemas/maxine_material_uv_qc_report.schema.json`
+  - `tools/material-uv-qc/validate_material_uv_qc_report.py`
+  - `examples/material-uv-qc/max_biped_v1_material_uv_pass.json`
+  - `examples/material-uv-qc/max_biped_v1_material_uv_warn.json`
+  - `examples/material-uv-qc/max_biped_v1_material_uv_fail.json`
+  - `docs/maxine/specs/material-uv-qc-v1.md`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -132,6 +139,10 @@
   - does not execute O3DE/AP, spawn, publish, or Cache/live DB access
 - DCC conform v1 report validation remains non-executing evidence-only:
   - validates DCC conform report JSON against `MAX_BIPED_v1` and manifest attachment rules
+  - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Material/UV QC v1 report validation remains non-executing evidence-only:
+  - validates Material/UV QC report JSON against release-lane material, UV, and texture-budget rules
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
