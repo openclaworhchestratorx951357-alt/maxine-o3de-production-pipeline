@@ -135,6 +135,13 @@
   - `examples/release-publication-execution-admission-gate/max_biped_v1_release_publication_execution_admission_gate_warn.json`
   - `examples/release-publication-execution-admission-gate/max_biped_v1_release_publication_execution_admission_gate_fail.json`
   - `docs/maxine/specs/release-publication-execution-admission-gate-v1.md`
+- Release publication execution request ledger v1 report validation is implemented (contract-first, non-executing evidence only):
+  - `schemas/maxine_release_publication_execution_request_ledger_report.schema.json`
+  - `tools/release-publication-execution-request-ledger/validate_release_publication_execution_request_ledger_report.py`
+  - `examples/release-publication-execution-request-ledger/max_biped_v1_release_publication_execution_request_ledger_pass.json`
+  - `examples/release-publication-execution-request-ledger/max_biped_v1_release_publication_execution_request_ledger_warn.json`
+  - `examples/release-publication-execution-request-ledger/max_biped_v1_release_publication_execution_request_ledger_fail.json`
+  - `docs/maxine/specs/release-publication-execution-request-ledger-v1.md`
 - Source Product Evidence Resolver v1 evidence report validation is implemented (deterministic evidence bridge, non-executing evidence only):
   - `schemas/maxine_source_product_evidence_resolver_report.schema.json`
   - `tools/source-product-evidence-resolver/validate_source_product_evidence_resolver_report.py`
@@ -160,6 +167,7 @@
   - `examples/release-publication-preflight/max_biped_v1_release_publication_preflight_pass.json`
   - `examples/release-publication-request-approval/max_biped_v1_release_publication_request_approval_pass.json`
   - `examples/release-publication-execution-admission-gate/max_biped_v1_release_publication_execution_admission_gate_pass.json`
+  - `examples/release-publication-execution-request-ledger/max_biped_v1_release_publication_execution_request_ledger_pass.json`
   - `examples/manifest-qc-attachments/max_biped_v1_release_publication_rollback_drill_attach_pass.json`
   - `examples/manifest-qc-attachments/max_biped_v1_release_publication_ready_for_execution_request_attach_pass.json`
   - `docs/maxine/specs/pilot-release-chain-validation-runner-v1.md`
@@ -298,6 +306,10 @@
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - Release publication execution admission gate v1 report validation remains non-executing evidence-only:
   - validates execution-admission gate evidence while keeping execution unadmitted
+  - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Release publication execution request ledger v1 report validation remains non-executing evidence-only:
+  - validates immutable execution-request ledger and audit-bundle evidence while keeping execution unadmitted
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
