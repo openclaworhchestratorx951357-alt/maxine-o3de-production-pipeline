@@ -52,6 +52,18 @@ Get-ChildItem .\examples\jobs
 Get-ChildItem .\examples\manifests
 ```
 
+## Current Release-Lane Status
+
+- Active integration branch baseline: `codex/pilot-rollback-readiness-evidence-v1`
+- The evidence-only pilot release chain is operational (`pilot_chain_status=pass`, `final_gate_count=23`).
+- AAA-quality output is not yet fully operational.
+- Execution admission remains future work requiring explicit approval.
+
+Start here for review readiness details:
+
+- `docs/maxine/release-lane-pilot-readiness-report-v1.md`
+- `docs/maxine/release-lane-gate-chain-v1.md`
+
 ## M.A.X.I.N.E. Resolver Ladder
 
 This repository now contains a read-only, manifest-first resolver ladder that progressively builds non-authoritative evidence from contract recording through final execution gate policy.
