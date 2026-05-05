@@ -144,6 +144,10 @@ REQUIRED_FILES = [
     "examples/release-publication-execution-request-ledger/max_biped_v1_release_publication_execution_request_ledger_pass.json",
     "examples/release-publication-execution-request-ledger/max_biped_v1_release_publication_execution_request_ledger_warn.json",
     "examples/release-publication-execution-request-ledger/max_biped_v1_release_publication_execution_request_ledger_fail.json",
+    "schemas/maxine_release_publication_execution_receipt_report.schema.json",
+    "examples/release-publication-execution-receipt/max_biped_v1_release_publication_execution_receipt_pass.json",
+    "examples/release-publication-execution-receipt/max_biped_v1_release_publication_execution_receipt_warn.json",
+    "examples/release-publication-execution-receipt/max_biped_v1_release_publication_execution_receipt_fail.json",
     "examples/capabilities/maxine-capability-matrix.json",
     "examples/sandbox/review-packets/.gitkeep",
     "examples/sandbox/review-decisions/.gitkeep",
@@ -187,6 +191,8 @@ REQUIRED_FILES = [
     "docs/maxine/specs/release-publication-execution-admission-gate-v1.md",
     "tools/release-publication-execution-request-ledger/validate_release_publication_execution_request_ledger_report.py",
     "docs/maxine/specs/release-publication-execution-request-ledger-v1.md",
+    "tools/release-publication-execution-receipt/validate_release_publication_execution_receipt_report.py",
+    "docs/maxine/specs/release-publication-execution-receipt-v1.md",
 ]
 
 
