@@ -51,7 +51,7 @@
       "order": 8,
       "check_id": "ci_artifact_retention_v1",
       "required": true,
-      "implemented": false
+      "implemented": true
     },
     {
       "order": 9,

@@ -22,6 +22,7 @@ REQUIRED_IMPLEMENTED_GATE_IDS = {
     "animation_smoke_v1",
     "screenshot_evidence_v1",
     "manual_hero_review_v1",
+    "ci_artifact_retention_v1",
     "release_publication_rollback_drill_v1",
     "release_publication_ready_for_execution_request_v1",
 }
