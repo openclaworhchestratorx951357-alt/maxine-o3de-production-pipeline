@@ -1,0 +1,111 @@
+﻿{
+  "schema_version": "1.0.0",
+  "report_type": "RELEASE_PUBLICATION_EXECUTION_ADMISSION_GATE_v1_REPORT",
+  "job_id": "job-release-admission-gate-warn-001",
+  "package_id": "char.maxine.guard_mira",
+  "lane": "release_character",
+  "status": "warn",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-admission-gate-warn-001/manifest.json",
+    "source_kind": "manifest"
+  },
+  "admission_contract": {
+    "contract_id": "RELEASE_PUBLICATION_EXECUTION_ADMISSION_GATE_v1",
+    "required_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1",
+      "release_promotion_decision_v1",
+      "release_publication_preflight_v1",
+      "release_publication_request_approval_v1"
+    ],
+    "required_approvals": 2,
+    "manual_review_required": true,
+    "explicit_execution_admission_required": true,
+    "evidence_only": true,
+    "execution_admitted": false
+  },
+  "execution_gate_request": {
+    "request_id": "release-admission-request-002",
+    "request_recorded_utc": "2026-05-05T04:15:00Z",
+    "requested_by": "ops.release_lead",
+    "requested_action": "admit_publication_execution",
+    "target_environment": "release_candidate",
+    "publish_command_display": "DisplayOnly Admission Request: release_bundle publish --manifest artifacts/jobs/job-release-admission-gate-warn-001/manifest.json --no-execute",
+    "rollback_command_display": "DisplayOnly Admission Rollback Plan: release_bundle rollback --manifest artifacts/jobs/job-release-admission-gate-warn-001/manifest.json --no-execute",
+    "no_command_execution_recorded": true,
+    "dry_run_evidence_paths": [
+      "artifacts/jobs/job-release-admission-gate-warn-001/release-bundle/manifest.json",
+      "artifacts/jobs/job-release-admission-gate-warn-001/release-bundle/artifact-index.json"
+    ]
+  },
+  "admission_assessment": {
+    "admission_decision": "ready_for_future_admission_review",
+    "approver_ids": [
+      "ops.release_lead",
+      "art.release_lead"
+    ],
+    "blocked_reason_codes": [],
+    "rollback_plan_verified": true,
+    "cleanup_plan_verified": true,
+    "publish_execution_admitted": false,
+    "o3de_execution_admitted": false,
+    "asset_processor_execution_admitted": false,
+    "spawn_execution_admitted": false
+  },
+  "readiness": {
+    "required_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1",
+      "release_promotion_decision_v1",
+      "release_publication_preflight_v1",
+      "release_publication_request_approval_v1"
+    ],
+    "present_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1",
+      "release_promotion_decision_v1",
+      "release_publication_preflight_v1",
+      "release_publication_request_approval_v1"
+    ],
+    "missing_gate_ids": [],
+    "release_readiness_state": "ready_for_manual_execution_admission_review"
+  },
+  "findings": [
+    {
+      "id": "admission_window_near_expiry",
+      "severity": "warning",
+      "status": "open",
+      "message": "Admission review window is near expiry; refresh review evidence if delayed."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "release_publication_execution_admission_gate_v1",
+      "result": "warn",
+      "severity": "warning",
+      "details": {
+        "summary": "Execution admission gate ready with advisory warning."
+      }
+    }
+  }
+}

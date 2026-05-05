@@ -81,7 +81,7 @@
       "order": 13,
       "check_id": "release_publication_execution_admission_gate_v1",
       "required": true,
-      "implemented": false
+      "implemented": true
     },
     {
       "order": 14,

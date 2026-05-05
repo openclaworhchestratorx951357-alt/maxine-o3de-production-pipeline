@@ -88,4 +88,5 @@ def test_release_pilot_chain_manifest_contains_required_gate_ids():
     assert "release_promotion_decision_v1" in gate_ids
     assert "release_publication_preflight_v1" in gate_ids
     assert "release_publication_request_approval_v1" in gate_ids
+    assert "release_publication_execution_admission_gate_v1" in gate_ids
     assert "release_publication_gate_set_v1" in gate_ids

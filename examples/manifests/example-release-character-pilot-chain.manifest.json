@@ -150,11 +150,12 @@
       },
       {
         "check_id": "release_publication_execution_admission_gate_v1",
-        "result": "pending_manual",
-        "severity": "manual_review",
+        "result": "pass",
+        "severity": "info",
         "details": {
-          "implemented_on_main": false,
-          "evidence_source": "future_admission_gate"
+          "implemented_in_stack": true,
+          "evidence_source": "fixture",
+          "summary": "Execution admission gate evidence validates explicit manual admission prerequisites without admitting execution."
         }
       },
       {
