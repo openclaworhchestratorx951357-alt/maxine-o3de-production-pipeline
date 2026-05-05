@@ -64,3 +64,24 @@ def test_release_qc_attach_base_manifest_has_qc_arrays():
     assert isinstance(qc, dict)
     assert isinstance(qc.get("gates"), list)
     assert isinstance(qc.get("checks"), list)
+
+
+def test_release_pilot_chain_manifest_contains_required_gate_ids():
+    repo_root = Path(__file__).resolve().parents[2]
+    manifest_path = (
+        repo_root
+        / "examples"
+        / "manifests"
+        / "example-release-character-pilot-chain.manifest.json"
+    )
+    data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    qc = data.get("qc", {})
+    gates = qc.get("gates", []) if isinstance(qc, dict) else []
+    gate_ids = {
+        str(item.get("check_id", "")).strip()
+        for item in gates
+        if isinstance(item, dict)
+    }
+    assert "max_biped_v1_skeleton_contract" in gate_ids
+    assert "source_product_evidence_resolver_v1" in gate_ids
+    assert "release_publication_gate_set_v1" in gate_ids

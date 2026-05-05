@@ -117,6 +117,15 @@ SOURCE_PRODUCT_EVIDENCE_RESOLVER_VALIDATOR_REL = (
 )
 MANIFEST_QC_ATTACHMENT_SCHEMA_REL = "schemas/maxine_manifest_qc_attachment.schema.json"
 MANIFEST_QC_ATTACH_TOOL_REL = "tools/manifest-validator/attach_qc_gate.py"
+PILOT_RELEASE_CHAIN_VALIDATOR_REL = (
+    "tools/release-lane/validate_pilot_release_chain.py"
+)
+PILOT_RELEASE_CHAIN_FIXTURE_REL = (
+    "examples/release-lane-gate-chain/max_biped_v1_release_lane_gate_chain.json"
+)
+PILOT_RELEASE_CHAIN_MANIFEST_REL = (
+    "examples/manifests/example-release-character-pilot-chain.manifest.json"
+)
 CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
@@ -680,6 +689,18 @@ REQUIRED_MANIFEST_QC_ATTACH_TOOL_NEEDLES = [
     "duplicate check_id",
 ]
 
+REQUIRED_PILOT_RELEASE_CHAIN_VALIDATOR_NEEDLES = [
+    "pilot_release_chain_v1",
+    "max_biped_v1_skeleton_contract",
+    "dcc_conform_v1",
+    "source_product_evidence_resolver_v1",
+    "material_uv_qc_v1",
+    "animation_smoke_v1",
+    "qc.gates[]",
+    "qc.checks[]",
+    "--allow-warn",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -783,6 +804,7 @@ EXPECTED_CAPABILITY_STATES = {
     "ap_real_binary_diagnostic_execution": "sandbox_only",
     "source_product_evidence_resolver_validate": "read_only",
     "manifest_qc_attachment_pipeline": "sandbox_only",
+    "pilot_release_chain_validation": "read_only",
     "real_asset_processor_execution": "blocked",
     "authoritative_resolver_write": "forbidden",
     "o3de_editor_execution": "blocked",
@@ -891,6 +913,9 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     )
     manifest_qc_attachment_schema = root / MANIFEST_QC_ATTACHMENT_SCHEMA_REL
     manifest_qc_attach_tool = root / MANIFEST_QC_ATTACH_TOOL_REL
+    pilot_release_chain_validator = root / PILOT_RELEASE_CHAIN_VALIDATOR_REL
+    pilot_release_chain_fixture = root / PILOT_RELEASE_CHAIN_FIXTURE_REL
+    pilot_release_chain_manifest = root / PILOT_RELEASE_CHAIN_MANIFEST_REL
     capability_matrix = root / CAPABILITY_MATRIX_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -2358,6 +2383,84 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         except Exception as exc:  # pragma: no cover - defensive failure surface
             failures.append(
                 "Manifest QC attachment schema is not valid JSON: "
+                f"{exc}"
+            )
+
+    if pilot_release_chain_validator.exists():
+        pilot_chain_validator_text = _read_text(pilot_release_chain_validator)
+        for needle in REQUIRED_PILOT_RELEASE_CHAIN_VALIDATOR_NEEDLES:
+            if needle not in pilot_chain_validator_text:
+                failures.append(
+                    "Pilot release chain validator missing required needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "start-process",
+            "invoke-expression",
+            "subprocess.popen(",
+            "shell=true",
+            "assetdb.sqlite",
+            "sqlite3.connect(",
+            "o3de.exe",
+            "editor.exe",
+            "assetprocessorbatch",
+        ):
+            if forbidden_phrase in pilot_chain_validator_text:
+                failures.append(
+                    "Pilot release chain validator contains forbidden phrase: "
+                    f"{forbidden_phrase}"
+                )
+
+    if pilot_release_chain_fixture.exists():
+        try:
+            fixture = json.loads(
+                pilot_release_chain_fixture.read_text(encoding="utf-8-sig")
+            )
+            if fixture.get("manifest_attachment_target_path") != "qc.gates[]":
+                failures.append(
+                    "Pilot release chain fixture must keep manifest_attachment_target_path as qc.gates[]."
+                )
+            if fixture.get("future_manifest_attachment_target_path") != "qc.checks[]":
+                failures.append(
+                    "Pilot release chain fixture must keep future_manifest_attachment_target_path as qc.checks[]."
+                )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "Pilot release chain fixture is not valid JSON: "
+                f"{exc}"
+            )
+
+    if pilot_release_chain_manifest.exists():
+        try:
+            pilot_manifest = json.loads(
+                pilot_release_chain_manifest.read_text(encoding="utf-8-sig")
+            )
+            qc = pilot_manifest.get("qc", {})
+            gates = qc.get("gates", []) if isinstance(qc, dict) else []
+            if not isinstance(gates, list):
+                failures.append("Pilot release chain manifest qc.gates must be an array.")
+            else:
+                gate_ids = {
+                    str(item.get("check_id", "")).strip()
+                    for item in gates
+                    if isinstance(item, dict)
+                }
+                for required_check in (
+                    "max_biped_v1_skeleton_contract",
+                    "dcc_conform_v1",
+                    "source_product_evidence_resolver_v1",
+                    "material_uv_qc_v1",
+                    "animation_smoke_v1",
+                    "release_publication_gate_set_v1",
+                ):
+                    if required_check not in gate_ids:
+                        failures.append(
+                            "Pilot release chain manifest is missing required gate check_id: "
+                            f"{required_check}"
+                        )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "Pilot release chain manifest fixture is not valid JSON: "
                 f"{exc}"
             )
 

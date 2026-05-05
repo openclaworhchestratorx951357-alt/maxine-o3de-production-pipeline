@@ -94,6 +94,11 @@
   - `examples/manifest-qc-attachments/max_biped_v1_dcc_conform_attach_warn.json`
   - `examples/manifest-qc-attachments/max_biped_v1_source_product_attach_fail.json`
   - `examples/manifests/example-release-character-qc-attach-base.manifest.json`
+- Pilot release package chain v1 integration is implemented (manifest-first chain completeness check, non-executing evidence integration only):
+  - `tools/release-lane/validate_pilot_release_chain.py`
+  - `examples/release-lane-gate-chain/max_biped_v1_release_lane_gate_chain.json`
+  - `examples/manifests/example-release-character-pilot-chain.manifest.json`
+  - `docs/maxine/specs/pilot-release-package-chain-v1.md`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -179,6 +184,11 @@
   - appends validator QC payloads into manifest `qc.gates[]` or `qc.checks[]`
   - blocks duplicate gate IDs by default
   - preserves unknown manifest fields and writes atomically
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Pilot release package chain validation remains non-executing evidence integration only:
+  - validates required gate presence/order for pilot release manifests
+  - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - rejects duplicate gate IDs and invalid implemented/unimplemented gate state claims
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
 

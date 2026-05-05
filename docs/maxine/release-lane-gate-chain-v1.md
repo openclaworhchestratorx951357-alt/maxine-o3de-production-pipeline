@@ -38,8 +38,10 @@ This consolidation checkpoint indexes the release-lane gates in sequence and mar
 
 AAA-quality output is still not fully operational. Before that state, the project still needs:
 
-- manifest QC attachment pipeline wired end-to-end
+- pilot chain fixture + validator are now available:
+  - `examples/manifests/example-release-character-pilot-chain.manifest.json`
+  - `tools/release-lane/validate_pilot_release_chain.py`
 - bounded real evidence extraction from controlled sources
 - controlled O3DE/AP evidence integration (still blocked today)
-- pilot package proof across the chain
+- promotion from fixture proof to controlled real evidence across the chain
 - human review and rollback validation

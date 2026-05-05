@@ -123,6 +123,10 @@ REQUIRED_FILES = [
     "docs/maxine/specs/source-product-evidence-resolver-v1.md",
     "tools/manifest-validator/attach_qc_gate.py",
     "docs/maxine/specs/manifest-qc-attachment-pipeline-v1.md",
+    "tools/release-lane/validate_pilot_release_chain.py",
+    "examples/release-lane-gate-chain/max_biped_v1_release_lane_gate_chain.json",
+    "examples/manifests/example-release-character-pilot-chain.manifest.json",
+    "docs/maxine/specs/pilot-release-package-chain-v1.md",
     "docs/maxine/release-lane-gate-chain-v1.md",
 ]
 

@@ -83,9 +83,11 @@ Manifest QC payload attachment is deterministic and script-driven:
 
 This is evidence integration only. It does not admit O3DE/AP execution, spawn/publish, or live Cache/DB access.
 
-## Source Product Evidence Resolver QC Attachment Point
+## Pilot Chain Attachment Point
 
-- `SOURCE_PRODUCT_EVIDENCE_RESOLVER_v1` validation output is attachable to manifest QC.
+- `PILOT_RELEASE_CHAIN_v1` validation output is attachable to manifest QC.
 - Current manifest attachment path: `qc.gates[]`.
 - Future-compatible path: `qc.checks[]`.
-- Suggested check id: `source_product_evidence_resolver_v1`.
+- Suggested check id: `pilot_release_chain_v1`.
+- Pilot manifest fixture:
+  - `examples/manifests/example-release-character-pilot-chain.manifest.json`.

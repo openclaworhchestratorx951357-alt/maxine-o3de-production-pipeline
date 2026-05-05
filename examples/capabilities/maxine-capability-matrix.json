@@ -36,6 +36,7 @@
     "ap_real_binary_diagnostic_execution": "sandbox_only",
     "source_product_evidence_resolver_validate": "read_only",
     "manifest_qc_attachment_pipeline": "sandbox_only",
+    "pilot_release_chain_validation": "read_only",
     "real_asset_processor_execution": "blocked",
     "authoritative_resolver_write": "forbidden",
     "o3de_editor_execution": "blocked",
