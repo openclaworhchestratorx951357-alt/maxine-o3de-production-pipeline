@@ -39,6 +39,9 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - `scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticExecution.ps1`
 - `scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticInspect.ps1`
 - `scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticBundleExport.ps1`
+- `scripts/powershell/Invoke-MaxineApSourceFileDiagnosticPreflightBuild.ps1`
+- `scripts/powershell/Invoke-MaxineApSourceFileDiagnosticPreflightInspect.ps1`
+- `scripts/powershell/Invoke-MaxineApSourceFileDiagnosticPreflightBundleExport.ps1`
 
 ## What This Implementation Does
 - Accepts a structured write plan JSON.
@@ -90,6 +93,18 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - Restricts diagnostic execution to allowlisted args only (`--help`, `-help`, `/?`, `--version`, `-version`) and blocks shell operators, traversal, Cache paths, and `assetdb.sqlite` references.
 - Captures sandbox-local stdout/stderr/hash evidence and supports read-only inspection.
 - Adds sandbox-only real binary diagnostic bundle export under `examples/sandbox/ap-real-binary-diagnostic-bundles` with JSON + stdout/stderr text only.
+- Adds sandbox-only source-file AP diagnostic preflight under `examples/sandbox/ap-source-file-diagnostic-preflights`.
+- Keeps source-file diagnostic preflight non-executing with `required_manual_confirmation=true`, `local_only=true`, and `execution_admitted=false`.
+- Constrains source-file preflight proposed command display to single-candidate scope only (`--source-file`) and blocks shell operators, traversal, Cache paths, `assetdb.sqlite`, and whole-project scan flags.
+- Adds read-only source-file diagnostic preflight inspection by list, `source_file_diagnostic_preflight_id`, and explicit path.
+- Adds sandbox-only source-file diagnostic preflight bundle export under `examples/sandbox/ap-source-file-diagnostic-preflight-bundles` with JSON snapshots only.
+- Ensures source-file diagnostic preflight bundles do not copy source assets, AP binaries, Cache files, runtime artifacts, or database files.
+- Adds Manifest v1 lifecycle foundations for all job outcomes (success/fail/pending_manual):
+  - canonical manifest path under `evidence/jobs/<job_id>/manifest.json`
+  - structured `errors` entries for failures
+  - `manual_review` state support
+  - deterministic artifact subfolders (`logs`, `screenshots`, `o3de`, `qc`, `temp`, `undo`, `cleanup`)
+  - atomic manifest writes and schema validation on create/update
 - Enforces capability-state boundaries via `examples/capabilities/maxine-capability-matrix.json`.
 - Allows rollback only for files listed in the receipt and only under the approved sandbox root.
 
@@ -100,5 +115,6 @@ This slice adds a real, locked sandbox writer skeleton and a paired rollback ske
 - No Asset Processor execution.
 - No broad AP binary execution admission (`asset_processor_execution` remains blocked).
 - No real AP execution admission (`real_asset_processor_execution` remains blocked).
+- No source-file AP processing execution admission (`ap_source_file_processing_execution` remains blocked).
 - No product resolution or Asset ID claims.
 - No spawn/publish operations.

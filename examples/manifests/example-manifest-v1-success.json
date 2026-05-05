@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.0.0",
+  "job": {
+    "job_id": "job-v1-success-001",
+    "lane": "draft_mesh",
+    "status": "pass",
+    "submitted_at": "2026-05-04T12:00:00Z",
+    "started_at": "2026-05-04T12:00:05Z",
+    "finished_at": "2026-05-04T12:02:10Z",
+    "retry_of": null,
+    "operator": "service",
+    "created_utc": "2026-05-04T12:00:00Z",
+    "updated_utc": "2026-05-04T12:02:10Z"
+  },
+  "identity": {
+    "package_id": "maxine-v1-success-001",
+    "display_name": "Maxine V1 Success",
+    "tier": "draft",
+    "package_version": "0.1.0",
+    "character_id": "maxine-v1-success-001",
+    "character_name": "Maxine_V1_Success_001"
+  },
+  "inputs": [
+    {
+      "kind": "prompt",
+      "prompt": "Stylized O3DE-ready character test"
+    }
+  ],
+  "generation": {},
+  "dcc_conform": {},
+  "o3de": {
+    "project": "C:/Projects/MaxineShow",
+    "platform": "pc",
+    "source_assets": [
+      "Assets/Characters/Maxine/source/maxine.fbx"
+    ],
+    "expected_products": [
+      "Cache/pc/Assets/Characters/Maxine/maxine.actor"
+    ],
+    "products": [
+      "Cache/pc/Assets/Characters/Maxine/maxine.actor"
+    ]
+  },
+  "qc": {
+    "overall": "pass",
+    "checks": [
+      {
+        "name": "manifest-shape",
+        "result": "pass"
+      }
+    ]
+  },
+  "runtime_validation": {
+    "spawned": false,
+    "entity_id": null,
+    "screenshots": []
+  },
+  "evidence": {
+    "manifest_path": "evidence/jobs/job-v1-success-001/manifest.json",
+    "artifact_root": "evidence/jobs/job-v1-success-001",
+    "logs": [
+      "evidence/jobs/job-v1-success-001/logs/stdout.log"
+    ],
+    "screenshots": [],
+    "stdout_log": "evidence/jobs/job-v1-success-001/logs/stdout.log",
+    "stderr_log": null
+  },
+  "errors": [],
+  "provenance": {
+    "source_commit": null,
+    "pipeline_revision": null,
+    "build_run_id": null
+  },
+  "undo": {
+    "available": false,
+    "steps": []
+  },
+  "cleanup": {
+    "retention_class": "draft-7d",
+    "paths": [
+      "evidence/jobs/job-v1-success-001/temp",
+      "evidence/jobs/job-v1-success-001/cleanup"
+    ]
+  },
+  "manual_review": {
+    "required": false,
+    "reason": null,
+    "review_state": "not_required"
+  }
+}

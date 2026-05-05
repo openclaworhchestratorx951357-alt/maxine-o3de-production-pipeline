@@ -9,7 +9,16 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 
-VALID_STATUSES = {"pass", "warn", "fail", "pending_manual", "running", "queued"}
+VALID_STATUSES = {
+    "created",
+    "running",
+    "pass",
+    "warn",
+    "fail",
+    "pending_manual",
+    "cancelled",
+    "queued",  # legacy compatibility
+}
 VALID_LANES = {
     "draft_mesh",
     "text_mesh",
@@ -18,7 +27,7 @@ VALID_LANES = {
     "external_rig_import",
     "release_character",
 }
-VALID_QC_OVERALL = {"pass", "warn", "fail"}
+VALID_QC_OVERALL = {"not_run", "pass", "warn", "fail"}
 
 
 def load_json(path: Path) -> Dict[str, Any]:
@@ -48,11 +57,16 @@ def minimal_validate(data: Dict[str, Any]) -> List[str]:
     identity = data.get("identity")
     if not isinstance(identity, dict):
         errors.append("Missing required object: identity")
-    elif not identity.get("character_id"):
-        errors.append("Missing required field: identity.character_id")
+    else:
+        if not (identity.get("package_id") or identity.get("character_id")):
+            errors.append("Missing required identity key: package_id or character_id")
 
     if "inputs" not in data:
         errors.append("Missing required field: inputs")
+    else:
+        inputs = data.get("inputs")
+        if not isinstance(inputs, (list, dict)):
+            errors.append("inputs must be an array or object")
 
     qc = data.get("qc")
     if not isinstance(qc, dict):
@@ -61,6 +75,10 @@ def minimal_validate(data: Dict[str, Any]) -> List[str]:
         overall = qc.get("overall")
         if overall not in VALID_QC_OVERALL:
             errors.append(f"Invalid qc.overall: {overall!r}")
+
+    evidence = data.get("evidence")
+    if not isinstance(evidence, dict):
+        errors.append("Missing required object: evidence")
 
     return errors
 

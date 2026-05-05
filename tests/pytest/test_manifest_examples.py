@@ -11,7 +11,16 @@ VALID_LANES = {
     "release_character",
 }
 
-VALID_STATUSES = {"pass", "warn", "fail", "pending_manual", "running", "queued"}
+VALID_STATUSES = {
+    "created",
+    "running",
+    "pass",
+    "warn",
+    "fail",
+    "pending_manual",
+    "cancelled",
+    "queued",
+}
 
 
 def test_example_manifest_required_fields():

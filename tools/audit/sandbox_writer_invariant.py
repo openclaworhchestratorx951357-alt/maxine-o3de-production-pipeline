@@ -72,6 +72,15 @@ AP_REAL_BINARY_DIAGNOSTIC_INSPECT_REL = (
 AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_EXPORT_REL = (
     "scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticBundleExport.ps1"
 )
+AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_BUILD_REL = (
+    "scripts/powershell/Invoke-MaxineApSourceFileDiagnosticPreflightBuild.ps1"
+)
+AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_INSPECT_REL = (
+    "scripts/powershell/Invoke-MaxineApSourceFileDiagnosticPreflightInspect.ps1"
+)
+AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_BUNDLE_EXPORT_REL = (
+    "scripts/powershell/Invoke-MaxineApSourceFileDiagnosticPreflightBundleExport.ps1"
+)
 AUTHORITATIVE_REL = "scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1"
 RECEIPT_INDEX_REL = "examples/sandbox/receipts/index.json"
 RECEIPT_INDEX_SCHEMA_REL = "schemas/maxine_sandbox_receipt_index.schema.json"
@@ -109,6 +118,12 @@ AP_REAL_BINARY_DIAGNOSTIC_EXECUTION_SCHEMA_REL = (
 AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_SCHEMA_REL = (
     "schemas/maxine_ap_real_binary_diagnostic_bundle.schema.json"
 )
+AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_SCHEMA_REL = (
+    "schemas/maxine_ap_source_file_diagnostic_preflight.schema.json"
+)
+AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_BUNDLE_SCHEMA_REL = (
+    "schemas/maxine_ap_source_file_diagnostic_preflight_bundle.schema.json"
+)
 CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
@@ -140,6 +155,12 @@ AP_REAL_BINARY_DIAGNOSTIC_EXECUTIONS_DIR_REL = (
 )
 AP_REAL_BINARY_DIAGNOSTIC_BUNDLES_DIR_REL = (
     "examples/sandbox/ap-real-binary-diagnostic-bundles"
+)
+AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHTS_DIR_REL = (
+    "examples/sandbox/ap-source-file-diagnostic-preflights"
+)
+AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_BUNDLES_DIR_REL = (
+    "examples/sandbox/ap-source-file-diagnostic-preflight-bundles"
 )
 
 ADMITTED_SANDBOX_COMMANDS = {
@@ -179,6 +200,9 @@ ADMITTED_SANDBOX_COMMANDS = {
     AP_REAL_BINARY_DIAGNOSTIC_EXECUTION_REL,
     AP_REAL_BINARY_DIAGNOSTIC_INSPECT_REL,
     AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_EXPORT_REL,
+    AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_BUILD_REL,
+    AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_INSPECT_REL,
+    AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_BUNDLE_EXPORT_REL,
 }
 
 REQUIRED_WRITER_NEEDLES = [
@@ -645,6 +669,53 @@ REQUIRED_AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_EXPORT_NEEDLES = [
     "does not copy ap binaries",
 ]
 
+REQUIRED_AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_BUILD_NEEDLES = [
+    "ap-source-file-diagnostic-preflights",
+    "source_review_packet_id",
+    "source_proposal_id",
+    "source_ap_binary_preflight_id",
+    "source_real_binary_diagnostic_execution_id",
+    "source_project_inventory_id",
+    "candidate_relative_path",
+    "candidate_sha256",
+    "selected_binary_path",
+    "binary_kind",
+    "proposed_diagnostic_command_display",
+    "required_manual_confirmation = $true",
+    "local_only = $true",
+    "execution_admitted = $false",
+    "ready_for_future_source_file_diagnostic_request",
+    "blocked_missing_evidence",
+    "blocked_safety_boundary",
+    "contains parent traversal and is blocked",
+    "single_file_not_wildcard",
+    "--source-file",
+    "--no-execution",
+]
+
+REQUIRED_AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_INSPECT_NEEDLES = [
+    "preflight_count",
+    "source_file_diagnostic_preflight_id",
+    "showrequirements",
+    "showblockingreasons",
+]
+
+REQUIRED_AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_BUNDLE_EXPORT_NEEDLES = [
+    "ap-source-file-diagnostic-preflight-bundles",
+    "source_preflight_id",
+    "source_review_packet_id",
+    "source_proposal_id",
+    "source_ap_binary_preflight_id",
+    "source_real_binary_diagnostic_execution_id",
+    "source_project_inventory_id",
+    "included_artifacts",
+    "copied_artifact_paths",
+    "artifact_sha256",
+    "copies json snapshots only",
+    "does not copy source assets",
+    "does not copy source assets, ap binaries, cache files, assetdb.sqlite",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -746,7 +817,11 @@ EXPECTED_CAPABILITY_STATES = {
     "ap_binary_discovery_inspect": "read_only",
     "ap_binary_preflight_build": "sandbox_only",
     "ap_real_binary_diagnostic_execution": "sandbox_only",
+    "ap_source_file_diagnostic_preflight_build": "sandbox_only",
+    "ap_source_file_diagnostic_preflight_inspect": "read_only",
+    "ap_source_file_diagnostic_preflight_bundle_export": "sandbox_only",
     "real_asset_processor_execution": "blocked",
+    "ap_source_file_processing_execution": "blocked",
     "authoritative_resolver_write": "forbidden",
     "o3de_editor_execution": "blocked",
     "asset_processor_execution": "blocked",
@@ -819,6 +894,15 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     ap_real_binary_diagnostic_bundle_export = (
         root / AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_EXPORT_REL
     )
+    ap_source_file_diagnostic_preflight_build = (
+        root / AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_BUILD_REL
+    )
+    ap_source_file_diagnostic_preflight_inspect = (
+        root / AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_INSPECT_REL
+    )
+    ap_source_file_diagnostic_preflight_bundle_export = (
+        root / AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_BUNDLE_EXPORT_REL
+    )
     authoritative = root / AUTHORITATIVE_REL
     receipt_index = root / RECEIPT_INDEX_REL
     receipt_index_schema = root / RECEIPT_INDEX_SCHEMA_REL
@@ -846,6 +930,12 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     ap_real_binary_diagnostic_bundle_schema = (
         root / AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_SCHEMA_REL
     )
+    ap_source_file_diagnostic_preflight_schema = (
+        root / AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_SCHEMA_REL
+    )
+    ap_source_file_diagnostic_preflight_bundle_schema = (
+        root / AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_BUNDLE_SCHEMA_REL
+    )
     capability_matrix = root / CAPABILITY_MATRIX_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -871,6 +961,12 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     )
     ap_real_binary_diagnostic_bundles_dir = (
         root / AP_REAL_BINARY_DIAGNOSTIC_BUNDLES_DIR_REL
+    )
+    ap_source_file_diagnostic_preflights_dir = (
+        root / AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHTS_DIR_REL
+    )
+    ap_source_file_diagnostic_preflight_bundles_dir = (
+        root / AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_BUNDLES_DIR_REL
     )
 
     if not writer.exists():
@@ -1012,6 +1108,21 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
             "AP real binary diagnostic bundle export command missing: "
             f"{AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_EXPORT_REL}"
         )
+    if not ap_source_file_diagnostic_preflight_build.exists():
+        failures.append(
+            "AP source file diagnostic preflight build command missing: "
+            f"{AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_BUILD_REL}"
+        )
+    if not ap_source_file_diagnostic_preflight_inspect.exists():
+        failures.append(
+            "AP source file diagnostic preflight inspect command missing: "
+            f"{AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_INSPECT_REL}"
+        )
+    if not ap_source_file_diagnostic_preflight_bundle_export.exists():
+        failures.append(
+            "AP source file diagnostic preflight bundle export command missing: "
+            f"{AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_BUNDLE_EXPORT_REL}"
+        )
     if authoritative.exists():
         failures.append(f"authoritative command must remain absent: {AUTHORITATIVE_REL}")
     if not receipt_index.exists():
@@ -1093,6 +1204,16 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(
             "AP real binary diagnostic bundle schema missing: "
             f"{AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_SCHEMA_REL}"
+        )
+    if not ap_source_file_diagnostic_preflight_schema.exists():
+        failures.append(
+            "AP source file diagnostic preflight schema missing: "
+            f"{AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_SCHEMA_REL}"
+        )
+    if not ap_source_file_diagnostic_preflight_bundle_schema.exists():
+        failures.append(
+            "AP source file diagnostic preflight bundle schema missing: "
+            f"{AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_BUNDLE_SCHEMA_REL}"
         )
     if not capability_matrix.exists():
         failures.append(f"capability matrix missing: {CAPABILITY_MATRIX_REL}")
@@ -1177,6 +1298,16 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(
             "AP real binary diagnostic bundles directory missing: "
             f"{AP_REAL_BINARY_DIAGNOSTIC_BUNDLES_DIR_REL}"
+        )
+    if not ap_source_file_diagnostic_preflights_dir.exists():
+        failures.append(
+            "AP source file diagnostic preflights directory missing: "
+            f"{AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHTS_DIR_REL}"
+        )
+    if not ap_source_file_diagnostic_preflight_bundles_dir.exists():
+        failures.append(
+            "AP source file diagnostic preflight bundles directory missing: "
+            f"{AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_BUNDLES_DIR_REL}"
         )
 
     if writer.exists():
@@ -2202,6 +2333,132 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                     f"{forbidden_copy}"
                 )
 
+    if ap_source_file_diagnostic_preflight_build.exists():
+        ap_source_file_diagnostic_preflight_build_text = _read_text(
+            ap_source_file_diagnostic_preflight_build
+        )
+        for needle in REQUIRED_AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_BUILD_NEEDLES:
+            if needle not in ap_source_file_diagnostic_preflight_build_text:
+                failures.append(
+                    "AP source file diagnostic preflight build command missing required needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "o3de.exe",
+            "editor.exe",
+            "invoke-expression",
+            "start-process",
+            "invoke-maxineauthoritativeresolverwrite.ps1",
+        ):
+            if forbidden_phrase in ap_source_file_diagnostic_preflight_build_text:
+                failures.append(
+                    "AP source file diagnostic preflight build command contains forbidden phrase: "
+                    f"{forbidden_phrase}"
+                )
+        for forbidden_admission in (
+            "execution_admitted = $true",
+            "required_manual_confirmation = $false",
+            "local_only = $false",
+            "product_ids_claimed = $true",
+            "asset_ids_claimed = $true",
+            "source_uuids_claimed = $true",
+            "product_resolution_claimed = $true",
+            "cache_access_admitted = $true",
+            "live_database_access_admitted = $true",
+            "spawn_admitted = $true",
+            "publish_admitted = $true",
+        ):
+            if forbidden_admission in ap_source_file_diagnostic_preflight_build_text:
+                failures.append(
+                    "AP source file diagnostic preflight build command widens forbidden admission: "
+                    f"{forbidden_admission}"
+                )
+        if (
+            "-command" in ap_source_file_diagnostic_preflight_build_text
+            and "valuefromremainingarguments" in ap_source_file_diagnostic_preflight_build_text
+        ):
+            failures.append(
+                "AP source file diagnostic preflight build command must not accept arbitrary "
+                "command text arguments."
+            )
+
+    if ap_source_file_diagnostic_preflight_inspect.exists():
+        ap_source_file_diagnostic_preflight_inspect_text = _read_text(
+            ap_source_file_diagnostic_preflight_inspect
+        )
+        for needle in REQUIRED_AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_INSPECT_NEEDLES:
+            if needle not in ap_source_file_diagnostic_preflight_inspect_text:
+                failures.append(
+                    "AP source file diagnostic preflight inspect command missing required needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "o3de.exe",
+            "editor.exe",
+            "invoke-expression",
+            "start-process",
+            "invoke-maxineauthoritativeresolverwrite.ps1",
+        ):
+            if forbidden_phrase in ap_source_file_diagnostic_preflight_inspect_text:
+                failures.append(
+                    "AP source file diagnostic preflight inspect command contains forbidden phrase: "
+                    f"{forbidden_phrase}"
+                )
+        for needle in MUTATION_NEEDLES:
+            if needle in ap_source_file_diagnostic_preflight_inspect_text:
+                failures.append(
+                    "AP source file diagnostic preflight inspect command is not read-only; "
+                    f"contains mutation needle: {needle}"
+                )
+
+    if ap_source_file_diagnostic_preflight_bundle_export.exists():
+        ap_source_file_diagnostic_preflight_bundle_export_text = _read_text(
+            ap_source_file_diagnostic_preflight_bundle_export
+        )
+        for needle in REQUIRED_AP_SOURCE_FILE_DIAGNOSTIC_PREFLIGHT_BUNDLE_EXPORT_NEEDLES:
+            if needle not in ap_source_file_diagnostic_preflight_bundle_export_text:
+                failures.append(
+                    "AP source file diagnostic preflight bundle export command missing required needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "o3de.exe",
+            "editor.exe",
+            "invoke-expression",
+            "start-process",
+            "invoke-maxineauthoritativeresolverwrite.ps1",
+        ):
+            if forbidden_phrase in ap_source_file_diagnostic_preflight_bundle_export_text:
+                failures.append(
+                    "AP source file diagnostic preflight bundle export command contains forbidden phrase: "
+                    f"{forbidden_phrase}"
+                )
+        for forbidden_copy in (
+            ".fbx",
+            ".gltf",
+            ".glb",
+            ".obj",
+            ".blend",
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".tiff",
+            ".exr",
+            ".bin",
+            ".dll",
+            ".pdb",
+            ".sqlite",
+            ".exe",
+            "assetdb.sqlite",
+            "cache",
+        ):
+            if f'"{forbidden_copy}"' in ap_source_file_diagnostic_preflight_bundle_export_text:
+                failures.append(
+                    "AP source file diagnostic preflight bundle export command should not hardcode "
+                    "copying binary/source/runtime/cache/database token: "
+                    f"{forbidden_copy}"
+                )
+
     if receipt_index.exists():
         try:
             raw = receipt_index.read_text(encoding="utf-8-sig")
@@ -2248,6 +2505,7 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                     "o3de_editor_execution",
                     "asset_processor_execution",
                     "real_asset_processor_execution",
+                    "ap_source_file_processing_execution",
                     "o3de_cli_execution",
                     "product_resolution",
                     "product_id_claims",

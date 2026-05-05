@@ -54,6 +54,17 @@
   - `scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticExecution.ps1`
   - `scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticInspect.ps1`
   - `scripts/powershell/Invoke-MaxineApRealBinaryDiagnosticBundleExport.ps1`
+- AP source-file diagnostic preflight commands are implemented (display-only and non-executing):
+  - `scripts/powershell/Invoke-MaxineApSourceFileDiagnosticPreflightBuild.ps1`
+  - `scripts/powershell/Invoke-MaxineApSourceFileDiagnosticPreflightInspect.ps1`
+  - `scripts/powershell/Invoke-MaxineApSourceFileDiagnosticPreflightBundleExport.ps1`
+- Manifest v1 foundation is implemented for auditable job lifecycle evidence:
+  - schema: `schemas/maxine_job_manifest.schema.json`
+  - writer: `scripts/powershell/New-MaxineManifest.ps1`
+  - updater: `scripts/powershell/Write-MaxineEvidence.ps1`
+  - reader helper: `scripts/powershell/Read-MaxineManifest.ps1`
+  - helper library: `scripts/powershell/MaxineManifestHelpers.ps1`
+  - canonical job artifact layout: `evidence/jobs/<job_id>/manifest.json` plus `logs/`, `screenshots/`, `o3de/`, `qc/`, `temp/`, `undo/`, `cleanup/`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -83,6 +94,8 @@
 - AP binary preflight output is restricted to `examples/sandbox/ap-binary-preflights`.
 - AP real-binary diagnostic execution output is restricted to `examples/sandbox/ap-real-binary-diagnostic-executions`.
 - AP real-binary diagnostic bundle output is restricted to `examples/sandbox/ap-real-binary-diagnostic-bundles`.
+- AP source-file diagnostic preflight output is restricted to `examples/sandbox/ap-source-file-diagnostic-preflights`.
+- AP source-file diagnostic preflight bundle output is restricted to `examples/sandbox/ap-source-file-diagnostic-preflight-bundles`.
 - Explicit sandbox approval is required in the input plan.
 - Production paths, engine paths, Cache paths, and parent traversal paths are blocked.
 - `scripts/powershell/Invoke-MaxineAuthoritativeResolverWrite.ps1` remains absent.
@@ -114,6 +127,12 @@
   - diagnostic argument is allowlisted (`--help`, `-help`, `/?`, `--version`, `-version`)
   - captures stdout/stderr and execution record under sandbox-only paths
   - keeps broad `asset_processor_execution` and `real_asset_processor_execution` blocked
+- AP source-file diagnostic preflight remains non-executing:
+  - proposed command is display-only
+  - command scope is one source candidate only
+  - no whole-project scan command is proposed
+  - source asset and AP binary are not copied into preflight bundles
+  - `ap_source_file_processing_execution` remains blocked
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
 
 ## Verification Entry Points

@@ -17,6 +17,12 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install manifest validation dependency
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install jsonschema==4.23.0
+
       - name: Validate example manifest
         shell: pwsh
         run: |
@@ -30,7 +36,7 @@ jobs:
             python -m pytest tests/pytest
           }
           else {
-            python -c "import json, pathlib; p=pathlib.Path('examples/manifests/example-draft-mesh.manifest.json'); d=json.loads(p.read_text(encoding='utf-8')); assert d['job']['job_id']; assert d['job']['lane'] in {'draft_mesh','text_mesh','photo_rig_prep','text_full_rig','external_rig_import','release_character'}; assert d['job']['status'] in {'pass','warn','fail','pending_manual','running','queued'}; print('pytest unavailable; smoke test passed')"
+            python -c "import json, pathlib; p=pathlib.Path('examples/manifests/example-draft-mesh.manifest.json'); d=json.loads(p.read_text(encoding='utf-8')); assert d['job']['job_id']; assert d['job']['lane'] in {'draft_mesh','text_mesh','photo_rig_prep','text_full_rig','external_rig_import','release_character'}; assert d['job']['status'] in {'created','running','pass','warn','fail','pending_manual','cancelled','queued'}; print('pytest unavailable; smoke test passed')"
           }
 
       - name: PowerShell file existence checks

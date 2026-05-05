@@ -1,18 +1,27 @@
 param(
     [string]$JobId = "",
     [string]$Lane,
-    [string]$Status = "queued",
+    [string]$Status = "created",
     [string]$CharacterId = "",
     [string]$CharacterName = "",
+    [string]$PackageId = "",
+    [string]$DisplayName = "",
+    [string]$Tier = "unknown",
+    [string]$PackageVersion = "0.1.0",
+    [string]$Operator = "unknown",
     [string]$JobType = "",
     [string]$InputPath = "",
     [string]$Prompt = "",
+    [string]$Project = "",
+    [string]$Platform = "pc",
+    [string]$ArtifactRoot = "",
     [string]$OutputPath = "",
     [string]$RetryOf = "",
     [string]$Notes = ""
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "MaxineManifestHelpers.ps1")
 
 $allowedLanes = @(
     "draft_mesh",
@@ -24,6 +33,8 @@ $allowedLanes = @(
 )
 
 $allowedStatuses = @(
+    "created",
+    "cancelled",
     "pass",
     "warn",
     "fail",
@@ -52,8 +63,9 @@ function Get-QcFromStatus {
     param([string]$CurrentStatus)
     switch ($CurrentStatus) {
         "pass" { return "pass" }
+        "warn" { return "warn" }
         "fail" { return "fail" }
-        default { return "warn" }
+        default { return "not_run" }
     }
 }
 
@@ -67,7 +79,19 @@ if ($allowedStatuses -notcontains $Status) {
     exit 1
 }
 
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$allowedTiers = @("draft", "npc", "hero", "test", "unknown")
+if ($allowedTiers -notcontains $Tier) {
+    Write-Error ("Invalid tier '{0}'. Allowed tiers: {1}" -f $Tier, ($allowedTiers -join ", "))
+    exit 1
+}
+
+$allowedOperators = @("human", "service", "ci", "unknown")
+if ($allowedOperators -notcontains $Operator) {
+    Write-Error ("Invalid operator '{0}'. Allowed operators: {1}" -f $Operator, ($allowedOperators -join ", "))
+    exit 1
+}
+
+$repoRoot = Resolve-MaxineRepoRoot -ScriptRoot $PSScriptRoot
 
 if ([string]::IsNullOrWhiteSpace($JobId)) {
     $JobId = New-JobId
@@ -85,6 +109,14 @@ if ([string]::IsNullOrWhiteSpace($CharacterId)) {
     $CharacterId = $charSlug
 }
 
+if ([string]::IsNullOrWhiteSpace($DisplayName)) {
+    $DisplayName = $CharacterName
+}
+
+if ([string]::IsNullOrWhiteSpace($PackageId)) {
+    $PackageId = $CharacterId
+}
+
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
     $calledFromInvoke = $false
     foreach ($frame in (Get-PSCallStack)) {
@@ -95,22 +127,56 @@ if ([string]::IsNullOrWhiteSpace($OutputPath)) {
     }
 
     if ($calledFromInvoke) {
-        $OutputPath = Join-Path $repoRoot ("evidence\manifests\{0}.manifest.json" -f $JobId)
+        $OutputPath = Join-Path $repoRoot ("evidence\jobs\{0}\manifest.json" -f $JobId)
     }
     else {
         $OutputPath = Join-Path $repoRoot ("examples\manifests\{0}.manifest.json" -f $JobId)
     }
 }
-elseif (-not [System.IO.Path]::IsPathRooted($OutputPath)) {
-    $OutputPath = Join-Path $repoRoot $OutputPath
+else {
+    $OutputPath = Resolve-MaxinePath -Path $OutputPath -RepoRoot $repoRoot
 }
 
-$parentDir = Split-Path -Parent $OutputPath
-if (-not [string]::IsNullOrWhiteSpace($parentDir)) {
-    New-Item -ItemType Directory -Force -Path $parentDir | Out-Null
+if ([string]::IsNullOrWhiteSpace($ArtifactRoot)) {
+    if ($OutputPath -like "*\evidence\jobs\*\manifest.json") {
+        $ArtifactRoot = Split-Path -Parent $OutputPath
+    }
+    else {
+        $ArtifactRoot = Join-Path $repoRoot ("evidence\jobs\{0}" -f $JobId)
+    }
+}
+else {
+    $ArtifactRoot = Resolve-MaxinePath -Path $ArtifactRoot -RepoRoot $repoRoot
 }
 
-$utcNow = (Get-Date).ToUniversalTime().ToString("o")
+foreach ($dir in @(
+        $ArtifactRoot,
+        (Join-Path $ArtifactRoot "logs"),
+        (Join-Path $ArtifactRoot "screenshots"),
+        (Join-Path $ArtifactRoot "o3de"),
+        (Join-Path $ArtifactRoot "qc"),
+        (Join-Path $ArtifactRoot "temp"),
+        (Join-Path $ArtifactRoot "undo"),
+        (Join-Path $ArtifactRoot "cleanup"),
+        (Join-Path $ArtifactRoot "reports")
+    )) {
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+}
+
+$utcNow = Get-MaxineUtcNow
+$inputItems = @()
+if (-not [string]::IsNullOrWhiteSpace($InputPath)) {
+    $inputItems += [ordered]@{
+        kind = "path"
+        path = $InputPath
+    }
+}
+if (-not [string]::IsNullOrWhiteSpace($Prompt)) {
+    $inputItems += [ordered]@{
+        kind   = "prompt"
+        prompt = $Prompt
+    }
+}
 
 $manifest = [ordered]@{
     schema_version     = "1.0.0"
@@ -118,20 +184,25 @@ $manifest = [ordered]@{
         job_id       = $JobId
         lane         = $Lane
         status       = $Status
+        submitted_at = $utcNow
+        started_at   = $null
+        finished_at  = $null
+        operator     = $Operator
         job_type     = $JobType
-        retry_of     = $RetryOf
+        retry_of     = $(if ([string]::IsNullOrWhiteSpace($RetryOf)) { $null } else { $RetryOf })
         notes        = $Notes
         created_utc  = $utcNow
         updated_utc  = $utcNow
     }
     identity           = [ordered]@{
+        package_id     = $PackageId
+        display_name   = $DisplayName
+        tier           = $Tier
+        package_version= $PackageVersion
         character_id   = $CharacterId
         character_name = $CharacterName
     }
-    inputs             = [ordered]@{
-        input_path      = $InputPath
-        prompt          = $Prompt
-    }
+    inputs             = $inputItems
     generation         = [ordered]@{
         provider        = ""
         output_sources  = @()
@@ -141,39 +212,64 @@ $manifest = [ordered]@{
         notes           = ""
     }
     o3de               = [ordered]@{
+        project         = $(if ([string]::IsNullOrWhiteSpace($Project)) { $null } else { $Project })
+        platform        = $(if ([string]::IsNullOrWhiteSpace($Platform)) { $null } else { $Platform })
         source_assets   = @()
-        products        = @{}
+        expected_products = @()
+        products        = @()
     }
     qc                 = [ordered]@{
         overall         = (Get-QcFromStatus -CurrentStatus $Status)
+        checks          = @()
         gates           = @()
     }
     runtime_validation = [ordered]@{
+        spawned         = $false
+        entity_id       = $null
+        screenshots     = @()
         smoke_status    = "not_started"
         checks          = @()
     }
     evidence           = [ordered]@{
+        manifest_path   = $OutputPath
+        artifact_root   = $ArtifactRoot
         logs            = @()
-        reports         = @()
         screenshots     = @()
+        stdout_log      = $null
+        stderr_log      = $null
+        reports         = @()
         exit_code       = $null
         message         = ""
     }
+    errors             = @()
     provenance         = [ordered]@{
+        source_commit   = $null
+        pipeline_revision = $null
+        build_run_id    = $null
         adapter_slice   = "manifest-first-adapter"
         created_by      = "New-MaxineManifest.ps1"
         repository_root = $repoRoot
     }
     undo               = [ordered]@{
+        available       = $false
+        steps           = @()
         rollback_plan   = ""
     }
     cleanup            = [ordered]@{
+        retention_class = "unknown"
+        paths           = @((Join-Path $ArtifactRoot "temp"), (Join-Path $ArtifactRoot "cleanup"))
         temp_paths      = @()
         completed       = $false
     }
+    manual_review      = [ordered]@{
+        required        = $false
+        reason          = $null
+        review_state    = "not_required"
+    }
 }
 
-$manifest | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $OutputPath -Encoding UTF8
+Write-MaxineJsonAtomic -Path $OutputPath -Data $manifest -Depth 40
+Invoke-MaxineManifestValidation -ManifestPath $OutputPath -RepoRoot $repoRoot
 
 Write-Host ("Manifest created: {0}" -f $OutputPath)
 Write-Output $OutputPath

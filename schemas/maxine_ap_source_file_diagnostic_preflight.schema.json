@@ -1,0 +1,112 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_ap_source_file_diagnostic_preflight.schema.json",
+  "title": "Maxine AP Source File Diagnostic Preflight",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "source_file_diagnostic_preflight_id",
+    "source_review_packet_id",
+    "source_proposal_id",
+    "source_ap_binary_preflight_id",
+    "source_real_binary_diagnostic_execution_id",
+    "source_project_inventory_id",
+    "sandbox_root",
+    "project_root",
+    "candidate_relative_path",
+    "candidate_sha256",
+    "candidate_extension",
+    "candidate_category",
+    "selected_binary_path",
+    "binary_kind",
+    "proposed_diagnostic_command_display",
+    "proposed_working_directory",
+    "required_manual_confirmation",
+    "local_only",
+    "execution_admitted",
+    "ready_for_future_execution_request",
+    "readiness_status",
+    "required_next_evidence",
+    "blocking_reasons",
+    "warnings",
+    "safety_summary",
+    "explicit_non_admissions",
+    "output_path",
+    "created_utc"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "source_file_diagnostic_preflight_id": { "type": "string", "minLength": 1 },
+    "source_review_packet_id": { "type": "string", "minLength": 1 },
+    "source_proposal_id": { "type": "string", "minLength": 1 },
+    "source_ap_binary_preflight_id": { "type": "string", "minLength": 1 },
+    "source_real_binary_diagnostic_execution_id": { "type": "string" },
+    "source_project_inventory_id": { "type": "string", "minLength": 1 },
+    "sandbox_root": { "type": "string", "const": "examples/sandbox" },
+    "project_root": { "type": "string", "minLength": 1 },
+    "candidate_relative_path": { "type": "string", "minLength": 1 },
+    "candidate_sha256": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{64}$"
+    },
+    "candidate_extension": { "type": "string", "minLength": 1 },
+    "candidate_category": {
+      "type": "string",
+      "enum": [
+        "character_source",
+        "mesh_source",
+        "scene_source",
+        "material_source",
+        "texture_source",
+        "metadata_source",
+        "unknown_source"
+      ]
+    },
+    "selected_binary_path": { "type": "string", "minLength": 1 },
+    "binary_kind": {
+      "type": "string",
+      "enum": ["AssetProcessorBatch", "AssetProcessor"]
+    },
+    "proposed_diagnostic_command_display": { "type": "string", "minLength": 1 },
+    "proposed_working_directory": { "type": "string", "minLength": 1 },
+    "required_manual_confirmation": { "type": "boolean", "const": true },
+    "local_only": { "type": "boolean", "const": true },
+    "execution_admitted": { "type": "boolean", "const": false },
+    "ready_for_future_execution_request": { "type": "boolean" },
+    "readiness_status": {
+      "type": "string",
+      "enum": [
+        "blocked_missing_evidence",
+        "blocked_safety_boundary",
+        "ready_for_future_source_file_diagnostic_request",
+        "rejected"
+      ]
+    },
+    "required_next_evidence": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "blocking_reasons": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "safety_summary": { "type": "string", "minLength": 1 },
+    "explicit_non_admissions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "output_path": { "type": "string", "minLength": 1 },
+    "created_utc": { "type": "string", "minLength": 1 },
+    "operator_id": { "type": "string", "minLength": 1 },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

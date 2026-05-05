@@ -77,7 +77,6 @@ if (-not $jobTypeMap.Contains($JobType)) {
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $newManifestScript = Join-Path $PSScriptRoot "New-MaxineManifest.ps1"
 $writeEvidenceScript = Join-Path $PSScriptRoot "Write-MaxineEvidence.ps1"
-$validatorScript = Join-Path $repoRoot "tools\manifest-validator\validate_manifest.py"
 
 $jobConfig = $jobTypeMap[$JobType]
 $lane = [string]$jobConfig.Lane
@@ -93,34 +92,49 @@ else {
 $evidencePath = Join-Path $outputRootResolved $jobId
 $logsPath = Join-Path $evidencePath "logs"
 $reportsPath = Join-Path $evidencePath "reports"
-$manifestDir = Join-Path $repoRoot "evidence\manifests"
-$manifestPath = Join-Path $manifestDir ("{0}.manifest.json" -f $jobId)
+$manifestPath = Join-Path $evidencePath "manifest.json"
 $stdoutLog = Join-Path $logsPath "stdout.log"
 $stderrLog = Join-Path $logsPath "stderr.log"
 $runPlanReport = Join-Path $reportsPath "run-plan.txt"
 
-foreach ($dir in @($evidencePath, $logsPath, $reportsPath, $manifestDir)) {
+foreach ($dir in @(
+        $evidencePath,
+        $logsPath,
+        $reportsPath,
+        (Join-Path $evidencePath "screenshots"),
+        (Join-Path $evidencePath "o3de"),
+        (Join-Path $evidencePath "qc"),
+        (Join-Path $evidencePath "temp"),
+        (Join-Path $evidencePath "undo"),
+        (Join-Path $evidencePath "cleanup")
+    )) {
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
 }
 
 $finalStatus = "fail"
 $finalMessage = "Unhandled adapter failure."
+$finalErrorCode = "ADAPTER_UNHANDLED_FAILURE"
+$finalErrorStage = "invoke_job"
 $exitCode = 1
 $legacyScriptPath = ""
 
 try {
+    $finalErrorStage = "manifest_create"
     & $newManifestScript `
         -JobId $jobId `
         -Lane $lane `
-        -Status "queued" `
+        -Status "created" `
         -CharacterName $CharacterName `
         -JobType $JobType `
         -InputPath $InputPath `
         -Prompt $Prompt `
+        -ArtifactRoot $evidencePath `
         -OutputPath $manifestPath `
+        -Operator "service" `
         -RetryOf $RetryOf `
         -Notes "Created by Invoke-MaxineJob.ps1" | Out-Null
 
+    $finalErrorStage = "manifest_update_running"
     & $writeEvidenceScript `
         -JobId $jobId `
         -ManifestPath $manifestPath `
@@ -132,18 +146,24 @@ try {
     if ($JobType -eq "release_character") {
         $finalStatus = "pending_manual"
         $finalMessage = "Release publication is not implemented in this slice."
+        $finalErrorCode = ""
+        $finalErrorStage = ""
         $exitCode = 0
     }
     else {
+        $finalErrorStage = "legacy_script_discovery"
         $legacyFile = [string]$jobConfig.Script
         $legacyScriptPath = Join-Path $ExistingFactoryToolsPath $legacyFile
 
         if (!(Test-Path -LiteralPath $legacyScriptPath)) {
             $finalStatus = "pending_manual"
             $finalMessage = ("Legacy script missing: {0}" -f $legacyScriptPath)
+            $finalErrorCode = ""
+            $finalErrorStage = ""
             $exitCode = 0
         }
         else {
+            $finalErrorStage = "legacy_parameter_mapping"
             $supportedParams = Get-ScriptParameterNames -ScriptPath $legacyScriptPath
             $legacyParamMap = [ordered]@{}
             $uncertain = $false
@@ -230,14 +250,19 @@ try {
                     $finalStatus = "pass"
                     $finalMessage = "Dry run generated command plan successfully."
                 }
+                $finalErrorCode = ""
+                $finalErrorStage = ""
                 $exitCode = 0
             }
             elseif ($uncertain) {
                 $finalStatus = "pending_manual"
                 $finalMessage = ("Legacy execution skipped due to uncertain mapping: {0}" -f ($uncertainReasons -join "; "))
+                $finalErrorCode = ""
+                $finalErrorStage = ""
                 $exitCode = 0
             }
             else {
+                $finalErrorStage = "legacy_execution"
                 $procArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $legacyScriptPath)
                 foreach ($paramName in $legacyParamMap.Keys) {
                     $procArgs += ("-{0}" -f $paramName)
@@ -257,10 +282,13 @@ try {
                 if ($exitCode -eq 0) {
                     $finalStatus = "pass"
                     $finalMessage = "Legacy script completed successfully."
+                    $finalErrorCode = ""
+                    $finalErrorStage = ""
                 }
                 else {
                     $finalStatus = "fail"
                     $finalMessage = ("Legacy script exited with code {0}." -f $exitCode)
+                    $finalErrorCode = "LEGACY_SCRIPT_NONZERO_EXIT"
                 }
             }
         }
@@ -269,6 +297,10 @@ try {
 catch {
     $finalStatus = "fail"
     $finalMessage = $_.Exception.Message
+    $finalErrorCode = "ADAPTER_EXCEPTION"
+    if ([string]::IsNullOrWhiteSpace($finalErrorStage)) {
+        $finalErrorStage = "adapter_exception"
+    }
     if ([string]::IsNullOrWhiteSpace($finalMessage)) {
         $finalMessage = "Unhandled exception in Invoke-MaxineJob.ps1"
     }
@@ -289,7 +321,10 @@ finally {
             -LogPath $reportForManifest `
             -Status $finalStatus `
             -Message $finalMessage `
-            -ExitCode $exitCode | Out-Null
+            -ExitCode $exitCode `
+            -ErrorCode $finalErrorCode `
+            -ErrorStage $finalErrorStage `
+            -ManualReviewReason $finalMessage | Out-Null
     }
 
     $summary = [ordered]@{

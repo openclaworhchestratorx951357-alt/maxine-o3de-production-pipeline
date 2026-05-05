@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0.0",
+  "job": {
+    "job_id": "job-v1-pending-001",
+    "lane": "release_character",
+    "status": "pending_manual",
+    "submitted_at": "2026-05-04T12:20:00Z",
+    "started_at": "2026-05-04T12:20:01Z",
+    "finished_at": "2026-05-04T12:20:30Z",
+    "retry_of": null,
+    "operator": "human",
+    "created_utc": "2026-05-04T12:20:00Z",
+    "updated_utc": "2026-05-04T12:20:30Z"
+  },
+  "identity": {
+    "package_id": "maxine-v1-pending-001",
+    "display_name": "Maxine V1 Pending Review",
+    "tier": "hero",
+    "package_version": "0.1.0",
+    "character_id": "maxine-v1-pending-001",
+    "character_name": "Maxine_V1_Pending_001"
+  },
+  "inputs": [],
+  "generation": {},
+  "dcc_conform": {},
+  "o3de": {
+    "project": "C:/Projects/MaxineShow",
+    "platform": "pc",
+    "source_assets": [],
+    "expected_products": [],
+    "products": []
+  },
+  "qc": {
+    "overall": "not_run",
+    "checks": []
+  },
+  "runtime_validation": {
+    "spawned": false,
+    "entity_id": null,
+    "screenshots": []
+  },
+  "evidence": {
+    "manifest_path": "evidence/jobs/job-v1-pending-001/manifest.json",
+    "artifact_root": "evidence/jobs/job-v1-pending-001",
+    "logs": [],
+    "screenshots": [],
+    "stdout_log": null,
+    "stderr_log": null
+  },
+  "errors": [],
+  "provenance": {
+    "source_commit": null,
+    "pipeline_revision": null,
+    "build_run_id": null
+  },
+  "undo": {
+    "available": false,
+    "steps": []
+  },
+  "cleanup": {
+    "retention_class": "manual",
+    "paths": [
+      "evidence/jobs/job-v1-pending-001/temp",
+      "evidence/jobs/job-v1-pending-001/cleanup"
+    ]
+  },
+  "manual_review": {
+    "required": true,
+    "reason": "Human release review is required before publication.",
+    "review_state": "pending"
+  }
+}

@@ -8,6 +8,8 @@ def test_adapter_scripts_exist():
         repo_root / "scripts" / "powershell" / "New-MaxineManifest.ps1",
         repo_root / "scripts" / "powershell" / "Write-MaxineEvidence.ps1",
         repo_root / "scripts" / "powershell" / "Invoke-MaxineJob.ps1",
+        repo_root / "scripts" / "powershell" / "Read-MaxineManifest.ps1",
+        repo_root / "scripts" / "powershell" / "MaxineManifestHelpers.ps1",
     ]
     for path in required:
         assert path.exists(), f"Missing adapter script: {path}"
@@ -39,5 +41,8 @@ def test_schema_baseline_structure():
     schema_path = repo_root / "schemas" / "maxine_job_manifest.schema.json"
     data = json.loads(schema_path.read_text(encoding="utf-8"))
     required = data.get("required", [])
-    for key in ("schema_version", "job", "identity", "inputs", "qc"):
+    for key in ("schema_version", "job", "identity", "inputs", "qc", "evidence"):
         assert key in required, f"Schema required missing key: {key}"
+
+    assert "manual_review" in data.get("properties", {}), "Schema missing manual_review property"
+    assert "errors" in data.get("properties", {}), "Schema missing errors property"
