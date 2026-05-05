@@ -32,6 +32,7 @@ REQUIRED_IMPLEMENTED_CHECK_IDS = [
     "manual_hero_review_v1",
     "ci_artifact_retention_v1",
     "release_package_bundle_v1",
+    "release_promotion_decision_v1",
     "release_publication_rollback_drill_v1",
     "release_publication_ready_for_execution_request_v1",
 ]
@@ -273,6 +274,15 @@ def main() -> int:
                 "examples/release-package-bundle/max_biped_v1_release_package_bundle_pass.json",
             ],
             "payload_path": attachment_dir / "release_package_bundle_v1.json",
+        },
+        {
+            "name": "release_promotion_decision",
+            "command": [
+                sys.executable,
+                "tools/release-promotion-decision/validate_release_promotion_decision_report.py",
+                "examples/release-promotion-decision/max_biped_v1_release_promotion_decision_pass.json",
+            ],
+            "payload_path": attachment_dir / "release_promotion_decision_v1.json",
         },
         {
             "name": "release_publication_rollback_drill_fixture",

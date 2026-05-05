@@ -85,4 +85,5 @@ def test_release_pilot_chain_manifest_contains_required_gate_ids():
     assert "max_biped_v1_skeleton_contract" in gate_ids
     assert "source_product_evidence_resolver_v1" in gate_ids
     assert "release_package_bundle_v1" in gate_ids
+    assert "release_promotion_decision_v1" in gate_ids
     assert "release_publication_gate_set_v1" in gate_ids

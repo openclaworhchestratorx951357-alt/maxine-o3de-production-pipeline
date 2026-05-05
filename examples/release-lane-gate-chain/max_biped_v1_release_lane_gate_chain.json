@@ -63,7 +63,7 @@
       "order": 10,
       "check_id": "release_promotion_decision_v1",
       "required": true,
-      "implemented": false
+      "implemented": true
     },
     {
       "order": 11,

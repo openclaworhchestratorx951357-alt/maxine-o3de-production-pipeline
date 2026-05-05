@@ -120,11 +120,12 @@
       },
       {
         "check_id": "release_promotion_decision_v1",
-        "result": "pending_manual",
-        "severity": "manual_review",
+        "result": "pass",
+        "severity": "info",
         "details": {
-          "implemented_on_main": false,
-          "evidence_source": "future_policy"
+          "implemented_in_stack": true,
+          "evidence_source": "fixture",
+          "summary": "Release promotion decision evidence validates policy-driven manual promotion readiness."
         }
       },
       {
