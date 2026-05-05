@@ -1,0 +1,109 @@
+﻿{
+  "schema_version": "1.0.0",
+  "report_type": "RELEASE_PUBLICATION_REQUEST_APPROVAL_v1_REPORT",
+  "job_id": "job-release-publication-request-fail-001",
+  "package_id": "char.maxine.raider_khal",
+  "lane": "release_character",
+  "status": "fail",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-publication-request-fail-001/manifest.json",
+    "source_kind": "manifest"
+  },
+  "request_contract": {
+    "contract_id": "RELEASE_PUBLICATION_REQUEST_APPROVAL_v1",
+    "required_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1",
+      "release_promotion_decision_v1",
+      "release_publication_preflight_v1"
+    ],
+    "required_approvals": 2,
+    "manual_review_required": true,
+    "explicit_publish_execution_request_required": true,
+    "evidence_only": true,
+    "execution_admitted": false
+  },
+  "publication_request": {
+    "request_id": "release-publish-request-003",
+    "request_recorded_utc": "2026-05-05T03:50:00Z",
+    "requested_by": "ops.release_lead",
+    "requested_action": "publish_release_bundle",
+    "target_environment": "release_candidate",
+    "publish_request_command_display": "DisplayOnly Publish Request: release_bundle publish --manifest artifacts/jobs/job-release-publication-request-fail-001/manifest.json --no-execute",
+    "rollback_request_command_display": "DisplayOnly Rollback Request: release_bundle rollback --manifest artifacts/jobs/job-release-publication-request-fail-001/manifest.json --no-execute",
+    "no_command_execution_recorded": true,
+    "dry_run_evidence_paths": [
+      "artifacts/jobs/job-release-publication-request-fail-001/release-bundle/manifest.json"
+    ]
+  },
+  "approval_state": {
+    "decision": "approved",
+    "approver_ids": [
+      "ops.release_lead"
+    ],
+    "blocked_reason_codes": [
+      "missing_qc_gate_evidence"
+    ],
+    "rollback_plan_verified": false,
+    "cleanup_plan_verified": false,
+    "publish_execution_admitted": false,
+    "o3de_execution_admitted": false,
+    "asset_processor_execution_admitted": false,
+    "spawn_execution_admitted": false
+  },
+  "readiness": {
+    "required_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1",
+      "release_promotion_decision_v1",
+      "release_publication_preflight_v1"
+    ],
+    "present_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "release_promotion_decision_v1",
+      "release_publication_preflight_v1"
+    ],
+    "missing_gate_ids": [
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1"
+    ],
+    "release_readiness_state": "blocked_missing_evidence"
+  },
+  "findings": [
+    {
+      "id": "publication_request_approved_with_missing_evidence",
+      "severity": "error",
+      "status": "open",
+      "message": "Publication request approval was recorded while required QC evidence is missing."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "release_publication_request_approval_v1",
+      "result": "fail",
+      "severity": "error",
+      "details": {
+        "summary": "Publication request approval evidence is inconsistent and blocked."
+      }
+    }
+  }
+}

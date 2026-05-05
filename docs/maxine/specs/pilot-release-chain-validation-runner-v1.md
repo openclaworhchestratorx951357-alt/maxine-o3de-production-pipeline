@@ -23,6 +23,8 @@
   - `release_promotion_decision_v1`
 - runs release publication preflight validator evidence:
   - `release_publication_preflight_v1`
+- runs release publication request approval validator evidence:
+  - `release_publication_request_approval_v1`
 - attaches fixture-backed rollback/readiness evidence payloads:
   - `release_publication_rollback_drill_v1`
   - `release_publication_ready_for_execution_request_v1`
@@ -71,6 +73,7 @@ python tools/release-lane/run_pilot_release_chain_validation.py --strict-chain
   - `release_package_bundle_v1`
   - `release_promotion_decision_v1`
   - `release_publication_preflight_v1`
+  - `release_publication_request_approval_v1`
   - `release_publication_rollback_drill_v1`
   - `release_publication_ready_for_execution_request_v1`
   - `pilot_release_chain_v1`

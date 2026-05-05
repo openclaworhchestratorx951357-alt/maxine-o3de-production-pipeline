@@ -26,6 +26,7 @@ REQUIRED_IMPLEMENTED_GATE_IDS = {
     "release_package_bundle_v1",
     "release_promotion_decision_v1",
     "release_publication_preflight_v1",
+    "release_publication_request_approval_v1",
     "release_publication_rollback_drill_v1",
     "release_publication_ready_for_execution_request_v1",
 }

@@ -103,6 +103,13 @@ The contract is designed so automation, operators, and CI can evaluate a job sta
 - Future-compatible path: `qc.checks[]`.
 - Suggested check id: `release_publication_preflight_v1`.
 
+## Release Publication Request Approval QC Attachment Point
+
+- `RELEASE_PUBLICATION_REQUEST_APPROVAL_v1` report validation output is attachable to manifest QC.
+- Current manifest attachment path: `qc.gates[]`.
+- Future-compatible path: `qc.checks[]`.
+- Suggested check id: `release_publication_request_approval_v1`.
+
 ## Rollback Drill QC Attachment Point
 
 - `RELEASE_PUBLICATION_ROLLBACK_DRILL_v1` evidence payload is attachable to manifest QC.
