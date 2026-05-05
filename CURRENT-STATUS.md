@@ -129,6 +129,13 @@
   - `examples/release-publication-request-approval/max_biped_v1_release_publication_request_approval_warn.json`
   - `examples/release-publication-request-approval/max_biped_v1_release_publication_request_approval_fail.json`
   - `docs/maxine/specs/release-publication-request-approval-v1.md`
+- Release publication execution admission gate v1 report validation is implemented (contract-first, non-executing evidence only):
+  - `schemas/maxine_release_publication_execution_admission_gate_report.schema.json`
+  - `tools/release-publication-execution-admission-gate/validate_release_publication_execution_admission_gate_report.py`
+  - `examples/release-publication-execution-admission-gate/max_biped_v1_release_publication_execution_admission_gate_pass.json`
+  - `examples/release-publication-execution-admission-gate/max_biped_v1_release_publication_execution_admission_gate_warn.json`
+  - `examples/release-publication-execution-admission-gate/max_biped_v1_release_publication_execution_admission_gate_fail.json`
+  - `docs/maxine/specs/release-publication-execution-admission-gate-v1.md`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -231,6 +238,10 @@
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - Release publication request approval v1 report validation remains non-executing evidence-only:
   - validates publication request and manual approval evidence consistency
+  - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Release publication execution admission gate v1 report validation remains non-executing evidence-only:
+  - validates execution-admission gate evidence while keeping execution unadmitted
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
