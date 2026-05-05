@@ -206,6 +206,13 @@
   - `examples/release-publication-execution-authorization-record/max_biped_v1_release_publication_execution_authorization_record_warn.json`
   - `examples/release-publication-execution-authorization-record/max_biped_v1_release_publication_execution_authorization_record_fail.json`
   - `docs/maxine/specs/release-publication-execution-authorization-record-v1.md`
+- Release publication execution window ticket v1 report validation is implemented (contract-first, non-executing evidence only):
+  - `schemas/maxine_release_publication_execution_window_ticket_report.schema.json`
+  - `tools/release-publication-execution-window-ticket/validate_release_publication_execution_window_ticket_report.py`
+  - `examples/release-publication-execution-window-ticket/max_biped_v1_release_publication_execution_window_ticket_pass.json`
+  - `examples/release-publication-execution-window-ticket/max_biped_v1_release_publication_execution_window_ticket_warn.json`
+  - `examples/release-publication-execution-window-ticket/max_biped_v1_release_publication_execution_window_ticket_fail.json`
+  - `docs/maxine/specs/release-publication-execution-window-ticket-v1.md`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
