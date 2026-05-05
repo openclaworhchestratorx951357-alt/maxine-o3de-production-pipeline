@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "RELEASE_PACKAGE_BUNDLE_v1_REPORT",
+  "job_id": "job-release-package-pass-001",
+  "package_id": "char.maxine.knight_arden",
+  "lane": "release_character",
+  "status": "pass",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-package-pass-001/manifest.json",
+    "source_kind": "manifest",
+    "sha256": "9f6ab9d041e12e6a7e2a5a4f39aa5627ba5f718f2054cf04a00de7886618a5e0"
+  },
+  "bundle_contract": {
+    "contract_id": "RELEASE_PACKAGE_BUNDLE_v1",
+    "bundle_root": "artifacts/jobs/job-release-package-pass-001/release-bundle",
+    "expected_manifest_path": "artifacts/jobs/job-release-package-pass-001/release-bundle/manifest.json",
+    "expected_artifact_index_path": "artifacts/jobs/job-release-package-pass-001/release-bundle/artifact-index.json",
+    "expected_rollback_plan_path": "artifacts/jobs/job-release-package-pass-001/release-bundle/undo/rollback-plan.json",
+    "expected_cleanup_plan_path": "artifacts/jobs/job-release-package-pass-001/release-bundle/cleanup/cleanup-plan.json",
+    "deterministic_layout": true,
+    "evidence_only": true,
+    "runtime_execution_admitted": false
+  },
+  "bundle_inventory": {
+    "manifest_path": "artifacts/jobs/job-release-package-pass-001/release-bundle/manifest.json",
+    "artifact_index_path": "artifacts/jobs/job-release-package-pass-001/release-bundle/artifact-index.json",
+    "rollback_plan_path": "artifacts/jobs/job-release-package-pass-001/release-bundle/undo/rollback-plan.json",
+    "cleanup_plan_path": "artifacts/jobs/job-release-package-pass-001/release-bundle/cleanup/cleanup-plan.json",
+    "included_paths": [
+      "artifacts/jobs/job-release-package-pass-001/release-bundle/manifest.json",
+      "artifacts/jobs/job-release-package-pass-001/release-bundle/artifact-index.json",
+      "artifacts/jobs/job-release-package-pass-001/release-bundle/undo/rollback-plan.json",
+      "artifacts/jobs/job-release-package-pass-001/release-bundle/cleanup/cleanup-plan.json",
+      "artifacts/jobs/job-release-package-pass-001/release-bundle/qc/dcc-conform.json",
+      "artifacts/jobs/job-release-package-pass-001/release-bundle/qc/material-uv.json",
+      "artifacts/jobs/job-release-package-pass-001/release-bundle/qc/animation-smoke.json",
+      "artifacts/jobs/job-release-package-pass-001/release-bundle/qc/screenshot-evidence.json",
+      "artifacts/jobs/job-release-package-pass-001/release-bundle/qc/manual-hero-review.json"
+    ],
+    "missing_paths": [],
+    "disallowed_paths": [],
+    "package_hash_sha256": "9c5be3ef8f8f65f4af6f6f9c45bfa0448604720fd624e5418f8538ed9988db8f"
+  },
+  "determinism": {
+    "package_id_stable": true,
+    "input_provenance_recorded": true,
+    "source_product_tracking_recorded": true,
+    "product_resolution_mode": "deterministic",
+    "checksum_index_present": true
+  },
+  "rollback": {
+    "undo_available": true,
+    "rollback_step_count": 4,
+    "rollback_instruction_paths": [
+      "artifacts/jobs/job-release-package-pass-001/release-bundle/undo/rollback-plan.json"
+    ],
+    "cleanup_step_count": 3,
+    "cleanup_instruction_paths": [
+      "artifacts/jobs/job-release-package-pass-001/release-bundle/cleanup/cleanup-plan.json"
+    ],
+    "destructive_cleanup_admitted": false
+  },
+  "release_readiness": {
+    "readiness_state": "ready_for_manual_release_review",
+    "manual_review_required": true
+  },
+  "findings": [],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "release_package_bundle_v1",
+      "result": "pass",
+      "severity": "info",
+      "details": {
+        "summary": "Release package bundle evidence and rollback instructions are complete."
+      }
+    }
+  }
+}

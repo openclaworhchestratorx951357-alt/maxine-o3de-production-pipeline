@@ -101,6 +101,13 @@
   - `examples/ci-artifact-retention/max_biped_v1_ci_artifact_retention_warn.json`
   - `examples/ci-artifact-retention/max_biped_v1_ci_artifact_retention_fail.json`
   - `docs/maxine/specs/ci-artifact-retention-v1.md`
+- Release package bundle v1 report validation is implemented (contract-first, non-executing evidence only):
+  - `schemas/maxine_release_package_bundle_report.schema.json`
+  - `tools/release-package-bundle/validate_release_package_bundle_report.py`
+  - `examples/release-package-bundle/max_biped_v1_release_package_bundle_pass.json`
+  - `examples/release-package-bundle/max_biped_v1_release_package_bundle_warn.json`
+  - `examples/release-package-bundle/max_biped_v1_release_package_bundle_fail.json`
+  - `docs/maxine/specs/release-package-bundle-v1.md`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -187,6 +194,10 @@
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - CI artifact retention v1 report validation remains non-executing evidence-only:
   - validates retention policy days, required artifact presence, and QC-gate completeness evidence
+  - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Release package bundle v1 report validation remains non-executing evidence-only:
+  - validates deterministic release bundle structure and rollback/cleanup instruction evidence
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.

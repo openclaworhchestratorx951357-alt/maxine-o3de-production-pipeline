@@ -73,6 +73,7 @@ REQUIRED_FILES = [
     "schemas/maxine_screenshot_evidence_report.schema.json",
     "schemas/maxine_manual_hero_review_report.schema.json",
     "schemas/maxine_ci_artifact_retention_report.schema.json",
+    "schemas/maxine_release_package_bundle_report.schema.json",
     "schemas/maxine_capability_matrix.schema.json",
     "examples/sandbox/receipts/index.json",
     "examples/sandbox/evidence-bundles/.gitkeep",
@@ -111,6 +112,9 @@ REQUIRED_FILES = [
     "examples/ci-artifact-retention/max_biped_v1_ci_artifact_retention_pass.json",
     "examples/ci-artifact-retention/max_biped_v1_ci_artifact_retention_warn.json",
     "examples/ci-artifact-retention/max_biped_v1_ci_artifact_retention_fail.json",
+    "examples/release-package-bundle/max_biped_v1_release_package_bundle_pass.json",
+    "examples/release-package-bundle/max_biped_v1_release_package_bundle_warn.json",
+    "examples/release-package-bundle/max_biped_v1_release_package_bundle_fail.json",
     "examples/capabilities/maxine-capability-matrix.json",
     "examples/sandbox/review-packets/.gitkeep",
     "examples/sandbox/review-decisions/.gitkeep",
@@ -128,6 +132,8 @@ REQUIRED_FILES = [
     "docs/maxine/specs/manual-hero-review-v1.md",
     "tools/ci-artifact-retention/validate_ci_artifact_retention_report.py",
     "docs/maxine/specs/ci-artifact-retention-v1.md",
+    "tools/release-package-bundle/validate_release_package_bundle_report.py",
+    "docs/maxine/specs/release-package-bundle-v1.md",
 ]
 
 
