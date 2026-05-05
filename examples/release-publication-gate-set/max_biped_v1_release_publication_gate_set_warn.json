@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "RELEASE_PUBLICATION_GATE_SET_v1_REPORT",
+  "job_id": "job-release-20260505-0002",
+  "package_id": "maxine-release-npc-002",
+  "lane": "release_character",
+  "tier": "npc",
+  "status": "warn",
+  "target_path": "qc.gates[]",
+  "required_gate_order": [
+    "dcc_conform_v1",
+    "material_uv_qc_v1",
+    "animation_smoke_v1",
+    "screenshot_evidence_v1"
+  ],
+  "observed_gates": [
+    {
+      "check_id": "screenshot_evidence_v1",
+      "result": "warn",
+      "index": 3
+    }
+  ],
+  "missing_required_gates": [],
+  "out_of_order_gates": [],
+  "blocked_by_status": [
+    {
+      "check_id": "screenshot_evidence_v1",
+      "result": "warn"
+    }
+  ],
+  "findings": [
+    {
+      "id": "gate_warn_result",
+      "severity": "warning",
+      "status": "open",
+      "message": "Gate result is warn and requires operator review before publication."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "release_publication_gate_set_v1",
+      "result": "warn",
+      "severity": "warning",
+      "details": {
+        "warn_gate_count": 1
+      }
+    }
+  },
+  "generated_utc": "2026-05-05T00:00:00Z"
+}

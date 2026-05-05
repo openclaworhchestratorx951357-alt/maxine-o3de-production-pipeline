@@ -1,0 +1,270 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_release_publication_gate_set_report.schema.json",
+  "title": "MAXINE Release Publication Gate Set Report",
+  "description": "Evidence-only validation report proving required release-publication QC gates exist and are ordered in the job manifest.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "report_type",
+    "job_id",
+    "package_id",
+    "lane",
+    "status",
+    "target_path",
+    "required_gate_order",
+    "observed_gates",
+    "missing_required_gates",
+    "out_of_order_gates",
+    "blocked_by_status",
+    "findings",
+    "manifest_attachment",
+    "generated_utc"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "report_type": {
+      "type": "string",
+      "const": "RELEASE_PUBLICATION_GATE_SET_v1_REPORT"
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "package_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lane": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tier": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "npc",
+        "hero",
+        "test",
+        "unknown"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ]
+    },
+    "target_path": {
+      "type": "string",
+      "const": "qc.gates[]"
+    },
+    "required_gate_order": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "observed_gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "check_id",
+          "result"
+        ],
+        "properties": {
+          "check_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "warn",
+              "fail",
+              "pending_manual"
+            ]
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "missing_required_gates": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "out_of_order_gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "check_id",
+          "expected_after",
+          "actual_index",
+          "expected_min_index"
+        ],
+        "properties": {
+          "check_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected_after": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actual_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "expected_min_index": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "blocked_by_status": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "check_id",
+          "result"
+        ],
+        "properties": {
+          "check_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "warn",
+              "fail",
+              "pending_manual"
+            ]
+          }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "severity",
+          "status",
+          "message"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "error",
+              "manual_review"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "details": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "manifest_attachment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target_path",
+        "future_target_path",
+        "qc_check"
+      ],
+      "properties": {
+        "target_path": {
+          "type": "string",
+          "const": "qc.gates[]"
+        },
+        "future_target_path": {
+          "type": "string",
+          "const": "qc.checks[]"
+        },
+        "qc_check": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "check_id",
+            "result",
+            "severity",
+            "details"
+          ],
+          "properties": {
+            "check_id": {
+              "type": "string",
+              "const": "release_publication_gate_set_v1"
+            },
+            "result": {
+              "type": "string",
+              "enum": [
+                "pass",
+                "warn",
+                "fail",
+                "pending_manual"
+              ]
+            },
+            "severity": {
+              "type": "string",
+              "enum": [
+                "info",
+                "warning",
+                "error",
+                "manual_review"
+              ]
+            },
+            "details": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    "generated_utc": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "RELEASE_PUBLICATION_GATE_SET_v1_REPORT",
+  "job_id": "job-release-20260505-0003",
+  "package_id": "maxine-release-npc-003",
+  "lane": "release_character",
+  "tier": "npc",
+  "status": "fail",
+  "target_path": "qc.gates[]",
+  "required_gate_order": [
+    "release_publication_execution_window_ticket_v1",
+    "release_publication_execution_window_state_v1",
+    "release_publication_execution_receipt_v1"
+  ],
+  "observed_gates": [
+    {
+      "check_id": "release_publication_execution_window_ticket_v1",
+      "result": "pass",
+      "index": 0
+    },
+    {
+      "check_id": "release_publication_execution_receipt_v1",
+      "result": "pass",
+      "index": 1
+    }
+  ],
+  "missing_required_gates": [
+    "release_publication_execution_window_state_v1"
+  ],
+  "out_of_order_gates": [
+    {
+      "check_id": "release_publication_execution_receipt_v1",
+      "expected_after": "release_publication_execution_window_state_v1",
+      "actual_index": 1,
+      "expected_min_index": 2
+    }
+  ],
+  "blocked_by_status": [],
+  "findings": [
+    {
+      "id": "missing_required_gate",
+      "severity": "error",
+      "status": "open",
+      "message": "Required gate missing from manifest qc.gates[]."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "release_publication_gate_set_v1",
+      "result": "fail",
+      "severity": "error",
+      "details": {
+        "missing_gate_count": 1
+      }
+    }
+  },
+  "generated_utc": "2026-05-05T00:00:00Z"
+}

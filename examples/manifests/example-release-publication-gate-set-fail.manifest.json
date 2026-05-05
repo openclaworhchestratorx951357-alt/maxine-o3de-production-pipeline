@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0.0",
+  "job": {
+    "job_id": "job-release-20260505-0003",
+    "lane": "release_character",
+    "status": "fail",
+    "created_utc": "2026-05-05T14:00:00Z",
+    "updated_utc": "2026-05-05T14:30:00Z"
+  },
+  "identity": {
+    "character_id": "maxine-release-npc-003",
+    "character_name": "Maxine_Release_NPC_003",
+    "tier": "npc"
+  },
+  "inputs": {},
+  "qc": {
+    "overall": "fail",
+    "gates": [
+      { "check_id": "dcc_conform_v1", "result": "pass", "severity": "info" },
+      { "check_id": "material_uv_qc_v1", "result": "pass", "severity": "info" },
+      { "check_id": "animation_smoke_v1", "result": "pass", "severity": "info" },
+      { "check_id": "screenshot_evidence_v1", "result": "pass", "severity": "info" },
+      { "check_id": "ci_artifact_retention_v1", "result": "pass", "severity": "info" },
+      { "check_id": "release_package_bundle_v1", "result": "pass", "severity": "info" },
+      { "check_id": "release_promotion_decision_v1", "result": "pass", "severity": "info" },
+      { "check_id": "release_publication_preflight_v1", "result": "pass", "severity": "info" },
+      { "check_id": "release_publication_request_approval_v1", "result": "pass", "severity": "info" },
+      { "check_id": "release_publication_execution_admission_gate_v1", "result": "pass", "severity": "info" },
+      { "check_id": "release_publication_execution_request_ledger_v1", "result": "pass", "severity": "info" },
+      { "check_id": "release_publication_ready_for_execution_request_v1", "result": "pass", "severity": "info" },
+      { "check_id": "release_publication_execution_handoff_v1", "result": "pass", "severity": "info" },
+      { "check_id": "release_publication_execution_admission_request_packet_v1", "result": "pass", "severity": "info" },
+      { "check_id": "release_publication_execution_admission_review_v1", "result": "fail", "severity": "error" },
+      { "check_id": "release_publication_execution_authorization_record_v1", "result": "pass", "severity": "info" },
+      { "check_id": "release_publication_execution_window_ticket_v1", "result": "pass", "severity": "info" },
+      { "check_id": "release_publication_execution_receipt_v1", "result": "pass", "severity": "info" },
+      { "check_id": "release_publication_rollback_drill_v1", "result": "pass", "severity": "info" },
+      { "check_id": "release_publication_evidence_integrity_index_v1", "result": "pass", "severity": "info" }
+    ]
+  },
+  "evidence": {
+    "logs": [],
+    "screenshots": []
+  }
+}

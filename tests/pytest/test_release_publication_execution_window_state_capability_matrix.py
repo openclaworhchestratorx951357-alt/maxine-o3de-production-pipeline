@@ -10,11 +10,12 @@ def _load_capability_matrix() -> dict:
     return json.loads(matrix_path.read_text(encoding="utf-8-sig"))
 
 
-def test_window_ticket_and_window_state_report_validation_capabilities_are_proof_only():
+def test_release_publication_validation_capabilities_are_proof_only():
     matrix = _load_capability_matrix()
     caps = matrix["capabilities"]
     assert caps["release_publication_execution_window_ticket_report_validation"] == "proof_only"
     assert caps["release_publication_execution_window_state_report_validation"] == "proof_only"
+    assert caps["release_publication_gate_set_report_validation"] == "proof_only"
 
 
 def test_window_validation_capabilities_do_not_admit_execution_surfaces():

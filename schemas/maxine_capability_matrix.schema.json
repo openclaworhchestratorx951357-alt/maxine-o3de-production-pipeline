@@ -60,6 +60,7 @@
         "ap_real_binary_diagnostic_execution",
         "release_publication_execution_window_ticket_report_validation",
         "release_publication_execution_window_state_report_validation",
+        "release_publication_gate_set_report_validation",
         "real_asset_processor_execution",
         "authoritative_resolver_write",
         "o3de_editor_execution",

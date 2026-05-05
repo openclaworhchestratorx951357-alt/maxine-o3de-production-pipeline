@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "RELEASE_PUBLICATION_GATE_SET_v1_REPORT",
+  "job_id": "job-release-20260505-0001",
+  "package_id": "maxine-release-npc-001",
+  "lane": "release_character",
+  "tier": "npc",
+  "status": "pass",
+  "target_path": "qc.gates[]",
+  "required_gate_order": [
+    "dcc_conform_v1",
+    "material_uv_qc_v1",
+    "animation_smoke_v1",
+    "screenshot_evidence_v1",
+    "ci_artifact_retention_v1",
+    "release_package_bundle_v1",
+    "release_promotion_decision_v1",
+    "release_publication_preflight_v1",
+    "release_publication_request_approval_v1",
+    "release_publication_execution_admission_gate_v1",
+    "release_publication_execution_request_ledger_v1",
+    "release_publication_ready_for_execution_request_v1",
+    "release_publication_execution_handoff_v1",
+    "release_publication_execution_admission_request_packet_v1",
+    "release_publication_execution_admission_review_v1",
+    "release_publication_execution_authorization_record_v1",
+    "release_publication_execution_window_ticket_v1",
+    "release_publication_execution_window_state_v1",
+    "release_publication_execution_receipt_v1",
+    "release_publication_rollback_drill_v1",
+    "release_publication_evidence_integrity_index_v1",
+    "release_publication_chain_audit_bundle_v1"
+  ],
+  "observed_gates": [],
+  "missing_required_gates": [],
+  "out_of_order_gates": [],
+  "blocked_by_status": [],
+  "findings": [],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "release_publication_gate_set_v1",
+      "result": "pass",
+      "severity": "info",
+      "details": {}
+    }
+  },
+  "generated_utc": "2026-05-05T00:00:00Z"
+}

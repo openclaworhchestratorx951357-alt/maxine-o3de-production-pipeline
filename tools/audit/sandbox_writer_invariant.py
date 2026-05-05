@@ -758,6 +758,7 @@ EXPECTED_CAPABILITY_STATES = {
     "ap_real_binary_diagnostic_execution": "sandbox_only",
     "release_publication_execution_window_ticket_report_validation": "proof_only",
     "release_publication_execution_window_state_report_validation": "proof_only",
+    "release_publication_gate_set_report_validation": "proof_only",
     "real_asset_processor_execution": "blocked",
     "authoritative_resolver_write": "forbidden",
     "o3de_editor_execution": "blocked",
