@@ -45,7 +45,7 @@
       "order": 7,
       "check_id": "manual_hero_review_v1",
       "required": true,
-      "implemented": false
+      "implemented": true
     },
     {
       "order": 8,

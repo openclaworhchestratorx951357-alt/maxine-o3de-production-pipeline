@@ -110,6 +110,7 @@ REQUIRED_FILES = [
     "examples/source-product-evidence-resolver/max_biped_v1_source_product_resolver_fail.json",
     "examples/manifest-qc-attachments/max_biped_v1_skeleton_attach_pass.json",
     "examples/manifest-qc-attachments/max_biped_v1_dcc_conform_attach_warn.json",
+    "examples/manifest-qc-attachments/max_biped_v1_manual_hero_review_attach_pass.json",
     "examples/manifest-qc-attachments/max_biped_v1_source_product_attach_fail.json",
     "examples/screenshot-evidence/max_biped_v1_screenshot_source_index.json",
     "examples/sandbox/evidence-sources/screenshots/pilot-shot-001.txt",

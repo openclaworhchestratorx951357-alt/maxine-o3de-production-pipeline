@@ -72,6 +72,7 @@ def test_runner_builds_generated_manifest_and_attaches_expected_checks(repo_tmp_
     assert "material_uv_qc_v1" in gate_ids
     assert "animation_smoke_v1" in gate_ids
     assert "screenshot_evidence_v1" in gate_ids
+    assert "manual_hero_review_v1" in gate_ids
     assert "release_publication_rollback_drill_v1" in gate_ids
     assert "release_publication_ready_for_execution_request_v1" in gate_ids
     assert "pilot_release_chain_v1" in gate_ids

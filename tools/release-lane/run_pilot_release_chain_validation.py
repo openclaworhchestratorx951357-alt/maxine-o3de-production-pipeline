@@ -29,6 +29,7 @@ REQUIRED_IMPLEMENTED_CHECK_IDS = [
     "material_uv_qc_v1",
     "animation_smoke_v1",
     "screenshot_evidence_v1",
+    "manual_hero_review_v1",
     "release_publication_rollback_drill_v1",
     "release_publication_ready_for_execution_request_v1",
 ]
@@ -243,6 +244,15 @@ def main() -> int:
                 "examples/screenshot-evidence/max_biped_v1_screenshot_source_index.json",
             ],
             "payload_path": attachment_dir / "screenshot_evidence_v1.json",
+        },
+        {
+            "name": "manual_hero_review",
+            "command": [
+                sys.executable,
+                "tools/manual-hero-review/validate_manual_hero_review_report.py",
+                "examples/manual-hero-review/max_biped_v1_manual_hero_review_pass.json",
+            ],
+            "payload_path": attachment_dir / "manual_hero_review_v1.json",
         },
         {
             "name": "release_publication_rollback_drill_fixture",

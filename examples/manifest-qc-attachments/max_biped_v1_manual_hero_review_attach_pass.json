@@ -1,0 +1,20 @@
+{
+  "status": "pass",
+  "check_id": "manual_hero_review_v1",
+  "contract_id": "MANUAL_HERO_REVIEW_v1",
+  "findings": [],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "manual_hero_review_v1",
+      "result": "pass",
+      "severity": "info",
+      "details": {
+        "report_path": "C:\\Users\\topgu\\OneDrive\\Documents\\GitHub\\maxine-o3de-production-pipeline\\examples\\manual-hero-review\\max_biped_v1_manual_hero_review_pass.json",
+        "report_status": "pass",
+        "validated_at_utc": "2026-05-05T13:49:55.349852+00:00"
+      }
+    }
+  }
+}
