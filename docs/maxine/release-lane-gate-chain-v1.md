@@ -44,6 +44,9 @@ AAA-quality output is still not fully operational. Before that state, the projec
 - deterministic pilot attachment runner is now available:
   - `tools/release-lane/run_pilot_release_chain_validation.py`
   - `examples/manifests/example-release-character-pilot-chain-base.manifest.json`
+- evidence/admission status reporter is now available:
+  - `tools/release-lane/report_release_lane_evidence_admission_status.py`
+  - `docs/maxine/specs/release-lane-evidence-admission-status-v1.md`
 - bounded real evidence extraction from controlled sources
 - controlled O3DE/AP evidence integration (still blocked today)
 - promotion from fixture proof to controlled real evidence across the chain
