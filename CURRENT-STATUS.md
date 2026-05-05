@@ -93,6 +93,13 @@
   - `examples/manual-hero-review/max_biped_v1_manual_hero_review_pending.json`
   - `examples/manual-hero-review/max_biped_v1_manual_hero_review_fail.json`
   - `docs/maxine/specs/manual-hero-review-v1.md`
+- CI artifact retention v1 report validation is implemented (contract-first, non-executing evidence only):
+  - `schemas/maxine_ci_artifact_retention_report.schema.json`
+  - `tools/ci-artifact-retention/validate_ci_artifact_retention_report.py`
+  - `examples/ci-artifact-retention/max_biped_v1_ci_artifact_retention_pass.json`
+  - `examples/ci-artifact-retention/max_biped_v1_ci_artifact_retention_warn.json`
+  - `examples/ci-artifact-retention/max_biped_v1_ci_artifact_retention_fail.json`
+  - `docs/maxine/specs/ci-artifact-retention-v1.md`
 - Source Product Evidence Resolver v1 evidence report validation is implemented (deterministic evidence bridge, non-executing evidence only):
   - `schemas/maxine_source_product_evidence_resolver_report.schema.json`
   - `tools/source-product-evidence-resolver/validate_source_product_evidence_resolver_report.py`
@@ -229,6 +236,10 @@
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - Manual hero review v1 report validation remains non-executing evidence-only:
   - validates hero-tier manual review decision reports against required evidence and approval-state rules
+  - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- CI artifact retention v1 report validation remains non-executing evidence-only:
+  - validates retention policy evidence metadata for release-lane artifacts
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.

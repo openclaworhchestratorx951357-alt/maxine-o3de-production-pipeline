@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "CI_ARTIFACT_RETENTION_v1_REPORT",
+  "job_id": "job-release-character-retention-warn-001",
+  "package_id": "char.maxine.guard_mira",
+  "lane": "release_character",
+  "status": "warn",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-retention-warn-001/manifest.json",
+    "source_kind": "manifest",
+    "sha256": "6b25dcd31fd7d72295fdafde4ee88420e4f0c34d8bcdfa052279a4bf2c7f6036"
+  },
+  "retention_policy": {
+    "policy_id": "CI_ARTIFACT_RETENTION_v1",
+    "retention_class": "release-365d",
+    "min_required_days": 365,
+    "recommended_days": 400,
+    "actual_retention_days": 365,
+    "evidence_only": true,
+    "runtime_execution_admitted": false
+  },
+  "artifact_inventory": {
+    "artifact_root": "artifacts/jobs/job-release-character-retention-warn-001",
+    "required_artifact_paths": [
+      "artifacts/jobs/job-release-character-retention-warn-001/manifest.json",
+      "artifacts/jobs/job-release-character-retention-warn-001/logs/pipeline.log",
+      "artifacts/jobs/job-release-character-retention-warn-001/qc/dcc-conform.json"
+    ],
+    "present_artifact_paths": [
+      "artifacts/jobs/job-release-character-retention-warn-001/manifest.json",
+      "artifacts/jobs/job-release-character-retention-warn-001/logs/pipeline.log",
+      "artifacts/jobs/job-release-character-retention-warn-001/qc/dcc-conform.json"
+    ],
+    "missing_artifacts": [],
+    "disallowed_artifact_paths": [],
+    "total_size_bytes": 702400
+  },
+  "release_validation": {
+    "required_qc_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1"
+    ],
+    "present_qc_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1"
+    ],
+    "missing_qc_gate_ids": [],
+    "release_readiness_state": "ready_for_manual_release_review",
+    "manual_review_required": true
+  },
+  "findings": [
+    {
+      "id": "retention_at_minimum",
+      "severity": "warning",
+      "status": "open",
+      "message": "Artifact retention meets minimum but is below recommended duration."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "ci_artifact_retention_v1",
+      "result": "warn",
+      "severity": "warning",
+      "details": {
+        "summary": "Retention is at minimum threshold; extension recommended."
+      }
+    }
+  }
+}
