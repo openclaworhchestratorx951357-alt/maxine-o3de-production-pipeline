@@ -1,0 +1,369 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_release_publication_preflight_report.schema.json",
+  "title": "MAXINE Release Publication Preflight Report",
+  "description": "Evidence-only release publication preflight contract for manual publication readiness.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "report_type",
+    "job_id",
+    "package_id",
+    "lane",
+    "status",
+    "source",
+    "preflight_contract",
+    "publication_plan",
+    "decision_context",
+    "readiness",
+    "findings",
+    "manifest_attachment"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "report_type": {
+      "type": "string",
+      "const": "RELEASE_PUBLICATION_PREFLIGHT_v1_REPORT"
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "package_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lane": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "source_path",
+        "source_kind"
+      ],
+      "properties": {
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "preflight_contract": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "contract_id",
+        "required_gate_ids",
+        "required_approvals",
+        "manual_review_required",
+        "explicit_publication_approval_required",
+        "evidence_only",
+        "execution_admitted"
+      ],
+      "properties": {
+        "contract_id": {
+          "type": "string",
+          "const": "RELEASE_PUBLICATION_PREFLIGHT_v1"
+        },
+        "required_gate_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required_approvals": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "manual_review_required": {
+          "type": "boolean"
+        },
+        "explicit_publication_approval_required": {
+          "type": "boolean",
+          "const": true
+        },
+        "evidence_only": {
+          "type": "boolean",
+          "const": true
+        },
+        "execution_admitted": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    },
+    "publication_plan": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "publication_mode",
+        "publish_command_display",
+        "rollback_command_display",
+        "planned_target_environment",
+        "no_command_execution_recorded",
+        "dry_run_evidence_paths"
+      ],
+      "properties": {
+        "publication_mode": {
+          "type": "string",
+          "enum": [
+            "non_executing_preflight_only"
+          ]
+        },
+        "publish_command_display": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rollback_command_display": {
+          "type": "string",
+          "minLength": 1
+        },
+        "planned_target_environment": {
+          "type": "string",
+          "enum": [
+            "release_candidate",
+            "production_candidate",
+            "unknown"
+          ]
+        },
+        "no_command_execution_recorded": {
+          "type": "boolean",
+          "const": true
+        },
+        "dry_run_evidence_paths": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "decision_context": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "proposed_decision",
+        "approver_ids",
+        "blocked_reason_codes",
+        "rollback_plan_verified",
+        "cleanup_plan_verified",
+        "publish_execution_admitted",
+        "o3de_execution_admitted",
+        "asset_processor_execution_admitted",
+        "spawn_execution_admitted"
+      ],
+      "properties": {
+        "proposed_decision": {
+          "type": "string",
+          "enum": [
+            "approved",
+            "pending",
+            "rejected"
+          ]
+        },
+        "approver_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "blocked_reason_codes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "rollback_plan_verified": {
+          "type": "boolean"
+        },
+        "cleanup_plan_verified": {
+          "type": "boolean"
+        },
+        "publish_execution_admitted": {
+          "type": "boolean",
+          "const": false
+        },
+        "o3de_execution_admitted": {
+          "type": "boolean",
+          "const": false
+        },
+        "asset_processor_execution_admitted": {
+          "type": "boolean",
+          "const": false
+        },
+        "spawn_execution_admitted": {
+          "type": "boolean",
+          "const": false
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "readiness": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "required_gate_ids",
+        "present_gate_ids",
+        "missing_gate_ids",
+        "release_readiness_state"
+      ],
+      "properties": {
+        "required_gate_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "present_gate_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "missing_gate_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "release_readiness_state": {
+          "type": "string",
+          "enum": [
+            "ready_for_manual_publication_request",
+            "blocked_missing_evidence",
+            "blocked_safety_boundary"
+          ]
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "severity",
+          "status",
+          "message"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "error",
+              "manual_review"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "manifest_attachment": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "target_path",
+        "future_target_path",
+        "qc_check"
+      ],
+      "properties": {
+        "target_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "future_target_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "qc_check": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "check_id",
+            "result",
+            "severity",
+            "details"
+          ],
+          "properties": {
+            "check_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "result": {
+              "type": "string",
+              "enum": [
+                "pass",
+                "warn",
+                "fail",
+                "pending_manual"
+              ]
+            },
+            "severity": {
+              "type": "string",
+              "enum": [
+                "info",
+                "warning",
+                "error",
+                "manual_review"
+              ]
+            },
+            "details": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      }
+    }
+  }
+}

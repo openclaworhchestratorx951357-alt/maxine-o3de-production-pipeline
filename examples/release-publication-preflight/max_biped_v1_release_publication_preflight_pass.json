@@ -1,0 +1,97 @@
+﻿{
+  "schema_version": "1.0.0",
+  "report_type": "RELEASE_PUBLICATION_PREFLIGHT_v1_REPORT",
+  "job_id": "job-release-publication-pass-001",
+  "package_id": "char.maxine.knight_arden",
+  "lane": "release_character",
+  "status": "pass",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-publication-pass-001/manifest.json",
+    "source_kind": "manifest",
+    "sha256": "fd5f3b5fe0762222d842907d6c8c7238628f0c3ca6f0ea94f7bc5c9d241623fd"
+  },
+  "preflight_contract": {
+    "contract_id": "RELEASE_PUBLICATION_PREFLIGHT_v1",
+    "required_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1",
+      "release_promotion_decision_v1"
+    ],
+    "required_approvals": 2,
+    "manual_review_required": true,
+    "explicit_publication_approval_required": true,
+    "evidence_only": true,
+    "execution_admitted": false
+  },
+  "publication_plan": {
+    "publication_mode": "non_executing_preflight_only",
+    "publish_command_display": "DisplayOnly Publish Plan: release_bundle publish --manifest artifacts/jobs/job-release-publication-pass-001/manifest.json --no-execute",
+    "rollback_command_display": "DisplayOnly Rollback Plan: release_bundle rollback --manifest artifacts/jobs/job-release-publication-pass-001/manifest.json --no-execute",
+    "planned_target_environment": "release_candidate",
+    "no_command_execution_recorded": true,
+    "dry_run_evidence_paths": [
+      "artifacts/jobs/job-release-publication-pass-001/release-bundle/manifest.json",
+      "artifacts/jobs/job-release-publication-pass-001/release-bundle/artifact-index.json"
+    ]
+  },
+  "decision_context": {
+    "proposed_decision": "approved",
+    "approver_ids": [
+      "ops.release_lead",
+      "art.release_lead"
+    ],
+    "blocked_reason_codes": [],
+    "rollback_plan_verified": true,
+    "cleanup_plan_verified": true,
+    "publish_execution_admitted": false,
+    "o3de_execution_admitted": false,
+    "asset_processor_execution_admitted": false,
+    "spawn_execution_admitted": false,
+    "notes": "Ready for explicit manual publication request; no command execution admitted by this preflight."
+  },
+  "readiness": {
+    "required_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1",
+      "release_promotion_decision_v1"
+    ],
+    "present_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1",
+      "release_promotion_decision_v1"
+    ],
+    "missing_gate_ids": [],
+    "release_readiness_state": "ready_for_manual_publication_request"
+  },
+  "findings": [],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "release_publication_preflight_v1",
+      "result": "pass",
+      "severity": "info",
+      "details": {
+        "summary": "Publication preflight evidence is complete and remains non-executing."
+      }
+    }
+  }
+}

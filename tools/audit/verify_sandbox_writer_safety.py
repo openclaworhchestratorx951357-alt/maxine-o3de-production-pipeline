@@ -128,6 +128,10 @@ REQUIRED_FILES = [
     "examples/sandbox/evidence-sources/screenshots/pilot-shot-001.txt",
     "examples/sandbox/evidence-sources/screenshots/pilot-shot-002.txt",
     "examples/manifests/example-release-character-qc-attach-base.manifest.json",
+    "schemas/maxine_release_publication_preflight_report.schema.json",
+    "examples/release-publication-preflight/max_biped_v1_release_publication_preflight_pass.json",
+    "examples/release-publication-preflight/max_biped_v1_release_publication_preflight_warn.json",
+    "examples/release-publication-preflight/max_biped_v1_release_publication_preflight_fail.json",
     "examples/capabilities/maxine-capability-matrix.json",
     "examples/sandbox/review-packets/.gitkeep",
     "examples/sandbox/review-decisions/.gitkeep",
@@ -163,6 +167,8 @@ REQUIRED_FILES = [
     "tools/screenshot-evidence/extract_screenshot_evidence_index.py",
     "docs/maxine/specs/screenshot-evidence-extractor-v1.md",
     "docs/maxine/release-lane-gate-chain-v1.md",
+    "tools/release-publication-preflight/validate_release_publication_preflight_report.py",
+    "docs/maxine/specs/release-publication-preflight-v1.md",
 ]
 
 

@@ -114,6 +114,13 @@
   - `examples/release-promotion-decision/max_biped_v1_release_promotion_decision_warn.json`
   - `examples/release-promotion-decision/max_biped_v1_release_promotion_decision_fail.json`
   - `docs/maxine/specs/release-promotion-decision-v1.md`
+- Release publication preflight v1 report validation is implemented (contract-first, non-executing evidence only):
+  - `schemas/maxine_release_publication_preflight_report.schema.json`
+  - `tools/release-publication-preflight/validate_release_publication_preflight_report.py`
+  - `examples/release-publication-preflight/max_biped_v1_release_publication_preflight_pass.json`
+  - `examples/release-publication-preflight/max_biped_v1_release_publication_preflight_warn.json`
+  - `examples/release-publication-preflight/max_biped_v1_release_publication_preflight_fail.json`
+  - `docs/maxine/specs/release-publication-preflight-v1.md`
 - Source Product Evidence Resolver v1 evidence report validation is implemented (deterministic evidence bridge, non-executing evidence only):
   - `schemas/maxine_source_product_evidence_resolver_report.schema.json`
   - `tools/source-product-evidence-resolver/validate_source_product_evidence_resolver_report.py`
@@ -136,6 +143,7 @@
 - Pilot release chain validation runner v1 is implemented (deterministic manifest QC attachment flow, non-executing evidence integration only):
   - `tools/release-lane/run_pilot_release_chain_validation.py`
   - `examples/manifests/example-release-character-pilot-chain-base.manifest.json`
+  - `examples/release-publication-preflight/max_biped_v1_release_publication_preflight_pass.json`
   - `examples/manifest-qc-attachments/max_biped_v1_release_publication_rollback_drill_attach_pass.json`
   - `examples/manifest-qc-attachments/max_biped_v1_release_publication_ready_for_execution_request_attach_pass.json`
   - `docs/maxine/specs/pilot-release-chain-validation-runner-v1.md`
@@ -262,6 +270,10 @@
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - Release promotion decision v1 report validation remains non-executing evidence-only:
   - validates promotion decision policy evidence, blocker policy state, and human-approval coverage
+  - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Release publication preflight v1 report validation remains non-executing evidence-only:
+  - validates publication preflight gate completeness/manual approval readiness evidence
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
