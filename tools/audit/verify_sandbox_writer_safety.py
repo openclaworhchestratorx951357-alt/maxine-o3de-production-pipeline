@@ -107,6 +107,9 @@ REQUIRED_FILES = [
     "examples/manifest-qc-attachments/max_biped_v1_skeleton_attach_pass.json",
     "examples/manifest-qc-attachments/max_biped_v1_dcc_conform_attach_warn.json",
     "examples/manifest-qc-attachments/max_biped_v1_source_product_attach_fail.json",
+    "examples/screenshot-evidence/max_biped_v1_screenshot_source_index.json",
+    "examples/sandbox/evidence-sources/screenshots/pilot-shot-001.txt",
+    "examples/sandbox/evidence-sources/screenshots/pilot-shot-002.txt",
     "examples/manifests/example-release-character-qc-attach-base.manifest.json",
     "examples/capabilities/maxine-capability-matrix.json",
     "examples/sandbox/review-packets/.gitkeep",
@@ -132,6 +135,8 @@ REQUIRED_FILES = [
     "examples/manifests/example-release-character-pilot-chain-base.manifest.json",
     "docs/maxine/specs/pilot-release-chain-validation-runner-v1.md",
     "docs/maxine/specs/pilot-release-chain-ci-proof-v1.md",
+    "tools/screenshot-evidence/extract_screenshot_evidence_index.py",
+    "docs/maxine/specs/screenshot-evidence-extractor-v1.md",
     "docs/maxine/release-lane-gate-chain-v1.md",
 ]
 

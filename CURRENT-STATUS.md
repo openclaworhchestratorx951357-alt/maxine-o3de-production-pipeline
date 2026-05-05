@@ -80,6 +80,12 @@
   - `examples/animation-smoke/max_biped_v1_animation_smoke_warn.json`
   - `examples/animation-smoke/max_biped_v1_animation_smoke_fail.json`
   - `docs/maxine/specs/animation-smoke-v1.md`
+- Screenshot evidence extractor v1 is implemented (controlled-input, non-executing evidence extraction only):
+  - `tools/screenshot-evidence/extract_screenshot_evidence_index.py`
+  - `examples/screenshot-evidence/max_biped_v1_screenshot_source_index.json`
+  - `examples/sandbox/evidence-sources/screenshots/pilot-shot-001.txt`
+  - `examples/sandbox/evidence-sources/screenshots/pilot-shot-002.txt`
+  - `docs/maxine/specs/screenshot-evidence-extractor-v1.md`
 - Source Product Evidence Resolver v1 evidence report validation is implemented (deterministic evidence bridge, non-executing evidence only):
   - `schemas/maxine_source_product_evidence_resolver_report.schema.json`
   - `tools/source-product-evidence-resolver/validate_source_product_evidence_resolver_report.py`
@@ -182,6 +188,10 @@
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - Animation smoke v1 report validation remains non-executing evidence-only:
   - validates animation smoke report JSON against required clip and status rules
+  - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Screenshot evidence extraction v1 remains non-executing evidence-only:
+  - validates controlled screenshot source-index input under `examples/sandbox`
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - Source Product Evidence Resolver v1 remains non-executing evidence-only:

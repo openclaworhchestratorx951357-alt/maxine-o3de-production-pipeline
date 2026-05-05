@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0.0",
+  "evidence_source_type": "fixture",
+  "minimum_required": 2,
+  "screenshots": [
+    {
+      "path": "examples/sandbox/evidence-sources/screenshots/pilot-shot-001.txt",
+      "label": "front_idle"
+    },
+    {
+      "path": "examples/sandbox/evidence-sources/screenshots/pilot-shot-002.txt",
+      "label": "side_idle"
+    }
+  ]
+}

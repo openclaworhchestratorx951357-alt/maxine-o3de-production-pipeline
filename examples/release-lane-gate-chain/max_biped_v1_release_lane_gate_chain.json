@@ -39,7 +39,7 @@
       "order": 6,
       "check_id": "screenshot_evidence_v1",
       "required": true,
-      "implemented": false
+      "implemented": true
     },
     {
       "order": 7,

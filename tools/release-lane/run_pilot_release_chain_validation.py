@@ -28,6 +28,7 @@ REQUIRED_IMPLEMENTED_CHECK_IDS = [
     "source_product_evidence_resolver_v1",
     "material_uv_qc_v1",
     "animation_smoke_v1",
+    "screenshot_evidence_v1",
     "release_publication_rollback_drill_v1",
     "release_publication_ready_for_execution_request_v1",
 ]
@@ -232,6 +233,16 @@ def main() -> int:
                 "examples/animation-smoke/max_biped_v1_animation_smoke_pass.json",
             ],
             "payload_path": attachment_dir / "animation_smoke_v1.json",
+        },
+        {
+            "name": "screenshot_evidence_extractor",
+            "command": [
+                sys.executable,
+                "tools/screenshot-evidence/extract_screenshot_evidence_index.py",
+                "--source-index",
+                "examples/screenshot-evidence/max_biped_v1_screenshot_source_index.json",
+            ],
+            "payload_path": attachment_dir / "screenshot_evidence_v1.json",
         },
         {
             "name": "release_publication_rollback_drill_fixture",

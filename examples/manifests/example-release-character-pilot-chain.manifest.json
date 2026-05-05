@@ -80,11 +80,12 @@
       },
       {
         "check_id": "screenshot_evidence_v1",
-        "result": "pending_manual",
-        "severity": "manual_review",
+        "result": "pass",
+        "severity": "info",
         "details": {
-          "implemented_on_main": false,
-          "evidence_source": "future_extractor"
+          "implemented_in_stack": true,
+          "evidence_source": "fixture_extractor",
+          "extractor_id": "screenshot_evidence_extractor_v1"
         }
       },
       {
