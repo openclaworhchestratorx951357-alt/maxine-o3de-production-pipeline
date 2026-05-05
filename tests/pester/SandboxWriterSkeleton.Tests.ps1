@@ -777,9 +777,25 @@
 
         $planPath = Join-Path $TestDrive "workflow-bad-path-plan.json"
         [System.IO.File]::WriteAllText($planPath, $plan, [System.Text.UTF8Encoding]::new($false))
+        $workflowRunsRoot = Join-Path $repoRoot "examples/sandbox/workflow-runs"
+        $beforeBlocked = @()
+        if (Test-Path -LiteralPath $workflowRunsRoot) {
+            $beforeBlocked = Get-ChildItem -LiteralPath $workflowRunsRoot -File -Filter "sandbox-workflow-run-*.blocked.json" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
+        }
 
         & powershell -NoProfile -ExecutionPolicy Bypass -File $workflowRun -PlanPath $planPath -WorkflowMode WriteOnly -WorkflowRunPath "../outside/workflow.json"
         $LASTEXITCODE | Should Not Be 0
+
+        $afterBlocked = @()
+        if (Test-Path -LiteralPath $workflowRunsRoot) {
+            $afterBlocked = Get-ChildItem -LiteralPath $workflowRunsRoot -File -Filter "sandbox-workflow-run-*.blocked.json" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
+        }
+
+        foreach ($path in $afterBlocked) {
+            if ($beforeBlocked -notcontains $path -and (Test-Path -LiteralPath $path)) {
+                Remove-Item -LiteralPath $path -Force
+            }
+        }
     }
 
     It "keeps authoritative resolver write absent" {
