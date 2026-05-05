@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "RELEASE_PROMOTION_DECISION_v1_REPORT",
+  "job_id": "job-release-promotion-pass-001",
+  "package_id": "char.maxine.knight_arden",
+  "lane": "release_character",
+  "status": "pass",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-promotion-pass-001/manifest.json",
+    "source_kind": "manifest",
+    "sha256": "fd5f3b5fe0762222d842907d6c8c7238628f0c3ca6f0ea94f7bc5c9d241623fd"
+  },
+  "promotion_policy": {
+    "contract_id": "RELEASE_PROMOTION_DECISION_v1",
+    "required_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1"
+    ],
+    "required_approvals": 2,
+    "manual_review_required": true,
+    "evidence_only": true,
+    "runtime_execution_admitted": false
+  },
+  "decision": {
+    "promotion_decision": "approved",
+    "decision_recorded_utc": "2026-05-05T00:00:00Z",
+    "approver_ids": [
+      "ops.release_lead",
+      "art.release_lead"
+    ],
+    "blocked_reason_codes": [],
+    "rollback_plan_verified": true,
+    "cleanup_plan_verified": true,
+    "publish_execution_admitted": false,
+    "spawn_execution_admitted": false,
+    "o3de_execution_admitted": false,
+    "asset_processor_execution_admitted": false,
+    "notes": "Promotion decision approved based on complete release evidence package."
+  },
+  "readiness": {
+    "required_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1"
+    ],
+    "present_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1"
+    ],
+    "missing_gate_ids": [],
+    "release_readiness_state": "ready_for_manual_release_review"
+  },
+  "findings": [],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "release_promotion_decision_v1",
+      "result": "pass",
+      "severity": "info",
+      "details": {
+        "summary": "Release promotion decision evidence is complete and approved."
+      }
+    }
+  }
+}

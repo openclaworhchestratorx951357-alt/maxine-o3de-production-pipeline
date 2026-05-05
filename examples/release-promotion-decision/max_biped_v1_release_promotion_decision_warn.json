@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "RELEASE_PROMOTION_DECISION_v1_REPORT",
+  "job_id": "job-release-promotion-warn-001",
+  "package_id": "char.maxine.guard_mira",
+  "lane": "release_character",
+  "status": "warn",
+  "source": {
+    "source_path": "artifacts/jobs/job-release-promotion-warn-001/manifest.json",
+    "source_kind": "manifest",
+    "sha256": "0e7d9da84ad66e26d9cf7b38a45f93695f2f65522f19ca66be6189c9d6fe2a3f"
+  },
+  "promotion_policy": {
+    "contract_id": "RELEASE_PROMOTION_DECISION_v1",
+    "required_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1"
+    ],
+    "required_approvals": 2,
+    "manual_review_required": true,
+    "evidence_only": true,
+    "runtime_execution_admitted": false
+  },
+  "decision": {
+    "promotion_decision": "approved",
+    "decision_recorded_utc": "2026-05-05T01:00:00Z",
+    "approver_ids": [
+      "ops.release_lead",
+      "art.release_lead"
+    ],
+    "blocked_reason_codes": [],
+    "rollback_plan_verified": true,
+    "cleanup_plan_verified": true,
+    "publish_execution_admitted": false,
+    "spawn_execution_admitted": false,
+    "o3de_execution_admitted": false,
+    "asset_processor_execution_admitted": false,
+    "notes": "Approved with advisory note for out-of-window final signoff."
+  },
+  "readiness": {
+    "required_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1"
+    ],
+    "present_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1"
+    ],
+    "missing_gate_ids": [],
+    "release_readiness_state": "ready_for_manual_release_review"
+  },
+  "findings": [
+    {
+      "id": "approval_window_exceeded",
+      "severity": "warning",
+      "status": "open",
+      "message": "Final release signoff occurred outside preferred approval window."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "release_promotion_decision_v1",
+      "result": "warn",
+      "severity": "warning",
+      "details": {
+        "summary": "Promotion approved with advisory warning."
+      }
+    }
+  }
+}

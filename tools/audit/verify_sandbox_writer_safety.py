@@ -115,6 +115,10 @@ REQUIRED_FILES = [
     "examples/release-package-bundle/max_biped_v1_release_package_bundle_pass.json",
     "examples/release-package-bundle/max_biped_v1_release_package_bundle_warn.json",
     "examples/release-package-bundle/max_biped_v1_release_package_bundle_fail.json",
+    "schemas/maxine_release_promotion_decision_report.schema.json",
+    "examples/release-promotion-decision/max_biped_v1_release_promotion_decision_pass.json",
+    "examples/release-promotion-decision/max_biped_v1_release_promotion_decision_warn.json",
+    "examples/release-promotion-decision/max_biped_v1_release_promotion_decision_fail.json",
     "examples/capabilities/maxine-capability-matrix.json",
     "examples/sandbox/review-packets/.gitkeep",
     "examples/sandbox/review-decisions/.gitkeep",
@@ -134,6 +138,8 @@ REQUIRED_FILES = [
     "docs/maxine/specs/ci-artifact-retention-v1.md",
     "tools/release-package-bundle/validate_release_package_bundle_report.py",
     "docs/maxine/specs/release-package-bundle-v1.md",
+    "tools/release-promotion-decision/validate_release_promotion_decision_report.py",
+    "docs/maxine/specs/release-promotion-decision-v1.md",
 ]
 
 
