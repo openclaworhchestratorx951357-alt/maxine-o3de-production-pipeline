@@ -1,0 +1,168 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "RELEASE_PUBLICATION_READY_FOR_EXECUTION_REQUEST_v1_REPORT",
+  "job_id": "job-maxine-release-001",
+  "package_id": "maxine.character.max_biped_v1",
+  "lane": "release_character",
+  "status": "fail",
+  "source": {
+    "source_path": "evidence/jobs/job-maxine-release-001/manifest.json",
+    "source_kind": "manifest_v1",
+    "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "readiness_contract": {
+    "contract_id": "RELEASE_PUBLICATION_READY_FOR_EXECUTION_REQUEST_v1",
+    "required_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1",
+      "release_promotion_decision_v1",
+      "release_publication_preflight_v1",
+      "release_publication_request_approval_v1",
+      "release_publication_execution_admission_gate_v1",
+      "release_publication_execution_request_ledger_v1",
+      "release_publication_execution_receipt_v1",
+      "release_publication_rollback_drill_v1",
+      "release_publication_evidence_integrity_index_v1"
+    ],
+    "required_report_artifact_ids": [
+      "manifest",
+      "release_package_bundle",
+      "release_promotion_decision",
+      "release_publication_preflight",
+      "release_publication_request_approval",
+      "release_publication_execution_admission_gate",
+      "release_publication_execution_request_ledger",
+      "release_publication_execution_receipt",
+      "release_publication_rollback_drill",
+      "release_publication_evidence_integrity_index",
+      "publication_log",
+      "rollback_drill_log",
+      "post_rollback_validation_log"
+    ],
+    "required_approvals": 2,
+    "manual_review_required": true,
+    "immutable_request_packet_required": true,
+    "hash_verification_required": true,
+    "evidence_only": true,
+    "execution_admitted": false
+  },
+  "ready_for_execution_request": {
+    "request_id": "ready-for-execution-request-20260505-0003",
+    "request_recorded_utc": "2026-05-05T11:45:00Z",
+    "recorded_by": "ops.release_manager",
+    "request_action": "record_release_publication_ready_for_execution_request",
+    "request_scope": "release_publication_chain",
+    "promotion_decision_id": "promotion-decision-20260505-0001",
+    "execution_receipt_id": "execution-receipt-20260505-0001",
+    "rollback_drill_id": "rollback-drill-20260505-0001",
+    "evidence_integrity_index_id": "integrity-index-20260505-0001",
+    "hash_algorithm": "sha256",
+    "request_packet_artifact_hashes": {
+      "manifest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "release_package_bundle": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "release_publication_execution_receipt": "not-a-sha",
+      "publication_log": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "artifact_count": 3,
+    "request_verification_status": "pass",
+    "missing_report_artifact_ids": [
+      "release_publication_execution_admission_gate"
+    ],
+    "hash_mismatch_report_artifact_ids": [
+      "release_publication_execution_receipt"
+    ],
+    "chain_manifest_path": "..\\outside\\manifest.json",
+    "no_command_execution_recorded": true,
+    "request_packet_path": "../outside/release-publication-ready-for-execution-request.json",
+    "request_packet_sha256": "invalid-sha",
+    "request_packet_artifacts": [
+      "evidence/jobs/job-maxine-release-001/manifest.json",
+      "evidence/jobs/job-maxine-release-001/qc/release-package-bundle-report.json",
+      "Cache/runtime/output.bin"
+    ],
+    "request_packet_immutable": false
+  },
+  "approval_state": {
+    "decision": "ready_for_execution_request_recorded_for_audit",
+    "approver_ids": [
+      "ops.release_manager"
+    ],
+    "blocked_reason_codes": [
+      "missing_qc_gate_evidence"
+    ],
+    "rollback_plan_verified": false,
+    "cleanup_plan_verified": false,
+    "publish_execution_admitted": true,
+    "o3de_execution_admitted": false,
+    "asset_processor_execution_admitted": false,
+    "spawn_execution_admitted": false,
+    "notes": "Invalid fail fixture."
+  },
+  "readiness": {
+    "required_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1",
+      "release_promotion_decision_v1",
+      "release_publication_preflight_v1",
+      "release_publication_request_approval_v1",
+      "release_publication_execution_admission_gate_v1",
+      "release_publication_execution_request_ledger_v1",
+      "release_publication_execution_receipt_v1",
+      "release_publication_rollback_drill_v1",
+      "release_publication_evidence_integrity_index_v1"
+    ],
+    "present_gate_ids": [
+      "max_biped_v1_skeleton_contract",
+      "release_promotion_decision_v1"
+    ],
+    "missing_gate_ids": [
+      "dcc_conform_v1",
+      "material_uv_qc_v1",
+      "animation_smoke_v1",
+      "screenshot_evidence_v1",
+      "manual_hero_review_v1",
+      "ci_artifact_retention_v1",
+      "release_package_bundle_v1",
+      "release_publication_preflight_v1",
+      "release_publication_request_approval_v1",
+      "release_publication_execution_admission_gate_v1",
+      "release_publication_execution_request_ledger_v1",
+      "release_publication_execution_receipt_v1",
+      "release_publication_rollback_drill_v1",
+      "release_publication_evidence_integrity_index_v1"
+    ],
+    "ready_for_execution_request_readiness_state": "blocked_missing_evidence"
+  },
+  "findings": [
+    {
+      "id": "invalid_ready_for_execution_request_fixture",
+      "severity": "error",
+      "status": "open",
+      "message": "Fail fixture intentionally violates ready for execution request safety and evidence requirements."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "release_publication_ready_for_execution_request_v1",
+      "result": "fail",
+      "severity": "error",
+      "details": {
+        "summary": "ready for execution request fixture intentionally fails validation."
+      }
+    }
+  }
+}

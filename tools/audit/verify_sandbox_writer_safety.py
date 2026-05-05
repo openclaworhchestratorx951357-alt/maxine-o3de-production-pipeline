@@ -151,6 +151,10 @@ REQUIRED_FILES = [
     "examples/release-publication-chain-audit-bundle/max_biped_v1_release_publication_chain_audit_bundle_pass.json",
     "examples/release-publication-chain-audit-bundle/max_biped_v1_release_publication_chain_audit_bundle_warn.json",
     "examples/release-publication-chain-audit-bundle/max_biped_v1_release_publication_chain_audit_bundle_fail.json",
+    "schemas/maxine_release_publication_ready_for_execution_request_report.schema.json",
+    "examples/release-publication-ready-for-execution-request/max_biped_v1_release_publication_ready_for_execution_request_pass.json",
+    "examples/release-publication-ready-for-execution-request/max_biped_v1_release_publication_ready_for_execution_request_warn.json",
+    "examples/release-publication-ready-for-execution-request/max_biped_v1_release_publication_ready_for_execution_request_fail.json",
     "examples/capabilities/maxine-capability-matrix.json",
     "examples/sandbox/review-packets/.gitkeep",
     "examples/sandbox/review-decisions/.gitkeep",
@@ -188,6 +192,8 @@ REQUIRED_FILES = [
     "docs/maxine/specs/release-publication-evidence-integrity-index-v1.md",
     "tools/release-publication-chain-audit-bundle/validate_release_publication_chain_audit_bundle_report.py",
     "docs/maxine/specs/release-publication-chain-audit-bundle-v1.md",
+    "tools/release-publication-ready-for-execution-request/validate_release_publication_ready_for_execution_request_report.py",
+    "docs/maxine/specs/release-publication-ready-for-execution-request-v1.md",
 ]
 
 
