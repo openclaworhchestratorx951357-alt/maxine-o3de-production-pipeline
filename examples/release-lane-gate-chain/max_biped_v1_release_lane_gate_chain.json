@@ -1,0 +1,141 @@
+{
+  "schema_version": "1.0.0",
+  "chain_id": "max_biped_v1_release_lane_chain",
+  "target_tier": "all",
+  "manifest_attachment_target_path": "qc.gates[]",
+  "future_manifest_attachment_target_path": "qc.checks[]",
+  "gates": [
+    {
+      "order": 1,
+      "check_id": "max_biped_v1_skeleton_contract",
+      "required": true,
+      "implemented": true
+    },
+    {
+      "order": 2,
+      "check_id": "dcc_conform_v1",
+      "required": true,
+      "implemented": true
+    },
+    {
+      "order": 3,
+      "check_id": "source_product_evidence_resolver_v1",
+      "required": true,
+      "implemented": true
+    },
+    {
+      "order": 4,
+      "check_id": "material_uv_qc_v1",
+      "required": true,
+      "implemented": true
+    },
+    {
+      "order": 5,
+      "check_id": "animation_smoke_v1",
+      "required": true,
+      "implemented": true
+    },
+    {
+      "order": 6,
+      "check_id": "screenshot_evidence_v1",
+      "required": true,
+      "implemented": false
+    },
+    {
+      "order": 7,
+      "check_id": "manual_hero_review_v1",
+      "required": true,
+      "implemented": false
+    },
+    {
+      "order": 8,
+      "check_id": "ci_artifact_retention_v1",
+      "required": true,
+      "implemented": false
+    },
+    {
+      "order": 9,
+      "check_id": "release_package_bundle_v1",
+      "required": true,
+      "implemented": false
+    },
+    {
+      "order": 10,
+      "check_id": "release_promotion_decision_v1",
+      "required": true,
+      "implemented": false
+    },
+    {
+      "order": 11,
+      "check_id": "release_publication_preflight_v1",
+      "required": true,
+      "implemented": false
+    },
+    {
+      "order": 12,
+      "check_id": "release_publication_request_approval_v1",
+      "required": true,
+      "implemented": false
+    },
+    {
+      "order": 13,
+      "check_id": "release_publication_execution_admission_gate_v1",
+      "required": true,
+      "implemented": false
+    },
+    {
+      "order": 14,
+      "check_id": "release_publication_execution_request_ledger_v1",
+      "required": true,
+      "implemented": false
+    },
+    {
+      "order": 15,
+      "check_id": "release_publication_execution_receipt_v1",
+      "required": true,
+      "implemented": false
+    },
+    {
+      "order": 16,
+      "check_id": "release_publication_rollback_drill_v1",
+      "required": true,
+      "implemented": false
+    },
+    {
+      "order": 17,
+      "check_id": "release_publication_evidence_integrity_index_v1",
+      "required": true,
+      "implemented": false
+    },
+    {
+      "order": 18,
+      "check_id": "release_publication_chain_audit_bundle_v1",
+      "required": true,
+      "implemented": false
+    },
+    {
+      "order": 19,
+      "check_id": "release_publication_ready_for_execution_request_v1",
+      "required": true,
+      "implemented": false
+    },
+    {
+      "order": 20,
+      "check_id": "release_publication_execution_handoff_v1",
+      "required": true,
+      "implemented": false
+    },
+    {
+      "order": 21,
+      "check_id": "release_publication_execution_admission_request_packet_v1",
+      "required": true,
+      "implemented": false
+    },
+    {
+      "order": 22,
+      "check_id": "release_publication_gate_set_v1",
+      "required": true,
+      "implemented": false
+    }
+  ]
+}

@@ -80,6 +80,32 @@
   - `examples/animation-smoke/max_biped_v1_animation_smoke_warn.json`
   - `examples/animation-smoke/max_biped_v1_animation_smoke_fail.json`
   - `docs/maxine/specs/animation-smoke-v1.md`
+- Source Product Evidence Resolver v1 evidence report validation is implemented (deterministic evidence bridge, non-executing evidence only):
+  - `schemas/maxine_source_product_evidence_resolver_report.schema.json`
+  - `tools/source-product-evidence-resolver/validate_source_product_evidence_resolver_report.py`
+  - `examples/source-product-evidence-resolver/max_biped_v1_source_product_resolver_pass.json`
+  - `examples/source-product-evidence-resolver/max_biped_v1_source_product_resolver_warn.json`
+  - `examples/source-product-evidence-resolver/max_biped_v1_source_product_resolver_fail.json`
+  - `docs/maxine/specs/source-product-evidence-resolver-v1.md`
+- Manifest QC attachment pipeline v1 is implemented (deterministic manifest integration, non-executing evidence integration only):
+  - `tools/manifest-validator/attach_qc_gate.py`
+  - `schemas/maxine_manifest_qc_attachment.schema.json`
+  - `examples/manifest-qc-attachments/max_biped_v1_skeleton_attach_pass.json`
+  - `examples/manifest-qc-attachments/max_biped_v1_dcc_conform_attach_warn.json`
+  - `examples/manifest-qc-attachments/max_biped_v1_source_product_attach_fail.json`
+  - `examples/manifests/example-release-character-qc-attach-base.manifest.json`
+- Pilot release package chain v1 integration is implemented (manifest-first chain completeness check, non-executing evidence integration only):
+  - `tools/release-lane/validate_pilot_release_chain.py`
+  - `examples/release-lane-gate-chain/max_biped_v1_release_lane_gate_chain.json`
+  - `examples/manifests/example-release-character-pilot-chain.manifest.json`
+  - `docs/maxine/specs/pilot-release-package-chain-v1.md`
+- Pilot release chain validation runner v1 is implemented (deterministic manifest QC attachment flow, non-executing evidence integration only):
+  - `tools/release-lane/run_pilot_release_chain_validation.py`
+  - `examples/manifests/example-release-character-pilot-chain-base.manifest.json`
+  - `docs/maxine/specs/pilot-release-chain-validation-runner-v1.md`
+- Pilot release-chain CI proof v1 is implemented (single-command local/CI integration proof, non-executing evidence integration only):
+  - `tools/release-lane/prove_pilot_release_chain.py`
+  - `docs/maxine/specs/pilot-release-chain-ci-proof-v1.md`
 - Capability matrix is implemented:
   - `examples/capabilities/maxine-capability-matrix.json`
   - `schemas/maxine_capability_matrix.schema.json`
@@ -155,6 +181,31 @@
 - Animation smoke v1 report validation remains non-executing evidence-only:
   - validates animation smoke report JSON against required clip and status rules
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Source Product Evidence Resolver v1 remains non-executing evidence-only:
+  - validates source-asset to expected/observed product evidence mapping
+  - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - keeps Source UUID/Asset ID/Product ID claim surfaces blocked in this slice
+  - keeps Cache/live DB access blocked and does not execute Blender/O3DE/AP, spawn, or publish
+- Manifest QC attachment pipeline remains non-executing evidence integration only:
+  - appends validator QC payloads into manifest `qc.gates[]` or `qc.checks[]`
+  - blocks duplicate gate IDs by default
+  - preserves unknown manifest fields and writes atomically
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Pilot release package chain validation remains non-executing evidence integration only:
+  - validates required gate presence/order for pilot release manifests
+  - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - rejects duplicate gate IDs and invalid implemented/unimplemented gate state claims
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Pilot release chain validation runner remains non-executing evidence integration only:
+  - runs implemented validators and attaches their payloads into a generated pilot manifest
+  - attaches pilot chain validation payload into the same manifest
+  - writes artifacts only under approved repo/sandbox paths
+  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Pilot release-chain CI proof remains non-executing evidence integration only:
+  - runs pilot release-chain validation runner in normal and strict modes
+  - verifies deterministic warn-baseline behavior for current fixture chain
+  - writes proof artifacts only under approved repo/sandbox paths
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
 

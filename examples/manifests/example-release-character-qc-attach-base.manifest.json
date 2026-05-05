@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0.0",
+  "job": {
+    "job_id": "job-release-qc-attach-0001",
+    "lane": "release_character",
+    "status": "running",
+    "created_utc": "2026-05-05T00:00:00Z",
+    "updated_utc": "2026-05-05T00:00:00Z"
+  },
+  "identity": {
+    "character_id": "maxine-release-knight-001",
+    "character_name": "Maxine Release Knight 001"
+  },
+  "inputs": {
+    "source_asset": "assets/characters/maxine_release_knight_001/source/maxine_release_knight_001.fbx"
+  },
+  "generation": {
+    "generator": "fixture-release-lane"
+  },
+  "dcc_conform": {
+    "required": true,
+    "status": "pending"
+  },
+  "o3de": {
+    "project": "maxine-release-project"
+  },
+  "qc": {
+    "overall": "pass",
+    "gates": [],
+    "checks": []
+  },
+  "runtime_validation": {
+    "smoke_test": "not_run"
+  },
+  "evidence": {
+    "logs": [],
+    "screenshots": []
+  },
+  "provenance": {
+    "submitted_by": "fixture",
+    "pipeline_version": "manifest-v1"
+  },
+  "undo": {
+    "rollback_plan": "fixture-only"
+  },
+  "cleanup": {
+    "temp_artifacts_removed": false
+  },
+  "x_unknown_extension_for_forward_compatibility": {
+    "preserve_me": true
+  }
+}

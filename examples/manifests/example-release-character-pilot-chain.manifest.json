@@ -1,0 +1,268 @@
+{
+  "schema_version": "1.0.0",
+  "job": {
+    "job_id": "job-release-pilot-chain-0001",
+    "lane": "release_character",
+    "status": "pending_manual",
+    "created_utc": "2026-05-05T00:00:00Z",
+    "updated_utc": "2026-05-05T00:00:00Z"
+  },
+  "identity": {
+    "character_id": "maxine-release-pilot-001",
+    "character_name": "Maxine Release Pilot 001",
+    "release_tag": "pilot-fixture-v1"
+  },
+  "inputs": {
+    "source_asset_reference": "fixtures://source/max_biped_v1/source_character.fbx",
+    "source_evidence_mode": "fixture_only"
+  },
+  "generation": {
+    "pipeline_mode": "manifest_first_evidence_only"
+  },
+  "dcc_conform": {
+    "required": true,
+    "status": "pass"
+  },
+  "o3de": {
+    "project": "maxine-release-project",
+    "platform": "pc",
+    "source_assets": [],
+    "expected_products": [],
+    "products": []
+  },
+  "qc": {
+    "overall": "warn",
+    "gates": [
+      {
+        "check_id": "max_biped_v1_skeleton_contract",
+        "result": "pass",
+        "severity": "info",
+        "details": {
+          "contract_id": "MAX_BIPED_v1",
+          "evidence_source": "fixture"
+        }
+      },
+      {
+        "check_id": "dcc_conform_v1",
+        "result": "pass",
+        "severity": "info",
+        "details": {
+          "contract_id": "DCC_CONFORM_v1",
+          "evidence_source": "fixture"
+        }
+      },
+      {
+        "check_id": "source_product_evidence_resolver_v1",
+        "result": "pass",
+        "severity": "info",
+        "details": {
+          "contract_id": "SOURCE_PRODUCT_EVIDENCE_RESOLVER_v1",
+          "evidence_source": "fixture"
+        }
+      },
+      {
+        "check_id": "material_uv_qc_v1",
+        "result": "pass",
+        "severity": "info",
+        "details": {
+          "contract_id": "MATERIAL_UV_QC_v1",
+          "evidence_source": "fixture"
+        }
+      },
+      {
+        "check_id": "animation_smoke_v1",
+        "result": "pass",
+        "severity": "info",
+        "details": {
+          "contract_id": "ANIMATION_SMOKE_v1",
+          "evidence_source": "fixture"
+        }
+      },
+      {
+        "check_id": "screenshot_evidence_v1",
+        "result": "pending_manual",
+        "severity": "manual_review",
+        "details": {
+          "implemented_on_main": false,
+          "evidence_source": "future_extractor"
+        }
+      },
+      {
+        "check_id": "manual_hero_review_v1",
+        "result": "pending_manual",
+        "severity": "manual_review",
+        "details": {
+          "implemented_on_main": false,
+          "evidence_source": "future_manual_review"
+        }
+      },
+      {
+        "check_id": "ci_artifact_retention_v1",
+        "result": "pending_manual",
+        "severity": "manual_review",
+        "details": {
+          "implemented_on_main": false,
+          "evidence_source": "future_ci"
+        }
+      },
+      {
+        "check_id": "release_package_bundle_v1",
+        "result": "pending_manual",
+        "severity": "manual_review",
+        "details": {
+          "implemented_on_main": false,
+          "evidence_source": "future_packager"
+        }
+      },
+      {
+        "check_id": "release_promotion_decision_v1",
+        "result": "pending_manual",
+        "severity": "manual_review",
+        "details": {
+          "implemented_on_main": false,
+          "evidence_source": "future_policy"
+        }
+      },
+      {
+        "check_id": "release_publication_preflight_v1",
+        "result": "pending_manual",
+        "severity": "manual_review",
+        "details": {
+          "implemented_on_main": false,
+          "evidence_source": "future_preflight"
+        }
+      },
+      {
+        "check_id": "release_publication_request_approval_v1",
+        "result": "pending_manual",
+        "severity": "manual_review",
+        "details": {
+          "implemented_on_main": false,
+          "evidence_source": "future_approval"
+        }
+      },
+      {
+        "check_id": "release_publication_execution_admission_gate_v1",
+        "result": "pending_manual",
+        "severity": "manual_review",
+        "details": {
+          "implemented_on_main": false,
+          "evidence_source": "future_admission_gate"
+        }
+      },
+      {
+        "check_id": "release_publication_execution_request_ledger_v1",
+        "result": "pending_manual",
+        "severity": "manual_review",
+        "details": {
+          "implemented_on_main": false,
+          "evidence_source": "future_ledger"
+        }
+      },
+      {
+        "check_id": "release_publication_execution_receipt_v1",
+        "result": "pending_manual",
+        "severity": "manual_review",
+        "details": {
+          "implemented_on_main": false,
+          "evidence_source": "future_receipt"
+        }
+      },
+      {
+        "check_id": "release_publication_rollback_drill_v1",
+        "result": "pending_manual",
+        "severity": "manual_review",
+        "details": {
+          "implemented_on_main": false,
+          "evidence_source": "future_rollback_drill"
+        }
+      },
+      {
+        "check_id": "release_publication_evidence_integrity_index_v1",
+        "result": "pending_manual",
+        "severity": "manual_review",
+        "details": {
+          "implemented_on_main": false,
+          "evidence_source": "future_integrity_index"
+        }
+      },
+      {
+        "check_id": "release_publication_chain_audit_bundle_v1",
+        "result": "pending_manual",
+        "severity": "manual_review",
+        "details": {
+          "implemented_on_main": false,
+          "evidence_source": "future_chain_audit"
+        }
+      },
+      {
+        "check_id": "release_publication_ready_for_execution_request_v1",
+        "result": "pending_manual",
+        "severity": "manual_review",
+        "details": {
+          "implemented_on_main": false,
+          "evidence_source": "future_ready_for_execution"
+        }
+      },
+      {
+        "check_id": "release_publication_execution_handoff_v1",
+        "result": "pending_manual",
+        "severity": "manual_review",
+        "details": {
+          "implemented_on_main": false,
+          "evidence_source": "future_handoff"
+        }
+      },
+      {
+        "check_id": "release_publication_execution_admission_request_packet_v1",
+        "result": "pending_manual",
+        "severity": "manual_review",
+        "details": {
+          "implemented_on_main": false,
+          "evidence_source": "future_admission_packet"
+        }
+      },
+      {
+        "check_id": "release_publication_gate_set_v1",
+        "result": "pending_manual",
+        "severity": "manual_review",
+        "details": {
+          "implemented_on_main": false,
+          "evidence_source": "future_gate_set_validator"
+        }
+      }
+    ],
+    "checks": []
+  },
+  "runtime_validation": {
+    "spawned": false,
+    "entity_id": null,
+    "screenshots": []
+  },
+  "evidence": {
+    "manifest_path": "examples/manifests/example-release-character-pilot-chain.manifest.json",
+    "artifact_root": "examples/pilot-release-package",
+    "logs": [],
+    "screenshots": [],
+    "stdout_log": null,
+    "stderr_log": null
+  },
+  "provenance": {
+    "source_commit": null,
+    "pipeline_revision": "pilot-chain-v1-fixture",
+    "build_run_id": null
+  },
+  "undo": {
+    "available": false,
+    "steps": []
+  },
+  "cleanup": {
+    "retention_class": "manual",
+    "paths": []
+  },
+  "manual_review": {
+    "required": true,
+    "reason": "release_lane_gates_pending",
+    "review_state": "pending"
+  }
+}

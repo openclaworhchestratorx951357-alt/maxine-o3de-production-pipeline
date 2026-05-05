@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "SOURCE_PRODUCT_EVIDENCE_RESOLVER_v1_REPORT",
+  "job_id": "job-release-20260505-1003",
+  "package_id": "maxine-release-npc-003",
+  "lane": "release_character",
+  "status": "fail",
+  "source_asset_reference": "character/maxine_release_npc_003.fbx",
+  "source_asset_path": "assets/characters/maxine_release_npc_003/source/maxine_release_npc_003.fbx",
+  "evidence_source_type": "future_asset_system_query",
+  "expected_products": [
+    { "product_type": "actor", "required": true },
+    { "product_type": "motion", "required": true },
+    { "product_type": "procprefab", "required": true }
+  ],
+  "observed_products": [
+    {
+      "product_type": "motion",
+      "product_path_or_hint": "evidence-hint://future-query/motion/maxine_release_npc_003",
+      "evidence_status": "partial",
+      "evidence_source": "future_asset_system_query",
+      "confidence": 0.45
+    }
+  ],
+  "source_uuid_claim_status": "future_admitted",
+  "asset_id_claim_status": "future_admitted",
+  "product_id_claim_status": "future_admitted",
+  "cache_access_status": "blocked",
+  "live_db_access_status": "blocked",
+  "findings": [
+    {
+      "id": "required_actor_missing",
+      "severity": "error",
+      "status": "open",
+      "message": "Required actor product evidence is missing."
+    },
+    {
+      "id": "claims_not_admitted",
+      "severity": "error",
+      "status": "open",
+      "message": "UUID/Product/Asset claims are not admitted in this slice."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "source_product_evidence_resolver_v1",
+      "result": "fail",
+      "severity": "error",
+      "details": {
+        "source": "example"
+      }
+    }
+  },
+  "safety_summary": "Failing report showing missing required products and non-admitted claim statuses.",
+  "explicit_non_admissions": [
+    "no live cache read",
+    "no live db read",
+    "no source uuid claim",
+    "no asset id claim",
+    "no product id claim",
+    "no asset processor execution",
+    "no o3de execution",
+    "no spawn",
+    "no publish"
+  ],
+  "generated_utc": "2026-05-05T00:00:00Z"
+}

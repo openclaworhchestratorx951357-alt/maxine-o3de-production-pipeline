@@ -60,3 +60,48 @@ The contract is designed so automation, operators, and CI can evaluate a job sta
 - Current manifest attachment path: `qc.gates[]`.
 - Future-compatible path: `qc.checks[]`.
 - Suggested check id: `animation_smoke_v1`.
+
+## Pilot Chain Proof Attachment Flow
+
+- `pilot_release_chain_ci_proof_v1` validates that implemented validator outputs are attachable in deterministic sequence.
+- Local/CI proof command: `python tools/release-lane/prove_pilot_release_chain.py`.
+- Current attachment path remains `qc.gates[]` and future-compatible path remains `qc.checks[]`.
+
+## Pilot Chain Integration Runner
+
+Deterministic local integration command:
+
+- `python tools/release-lane/run_pilot_release_chain_validation.py`
+
+It runs implemented validators, writes payload snapshots, attaches QC payloads into one manifest, validates `pilot_release_chain_v1`, and attaches that chain result payload.
+
+## Source Product Evidence Resolver QC Attachment Point
+
+- `SOURCE_PRODUCT_EVIDENCE_RESOLVER_v1` report validation output is attachable to manifest QC.
+- Current manifest attachment path: `qc.gates[]`.
+- Future-compatible path: `qc.checks[]`.
+- Suggested check id: `source_product_evidence_resolver_v1`.
+
+## Deterministic QC Attachment Pipeline
+
+Manifest QC payload attachment is deterministic and script-driven:
+
+- script: `tools/manifest-validator/attach_qc_gate.py`
+- input: one manifest path and one-or-more validator attachment payload JSON files
+- behavior:
+  - validates attachment payload shape
+  - appends `qc_check` payloads to `qc.gates[]` or `qc.checks[]`
+  - blocks duplicate `check_id` by default
+  - preserves unknown manifest fields
+  - writes atomically
+
+This is evidence integration only. It does not admit O3DE/AP execution, spawn/publish, or live Cache/DB access.
+
+## Pilot Chain Attachment Point
+
+- `PILOT_RELEASE_CHAIN_v1` validation output is attachable to manifest QC.
+- Current manifest attachment path: `qc.gates[]`.
+- Future-compatible path: `qc.checks[]`.
+- Suggested check id: `pilot_release_chain_v1`.
+- Pilot manifest fixture:
+  - `examples/manifests/example-release-character-pilot-chain.manifest.json`.

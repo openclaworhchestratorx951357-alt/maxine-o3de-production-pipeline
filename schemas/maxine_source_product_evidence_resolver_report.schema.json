@@ -1,0 +1,301 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_source_product_evidence_resolver_report.schema.json",
+  "title": "Maxine Source Product Evidence Resolver Report",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "report_type",
+    "job_id",
+    "package_id",
+    "lane",
+    "status",
+    "source_asset_reference",
+    "source_asset_path",
+    "evidence_source_type",
+    "expected_products",
+    "observed_products",
+    "source_uuid_claim_status",
+    "asset_id_claim_status",
+    "product_id_claim_status",
+    "cache_access_status",
+    "live_db_access_status",
+    "findings",
+    "manifest_attachment",
+    "safety_summary",
+    "explicit_non_admissions",
+    "generated_utc"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "report_type": {
+      "type": "string",
+      "const": "SOURCE_PRODUCT_EVIDENCE_RESOLVER_v1_REPORT"
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "package_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lane": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ]
+    },
+    "source_asset_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_asset_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_source_type": {
+      "type": "string",
+      "enum": [
+        "fixture",
+        "imported_ap_evidence",
+        "future_asset_system_query"
+      ]
+    },
+    "expected_products": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "product_type",
+          "required"
+        ],
+        "properties": {
+          "product_type": {
+            "type": "string",
+            "enum": [
+              "actor",
+              "motion",
+              "procprefab",
+              "azmodel",
+              "material",
+              "texture",
+              "pxmesh"
+            ]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "observed_products": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "product_type",
+          "product_path_or_hint",
+          "evidence_status",
+          "evidence_source",
+          "confidence"
+        ],
+        "properties": {
+          "product_type": {
+            "type": "string",
+            "enum": [
+              "actor",
+              "motion",
+              "procprefab",
+              "azmodel",
+              "material",
+              "texture",
+              "pxmesh"
+            ]
+          },
+          "product_path_or_hint": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence_status": {
+            "type": "string",
+            "enum": [
+              "observed",
+              "partial",
+              "missing"
+            ]
+          },
+          "evidence_source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          }
+        }
+      }
+    },
+    "source_uuid_claim_status": {
+      "type": "string",
+      "enum": [
+        "blocked",
+        "not_claimed",
+        "evidence_only",
+        "future_admitted"
+      ]
+    },
+    "asset_id_claim_status": {
+      "type": "string",
+      "enum": [
+        "blocked",
+        "not_claimed",
+        "evidence_only",
+        "future_admitted"
+      ]
+    },
+    "product_id_claim_status": {
+      "type": "string",
+      "enum": [
+        "blocked",
+        "not_claimed",
+        "evidence_only",
+        "future_admitted"
+      ]
+    },
+    "cache_access_status": {
+      "type": "string",
+      "const": "blocked"
+    },
+    "live_db_access_status": {
+      "type": "string",
+      "const": "blocked"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "severity",
+          "status",
+          "message"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "error",
+              "manual_review"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "manifest_attachment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target_path",
+        "future_target_path",
+        "qc_check"
+      ],
+      "properties": {
+        "target_path": {
+          "type": "string",
+          "const": "qc.gates[]"
+        },
+        "future_target_path": {
+          "type": "string",
+          "const": "qc.checks[]"
+        },
+        "qc_check": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "check_id",
+            "result",
+            "severity",
+            "details"
+          ],
+          "properties": {
+            "check_id": {
+              "type": "string",
+              "const": "source_product_evidence_resolver_v1"
+            },
+            "result": {
+              "type": "string",
+              "enum": [
+                "pass",
+                "warn",
+                "fail",
+                "pending_manual"
+              ]
+            },
+            "severity": {
+              "type": "string",
+              "enum": [
+                "info",
+                "warning",
+                "error",
+                "manual_review"
+              ]
+            },
+            "details": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    "safety_summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "explicit_non_admissions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "generated_utc": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

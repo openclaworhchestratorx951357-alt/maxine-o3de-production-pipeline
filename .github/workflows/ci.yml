@@ -22,6 +22,11 @@ jobs:
         run: |
           python tools/manifest-validator/validate_manifest.py examples/manifests/example-draft-mesh.manifest.json
 
+      - name: Prove pilot release chain integration
+        shell: pwsh
+        run: |
+          python tools/release-lane/prove_pilot_release_chain.py
+
       - name: Run pytest if available, else smoke test
         shell: pwsh
         run: |

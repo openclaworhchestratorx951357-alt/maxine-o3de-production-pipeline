@@ -1,0 +1,19 @@
+{
+  "status": "pass",
+  "check_id": "max_biped_v1_skeleton_contract",
+  "contract_id": "MAX_BIPED_v1",
+  "findings": [],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "max_biped_v1_skeleton_contract",
+      "result": "pass",
+      "severity": "info",
+      "details": {
+        "source_report": "examples/skeletons/max_biped_v1_pass.json",
+        "summary": "Skeleton contract passed."
+      }
+    }
+  }
+}

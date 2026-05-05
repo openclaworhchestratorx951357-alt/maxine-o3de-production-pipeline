@@ -109,6 +109,32 @@ AP_REAL_BINARY_DIAGNOSTIC_EXECUTION_SCHEMA_REL = (
 AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_SCHEMA_REL = (
     "schemas/maxine_ap_real_binary_diagnostic_bundle.schema.json"
 )
+SOURCE_PRODUCT_EVIDENCE_RESOLVER_SCHEMA_REL = (
+    "schemas/maxine_source_product_evidence_resolver_report.schema.json"
+)
+SOURCE_PRODUCT_EVIDENCE_RESOLVER_VALIDATOR_REL = (
+    "tools/source-product-evidence-resolver/validate_source_product_evidence_resolver_report.py"
+)
+MANIFEST_QC_ATTACHMENT_SCHEMA_REL = "schemas/maxine_manifest_qc_attachment.schema.json"
+MANIFEST_QC_ATTACH_TOOL_REL = "tools/manifest-validator/attach_qc_gate.py"
+PILOT_RELEASE_CHAIN_VALIDATOR_REL = (
+    "tools/release-lane/validate_pilot_release_chain.py"
+)
+PILOT_RELEASE_CHAIN_FIXTURE_REL = (
+    "examples/release-lane-gate-chain/max_biped_v1_release_lane_gate_chain.json"
+)
+PILOT_RELEASE_CHAIN_MANIFEST_REL = (
+    "examples/manifests/example-release-character-pilot-chain.manifest.json"
+)
+PILOT_RELEASE_CHAIN_BASE_MANIFEST_REL = (
+    "examples/manifests/example-release-character-pilot-chain-base.manifest.json"
+)
+PILOT_RELEASE_CHAIN_RUNNER_REL = (
+    "tools/release-lane/run_pilot_release_chain_validation.py"
+)
+PILOT_RELEASE_CHAIN_CI_PROOF_REL = (
+    "tools/release-lane/prove_pilot_release_chain.py"
+)
 CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
@@ -645,6 +671,69 @@ REQUIRED_AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_EXPORT_NEEDLES = [
     "does not copy ap binaries",
 ]
 
+REQUIRED_SOURCE_PRODUCT_EVIDENCE_RESOLVER_VALIDATOR_NEEDLES = [
+    "source_product_evidence_resolver_v1",
+    "source_product_evidence_resolver_v1_report",
+    "expected_products",
+    "observed_products",
+    "source_uuid_claim_status",
+    "asset_id_claim_status",
+    "product_id_claim_status",
+    "cache_access_status",
+    "live_db_access_status",
+    "future_admitted",
+    "qc.gates[]",
+    "qc.checks[]",
+    "--allow-warn",
+]
+
+REQUIRED_MANIFEST_QC_ATTACH_TOOL_NEEDLES = [
+    "manifest_attachment",
+    "qc.gates[]",
+    "qc.checks[]",
+    "allow-duplicate-check-id",
+    "atomic_write_json",
+    "os.replace(",
+    "inside repository root",
+    "duplicate check_id",
+]
+
+REQUIRED_PILOT_RELEASE_CHAIN_VALIDATOR_NEEDLES = [
+    "pilot_release_chain_v1",
+    "max_biped_v1_skeleton_contract",
+    "dcc_conform_v1",
+    "source_product_evidence_resolver_v1",
+    "material_uv_qc_v1",
+    "animation_smoke_v1",
+    "qc.gates[]",
+    "qc.checks[]",
+    "--allow-warn",
+]
+
+REQUIRED_PILOT_RELEASE_CHAIN_RUNNER_NEEDLES = [
+    "run_pilot_release_chain_validation.py",
+    "example-release-character-pilot-chain-base.manifest.json",
+    "max_biped_v1_skeleton_contract",
+    "dcc_conform_v1",
+    "source_product_evidence_resolver_v1",
+    "material_uv_qc_v1",
+    "animation_smoke_v1",
+    "pilot_release_chain_v1",
+    "attach_qc_gate.py",
+    "qc.gates[]",
+    "qc.checks[]",
+]
+
+REQUIRED_PILOT_RELEASE_CHAIN_CI_PROOF_NEEDLES = [
+    "prove_pilot_release_chain.py",
+    "run_pilot_release_chain_validation.py",
+    "pilot_release_chain_ci_proof_v1",
+    "pilot_chain_status",
+    "--strict-chain",
+    "qc.gates[]",
+    "qc.checks[]",
+]
+
 FORBIDDEN_EXECUTION_NEEDLES = [
     "o3de editor",
     "asset processor",
@@ -746,6 +835,10 @@ EXPECTED_CAPABILITY_STATES = {
     "ap_binary_discovery_inspect": "read_only",
     "ap_binary_preflight_build": "sandbox_only",
     "ap_real_binary_diagnostic_execution": "sandbox_only",
+    "source_product_evidence_resolver_validate": "read_only",
+    "manifest_qc_attachment_pipeline": "sandbox_only",
+    "pilot_release_chain_validation": "read_only",
+    "pilot_release_chain_attachment_run": "sandbox_only",
     "real_asset_processor_execution": "blocked",
     "authoritative_resolver_write": "forbidden",
     "o3de_editor_execution": "blocked",
@@ -846,6 +939,20 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     ap_real_binary_diagnostic_bundle_schema = (
         root / AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_SCHEMA_REL
     )
+    source_product_evidence_resolver_schema = (
+        root / SOURCE_PRODUCT_EVIDENCE_RESOLVER_SCHEMA_REL
+    )
+    source_product_evidence_resolver_validator = (
+        root / SOURCE_PRODUCT_EVIDENCE_RESOLVER_VALIDATOR_REL
+    )
+    manifest_qc_attachment_schema = root / MANIFEST_QC_ATTACHMENT_SCHEMA_REL
+    manifest_qc_attach_tool = root / MANIFEST_QC_ATTACH_TOOL_REL
+    pilot_release_chain_validator = root / PILOT_RELEASE_CHAIN_VALIDATOR_REL
+    pilot_release_chain_fixture = root / PILOT_RELEASE_CHAIN_FIXTURE_REL
+    pilot_release_chain_manifest = root / PILOT_RELEASE_CHAIN_MANIFEST_REL
+    pilot_release_chain_base_manifest = root / PILOT_RELEASE_CHAIN_BASE_MANIFEST_REL
+    pilot_release_chain_runner = root / PILOT_RELEASE_CHAIN_RUNNER_REL
+    pilot_release_chain_ci_proof = root / PILOT_RELEASE_CHAIN_CI_PROOF_REL
     capability_matrix = root / CAPABILITY_MATRIX_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -1093,6 +1200,56 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         failures.append(
             "AP real binary diagnostic bundle schema missing: "
             f"{AP_REAL_BINARY_DIAGNOSTIC_BUNDLE_SCHEMA_REL}"
+        )
+    if not source_product_evidence_resolver_schema.exists():
+        failures.append(
+            "Source product evidence resolver schema missing: "
+            f"{SOURCE_PRODUCT_EVIDENCE_RESOLVER_SCHEMA_REL}"
+        )
+    if not source_product_evidence_resolver_validator.exists():
+        failures.append(
+            "Source product evidence resolver validator missing: "
+            f"{SOURCE_PRODUCT_EVIDENCE_RESOLVER_VALIDATOR_REL}"
+        )
+    if not manifest_qc_attachment_schema.exists():
+        failures.append(
+            "Manifest QC attachment schema missing: "
+            f"{MANIFEST_QC_ATTACHMENT_SCHEMA_REL}"
+        )
+    if not manifest_qc_attach_tool.exists():
+        failures.append(
+            "Manifest QC attachment tool missing: "
+            f"{MANIFEST_QC_ATTACH_TOOL_REL}"
+        )
+    if not pilot_release_chain_validator.exists():
+        failures.append(
+            "Pilot release chain validator missing: "
+            f"{PILOT_RELEASE_CHAIN_VALIDATOR_REL}"
+        )
+    if not pilot_release_chain_fixture.exists():
+        failures.append(
+            "Pilot release chain fixture missing: "
+            f"{PILOT_RELEASE_CHAIN_FIXTURE_REL}"
+        )
+    if not pilot_release_chain_manifest.exists():
+        failures.append(
+            "Pilot release chain manifest fixture missing: "
+            f"{PILOT_RELEASE_CHAIN_MANIFEST_REL}"
+        )
+    if not pilot_release_chain_base_manifest.exists():
+        failures.append(
+            "Pilot release chain base manifest fixture missing: "
+            f"{PILOT_RELEASE_CHAIN_BASE_MANIFEST_REL}"
+        )
+    if not pilot_release_chain_runner.exists():
+        failures.append(
+            "Pilot release chain runner missing: "
+            f"{PILOT_RELEASE_CHAIN_RUNNER_REL}"
+        )
+    if not pilot_release_chain_ci_proof.exists():
+        failures.append(
+            "Pilot release chain CI proof command missing: "
+            f"{PILOT_RELEASE_CHAIN_CI_PROOF_REL}"
         )
     if not capability_matrix.exists():
         failures.append(f"capability matrix missing: {CAPABILITY_MATRIX_REL}")
@@ -2201,6 +2358,266 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                     "copying binary/source/runtime/cache/database token: "
                     f"{forbidden_copy}"
                 )
+
+    if source_product_evidence_resolver_validator.exists():
+        source_product_validator_text = _read_text(
+            source_product_evidence_resolver_validator
+        )
+        for needle in REQUIRED_SOURCE_PRODUCT_EVIDENCE_RESOLVER_VALIDATOR_NEEDLES:
+            if needle not in source_product_validator_text:
+                failures.append(
+                    "Source product evidence resolver validator missing required needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "start-process",
+            "invoke-expression",
+            "subprocess.popen(",
+            "shell=true",
+            "assetdb.sqlite",
+            "sqlite3.connect(",
+        ):
+            if forbidden_phrase in source_product_validator_text:
+                failures.append(
+                    "Source product evidence resolver validator contains forbidden phrase: "
+                    f"{forbidden_phrase}"
+                )
+
+    if source_product_evidence_resolver_schema.exists():
+        try:
+            source_product_schema = json.loads(
+                source_product_evidence_resolver_schema.read_text(encoding="utf-8-sig")
+            )
+            properties = source_product_schema.get("properties", {})
+            cache_status = properties.get("cache_access_status", {})
+            live_db_status = properties.get("live_db_access_status", {})
+            if cache_status.get("const") != "blocked":
+                failures.append(
+                    "Source product evidence resolver schema must keep cache_access_status const blocked."
+                )
+            if live_db_status.get("const") != "blocked":
+                failures.append(
+                    "Source product evidence resolver schema must keep live_db_access_status const blocked."
+                )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "Source product evidence resolver schema is not valid JSON: "
+                f"{exc}"
+            )
+
+    if manifest_qc_attach_tool.exists():
+        manifest_qc_attach_text = _read_text(manifest_qc_attach_tool)
+        for needle in REQUIRED_MANIFEST_QC_ATTACH_TOOL_NEEDLES:
+            if needle not in manifest_qc_attach_text:
+                failures.append(
+                    "Manifest QC attachment tool missing required needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "start-process",
+            "invoke-expression",
+            "subprocess.popen(",
+            "shell=true",
+            "assetdb.sqlite",
+            "sqlite3.connect(",
+        ):
+            if forbidden_phrase in manifest_qc_attach_text:
+                failures.append(
+                    "Manifest QC attachment tool contains forbidden phrase: "
+                    f"{forbidden_phrase}"
+                )
+
+    if manifest_qc_attachment_schema.exists():
+        try:
+            attach_schema = json.loads(
+                manifest_qc_attachment_schema.read_text(encoding="utf-8-sig")
+            )
+            attachment_props = (
+                attach_schema.get("properties", {})
+                .get("manifest_attachment", {})
+                .get("properties", {})
+            )
+            target_schema = attachment_props.get("target_path", {})
+            future_schema = attachment_props.get("future_target_path", {})
+            if "qc.gates[]" not in target_schema.get("enum", []):
+                failures.append(
+                    "Manifest QC attachment schema target_path must allow qc.gates[]."
+                )
+            if future_schema.get("const") != "qc.checks[]":
+                failures.append(
+                    "Manifest QC attachment schema future_target_path must remain qc.checks[]."
+                )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "Manifest QC attachment schema is not valid JSON: "
+                f"{exc}"
+            )
+
+    if pilot_release_chain_validator.exists():
+        pilot_chain_validator_text = _read_text(pilot_release_chain_validator)
+        for needle in REQUIRED_PILOT_RELEASE_CHAIN_VALIDATOR_NEEDLES:
+            if needle not in pilot_chain_validator_text:
+                failures.append(
+                    "Pilot release chain validator missing required needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "start-process",
+            "invoke-expression",
+            "subprocess.popen(",
+            "shell=true",
+            "assetdb.sqlite",
+            "sqlite3.connect(",
+            "o3de.exe",
+            "editor.exe",
+            "assetprocessorbatch",
+        ):
+            if forbidden_phrase in pilot_chain_validator_text:
+                failures.append(
+                    "Pilot release chain validator contains forbidden phrase: "
+                    f"{forbidden_phrase}"
+                )
+
+    if pilot_release_chain_runner.exists():
+        pilot_chain_runner_text = _read_text(pilot_release_chain_runner)
+        for needle in REQUIRED_PILOT_RELEASE_CHAIN_RUNNER_NEEDLES:
+            if needle not in pilot_chain_runner_text:
+                failures.append(
+                    "Pilot release chain runner missing required needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "start-process",
+            "invoke-expression",
+            "subprocess.popen(",
+            "shell=true",
+            "assetdb.sqlite",
+            "sqlite3.connect(",
+            "o3de.exe",
+            "editor.exe",
+            "assetprocessorbatch",
+        ):
+            if forbidden_phrase in pilot_chain_runner_text:
+                failures.append(
+                    "Pilot release chain runner contains forbidden phrase: "
+                    f"{forbidden_phrase}"
+                )
+
+    if pilot_release_chain_ci_proof.exists():
+        pilot_chain_ci_proof_text = _read_text(pilot_release_chain_ci_proof)
+        for needle in REQUIRED_PILOT_RELEASE_CHAIN_CI_PROOF_NEEDLES:
+            if needle not in pilot_chain_ci_proof_text:
+                failures.append(
+                    "Pilot release chain CI proof command missing required needle: "
+                    f"{needle}"
+                )
+        for forbidden_phrase in (
+            "start-process",
+            "invoke-expression",
+            "subprocess.popen(",
+            "shell=true",
+            "assetdb.sqlite",
+            "sqlite3.connect(",
+            "o3de.exe",
+            "editor.exe",
+            "assetprocessorbatch",
+        ):
+            if forbidden_phrase in pilot_chain_ci_proof_text:
+                failures.append(
+                    "Pilot release chain CI proof command contains forbidden phrase: "
+                    f"{forbidden_phrase}"
+                )
+
+    if pilot_release_chain_fixture.exists():
+        try:
+            fixture = json.loads(
+                pilot_release_chain_fixture.read_text(encoding="utf-8-sig")
+            )
+            if fixture.get("manifest_attachment_target_path") != "qc.gates[]":
+                failures.append(
+                    "Pilot release chain fixture must keep manifest_attachment_target_path as qc.gates[]."
+                )
+            if fixture.get("future_manifest_attachment_target_path") != "qc.checks[]":
+                failures.append(
+                    "Pilot release chain fixture must keep future_manifest_attachment_target_path as qc.checks[]."
+                )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "Pilot release chain fixture is not valid JSON: "
+                f"{exc}"
+            )
+
+    if pilot_release_chain_manifest.exists():
+        try:
+            pilot_manifest = json.loads(
+                pilot_release_chain_manifest.read_text(encoding="utf-8-sig")
+            )
+            qc = pilot_manifest.get("qc", {})
+            gates = qc.get("gates", []) if isinstance(qc, dict) else []
+            if not isinstance(gates, list):
+                failures.append("Pilot release chain manifest qc.gates must be an array.")
+            else:
+                gate_ids = {
+                    str(item.get("check_id", "")).strip()
+                    for item in gates
+                    if isinstance(item, dict)
+                }
+                for required_check in (
+                    "max_biped_v1_skeleton_contract",
+                    "dcc_conform_v1",
+                    "source_product_evidence_resolver_v1",
+                    "material_uv_qc_v1",
+                    "animation_smoke_v1",
+                    "release_publication_gate_set_v1",
+                ):
+                    if required_check not in gate_ids:
+                        failures.append(
+                            "Pilot release chain manifest is missing required gate check_id: "
+                            f"{required_check}"
+                        )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "Pilot release chain manifest fixture is not valid JSON: "
+                f"{exc}"
+            )
+
+    if pilot_release_chain_base_manifest.exists():
+        try:
+            base_manifest = json.loads(
+                pilot_release_chain_base_manifest.read_text(encoding="utf-8-sig")
+            )
+            qc = base_manifest.get("qc", {})
+            gates = qc.get("gates", []) if isinstance(qc, dict) else []
+            if not isinstance(gates, list):
+                failures.append("Pilot release chain base manifest qc.gates must be an array.")
+            else:
+                gate_ids = {
+                    str(item.get("check_id", "")).strip()
+                    for item in gates
+                    if isinstance(item, dict)
+                }
+                for implemented_gate in (
+                    "max_biped_v1_skeleton_contract",
+                    "dcc_conform_v1",
+                    "source_product_evidence_resolver_v1",
+                    "material_uv_qc_v1",
+                    "animation_smoke_v1",
+                ):
+                    if implemented_gate in gate_ids:
+                        failures.append(
+                            "Pilot release chain base manifest must not pre-attach implemented "
+                            f"gate check_id: {implemented_gate}"
+                        )
+                if "release_publication_gate_set_v1" not in gate_ids:
+                    failures.append(
+                        "Pilot release chain base manifest must retain downstream gate "
+                        "release_publication_gate_set_v1."
+                    )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "Pilot release chain base manifest fixture is not valid JSON: "
+                f"{exc}"
+            )
 
     if receipt_index.exists():
         try:

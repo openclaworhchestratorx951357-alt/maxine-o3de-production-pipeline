@@ -1,0 +1,26 @@
+{
+  "status": "warn",
+  "check_id": "dcc_conform_v1",
+  "contract_id": "DCC_CONFORM_v1",
+  "findings": [
+    {
+      "id": "non_blocking_orientation_note",
+      "severity": "warning",
+      "status": "open",
+      "message": "Forward-axis metadata was inferred from fixture evidence."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "dcc_conform_v1",
+      "result": "warn",
+      "severity": "warning",
+      "details": {
+        "source_report": "examples/dcc-conform/max_biped_v1_conform_warn.json",
+        "summary": "DCC conform warning recorded."
+      }
+    }
+  }
+}
