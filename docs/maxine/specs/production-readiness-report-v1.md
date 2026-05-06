@@ -73,7 +73,8 @@ No execution or publication is admitted by this report:
 
 ## Follow-On Planning
 
-Execution/publication admission remains blocked. Review-only planning for the first narrow no-op receipt candidate is documented in:
+Execution/publication remains blocked for real tool execution and publication. The first narrow no-op receipt candidate is now admitted only for bounded receipt generation, and remains non-executing/non-publishing:
 
 - `docs/maxine/execution-admission/execution-publication-admission-planning-v1.md`
 - `docs/maxine/execution-admission/release-candidate-package-receipt-noop-v1.md`
+- `examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json`

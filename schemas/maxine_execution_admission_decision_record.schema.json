@@ -54,6 +54,7 @@
         "surface_id": {
           "type": "string",
           "enum": [
+            "release_candidate_package_receipt_noop_execution",
             "asset_processor_execution",
             "o3de_editor_execution",
             "o3de_cli_execution",

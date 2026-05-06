@@ -22,8 +22,8 @@ EVIDENCE_ADMISSION_STATUS_REL = "tools/release-lane/report_release_lane_evidence
 PRODUCTION_READINESS_REPORT_REL = (
     "tools/production-readiness-report/validate_production_readiness_report.py"
 )
-EXECUTION_ADMISSION_RECEIPT_DRY_RUN_REL = (
-    "tools/release-lane/generate_execution_admission_receipt_dry_run.py"
+RELEASE_CANDIDATE_PACKAGE_RECEIPT_NOOP_REL = (
+    "tools/execution-admission/generate_release_candidate_package_receipt_noop.py"
 )
 CONTROLLED_REAL_EVIDENCE_INVENTORY_REL = (
     "tools/release-lane/report_controlled_real_evidence_inventory.py"
@@ -34,8 +34,12 @@ PROJECT_INVENTORY_FIXTURE_REL = (
 ASSET_CANDIDATE_INVENTORY_FIXTURE_REL = (
     "examples/sandbox/asset-candidates/max_biped_v1_asset_candidate_inventory.fixture.json"
 )
-DECISION_RECORD_REL = (
-    "examples/execution-admission/max_biped_v1_execution_admission_decision_approved.json"
+NOOP_DECISION_RECORD_REL = (
+    "examples/execution-admission/"
+    "release_candidate_package_receipt_noop_execution_admission_decision_approved.json"
+)
+NOOP_RECEIPT_OUTPUT_ROOT_REL = (
+    "examples/sandbox/execution-receipts/release-candidate-package-receipt-noop"
 )
 BASE_MANIFEST_REL = "examples/manifests/example-release-character-pilot-chain-base.manifest.json"
 CHAIN_REL = "examples/release-lane-gate-chain/max_biped_v1_release_lane_gate_chain.json"
@@ -182,18 +186,25 @@ def run_production_readiness_report(
     return proc.returncode, payload
 
 
-def run_execution_admission_receipt_dry_run(
+def run_release_candidate_package_receipt_noop(
     repo_root: Path,
     output_root: Path,
+    release_candidate_package_report: Path,
 ) -> Tuple[int, Dict[str, Any]]:
-    output_path = output_root / "execution-admission-receipt-dry-run.json"
+    output_path = (
+        repo_root
+        / NOOP_RECEIPT_OUTPUT_ROOT_REL
+        / f"proof-{output_root.name}-release-candidate-package-receipt-noop.json"
+    )
     cmd: List[str] = [
         sys.executable,
-        str((repo_root / EXECUTION_ADMISSION_RECEIPT_DRY_RUN_REL).resolve()),
+        str((repo_root / RELEASE_CANDIDATE_PACKAGE_RECEIPT_NOOP_REL).resolve()),
         "--decision-record",
-        str((repo_root / DECISION_RECORD_REL).resolve()),
+        str((repo_root / NOOP_DECISION_RECORD_REL).resolve()),
+        "--release-candidate-package-report",
+        str(release_candidate_package_report.resolve()),
         "--output",
-        str(output_path),
+        str(output_path.resolve()),
     ]
     proc = subprocess.run(
         cmd,
@@ -272,9 +283,21 @@ def main() -> int:
             output_root=output_root,
             manifest_path=Path(strict_payload["output_manifest"]),
         )
-        receipt_code, receipt_payload = run_execution_admission_receipt_dry_run(
+        strict_step_map = {
+            str(step.get("step", "")).strip(): step
+            for step in strict_payload.get("validator_steps", [])
+            if isinstance(step, dict)
+        }
+        real_pilot_step = strict_step_map.get("real_pilot_release_candidate_package")
+        if not isinstance(real_pilot_step, dict):
+            raise ValueError("strict run missing real_pilot_release_candidate_package validator step")
+        real_pilot_payload_path = real_pilot_step.get("payload_path")
+        if not isinstance(real_pilot_payload_path, str) or not real_pilot_payload_path.strip():
+            raise ValueError("strict run real_pilot_release_candidate_package payload_path is missing")
+        receipt_code, receipt_payload = run_release_candidate_package_receipt_noop(
             repo_root=repo_root,
             output_root=output_root,
+            release_candidate_package_report=Path(real_pilot_payload_path),
         )
         controlled_inventory_code, controlled_inventory_payload = run_controlled_real_evidence_inventory(
             repo_root=repo_root,
@@ -319,15 +342,21 @@ def main() -> int:
             "production readiness report must classify evidence-only readiness without claiming full production readiness."
         )
     if receipt_code != 0:
-        failures.append("execution-admission receipt dry-run report command must return 0.")
-    if receipt_payload.get("report_type") != "EXECUTION_ADMISSION_RECEIPT_DRY_RUN_v1_REPORT":
+        failures.append("release-candidate package no-op receipt report command must return 0.")
+    if receipt_payload.get("report_type") != "RELEASE_CANDIDATE_PACKAGE_RECEIPT_NOOP_v1_REPORT":
         failures.append(
-            "execution-admission receipt dry-run report must emit EXECUTION_ADMISSION_RECEIPT_DRY_RUN_v1_REPORT."
+            "release-candidate package no-op receipt report must emit RELEASE_CANDIDATE_PACKAGE_RECEIPT_NOOP_v1_REPORT."
         )
     if receipt_payload.get("status") != "pass":
-        failures.append("execution-admission receipt dry-run report status must be pass.")
-    if receipt_payload.get("execution_performed") is not False:
-        failures.append("execution-admission receipt dry-run report must keep execution_performed=false.")
+        failures.append("release-candidate package no-op receipt report status must be pass.")
+    if receipt_payload.get("command_mode") != "noop":
+        failures.append("release-candidate package no-op receipt report must keep command_mode=noop.")
+    if receipt_payload.get("external_execution_performed") is not False:
+        failures.append("release-candidate package no-op receipt report must keep external_execution_performed=false.")
+    if receipt_payload.get("publication_performed") is not False:
+        failures.append("release-candidate package no-op receipt report must keep publication_performed=false.")
+    if receipt_payload.get("candidate_id") != "release_candidate_package_receipt_noop_v1":
+        failures.append("release-candidate package no-op receipt report candidate_id must match admitted candidate.")
     if controlled_inventory_code != 0:
         failures.append("controlled real evidence inventory report command must return 0.")
     if controlled_inventory_payload.get("report_type") != "CONTROLLED_REAL_EVIDENCE_INVENTORY_v1_REPORT":
@@ -350,7 +379,7 @@ def main() -> int:
             "strict_run": strict_payload,
             "evidence_admission_report": evidence_payload,
             "production_readiness_report": production_readiness_payload,
-            "execution_admission_receipt_dry_run_report": receipt_payload,
+            "release_candidate_package_receipt_noop_report": receipt_payload,
             "controlled_real_evidence_inventory_report": controlled_inventory_payload,
             "failures": failures,
         },

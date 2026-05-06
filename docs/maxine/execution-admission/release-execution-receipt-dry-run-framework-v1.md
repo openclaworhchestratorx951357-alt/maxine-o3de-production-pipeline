@@ -43,13 +43,16 @@ Primary output:
 
 ## Proof-Flow Integration
 
-The pilot CI proof now includes this dry-run receipt step:
+This generic dry-run framework remains available for bounded non-executing receipt proof.
 
+Current pilot CI proof integration now uses the admitted candidate-specific no-op receipt flow:
+
+- `tools/execution-admission/generate_release_candidate_package_receipt_noop.py`
 - `python tools/release-lane/prove_pilot_release_chain.py`
 
 Proof summary includes:
 
-- `details.execution_admission_receipt_dry_run_report`
+- `details.release_candidate_package_receipt_noop_report`
 
 ## Safety Boundaries
 

@@ -76,13 +76,17 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
     assert readiness_status["publication_admission_status"] == "blocked"
     assert readiness_status["reporter_return_code"] == 0
     assert Path(readiness_status["output_path"]).exists()
-    receipt_status = payload["details"]["execution_admission_receipt_dry_run_report"]
+    receipt_status = payload["details"]["release_candidate_package_receipt_noop_report"]
     assert receipt_status["status"] == "pass"
-    assert receipt_status["report_type"] == "EXECUTION_ADMISSION_RECEIPT_DRY_RUN_v1_REPORT"
-    assert receipt_status["execution_mode"] == "no_op_dry_run"
-    assert receipt_status["execution_performed"] is False
+    assert receipt_status["report_type"] == "RELEASE_CANDIDATE_PACKAGE_RECEIPT_NOOP_v1_REPORT"
+    assert receipt_status["candidate_id"] == "release_candidate_package_receipt_noop_v1"
+    assert receipt_status["command_mode"] == "noop"
+    assert receipt_status["external_execution_performed"] is False
+    assert receipt_status["publication_performed"] is False
     assert receipt_status["reporter_return_code"] == 0
-    assert Path(receipt_status["output_path"]).exists()
+    receipt_output_path = Path(receipt_status["output_path"])
+    assert receipt_output_path.exists()
+    receipt_output_path.unlink(missing_ok=True)
     controlled_inventory_status = payload["details"]["controlled_real_evidence_inventory_report"]
     assert controlled_inventory_status["status"] == "pass"
     assert controlled_inventory_status["report_type"] == "CONTROLLED_REAL_EVIDENCE_INVENTORY_v1_REPORT"
