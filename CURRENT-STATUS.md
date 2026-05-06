@@ -25,6 +25,12 @@
   - integrated into `tools/release-lane/prove_pilot_release_chain.py`
   - `tests/pytest/test_controlled_real_evidence_inventory_report_schema.py`
   - `tests/pytest/test_controlled_real_evidence_inventory_report.py`
+- Bounded source/product evidence resolver extraction v1 is implemented (admitted-source extraction only, non-executing):
+  - `docs/maxine/specs/source-product-evidence-real-extraction-v1.md`
+  - `tools/release-lane/extract_source_product_evidence_resolver_report.py`
+  - integrated into `tools/release-lane/run_pilot_release_chain_validation.py`
+  - extracted report is validated by `tools/source-product-evidence-resolver/validate_source_product_evidence_resolver_report.py`
+  - `tests/pytest/test_source_product_evidence_resolver_extraction.py`
 - Execution admission remains future work requiring explicit operator approval.
 - No execution surfaces are newly admitted in this slice.
 - Sandbox-only writer skeleton is implemented for generated-asset resolver placeholders.

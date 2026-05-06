@@ -57,6 +57,7 @@ Get-ChildItem .\examples\manifests
 - Active integration branch baseline: `codex/pilot-rollback-readiness-evidence-v1`
 - The evidence-only pilot release chain is operational (`pilot_chain_status=pass`, `final_gate_count=23`).
 - Controlled real evidence inventory reporting from approved local inputs/evidence sources is integrated into proof flow (inventory-only).
+- Bounded source/product evidence resolver extraction from admitted evidence sources is integrated into the pilot runner (non-executing).
 - AAA-quality output is not yet fully operational.
 - Execution admission remains future work requiring explicit approval.
 
@@ -68,6 +69,7 @@ Start here for PR readiness, review, and merge details:
 - `docs/maxine/execution-admission/release-execution-admission-review-framework-v1.md`
 - `docs/maxine/execution-admission/release-execution-receipt-dry-run-framework-v1.md`
 - `docs/maxine/specs/controlled-real-evidence-inventory-v1.md`
+- `docs/maxine/specs/source-product-evidence-real-extraction-v1.md`
 
 ## M.A.X.I.N.E. Resolver Ladder
 

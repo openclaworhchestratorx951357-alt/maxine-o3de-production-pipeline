@@ -22,6 +22,12 @@ DEFAULT_OUTPUT_MANIFEST = (
 )
 DEFAULT_OUTPUT_DIR = "examples/sandbox/manifests/reports/pilot-release-chain-validation"
 DEFAULT_CHAIN_PATH = "examples/release-lane-gate-chain/max_biped_v1_release_lane_gate_chain.json"
+DEFAULT_PROJECT_INVENTORY = (
+    "examples/sandbox/project-inventory/max_biped_v1_project_inventory.fixture.json"
+)
+DEFAULT_ASSET_CANDIDATE_INVENTORY = (
+    "examples/sandbox/asset-candidates/max_biped_v1_asset_candidate_inventory.fixture.json"
+)
 REQUIRED_IMPLEMENTED_CHECK_IDS = [
     "max_biped_v1_skeleton_contract",
     "dcc_conform_v1",
@@ -192,6 +198,8 @@ def main() -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
     attachment_dir = output_dir / "attachments"
     attachment_dir.mkdir(parents=True, exist_ok=True)
+    source_product_report_path = attachment_dir / "source_product_evidence_resolver_v1_report.json"
+    controlled_inventory_report_path = output_dir / "controlled-real-evidence-inventory.json"
 
     base_manifest = load_json(base_manifest_path)
     base_pending_gates = _get_qc_gates(base_manifest)
@@ -200,6 +208,118 @@ def main() -> int:
     if isinstance(base_manifest_qc, dict):
         base_manifest_qc["gates"] = []
     write_json(output_manifest_path, base_manifest)
+
+    controlled_inventory_cmd: List[str] = [
+        sys.executable,
+        "tools/release-lane/report_controlled_real_evidence_inventory.py",
+        "--project-inventory",
+        DEFAULT_PROJECT_INVENTORY,
+        "--asset-candidate-inventory",
+        DEFAULT_ASSET_CANDIDATE_INVENTORY,
+        "--output",
+        str(controlled_inventory_report_path),
+    ]
+    controlled_inventory_proc = run_command(repo_root, controlled_inventory_cmd)
+    if controlled_inventory_proc.returncode != 0:
+        print(
+            json.dumps(
+                {
+                    "status": "failed",
+                    "failed_step": "controlled_real_evidence_inventory",
+                    "command": controlled_inventory_cmd,
+                    "stdout": controlled_inventory_proc.stdout,
+                    "stderr": controlled_inventory_proc.stderr,
+                },
+                indent=2,
+            )
+        )
+        return 1
+    try:
+        controlled_inventory_payload = parse_payload_from_stdout(controlled_inventory_proc.stdout)
+    except Exception as exc:
+        print(
+            json.dumps(
+                {
+                    "status": "failed",
+                    "failed_step": "controlled_real_evidence_inventory",
+                    "reason": f"payload_parse_error: {exc}",
+                    "stdout": controlled_inventory_proc.stdout,
+                },
+                indent=2,
+            )
+        )
+        return 1
+    if controlled_inventory_payload.get("status") != "pass":
+        print(
+            json.dumps(
+                {
+                    "status": "failed",
+                    "failed_step": "controlled_real_evidence_inventory",
+                    "reason": "expected_pass_status",
+                    "payload_status": controlled_inventory_payload.get("status"),
+                    "output_path": str(controlled_inventory_report_path),
+                },
+                indent=2,
+            )
+        )
+        return 1
+
+    resolver_extract_cmd: List[str] = [
+        sys.executable,
+        "tools/release-lane/extract_source_product_evidence_resolver_report.py",
+        "--project-inventory",
+        DEFAULT_PROJECT_INVENTORY,
+        "--asset-candidate-inventory",
+        DEFAULT_ASSET_CANDIDATE_INVENTORY,
+        "--controlled-inventory-report",
+        str(controlled_inventory_report_path),
+        "--output",
+        str(source_product_report_path),
+    ]
+    resolver_extract_proc = run_command(repo_root, resolver_extract_cmd)
+    if resolver_extract_proc.returncode != 0:
+        print(
+            json.dumps(
+                {
+                    "status": "failed",
+                    "failed_step": "source_product_resolver_extract",
+                    "command": resolver_extract_cmd,
+                    "stdout": resolver_extract_proc.stdout,
+                    "stderr": resolver_extract_proc.stderr,
+                },
+                indent=2,
+            )
+        )
+        return 1
+    try:
+        resolver_extract_payload = parse_payload_from_stdout(resolver_extract_proc.stdout)
+    except Exception as exc:
+        print(
+            json.dumps(
+                {
+                    "status": "failed",
+                    "failed_step": "source_product_resolver_extract",
+                    "reason": f"payload_parse_error: {exc}",
+                    "stdout": resolver_extract_proc.stdout,
+                },
+                indent=2,
+            )
+        )
+        return 1
+    if resolver_extract_payload.get("status") != "pass":
+        print(
+            json.dumps(
+                {
+                    "status": "failed",
+                    "failed_step": "source_product_resolver_extract",
+                    "reason": "expected_pass_status",
+                    "payload_status": resolver_extract_payload.get("status"),
+                    "output_path": str(source_product_report_path),
+                },
+                indent=2,
+            )
+        )
+        return 1
 
     validator_steps: List[Dict[str, Any]] = [
         {
@@ -226,7 +346,7 @@ def main() -> int:
             "command": [
                 sys.executable,
                 "tools/source-product-evidence-resolver/validate_source_product_evidence_resolver_report.py",
-                "examples/source-product-evidence-resolver/max_biped_v1_source_product_resolver_pass.json",
+                str(source_product_report_path),
             ],
             "payload_path": attachment_dir / "source_product_evidence_resolver_v1.json",
         },
@@ -398,6 +518,25 @@ def main() -> int:
     snapshot_paths: List[str] = []
     attached_check_ids: List[str] = []
     gate_override_payloads: Dict[str, Dict[str, Any]] = {}
+
+    step_results.append(
+        {
+            "step": "controlled_real_evidence_inventory",
+            "status": controlled_inventory_payload.get("status"),
+            "payload_path": str(controlled_inventory_report_path),
+            "check_id": "controlled_real_evidence_inventory_v1",
+        }
+    )
+    snapshot_paths.append(str(controlled_inventory_report_path))
+    step_results.append(
+        {
+            "step": "source_product_resolver_extract",
+            "status": resolver_extract_payload.get("status"),
+            "payload_path": str(source_product_report_path),
+            "check_id": "source_product_evidence_resolver_v1_extract",
+        }
+    )
+    snapshot_paths.append(str(source_product_report_path))
 
     for step in validator_steps:
         if "attachment_fixture" in step:

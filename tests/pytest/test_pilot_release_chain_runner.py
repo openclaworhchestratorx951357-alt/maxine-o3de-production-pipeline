@@ -59,6 +59,11 @@ def test_runner_builds_generated_manifest_and_attaches_expected_checks(repo_tmp_
     payload = _extract_payload(result.stdout)
     assert payload["status"] == "completed"
     assert payload["pilot_chain_status"] == "pass"
+    step_map = {step["step"]: step for step in payload["validator_steps"]}
+    assert "controlled_real_evidence_inventory" in step_map
+    assert "source_product_resolver_extract" in step_map
+    assert Path(step_map["controlled_real_evidence_inventory"]["payload_path"]).exists()
+    assert Path(step_map["source_product_resolver_extract"]["payload_path"]).exists()
 
     manifest = json.loads(output_manifest.read_text(encoding="utf-8-sig"))
     gate_ids = {

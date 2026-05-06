@@ -47,6 +47,9 @@ AAA-quality output is still not fully operational. Before that state, the projec
 - evidence/admission status reporter is now available:
   - `tools/release-lane/report_release_lane_evidence_admission_status.py`
   - `docs/maxine/specs/release-lane-evidence-admission-status-v1.md`
+- bounded source/product evidence extraction is now available:
+  - `tools/release-lane/extract_source_product_evidence_resolver_report.py`
+  - `docs/maxine/specs/source-product-evidence-real-extraction-v1.md`
 - bounded real evidence extraction from controlled sources
 - controlled O3DE/AP evidence integration (still blocked today)
 - promotion from fixture proof to controlled real evidence across the chain
