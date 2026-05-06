@@ -76,6 +76,13 @@ AAA-quality output is still not fully operational. Before that state, the projec
 - evidence-only real pilot release-candidate package proof is now available:
   - `docs/maxine/specs/real-pilot-release-candidate-package-v1.md`
   - `tools/real-pilot-release-candidate-package/validate_real_pilot_release_candidate_package_report.py`
+- evidence-only production-readiness report is now available:
+  - `docs/maxine/specs/production-readiness-report-v1.md`
+  - `tools/production-readiness-report/validate_production_readiness_report.py`
+- runner/proof now attach/report production readiness after package proof:
+  - `tools/release-lane/run_pilot_release_chain_validation.py`
+  - `tools/release-lane/prove_pilot_release_chain.py`
+  - expected generated-manifest gate count in current slice: `final_gate_count=26`
 - bounded real evidence extraction from controlled sources
 - controlled O3DE/AP evidence integration (still blocked today)
 - promotion from fixture proof to controlled real evidence across the chain

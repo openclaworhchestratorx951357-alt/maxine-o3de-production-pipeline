@@ -106,6 +106,18 @@
   - integrated into `tools/release-lane/run_pilot_release_chain_validation.py` as post-chain package proof attachment
   - release-lane evidence admission status now classifies `real_pilot_release_candidate_package_v1` as manual evidence-only package proof
   - `tests/pytest/test_real_pilot_release_candidate_package_report.py`
+- Production readiness report v1 is implemented (bounded evidence-only, non-executing, non-publishing):
+  - `docs/maxine/specs/production-readiness-report-v1.md`
+  - `schemas/maxine_production_readiness_report.schema.json`
+  - `tools/production-readiness-report/validate_production_readiness_report.py`
+  - `examples/production-readiness-report/max_biped_v1_production_readiness_report_pass.json`
+  - `examples/production-readiness-report/max_biped_v1_production_readiness_report_warn.json`
+  - `examples/production-readiness-report/max_biped_v1_production_readiness_report_fail.json`
+  - integrated into `tools/release-lane/run_pilot_release_chain_validation.py` as post-chain/post-package readiness summary attachment
+  - integrated into `tools/release-lane/prove_pilot_release_chain.py` proof artifacts
+  - `tests/pytest/test_production_readiness_report.py`
+  - distinction is now explicit between evidence/review readiness and blocked execution/publication readiness
+  - pilot runner now attaches `production_readiness_report_v1` and reports `final_gate_count=26` on the generated manifest path
 - Execution admission remains future work requiring explicit operator approval.
 - No execution surfaces are newly admitted in this slice.
 - Sandbox-only writer skeleton is implemented for generated-asset resolver placeholders.

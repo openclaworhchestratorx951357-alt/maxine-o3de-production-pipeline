@@ -1,0 +1,150 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "PRODUCTION_READINESS_REPORT_v1_REPORT",
+  "status": "fail",
+  "generated_utc": "2026-05-05T00:00:00Z",
+  "report_id": "production-readiness-example-fail-001",
+  "report_version": "v1",
+  "generated_for_branch_or_commit": "example-commit-production-readiness-v1",
+  "evaluated_manifest_ref": "examples/manifests/example-release-character-pilot-chain.manifest.json",
+  "evaluated_release_candidate_package_ref": "real_pilot_release_candidate_package_v1",
+  "evaluated_gate_chain_ref": "examples/release-lane-gate-chain/max_biped_v1_release_lane_gate_chain.json",
+  "pilot_chain_status": "pass",
+  "final_gate_count": 25,
+  "evidence_summary": {
+    "total_gate_count": 25,
+    "required_gate_count": 25,
+    "required_pass_count": 24,
+    "pass_count": 25,
+    "warn_count": 0,
+    "fail_count": 0,
+    "pending_manual_count": 0,
+    "evidence_ready": false,
+    "review_ready": false
+  },
+  "controlled_real_gate_ids": [
+    "aaa_performance_budget_v1",
+    "animation_smoke_v1",
+    "dcc_conform_v1",
+    "material_uv_qc_v1",
+    "max_biped_v1_skeleton_contract",
+    "screenshot_evidence_v1"
+  ],
+  "imported_gate_ids": [
+    "source_product_evidence_resolver_v1"
+  ],
+  "manual_gate_ids": [
+    "manual_hero_review_v1",
+    "pilot_release_chain_v1",
+    "real_pilot_release_candidate_package_v1",
+    "release_package_bundle_v1",
+    "release_promotion_decision_v1",
+    "release_publication_chain_audit_bundle_v1",
+    "release_publication_evidence_integrity_index_v1",
+    "release_publication_execution_admission_gate_v1",
+    "release_publication_execution_admission_request_packet_v1",
+    "release_publication_execution_handoff_v1",
+    "release_publication_execution_receipt_v1",
+    "release_publication_execution_request_ledger_v1",
+    "release_publication_gate_set_v1",
+    "release_publication_preflight_v1",
+    "release_publication_request_approval_v1"
+  ],
+  "fixture_only_gate_ids": [
+    "ci_artifact_retention_v1",
+    "release_publication_ready_for_execution_request_v1",
+    "release_publication_rollback_drill_v1"
+  ],
+  "missing_required_gate_ids": [
+    "manual_hero_review_v1"
+  ],
+  "release_candidate_package_status": "fail",
+  "aaa_quality_gate_status": "pass",
+  "performance_budget_status": "pass",
+  "manual_hero_review_status": "missing",
+  "rollback_readiness_status": "pass",
+  "evidence_integrity_status": "pass",
+  "execution_admission_status": "blocked",
+  "publication_admission_status": "blocked",
+  "source_product_authority_status": "admitted_authoritative",
+  "cache_live_db_status": "blocked",
+  "production_write_status": "blocked",
+  "production_readiness_level": "blocked",
+  "readiness_decision": "fail",
+  "blocking_findings": [
+    "missing_required_gate_chain_summary",
+    "source_product_authority_false_claim"
+  ],
+  "warning_findings": [],
+  "remaining_required_actions": [
+    "record explicit approved execution admission before execution-ready/production-ready claims",
+    "record explicit approved publication admission before publication claims",
+    "restore source/product identity claims to evidence-only posture"
+  ],
+  "recommended_next_milestone": "execution_publication_admission_planning_v1",
+  "claim_status": "evidence_only",
+  "safety": {
+    "o3de_execution_status": "blocked",
+    "editor_execution_status": "blocked",
+    "runtime_execution_status": "blocked",
+    "asset_processor_execution_status": "blocked",
+    "dcc_execution_status": "blocked",
+    "blender_execution_status": "blocked",
+    "profiler_execution_status": "blocked",
+    "screenshot_capture_status": "blocked",
+    "spawn_publish_status": "blocked",
+    "production_write_status": "blocked"
+  },
+  "findings": [
+    {
+      "id": "missing_required_gate_chain_summary",
+      "severity": "error",
+      "status": "open",
+      "message": "Required gate is missing from manifest gate chain summary.",
+      "details": {
+        "check_id": "manual_hero_review_v1"
+      }
+    },
+    {
+      "id": "source_product_authority_false_claim",
+      "severity": "error",
+      "status": "open",
+      "message": "Source/product authority claim must remain evidence-only in this slice."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "production_readiness_report_v1",
+      "result": "fail",
+      "severity": "error",
+      "details": {
+        "contract_id": "PRODUCTION_READINESS_REPORT_v1",
+        "report_id": "production-readiness-job-release-pilot-chain-0001",
+        "report_version": "v1",
+        "evidence_class": "manual",
+        "pilot_chain_status": "pass",
+        "final_gate_count": 25,
+        "production_readiness_level": "blocked",
+        "readiness_decision": "fail",
+        "execution_admission_status": "blocked",
+        "publication_admission_status": "blocked",
+        "claim_status": "evidence_only",
+        "validated_at_utc": "2026-05-05T00:00:00Z",
+        "safety": {
+          "o3de_execution_status": "blocked",
+          "editor_execution_status": "blocked",
+          "runtime_execution_status": "blocked",
+          "asset_processor_execution_status": "blocked",
+          "dcc_execution_status": "blocked",
+          "blender_execution_status": "blocked",
+          "profiler_execution_status": "blocked",
+          "screenshot_capture_status": "blocked",
+          "spawn_publish_status": "blocked",
+          "production_write_status": "blocked"
+        }
+      }
+    }
+  }
+}
