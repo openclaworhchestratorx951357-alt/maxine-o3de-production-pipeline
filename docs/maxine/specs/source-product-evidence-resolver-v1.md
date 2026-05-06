@@ -77,6 +77,16 @@ QC check id:
 
 - `source_product_evidence_resolver_v1`
 
+## Bounded Extraction Input (v1)
+
+The pilot release-chain runner now generates resolver input from admitted sources before validating this report contract:
+
+- `tools/release-lane/extract_source_product_evidence_resolver_report.py`
+- controlled inventory records
+- approved local input candidate inventory
+- optional imported AP evidence import records
+- fixture-backed hints when imported AP evidence is absent
+
 ## Validator
 
 Validator script:
