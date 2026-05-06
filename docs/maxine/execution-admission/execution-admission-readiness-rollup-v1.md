@@ -54,6 +54,17 @@ The rollup answers:
 
 This recommendation is planning/status only and does not admit any candidate.
 
+## Candidate-Specific Dry-Run Planning Link
+
+The recommended next slice is now implemented as a static planning artifact for the same candidate:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-planning-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_plan.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_plan_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_plan.py`
+
+This dry-run plan remains `unadmitted`, with `dry_run_admitted=false`, `publication_admitted=false`, and `real_execution_admitted=false`.
+
 ## Approval Phrase
 
 Future real execution/publication admission still requires:
