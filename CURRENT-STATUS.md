@@ -118,6 +118,15 @@
   - `tests/pytest/test_production_readiness_report.py`
   - distinction is now explicit between evidence/review readiness and blocked execution/publication readiness
   - pilot runner now attaches `production_readiness_report_v1` and reports `final_gate_count=26` on the generated manifest path
+- Execution/publication admission planning v1 is implemented (review-only planning, non-executing, non-publishing):
+  - `docs/maxine/execution-admission/execution-publication-admission-planning-v1.md`
+  - `docs/maxine/execution-admission/release-candidate-package-receipt-noop-v1.md`
+  - `schemas/maxine_execution_publication_admission_plan.schema.json`
+  - `examples/execution-admission/release_candidate_package_receipt_noop_review_only.json`
+  - `examples/execution-admission/release_candidate_package_receipt_noop_blocked.json`
+  - `tests/pytest/test_execution_publication_admission_plan_schema.py`
+  - current readiness remains `review_ready` / `blocked_for_execution`
+  - first candidate remains `review_only`; no execution or publication is admitted in this slice
 - Execution admission remains future work requiring explicit operator approval.
 - No execution surfaces are newly admitted in this slice.
 - Sandbox-only writer skeleton is implemented for generated-asset resolver placeholders.

@@ -1,0 +1,104 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "EXECUTION_PUBLICATION_ADMISSION_PLAN_v1",
+  "plan_id": "plan-release-candidate-package-receipt-noop-v1-blocked",
+  "plan_version": "v1",
+  "status": "blocked",
+  "generated_for_branch_or_commit": "3fa4abcdcc922182da85f075a25f9007378cf735",
+  "current_readiness": {
+    "production_readiness_level": "review_ready",
+    "readiness_decision": "blocked_for_execution",
+    "execution_admission_status": "blocked",
+    "publication_admission_status": "blocked",
+    "execution_admission_admitted": false,
+    "publication_admission_admitted": false
+  },
+  "candidate": {
+    "candidate_id": "release_candidate_package_receipt_noop_v1",
+    "candidate_title": "Release-candidate package receipt no-op candidate",
+    "candidate_status": "blocked"
+  },
+  "scope": {
+    "no_op_receipt_generation_only": true,
+    "local_repo_evidence_inputs_only": true,
+    "sandbox_example_outputs_only": true,
+    "execution_or_publication_admitted": false
+  },
+  "allowed_inputs": [
+    "examples/manifests/example-real-pilot-release-candidate-package-pass.manifest.json",
+    "examples/sandbox/manifests/reports/pilot-release-chain-proof/strict/generated.manifest.json"
+  ],
+  "allowed_outputs": [
+    "examples/sandbox/manifests/reports/pilot-release-chain-proof/execution-publication-admission-plan-receipt-noop-blocked.json"
+  ],
+  "blocked_inputs": [
+    "o3de_execution",
+    "editor_execution",
+    "runtime_execution",
+    "asset_processor_execution",
+    "blender_or_dcc_execution",
+    "profiler_or_benchmark_execution",
+    "live_screenshot_capture",
+    "spawn_or_publish_execution",
+    "cache_or_live_db_access",
+    "authoritative_source_uuid_claims",
+    "authoritative_asset_id_claims",
+    "authoritative_product_id_claims"
+  ],
+  "blocked_outputs": [
+    "production_path_write",
+    "engine_path_write",
+    "spawn_or_publish_output"
+  ],
+  "approval": {
+    "required_phrase_format": "APPROVE EXECUTION ADMISSION <candidate_id>",
+    "required_phrase_exact": "APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1",
+    "approval_received": false,
+    "admission_approved_in_this_slice": false
+  },
+  "required_preconditions": [
+    "explicit operator approval phrase has not been granted",
+    "candidate remains review-only planning in this slice"
+  ],
+  "required_postconditions": [
+    "no receipt execution is performed in this slice",
+    "execution and publication remain blocked"
+  ],
+  "receipt_fields": [
+    "receipt_id",
+    "candidate_id",
+    "execution_mode",
+    "execution_performed",
+    "approval_phrase_required",
+    "approval_phrase_received",
+    "allowed_inputs",
+    "allowed_outputs",
+    "blocked_inputs_confirmed",
+    "blocked_outputs_confirmed",
+    "post_validation_status",
+    "claim_status"
+  ],
+  "rollback_readiness_requirements": [
+    "no production or engine writes are allowed",
+    "rollback evidence remains fixture/manual controlled"
+  ],
+  "safety_verifier_requirements": [
+    "safety verifier remains mandatory before any future admission attempt"
+  ],
+  "post_execution_validation_requirements": [
+    "post-validation command list is predeclared for future admitted attempt"
+  ],
+  "reasons_broad_execution_still_blocked": [
+    "no explicit approval phrase received for this candidate",
+    "execution/publication admission remains blocked by policy",
+    "no authoritative id claim admission exists"
+  ],
+  "claim_status": {
+    "source_uuid_status": "not_authoritative",
+    "asset_id_status": "not_authoritative",
+    "product_id_status": "not_authoritative"
+  },
+  "no_admission_in_this_slice": true,
+  "recommended_next_step": "Remain blocked until explicit approval phrase is received and reviewed."
+}
+

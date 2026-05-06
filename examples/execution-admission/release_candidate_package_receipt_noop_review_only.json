@@ -1,0 +1,116 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "EXECUTION_PUBLICATION_ADMISSION_PLAN_v1",
+  "plan_id": "plan-release-candidate-package-receipt-noop-v1-review-only",
+  "plan_version": "v1",
+  "status": "review_only",
+  "generated_for_branch_or_commit": "3fa4abcdcc922182da85f075a25f9007378cf735",
+  "current_readiness": {
+    "production_readiness_level": "review_ready",
+    "readiness_decision": "blocked_for_execution",
+    "execution_admission_status": "blocked",
+    "publication_admission_status": "blocked",
+    "execution_admission_admitted": false,
+    "publication_admission_admitted": false
+  },
+  "candidate": {
+    "candidate_id": "release_candidate_package_receipt_noop_v1",
+    "candidate_title": "Release-candidate package receipt no-op candidate",
+    "candidate_status": "review_only"
+  },
+  "scope": {
+    "no_op_receipt_generation_only": true,
+    "local_repo_evidence_inputs_only": true,
+    "sandbox_example_outputs_only": true,
+    "execution_or_publication_admitted": false
+  },
+  "allowed_inputs": [
+    "examples/manifests/example-real-pilot-release-candidate-package-pass.manifest.json",
+    "examples/sandbox/manifests/reports/pilot-release-chain-proof/strict/generated.manifest.json",
+    "examples/production-readiness-report/max_biped_v1_production_readiness_report_pass.json"
+  ],
+  "allowed_outputs": [
+    "examples/sandbox/manifests/reports/pilot-release-chain-proof/execution-publication-admission-plan-receipt-noop-review.json"
+  ],
+  "blocked_inputs": [
+    "o3de_execution",
+    "editor_execution",
+    "runtime_execution",
+    "asset_processor_execution",
+    "blender_or_dcc_execution",
+    "profiler_or_benchmark_execution",
+    "live_screenshot_capture",
+    "spawn_or_publish_execution",
+    "cache_or_live_db_access",
+    "authoritative_source_uuid_claims",
+    "authoritative_asset_id_claims",
+    "authoritative_product_id_claims"
+  ],
+  "blocked_outputs": [
+    "production_path_write",
+    "engine_path_write",
+    "spawn_or_publish_output"
+  ],
+  "approval": {
+    "required_phrase_format": "APPROVE EXECUTION ADMISSION <candidate_id>",
+    "required_phrase_exact": "APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1",
+    "approval_received": false,
+    "admission_approved_in_this_slice": false
+  },
+  "required_preconditions": [
+    "production_readiness_report_v1 remains pass and truthful",
+    "real_pilot_release_candidate_package_v1 remains pass",
+    "pilot_release_chain_v1 remains pass",
+    "safety verifier and PowerShell safety wrapper remain pass",
+    "operator review confirms bounded input/output paths"
+  ],
+  "required_postconditions": [
+    "no-op receipt is generated",
+    "execution_performed remains false",
+    "blocked surfaces remain blocked",
+    "post-execution validation commands pass",
+    "no publication action is performed"
+  ],
+  "receipt_fields": [
+    "receipt_id",
+    "candidate_id",
+    "execution_mode",
+    "execution_performed",
+    "approval_phrase_required",
+    "approval_phrase_received",
+    "allowed_inputs",
+    "allowed_outputs",
+    "blocked_inputs_confirmed",
+    "blocked_outputs_confirmed",
+    "post_validation_status",
+    "claim_status"
+  ],
+  "rollback_readiness_requirements": [
+    "no production/engine writes are permitted",
+    "receipt capture includes immutable id and generated timestamp",
+    "rollback drill evidence remains unchanged and pass"
+  ],
+  "safety_verifier_requirements": [
+    "python tools/audit/verify_sandbox_writer_safety.py must pass",
+    "powershell -ExecutionPolicy Bypass -File .\\scripts\\powershell\\Test-MaxineSandboxWriterSafety.ps1 must pass"
+  ],
+  "post_execution_validation_requirements": [
+    "python tools/release-lane/run_pilot_release_chain_validation.py",
+    "python tools/release-lane/prove_pilot_release_chain.py",
+    "git diff --check"
+  ],
+  "reasons_broad_execution_still_blocked": [
+    "execution admission policy remains bounded and candidate-specific only",
+    "publication admission remains blocked",
+    "authoritative source/product identity claims remain blocked",
+    "no production or engine path writes are admitted"
+  ],
+  "claim_status": {
+    "source_uuid_status": "not_authoritative",
+    "asset_id_status": "not_authoritative",
+    "product_id_status": "not_authoritative"
+  },
+  "no_admission_in_this_slice": true,
+  "recommended_next_step": "Request explicit approval only when operator is ready for bounded no-op receipt admission."
+}
+
