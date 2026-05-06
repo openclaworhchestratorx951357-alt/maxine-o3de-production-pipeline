@@ -141,7 +141,7 @@
         "manual_hero_review_v1 pass",
         "aaa_performance_budget_v1 pass"
       ],
-      "required_receipt_schema": "schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
+      "required_receipt_schema": "schemas/maxine_release_candidate_publication_dry_run_receipt.schema.json",
       "receipt_required": true,
       "rollback_plan_required": true,
       "operator_approval_required": true,
@@ -631,7 +631,8 @@
       "expected_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
       "expected_tests": [
         "tests/pytest/test_execution_admission_preflight_contracts.py",
-        "tests/pytest/test_execution_admission_receipt_dry_run_proof.py"
+        "tests/pytest/test_execution_admission_receipt_dry_run_proof.py",
+        "tests/pytest/test_release_candidate_publication_dry_run_receipt_contract.py"
       ],
       "blocked_surfaces": [
         "o3de_execution",

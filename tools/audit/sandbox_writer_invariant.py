@@ -151,6 +151,12 @@ EXECUTION_ADMISSION_READINESS_ROLLUP_REL = (
 RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_PLAN_REL = (
     "examples/execution-admission/release_candidate_package_publish_dry_run_plan_v1.json"
 )
+RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_CONTRACT_REL = (
+    "examples/execution-admission/release_candidate_package_publish_dry_run_receipt_contract_v1.json"
+)
+RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_BLOCKED_REL = (
+    "examples/execution-admission/release_candidate_package_publish_dry_run_receipt_blocked_v1.json"
+)
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
 WORKFLOW_RUNS_DIR_REL = "examples/sandbox/workflow-runs"
@@ -207,6 +213,7 @@ EXPECTED_ROLLUP_NEXT_SLICE_CANDIDATE_ID = (
 EXPECTED_DRY_RUN_PLAN_APPROVAL_PHRASE = (
     "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1"
 )
+EXPECTED_DRY_RUN_RECEIPT_TYPE = "release_candidate_package_publish_dry_run_receipt_v1"
 REQUIRED_PREFLIGHT_BLOCKED_SURFACES = {
     "o3de_execution",
     "editor_runtime_execution",
@@ -1028,6 +1035,12 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     )
     release_candidate_publication_dry_run_plan = (
         root / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_PLAN_REL
+    )
+    release_candidate_publication_dry_run_receipt_contract = (
+        root / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_CONTRACT_REL
+    )
+    release_candidate_publication_dry_run_receipt_blocked = (
+        root / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_BLOCKED_REL
     )
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -3962,5 +3975,333 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                 "release candidate publication dry-run plan is not valid JSON: "
                 f"{exc}"
             )
+
+    for receipt_example_path, expected_receipt_status in (
+        (
+            release_candidate_publication_dry_run_receipt_contract,
+            "receipt_not_issued_contract_only",
+        ),
+        (
+            release_candidate_publication_dry_run_receipt_blocked,
+            "blocked_unissued_contract_only",
+        ),
+    ):
+        if receipt_example_path.exists():
+            try:
+                receipt_contract = json.loads(
+                    receipt_example_path.read_text(encoding="utf-8-sig")
+                )
+
+                if receipt_contract.get("schema_version") != "1.0.0":
+                    failures.append(
+                        "release candidate publication dry-run receipt contract schema_version must be 1.0.0."
+                    )
+                if (
+                    receipt_contract.get("record_type")
+                    != "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_CONTRACT_v1"
+                ):
+                    failures.append(
+                        "release candidate publication dry-run receipt contract record_type must be RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_CONTRACT_v1."
+                    )
+                if (
+                    str(receipt_contract.get("candidate_id", "")).strip()
+                    != EXPECTED_ROLLUP_NEXT_SLICE_CANDIDATE_ID
+                ):
+                    failures.append(
+                        "release candidate publication dry-run receipt contract candidate_id must be release_candidate_package_publish_dry_run_v1."
+                    )
+                if str(receipt_contract.get("candidate_type", "")).strip() != "dry_run":
+                    failures.append(
+                        "release candidate publication dry-run receipt contract candidate_type must be dry_run."
+                    )
+                if str(receipt_contract.get("admission_status", "")).strip() != "unadmitted":
+                    failures.append(
+                        "release candidate publication dry-run receipt contract admission_status must remain unadmitted."
+                    )
+                if str(receipt_contract.get("receipt_type", "")).strip() != EXPECTED_DRY_RUN_RECEIPT_TYPE:
+                    failures.append(
+                        "release candidate publication dry-run receipt contract receipt_type must be release_candidate_package_publish_dry_run_receipt_v1."
+                    )
+                if str(receipt_contract.get("receipt_contract_status", "")).strip() != "static_contract_valid_blocked":
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must keep receipt_contract_status=static_contract_valid_blocked."
+                    )
+                if str(receipt_contract.get("receipt_status", "")).strip() != expected_receipt_status:
+                    failures.append(
+                        "release candidate publication dry-run receipt contract receipt_status does not match expected blocked/unissued value."
+                    )
+                if bool(receipt_contract.get("receipt_issued", False)):
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must keep receipt_issued=false."
+                    )
+                if bool(receipt_contract.get("dry_run_admitted", False)):
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must keep dry_run_admitted=false."
+                    )
+                if bool(receipt_contract.get("publication_admitted", False)):
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must keep publication_admitted=false."
+                    )
+                if bool(receipt_contract.get("real_execution_admitted", False)):
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must keep real_execution_admitted=false."
+                    )
+                if bool(receipt_contract.get("production_ready_claimed", False)):
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must keep production_ready_claimed=false."
+                    )
+                if receipt_contract.get("generated_from_static_artifacts_only") is not True:
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must keep generated_from_static_artifacts_only=true."
+                    )
+                if receipt_contract.get("required_approval_decision_reference") is not True:
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must keep required_approval_decision_reference=true."
+                    )
+                if (
+                    str(receipt_contract.get("approval_phrase_required", "")).strip()
+                    != EXPECTED_DRY_RUN_PLAN_APPROVAL_PHRASE
+                ):
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must keep exact approval phrase for release_candidate_package_publish_dry_run_v1."
+                    )
+                approval_decision_reference = receipt_contract.get("approval_decision_reference")
+                if isinstance(approval_decision_reference, str) and approval_decision_reference.strip():
+                    failures.append(
+                        "release candidate publication dry-run receipt contract approval_decision_reference must be null/empty while unadmitted."
+                    )
+
+                blocked_reason_codes = {
+                    str(item).strip()
+                    for item in (receipt_contract.get("blocked_reason_codes") or [])
+                    if str(item).strip()
+                }
+                missing_evidence_items = {
+                    str(item).strip()
+                    for item in (receipt_contract.get("missing_evidence_items") or [])
+                    if str(item).strip()
+                }
+                if not blocked_reason_codes:
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must include blocked_reason_codes."
+                    )
+                if not missing_evidence_items:
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must include missing_evidence_items."
+                    )
+
+                forbidden_paths = {
+                    str(item).strip()
+                    for item in (receipt_contract.get("forbidden_paths") or [])
+                    if str(item).strip()
+                }
+                for required_path_category in (
+                    "production_path_category",
+                    "engine_path_category",
+                    "cache_live_db_category",
+                    "destructive_cleanup_category",
+                ):
+                    if required_path_category not in forbidden_paths:
+                        failures.append(
+                            "release candidate publication dry-run receipt contract forbidden_paths must include: "
+                            f"{required_path_category}"
+                        )
+
+                forbidden_outputs = {
+                    str(item).strip()
+                    for item in (receipt_contract.get("forbidden_outputs") or [])
+                    if str(item).strip()
+                }
+                for required_output in (
+                    "publish_operation",
+                    "spawn_operation",
+                    "production_path_writes",
+                    "engine_path_writes",
+                    "cache_live_db_access",
+                    "authoritative_source_uuid_claims",
+                    "authoritative_asset_id_claims",
+                    "authoritative_product_id_claims",
+                ):
+                    if required_output not in forbidden_outputs:
+                        failures.append(
+                            "release candidate publication dry-run receipt contract forbidden_outputs must include: "
+                            f"{required_output}"
+                        )
+
+                required_receipt_fields = {
+                    str(item).strip()
+                    for item in (receipt_contract.get("required_receipt_fields") or [])
+                    if str(item).strip()
+                }
+                for required_field in (
+                    "candidate_id",
+                    "receipt_type",
+                    "receipt_status",
+                    "approval_decision_reference",
+                    "source_artifact_references",
+                    "input_evidence_references",
+                    "sandbox_output_index",
+                    "validation_summary",
+                    "blocked_surface_attestations",
+                    "rollback_or_cleanup_evidence",
+                    "hashes",
+                    "safety_posture",
+                ):
+                    if required_field not in required_receipt_fields:
+                        failures.append(
+                            "release candidate publication dry-run receipt contract required_receipt_fields must include: "
+                            f"{required_field}"
+                        )
+
+                if receipt_contract.get("publication_surfaces_blocked") is not True:
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must keep publication_surfaces_blocked=true."
+                    )
+                if receipt_contract.get("execution_surfaces_blocked") is not True:
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must keep execution_surfaces_blocked=true."
+                    )
+                if receipt_contract.get("cache_live_db_access_blocked") is not True:
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must keep cache_live_db_access_blocked=true."
+                    )
+                if receipt_contract.get("authoritative_id_claims_blocked") is not True:
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must keep authoritative_id_claims_blocked=true."
+                    )
+
+                for output_scope in receipt_contract.get("allowed_receipt_output_scope") or []:
+                    normalized_scope = str(output_scope).replace("\\", "/").strip().lower()
+                    if not normalized_scope.startswith("examples/sandbox/"):
+                        failures.append(
+                            "release candidate publication dry-run receipt contract allowed_receipt_output_scope must stay under examples/sandbox/: "
+                            f"{output_scope}"
+                        )
+                    if "production" in normalized_scope:
+                        failures.append(
+                            "release candidate publication dry-run receipt contract must not allow production-path output scopes: "
+                            f"{output_scope}"
+                        )
+                    if "engine" in normalized_scope:
+                        failures.append(
+                            "release candidate publication dry-run receipt contract must not allow engine-path output scopes: "
+                            f"{output_scope}"
+                        )
+
+                safety_posture = (
+                    receipt_contract.get("safety_posture")
+                    if isinstance(receipt_contract.get("safety_posture"), dict)
+                    else {}
+                )
+                if str(safety_posture.get("source_uuid_status", "")).strip() != "not_authoritative":
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must keep safety_posture.source_uuid_status=not_authoritative."
+                    )
+                if str(safety_posture.get("asset_id_status", "")).strip() != "not_authoritative":
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must keep safety_posture.asset_id_status=not_authoritative."
+                    )
+                if str(safety_posture.get("product_id_status", "")).strip() != "not_authoritative":
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must keep safety_posture.product_id_status=not_authoritative."
+                    )
+
+                if bool(receipt_contract.get("unsafe_claims_detected", False)):
+                    failures.append(
+                        "release candidate publication dry-run receipt contract must keep unsafe_claims_detected=false."
+                    )
+
+                source_artifacts = (
+                    receipt_contract.get("source_artifacts")
+                    if isinstance(receipt_contract.get("source_artifacts"), dict)
+                    else {}
+                )
+                expected_source_refs = {
+                    "candidate_matrix_ref": EXECUTION_ADMISSION_CANDIDATE_MATRIX_REL,
+                    "preflight_contracts_ref": EXECUTION_ADMISSION_PREFLIGHT_CONTRACTS_REL,
+                    "preflight_proof_packages_ref": EXECUTION_ADMISSION_PREFLIGHT_PROOF_PACKAGES_REL,
+                    "readiness_rollup_ref": EXECUTION_ADMISSION_READINESS_ROLLUP_REL,
+                    "dry_run_plan_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_PLAN_REL,
+                    "noop_receipt_status_ref": "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json",
+                }
+                for field, expected_path in expected_source_refs.items():
+                    actual_ref = str(source_artifacts.get(field, "")).replace("\\", "/").strip()
+                    if not actual_ref:
+                        failures.append(
+                            "release candidate publication dry-run receipt contract source_artifacts is missing field: "
+                            f"{field}"
+                        )
+                        continue
+                    if actual_ref != expected_path:
+                        failures.append(
+                            "release candidate publication dry-run receipt contract source_artifacts field has unexpected path: "
+                            f"{field} -> {actual_ref}"
+                        )
+
+                source_status = (
+                    receipt_contract.get("source_artifact_validation_status")
+                    if isinstance(receipt_contract.get("source_artifact_validation_status"), dict)
+                    else {}
+                )
+                for field in (
+                    "candidate_matrix_status",
+                    "preflight_contracts_status",
+                    "preflight_proof_packages_status",
+                    "readiness_rollup_status",
+                    "dry_run_plan_status",
+                    "production_readiness_status",
+                    "noop_receipt_status",
+                ):
+                    if str(source_status.get(field, "")).strip() != "pass":
+                        failures.append(
+                            "release candidate publication dry-run receipt contract source_artifact_validation_status must keep field pass: "
+                            f"{field}"
+                        )
+
+                alignment = (
+                    receipt_contract.get("readiness_rollup_alignment")
+                    if isinstance(receipt_contract.get("readiness_rollup_alignment"), dict)
+                    else {}
+                )
+                if (
+                    str(alignment.get("safest_next_preparation_slice_id", "")).strip()
+                    != EXPECTED_ROLLUP_NEXT_SLICE_ID
+                ):
+                    failures.append(
+                        "release candidate publication dry-run receipt contract readiness_rollup_alignment must keep safest_next_preparation_slice_id=candidate_specific_dry_run_planning_v1."
+                    )
+                if (
+                    str(alignment.get("safest_next_preparation_candidate_id", "")).strip()
+                    != EXPECTED_ROLLUP_NEXT_SLICE_CANDIDATE_ID
+                ):
+                    failures.append(
+                        "release candidate publication dry-run receipt contract readiness_rollup_alignment must keep safest_next_preparation_candidate_id=release_candidate_package_publish_dry_run_v1."
+                    )
+                if str(alignment.get("alignment_status", "")).strip() != "aligned":
+                    failures.append(
+                        "release candidate publication dry-run receipt contract readiness_rollup_alignment must keep alignment_status=aligned."
+                    )
+
+                plan_alignment = (
+                    receipt_contract.get("dry_run_plan_alignment")
+                    if isinstance(receipt_contract.get("dry_run_plan_alignment"), dict)
+                    else {}
+                )
+                if (
+                    str(plan_alignment.get("planned_candidate_id", "")).strip()
+                    != EXPECTED_ROLLUP_NEXT_SLICE_CANDIDATE_ID
+                ):
+                    failures.append(
+                        "release candidate publication dry-run receipt contract dry_run_plan_alignment must keep planned_candidate_id=release_candidate_package_publish_dry_run_v1."
+                    )
+                if str(plan_alignment.get("alignment_status", "")).strip() != "aligned":
+                    failures.append(
+                        "release candidate publication dry-run receipt contract dry_run_plan_alignment must keep alignment_status=aligned."
+                    )
+            except Exception as exc:  # pragma: no cover - defensive failure surface
+                failures.append(
+                    "release candidate publication dry-run receipt contract is not valid JSON: "
+                    f"{exc}"
+                )
 
     return failures

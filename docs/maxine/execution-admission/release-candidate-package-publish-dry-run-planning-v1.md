@@ -81,6 +81,18 @@ Readiness-rollup alignment remains:
 - `slice_id`: `candidate_specific_dry_run_planning_v1`
 - `candidate_id`: `release_candidate_package_publish_dry_run_v1`
 
+## Dry-Run Receipt Contract Link
+
+The next static boundary layer is now defined as a receipt contract:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-receipt-contract-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_receipt.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_receipt_contract_v1.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_receipt_blocked_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_receipt.py`
+
+This receipt contract remains static/unissued (`receipt_issued=false`) and does not admit or execute dry-run publication flow.
+
 ## Artifacts
 
 - schema:

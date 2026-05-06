@@ -110,9 +110,9 @@
         "missing_rollback_proof"
       ],
       "blocked_reason_summary": "Requirements exist but execution evidence is still static-only; candidate remains blocked/unadmitted.",
-      "required_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+      "required_validator": "tools/execution-admission/validate_release_candidate_publication_dry_run_receipt.py",
       "validator_status": "present",
-      "required_receipt_schema": "schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
+      "required_receipt_schema": "schemas/maxine_release_candidate_publication_dry_run_receipt.schema.json",
       "receipt_status": "required_not_generated",
       "rollback_plan_status": "required_not_proven",
       "approval_status": "blocked_missing_approval",
@@ -429,7 +429,7 @@
       "unsafe_claims_detected": false,
       "production_readiness_effect": "publication_blocked_missing_preflight_proof",
       "publication_effect": "dry_run_only_publication_blocked",
-      "next_required_action": "Prepare narrow dry-run admission package that preserves publication_performed=false.",
+      "next_required_action": "Keep candidate unadmitted and complete admission-blocker checklist review now that static dry-run receipt-contract requirements are defined.",
       "safety_notes": [
         "Dry-run planning is not publication admission.",
         "No real execution is admitted."

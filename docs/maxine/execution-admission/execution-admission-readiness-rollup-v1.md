@@ -65,6 +65,18 @@ The recommended next slice is now implemented as a static planning artifact for 
 
 This dry-run plan remains `unadmitted`, with `dry_run_admitted=false`, `publication_admitted=false`, and `real_execution_admitted=false`.
 
+## Candidate-Specific Dry-Run Receipt Contract Link
+
+The same candidate now has a static receipt-boundary contract:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-receipt-contract-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_receipt.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_receipt_contract_v1.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_receipt_blocked_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_receipt.py`
+
+This receipt contract remains blocked/unissued (`receipt_issued=false`) and does not admit dry-run execution, real execution, or publication.
+
 ## Approval Phrase
 
 Future real execution/publication admission still requires:

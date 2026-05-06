@@ -240,3 +240,51 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
     assert source_status["production_readiness_status"] == "pass"
     assert source_status["noop_receipt_status"] == "pass"
     assert dry_run_plan_status["reporter_return_code"] == 0
+    dry_run_receipt_contract_status = payload["details"]["release_candidate_publication_dry_run_receipt_contract_report"]
+    assert dry_run_receipt_contract_status["status"] == "pass"
+    assert (
+        dry_run_receipt_contract_status["report_type"]
+        == "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_CONTRACT_VALIDATION_v1_REPORT"
+    )
+    assert (
+        dry_run_receipt_contract_status["release_candidate_publication_dry_run_receipt_contract_present"]
+        is True
+    )
+    assert dry_run_receipt_contract_status["planned_candidate_id"] == "release_candidate_package_publish_dry_run_v1"
+    assert dry_run_receipt_contract_status["candidate_type"] == "dry_run"
+    assert (
+        dry_run_receipt_contract_status["receipt_type"]
+        == "release_candidate_package_publish_dry_run_receipt_v1"
+    )
+    assert dry_run_receipt_contract_status["receipt_contract_status"] == "static_contract_valid_blocked"
+    assert dry_run_receipt_contract_status["receipt_issued"] is False
+    assert dry_run_receipt_contract_status["dry_run_admitted"] is False
+    assert dry_run_receipt_contract_status["publication_admitted"] is False
+    assert dry_run_receipt_contract_status["real_execution_admitted"] is False
+    assert dry_run_receipt_contract_status["production_ready_claimed"] is False
+    assert dry_run_receipt_contract_status["publication_surfaces_blocked"] is True
+    assert dry_run_receipt_contract_status["execution_surfaces_blocked"] is True
+    assert dry_run_receipt_contract_status["cache_live_db_access_blocked"] is True
+    assert dry_run_receipt_contract_status["authoritative_id_claims_blocked"] is True
+    assert dry_run_receipt_contract_status["missing_evidence_items_count"] > 0
+    assert len(dry_run_receipt_contract_status["blocked_reason_codes"]) > 0
+    assert (
+        dry_run_receipt_contract_status["approval_phrase_required"]
+        == "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1"
+    )
+    receipt_source_status = dry_run_receipt_contract_status["computed_source_artifact_validation_status"]
+    assert receipt_source_status["candidate_matrix_status"] == "pass"
+    assert receipt_source_status["preflight_contracts_status"] == "pass"
+    assert receipt_source_status["preflight_proof_packages_status"] == "pass"
+    assert receipt_source_status["readiness_rollup_status"] == "pass"
+    assert receipt_source_status["dry_run_plan_status"] == "pass"
+    assert receipt_source_status["production_readiness_status"] == "pass"
+    assert receipt_source_status["noop_receipt_status"] == "pass"
+    receipt_rollup_alignment = dry_run_receipt_contract_status["readiness_rollup_alignment"]
+    assert receipt_rollup_alignment["safest_next_preparation_slice_id"] == "candidate_specific_dry_run_planning_v1"
+    assert receipt_rollup_alignment["safest_next_preparation_candidate_id"] == "release_candidate_package_publish_dry_run_v1"
+    assert receipt_rollup_alignment["alignment_status"] == "aligned"
+    receipt_plan_alignment = dry_run_receipt_contract_status["dry_run_plan_alignment"]
+    assert receipt_plan_alignment["planned_candidate_id"] == "release_candidate_package_publish_dry_run_v1"
+    assert receipt_plan_alignment["alignment_status"] == "aligned"
+    assert dry_run_receipt_contract_status["reporter_return_code"] == 0

@@ -156,3 +156,27 @@ The rollup-recommended next preparation slice is now implemented as a static pla
 
 This artifact does not admit dry-run execution, real execution, or publication.
 
+## Candidate-Specific Dry-Run Receipt Contract v1
+
+The dry-run candidate now also has a static receipt boundary contract:
+
+- candidate id:
+  - `release_candidate_package_publish_dry_run_v1`
+- contract status:
+  - `static_contract_valid_blocked`
+- receipt issued:
+  - `false`
+- admission posture:
+  - `dry_run_admitted=false`
+  - `real_execution_admitted=false`
+  - `publication_admitted=false`
+
+Artifacts:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-receipt-contract-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_receipt.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_receipt_contract_v1.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_receipt_blocked_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_receipt.py`
+
+This layer is contract-only and does not emit a receipt or admit dry-run/publication execution.
