@@ -2,21 +2,22 @@
 
 ## What This Slice Does
 
-`DCC conform v1` defines a contract-first, non-destructive evidence report for release-lane character conform checks.
+`dcc_conform_v1` defines a contract-first, non-destructive DCC conform evidence report for pilot release-lane candidates.
 
 - validates normalized DCC conform report JSON
-- enforces `MAX_BIPED_v1` targeting
+- preserves `MAX_BIPED_v1` target enforcement
 - emits manifest-attachable QC output
-- supports `pass`, `warn`, `fail`, and `pending_manual` outcomes
+- supports `pass`, `warn`, `fail`, and `pending_manual`
+- supports bounded controlled-real evidence metadata without admitting execution
 
-## What This Slice Does Not Do Yet
+## What This Slice Does Not Do
 
-- does not execute Blender
+- does not execute Blender/DCC
 - does not execute O3DE
 - does not execute Asset Processor
-- does not modify source art assets
 - does not spawn or publish
-- does not read Cache or live asset databases
+- does not read Cache or live asset DB
+- does not make authoritative source UUID / Asset ID / Product ID claims
 
 ## Report Contract
 
@@ -24,24 +25,44 @@ Schema:
 
 - `schemas/maxine_dcc_conform_report.schema.json`
 
-Core report fields:
+Required controlled-real evidence fields:
 
-- identity and routing: `job_id`, `package_id`, `lane`, `status`
-- source evidence: `source.source_path`, `source.source_kind`, optional `source.sha256`
-- target contract: `target.skeleton_contract_id`, `target.expected_skeleton_contract_id`, `target.package_tier`
-- DCC evidence metadata: `dcc.tool_name`, optional `dcc.tool_version`, `dcc.export_preset`, `dcc.intended_output_path`, `dcc.evidence_only=true`
-- transform evidence: units, normalization, origin, axes, handedness, bounds
-- skeleton evidence: `root_bone_present`, `skeleton_contract_result`, optional `skeleton_validator_output_ref`
-- structured findings list
+- `candidate_id`
+- `source_asset_reference`
+- `source_evidence_ref`
+- `dcc_tool_name`
+- `dcc_tool_version`
+- `conform_profile_id`
+- `conform_profile_version`
+- `unit_scale_status`
+- `orientation_status`
+- `origin_status`
+- `transform_freeze_status`
+- `mesh_naming_status`
+- `material_slot_naming_status`
+- `skeleton_reference_status`
+- `export_format_status`
+- `required_axes`
+- `required_units`
+- `evidence_class`: `fixture | imported | controlled_real`
+- `claim_status`: `evidence_only | not_authoritative`
+- `safety` with blocked statuses:
+  - `dcc_execution_status`
+  - `blender_execution_status`
+  - `production_write_status`
+
+Existing report sections remain required:
+
+- identity/routing: `job_id`, `package_id`, `lane`, `status`
+- source metadata: `source.*`
+- target metadata: `target.*`
+- DCC metadata: `dcc.*`
+- transform metadata: `transform.*`
+- skeleton metadata: `skeleton.*`
+- findings array
 - manifest attachment payload
 
-## MAX_BIPED_v1 Integration
-
-- DCC conform reports must target `MAX_BIPED_v1`.
-- Expected contract id is enforced by validator rule checks.
-- Skeleton contract results can be referenced through `skeleton_validator_output_ref`.
-
-## Manifest v1 Integration
+## Manifest Integration
 
 Current attachment path:
 
@@ -54,8 +75,6 @@ Future-compatible path:
 DCC conform check id:
 
 - `dcc_conform_v1`
-
-The validator emits a normalized QC payload suitable for immediate attachment to the current manifest contract and forward migration to `qc.checks[]`.
 
 ## Validator
 
@@ -70,16 +89,21 @@ Behavior:
 - exits nonzero for `fail`
 - exits nonzero for `warn` without `--allow-warn`
 
+## Controlled Real Evidence Fixture
+
+Pilot controlled-real fixture path:
+
+- `examples/sandbox/dcc-conform-evidence/pilot-candidates/max_biped_v1_dcc_conform_controlled_real.fixture.json`
+
+The pilot runner now validates this bounded fixture for `dcc_conform_v1` and keeps execution blocked.
+
 ## Safety Boundaries
 
-This slice remains evidence/report-validation only and preserves existing safety boundaries:
+This slice is evidence/report-validation only and preserves:
 
 - no broad execution admissions
-- no spawn/publish admissions
-- no cache/live-db admissions
-- no source/product UUID claim admissions
-- no authoritative writes
-
-## Future Path (Not Implemented Here)
-
-A later slice may add bounded Blender/DCC execution with explicit approvals and sandbox-local evidence capture. That future work is not implemented in this slice.
+- no Blender/DCC execution admission
+- no spawn/publish admission
+- no Cache/live DB admission
+- no authoritative ID claims
+- no production/engine path writes

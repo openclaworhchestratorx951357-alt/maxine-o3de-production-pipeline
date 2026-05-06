@@ -4,6 +4,34 @@
   "job_id": "job-release-character-warn-001",
   "package_id": "char.maxine.guard_mira",
   "lane": "release_character",
+  "candidate_id": "max_biped_v1_candidate_002",
+  "source_asset_reference": "fixtures://source/max_biped_v1/guard_mira.fbx",
+  "source_evidence_ref": "examples/sandbox/ap-evidence-imports/pilot-candidates/max_biped_v1_dcc_conform_import_warn.fixture.json",
+  "dcc_tool_name": "Blender",
+  "dcc_tool_version": "4.2.0",
+  "conform_profile_id": "MAXINE_FBX_RELEASE_v1",
+  "conform_profile_version": "1.0.0",
+  "unit_scale_status": "pass",
+  "orientation_status": "warn",
+  "origin_status": "pass",
+  "transform_freeze_status": "pass",
+  "mesh_naming_status": "pass",
+  "material_slot_naming_status": "warn",
+  "skeleton_reference_status": "warn",
+  "export_format_status": "pass",
+  "required_axes": {
+    "up_axis": "Z",
+    "forward_axis": "Y",
+    "handedness": "right"
+  },
+  "required_units": "meters",
+  "evidence_class": "imported",
+  "claim_status": "not_authoritative",
+  "safety": {
+    "dcc_execution_status": "blocked",
+    "blender_execution_status": "blocked",
+    "production_write_status": "blocked"
+  },
   "status": "warn",
   "source": {
     "source_path": "artifacts/jobs/job-release-character-warn-001/o3de/source/guard_mira.fbx",
@@ -68,7 +96,8 @@
       "result": "warn",
       "severity": "warning",
       "details": {
-        "summary": "Conform metadata accepted with non-blocking warning."
+        "summary": "Conform metadata accepted with non-blocking warning.",
+        "evidence_class": "imported"
       }
     }
   }

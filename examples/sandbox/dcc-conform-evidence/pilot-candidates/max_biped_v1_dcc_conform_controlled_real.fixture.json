@@ -1,12 +1,12 @@
 {
   "schema_version": "1.0.0",
   "report_type": "DCC_CONFORM_v1_REPORT",
-  "job_id": "job-release-character-pass-001",
-  "package_id": "char.maxine.knight_arden",
+  "job_id": "job-release-character-controlled-real-dcc-conform-001",
+  "package_id": "char.maxine.release_pilot.max_biped_v1",
   "lane": "release_character",
   "candidate_id": "max_biped_v1_candidate_001",
-  "source_asset_reference": "fixtures://source/max_biped_v1/source_character.fbx",
-  "source_evidence_ref": "examples/sandbox/evidence-bundles/max_biped_v1_dcc_conform_controlled_real_bundle.json",
+  "source_asset_reference": "examples/sandbox/evidence-sources/approved-local-inputs/characters/max_biped_v1/source_character.fbx",
+  "source_evidence_ref": "examples/sandbox/evidence-bundles/max_biped_v1_candidate_001_controlled_real_dcc_conform.bundle.json",
   "dcc_tool_name": "Blender",
   "dcc_tool_version": "4.2.0",
   "conform_profile_id": "MAXINE_FBX_RELEASE_v1",
@@ -34,7 +34,7 @@
   },
   "status": "pass",
   "source": {
-    "source_path": "artifacts/jobs/job-release-character-pass-001/o3de/source/knight_arden.fbx",
+    "source_path": "artifacts/jobs/job-release-character-controlled-real-dcc-conform-001/o3de/source/max_biped_v1/source_character.fbx",
     "source_kind": "fbx",
     "sha256": "f2e0f4db7be4f4f6a6c9e4d46b5e7d7bb5f7cc8e23f8599d0d3ad6cfd2a7b3d2"
   },
@@ -47,7 +47,7 @@
     "tool_name": "Blender",
     "tool_version": "4.2.0",
     "export_preset": "MAXINE_FBX_RELEASE_v1",
-    "intended_output_path": "artifacts/jobs/job-release-character-pass-001/o3de/source/knight_arden_conformed.fbx",
+    "intended_output_path": "artifacts/jobs/job-release-character-controlled-real-dcc-conform-001/o3de/source/max_biped_v1/source_character_conformed.fbx",
     "evidence_only": true
   },
   "transform": {
@@ -89,7 +89,7 @@
       "result": "pass",
       "severity": "info",
       "details": {
-        "summary": "MAX_BIPED_v1 conform metadata satisfied.",
+        "summary": "Controlled-real DCC conform evidence validated for MAX_BIPED_v1.",
         "evidence_class": "controlled_real"
       }
     }

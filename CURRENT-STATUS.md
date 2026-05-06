@@ -34,6 +34,14 @@
   - pass now requires imported AP evidence coverage for required resolver product types (fixture fallback cannot carry pass for required types)
   - extracted report is validated by `tools/source-product-evidence-resolver/validate_source_product_evidence_resolver_report.py`
   - `tests/pytest/test_source_product_evidence_resolver_extraction.py`
+- Controlled real DCC conform evidence v1 is implemented (bounded evidence-only, non-executing):
+  - `docs/maxine/specs/controlled-real-dcc-conform-evidence-v1.md`
+  - `schemas/maxine_dcc_conform_report.schema.json` (controlled-real evidence fields and blocked safety statuses)
+  - `tools/dcc-conform/validate_dcc_conform_report.py`
+  - `examples/sandbox/dcc-conform-evidence/pilot-candidates/max_biped_v1_dcc_conform_controlled_real.fixture.json`
+  - integrated into `tools/release-lane/run_pilot_release_chain_validation.py`
+  - release-lane evidence admission status now classifies `dcc_conform_v1` as controlled-real evidence
+  - `tests/pytest/test_dcc_conform_report.py`
 - Execution admission remains future work requiring explicit operator approval.
 - No execution surfaces are newly admitted in this slice.
 - Sandbox-only writer skeleton is implemented for generated-asset resolver placeholders.
@@ -336,6 +344,7 @@
   - does not execute O3DE/AP, spawn, publish, or Cache/live DB access
 - DCC conform v1 report validation remains non-executing evidence-only:
   - validates DCC conform report JSON against `MAX_BIPED_v1` and manifest attachment rules
+  - validates controlled-real evidence fields (`candidate_id`, source references, conform profile, evidence class, claim status, blocked safety statuses)
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - Material/UV QC v1 report validation remains non-executing evidence-only:

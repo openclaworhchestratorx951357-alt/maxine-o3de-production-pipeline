@@ -35,6 +35,12 @@ def test_pass_report_returns_pass_and_exit_zero():
     payload = _extract_payload(result.stdout)
     assert payload["status"] == "pass"
     assert payload["check_id"] == "dcc_conform_v1"
+    assert payload["evidence_class"] == "controlled_real"
+    assert payload["claim_status"] == "evidence_only"
+    details = payload["manifest_attachment"]["qc_check"]["details"]
+    assert details["safety"]["dcc_execution_status"] == "blocked"
+    assert details["safety"]["blender_execution_status"] == "blocked"
+    assert details["safety"]["production_write_status"] == "blocked"
 
 
 def test_warn_report_returns_warn_and_allow_warn_controls_exit():
@@ -121,3 +127,32 @@ def test_output_contains_manifest_attachable_qc_payload():
     assert attachment.get("future_target_path") == "qc.checks[]"
     assert qc_check.get("check_id") == "dcc_conform_v1"
     assert qc_check.get("result") == "pass"
+
+
+def test_missing_candidate_id_fails(tmp_path: Path):
+    report = json.loads(_report_path("max_biped_v1_conform_pass.json").read_text(encoding="utf-8-sig"))
+    del report["candidate_id"]
+    test_file = tmp_path / "missing-candidate-id.json"
+    test_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+    result = _run_validator(test_file)
+    payload = _extract_payload(result.stdout)
+    assert result.returncode != 0
+    assert payload["status"] == "fail"
+    assert any(item.get("id") == "candidate_id_missing" for item in payload["findings"])
+
+
+def test_controlled_real_source_evidence_ref_outside_sandbox_fails(tmp_path: Path):
+    report = json.loads(_report_path("max_biped_v1_conform_pass.json").read_text(encoding="utf-8-sig"))
+    report["source_evidence_ref"] = "examples/dcc-conform/non-sandbox-evidence.json"
+    test_file = tmp_path / "outside-sandbox-source-evidence-ref.json"
+    test_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+    result = _run_validator(test_file)
+    payload = _extract_payload(result.stdout)
+    assert result.returncode != 0
+    assert payload["status"] == "fail"
+    assert any(
+        item.get("id") == "controlled_real_source_evidence_ref_outside_sandbox"
+        for item in payload["findings"]
+    )

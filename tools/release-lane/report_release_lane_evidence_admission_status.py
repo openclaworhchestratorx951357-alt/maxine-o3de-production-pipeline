@@ -39,7 +39,7 @@ REQUIRED_CHAIN_GATE_IDS = [
 ]
 EVIDENCE_CLASS_BY_CHECK_ID = {
     "max_biped_v1_skeleton_contract": "fixture",
-    "dcc_conform_v1": "manual",
+    "dcc_conform_v1": "controlled_real",
     "source_product_evidence_resolver_v1": "imported",
     "material_uv_qc_v1": "manual",
     "animation_smoke_v1": "manual",
@@ -133,7 +133,7 @@ def _gate_result_map(gates: List[Dict[str, Any]]) -> Dict[str, str]:
     return result_map
 
 
-def _classify_gate_ids(gate_ids: List[str]) -> Dict[str, List[str]]:
+def _classify_gates(gates: List[Dict[str, Any]]) -> Dict[str, List[str]]:
     classes = {
         "fixture": [],
         "manual": [],
@@ -141,11 +141,19 @@ def _classify_gate_ids(gate_ids: List[str]) -> Dict[str, List[str]]:
         "controlled_real": [],
         "future": [],
     }
-    for check_id in gate_ids:
-        evidence_class = EVIDENCE_CLASS_BY_CHECK_ID.get(check_id, "future")
+    for gate in gates:
+        check_id = str(gate.get("check_id", "")).strip()
+        if not check_id:
+            continue
+        details = gate.get("details") if isinstance(gate.get("details"), dict) else {}
+        details_class = str(details.get("evidence_class", "")).strip()
+        if details_class in classes:
+            evidence_class = details_class
+        else:
+            evidence_class = EVIDENCE_CLASS_BY_CHECK_ID.get(check_id, "future")
         classes.setdefault(evidence_class, []).append(check_id)
     for key in classes:
-        classes[key] = sorted(classes[key])
+        classes[key] = sorted(set(classes[key]))
     return classes
 
 
@@ -196,7 +204,7 @@ def main() -> int:
     chain_pass = not required_missing and not required_non_pass
 
     observed_gate_ids = sorted(gate_result_map.keys())
-    evidence_classes = _classify_gate_ids(observed_gate_ids)
+    evidence_classes = _classify_gates(gates)
     controlled_real_evidence_available = bool(evidence_classes["controlled_real"])
     execution_admitted = False
 

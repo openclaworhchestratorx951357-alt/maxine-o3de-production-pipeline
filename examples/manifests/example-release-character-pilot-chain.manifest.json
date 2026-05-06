@@ -48,7 +48,8 @@
         "severity": "info",
         "details": {
           "contract_id": "DCC_CONFORM_v1",
-          "evidence_source": "fixture"
+          "evidence_source": "controlled_real_fixture",
+          "evidence_class": "controlled_real"
         }
       },
       {
