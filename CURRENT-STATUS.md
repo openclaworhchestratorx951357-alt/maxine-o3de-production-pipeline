@@ -16,6 +16,15 @@
   - integrated into `tools/release-lane/prove_pilot_release_chain.py`
   - `tests/pytest/test_execution_admission_receipt_dry_run_report_schema.py`
   - `tests/pytest/test_execution_admission_receipt_dry_run_proof.py`
+- Controlled real evidence inventory framework v1 is implemented (approved-local-input inventory only, non-executing):
+  - `docs/maxine/specs/controlled-real-evidence-inventory-v1.md`
+  - `schemas/maxine_controlled_real_evidence_inventory_report.schema.json`
+  - `examples/sandbox/project-inventory/max_biped_v1_project_inventory.fixture.json`
+  - `examples/sandbox/asset-candidates/max_biped_v1_asset_candidate_inventory.fixture.json`
+  - `tools/release-lane/report_controlled_real_evidence_inventory.py`
+  - integrated into `tools/release-lane/prove_pilot_release_chain.py`
+  - `tests/pytest/test_controlled_real_evidence_inventory_report_schema.py`
+  - `tests/pytest/test_controlled_real_evidence_inventory_report.py`
 - Execution admission remains future work requiring explicit operator approval.
 - No execution surfaces are newly admitted in this slice.
 - Sandbox-only writer skeleton is implemented for generated-asset resolver placeholders.

@@ -22,6 +22,15 @@ EVIDENCE_ADMISSION_STATUS_REL = "tools/release-lane/report_release_lane_evidence
 EXECUTION_ADMISSION_RECEIPT_DRY_RUN_REL = (
     "tools/release-lane/generate_execution_admission_receipt_dry_run.py"
 )
+CONTROLLED_REAL_EVIDENCE_INVENTORY_REL = (
+    "tools/release-lane/report_controlled_real_evidence_inventory.py"
+)
+PROJECT_INVENTORY_FIXTURE_REL = (
+    "examples/sandbox/project-inventory/max_biped_v1_project_inventory.fixture.json"
+)
+ASSET_CANDIDATE_INVENTORY_FIXTURE_REL = (
+    "examples/sandbox/asset-candidates/max_biped_v1_asset_candidate_inventory.fixture.json"
+)
 DECISION_RECORD_REL = (
     "examples/execution-admission/max_biped_v1_execution_admission_decision_approved.json"
 )
@@ -170,6 +179,33 @@ def run_execution_admission_receipt_dry_run(
     return proc.returncode, payload
 
 
+def run_controlled_real_evidence_inventory(
+    repo_root: Path,
+    output_root: Path,
+) -> Tuple[int, Dict[str, Any]]:
+    output_path = output_root / "controlled-real-evidence-inventory.json"
+    cmd: List[str] = [
+        sys.executable,
+        str((repo_root / CONTROLLED_REAL_EVIDENCE_INVENTORY_REL).resolve()),
+        "--project-inventory",
+        str((repo_root / PROJECT_INVENTORY_FIXTURE_REL).resolve()),
+        "--asset-candidate-inventory",
+        str((repo_root / ASSET_CANDIDATE_INVENTORY_FIXTURE_REL).resolve()),
+        "--output",
+        str(output_path),
+    ]
+    proc = subprocess.run(
+        cmd,
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+    )
+    payload = parse_payload_from_stdout(proc.stdout)
+    payload["output_path"] = str(output_path)
+    payload["reporter_return_code"] = proc.returncode
+    return proc.returncode, payload
+
+
 def write_json(path: Path, payload: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2) + os.linesep, encoding="utf-8")
@@ -207,6 +243,10 @@ def main() -> int:
             repo_root=repo_root,
             output_root=output_root,
         )
+        controlled_inventory_code, controlled_inventory_payload = run_controlled_real_evidence_inventory(
+            repo_root=repo_root,
+            output_root=output_root,
+        )
     except Exception as exc:
         print(f"FAIL: pilot chain proof runner execution failed: {exc}")
         return 1
@@ -238,6 +278,16 @@ def main() -> int:
         failures.append("execution-admission receipt dry-run report status must be pass.")
     if receipt_payload.get("execution_performed") is not False:
         failures.append("execution-admission receipt dry-run report must keep execution_performed=false.")
+    if controlled_inventory_code != 0:
+        failures.append("controlled real evidence inventory report command must return 0.")
+    if controlled_inventory_payload.get("report_type") != "CONTROLLED_REAL_EVIDENCE_INVENTORY_v1_REPORT":
+        failures.append(
+            "controlled real evidence inventory report must emit CONTROLLED_REAL_EVIDENCE_INVENTORY_v1_REPORT."
+        )
+    if controlled_inventory_payload.get("status") != "pass":
+        failures.append("controlled real evidence inventory report status must be pass.")
+    if controlled_inventory_payload.get("execution_admitted") is not False:
+        failures.append("controlled real evidence inventory report must keep execution_admitted=false.")
 
     summary: Dict[str, Any] = {
         "status": "pass" if not failures else "fail",
@@ -250,6 +300,7 @@ def main() -> int:
             "strict_run": strict_payload,
             "evidence_admission_report": evidence_payload,
             "execution_admission_receipt_dry_run_report": receipt_payload,
+            "controlled_real_evidence_inventory_report": controlled_inventory_payload,
             "failures": failures,
         },
     }

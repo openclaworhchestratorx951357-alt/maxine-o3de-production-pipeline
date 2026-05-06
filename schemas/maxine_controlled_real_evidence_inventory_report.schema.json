@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_controlled_real_evidence_inventory_report.schema.json",
+  "title": "Maxine Controlled Real Evidence Inventory Report v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "report_type",
+    "status",
+    "generated_utc",
+    "manifest_attachment_target_path",
+    "future_manifest_attachment_target_path",
+    "inventory_mode",
+    "source_project_inventory_path",
+    "source_asset_candidate_inventory_path",
+    "source_project_inventory_id",
+    "source_asset_candidate_inventory_id",
+    "approved_input_roots",
+    "approved_evidence_roots",
+    "discovered_asset_candidate_count",
+    "discovered_candidate_categories",
+    "linked_evidence_counts",
+    "candidate_path_policy",
+    "controlled_real_inventory_ready",
+    "execution_admitted",
+    "blocked_surfaces",
+    "missing_for_promotion",
+    "findings"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "report_type": {
+      "type": "string",
+      "const": "CONTROLLED_REAL_EVIDENCE_INVENTORY_v1_REPORT"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail"
+      ]
+    },
+    "generated_utc": {
+      "type": "string",
+      "minLength": 1
+    },
+    "manifest_attachment_target_path": {
+      "type": "string",
+      "const": "qc.gates[]"
+    },
+    "future_manifest_attachment_target_path": {
+      "type": "string",
+      "const": "qc.checks[]"
+    },
+    "inventory_mode": {
+      "type": "string",
+      "const": "approved_local_inputs_and_evidence_sources_only"
+    },
+    "source_project_inventory_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_asset_candidate_inventory_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_project_inventory_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_asset_candidate_inventory_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approved_input_roots": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "approved_evidence_roots": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "discovered_asset_candidate_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "discovered_candidate_categories": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "linked_evidence_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receipt_ids",
+        "review_packet_ids",
+        "decision_ids",
+        "workflow_run_ids",
+        "evidence_bundle_ids"
+      ],
+      "properties": {
+        "receipt_ids": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "review_packet_ids": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "decision_ids": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "workflow_run_ids": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "evidence_bundle_ids": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "candidate_path_policy": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "outside_approved_roots_count",
+        "blocked_token_path_count",
+        "outside_approved_roots_paths",
+        "blocked_token_paths",
+        "invalid_relative_paths"
+      ],
+      "properties": {
+        "outside_approved_roots_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "blocked_token_path_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "outside_approved_roots_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "blocked_token_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "invalid_relative_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "controlled_real_inventory_ready": {
+      "type": "boolean"
+    },
+    "execution_admitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "blocked_surfaces": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "missing_for_promotion": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "severity",
+          "status",
+          "message"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "error"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "details": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "output_path": {
+      "type": "string"
+    }
+  }
+}

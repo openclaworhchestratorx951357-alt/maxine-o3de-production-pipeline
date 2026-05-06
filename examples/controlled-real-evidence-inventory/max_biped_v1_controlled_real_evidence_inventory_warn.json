@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "CONTROLLED_REAL_EVIDENCE_INVENTORY_v1_REPORT",
+  "status": "warn",
+  "generated_utc": "2026-05-06T00:00:00Z",
+  "manifest_attachment_target_path": "qc.gates[]",
+  "future_manifest_attachment_target_path": "qc.checks[]",
+  "inventory_mode": "approved_local_inputs_and_evidence_sources_only",
+  "source_project_inventory_path": "examples/sandbox/project-inventory/max_biped_v1_project_inventory.fixture.json",
+  "source_asset_candidate_inventory_path": "examples/sandbox/asset-candidates/max_biped_v1_asset_candidate_inventory.fixture.json",
+  "source_project_inventory_id": "sandbox-project-inventory-max-biped-v1-fixture",
+  "source_asset_candidate_inventory_id": "sandbox-asset-candidate-inventory-max-biped-v1-fixture",
+  "approved_input_roots": [
+    "examples/sandbox/evidence-sources/approved-local-inputs"
+  ],
+  "approved_evidence_roots": [
+    "examples/sandbox/receipts",
+    "examples/sandbox/review-packets",
+    "examples/sandbox/review-decisions",
+    "examples/sandbox/workflow-runs",
+    "examples/sandbox/evidence-bundles"
+  ],
+  "discovered_asset_candidate_count": 0,
+  "discovered_candidate_categories": {},
+  "linked_evidence_counts": {
+    "receipt_ids": 0,
+    "review_packet_ids": 0,
+    "decision_ids": 0,
+    "workflow_run_ids": 0,
+    "evidence_bundle_ids": 0
+  },
+  "candidate_path_policy": {
+    "outside_approved_roots_count": 0,
+    "blocked_token_path_count": 0,
+    "outside_approved_roots_paths": [],
+    "blocked_token_paths": [],
+    "invalid_relative_paths": []
+  },
+  "controlled_real_inventory_ready": false,
+  "execution_admitted": false,
+  "blocked_surfaces": [
+    "o3de_editor_execution",
+    "asset_processor_execution",
+    "blender_or_dcc_execution",
+    "spawn_or_publish_execution",
+    "cache_read",
+    "live_asset_database_read",
+    "authoritative_source_uuid_claims",
+    "authoritative_asset_id_claims",
+    "authoritative_product_id_claims",
+    "production_path_write",
+    "engine_path_write"
+  ],
+  "missing_for_promotion": [
+    "add approved local input candidates to controlled evidence inventory",
+    "link approved sandbox evidence ids to inventoried candidates",
+    "execution admission remains blocked until explicit approval phrase: APPROVE EXECUTION ADMISSION <candidate_id>"
+  ],
+  "findings": [
+    {
+      "id": "candidate_count_zero",
+      "severity": "warning",
+      "status": "open",
+      "message": "No source candidates are currently inventoried."
+    },
+    {
+      "id": "linked_evidence_ids_zero",
+      "severity": "warning",
+      "status": "open",
+      "message": "No linked sandbox evidence ids were found."
+    }
+  ]
+}

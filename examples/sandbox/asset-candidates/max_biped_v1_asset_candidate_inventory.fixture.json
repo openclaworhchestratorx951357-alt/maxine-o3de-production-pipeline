@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.0.0",
+  "inventory_id": "sandbox-asset-candidate-inventory-max-biped-v1-fixture",
+  "source_project_inventory_id": "sandbox-project-inventory-max-biped-v1-fixture",
+  "project_root": ".",
+  "sandbox_root": "examples/sandbox",
+  "scanned_roots": [
+    "examples/sandbox/evidence-sources/approved-local-inputs"
+  ],
+  "generated_candidate_folders": [
+    "examples/sandbox/evidence-sources/approved-local-inputs"
+  ],
+  "source_asset_candidates": [
+    {
+      "candidate_id": "asset-candidate-max-biped-source-character",
+      "relative_path": "examples/sandbox/evidence-sources/approved-local-inputs/max_biped_v1_source_character.fbx",
+      "extension": ".fbx",
+      "category": "character_source",
+      "size_bytes": 33,
+      "sha256": "d4ddffb95d31d38baef3998d5d781b82df1e58f34f5b4122a5e3ee1ea9602088",
+      "last_write_time_utc": "2026-05-06T00:00:00Z",
+      "evidence_links": {
+        "receipt_ids": [
+          "sandbox-write-receipt-e726777a9d184528869a8ec380fbf40f"
+        ],
+        "review_packet_ids": [],
+        "decision_ids": [],
+        "workflow_run_ids": [],
+        "evidence_bundle_ids": []
+      },
+      "confidence": "high",
+      "notes": [
+        "Read-only fixture candidate from approved local input root."
+      ]
+    }
+  ],
+  "material_texture_candidates": [],
+  "metadata_provenance_candidates": [],
+  "linked_sandbox_evidence": {
+    "receipt_ids": [
+      "sandbox-write-receipt-e726777a9d184528869a8ec380fbf40f"
+    ],
+    "review_packet_ids": [],
+    "decision_ids": [],
+    "workflow_run_ids": [],
+    "evidence_bundle_ids": []
+  },
+  "warnings": [],
+  "explicit_non_admissions": [
+    "authoritative_writes",
+    "product_resolution",
+    "asset_id_claims",
+    "spawning",
+    "publishing",
+    "o3de_editor_execution",
+    "asset_processor_execution",
+    "o3de_cli_execution",
+    "cache_path_write",
+    "engine_path_write",
+    "production_path_write"
+  ],
+  "output_path": "examples/sandbox/asset-candidates/max_biped_v1_asset_candidate_inventory.fixture.json",
+  "created_utc": "2026-05-06T00:00:00Z"
+}

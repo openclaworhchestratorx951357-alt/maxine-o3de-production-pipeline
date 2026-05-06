@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0.0",
+  "command_name": "Invoke-MaxineProjectInventoryRead.ps1",
+  "inventory_id": "sandbox-project-inventory-max-biped-v1-fixture",
+  "generated_at_utc": "2026-05-06T00:00:00Z",
+  "sandbox_root": "examples/sandbox",
+  "inventory_path": "examples/sandbox/project-inventory/max_biped_v1_project_inventory.fixture.json",
+  "project_root": ".",
+  "project_json_candidates": [
+    {
+      "path": "examples/manifests/example-release-character-pilot-chain.manifest.json",
+      "exists": true,
+      "parsed": true,
+      "summary": {
+        "project_name": "maxine-release-project"
+      }
+    }
+  ],
+  "gem_names": [],
+  "known_asset_folders": [
+    "examples/sandbox/evidence-sources/approved-local-inputs"
+  ],
+  "generated_asset_candidate_folders": [
+    "examples/sandbox/evidence-sources/approved-local-inputs"
+  ],
+  "sandbox_evidence_folders": [
+    "examples/sandbox/receipts",
+    "examples/sandbox/review-packets",
+    "examples/sandbox/review-decisions",
+    "examples/sandbox/workflow-runs",
+    "examples/sandbox/evidence-bundles",
+    "examples/sandbox/project-inventory",
+    "examples/sandbox/asset-candidates"
+  ],
+  "o3de_project_path_metadata": {
+    "repository_root": ".",
+    "project_root": ".",
+    "project_root_relative": ".",
+    "project_json_candidate_count": 1,
+    "project_json_existing_count": 1,
+    "o3de_directories": []
+  },
+  "configured_non_executed_path_hints": {
+    "evidence_file_count": 0,
+    "project_path_hints": [],
+    "o3de_path_hints": [],
+    "asset_processor_path_hints": [],
+    "cache_path_hints": []
+  },
+  "safety": {
+    "read_only_project_scan": true,
+    "writes_limited_to_sandbox_inventory": true,
+    "o3de_editor_execution_admitted": false,
+    "asset_processor_execution_admitted": false,
+    "product_resolution_admitted": false,
+    "asset_id_claims_admitted": false,
+    "spawning_admitted": false,
+    "publishing_admitted": false,
+    "authoritative_writes_admitted": false
+  }
+}

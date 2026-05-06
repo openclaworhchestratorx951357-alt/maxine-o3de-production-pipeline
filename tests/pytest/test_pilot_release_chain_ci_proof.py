@@ -59,3 +59,10 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
     assert receipt_status["execution_performed"] is False
     assert receipt_status["reporter_return_code"] == 0
     assert Path(receipt_status["output_path"]).exists()
+    controlled_inventory_status = payload["details"]["controlled_real_evidence_inventory_report"]
+    assert controlled_inventory_status["status"] == "pass"
+    assert controlled_inventory_status["report_type"] == "CONTROLLED_REAL_EVIDENCE_INVENTORY_v1_REPORT"
+    assert controlled_inventory_status["inventory_mode"] == "approved_local_inputs_and_evidence_sources_only"
+    assert controlled_inventory_status["execution_admitted"] is False
+    assert controlled_inventory_status["reporter_return_code"] == 0
+    assert Path(controlled_inventory_status["output_path"]).exists()
