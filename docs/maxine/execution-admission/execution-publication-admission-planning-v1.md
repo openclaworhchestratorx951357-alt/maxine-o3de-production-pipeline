@@ -180,3 +180,29 @@ Artifacts:
 - `tools/execution-admission/validate_release_candidate_publication_dry_run_receipt.py`
 
 This layer is contract-only and does not emit a receipt or admit dry-run/publication execution.
+
+## Candidate-Specific Dry-Run Admission Blockers v1
+
+The dry-run candidate now also has a final static admission-readiness checklist:
+
+- candidate id:
+  - `release_candidate_package_publish_dry_run_v1`
+- checklist status:
+  - `static_checklist_valid_blocked`
+- approval review ready:
+  - `false`
+- ready to request approval:
+  - `false`
+- dry-run admitted:
+  - `false`
+- receipt issued:
+  - `false`
+
+Artifacts:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-admission-blockers-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_admission_blockers.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_admission_blockers_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_admission_blockers.py`
+
+This layer is checklist-only and does not approve or admit dry-run/publication execution.

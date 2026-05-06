@@ -29,6 +29,7 @@ The report distinguishes and records:
 - execution-admission readiness rollup posture (static control-tower status only)
 - candidate-specific dry-run planning posture for `release_candidate_package_publish_dry_run_v1` (static planning-only, unadmitted)
 - candidate-specific dry-run receipt contract posture for `release_candidate_package_publish_dry_run_v1` (static contract-only, receipt unissued, unadmitted)
+- candidate-specific dry-run admission blocker checklist posture for `release_candidate_package_publish_dry_run_v1` (static checklist-only, not approval-ready, unadmitted)
 - remaining blockers before true production operation
 
 ## Required Gate Coverage
@@ -93,4 +94,5 @@ Execution/publication remains blocked for real tool execution and publication. T
 - `docs/maxine/execution-admission/execution-admission-readiness-rollup-v1.md`
 - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-planning-v1.md`
 - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-receipt-contract-v1.md`
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-admission-blockers-v1.md`
 - `examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json`

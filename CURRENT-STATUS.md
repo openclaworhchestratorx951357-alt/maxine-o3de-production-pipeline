@@ -185,6 +185,16 @@
   - target candidate remains `release_candidate_package_publish_dry_run_v1`
   - contract remains static and blocked with `receipt_issued=false`, `dry_run_admitted=false`, `publication_admitted=false`, `real_execution_admitted=false`
   - artifact defines required future receipt fields/attestations/hashes/rollback evidence only and does not emit or admit a dry-run receipt
+- Release-candidate publication dry-run admission blockers v1 are implemented (candidate-specific static admission-readiness checklist only, non-executing, non-publishing):
+  - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-admission-blockers-v1.md`
+  - `schemas/maxine_release_candidate_publication_dry_run_admission_blockers.schema.json`
+  - `examples/execution-admission/release_candidate_package_publish_dry_run_admission_blockers_v1.json`
+  - `tools/execution-admission/validate_release_candidate_publication_dry_run_admission_blockers.py`
+  - integrated into `tools/release-lane/prove_pilot_release_chain.py` proof output as read-only dry-run-admission-blockers status evidence
+  - `tests/pytest/test_release_candidate_publication_dry_run_admission_blockers.py`
+  - target candidate remains `release_candidate_package_publish_dry_run_v1`
+  - checklist remains static and blocked with `approval_review_ready=false`, `ready_to_request_approval=false`, `dry_run_admitted=false`, `receipt_issued=false`
+  - artifact consolidates remaining approval/evidence/receipt/rollback/publication/execution blockers and does not approve or admit the candidate
 - Admitted no-op release-candidate package receipt candidate v1 is implemented (bounded receipt generation only, non-executing, non-publishing):
   - approval phrase recorded:
     - `APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1`

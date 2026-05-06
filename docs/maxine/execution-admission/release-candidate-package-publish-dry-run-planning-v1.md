@@ -93,6 +93,17 @@ The next static boundary layer is now defined as a receipt contract:
 
 This receipt contract remains static/unissued (`receipt_issued=false`) and does not admit or execute dry-run publication flow.
 
+## Dry-Run Admission Blockers Link
+
+The final static pre-approval checklist layer is now defined for the same candidate:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-admission-blockers-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_admission_blockers.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_admission_blockers_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_admission_blockers.py`
+
+This checklist remains blocked (`approval_review_ready=false`, `ready_to_request_approval=false`) and does not approve or admit the candidate.
+
 ## Artifacts
 
 - schema:

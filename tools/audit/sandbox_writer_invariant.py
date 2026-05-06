@@ -157,6 +157,9 @@ RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_CONTRACT_REL = (
 RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_BLOCKED_REL = (
     "examples/execution-admission/release_candidate_package_publish_dry_run_receipt_blocked_v1.json"
 )
+RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_ADMISSION_BLOCKERS_REL = (
+    "examples/execution-admission/release_candidate_package_publish_dry_run_admission_blockers_v1.json"
+)
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
 WORKFLOW_RUNS_DIR_REL = "examples/sandbox/workflow-runs"
@@ -214,6 +217,15 @@ EXPECTED_DRY_RUN_PLAN_APPROVAL_PHRASE = (
     "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1"
 )
 EXPECTED_DRY_RUN_RECEIPT_TYPE = "release_candidate_package_publish_dry_run_receipt_v1"
+EXPECTED_DRY_RUN_ADMISSION_BLOCKERS_STATUS = "static_checklist_valid_blocked"
+REQUIRED_DRY_RUN_ADMISSION_BLOCKERS = (
+    "missing_approval_decision",
+    "dry_run_not_admitted",
+    "dry_run_not_executed",
+    "receipt_not_issued",
+    "rollback_cleanup_evidence_missing",
+    "publication_surfaces_blocked_by_policy",
+)
 REQUIRED_PREFLIGHT_BLOCKED_SURFACES = {
     "o3de_execution",
     "editor_runtime_execution",
@@ -1041,6 +1053,9 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     )
     release_candidate_publication_dry_run_receipt_blocked = (
         root / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_BLOCKED_REL
+    )
+    release_candidate_publication_dry_run_admission_blockers = (
+        root / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_ADMISSION_BLOCKERS_REL
     )
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -4303,5 +4318,203 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                     "release candidate publication dry-run receipt contract is not valid JSON: "
                     f"{exc}"
                 )
+
+    if release_candidate_publication_dry_run_admission_blockers.exists():
+        try:
+            admission_blockers = json.loads(
+                release_candidate_publication_dry_run_admission_blockers.read_text(
+                    encoding="utf-8-sig"
+                )
+            )
+            if admission_blockers.get("schema_version") != "1.0.0":
+                failures.append(
+                    "release candidate publication dry-run admission blockers schema_version must be 1.0.0."
+                )
+            if (
+                admission_blockers.get("record_type")
+                != "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_ADMISSION_BLOCKERS_v1"
+            ):
+                failures.append(
+                    "release candidate publication dry-run admission blockers record_type must be RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_ADMISSION_BLOCKERS_v1."
+                )
+            if (
+                str(admission_blockers.get("candidate_id", "")).strip()
+                != EXPECTED_ROLLUP_NEXT_SLICE_CANDIDATE_ID
+            ):
+                failures.append(
+                    "release candidate publication dry-run admission blockers candidate_id must be release_candidate_package_publish_dry_run_v1."
+                )
+            if str(admission_blockers.get("candidate_type", "")).strip() != "dry_run":
+                failures.append(
+                    "release candidate publication dry-run admission blockers candidate_type must be dry_run."
+                )
+            if str(admission_blockers.get("checklist_status", "")).strip() != EXPECTED_DRY_RUN_ADMISSION_BLOCKERS_STATUS:
+                failures.append(
+                    "release candidate publication dry-run admission blockers must keep checklist_status=static_checklist_valid_blocked."
+                )
+            if str(admission_blockers.get("admission_status", "")).strip() != "unadmitted":
+                failures.append(
+                    "release candidate publication dry-run admission blockers admission_status must remain unadmitted."
+                )
+            if bool(admission_blockers.get("ready_to_request_approval", False)):
+                failures.append(
+                    "release candidate publication dry-run admission blockers must keep ready_to_request_approval=false."
+                )
+            approval_review_ready = admission_blockers.get("approval_review_ready")
+            if approval_review_ready is True or str(approval_review_ready).strip().lower() == "true":
+                failures.append(
+                    "release candidate publication dry-run admission blockers must keep approval_review_ready=false/blocked."
+                )
+            for field in (
+                "dry_run_admitted",
+                "receipt_issued",
+                "publication_admitted",
+                "real_execution_admitted",
+                "production_ready_claimed",
+            ):
+                if bool(admission_blockers.get(field, False)):
+                    failures.append(
+                        "release candidate publication dry-run admission blockers must keep field false: "
+                        f"{field}"
+                    )
+            if (
+                str(admission_blockers.get("approval_phrase_required", "")).strip()
+                != EXPECTED_DRY_RUN_PLAN_APPROVAL_PHRASE
+            ):
+                failures.append(
+                    "release candidate publication dry-run admission blockers must keep exact approval phrase for release_candidate_package_publish_dry_run_v1."
+                )
+            approval_decision_reference = admission_blockers.get("approval_decision_reference")
+            if isinstance(approval_decision_reference, str) and approval_decision_reference.strip():
+                failures.append(
+                    "release candidate publication dry-run admission blockers approval_decision_reference must be null/empty while unadmitted."
+                )
+
+            prerequisite_checklist = (
+                admission_blockers.get("prerequisite_checklist")
+                if isinstance(admission_blockers.get("prerequisite_checklist"), dict)
+                else {}
+            )
+            expected_prerequisite_values = {
+                "candidate_matrix_entry_present": True,
+                "preflight_contract_present": True,
+                "preflight_proof_package_present": True,
+                "readiness_rollup_present": True,
+                "dry_run_plan_present": True,
+                "dry_run_receipt_contract_present": True,
+                "blocked_unissued_receipt_example_present": True,
+                "production_readiness_report_present": True,
+                "noop_receipt_status_present": True,
+                "source_artifact_validations_pass": True,
+                "approval_decision_present": False,
+                "dry_run_runner_admitted": False,
+                "dry_run_executed": False,
+                "dry_run_receipt_issued": False,
+                "rollback_cleanup_evidence_present": False,
+                "publication_surfaces_blocked": True,
+                "execution_surfaces_blocked": True,
+                "production_ready_claimed": False,
+            }
+            for key, expected_value in expected_prerequisite_values.items():
+                if key not in prerequisite_checklist:
+                    failures.append(
+                        "release candidate publication dry-run admission blockers prerequisite_checklist is missing key: "
+                        f"{key}"
+                    )
+                    continue
+                if prerequisite_checklist.get(key) is not expected_value:
+                    failures.append(
+                        "release candidate publication dry-run admission blockers prerequisite_checklist has unexpected value: "
+                        f"{key}"
+                    )
+
+            for key in (
+                "admission_blockers",
+                "approval_blockers",
+                "evidence_blockers",
+                "receipt_blockers",
+                "rollback_or_cleanup_blockers",
+                "publication_blockers",
+                "execution_blockers",
+            ):
+                values = {
+                    str(item).strip()
+                    for item in (admission_blockers.get(key) or [])
+                    if str(item).strip()
+                }
+                if not values:
+                    failures.append(
+                        "release candidate publication dry-run admission blockers list must be non-empty: "
+                        f"{key}"
+                    )
+                if key == "admission_blockers":
+                    for required_token in REQUIRED_DRY_RUN_ADMISSION_BLOCKERS:
+                        if required_token not in values:
+                            failures.append(
+                                "release candidate publication dry-run admission blockers admission_blockers must include: "
+                                f"{required_token}"
+                            )
+
+            if bool(admission_blockers.get("unsafe_claims_detected", False)):
+                failures.append(
+                    "release candidate publication dry-run admission blockers must keep unsafe_claims_detected=false."
+                )
+
+            source_artifacts = (
+                admission_blockers.get("source_artifacts")
+                if isinstance(admission_blockers.get("source_artifacts"), dict)
+                else {}
+            )
+            expected_source_refs = {
+                "candidate_matrix_ref": EXECUTION_ADMISSION_CANDIDATE_MATRIX_REL,
+                "preflight_contracts_ref": EXECUTION_ADMISSION_PREFLIGHT_CONTRACTS_REL,
+                "preflight_proof_packages_ref": EXECUTION_ADMISSION_PREFLIGHT_PROOF_PACKAGES_REL,
+                "readiness_rollup_ref": EXECUTION_ADMISSION_READINESS_ROLLUP_REL,
+                "dry_run_plan_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_PLAN_REL,
+                "dry_run_receipt_contract_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_CONTRACT_REL,
+                "blocked_unissued_receipt_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_BLOCKED_REL,
+                "production_readiness_report_ref": "examples/production-readiness-report/max_biped_v1_production_readiness_report_pass.json",
+                "noop_receipt_status_ref": "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json",
+            }
+            for field, expected_path in expected_source_refs.items():
+                actual_ref = str(source_artifacts.get(field, "")).replace("\\", "/").strip()
+                if not actual_ref:
+                    failures.append(
+                        "release candidate publication dry-run admission blockers source_artifacts is missing field: "
+                        f"{field}"
+                    )
+                    continue
+                if actual_ref != expected_path:
+                    failures.append(
+                        "release candidate publication dry-run admission blockers source_artifacts field has unexpected path: "
+                        f"{field} -> {actual_ref}"
+                    )
+
+            source_status = (
+                admission_blockers.get("source_artifact_validation_status")
+                if isinstance(admission_blockers.get("source_artifact_validation_status"), dict)
+                else {}
+            )
+            for field in (
+                "candidate_matrix_status",
+                "preflight_contracts_status",
+                "preflight_proof_packages_status",
+                "readiness_rollup_status",
+                "dry_run_plan_status",
+                "dry_run_receipt_contract_status",
+                "blocked_unissued_receipt_status",
+                "production_readiness_status",
+                "noop_receipt_status",
+            ):
+                if str(source_status.get(field, "")).strip() != "pass":
+                    failures.append(
+                        "release candidate publication dry-run admission blockers source_artifact_validation_status must keep field pass: "
+                        f"{field}"
+                    )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "release candidate publication dry-run admission blockers is not valid JSON: "
+                f"{exc}"
+            )
 
     return failures
