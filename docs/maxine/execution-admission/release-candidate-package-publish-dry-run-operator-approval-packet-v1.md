@@ -68,6 +68,17 @@ This slice does not approve the phrase and does not include an approval decision
 - no approver identity/timestamp/approval scope fields are populated
 - approval request remains blocked by summary blockers and missing future evidence
 
+## Completeness Review Link
+
+A static completeness self-check now validates this template is structurally complete and internally consistent for future review template purposes while remaining blocked:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-operator-approval-packet-completeness-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_operator_approval_packet_completeness.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_operator_approval_packet_completeness_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_operator_approval_packet_completeness.py`
+
+Completeness status is static/blocked only and does not make the candidate approval-ready.
+
 ## Safety Model
 
 Blocked surfaces remain blocked:
