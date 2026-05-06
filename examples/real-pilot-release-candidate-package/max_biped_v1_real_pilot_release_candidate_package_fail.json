@@ -1,0 +1,96 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "REAL_PILOT_RELEASE_CANDIDATE_PACKAGE_v1_REPORT",
+  "job_id": "job-release-pilot-package-fail-001",
+  "lane": "release_character",
+  "status": "fail",
+  "package_id": "char.maxine.release_pilot.max_biped_v1",
+  "package_version": "pilot-fixture-v1",
+  "package_type": "hero_character",
+  "candidate_id": "max_biped_v1_candidate_001",
+  "asset_tier": "hero",
+  "manifest_ref": "examples/manifests/example-real-pilot-release-candidate-package-fail.manifest.json",
+  "release_chain_ref": "pilot_release_chain_v1",
+  "evidence_bundle_refs": [],
+  "required_gate_refs": [
+    "source_product_evidence_resolver_v1",
+    "dcc_conform_v1",
+    "max_biped_v1_skeleton_contract",
+    "material_uv_qc_v1",
+    "animation_smoke_v1",
+    "screenshot_evidence_v1",
+    "manual_hero_review_v1",
+    "aaa_performance_budget_v1",
+    "release_package_bundle_v1",
+    "release_promotion_decision_v1",
+    "release_publication_preflight_v1",
+    "release_publication_gate_set_v1",
+    "pilot_release_chain_v1"
+  ],
+  "controlled_real_gate_refs": [
+    "aaa_performance_budget_v1",
+    "animation_smoke_v1",
+    "dcc_conform_v1",
+    "material_uv_qc_v1",
+    "max_biped_v1_skeleton_contract",
+    "screenshot_evidence_v1"
+  ],
+  "fixture_gate_refs": [],
+  "imported_gate_refs": [],
+  "manual_gate_refs": [],
+  "missing_required_gate_refs": [
+    "source_product_evidence_resolver_v1"
+  ],
+  "blocking_findings": [
+    "missing_required_gate_ref",
+    "false_admission_detected"
+  ],
+  "warning_findings": [],
+  "release_candidate_status": "fail",
+  "package_completeness_status": "fail",
+  "evidence_integrity_status": "fail",
+  "rollback_readiness_status": "fail",
+  "publication_readiness_status": "fail",
+  "performance_budget_status": "fail",
+  "manual_review_status": "fail",
+  "decision_summary": "Real pilot package proof fails when required gate refs are missing or admission is falsely marked true.",
+  "claim_status": "evidence_only",
+  "safety": {
+    "package_publication_status": "blocked",
+    "o3de_execution_status": "blocked",
+    "editor_execution_status": "blocked",
+    "runtime_execution_status": "blocked",
+    "asset_processor_execution_status": "blocked",
+    "dcc_execution_status": "blocked",
+    "blender_execution_status": "blocked",
+    "spawn_publish_status": "blocked",
+    "production_write_status": "blocked"
+  },
+  "findings": [
+    {
+      "id": "missing_required_gate_ref",
+      "severity": "error",
+      "status": "open",
+      "message": "Required gate reference missing."
+    },
+    {
+      "id": "false_admission_detected",
+      "severity": "error",
+      "status": "open",
+      "message": "Execution/publication admission field was true."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "real_pilot_release_candidate_package_v1",
+      "result": "fail",
+      "severity": "error",
+      "details": {
+        "contract_id": "REAL_PILOT_RELEASE_CANDIDATE_PACKAGE_v1",
+        "evidence_class": "manual"
+      }
+    }
+  }
+}

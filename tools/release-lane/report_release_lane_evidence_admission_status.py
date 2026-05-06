@@ -37,6 +37,7 @@ REQUIRED_CHAIN_GATE_IDS = [
     "release_publication_execution_handoff_v1",
     "release_publication_execution_admission_request_packet_v1",
     "release_publication_gate_set_v1",
+    "real_pilot_release_candidate_package_v1",
 ]
 EVIDENCE_CLASS_BY_CHECK_ID = {
     "max_biped_v1_skeleton_contract": "controlled_real",
@@ -62,6 +63,7 @@ EVIDENCE_CLASS_BY_CHECK_ID = {
     "release_publication_execution_handoff_v1": "manual",
     "release_publication_execution_admission_request_packet_v1": "manual",
     "release_publication_gate_set_v1": "manual",
+    "real_pilot_release_candidate_package_v1": "manual",
 }
 BLOCKED_EXECUTION_SURFACES = [
     "o3de_editor_execution",

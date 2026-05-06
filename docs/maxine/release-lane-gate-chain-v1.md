@@ -73,6 +73,9 @@ AAA-quality output is still not fully operational. Before that state, the projec
   - `docs/maxine/specs/aaa-performance-budget-v1.md`
   - `docs/maxine/specs/aaa-performance-budget-gates-v1.md`
   - `examples/sandbox/aaa-performance-budget-evidence/pilot-candidates/max_biped_v1_aaa_performance_budget_controlled_real.fixture.json`
+- evidence-only real pilot release-candidate package proof is now available:
+  - `docs/maxine/specs/real-pilot-release-candidate-package-v1.md`
+  - `tools/real-pilot-release-candidate-package/validate_real_pilot_release_candidate_package_report.py`
 - bounded real evidence extraction from controlled sources
 - controlled O3DE/AP evidence integration (still blocked today)
 - promotion from fixture proof to controlled real evidence across the chain

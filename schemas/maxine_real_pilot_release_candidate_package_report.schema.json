@@ -1,0 +1,352 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_real_pilot_release_candidate_package_report.schema.json",
+  "title": "MAXINE Real Pilot Release Candidate Package Report",
+  "description": "Evidence-only real pilot release-candidate package proof binding required release-lane gates.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "report_type",
+    "job_id",
+    "lane",
+    "status",
+    "package_id",
+    "package_version",
+    "package_type",
+    "candidate_id",
+    "asset_tier",
+    "manifest_ref",
+    "release_chain_ref",
+    "evidence_bundle_refs",
+    "required_gate_refs",
+    "controlled_real_gate_refs",
+    "fixture_gate_refs",
+    "imported_gate_refs",
+    "manual_gate_refs",
+    "missing_required_gate_refs",
+    "blocking_findings",
+    "warning_findings",
+    "release_candidate_status",
+    "package_completeness_status",
+    "evidence_integrity_status",
+    "rollback_readiness_status",
+    "publication_readiness_status",
+    "performance_budget_status",
+    "manual_review_status",
+    "decision_summary",
+    "claim_status",
+    "safety",
+    "findings",
+    "manifest_attachment"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "report_type": {
+      "type": "string",
+      "const": "REAL_PILOT_RELEASE_CANDIDATE_PACKAGE_v1_REPORT"
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lane": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "$ref": "#/$defs/packageStatus"
+    },
+    "package_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "package_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "package_type": {
+      "type": "string",
+      "enum": [
+        "hero_character",
+        "npc_character",
+        "prop",
+        "environment_asset"
+      ]
+    },
+    "candidate_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "asset_tier": {
+      "type": "string",
+      "enum": [
+        "hero",
+        "npc",
+        "prop",
+        "environment"
+      ]
+    },
+    "manifest_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "release_chain_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_bundle_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required_gate_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "controlled_real_gate_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "fixture_gate_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "imported_gate_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "manual_gate_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "missing_required_gate_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "blocking_findings": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "warning_findings": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "release_candidate_status": {
+      "$ref": "#/$defs/packageStatus"
+    },
+    "package_completeness_status": {
+      "$ref": "#/$defs/packageStatus"
+    },
+    "evidence_integrity_status": {
+      "$ref": "#/$defs/packageStatus"
+    },
+    "rollback_readiness_status": {
+      "$ref": "#/$defs/packageStatus"
+    },
+    "publication_readiness_status": {
+      "$ref": "#/$defs/packageStatus"
+    },
+    "performance_budget_status": {
+      "$ref": "#/$defs/packageStatus"
+    },
+    "manual_review_status": {
+      "$ref": "#/$defs/packageStatus"
+    },
+    "decision_summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "claim_status": {
+      "type": "string",
+      "enum": [
+        "evidence_only",
+        "not_authoritative"
+      ]
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "package_publication_status",
+        "o3de_execution_status",
+        "editor_execution_status",
+        "runtime_execution_status",
+        "asset_processor_execution_status",
+        "dcc_execution_status",
+        "blender_execution_status",
+        "spawn_publish_status",
+        "production_write_status"
+      ],
+      "properties": {
+        "package_publication_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "o3de_execution_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "editor_execution_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "runtime_execution_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "asset_processor_execution_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "dcc_execution_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "blender_execution_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "spawn_publish_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "production_write_status": {
+          "type": "string",
+          "const": "blocked"
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    },
+    "manifest_attachment": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "target_path",
+        "future_target_path",
+        "qc_check"
+      ],
+      "properties": {
+        "target_path": {
+          "type": "string",
+          "const": "qc.gates[]"
+        },
+        "future_target_path": {
+          "type": "string",
+          "const": "qc.checks[]"
+        },
+        "qc_check": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "check_id",
+            "result",
+            "severity",
+            "details"
+          ],
+          "properties": {
+            "check_id": {
+              "type": "string",
+              "const": "real_pilot_release_candidate_package_v1"
+            },
+            "result": {
+              "$ref": "#/$defs/packageStatus"
+            },
+            "severity": {
+              "type": "string",
+              "enum": [
+                "info",
+                "warning",
+                "error",
+                "manual_review"
+              ]
+            },
+            "details": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "packageStatus": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending"
+      ]
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "id",
+        "severity",
+        "status",
+        "message"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "info",
+            "warning",
+            "error",
+            "manual_review"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}
