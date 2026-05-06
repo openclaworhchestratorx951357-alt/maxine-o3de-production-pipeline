@@ -121,7 +121,16 @@ def test_runner_builds_generated_manifest_and_attaches_expected_checks(repo_tmp_
     assert production_readiness_payload.get("status") == "pass"
     assert production_readiness_payload.get("readiness_decision") == "blocked_for_execution"
     assert production_readiness_payload.get("production_readiness_level") == "review_ready"
+    assert production_readiness_payload.get("admitted_noop_receipt_candidate_ids") == [
+        "release_candidate_package_receipt_noop_v1"
+    ]
+    assert production_readiness_payload.get("receipt_backed_candidate_ids") == [
+        "release_candidate_package_receipt_noop_v1"
+    ]
+    assert production_readiness_payload.get("admitted_real_execution_candidate_ids") == []
+    assert production_readiness_payload.get("admitted_publication_candidate_ids") == []
     assert production_readiness_payload.get("execution_admission_status") == "blocked"
+    assert production_readiness_payload.get("real_execution_admission_status") == "blocked"
     assert production_readiness_payload.get("publication_admission_status") == "blocked"
     extraction_report = json.loads(
         Path(step_map["source_product_resolver_extract"]["payload_path"]).read_text(encoding="utf-8-sig")

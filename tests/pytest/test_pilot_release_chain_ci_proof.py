@@ -72,7 +72,12 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
     assert readiness_status["report_type"] == "PRODUCTION_READINESS_REPORT_v1_REPORT"
     assert readiness_status["production_readiness_level"] == "review_ready"
     assert readiness_status["readiness_decision"] == "blocked_for_execution"
+    assert readiness_status["admitted_noop_receipt_candidate_ids"] == ["release_candidate_package_receipt_noop_v1"]
+    assert readiness_status["receipt_backed_candidate_ids"] == ["release_candidate_package_receipt_noop_v1"]
+    assert readiness_status["admitted_real_execution_candidate_ids"] == []
+    assert readiness_status["admitted_publication_candidate_ids"] == []
     assert readiness_status["execution_admission_status"] == "blocked"
+    assert readiness_status["real_execution_admission_status"] == "blocked"
     assert readiness_status["publication_admission_status"] == "blocked"
     assert readiness_status["reporter_return_code"] == 0
     assert Path(readiness_status["output_path"]).exists()

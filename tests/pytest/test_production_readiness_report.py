@@ -78,7 +78,12 @@ def test_validator_passes_evidence_ready_manifest_and_blocks_full_production_cla
     assert payload["status"] == "pass"
     assert payload["readiness_decision"] == "blocked_for_execution"
     assert payload["production_readiness_level"] == "review_ready"
+    assert payload["admitted_noop_receipt_candidate_ids"] == ["release_candidate_package_receipt_noop_v1"]
+    assert payload["receipt_backed_candidate_ids"] == ["release_candidate_package_receipt_noop_v1"]
+    assert payload["admitted_real_execution_candidate_ids"] == []
+    assert payload["admitted_publication_candidate_ids"] == []
     assert payload["execution_admission_status"] == "blocked"
+    assert payload["real_execution_admission_status"] == "blocked"
     assert payload["publication_admission_status"] == "blocked"
     assert payload["manifest_attachment"]["qc_check"]["check_id"] == "production_readiness_report_v1"
 
@@ -127,15 +132,36 @@ def test_source_product_authority_false_claim_fails(tmp_path: Path):
     assert "source_product_authority_false_claim" in payload["blocking_findings"]
 
 
-def test_execution_admitted_without_reference_fails(tmp_path: Path):
+def test_real_execution_admission_without_candidate_reference_fails(tmp_path: Path):
     manifest = _with_pilot_chain_gate(json.loads(BASE_MANIFEST.read_text(encoding="utf-8-sig")))
     for gate in manifest["qc"]["gates"]:
         if gate.get("check_id") == "manual_hero_review_v1":
             gate.setdefault("details", {})
-            gate["details"]["execution_admitted"] = True
+            gate["details"]["real_execution_admission_status"] = "admitted"
+            gate["details"]["execution_admission_reference"] = "docs/maxine/execution-admission/example-real-exec.json"
+            break
+    tmp_manifest = tmp_path / "production-readiness-real-exec-admitted-no-candidate.manifest.json"
+    tmp_manifest.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+    result = _run(tmp_manifest)
+    assert result.returncode != 0
+    payload = _parse_payload(result.stdout)
+    assert payload["status"] == "fail"
+    assert "real_execution_admission_without_candidate_reference" in payload["blocking_findings"]
+
+
+def test_real_execution_candidate_without_reference_fails(tmp_path: Path):
+    manifest = _with_pilot_chain_gate(json.loads(BASE_MANIFEST.read_text(encoding="utf-8-sig")))
+    for gate in manifest["qc"]["gates"]:
+        if gate.get("check_id") == "manual_hero_review_v1":
+            gate.setdefault("details", {})
+            gate["details"]["admitted_real_execution_candidate_ids"] = [
+                "max_biped_v1_real_execution_candidate_001"
+            ]
+            gate["details"]["real_execution_admission_status"] = "admitted"
             gate["details"].pop("execution_admission_reference", None)
             break
-    tmp_manifest = tmp_path / "production-readiness-execution-admitted-no-ref.manifest.json"
+    tmp_manifest = tmp_path / "production-readiness-real-exec-candidate-no-ref.manifest.json"
     tmp_manifest.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     result = _run(tmp_manifest)
@@ -145,7 +171,71 @@ def test_execution_admitted_without_reference_fails(tmp_path: Path):
     assert "execution_admission_without_reference" in payload["blocking_findings"]
 
 
-def test_production_ready_claim_while_blocked_fails(tmp_path: Path):
+def test_noop_candidate_misclassified_as_real_execution_fails(tmp_path: Path):
+    manifest = _with_pilot_chain_gate(json.loads(BASE_MANIFEST.read_text(encoding="utf-8-sig")))
+    for gate in manifest["qc"]["gates"]:
+        if gate.get("check_id") == "manual_hero_review_v1":
+            gate.setdefault("details", {})
+            gate["details"]["admitted_real_execution_candidate_ids"] = [
+                "release_candidate_package_receipt_noop_v1"
+            ]
+            gate["details"]["real_execution_admission_status"] = "admitted"
+            gate["details"]["execution_admission_reference"] = (
+                "docs/maxine/execution-admission/example-real-exec-approval.json"
+            )
+            break
+    tmp_manifest = tmp_path / "production-readiness-noop-misclassified-as-real.manifest.json"
+    tmp_manifest.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+    result = _run(tmp_manifest)
+    assert result.returncode != 0
+    payload = _parse_payload(result.stdout)
+    assert payload["status"] == "fail"
+    assert "noop_candidate_misclassified_as_real_execution" in payload["blocking_findings"]
+
+
+def test_publication_admission_without_candidate_reference_fails(tmp_path: Path):
+    manifest = _with_pilot_chain_gate(json.loads(BASE_MANIFEST.read_text(encoding="utf-8-sig")))
+    for gate in manifest["qc"]["gates"]:
+        if gate.get("check_id") == "manual_hero_review_v1":
+            gate.setdefault("details", {})
+            gate["details"]["publication_admission_status"] = "admitted"
+            gate["details"]["publication_admission_reference"] = (
+                "docs/maxine/execution-admission/example-publication-approval.json"
+            )
+            break
+    tmp_manifest = tmp_path / "production-readiness-publication-admitted-no-candidate.manifest.json"
+    tmp_manifest.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+    result = _run(tmp_manifest)
+    assert result.returncode != 0
+    payload = _parse_payload(result.stdout)
+    assert payload["status"] == "fail"
+    assert "publication_admission_without_candidate_reference" in payload["blocking_findings"]
+
+
+def test_publication_candidate_without_reference_fails(tmp_path: Path):
+    manifest = _with_pilot_chain_gate(json.loads(BASE_MANIFEST.read_text(encoding="utf-8-sig")))
+    for gate in manifest["qc"]["gates"]:
+        if gate.get("check_id") == "manual_hero_review_v1":
+            gate.setdefault("details", {})
+            gate["details"]["admitted_publication_candidate_ids"] = [
+                "max_biped_v1_publication_candidate_001"
+            ]
+            gate["details"]["publication_admission_status"] = "admitted"
+            gate["details"].pop("publication_admission_reference", None)
+            break
+    tmp_manifest = tmp_path / "production-readiness-publication-candidate-no-ref.manifest.json"
+    tmp_manifest.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+    result = _run(tmp_manifest)
+    assert result.returncode != 0
+    payload = _parse_payload(result.stdout)
+    assert payload["status"] == "fail"
+    assert "publication_admission_without_reference" in payload["blocking_findings"]
+
+
+def test_production_ready_claim_while_real_execution_blocked_fails(tmp_path: Path):
     manifest = _with_pilot_chain_gate(json.loads(BASE_MANIFEST.read_text(encoding="utf-8-sig")))
     manifest["qc"]["gates"].append(
         {
@@ -154,12 +244,38 @@ def test_production_ready_claim_while_blocked_fails(tmp_path: Path):
             "severity": "info",
             "details": {
                 "production_readiness_level": "production_ready",
-                "execution_admission_status": "blocked",
+                "real_execution_admission_status": "blocked",
                 "publication_admission_status": "blocked",
             },
         }
     )
     tmp_manifest = tmp_path / "production-readiness-false-claim.manifest.json"
+    tmp_manifest.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+    result = _run(tmp_manifest)
+    assert result.returncode != 0
+    payload = _parse_payload(result.stdout)
+    assert payload["status"] == "fail"
+    assert "production_ready_claim_while_blocked" in payload["blocking_findings"]
+
+
+def test_production_ready_claim_while_publication_blocked_fails(tmp_path: Path):
+    manifest = _with_pilot_chain_gate(json.loads(BASE_MANIFEST.read_text(encoding="utf-8-sig")))
+    manifest["qc"]["gates"].append(
+        {
+            "check_id": "production_readiness_report_v1",
+            "result": "pass",
+            "severity": "info",
+            "details": {
+                "production_readiness_level": "production_ready",
+                "real_execution_admission_status": "admitted",
+                "admitted_real_execution_candidate_ids": ["max_biped_v1_real_execution_candidate_001"],
+                "execution_admission_reference": "docs/maxine/execution-admission/example-real-exec-approval.json",
+                "publication_admission_status": "blocked",
+            },
+        }
+    )
+    tmp_manifest = tmp_path / "production-readiness-false-claim-publication-blocked.manifest.json"
     tmp_manifest.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     result = _run(tmp_manifest)

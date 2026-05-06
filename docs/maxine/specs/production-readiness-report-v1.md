@@ -18,6 +18,9 @@ The report distinguishes and records:
 
 - evidence-only release-candidate readiness
 - controlled-real/imported/manual/fixture evidence split
+- admitted no-op receipt candidates and receipt-backed candidate ids
+- admitted real-execution candidates (separate from no-op receipt admission)
+- admitted publication candidates (separate from no-op receipt admission)
 - AAA-quality gate readiness
 - execution admission posture
 - publication admission posture
@@ -36,7 +39,8 @@ It fails when required gate-chain summary coverage is missing.
 ## Readiness Policy
 
 - evidence-ready/review-ready may be recognized when required evidence gates pass.
-- execution-ready remains blocked unless explicit execution admission exists with reference evidence.
+- no-op receipt admission is tracked separately and does not satisfy real execution admission.
+- execution-ready remains blocked unless explicit real-execution candidate admission exists with reference evidence.
 - production-ready remains blocked unless both execution and publication are explicitly admitted.
 - source/product authority remains evidence-only/not-authoritative unless an admitted authority path exists.
 - the report must not claim `production_ready` while blocked surfaces remain blocked.

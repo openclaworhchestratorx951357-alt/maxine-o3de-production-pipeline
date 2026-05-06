@@ -126,6 +126,20 @@ SAFE_STATUS_FIELDS = [
     "production_write_status",
 ]
 
+NOOP_RECEIPT_CANDIDATE_ID = "release_candidate_package_receipt_noop_v1"
+NOOP_RECEIPT_APPROVAL_PHRASE = (
+    "APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1"
+)
+NOOP_RECEIPT_DECISION_RECORD_REL = Path(
+    "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json"
+)
+NOOP_RECEIPT_PASS_REPORT_REL = Path(
+    "examples/execution-admission/release_candidate_package_receipt_noop_report_pass.json"
+)
+
+REAL_EXECUTION_ADMISSION_STATUS_VALUES = {"admitted", "allowed", "executed", "true", "yes"}
+PUBLICATION_ADMISSION_STATUS_VALUES = {"admitted", "allowed", "published", "true", "yes"}
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -345,10 +359,14 @@ def _scan_claim_surfaces(
     gate_map: Dict[str, Dict[str, Any]],
     findings: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
-    execution_admitted = False
-    publication_admitted = False
+    real_execution_admission_claimed = False
+    publication_admission_claimed = False
     execution_refs: List[str] = []
     publication_refs: List[str] = []
+    admitted_noop_receipt_candidate_ids: List[str] = []
+    admitted_real_execution_candidate_ids: List[str] = []
+    admitted_publication_candidate_ids: List[str] = []
+    receipt_backed_candidate_ids: List[str] = []
     source_authority_claimed = False
     cache_live_db_admitted = False
     production_write_admitted = False
@@ -365,16 +383,44 @@ def _scan_claim_surfaces(
             if key_norm in {"publication_admission_reference", "publication_admission_ref"} and value_norm:
                 publication_refs.append(str(raw_value).strip())
 
-            if key_norm in EXECUTION_ADMISSION_BOOL_KEYS and _is_truthy(raw_value):
-                execution_admitted = True
-            if key_norm in PUBLICATION_ADMISSION_BOOL_KEYS and _is_truthy(raw_value):
-                publication_admitted = True
+            if key_norm == "admitted_noop_receipt_candidate_ids":
+                values = raw_value if isinstance(raw_value, list) else [raw_value]
+                for value in values:
+                    candidate_id = str(value).strip()
+                    if candidate_id:
+                        admitted_noop_receipt_candidate_ids.append(candidate_id)
+            if key_norm == "receipt_backed_candidate_ids":
+                values = raw_value if isinstance(raw_value, list) else [raw_value]
+                for value in values:
+                    candidate_id = str(value).strip()
+                    if candidate_id:
+                        receipt_backed_candidate_ids.append(candidate_id)
+            if key_norm == "admitted_real_execution_candidate_ids":
+                values = raw_value if isinstance(raw_value, list) else [raw_value]
+                for value in values:
+                    candidate_id = str(value).strip()
+                    if candidate_id:
+                        admitted_real_execution_candidate_ids.append(candidate_id)
+            if key_norm == "admitted_publication_candidate_ids":
+                values = raw_value if isinstance(raw_value, list) else [raw_value]
+                for value in values:
+                    candidate_id = str(value).strip()
+                    if candidate_id:
+                        admitted_publication_candidate_ids.append(candidate_id)
 
-            if key_norm.endswith("execution_status") and value_norm in ADMISSION_STATUS_VALUES:
-                execution_admitted = True
-            if key_norm in {"publication_status", "package_publication_status", "spawn_publish_status"}:
-                if value_norm in ADMISSION_STATUS_VALUES:
-                    publication_admitted = True
+            if key_norm in EXECUTION_ADMISSION_BOOL_KEYS and _is_truthy(raw_value):
+                real_execution_admission_claimed = True
+            if key_norm in PUBLICATION_ADMISSION_BOOL_KEYS and _is_truthy(raw_value):
+                publication_admission_claimed = True
+
+            if key_norm in {"execution_admission_status", "real_execution_admission_status"}:
+                if value_norm in REAL_EXECUTION_ADMISSION_STATUS_VALUES:
+                    real_execution_admission_claimed = True
+            if key_norm.endswith("execution_status") and value_norm in REAL_EXECUTION_ADMISSION_STATUS_VALUES:
+                real_execution_admission_claimed = True
+            if key_norm in {"publication_status", "package_publication_status", "spawn_publish_status", "publication_admission_status"}:
+                if value_norm in PUBLICATION_ADMISSION_STATUS_VALUES:
+                    publication_admission_claimed = True
 
             if key_norm in {
                 "source_uuid_claim_status",
@@ -429,32 +475,175 @@ def _scan_claim_surfaces(
             if key_norm == "production_readiness_level" and value_norm == "production_ready":
                 production_ready_claim_gates.append(check_id)
 
-    if execution_admitted and not execution_refs:
+    if NOOP_RECEIPT_CANDIDATE_ID in admitted_real_execution_candidate_ids:
+        add_finding(
+            findings,
+            "noop_candidate_misclassified_as_real_execution",
+            "error",
+            "open",
+            "No-op receipt candidate cannot be classified as a real execution-admitted candidate.",
+            {"candidate_id": NOOP_RECEIPT_CANDIDATE_ID},
+        )
+    if NOOP_RECEIPT_CANDIDATE_ID in admitted_publication_candidate_ids:
+        add_finding(
+            findings,
+            "noop_candidate_misclassified_as_publication",
+            "error",
+            "open",
+            "No-op receipt candidate cannot be classified as a publication-admitted candidate.",
+            {"candidate_id": NOOP_RECEIPT_CANDIDATE_ID},
+        )
+    if real_execution_admission_claimed and not admitted_real_execution_candidate_ids:
+        add_finding(
+            findings,
+            "real_execution_admission_without_candidate_reference",
+            "error",
+            "open",
+            "Real execution admission claims require explicit admitted_real_execution_candidate_ids references.",
+        )
+    if publication_admission_claimed and not admitted_publication_candidate_ids:
+        add_finding(
+            findings,
+            "publication_admission_without_candidate_reference",
+            "error",
+            "open",
+            "Publication admission claims require explicit admitted_publication_candidate_ids references.",
+        )
+    if admitted_real_execution_candidate_ids and not execution_refs:
         add_finding(
             findings,
             "execution_admission_without_reference",
             "error",
             "open",
-            "Execution admission cannot be true without an admission reference.",
+            "Execution admission cannot be true without an execution admission reference.",
         )
-    if publication_admitted and not publication_refs:
+    if admitted_publication_candidate_ids and not publication_refs:
         add_finding(
             findings,
             "publication_admission_without_reference",
             "error",
             "open",
-            "Publication admission cannot be true without an admission reference.",
+            "Publication admission cannot be true without a publication admission reference.",
         )
 
     return {
-        "execution_admitted": execution_admitted,
-        "publication_admitted": publication_admitted,
+        "real_execution_admission_claimed": real_execution_admission_claimed,
+        "publication_admission_claimed": publication_admission_claimed,
         "execution_references": sorted(set(execution_refs)),
         "publication_references": sorted(set(publication_refs)),
+        "admitted_noop_receipt_candidate_ids": sorted(set(admitted_noop_receipt_candidate_ids)),
+        "admitted_real_execution_candidate_ids": sorted(set(admitted_real_execution_candidate_ids)),
+        "admitted_publication_candidate_ids": sorted(set(admitted_publication_candidate_ids)),
+        "receipt_backed_candidate_ids": sorted(set(receipt_backed_candidate_ids)),
         "source_authority_claimed": source_authority_claimed,
         "cache_live_db_admitted": cache_live_db_admitted,
         "production_write_admitted": production_write_admitted,
         "production_ready_claim_gates": sorted(set(production_ready_claim_gates)),
+    }
+
+
+def _collect_noop_receipt_admission(repo_root: Path, findings: List[Dict[str, Any]]) -> Dict[str, List[str]]:
+    admitted_noop_receipt_candidate_ids: List[str] = []
+    receipt_backed_candidate_ids: List[str] = []
+
+    decision_record_path = repo_root / NOOP_RECEIPT_DECISION_RECORD_REL
+    if not decision_record_path.exists():
+        add_finding(
+            findings,
+            "noop_receipt_decision_record_missing",
+            "error",
+            "open",
+            "Expected admitted no-op receipt decision record is missing.",
+            {"path": str(NOOP_RECEIPT_DECISION_RECORD_REL)},
+        )
+        return {
+            "admitted_noop_receipt_candidate_ids": admitted_noop_receipt_candidate_ids,
+            "receipt_backed_candidate_ids": receipt_backed_candidate_ids,
+        }
+
+    decision_record = load_json(decision_record_path)
+    decision_candidate_id = str(decision_record.get("candidate_id", "")).strip()
+    decision_state = str(decision_record.get("decision_state", "")).strip().lower()
+    surface_id = str(
+        (
+            decision_record.get("requested_execution", {})
+            if isinstance(decision_record.get("requested_execution"), dict)
+            else {}
+        ).get("surface_id", "")
+    ).strip()
+    approval = decision_record.get("approval", {}) if isinstance(decision_record.get("approval"), dict) else {}
+    approval_received = approval.get("approval_received")
+    approval_phrase = str(approval.get("approval_phrase_received", "")).strip()
+    admission_outcome = (
+        decision_record.get("admission_outcome", {})
+        if isinstance(decision_record.get("admission_outcome"), dict)
+        else {}
+    )
+    execution_admitted = admission_outcome.get("execution_admitted")
+
+    decision_is_valid = (
+        decision_candidate_id == NOOP_RECEIPT_CANDIDATE_ID
+        and decision_state == "approved"
+        and surface_id == "release_candidate_package_receipt_noop_execution"
+        and approval_received is True
+        and approval_phrase == NOOP_RECEIPT_APPROVAL_PHRASE
+        and execution_admitted is True
+    )
+    if decision_is_valid:
+        admitted_noop_receipt_candidate_ids.append(NOOP_RECEIPT_CANDIDATE_ID)
+    else:
+        add_finding(
+            findings,
+            "noop_receipt_decision_record_invalid",
+            "error",
+            "open",
+            "No-op receipt decision record does not satisfy admitted candidate requirements.",
+            {"path": str(NOOP_RECEIPT_DECISION_RECORD_REL)},
+        )
+
+    receipt_report_path = repo_root / NOOP_RECEIPT_PASS_REPORT_REL
+    if not receipt_report_path.exists():
+        add_finding(
+            findings,
+            "noop_receipt_report_fixture_missing",
+            "error",
+            "open",
+            "Expected no-op receipt pass fixture is missing.",
+            {"path": str(NOOP_RECEIPT_PASS_REPORT_REL)},
+        )
+        return {
+            "admitted_noop_receipt_candidate_ids": sorted(set(admitted_noop_receipt_candidate_ids)),
+            "receipt_backed_candidate_ids": sorted(set(receipt_backed_candidate_ids)),
+        }
+
+    receipt_report = load_json(receipt_report_path)
+    report_candidate_id = str(receipt_report.get("candidate_id", "")).strip()
+    report_status = str(receipt_report.get("status", "")).strip().lower()
+    command_mode = str(receipt_report.get("command_mode", "")).strip().lower()
+    external_execution_performed = receipt_report.get("external_execution_performed")
+    publication_performed = receipt_report.get("publication_performed")
+    receipt_report_valid = (
+        report_candidate_id == NOOP_RECEIPT_CANDIDATE_ID
+        and report_status == "pass"
+        and command_mode == "noop"
+        and external_execution_performed is False
+        and publication_performed is False
+    )
+    if receipt_report_valid:
+        receipt_backed_candidate_ids.append(NOOP_RECEIPT_CANDIDATE_ID)
+    else:
+        add_finding(
+            findings,
+            "noop_receipt_report_fixture_invalid",
+            "error",
+            "open",
+            "No-op receipt pass fixture must stay non-executing and non-publishing.",
+            {"path": str(NOOP_RECEIPT_PASS_REPORT_REL)},
+        )
+
+    return {
+        "admitted_noop_receipt_candidate_ids": sorted(set(admitted_noop_receipt_candidate_ids)),
+        "receipt_backed_candidate_ids": sorted(set(receipt_backed_candidate_ids)),
     }
 
 
@@ -511,8 +700,43 @@ def main() -> int:
 
     claim_scan = _scan_claim_surfaces(gate_map, findings)
 
-    execution_admission_status = "admitted" if claim_scan["execution_admitted"] else "blocked"
-    publication_admission_status = "admitted" if claim_scan["publication_admitted"] else "blocked"
+    noop_receipt_scan = _collect_noop_receipt_admission(repo_root, findings)
+    admitted_noop_receipt_candidate_ids = sorted(
+        set(claim_scan["admitted_noop_receipt_candidate_ids"])
+        | set(noop_receipt_scan["admitted_noop_receipt_candidate_ids"])
+    )
+    admitted_real_execution_candidate_ids = sorted(set(claim_scan["admitted_real_execution_candidate_ids"]))
+    admitted_publication_candidate_ids = sorted(set(claim_scan["admitted_publication_candidate_ids"]))
+    receipt_backed_candidate_ids = sorted(
+        set(claim_scan["receipt_backed_candidate_ids"]) | set(noop_receipt_scan["receipt_backed_candidate_ids"])
+    )
+
+    if set(receipt_backed_candidate_ids) - set(admitted_noop_receipt_candidate_ids):
+        add_finding(
+            findings,
+            "receipt_backed_candidate_without_noop_admission",
+            "error",
+            "open",
+            "Receipt-backed candidates must also be admitted no-op receipt candidates.",
+            {
+                "candidate_ids": sorted(
+                    set(receipt_backed_candidate_ids) - set(admitted_noop_receipt_candidate_ids)
+                )
+            },
+        )
+    if NOOP_RECEIPT_CANDIDATE_ID in admitted_noop_receipt_candidate_ids and NOOP_RECEIPT_CANDIDATE_ID not in receipt_backed_candidate_ids:
+        add_finding(
+            findings,
+            "admitted_noop_candidate_missing_receipt_backing",
+            "error",
+            "open",
+            "Admitted no-op receipt candidate must be receipt-backed.",
+            {"candidate_id": NOOP_RECEIPT_CANDIDATE_ID},
+        )
+
+    real_execution_admission_status = "admitted" if admitted_real_execution_candidate_ids else "blocked"
+    execution_admission_status = real_execution_admission_status
+    publication_admission_status = "admitted" if admitted_publication_candidate_ids else "blocked"
     source_product_authority_status = (
         "admitted_authoritative" if claim_scan["source_authority_claimed"] else "not_authoritative"
     )
@@ -520,7 +744,7 @@ def main() -> int:
     production_write_status = "admitted" if claim_scan["production_write_admitted"] else "blocked"
 
     if claim_scan["production_ready_claim_gates"] and (
-        execution_admission_status != "admitted" or publication_admission_status != "admitted"
+        real_execution_admission_status != "admitted" or publication_admission_status != "admitted"
     ):
         add_finding(
             findings,
@@ -580,7 +804,7 @@ def main() -> int:
     if has_required_fail:
         production_readiness_level = "blocked"
         readiness_decision = "fail"
-    elif review_ready and execution_admission_status != "admitted":
+    elif review_ready and real_execution_admission_status != "admitted":
         production_readiness_level = "review_ready"
         readiness_decision = "blocked_for_execution"
     elif review_ready and publication_admission_status != "admitted":
@@ -625,7 +849,7 @@ def main() -> int:
         remaining_required_actions.append(
             "fill missing required gate outputs before readiness claims can proceed"
         )
-    if execution_admission_status != "admitted":
+    if real_execution_admission_status != "admitted":
         remaining_required_actions.append(
             "record explicit approved execution admission before execution-ready/production-ready claims"
         )
@@ -644,6 +868,10 @@ def main() -> int:
     if not review_ready:
         remaining_required_actions.append(
             "close remaining manual hero review/performance/AAA quality gaps for review-ready state"
+        )
+    if admitted_noop_receipt_candidate_ids and real_execution_admission_status != "admitted":
+        remaining_required_actions.append(
+            "treat no-op receipt admission as receipt-only; real execution admission remains separately blocked"
         )
     remaining_required_actions = sorted(set(remaining_required_actions))
 
@@ -711,7 +939,12 @@ def main() -> int:
         "manual_hero_review_status": manual_hero_review_status,
         "rollback_readiness_status": rollback_readiness_status,
         "evidence_integrity_status": evidence_integrity_status,
+        "admitted_noop_receipt_candidate_ids": admitted_noop_receipt_candidate_ids,
+        "receipt_backed_candidate_ids": receipt_backed_candidate_ids,
+        "admitted_real_execution_candidate_ids": admitted_real_execution_candidate_ids,
+        "admitted_publication_candidate_ids": admitted_publication_candidate_ids,
         "execution_admission_status": execution_admission_status,
+        "real_execution_admission_status": real_execution_admission_status,
         "publication_admission_status": publication_admission_status,
         "source_product_authority_status": source_product_authority_status,
         "cache_live_db_status": cache_live_db_status,
@@ -752,7 +985,12 @@ def main() -> int:
                     "final_gate_count": len(gate_map),
                     "production_readiness_level": production_readiness_level,
                     "readiness_decision": readiness_decision,
+                    "admitted_noop_receipt_candidate_ids": admitted_noop_receipt_candidate_ids,
+                    "receipt_backed_candidate_ids": receipt_backed_candidate_ids,
+                    "admitted_real_execution_candidate_ids": admitted_real_execution_candidate_ids,
+                    "admitted_publication_candidate_ids": admitted_publication_candidate_ids,
                     "execution_admission_status": execution_admission_status,
+                    "real_execution_admission_status": real_execution_admission_status,
                     "publication_admission_status": publication_admission_status,
                     "claim_status": "evidence_only",
                     "validated_at_utc": utc_now(),
