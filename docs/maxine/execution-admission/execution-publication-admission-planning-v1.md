@@ -131,3 +131,14 @@ A static proof-evaluation layer now explains present/missing evidence and blocke
 
 These proof packages are static explanations only and do not admit execution/publication.
 
+## Readiness Rollup Link
+
+Execution/publication planning posture is now also summarized by a static control-tower rollup:
+
+- `docs/maxine/execution-admission/execution-admission-readiness-rollup-v1.md`
+- `schemas/maxine_execution_admission_readiness_rollup.schema.json`
+- `examples/execution-admission/execution_admission_readiness_rollup_v1.json`
+- `tools/execution-admission/validate_execution_admission_readiness_rollup.py`
+
+The rollup remains reporting-only and does not admit execution/publication.
+

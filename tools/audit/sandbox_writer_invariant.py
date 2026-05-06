@@ -145,6 +145,9 @@ EXECUTION_ADMISSION_PREFLIGHT_CONTRACTS_REL = (
 EXECUTION_ADMISSION_PREFLIGHT_PROOF_PACKAGES_REL = (
     "examples/execution-admission/execution_admission_preflight_proof_packages_v1.json"
 )
+EXECUTION_ADMISSION_READINESS_ROLLUP_REL = (
+    "examples/execution-admission/execution_admission_readiness_rollup_v1.json"
+)
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
 WORKFLOW_RUNS_DIR_REL = "examples/sandbox/workflow-runs"
@@ -193,6 +196,10 @@ EXPECTED_EXECUTION_ADMISSION_CANDIDATE_IDS = (
     *EXPECTED_REAL_EXECUTION_CANDIDATE_IDS,
     *EXPECTED_PUBLICATION_CANDIDATE_IDS,
     *EXPECTED_DRY_RUN_CANDIDATE_IDS,
+)
+EXPECTED_ROLLUP_NEXT_SLICE_ID = "candidate_specific_dry_run_planning_v1"
+EXPECTED_ROLLUP_NEXT_SLICE_CANDIDATE_ID = (
+    "release_candidate_package_publish_dry_run_v1"
 )
 REQUIRED_PREFLIGHT_BLOCKED_SURFACES = {
     "o3de_execution",
@@ -1009,6 +1016,9 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     )
     execution_admission_preflight_proof_packages = (
         root / EXECUTION_ADMISSION_PREFLIGHT_PROOF_PACKAGES_REL
+    )
+    execution_admission_readiness_rollup = (
+        root / EXECUTION_ADMISSION_READINESS_ROLLUP_REL
     )
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -3406,6 +3416,288 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         except Exception as exc:  # pragma: no cover - defensive failure surface
             failures.append(
                 "execution admission preflight proof packages is not valid JSON: "
+                f"{exc}"
+            )
+
+    if execution_admission_readiness_rollup.exists():
+        try:
+            rollup = json.loads(
+                execution_admission_readiness_rollup.read_text(encoding="utf-8-sig")
+            )
+
+            if rollup.get("schema_version") != "1.0.0":
+                failures.append(
+                    "execution admission readiness rollup schema_version must be 1.0.0."
+                )
+            if rollup.get("record_type") != "EXECUTION_ADMISSION_READINESS_ROLLUP_v1":
+                failures.append(
+                    "execution admission readiness rollup record_type must be EXECUTION_ADMISSION_READINESS_ROLLUP_v1."
+                )
+            if rollup.get("overall_readiness_rollup_status") != "static_rollup_valid_blocked":
+                failures.append(
+                    "execution admission readiness rollup must keep overall_readiness_rollup_status=static_rollup_valid_blocked."
+                )
+            if rollup.get("production_ready_claimed") is not False:
+                failures.append(
+                    "execution admission readiness rollup must keep production_ready_claimed=false."
+                )
+            if rollup.get("unsafe_claims_detected") is not False:
+                failures.append(
+                    "execution admission readiness rollup must keep unsafe_claims_detected=false."
+                )
+            if rollup.get("real_execution_admission_status") != "blocked":
+                failures.append(
+                    "execution admission readiness rollup must keep real_execution_admission_status=blocked."
+                )
+            if rollup.get("publication_admission_status") != "blocked":
+                failures.append(
+                    "execution admission readiness rollup must keep publication_admission_status=blocked."
+                )
+            if (
+                str(rollup.get("approval_phrase_required", "")).strip()
+                != "APPROVE EXECUTION ADMISSION <candidate_id>"
+            ):
+                failures.append(
+                    "execution admission readiness rollup approval_phrase_required must be APPROVE EXECUTION ADMISSION <candidate_id>."
+                )
+
+            admitted_noop = {
+                str(item).strip()
+                for item in (rollup.get("admitted_noop_receipt_candidate_ids") or [])
+                if str(item).strip()
+            }
+            admitted_real = {
+                str(item).strip()
+                for item in (rollup.get("admitted_real_execution_candidate_ids") or [])
+                if str(item).strip()
+            }
+            admitted_publication = {
+                str(item).strip()
+                for item in (rollup.get("admitted_publication_candidate_ids") or [])
+                if str(item).strip()
+            }
+            real_preflight_passed = {
+                str(item).strip()
+                for item in (rollup.get("real_execution_preflight_passed_candidate_ids") or [])
+                if str(item).strip()
+            }
+            publication_preflight_passed = {
+                str(item).strip()
+                for item in (rollup.get("publication_preflight_passed_candidate_ids") or [])
+                if str(item).strip()
+            }
+            blocked_real = {
+                str(item).strip()
+                for item in (rollup.get("blocked_real_execution_candidate_ids") or [])
+                if str(item).strip()
+            }
+            blocked_publication = {
+                str(item).strip()
+                for item in (rollup.get("blocked_publication_candidate_ids") or [])
+                if str(item).strip()
+            }
+            blocked_dry_run = {
+                str(item).strip()
+                for item in (rollup.get("blocked_dry_run_candidate_ids") or [])
+                if str(item).strip()
+            }
+
+            if admitted_noop != {NOOP_RECEIPT_CANDIDATE_ID}:
+                failures.append(
+                    "execution admission readiness rollup must keep only release_candidate_package_receipt_noop_v1 in admitted_noop_receipt_candidate_ids."
+                )
+            if admitted_real:
+                failures.append(
+                    "execution admission readiness rollup must keep admitted_real_execution_candidate_ids empty."
+                )
+            if admitted_publication:
+                failures.append(
+                    "execution admission readiness rollup must keep admitted_publication_candidate_ids empty."
+                )
+            if real_preflight_passed:
+                failures.append(
+                    "execution admission readiness rollup must keep real_execution_preflight_passed_candidate_ids empty."
+                )
+            if publication_preflight_passed:
+                failures.append(
+                    "execution admission readiness rollup must keep publication_preflight_passed_candidate_ids empty."
+                )
+            if blocked_real != set(EXPECTED_REAL_EXECUTION_CANDIDATE_IDS):
+                failures.append(
+                    "execution admission readiness rollup blocked_real_execution_candidate_ids must match expected real execution candidate ids."
+                )
+            if blocked_publication != set(EXPECTED_PUBLICATION_CANDIDATE_IDS):
+                failures.append(
+                    "execution admission readiness rollup blocked_publication_candidate_ids must match expected publication candidate ids."
+                )
+            if blocked_dry_run != set(EXPECTED_DRY_RUN_CANDIDATE_IDS):
+                failures.append(
+                    "execution admission readiness rollup blocked_dry_run_candidate_ids must match expected dry-run candidate ids."
+                )
+
+            rollups_raw = rollup.get("candidate_rollups")
+            if not isinstance(rollups_raw, list):
+                failures.append(
+                    "execution admission readiness rollup candidate_rollups field must be an array."
+                )
+            else:
+                rollup_map = {}
+                for entry in rollups_raw:
+                    if isinstance(entry, dict):
+                        cid = str(entry.get("candidate_id", "")).strip()
+                        if cid:
+                            rollup_map[cid] = entry
+
+                expected_ids = set(EXPECTED_EXECUTION_ADMISSION_CANDIDATE_IDS)
+                missing_ids = sorted(expected_ids - set(rollup_map))
+                extra_ids = sorted(set(rollup_map) - expected_ids)
+                for missing_id in missing_ids:
+                    failures.append(
+                        "execution admission readiness rollup is missing expected candidate rollup: "
+                        f"{missing_id}"
+                    )
+                for extra_id in extra_ids:
+                    failures.append(
+                        "execution admission readiness rollup contains unknown candidate rollup: "
+                        f"{extra_id}"
+                    )
+
+                noop_entry = rollup_map.get(NOOP_RECEIPT_CANDIDATE_ID)
+                if not isinstance(noop_entry, dict):
+                    failures.append(
+                        "execution admission readiness rollup must include release_candidate_package_receipt_noop_v1 rollup entry."
+                    )
+                else:
+                    if str(noop_entry.get("candidate_type", "")).strip() != "no_op_receipt":
+                        failures.append(
+                            "execution admission readiness rollup no-op candidate must keep candidate_type=no_op_receipt."
+                        )
+                    if str(noop_entry.get("admission_status", "")).strip() != "admitted_no_op_only":
+                        failures.append(
+                            "execution admission readiness rollup no-op candidate must keep admission_status=admitted_no_op_only."
+                        )
+                    if (
+                        str(noop_entry.get("proof_package_status", "")).strip()
+                        not in {"satisfied_no_op_only", "satisfied_non_execution_only"}
+                    ):
+                        failures.append(
+                            "execution admission readiness rollup no-op candidate must keep a no-op-only satisfied proof status."
+                        )
+
+                for candidate_id in EXPECTED_REAL_EXECUTION_CANDIDATE_IDS:
+                    entry = rollup_map.get(candidate_id)
+                    if not isinstance(entry, dict):
+                        continue
+                    if str(entry.get("candidate_type", "")).strip() != "real_execution":
+                        failures.append(
+                            "execution admission readiness rollup real execution candidate has wrong type: "
+                            f"{candidate_id}"
+                        )
+                    if str(entry.get("admission_status", "")).strip() != "unadmitted":
+                        failures.append(
+                            "execution admission readiness rollup must keep real execution candidates unadmitted: "
+                            f"{candidate_id}"
+                        )
+                    if bool(entry.get("preflight_passed", False)):
+                        failures.append(
+                            "execution admission readiness rollup must keep real execution preflight_passed=false in this slice: "
+                            f"{candidate_id}"
+                        )
+
+                for candidate_id in EXPECTED_PUBLICATION_CANDIDATE_IDS:
+                    entry = rollup_map.get(candidate_id)
+                    if not isinstance(entry, dict):
+                        continue
+                    if str(entry.get("candidate_type", "")).strip() != "publication":
+                        failures.append(
+                            "execution admission readiness rollup publication candidate has wrong type: "
+                            f"{candidate_id}"
+                        )
+                    if str(entry.get("admission_status", "")).strip() != "unadmitted":
+                        failures.append(
+                            "execution admission readiness rollup must keep publication candidates unadmitted: "
+                            f"{candidate_id}"
+                        )
+                    if bool(entry.get("preflight_passed", False)):
+                        failures.append(
+                            "execution admission readiness rollup must keep publication preflight_passed=false in this slice: "
+                            f"{candidate_id}"
+                        )
+
+                for candidate_id in EXPECTED_DRY_RUN_CANDIDATE_IDS:
+                    entry = rollup_map.get(candidate_id)
+                    if not isinstance(entry, dict):
+                        continue
+                    if str(entry.get("candidate_type", "")).strip() != "dry_run":
+                        failures.append(
+                            "execution admission readiness rollup dry-run candidate has wrong type: "
+                            f"{candidate_id}"
+                        )
+                    if str(entry.get("admission_status", "")).strip() != "unadmitted":
+                        failures.append(
+                            "execution admission readiness rollup must keep dry-run candidates unadmitted: "
+                            f"{candidate_id}"
+                        )
+                    if bool(entry.get("can_advance_without_explicit_approval", True)):
+                        failures.append(
+                            "execution admission readiness rollup must keep dry-run candidates can_advance_without_explicit_approval=false in this slice: "
+                            f"{candidate_id}"
+                        )
+
+            next_slice = (
+                rollup.get("safest_next_preparation_slice")
+                if isinstance(rollup.get("safest_next_preparation_slice"), dict)
+                else {}
+            )
+            if str(next_slice.get("slice_id", "")).strip() != EXPECTED_ROLLUP_NEXT_SLICE_ID:
+                failures.append(
+                    "execution admission readiness rollup safest_next_preparation_slice.slice_id must match expected planning slice."
+                )
+            if (
+                str(next_slice.get("candidate_id", "")).strip()
+                != EXPECTED_ROLLUP_NEXT_SLICE_CANDIDATE_ID
+            ):
+                failures.append(
+                    "execution admission readiness rollup safest_next_preparation_slice.candidate_id must match expected dry-run planning candidate."
+                )
+            if bool(next_slice.get("admits_execution", False)):
+                failures.append(
+                    "execution admission readiness rollup safest_next_preparation_slice must keep admits_execution=false."
+                )
+            if bool(next_slice.get("admits_publication", False)):
+                failures.append(
+                    "execution admission readiness rollup safest_next_preparation_slice must keep admits_publication=false."
+                )
+            if next_slice.get("requires_future_pr") is not True:
+                failures.append(
+                    "execution admission readiness rollup safest_next_preparation_slice must keep requires_future_pr=true."
+                )
+            if next_slice.get("requires_explicit_approval_before_admission") is not True:
+                failures.append(
+                    "execution admission readiness rollup safest_next_preparation_slice must keep requires_explicit_approval_before_admission=true."
+                )
+
+            safety = rollup.get("safety") if isinstance(rollup.get("safety"), dict) else {}
+            for field in (
+                "o3de_execution_status",
+                "editor_runtime_execution_status",
+                "asset_processor_execution_status",
+                "blender_dcc_execution_status",
+                "profiler_benchmark_execution_status",
+                "live_screenshot_capture_status",
+                "spawn_publish_status",
+                "cache_live_db_access_status",
+                "production_write_status",
+                "engine_write_status",
+            ):
+                if str(safety.get(field, "")).strip() != "blocked":
+                    failures.append(
+                        "execution admission readiness rollup safety field must remain blocked: "
+                        f"{field}"
+                    )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "execution admission readiness rollup is not valid JSON: "
                 f"{exc}"
             )
 

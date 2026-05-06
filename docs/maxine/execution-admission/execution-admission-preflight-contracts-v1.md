@@ -81,6 +81,15 @@ A static proof-evaluation layer now explains current evidence coverage and missi
 
 This layer remains requirements/reporting only. It does not admit execution or publication.
 
+## Readiness Rollup Link
+
+Readiness rollup now consolidates candidate matrix, preflight contracts, and preflight proof package posture in one static report:
+
+- `docs/maxine/execution-admission/execution-admission-readiness-rollup-v1.md`
+- `schemas/maxine_execution_admission_readiness_rollup.schema.json`
+- `examples/execution-admission/execution_admission_readiness_rollup_v1.json`
+- `tools/execution-admission/validate_execution_admission_readiness_rollup.py`
+
 ## Safety Notes
 
 This milestone preserves blocked execution/publication surfaces:

@@ -155,6 +155,15 @@
   - `tests/pytest/test_execution_admission_preflight_proof_packages.py`
   - proof packages are static requirement-evaluation explanations and do not admit execution/publication
   - no future real-execution/publication candidate is marked preflight passed in this slice
+- Execution-admission readiness rollup v1 is implemented (static control-tower reporting only, non-executing, non-publishing):
+  - `docs/maxine/execution-admission/execution-admission-readiness-rollup-v1.md`
+  - `schemas/maxine_execution_admission_readiness_rollup.schema.json`
+  - `examples/execution-admission/execution_admission_readiness_rollup_v1.json`
+  - `tools/execution-admission/validate_execution_admission_readiness_rollup.py`
+  - integrated into `tools/release-lane/prove_pilot_release_chain.py` proof output as read-only readiness-rollup status evidence
+  - `tests/pytest/test_execution_admission_readiness_rollup.py`
+  - rollup consolidates matrix/contracts/proof-packages/production-readiness posture without admitting execution/publication
+  - no real-execution/publication preflight candidate is marked passed in this slice
 - Admitted no-op release-candidate package receipt candidate v1 is implemented (bounded receipt generation only, non-executing, non-publishing):
   - approval phrase recorded:
     - `APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1`

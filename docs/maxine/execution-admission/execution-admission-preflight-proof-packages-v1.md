@@ -81,11 +81,20 @@ Future real execution/publication admissions still require:
 - example:
   - `examples/execution-admission/execution_admission_preflight_proof_packages_v1.json`
 - validator:
-  - `tools/execution-admission/validate_execution_admission_preflight_proof_packages.py`
+- `tools/execution-admission/validate_execution_admission_preflight_proof_packages.py`
 - proof integration:
   - `tools/release-lane/prove_pilot_release_chain.py`
 - tests:
   - `tests/pytest/test_execution_admission_preflight_proof_packages.py`
+
+## Readiness Rollup Link
+
+The static readiness rollup now aggregates matrix/contracts/proof-package posture with production-readiness status:
+
+- `docs/maxine/execution-admission/execution-admission-readiness-rollup-v1.md`
+- `schemas/maxine_execution_admission_readiness_rollup.schema.json`
+- `examples/execution-admission/execution_admission_readiness_rollup_v1.json`
+- `tools/execution-admission/validate_execution_admission_readiness_rollup.py`
 
 ## Safety Notes
 

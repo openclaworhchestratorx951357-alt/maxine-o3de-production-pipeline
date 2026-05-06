@@ -170,3 +170,39 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
         "blocked_dry_run_preflight_candidate_ids"
     ]
     assert preflight_proof_status["reporter_return_code"] == 0
+    readiness_rollup_status = payload["details"]["execution_admission_readiness_rollup_report"]
+    assert readiness_rollup_status["status"] == "pass"
+    assert (
+        readiness_rollup_status["report_type"]
+        == "EXECUTION_ADMISSION_READINESS_ROLLUP_VALIDATION_v1_REPORT"
+    )
+    assert readiness_rollup_status["execution_admission_readiness_rollup_present"] is True
+    assert readiness_rollup_status["overall_readiness_rollup_status"] == "static_rollup_valid_blocked"
+    assert readiness_rollup_status["admitted_noop_receipt_candidate_ids"] == [
+        "release_candidate_package_receipt_noop_v1"
+    ]
+    assert readiness_rollup_status["admitted_real_execution_candidate_ids"] == []
+    assert readiness_rollup_status["admitted_publication_candidate_ids"] == []
+    assert readiness_rollup_status["real_execution_preflight_passed_candidate_ids"] == []
+    assert readiness_rollup_status["publication_preflight_passed_candidate_ids"] == []
+    assert "dcc_conform_execution_v1" in readiness_rollup_status[
+        "blocked_real_execution_candidate_ids"
+    ]
+    assert "release_candidate_package_publication_v1" in readiness_rollup_status[
+        "blocked_publication_candidate_ids"
+    ]
+    assert "release_candidate_package_publish_dry_run_v1" in readiness_rollup_status[
+        "blocked_dry_run_candidate_ids"
+    ]
+    assert readiness_rollup_status["real_execution_admission_status"] == "blocked"
+    assert readiness_rollup_status["publication_admission_status"] == "blocked"
+    assert readiness_rollup_status["production_ready_claimed"] is False
+    assert readiness_rollup_status["unsafe_claims_detected"] is False
+    next_slice = readiness_rollup_status["safest_next_preparation_slice"]
+    assert next_slice["slice_id"] == "candidate_specific_dry_run_planning_v1"
+    assert next_slice["candidate_id"] == "release_candidate_package_publish_dry_run_v1"
+    assert next_slice["admits_execution"] is False
+    assert next_slice["admits_publication"] is False
+    assert next_slice["requires_future_pr"] is True
+    assert next_slice["requires_explicit_approval_before_admission"] is True
+    assert readiness_rollup_status["reporter_return_code"] == 0

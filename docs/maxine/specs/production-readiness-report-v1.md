@@ -26,6 +26,7 @@ The report distinguishes and records:
 - publication admission posture
 - execution-admission candidate matrix and preflight-contract requirement posture
 - execution-admission preflight proof-package posture (static evidence-only proof evaluation)
+- execution-admission readiness rollup posture (static control-tower status only)
 - remaining blockers before true production operation
 
 ## Required Gate Coverage
@@ -87,4 +88,5 @@ Execution/publication remains blocked for real tool execution and publication. T
 - `docs/maxine/execution-admission/execution-admission-candidate-matrix-v1.md`
 - `docs/maxine/execution-admission/execution-admission-preflight-contracts-v1.md`
 - `docs/maxine/execution-admission/execution-admission-preflight-proof-packages-v1.md`
+- `docs/maxine/execution-admission/execution-admission-readiness-rollup-v1.md`
 - `examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json`
