@@ -1,0 +1,207 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_aaa_performance_budget_report.schema.json",
+  "title": "MAXINE AAA Performance Budget Report",
+  "description": "Evidence-only AAA performance budget contract for pilot release-lane readiness.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "report_type",
+    "job_id",
+    "package_id",
+    "lane",
+    "status",
+    "candidate_id",
+    "source_asset_reference",
+    "source_evidence_ref",
+    "performance_profile_id",
+    "performance_profile_version",
+    "asset_tier",
+    "evidence_class",
+    "triangle_count",
+    "triangle_budget_status",
+    "material_slot_count",
+    "material_slot_budget_status",
+    "texture_count",
+    "texture_resolution_max",
+    "texture_memory_estimate_mb",
+    "texture_budget_status",
+    "uv_set_count",
+    "uv_budget_status",
+    "bone_count",
+    "bone_budget_status",
+    "skin_influence_max",
+    "skin_influence_budget_status",
+    "lod_count",
+    "lod_budget_status",
+    "animation_clip_count",
+    "animation_budget_status",
+    "package_size_estimate_mb",
+    "package_size_budget_status",
+    "runtime_load_readiness_status",
+    "review_tier_status",
+    "waiver_status",
+    "waiver_ids",
+    "waiver_reasons",
+    "findings",
+    "claim_status",
+    "safety",
+    "source",
+    "manifest_attachment"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0.0"},
+    "report_type": {"type": "string", "const": "AAA_PERFORMANCE_BUDGET_v1_REPORT"},
+    "job_id": {"type": "string", "minLength": 1},
+    "package_id": {"type": "string", "minLength": 1},
+    "lane": {"type": "string", "minLength": 1},
+    "status": {"$ref": "#/$defs/checkStatus"},
+    "candidate_id": {"type": "string", "minLength": 1},
+    "source_asset_reference": {"type": "string", "minLength": 1},
+    "source_evidence_ref": {"type": "string", "minLength": 1},
+    "performance_profile_id": {"type": "string", "const": "AAA_PERFORMANCE_BUDGET_v1"},
+    "performance_profile_version": {"type": "string", "minLength": 1},
+    "asset_tier": {
+      "type": "string",
+      "enum": ["hero", "npc", "prop", "environment"]
+    },
+    "evidence_class": {
+      "type": "string",
+      "enum": ["fixture", "imported", "controlled_real"]
+    },
+    "triangle_count": {"type": "integer", "minimum": 0},
+    "triangle_budget_status": {"$ref": "#/$defs/checkStatus"},
+    "material_slot_count": {"type": "integer", "minimum": 0},
+    "material_slot_budget_status": {"$ref": "#/$defs/checkStatus"},
+    "texture_count": {"type": "integer", "minimum": 0},
+    "texture_resolution_max": {"type": "integer", "minimum": 1},
+    "texture_memory_estimate_mb": {"type": "number", "minimum": 0},
+    "texture_budget_status": {"$ref": "#/$defs/checkStatus"},
+    "uv_set_count": {"type": "integer", "minimum": 0},
+    "uv_budget_status": {"$ref": "#/$defs/checkStatus"},
+    "bone_count": {"type": "integer", "minimum": 0},
+    "bone_budget_status": {"$ref": "#/$defs/checkStatus"},
+    "skin_influence_max": {"type": "integer", "minimum": 0},
+    "skin_influence_budget_status": {"$ref": "#/$defs/checkStatus"},
+    "lod_count": {"type": "integer", "minimum": 0},
+    "lod_budget_status": {"$ref": "#/$defs/checkStatus"},
+    "animation_clip_count": {"type": "integer", "minimum": 0},
+    "animation_budget_status": {"$ref": "#/$defs/checkStatus"},
+    "package_size_estimate_mb": {"type": "number", "minimum": 0},
+    "package_size_budget_status": {"$ref": "#/$defs/checkStatus"},
+    "import_time_estimate_status": {"$ref": "#/$defs/checkStatus"},
+    "runtime_load_readiness_status": {"$ref": "#/$defs/checkStatus"},
+    "review_tier_status": {"$ref": "#/$defs/checkStatus"},
+    "waiver_status": {
+      "type": "string",
+      "enum": ["none", "waived"]
+    },
+    "waiver_ids": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "waiver_reasons": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "claim_status": {
+      "type": "string",
+      "enum": ["evidence_only", "not_authoritative"]
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "o3de_execution_status",
+        "editor_execution_status",
+        "runtime_execution_status",
+        "asset_processor_execution_status",
+        "dcc_execution_status",
+        "blender_execution_status",
+        "benchmark_execution_status",
+        "production_write_status"
+      ],
+      "properties": {
+        "o3de_execution_status": {"type": "string", "const": "blocked"},
+        "editor_execution_status": {"type": "string", "const": "blocked"},
+        "runtime_execution_status": {"type": "string", "const": "blocked"},
+        "asset_processor_execution_status": {"type": "string", "const": "blocked"},
+        "dcc_execution_status": {"type": "string", "const": "blocked"},
+        "blender_execution_status": {"type": "string", "const": "blocked"},
+        "benchmark_execution_status": {"type": "string", "const": "blocked"},
+        "production_write_status": {"type": "string", "const": "blocked"}
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["source_path", "source_kind"],
+      "properties": {
+        "source_path": {"type": "string", "minLength": 1},
+        "source_kind": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "minLength": 1}
+      }
+    },
+    "budget_thresholds": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "package_size_warn_mb": {"type": "number", "minimum": 0},
+        "package_size_fail_mb": {"type": "number", "minimum": 0},
+        "texture_memory_warn_mb": {"type": "number", "minimum": 0},
+        "texture_memory_fail_mb": {"type": "number", "minimum": 0}
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/finding"}
+    },
+    "manifest_attachment": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["target_path", "future_target_path", "qc_check"],
+      "properties": {
+        "target_path": {"type": "string", "const": "qc.gates[]"},
+        "future_target_path": {"type": "string", "const": "qc.checks[]"},
+        "qc_check": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["check_id", "result", "severity", "details"],
+          "properties": {
+            "check_id": {"type": "string", "const": "aaa_performance_budget_v1"},
+            "result": {"$ref": "#/$defs/checkStatus"},
+            "severity": {
+              "type": "string",
+              "enum": ["info", "warning", "error", "manual_review"]
+            },
+            "details": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "checkStatus": {
+      "type": "string",
+      "enum": ["pass", "warn", "fail", "pending_manual"]
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "severity", "status", "message"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "severity": {
+          "type": "string",
+          "enum": ["info", "warning", "error", "manual_review"]
+        },
+        "status": {"type": "string", "minLength": 1},
+        "message": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

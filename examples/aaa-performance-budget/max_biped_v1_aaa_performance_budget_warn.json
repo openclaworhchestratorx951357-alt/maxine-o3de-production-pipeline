@@ -1,0 +1,88 @@
+﻿{
+  "schema_version": "1.0.0",
+  "report_type": "AAA_PERFORMANCE_BUDGET_v1_REPORT",
+  "job_id": "job-release-character-performance-warn-001",
+  "package_id": "char.maxine.knight_arden",
+  "lane": "release_character",
+  "status": "warn",
+  "candidate_id": "max_biped_v1_candidate_001",
+  "source_asset_reference": "fixtures://source/max_biped_v1/source_character.fbx",
+  "source_evidence_ref": "examples/aaa-performance-budget/max_biped_v1_aaa_performance_budget_warn.json",
+  "performance_profile_id": "AAA_PERFORMANCE_BUDGET_v1",
+  "performance_profile_version": "1.0.0",
+  "asset_tier": "hero",
+  "evidence_class": "fixture",
+  "triangle_count": 185000,
+  "triangle_budget_status": "warn",
+  "material_slot_count": 7,
+  "material_slot_budget_status": "warn",
+  "texture_count": 22,
+  "texture_resolution_max": 4096,
+  "texture_memory_estimate_mb": 280.4,
+  "texture_budget_status": "warn",
+  "uv_set_count": 2,
+  "uv_budget_status": "pass",
+  "bone_count": 168,
+  "bone_budget_status": "warn",
+  "skin_influence_max": 4,
+  "skin_influence_budget_status": "pass",
+  "lod_count": 3,
+  "lod_budget_status": "warn",
+  "animation_clip_count": 7,
+  "animation_budget_status": "pass",
+  "package_size_estimate_mb": 390.8,
+  "package_size_budget_status": "warn",
+  "import_time_estimate_status": "warn",
+  "runtime_load_readiness_status": "warn",
+  "review_tier_status": "warn",
+  "waiver_status": "waived",
+  "waiver_ids": [
+    "waiver-hero-triangles-0001"
+  ],
+  "waiver_reasons": [
+    "Hero silhouette retention exception accepted for pilot evidence lane."
+  ],
+  "claim_status": "evidence_only",
+  "safety": {
+    "o3de_execution_status": "blocked",
+    "editor_execution_status": "blocked",
+    "runtime_execution_status": "blocked",
+    "asset_processor_execution_status": "blocked",
+    "dcc_execution_status": "blocked",
+    "blender_execution_status": "blocked",
+    "benchmark_execution_status": "blocked",
+    "production_write_status": "blocked"
+  },
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-performance-warn-001/o3de/source/knight_arden_conformed.fbx",
+    "source_kind": "fbx",
+    "sha256": "49843b8f56db0f9ff6d44e9b97c711dbcc7cb808f4c3816d38c1d45a833f7121"
+  },
+  "budget_thresholds": {
+    "package_size_warn_mb": 350,
+    "package_size_fail_mb": 500,
+    "texture_memory_warn_mb": 260,
+    "texture_memory_fail_mb": 360
+  },
+  "findings": [
+    {
+      "id": "hero_budget_review_note",
+      "severity": "warning",
+      "status": "open",
+      "message": "Hero tier budget envelope exceeded with explicit waiver."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "aaa_performance_budget_v1",
+      "result": "warn",
+      "severity": "warning",
+      "details": {
+        "summary": "Performance budget report includes explicit visible waivers and warning-level budget overages.",
+        "evidence_class": "fixture"
+      }
+    }
+  }
+}

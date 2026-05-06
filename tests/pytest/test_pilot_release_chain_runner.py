@@ -100,6 +100,14 @@ def test_runner_builds_generated_manifest_and_attaches_expected_checks(repo_tmp_
     assert manual_payload.get("manifest_attachment", {}).get("qc_check", {}).get("details", {}).get(
         "publication_admitted"
     ) is False
+    performance_payload = json.loads(
+        Path(step_map["aaa_performance_budget"]["payload_path"]).read_text(encoding="utf-8-sig")
+    )
+    assert performance_payload.get("status") == "pass"
+    assert performance_payload.get("evidence_class") == "controlled_real"
+    perf_details = performance_payload.get("manifest_attachment", {}).get("qc_check", {}).get("details", {})
+    assert perf_details.get("safety", {}).get("benchmark_execution_status") == "blocked"
+    assert perf_details.get("safety", {}).get("runtime_execution_status") == "blocked"
     extraction_report = json.loads(
         Path(step_map["source_product_resolver_extract"]["payload_path"]).read_text(encoding="utf-8-sig")
     )
@@ -121,6 +129,7 @@ def test_runner_builds_generated_manifest_and_attaches_expected_checks(repo_tmp_
     assert "animation_smoke_v1" in gate_ids
     assert "screenshot_evidence_v1" in gate_ids
     assert "manual_hero_review_v1" in gate_ids
+    assert "aaa_performance_budget_v1" in gate_ids
     assert "ci_artifact_retention_v1" in gate_ids
     assert "release_package_bundle_v1" in gate_ids
     assert "release_promotion_decision_v1" in gate_ids

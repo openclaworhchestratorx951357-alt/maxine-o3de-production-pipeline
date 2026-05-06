@@ -81,6 +81,18 @@
   - `examples/sandbox/manual-hero-review-evidence/pilot-candidates/max_biped_v1_manual_hero_review_controlled_real.fixture.json`
   - integrated into `tools/release-lane/run_pilot_release_chain_validation.py`
   - `tests/pytest/test_manual_hero_review_report.py`
+- AAA performance budget gates v1 are implemented (bounded evidence-only, non-executing, non-publishing):
+  - `docs/maxine/specs/aaa-performance-budget-v1.md`
+  - `docs/maxine/specs/aaa-performance-budget-gates-v1.md`
+  - `schemas/maxine_aaa_performance_budget_report.schema.json`
+  - `tools/aaa-performance-budget/validate_aaa_performance_budget_report.py`
+  - `examples/aaa-performance-budget/max_biped_v1_aaa_performance_budget_pass.json`
+  - `examples/aaa-performance-budget/max_biped_v1_aaa_performance_budget_warn.json`
+  - `examples/aaa-performance-budget/max_biped_v1_aaa_performance_budget_fail.json`
+  - `examples/sandbox/aaa-performance-budget-evidence/pilot-candidates/max_biped_v1_aaa_performance_budget_controlled_real.fixture.json`
+  - integrated into `tools/release-lane/run_pilot_release_chain_validation.py`
+  - release-lane evidence admission status now classifies `aaa_performance_budget_v1` as controlled-real evidence
+  - `tests/pytest/test_aaa_performance_budget_report.py`
 - Execution admission remains future work requiring explicit operator approval.
 - No execution surfaces are newly admitted in this slice.
 - Sandbox-only writer skeleton is implemented for generated-asset resolver placeholders.

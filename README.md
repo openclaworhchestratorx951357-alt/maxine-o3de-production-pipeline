@@ -55,7 +55,7 @@ Get-ChildItem .\examples\manifests
 ## Current Release-Lane Status
 
 - Active integration branch baseline: `codex/pilot-rollback-readiness-evidence-v1`
-- The evidence-only pilot release chain is operational (`pilot_chain_status=pass`, `final_gate_count=23`).
+- The evidence-only pilot release chain is operational (`pilot_chain_status=pass`, `final_gate_count=24`).
 - Controlled real evidence inventory reporting from approved local inputs/evidence sources is integrated into proof flow (inventory-only).
 - Bounded source/product evidence resolver extraction from admitted evidence sources is integrated into the pilot runner (non-executing).
 - Bounded AP-evidence-import pilot fixtures are integrated, and resolver pass now requires imported coverage for required source/product types so fixture fallback alone can no longer carry pass.
@@ -65,6 +65,7 @@ Get-ChildItem .\examples\manifests
 - Controlled real animation smoke evidence is integrated for pilot candidates through bounded sandbox fixtures (non-executing, no runtime playback).
 - Controlled real screenshot/visual evidence is integrated for pilot candidates through bounded sandbox fixtures (non-executing, no live screenshot capture).
 - Manual hero review is now hardened to require required controlled-real gate references for hero-tier candidates (evidence-only, no execution/publication admission).
+- AAA performance budget gating is integrated for pilot candidates with tiered metric policy and explicit waiver visibility (evidence-only, no live benchmark/profiler execution).
 - AAA-quality output is not yet fully operational.
 - Execution admission remains future work requiring explicit approval.
 
@@ -83,6 +84,8 @@ Start here for PR readiness, review, and merge details:
 - `docs/maxine/specs/controlled-real-animation-smoke-evidence-v1.md`
 - `docs/maxine/specs/controlled-real-visual-evidence-v1.md`
 - `docs/maxine/specs/manual-hero-review-controlled-real-evidence-v1.md`
+- `docs/maxine/specs/aaa-performance-budget-v1.md`
+- `docs/maxine/specs/aaa-performance-budget-gates-v1.md`
 
 ## M.A.X.I.N.E. Resolver Ladder
 

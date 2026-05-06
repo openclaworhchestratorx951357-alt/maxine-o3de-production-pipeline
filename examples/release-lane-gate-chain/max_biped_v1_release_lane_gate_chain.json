@@ -49,90 +49,96 @@
     },
     {
       "order": 8,
-      "check_id": "ci_artifact_retention_v1",
+      "check_id": "aaa_performance_budget_v1",
       "required": true,
       "implemented": true
     },
     {
       "order": 9,
-      "check_id": "release_package_bundle_v1",
+      "check_id": "ci_artifact_retention_v1",
       "required": true,
       "implemented": true
     },
     {
       "order": 10,
-      "check_id": "release_promotion_decision_v1",
+      "check_id": "release_package_bundle_v1",
       "required": true,
       "implemented": true
     },
     {
       "order": 11,
-      "check_id": "release_publication_preflight_v1",
+      "check_id": "release_promotion_decision_v1",
       "required": true,
       "implemented": true
     },
     {
       "order": 12,
-      "check_id": "release_publication_request_approval_v1",
+      "check_id": "release_publication_preflight_v1",
       "required": true,
       "implemented": true
     },
     {
       "order": 13,
-      "check_id": "release_publication_execution_admission_gate_v1",
+      "check_id": "release_publication_request_approval_v1",
       "required": true,
       "implemented": true
     },
     {
       "order": 14,
-      "check_id": "release_publication_execution_request_ledger_v1",
+      "check_id": "release_publication_execution_admission_gate_v1",
       "required": true,
       "implemented": true
     },
     {
       "order": 15,
-      "check_id": "release_publication_execution_receipt_v1",
+      "check_id": "release_publication_execution_request_ledger_v1",
       "required": true,
       "implemented": true
     },
     {
       "order": 16,
-      "check_id": "release_publication_rollback_drill_v1",
+      "check_id": "release_publication_execution_receipt_v1",
       "required": true,
       "implemented": true
     },
     {
       "order": 17,
-      "check_id": "release_publication_evidence_integrity_index_v1",
+      "check_id": "release_publication_rollback_drill_v1",
       "required": true,
       "implemented": true
     },
     {
       "order": 18,
-      "check_id": "release_publication_chain_audit_bundle_v1",
+      "check_id": "release_publication_evidence_integrity_index_v1",
       "required": true,
       "implemented": true
     },
     {
       "order": 19,
-      "check_id": "release_publication_ready_for_execution_request_v1",
+      "check_id": "release_publication_chain_audit_bundle_v1",
       "required": true,
       "implemented": true
     },
     {
       "order": 20,
-      "check_id": "release_publication_execution_handoff_v1",
+      "check_id": "release_publication_ready_for_execution_request_v1",
       "required": true,
       "implemented": true
     },
     {
       "order": 21,
-      "check_id": "release_publication_execution_admission_request_packet_v1",
+      "check_id": "release_publication_execution_handoff_v1",
       "required": true,
       "implemented": true
     },
     {
       "order": 22,
+      "check_id": "release_publication_execution_admission_request_packet_v1",
+      "required": true,
+      "implemented": true
+    },
+    {
+      "order": 23,
       "check_id": "release_publication_gate_set_v1",
       "required": true,
       "implemented": true

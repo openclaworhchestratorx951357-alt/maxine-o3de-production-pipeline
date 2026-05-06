@@ -1,0 +1,84 @@
+﻿{
+  "schema_version": "1.0.0",
+  "report_type": "AAA_PERFORMANCE_BUDGET_v1_REPORT",
+  "job_id": "job-release-character-performance-fail-001",
+  "package_id": "char.maxine.knight_arden",
+  "lane": "release_character",
+  "status": "fail",
+  "candidate_id": "max_biped_v1_candidate_001",
+  "source_asset_reference": "fixtures://source/max_biped_v1/source_character.fbx",
+  "source_evidence_ref": "examples/aaa-performance-budget/max_biped_v1_aaa_performance_budget_fail.json",
+  "performance_profile_id": "AAA_PERFORMANCE_BUDGET_v1",
+  "performance_profile_version": "1.0.0",
+  "asset_tier": "hero",
+  "evidence_class": "fixture",
+  "triangle_count": 201000,
+  "triangle_budget_status": "fail",
+  "material_slot_count": 10,
+  "material_slot_budget_status": "fail",
+  "texture_count": 30,
+  "texture_resolution_max": 8192,
+  "texture_memory_estimate_mb": 420.2,
+  "texture_budget_status": "fail",
+  "uv_set_count": 0,
+  "uv_budget_status": "fail",
+  "bone_count": 236,
+  "bone_budget_status": "fail",
+  "skin_influence_max": 9,
+  "skin_influence_budget_status": "fail",
+  "lod_count": 1,
+  "lod_budget_status": "fail",
+  "animation_clip_count": 0,
+  "animation_budget_status": "fail",
+  "package_size_estimate_mb": 620.0,
+  "package_size_budget_status": "fail",
+  "import_time_estimate_status": "fail",
+  "runtime_load_readiness_status": "fail",
+  "review_tier_status": "fail",
+  "waiver_status": "none",
+  "waiver_ids": [],
+  "waiver_reasons": [],
+  "claim_status": "evidence_only",
+  "safety": {
+    "o3de_execution_status": "blocked",
+    "editor_execution_status": "blocked",
+    "runtime_execution_status": "blocked",
+    "asset_processor_execution_status": "blocked",
+    "dcc_execution_status": "blocked",
+    "blender_execution_status": "blocked",
+    "benchmark_execution_status": "blocked",
+    "production_write_status": "blocked"
+  },
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-performance-fail-001/o3de/source/knight_arden_conformed.fbx",
+    "source_kind": "fbx",
+    "sha256": "ec7472bc0ff9ca6f4dd620cfec516ba509de9634d9d68fc2ff5d884a3feddf40"
+  },
+  "budget_thresholds": {
+    "package_size_warn_mb": 350,
+    "package_size_fail_mb": 500,
+    "texture_memory_warn_mb": 260,
+    "texture_memory_fail_mb": 360
+  },
+  "findings": [
+    {
+      "id": "hero_budget_blocker",
+      "severity": "error",
+      "status": "open",
+      "message": "Multiple hard-limit budget thresholds are exceeded without waiver."
+    }
+  ],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "aaa_performance_budget_v1",
+      "result": "fail",
+      "severity": "error",
+      "details": {
+        "summary": "Performance budget report has blocking threshold violations.",
+        "evidence_class": "fixture"
+      }
+    }
+  }
+}

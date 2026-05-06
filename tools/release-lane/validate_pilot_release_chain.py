@@ -22,6 +22,7 @@ REQUIRED_IMPLEMENTED_GATE_IDS = {
     "animation_smoke_v1",
     "screenshot_evidence_v1",
     "manual_hero_review_v1",
+    "aaa_performance_budget_v1",
     "ci_artifact_retention_v1",
     "release_package_bundle_v1",
     "release_promotion_decision_v1",

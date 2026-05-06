@@ -37,6 +37,7 @@ def test_report_default_manifest_outputs_controlled_evidence_ready_execution_blo
     assert "dcc_conform_v1" in evidence["controlled_real_check_ids"]
     assert "material_uv_qc_v1" in evidence["controlled_real_check_ids"]
     assert "animation_smoke_v1" in evidence["controlled_real_check_ids"]
+    assert "aaa_performance_budget_v1" in evidence["controlled_real_check_ids"]
     assert "animation_smoke_v1" not in evidence["manual_check_ids"]
 
     execution = payload["execution_admission_status"]
