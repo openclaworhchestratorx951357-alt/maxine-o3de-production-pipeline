@@ -28,6 +28,12 @@ DEFAULT_PROJECT_INVENTORY = (
 DEFAULT_ASSET_CANDIDATE_INVENTORY = (
     "examples/sandbox/asset-candidates/max_biped_v1_asset_candidate_inventory.fixture.json"
 )
+DEFAULT_RESOLVER_AP_EVIDENCE_IMPORTS = [
+    (
+        "examples/sandbox/ap-evidence-imports/pilot-candidates/"
+        "max_biped_v1_ap_evidence_import.fixture.json"
+    ),
+]
 REQUIRED_IMPLEMENTED_CHECK_IDS = [
     "max_biped_v1_skeleton_contract",
     "dcc_conform_v1",
@@ -276,6 +282,8 @@ def main() -> int:
         "--output",
         str(source_product_report_path),
     ]
+    for ap_import_path in DEFAULT_RESOLVER_AP_EVIDENCE_IMPORTS:
+        resolver_extract_cmd.extend(["--ap-evidence-import", ap_import_path])
     resolver_extract_proc = run_command(repo_root, resolver_extract_cmd)
     if resolver_extract_proc.returncode != 0:
         print(

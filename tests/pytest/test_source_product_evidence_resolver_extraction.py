@@ -66,12 +66,15 @@ def test_extractor_default_fixtures_pass(repo_tmp_dir: Path):
     payload = _payload(result.stdout)
     assert payload["status"] == "pass"
     assert payload["report_type"] == "SOURCE_PRODUCT_EVIDENCE_RESOLVER_v1_REPORT"
-    assert payload["evidence_source_type"] == "fixture"
+    assert payload["evidence_source_type"] == "imported_ap_evidence"
     assert payload["source_uuid_claim_status"] == "not_claimed"
     assert payload["asset_id_claim_status"] == "not_claimed"
     assert payload["product_id_claim_status"] == "not_claimed"
     assert payload["cache_access_status"] == "blocked"
     assert payload["live_db_access_status"] == "blocked"
+    extraction_inputs = payload.get("extraction_inputs", {})
+    assert extraction_inputs.get("required_imported_coverage_complete") is True
+    assert extraction_inputs.get("missing_required_imported_product_types") == []
     assert output_path.exists()
 
 
@@ -106,6 +109,9 @@ def test_extractor_uses_imported_ap_evidence_when_present(repo_tmp_dir: Path):
                 "evidence-hint://ap-import/objects/max_biped_v1.motion",
                 "evidence-hint://ap-import/prefabs/max_biped_v1.procprefab",
                 "evidence-hint://ap-import/objects/max_biped_v1.azmodel",
+                "evidence-hint://ap-import/materials/max_biped_v1.material",
+                "evidence-hint://ap-import/textures/max_biped_v1.streamingimage",
+                "evidence-hint://ap-import/physics/max_biped_v1.pxmesh",
             ],
         }
         ap_import_path.write_text(json.dumps(ap_import_payload, indent=2) + "\n", encoding="utf-8")
@@ -162,3 +168,58 @@ def test_extractor_fails_when_candidate_is_outside_approved_roots(repo_tmp_dir: 
     assert payload["status"] == "fail"
     finding_ids = {item.get("id") for item in payload.get("findings", [])}
     assert "source_asset_path_outside_approved_roots" in finding_ids
+
+
+def test_extractor_fails_when_required_imported_coverage_is_missing(repo_tmp_dir: Path):
+    ap_import_path = (
+        REPO_ROOT
+        / "examples"
+        / "sandbox"
+        / "ap-evidence-imports"
+        / f"pytest-source-product-missing-import-coverage-{uuid4().hex}.json"
+    )
+    output_path = repo_tmp_dir / "source-product-report-missing-coverage.json"
+
+    try:
+        ap_import_payload = {
+            "schema_version": "1.0.0",
+            "ap_evidence_import_id": f"pytest-ap-import-missing-{uuid4().hex}",
+            "read_only": True,
+            "asset_processor_execution_admitted": False,
+            "o3de_execution_admitted": False,
+            "cache_access_admitted": False,
+            "live_database_access_admitted": False,
+            "product_ids_claimed": False,
+            "asset_ids_claimed": False,
+            "source_uuids_claimed": False,
+            "product_resolution_claimed": False,
+            "spawn_admitted": False,
+            "publish_admitted": False,
+            "evidence_quality": "partial",
+            "observed_product_like_mentions": [
+                "evidence-hint://ap-import/objects/max_biped_v1.actor"
+            ],
+        }
+        ap_import_path.write_text(json.dumps(ap_import_payload, indent=2) + "\n", encoding="utf-8")
+
+        result = _run(
+            "--project-inventory",
+            str(PROJECT_FIXTURE),
+            "--asset-candidate-inventory",
+            str(ASSET_FIXTURE),
+            "--controlled-inventory-report",
+            str(CONTROLLED_FIXTURE),
+            "--ap-evidence-import",
+            str(ap_import_path),
+            "--output",
+            str(output_path),
+        )
+        assert result.returncode == 1
+        payload = _payload(result.stdout)
+        assert payload["status"] == "fail"
+        finding_ids = {item.get("id") for item in payload.get("findings", [])}
+        assert "required_imported_product_coverage_missing" in finding_ids
+        assert "required_types_using_fixture_fallback" in finding_ids
+    finally:
+        if ap_import_path.exists():
+            ap_import_path.unlink()

@@ -64,6 +64,13 @@ def test_runner_builds_generated_manifest_and_attaches_expected_checks(repo_tmp_
     assert "source_product_resolver_extract" in step_map
     assert Path(step_map["controlled_real_evidence_inventory"]["payload_path"]).exists()
     assert Path(step_map["source_product_resolver_extract"]["payload_path"]).exists()
+    extraction_report = json.loads(
+        Path(step_map["source_product_resolver_extract"]["payload_path"]).read_text(encoding="utf-8-sig")
+    )
+    extraction_inputs = extraction_report.get("extraction_inputs", {})
+    assert extraction_inputs.get("required_imported_coverage_complete") is True
+    assert extraction_inputs.get("missing_required_imported_product_types") == []
+    assert extraction_inputs.get("ap_evidence_import_count", 0) >= 1
 
     manifest = json.loads(output_manifest.read_text(encoding="utf-8-sig"))
     gate_ids = {

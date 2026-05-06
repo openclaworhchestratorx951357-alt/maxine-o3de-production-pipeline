@@ -29,7 +29,7 @@ DEFAULT_CONTROLLED_INVENTORY_REPORT = (
 DEFAULT_FIXTURE_REPORT = (
     "examples/source-product-evidence-resolver/max_biped_v1_source_product_resolver_pass.json"
 )
-DEFAULT_AP_EVIDENCE_IMPORT_ROOT = "examples/sandbox/ap-evidence-imports"
+DEFAULT_AP_EVIDENCE_IMPORT_ROOT = "examples/sandbox/ap-evidence-imports/pilot-candidates"
 DEFAULT_OUTPUT = (
     "examples/sandbox/manifests/reports/pilot-release-chain-proof/"
     "source-product-evidence-resolver-extracted.json"
@@ -45,6 +45,7 @@ EXPECTED_PRODUCT_TYPES = [
     "texture",
     "pxmesh",
 ]
+REQUIRED_IMPORTED_PRODUCT_TYPES = EXPECTED_PRODUCT_TYPES
 NON_ADMISSIONS = [
     "no live cache read",
     "no live db read",
@@ -69,7 +70,8 @@ def parse_args() -> argparse.Namespace:
         description=(
             "Build SOURCE_PRODUCT_EVIDENCE_RESOLVER_v1_REPORT from admitted evidence "
             "sources only (controlled inventory + approved local inputs + optional AP "
-            "evidence imports + fixture-backed fallback)."
+            "evidence imports + fixture-backed fallback). Pass status requires imported AP "
+            "evidence coverage for required product types."
         )
     )
     parser.add_argument("--project-inventory", default=DEFAULT_PROJECT_INVENTORY)
@@ -573,6 +575,58 @@ def main() -> int:
     fixture_observed = _load_fixture_observed(fixture_report)
     expected_products = _build_expected_products()
     observed_products = _build_observed_products(expected_products, imported_observed, fixture_observed)
+    imported_product_types = sorted(imported_observed.keys())
+    required_imported_types = list(REQUIRED_IMPORTED_PRODUCT_TYPES)
+    missing_required_imported_types = sorted(
+        set(required_imported_types) - set(imported_product_types)
+    )
+    fixture_fallback_product_types = sorted(
+        str(item.get("product_type", "")).strip()
+        for item in observed_products
+        if str(item.get("evidence_source", "")).strip() == "fixture"
+    )
+    required_types_using_fixture_fallback = sorted(
+        set(required_imported_types).intersection(fixture_fallback_product_types)
+    )
+
+    if not ap_import_payloads:
+        findings.append(
+            _finding(
+                "required_ap_evidence_imports_missing_for_pass",
+                "error",
+                "Pass status requires bounded AP evidence import fixtures for pilot candidates.",
+                {
+                    "required_imported_product_types": required_imported_types,
+                    "ap_import_root": _normalize(ap_import_root, repo_root),
+                },
+            )
+        )
+
+    if missing_required_imported_types:
+        findings.append(
+            _finding(
+                "required_imported_product_coverage_missing",
+                "error",
+                "Imported AP evidence does not cover all required product types for pass status.",
+                {
+                    "required_imported_product_types": required_imported_types,
+                    "imported_product_types": imported_product_types,
+                    "missing_required_imported_product_types": missing_required_imported_types,
+                },
+            )
+        )
+
+    if required_types_using_fixture_fallback:
+        findings.append(
+            _finding(
+                "required_types_using_fixture_fallback",
+                "error",
+                "Required product types cannot rely on fixture fallback when reporting pass.",
+                {
+                    "required_types_using_fixture_fallback": required_types_using_fixture_fallback,
+                },
+            )
+        )
 
     status = _status_from_findings(findings)
     evidence_source_type = "imported_ap_evidence" if imported_observed else "fixture"
@@ -611,13 +665,17 @@ def main() -> int:
                     "source_fixture_report_path": _normalize(fixture_report_path, repo_root),
                     "ap_evidence_import_paths": [_normalize(path, repo_root) for path, _ in ap_import_payloads],
                     "candidate_id": candidate_id,
+                    "required_imported_product_types": required_imported_types,
+                    "imported_product_types": imported_product_types,
+                    "missing_required_imported_product_types": missing_required_imported_types,
+                    "required_types_using_fixture_fallback": required_types_using_fixture_fallback,
                 },
             },
         },
         "safety_summary": (
             "Bounded source/product evidence extraction used admitted controlled inventory records, "
-            "approved local inputs, optional imported AP evidence, sandbox evidence links, and "
-            "fixture-backed hints only."
+            "approved local inputs, imported AP evidence fixtures for required product coverage, "
+            "sandbox evidence links, and fixture-backed hints only where allowed."
         ),
         "explicit_non_admissions": NON_ADMISSIONS,
         "generated_utc": datetime.now(timezone.utc).isoformat(),
@@ -628,6 +686,12 @@ def main() -> int:
             "controlled_inventory_ready": controlled_inventory.get("controlled_real_inventory_ready"),
             "ap_evidence_import_count": len(ap_import_payloads),
             "ap_import_root": _normalize(ap_import_root, repo_root),
+            "required_imported_product_types": required_imported_types,
+            "imported_product_types": imported_product_types,
+            "missing_required_imported_product_types": missing_required_imported_types,
+            "required_imported_coverage_complete": not missing_required_imported_types,
+            "fixture_fallback_product_types": fixture_fallback_product_types,
+            "required_types_using_fixture_fallback": required_types_using_fixture_fallback,
         },
     }
 

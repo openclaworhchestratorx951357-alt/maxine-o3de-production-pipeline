@@ -7,6 +7,7 @@
 - validates structured source->product evidence report JSON
 - checks required expected product coverage
 - checks optional product coverage as warning-level gaps
+- requires imported AP evidence coverage for required resolver product types before pass
 - enforces blocked claim/access status surfaces
 - emits manifest-attachable QC output
 
@@ -58,6 +59,7 @@ Core fields:
 
 - required expected product missing -> fail
 - optional expected product missing -> warn
+- required imported AP evidence coverage missing -> fail
 - low-confidence observed product evidence -> warn
 - future admission claim status while blocked -> fail
 - cache/live DB access not blocked -> fail
@@ -86,6 +88,7 @@ The pilot release-chain runner now generates resolver input from admitted source
 - approved local input candidate inventory
 - optional imported AP evidence import records
 - fixture-backed hints when imported AP evidence is absent
+- resolver pass is blocked if required product types rely on fixture fallback
 
 ## Validator
 
