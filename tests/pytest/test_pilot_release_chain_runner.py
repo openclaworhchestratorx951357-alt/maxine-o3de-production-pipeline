@@ -108,6 +108,13 @@ def test_runner_builds_generated_manifest_and_attaches_expected_checks(repo_tmp_
     perf_details = performance_payload.get("manifest_attachment", {}).get("qc_check", {}).get("details", {})
     assert perf_details.get("safety", {}).get("benchmark_execution_status") == "blocked"
     assert perf_details.get("safety", {}).get("runtime_execution_status") == "blocked"
+    package_payload = json.loads(
+        Path(step_map["real_pilot_release_candidate_package"]["payload_path"]).read_text(encoding="utf-8-sig")
+    )
+    assert package_payload.get("status") == "pass"
+    assert package_payload.get("claim_status") == "evidence_only"
+    assert package_payload.get("safety", {}).get("package_publication_status") == "blocked"
+    assert "pilot_release_chain_v1" in package_payload.get("required_gate_refs", [])
     extraction_report = json.loads(
         Path(step_map["source_product_resolver_extract"]["payload_path"]).read_text(encoding="utf-8-sig")
     )
@@ -146,6 +153,7 @@ def test_runner_builds_generated_manifest_and_attaches_expected_checks(repo_tmp_
     assert "release_publication_execution_admission_request_packet_v1" in gate_ids
     assert "release_publication_gate_set_v1" in gate_ids
     assert "pilot_release_chain_v1" in gate_ids
+    assert "real_pilot_release_candidate_package_v1" in gate_ids
 
 
 def test_runner_strict_chain_passes_for_pass_chain(repo_tmp_dir: Path):

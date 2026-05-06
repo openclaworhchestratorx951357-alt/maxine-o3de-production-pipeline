@@ -37,6 +37,7 @@ For the representative pilot fixture:
 - required release-lane gate chain can be pass-complete
 - controlled real evidence is present for `max_biped_v1_skeleton_contract`, `dcc_conform_v1`, `material_uv_qc_v1`, `animation_smoke_v1`, `screenshot_evidence_v1`, and `aaa_performance_budget_v1`
 - `manual_hero_review_v1` remains manual evidence class but now references required controlled-real gate evidence for hero-tier review decisions
+- `real_pilot_release_candidate_package_v1` is attached as manual evidence-only package proof binding required gate references while keeping execution/publication blocked
 - explicit approved execution-admission remains missing
 
 This report provides the deterministic status statement required before any execution-admission discussion.

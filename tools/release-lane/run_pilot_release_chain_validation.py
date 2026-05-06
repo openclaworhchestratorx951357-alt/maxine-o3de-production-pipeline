@@ -86,6 +86,7 @@ REQUIRED_IMPLEMENTED_CHECK_IDS = [
     "release_publication_execution_handoff_v1",
     "release_publication_execution_admission_request_packet_v1",
     "release_publication_gate_set_v1",
+    "real_pilot_release_candidate_package_v1",
 ]
 
 
@@ -897,6 +898,87 @@ def main() -> int:
             )
         )
         return 1
+
+    real_pilot_package_cmd: List[str] = [
+        sys.executable,
+        "tools/real-pilot-release-candidate-package/validate_real_pilot_release_candidate_package_report.py",
+        str(output_manifest_path),
+    ]
+    real_pilot_package_proc = run_command(repo_root, real_pilot_package_cmd)
+    if real_pilot_package_proc.returncode != 0:
+        print(
+            json.dumps(
+                {
+                    "status": "failed",
+                    "failed_step": "real_pilot_release_candidate_package",
+                    "command": real_pilot_package_cmd,
+                    "stdout": real_pilot_package_proc.stdout,
+                    "stderr": real_pilot_package_proc.stderr,
+                },
+                indent=2,
+            )
+        )
+        return 1
+    try:
+        real_pilot_package_payload = parse_payload_from_stdout(real_pilot_package_proc.stdout)
+        ensure_attachment_paths(real_pilot_package_payload, "real_pilot_release_candidate_package")
+    except Exception as exc:
+        print(
+            json.dumps(
+                {
+                    "status": "failed",
+                    "failed_step": "real_pilot_release_candidate_package",
+                    "reason": f"payload_parse_error: {exc}",
+                    "stdout": real_pilot_package_proc.stdout,
+                },
+                indent=2,
+            )
+        )
+        return 1
+    real_pilot_package_payload_path = (
+        attachment_dir / "real_pilot_release_candidate_package_v1.json"
+    )
+    write_json(real_pilot_package_payload_path, real_pilot_package_payload)
+    snapshot_paths.append(str(real_pilot_package_payload_path))
+
+    attach_real_pilot_package_cmd = [
+        sys.executable,
+        "tools/manifest-validator/attach_qc_gate.py",
+        "--manifest",
+        str(output_manifest_path),
+        "--attachment",
+        str(real_pilot_package_payload_path),
+    ]
+    attach_real_pilot_package_proc = run_command(repo_root, attach_real_pilot_package_cmd)
+    if attach_real_pilot_package_proc.returncode != 0:
+        print(
+            json.dumps(
+                {
+                    "status": "failed",
+                    "failed_step": "attach_real_pilot_release_candidate_package_payload",
+                    "command": attach_real_pilot_package_cmd,
+                    "stdout": attach_real_pilot_package_proc.stdout,
+                    "stderr": attach_real_pilot_package_proc.stderr,
+                },
+                indent=2,
+            )
+        )
+        return 1
+    real_pilot_check_id = (
+        real_pilot_package_payload.get("manifest_attachment", {})
+        .get("qc_check", {})
+        .get("check_id", "")
+    )
+    if isinstance(real_pilot_check_id, str) and real_pilot_check_id.strip():
+        attached_check_ids.append(real_pilot_check_id.strip())
+    step_results.append(
+        {
+            "step": "real_pilot_release_candidate_package",
+            "status": real_pilot_package_payload.get("status"),
+            "payload_path": str(real_pilot_package_payload_path),
+            "check_id": real_pilot_check_id,
+        }
+    )
 
     expected_missing = [
         check_id for check_id in REQUIRED_IMPLEMENTED_CHECK_IDS if check_id not in attached_check_ids

@@ -93,6 +93,19 @@
   - integrated into `tools/release-lane/run_pilot_release_chain_validation.py`
   - release-lane evidence admission status now classifies `aaa_performance_budget_v1` as controlled-real evidence
   - `tests/pytest/test_aaa_performance_budget_report.py`
+- Real pilot release-candidate package proof v1 is implemented (bounded evidence-only, non-executing, non-publishing):
+  - `docs/maxine/specs/real-pilot-release-candidate-package-v1.md`
+  - `schemas/maxine_real_pilot_release_candidate_package_report.schema.json`
+  - `tools/real-pilot-release-candidate-package/validate_real_pilot_release_candidate_package_report.py`
+  - `examples/real-pilot-release-candidate-package/max_biped_v1_real_pilot_release_candidate_package_pass.json`
+  - `examples/real-pilot-release-candidate-package/max_biped_v1_real_pilot_release_candidate_package_warn.json`
+  - `examples/real-pilot-release-candidate-package/max_biped_v1_real_pilot_release_candidate_package_fail.json`
+  - `examples/manifests/example-real-pilot-release-candidate-package-pass.manifest.json`
+  - `examples/manifests/example-real-pilot-release-candidate-package-warn.manifest.json`
+  - `examples/manifests/example-real-pilot-release-candidate-package-fail.manifest.json`
+  - integrated into `tools/release-lane/run_pilot_release_chain_validation.py` as post-chain package proof attachment
+  - release-lane evidence admission status now classifies `real_pilot_release_candidate_package_v1` as manual evidence-only package proof
+  - `tests/pytest/test_real_pilot_release_candidate_package_report.py`
 - Execution admission remains future work requiring explicit operator approval.
 - No execution surfaces are newly admitted in this slice.
 - Sandbox-only writer skeleton is implemented for generated-asset resolver placeholders.
@@ -523,6 +536,11 @@
   - validates deterministic completeness/order of required release publication gate evidence already attached to the manifest
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+- Real pilot release-candidate package proof v1 validation remains non-executing evidence-only:
+  - validates required pilot release-candidate gate references and core controlled/imported/manual evidence-class coverage
+  - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - keeps package publication and all execution surfaces blocked
+  - does not execute Blender/O3DE/AP/Editor/runtime/profiler, spawn, publish, or Cache/live DB access
 - No O3DE Editor, Asset Processor, database, spawn, or publish execution is introduced.
 
 ## Verification Entry Points

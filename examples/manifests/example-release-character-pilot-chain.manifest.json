@@ -269,6 +269,19 @@
           "evidence_source": "fixture",
           "summary": "Release publication gate-set evidence validates deterministic gate completeness/order before publication-ready chain sign-off."
         }
+      },
+      {
+        "check_id": "real_pilot_release_candidate_package_v1",
+        "result": "pass",
+        "severity": "info",
+        "details": {
+          "contract_id": "REAL_PILOT_RELEASE_CANDIDATE_PACKAGE_v1",
+          "evidence_source": "derived_evidence_only_package_proof",
+          "evidence_class": "manual",
+          "summary": "Real pilot release-candidate package proof binds required controlled/imported/manual gate evidence while execution/publication remains blocked.",
+          "package_publication_status": "blocked",
+          "runtime_execution_status": "blocked"
+        }
       }
     ],
     "checks": []

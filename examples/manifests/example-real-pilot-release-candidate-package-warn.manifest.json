@@ -1,0 +1,111 @@
+{
+  "schema_version": "1.0.0",
+  "job": {
+    "job_id": "job-real-pilot-package-warn-001",
+    "lane": "release_character",
+    "status": "pending_manual"
+  },
+  "identity": {
+    "character_id": "maxine-release-pilot-001",
+    "package_id": "char.maxine.release_pilot.max_biped_v1",
+    "release_tag": "pilot-fixture-v1",
+    "asset_tier": "hero"
+  },
+  "qc": {
+    "overall": "warn",
+    "gates": [
+      {
+        "check_id": "source_product_evidence_resolver_v1",
+        "result": "pass",
+        "severity": "info",
+        "details": {
+          "evidence_class": "imported"
+        }
+      },
+      {
+        "check_id": "dcc_conform_v1",
+        "result": "pass",
+        "severity": "info",
+        "details": {
+          "evidence_class": "controlled_real"
+        }
+      },
+      {
+        "check_id": "max_biped_v1_skeleton_contract",
+        "result": "pass",
+        "severity": "info",
+        "details": {
+          "evidence_class": "controlled_real"
+        }
+      },
+      {
+        "check_id": "material_uv_qc_v1",
+        "result": "pass",
+        "severity": "info",
+        "details": {
+          "evidence_class": "controlled_real"
+        }
+      },
+      {
+        "check_id": "animation_smoke_v1",
+        "result": "pass",
+        "severity": "info",
+        "details": {
+          "evidence_class": "controlled_real"
+        }
+      },
+      {
+        "check_id": "screenshot_evidence_v1",
+        "result": "pass",
+        "severity": "info",
+        "details": {
+          "evidence_class": "controlled_real"
+        }
+      },
+      {
+        "check_id": "manual_hero_review_v1",
+        "result": "pass",
+        "severity": "info",
+        "details": {
+          "evidence_class": "manual",
+          "execution_admitted": false,
+          "publication_admitted": false
+        }
+      },
+      {
+        "check_id": "aaa_performance_budget_v1",
+        "result": "pass",
+        "severity": "info",
+        "details": {
+          "evidence_class": "controlled_real"
+        }
+      },
+      {
+        "check_id": "release_package_bundle_v1",
+        "result": "pass",
+        "severity": "info"
+      },
+      {
+        "check_id": "release_promotion_decision_v1",
+        "result": "warn",
+        "severity": "warning"
+      },
+      {
+        "check_id": "release_publication_preflight_v1",
+        "result": "pass",
+        "severity": "info"
+      },
+      {
+        "check_id": "release_publication_gate_set_v1",
+        "result": "pass",
+        "severity": "info"
+      },
+      {
+        "check_id": "pilot_release_chain_v1",
+        "result": "pass",
+        "severity": "info"
+      }
+    ],
+    "checks": []
+  }
+}
