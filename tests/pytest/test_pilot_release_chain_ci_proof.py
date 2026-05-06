@@ -59,6 +59,7 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
     assert evidence_status["report_type"] == "RELEASE_LANE_EVIDENCE_ADMISSION_STATUS_v1_REPORT"
     assert evidence_status["overall_release_lane_state"] == "controlled_evidence_ready_execution_blocked"
     assert "max_biped_v1_skeleton_contract" in evidence_status["evidence_classification"]["controlled_real_check_ids"]
+    assert "material_uv_qc_v1" in evidence_status["evidence_classification"]["controlled_real_check_ids"]
     assert evidence_status["reporter_return_code"] == 0
     assert Path(evidence_status["output_path"]).exists()
     receipt_status = payload["details"]["execution_admission_receipt_dry_run_report"]

@@ -34,6 +34,15 @@ def test_pass_report_returns_pass_and_exit_zero():
     assert result.returncode == 0, f"Unexpected failure:\n{result.stdout}\n{result.stderr}"
     payload = _extract_payload(result.stdout)
     assert payload["status"] == "pass"
+    assert payload["check_id"] == "material_uv_qc_v1"
+    assert payload["evidence_class"] == "controlled_real"
+    assert payload["claim_status"] == "evidence_only"
+    details = payload["manifest_attachment"]["qc_check"]["details"]
+    assert details["safety"]["dcc_execution_status"] == "blocked"
+    assert details["safety"]["blender_execution_status"] == "blocked"
+    assert details["safety"]["o3de_execution_status"] == "blocked"
+    assert details["safety"]["asset_processor_execution_status"] == "blocked"
+    assert details["safety"]["production_write_status"] == "blocked"
 
 
 def test_warn_report_returns_warn_and_exit_zero_with_allow_warn():
@@ -60,9 +69,11 @@ def test_fail_report_returns_fail_and_nonzero():
 def test_missing_required_uv_set_fails(tmp_path: Path):
     report = json.loads(_report_path("max_biped_v1_material_uv_pass.json").read_text(encoding="utf-8-sig"))
     report["status"] = "fail"
+    report["required_uv_sets_present"] = "fail"
     report["uv_summary"]["required_uv_sets"] = ["UV0", "UV1"]
     report["uv_summary"]["present_uv_sets"] = ["UV0"]
     report["uv_summary"]["missing_uv_sets"] = ["UV1"]
+    report["uv_set_count"] = 1
     test_file = tmp_path / "missing-required-uv.json"
     test_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
@@ -76,6 +87,8 @@ def test_missing_required_uv_set_fails(tmp_path: Path):
 def test_missing_required_texture_or_material_fails(tmp_path: Path):
     report = json.loads(_report_path("max_biped_v1_material_uv_pass.json").read_text(encoding="utf-8-sig"))
     report["status"] = "fail"
+    report["material_slot_status"] = "fail"
+    report["missing_texture_status"] = "fail"
     report["material_summary"]["missing_materials"] = ["body"]
     report["material_summary"]["missing_textures"] = ["textures/char/body_albedo.png"]
     test_file = tmp_path / "missing-material-texture.json"
@@ -93,6 +106,9 @@ def test_missing_required_texture_or_material_fails(tmp_path: Path):
 def test_material_slot_budget_overflow_warns_by_schema_rule(tmp_path: Path):
     report = json.loads(_report_path("max_biped_v1_material_uv_pass.json").read_text(encoding="utf-8-sig"))
     report["status"] = "warn"
+    report["material_slot_count"] = 12
+    report["material_slot_status"] = "warn"
+    report["material_budget_status"] = "warn"
     report["material_summary"]["material_slot_count"] = 12
     report["material_summary"]["material_slot_budget"] = 10
     report["material_summary"]["slot_budget_exceeded_severity"] = "warning"
@@ -132,3 +148,19 @@ def test_output_future_target_path_is_qc_checks():
     result = _run_validator(_report_path("max_biped_v1_material_uv_pass.json"))
     payload = _extract_payload(result.stdout)
     assert payload["manifest_attachment"]["future_target_path"] == "qc.checks[]"
+
+
+def test_controlled_real_source_evidence_ref_outside_sandbox_fails(tmp_path: Path):
+    report = json.loads(_report_path("max_biped_v1_material_uv_pass.json").read_text(encoding="utf-8-sig"))
+    report["source_evidence_ref"] = "examples/material-uv-qc/non-sandbox-report.json"
+    test_file = tmp_path / "outside-sandbox-source-evidence-ref.json"
+    test_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+    result = _run_validator(test_file)
+    payload = _extract_payload(result.stdout)
+    assert result.returncode != 0
+    assert payload["status"] == "fail"
+    assert any(
+        item.get("id") == "controlled_real_source_evidence_ref_outside_sandbox"
+        for item in payload["findings"]
+    )

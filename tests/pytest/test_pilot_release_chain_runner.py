@@ -73,6 +73,11 @@ def test_runner_builds_generated_manifest_and_attaches_expected_checks(repo_tmp_
     dcc_payload = json.loads(Path(step_map["dcc_conform"]["payload_path"]).read_text(encoding="utf-8-sig"))
     assert dcc_payload.get("status") == "pass"
     assert dcc_payload.get("evidence_class") == "controlled_real"
+    material_uv_payload = json.loads(
+        Path(step_map["material_uv_qc"]["payload_path"]).read_text(encoding="utf-8-sig")
+    )
+    assert material_uv_payload.get("status") == "pass"
+    assert material_uv_payload.get("evidence_class") == "controlled_real"
     extraction_report = json.loads(
         Path(step_map["source_product_resolver_extract"]["payload_path"]).read_text(encoding="utf-8-sig")
     )

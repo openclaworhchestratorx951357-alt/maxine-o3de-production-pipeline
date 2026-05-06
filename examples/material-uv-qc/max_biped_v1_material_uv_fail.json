@@ -4,6 +4,36 @@
   "job_id": "job-release-character-material-uv-fail-001",
   "package_id": "char.maxine.raider_khal",
   "lane": "release_character",
+  "candidate_id": "max_biped_v1_candidate_003",
+  "source_asset_reference": "examples/sandbox/evidence-sources/approved-local-inputs/characters/max_biped_v1/source_character.fbx",
+  "source_evidence_ref": "examples/sandbox/evidence-bundles/max_biped_v1_candidate_003_material_uv.bundle.json",
+  "material_uv_profile_id": "MATERIAL_UV_QC_v1",
+  "material_uv_profile_version": "1.0.0",
+  "evidence_class": "controlled_real",
+  "material_slot_count": 7,
+  "material_slot_status": "fail",
+  "material_naming_status": "fail",
+  "standard_pbr_status": "pass",
+  "texture_reference_status": "fail",
+  "missing_texture_status": "fail",
+  "texture_resolution_status": "pass",
+  "texture_count_status": "pass",
+  "uv_set_count": 1,
+  "required_uv_sets_present": "fail",
+  "uv_overlap_status": "warn",
+  "uv_out_of_bounds_status": "warn",
+  "texel_density_status": "warn",
+  "lightmap_uv_status": "warn",
+  "material_budget_status": "pass",
+  "texture_budget_status": "pass",
+  "claim_status": "evidence_only",
+  "safety": {
+    "dcc_execution_status": "blocked",
+    "blender_execution_status": "blocked",
+    "o3de_execution_status": "blocked",
+    "asset_processor_execution_status": "blocked",
+    "production_write_status": "blocked"
+  },
   "status": "fail",
   "source": {
     "source_path": "artifacts/jobs/job-release-character-material-uv-fail-001/o3de/source/raider_khal_conformed.fbx",
@@ -64,7 +94,8 @@
       "result": "fail",
       "severity": "error",
       "details": {
-        "summary": "Required material and UV requirements not met."
+        "summary": "Required material and UV requirements not met.",
+        "evidence_class": "controlled_real"
       }
     }
   }

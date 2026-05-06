@@ -4,6 +4,36 @@
   "job_id": "job-release-character-material-uv-pass-001",
   "package_id": "char.maxine.knight_arden",
   "lane": "release_character",
+  "candidate_id": "max_biped_v1_candidate_001",
+  "source_asset_reference": "examples/sandbox/evidence-sources/approved-local-inputs/characters/max_biped_v1/source_character.fbx",
+  "source_evidence_ref": "examples/sandbox/evidence-bundles/max_biped_v1_candidate_001_material_uv.bundle.json",
+  "material_uv_profile_id": "MATERIAL_UV_QC_v1",
+  "material_uv_profile_version": "1.0.0",
+  "evidence_class": "controlled_real",
+  "material_slot_count": 8,
+  "material_slot_status": "pass",
+  "material_naming_status": "pass",
+  "standard_pbr_status": "pass",
+  "texture_reference_status": "pass",
+  "missing_texture_status": "pass",
+  "texture_resolution_status": "pass",
+  "texture_count_status": "pass",
+  "uv_set_count": 2,
+  "required_uv_sets_present": "pass",
+  "uv_overlap_status": "pass",
+  "uv_out_of_bounds_status": "pass",
+  "texel_density_status": "pass",
+  "lightmap_uv_status": "pass",
+  "material_budget_status": "pass",
+  "texture_budget_status": "pass",
+  "claim_status": "evidence_only",
+  "safety": {
+    "dcc_execution_status": "blocked",
+    "blender_execution_status": "blocked",
+    "o3de_execution_status": "blocked",
+    "asset_processor_execution_status": "blocked",
+    "production_write_status": "blocked"
+  },
   "status": "pass",
   "source": {
     "source_path": "artifacts/jobs/job-release-character-material-uv-pass-001/o3de/source/knight_arden_conformed.fbx",
@@ -63,7 +93,8 @@
       "result": "pass",
       "severity": "info",
       "details": {
-        "summary": "Material slots, UV sets, and texture references satisfy v1 policy."
+        "summary": "Material slots, UV sets, and texture references satisfy v1 policy.",
+        "evidence_class": "controlled_real"
       }
     }
   }

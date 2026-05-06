@@ -50,6 +50,14 @@
   - integrated into `tools/release-lane/run_pilot_release_chain_validation.py`
   - release-lane evidence admission status now classifies `max_biped_v1_skeleton_contract` as controlled-real evidence
   - `tests/pytest/test_max_biped_skeleton_evidence_report.py`
+- Controlled real material/UV evidence v1 is implemented (bounded evidence-only, non-executing):
+  - `docs/maxine/specs/controlled-real-material-uv-evidence-v1.md`
+  - `schemas/maxine_material_uv_qc_report.schema.json` (controlled-real evidence fields and blocked safety statuses)
+  - `tools/material-uv-qc/validate_material_uv_qc_report.py`
+  - `examples/sandbox/material-uv-evidence/pilot-candidates/max_biped_v1_material_uv_controlled_real.fixture.json`
+  - integrated into `tools/release-lane/run_pilot_release_chain_validation.py`
+  - release-lane evidence admission status now classifies `material_uv_qc_v1` as controlled-real evidence
+  - `tests/pytest/test_material_uv_qc_report.py`
 - Execution admission remains future work requiring explicit operator approval.
 - No execution surfaces are newly admitted in this slice.
 - Sandbox-only writer skeleton is implemented for generated-asset resolver placeholders.
@@ -127,10 +135,12 @@
 - Material/UV QC v1 evidence report validation is implemented (contract-first, non-executing evidence only):
   - `schemas/maxine_material_uv_qc_report.schema.json`
   - `tools/material-uv-qc/validate_material_uv_qc_report.py`
+  - `examples/sandbox/material-uv-evidence/pilot-candidates/max_biped_v1_material_uv_controlled_real.fixture.json`
   - `examples/material-uv-qc/max_biped_v1_material_uv_pass.json`
   - `examples/material-uv-qc/max_biped_v1_material_uv_warn.json`
   - `examples/material-uv-qc/max_biped_v1_material_uv_fail.json`
   - `docs/maxine/specs/material-uv-qc-v1.md`
+  - `docs/maxine/specs/controlled-real-material-uv-evidence-v1.md`
 - Animation smoke v1 evidence report validation is implemented (contract-first, non-executing evidence only):
   - `schemas/maxine_animation_smoke_report.schema.json`
   - `tools/animation-smoke/validate_animation_smoke_report.py`
@@ -368,7 +378,8 @@
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - Material/UV QC v1 report validation remains non-executing evidence-only:
-  - validates Material/UV QC report JSON against release-lane material, UV, and texture-budget rules
+  - validates Material/UV QC report JSON against release-lane material, UV, and texture-budget rules plus controlled-real evidence metadata
+  - validates blocked safety statuses (`dcc`, `blender`, `o3de`, `asset_processor`, `production_write` all blocked)
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - Animation smoke v1 report validation remains non-executing evidence-only:

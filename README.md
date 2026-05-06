@@ -61,6 +61,7 @@ Get-ChildItem .\examples\manifests
 - Bounded AP-evidence-import pilot fixtures are integrated, and resolver pass now requires imported coverage for required source/product types so fixture fallback alone can no longer carry pass.
 - Controlled real MAX_BIPED skeleton evidence is integrated for pilot candidates through bounded sandbox fixtures (non-executing).
 - Controlled real DCC conform evidence is integrated for pilot candidates through bounded sandbox fixtures (non-executing).
+- Controlled real material/UV evidence is integrated for pilot candidates through bounded sandbox fixtures (non-executing).
 - AAA-quality output is not yet fully operational.
 - Execution admission remains future work requiring explicit approval.
 
@@ -75,6 +76,7 @@ Start here for PR readiness, review, and merge details:
 - `docs/maxine/specs/source-product-evidence-real-extraction-v1.md`
 - `docs/maxine/specs/controlled-real-max-biped-skeleton-evidence-v1.md`
 - `docs/maxine/specs/controlled-real-dcc-conform-evidence-v1.md`
+- `docs/maxine/specs/controlled-real-material-uv-evidence-v1.md`
 
 ## M.A.X.I.N.E. Resolver Ladder
 

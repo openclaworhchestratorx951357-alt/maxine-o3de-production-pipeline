@@ -1,31 +1,31 @@
 {
   "schema_version": "1.0.0",
   "report_type": "MATERIAL_UV_QC_v1_REPORT",
-  "job_id": "job-release-character-material-uv-warn-001",
-  "package_id": "char.maxine.guard_mira",
+  "job_id": "job-release-character-controlled-real-material-uv-001",
+  "package_id": "char.maxine.release_pilot.max_biped_v1",
   "lane": "release_character",
-  "candidate_id": "max_biped_v1_candidate_002",
+  "candidate_id": "max_biped_v1_candidate_001",
   "source_asset_reference": "examples/sandbox/evidence-sources/approved-local-inputs/characters/max_biped_v1/source_character.fbx",
-  "source_evidence_ref": "examples/sandbox/evidence-bundles/max_biped_v1_candidate_002_material_uv.bundle.json",
+  "source_evidence_ref": "examples/sandbox/evidence-bundles/max_biped_v1_candidate_001_controlled_real_material_uv.bundle.json",
   "material_uv_profile_id": "MATERIAL_UV_QC_v1",
   "material_uv_profile_version": "1.0.0",
   "evidence_class": "controlled_real",
-  "material_slot_count": 11,
-  "material_slot_status": "warn",
+  "material_slot_count": 8,
+  "material_slot_status": "pass",
   "material_naming_status": "pass",
   "standard_pbr_status": "pass",
   "texture_reference_status": "pass",
   "missing_texture_status": "pass",
-  "texture_resolution_status": "warn",
+  "texture_resolution_status": "pass",
   "texture_count_status": "pass",
-  "uv_set_count": 1,
+  "uv_set_count": 2,
   "required_uv_sets_present": "pass",
-  "uv_overlap_status": "warn",
-  "uv_out_of_bounds_status": "warn",
+  "uv_overlap_status": "pass",
+  "uv_out_of_bounds_status": "pass",
   "texel_density_status": "pass",
   "lightmap_uv_status": "pass",
-  "material_budget_status": "warn",
-  "texture_budget_status": "warn",
+  "material_budget_status": "pass",
+  "texture_budget_status": "pass",
   "claim_status": "evidence_only",
   "safety": {
     "dcc_execution_status": "blocked",
@@ -34,28 +34,34 @@
     "asset_processor_execution_status": "blocked",
     "production_write_status": "blocked"
   },
-  "status": "warn",
+  "status": "pass",
   "source": {
-    "source_path": "artifacts/jobs/job-release-character-material-uv-warn-001/o3de/source/guard_mira_conformed.fbx",
+    "source_path": "artifacts/jobs/job-release-character-controlled-real-material-uv-001/o3de/source/max_biped_v1/source_character_conformed.fbx",
     "source_kind": "fbx",
-    "sha256": "5a87e89d62ebf6b6c7c8f8a5ed1455c4da88c6db3f4ffc04532c811d7e569fb4"
+    "sha256": "f0c31a1221dbf28618b8fa846717b9d9ea2bdb18d69d6fae4456d29eb11e61c2"
   },
   "target": {
-    "package_tier": "npc",
+    "package_tier": "hero",
     "material_profile": "StandardPBR"
   },
   "material_summary": {
-    "material_slot_count": 11,
+    "material_slot_count": 8,
     "material_slot_budget": 10,
     "slot_budget_exceeded_severity": "warning",
     "missing_materials": [],
     "unsupported_materials": [],
     "texture_references": [
       {
-        "material_slot": "cape",
-        "texture_path": "textures/guard_mira/cape_albedo.png",
+        "material_slot": "body",
+        "texture_path": "textures/max_biped_v1/body_albedo.png",
         "texture_kind": "albedo",
-        "resolution": 4096
+        "resolution": 2048
+      },
+      {
+        "material_slot": "body",
+        "texture_path": "textures/max_biped_v1/body_normal.png",
+        "texture_kind": "normal",
+        "resolution": 2048
       }
     ],
     "missing_textures": []
@@ -65,40 +71,29 @@
       "UV0"
     ],
     "present_uv_sets": [
-      "UV0"
+      "UV0",
+      "UV1"
     ],
     "missing_uv_sets": [],
-    "overlapping_uvs_status": "major",
-    "out_of_bounds_uvs_status": "major"
+    "overlapping_uvs_status": "none",
+    "out_of_bounds_uvs_status": "none"
   },
   "texture_budget": {
     "max_texture_resolution": 2048,
-    "oversized_textures": [
-      {
-        "texture_path": "textures/guard_mira/cape_albedo.png",
-        "actual_resolution": 4096
-      }
-    ],
+    "oversized_textures": [],
     "oversized_textures_severity": "warning",
-    "texture_count": 14
+    "texture_count": 16
   },
-  "findings": [
-    {
-      "id": "texture_over_budget",
-      "severity": "warning",
-      "status": "open",
-      "message": "One texture exceeds recommended max resolution."
-    }
-  ],
+  "findings": [],
   "manifest_attachment": {
     "target_path": "qc.gates[]",
     "future_target_path": "qc.checks[]",
     "qc_check": {
       "check_id": "material_uv_qc_v1",
-      "result": "warn",
-      "severity": "warning",
+      "result": "pass",
+      "severity": "info",
       "details": {
-        "summary": "Material/UV readiness acceptable with non-blocking warnings.",
+        "summary": "Controlled-real material/UV evidence validates slot, texture, and UV readiness policies.",
         "evidence_class": "controlled_real"
       }
     }
