@@ -78,6 +78,11 @@ def test_runner_builds_generated_manifest_and_attaches_expected_checks(repo_tmp_
     )
     assert material_uv_payload.get("status") == "pass"
     assert material_uv_payload.get("evidence_class") == "controlled_real"
+    animation_payload = json.loads(
+        Path(step_map["animation_smoke"]["payload_path"]).read_text(encoding="utf-8-sig")
+    )
+    assert animation_payload.get("status") == "pass"
+    assert animation_payload.get("evidence_class") == "controlled_real"
     extraction_report = json.loads(
         Path(step_map["source_product_resolver_extract"]["payload_path"]).read_text(encoding="utf-8-sig")
     )

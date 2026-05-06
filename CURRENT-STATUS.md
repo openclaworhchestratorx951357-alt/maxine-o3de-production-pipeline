@@ -58,6 +58,14 @@
   - integrated into `tools/release-lane/run_pilot_release_chain_validation.py`
   - release-lane evidence admission status now classifies `material_uv_qc_v1` as controlled-real evidence
   - `tests/pytest/test_material_uv_qc_report.py`
+- Controlled real animation smoke evidence v1 is implemented (bounded evidence-only, non-executing):
+  - `docs/maxine/specs/controlled-real-animation-smoke-evidence-v1.md`
+  - `schemas/maxine_animation_smoke_report.schema.json` (controlled-real evidence fields and blocked safety/runtime statuses)
+  - `tools/animation-smoke/validate_animation_smoke_report.py`
+  - `examples/sandbox/animation-smoke-evidence/pilot-candidates/max_biped_v1_animation_smoke_controlled_real.fixture.json`
+  - integrated into `tools/release-lane/run_pilot_release_chain_validation.py`
+  - release-lane evidence admission status now classifies `animation_smoke_v1` as controlled-real evidence
+  - `tests/pytest/test_animation_smoke_report.py`
 - Execution admission remains future work requiring explicit operator approval.
 - No execution surfaces are newly admitted in this slice.
 - Sandbox-only writer skeleton is implemented for generated-asset resolver placeholders.
@@ -144,10 +152,12 @@
 - Animation smoke v1 evidence report validation is implemented (contract-first, non-executing evidence only):
   - `schemas/maxine_animation_smoke_report.schema.json`
   - `tools/animation-smoke/validate_animation_smoke_report.py`
+  - `examples/sandbox/animation-smoke-evidence/pilot-candidates/max_biped_v1_animation_smoke_controlled_real.fixture.json`
   - `examples/animation-smoke/max_biped_v1_animation_smoke_pass.json`
   - `examples/animation-smoke/max_biped_v1_animation_smoke_warn.json`
   - `examples/animation-smoke/max_biped_v1_animation_smoke_fail.json`
   - `docs/maxine/specs/animation-smoke-v1.md`
+  - `docs/maxine/specs/controlled-real-animation-smoke-evidence-v1.md`
 - Screenshot evidence extractor v1 is implemented (controlled-input, non-executing evidence extraction only):
   - `tools/screenshot-evidence/extract_screenshot_evidence_index.py`
   - `examples/screenshot-evidence/max_biped_v1_screenshot_source_index.json`
@@ -383,9 +393,10 @@
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - Animation smoke v1 report validation remains non-executing evidence-only:
-  - validates animation smoke report JSON against required clip and status rules
+  - validates animation smoke report JSON against required clip and status rules plus controlled-real metadata
+  - validates blocked safety/runtime statuses (`dcc`, `blender`, `o3de`, `asset_processor`, `runtime_playback`, `production_write` all blocked)
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
-  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+  - does not execute Blender/O3DE/AP/runtime playback, spawn, publish, or Cache/live DB access
 - Screenshot evidence extraction v1 remains non-executing evidence-only:
   - validates controlled screenshot source-index input under `examples/sandbox`
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`

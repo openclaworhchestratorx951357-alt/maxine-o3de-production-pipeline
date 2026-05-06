@@ -16,6 +16,17 @@ def _report_path(name: str) -> Path:
     return _repo_root() / "examples" / "animation-smoke" / name
 
 
+def _controlled_real_report_path() -> Path:
+    return (
+        _repo_root()
+        / "examples"
+        / "sandbox"
+        / "animation-smoke-evidence"
+        / "pilot-candidates"
+        / "max_biped_v1_animation_smoke_controlled_real.fixture.json"
+    )
+
+
 def _run_validator(report_path: Path, allow_warn: bool = False) -> subprocess.CompletedProcess[str]:
     cmd = [sys.executable, str(_validator_script()), str(report_path)]
     if allow_warn:
@@ -128,3 +139,13 @@ def test_output_future_target_path_is_qc_checks():
     result = _run_validator(_report_path("max_biped_v1_animation_smoke_pass.json"))
     payload = _extract_payload(result.stdout)
     assert payload["manifest_attachment"]["future_target_path"] == "qc.checks[]"
+
+
+def test_controlled_real_fixture_outputs_controlled_real_metadata():
+    result = _run_validator(_controlled_real_report_path())
+    assert result.returncode == 0, f"Unexpected failure:\n{result.stdout}\n{result.stderr}"
+    payload = _extract_payload(result.stdout)
+    details = payload["manifest_attachment"]["qc_check"]["details"]
+    assert payload["evidence_class"] == "controlled_real"
+    assert details["evidence_class"] == "controlled_real"
+    assert details["safety"]["runtime_playback_status"] == "blocked"

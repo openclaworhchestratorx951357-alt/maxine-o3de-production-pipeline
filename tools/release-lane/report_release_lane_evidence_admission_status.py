@@ -42,7 +42,7 @@ EVIDENCE_CLASS_BY_CHECK_ID = {
     "dcc_conform_v1": "controlled_real",
     "source_product_evidence_resolver_v1": "imported",
     "material_uv_qc_v1": "controlled_real",
-    "animation_smoke_v1": "manual",
+    "animation_smoke_v1": "controlled_real",
     "screenshot_evidence_v1": "fixture",
     "manual_hero_review_v1": "manual",
     "ci_artifact_retention_v1": "fixture",

@@ -4,6 +4,43 @@
   "job_id": "job-release-character-animation-smoke-pass-001",
   "package_id": "char.maxine.knight_arden",
   "lane": "release_character",
+  "candidate_id": "max_biped_v1_candidate_pass_001",
+  "source_asset_reference": "fixtures://source/max_biped_v1/source_character.fbx",
+  "source_evidence_ref": "examples/animation-smoke/max_biped_v1_animation_smoke_pass.json",
+  "animation_profile_id": "ANIMATION_SMOKE_v1",
+  "animation_profile_version": "1.0.0",
+  "evidence_class": "fixture",
+  "actor_asset_reference": "assets/characters/max_biped_v1/max_biped_v1.actor",
+  "motion_asset_reference": "assets/characters/max_biped_v1/motions/max_biped_v1_locomotion.motion",
+  "motion_set_reference": "assets/characters/max_biped_v1/motionsets/max_biped_v1.motionset",
+  "anim_graph_reference": "assets/characters/max_biped_v1/animgraphs/max_biped_v1.animgraph",
+  "skeleton_profile_id": "MAX_BIPED_v1",
+  "skeleton_compatibility_status": "pass",
+  "root_motion_status": "pass",
+  "bind_pose_compatibility_status": "pass",
+  "clip_count": 4,
+  "smoke_clip_names": [
+    "idle",
+    "walk",
+    "run",
+    "turn_left"
+  ],
+  "clip_duration_status": "pass",
+  "missing_clip_status": "pass",
+  "retarget_readiness_status": "pass",
+  "loopability_status": "pass",
+  "motion_event_status": "pass",
+  "frame_range_status": "pass",
+  "animation_budget_status": "pass",
+  "claim_status": "evidence_only",
+  "safety": {
+    "dcc_execution_status": "blocked",
+    "blender_execution_status": "blocked",
+    "o3de_execution_status": "blocked",
+    "asset_processor_execution_status": "blocked",
+    "runtime_playback_status": "blocked",
+    "production_write_status": "blocked"
+  },
   "status": "pass",
   "source": {
     "source_path": "artifacts/jobs/job-release-character-animation-smoke-pass-001/o3de/source/knight_arden_conformed.fbx",
@@ -48,7 +85,8 @@
       "result": "pass",
       "severity": "info",
       "details": {
-        "summary": "Animation smoke report meets v1 required clip and status rules."
+        "summary": "Animation smoke report meets v1 required clip and status rules.",
+        "evidence_class": "fixture"
       }
     }
   }

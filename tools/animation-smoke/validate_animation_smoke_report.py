@@ -11,15 +11,33 @@ from typing import Any, Dict, List, Tuple
 
 
 ALLOWED_STATUS = {"pass", "warn", "fail", "pending_manual"}
+ALLOWED_SUMMARY_STATUS = {"pass", "warn", "fail", "unknown"}
 ALLOWED_FINDING_SEVERITY = {"info", "warning", "error", "manual_review"}
+ALLOWED_EVIDENCE_CLASS = {"fixture", "imported", "controlled_real"}
+ALLOWED_CLAIM_STATUS = {"evidence_only", "not_authoritative"}
 EXPECTED_SCHEMA_VERSION = "1.0.0"
 EXPECTED_REPORT_TYPE = "ANIMATION_SMOKE_v1_REPORT"
 EXPECTED_SMOKE_CONTRACT_ID = "ANIMATION_SMOKE_v1"
-EXPECTED_SKELETON_CONTRACT_ID = "MAX_BIPED_v1"
+EXPECTED_ANIMATION_PROFILE_ID = "ANIMATION_SMOKE_v1"
+EXPECTED_SKELETON_PROFILE_ID = "MAX_BIPED_v1"
 TARGET_PATH = "qc.gates[]"
 FUTURE_TARGET_PATH = "qc.checks[]"
 CHECK_ID = "animation_smoke_v1"
 CONTRACT_ID = "ANIMATION_SMOKE_v1"
+REQUIRED_STATUS_FIELDS = [
+    "skeleton_compatibility_status",
+    "root_motion_status",
+    "bind_pose_compatibility_status",
+    "clip_duration_status",
+    "missing_clip_status",
+    "retarget_readiness_status",
+    "frame_range_status",
+    "animation_budget_status",
+]
+OPTIONAL_STATUS_FIELDS = [
+    "loopability_status",
+    "motion_event_status",
+]
 
 
 def utc_now() -> str:
@@ -117,6 +135,26 @@ def _contains_unsafe_path_tokens(path_text: str) -> bool:
     return any(token in lowered for token in blocked)
 
 
+def _collect_component_status(report: Dict[str, Any]) -> str:
+    seen: List[str] = []
+    for field in REQUIRED_STATUS_FIELDS + OPTIONAL_STATUS_FIELDS:
+        value = report.get(field)
+        if isinstance(value, str) and value in ALLOWED_STATUS:
+            seen.append(value)
+    if "fail" in seen:
+        return "fail"
+    if "pending_manual" in seen:
+        return "pending_manual"
+    if "warn" in seen:
+        return "warn"
+    return "pass"
+
+
+def _merge_status(a: str, b: str) -> str:
+    order = ["pass", "warn", "pending_manual", "fail"]
+    return max(a, b, key=lambda value: order.index(value))
+
+
 def main() -> int:
     args = parse_args()
     repo_root = Path(__file__).resolve().parents[2]
@@ -195,7 +233,20 @@ def main() -> int:
             {"actual": declared_status},
         )
 
-    for required in ("job_id", "package_id", "lane"):
+    for required in (
+        "job_id",
+        "package_id",
+        "lane",
+        "candidate_id",
+        "source_asset_reference",
+        "source_evidence_ref",
+        "animation_profile_id",
+        "animation_profile_version",
+        "actor_asset_reference",
+        "motion_asset_reference",
+        "skeleton_profile_id",
+        "claim_status",
+    ):
         value = str(report.get(required, "")).strip()
         if not value:
             add_finding(
@@ -204,6 +255,179 @@ def main() -> int:
                 "error",
                 "open",
                 f"{required} is required.",
+            )
+
+    candidate_id = str(report.get("candidate_id", "")).strip()
+    source_asset_reference = str(report.get("source_asset_reference", "")).strip()
+    source_evidence_ref = str(report.get("source_evidence_ref", "")).strip()
+    animation_profile_id = str(report.get("animation_profile_id", "")).strip()
+    animation_profile_version = str(report.get("animation_profile_version", "")).strip()
+    evidence_class = str(report.get("evidence_class", "")).strip()
+    actor_asset_reference = str(report.get("actor_asset_reference", "")).strip()
+    motion_asset_reference = str(report.get("motion_asset_reference", "")).strip()
+    motion_set_reference = str(report.get("motion_set_reference", "")).strip()
+    anim_graph_reference = str(report.get("anim_graph_reference", "")).strip()
+    skeleton_profile_id = str(report.get("skeleton_profile_id", "")).strip()
+    claim_status = str(report.get("claim_status", "")).strip()
+
+    if animation_profile_id and animation_profile_id != EXPECTED_ANIMATION_PROFILE_ID:
+        add_finding(
+            findings,
+            "animation_profile_id_invalid",
+            "error",
+            "open",
+            f"animation_profile_id must be {EXPECTED_ANIMATION_PROFILE_ID}.",
+            {"actual": animation_profile_id},
+        )
+    if not animation_profile_version:
+        add_finding(
+            findings,
+            "animation_profile_version_missing",
+            "error",
+            "open",
+            "animation_profile_version is required.",
+        )
+
+    if evidence_class not in ALLOWED_EVIDENCE_CLASS:
+        add_finding(
+            findings,
+            "evidence_class_invalid",
+            "error",
+            "open",
+            "evidence_class must be fixture|imported|controlled_real.",
+            {"actual": evidence_class},
+        )
+    elif evidence_class == "controlled_real":
+        normalized_ref = source_evidence_ref.replace("\\", "/")
+        if not normalized_ref.startswith("examples/sandbox/"):
+            add_finding(
+                findings,
+                "controlled_real_source_evidence_ref_outside_sandbox",
+                "error",
+                "open",
+                "controlled_real evidence must reference sandbox evidence roots.",
+                {"source_evidence_ref": source_evidence_ref},
+            )
+
+    if claim_status not in ALLOWED_CLAIM_STATUS:
+        add_finding(
+            findings,
+            "claim_status_invalid",
+            "error",
+            "open",
+            "claim_status must be evidence_only|not_authoritative.",
+            {"actual": claim_status},
+        )
+
+    if source_evidence_ref and _contains_unsafe_path_tokens(source_evidence_ref):
+        add_finding(
+            findings,
+            "source_evidence_ref_unsafe",
+            "error",
+            "open",
+            "source_evidence_ref contains unsafe traversal or shell tokens.",
+            {"source_evidence_ref": source_evidence_ref},
+        )
+
+    if skeleton_profile_id and skeleton_profile_id != EXPECTED_SKELETON_PROFILE_ID:
+        add_finding(
+            findings,
+            "skeleton_profile_id_invalid",
+            "error",
+            "open",
+            f"skeleton_profile_id must be {EXPECTED_SKELETON_PROFILE_ID}.",
+            {"actual": skeleton_profile_id},
+        )
+
+    if source_asset_reference and _contains_unsafe_path_tokens(source_asset_reference):
+        add_finding(
+            findings,
+            "source_asset_reference_unsafe",
+            "error",
+            "open",
+            "source_asset_reference contains unsafe traversal or shell tokens.",
+            {"source_asset_reference": source_asset_reference},
+        )
+    if actor_asset_reference and _contains_unsafe_path_tokens(actor_asset_reference):
+        add_finding(
+            findings,
+            "actor_asset_reference_unsafe",
+            "error",
+            "open",
+            "actor_asset_reference contains unsafe traversal or shell tokens.",
+            {"actor_asset_reference": actor_asset_reference},
+        )
+    if motion_asset_reference and _contains_unsafe_path_tokens(motion_asset_reference):
+        add_finding(
+            findings,
+            "motion_asset_reference_unsafe",
+            "error",
+            "open",
+            "motion_asset_reference contains unsafe traversal or shell tokens.",
+            {"motion_asset_reference": motion_asset_reference},
+        )
+    if motion_set_reference and _contains_unsafe_path_tokens(motion_set_reference):
+        add_finding(
+            findings,
+            "motion_set_reference_unsafe",
+            "error",
+            "open",
+            "motion_set_reference contains unsafe traversal or shell tokens.",
+            {"motion_set_reference": motion_set_reference},
+        )
+    if anim_graph_reference and _contains_unsafe_path_tokens(anim_graph_reference):
+        add_finding(
+            findings,
+            "anim_graph_reference_unsafe",
+            "error",
+            "open",
+            "anim_graph_reference contains unsafe traversal or shell tokens.",
+            {"anim_graph_reference": anim_graph_reference},
+        )
+
+    for field_name in REQUIRED_STATUS_FIELDS:
+        value = str(report.get(field_name, "")).strip()
+        if value not in ALLOWED_STATUS:
+            add_finding(
+                findings,
+                f"{field_name}_invalid",
+                "error",
+                "open",
+                f"{field_name} must be pass|warn|fail|pending_manual.",
+                {"actual": value},
+            )
+    for field_name in OPTIONAL_STATUS_FIELDS:
+        value = str(report.get(field_name, "")).strip()
+        if value and value not in ALLOWED_STATUS:
+            add_finding(
+                findings,
+                f"{field_name}_invalid",
+                "error",
+                "open",
+                f"{field_name} must be pass|warn|fail|pending_manual when present.",
+                {"actual": value},
+            )
+
+    safety = report.get("safety", {})
+    if not isinstance(safety, dict):
+        safety = {}
+        add_finding(findings, "safety_not_object", "error", "open", "safety must be an object.")
+    for safety_field in (
+        "dcc_execution_status",
+        "blender_execution_status",
+        "o3de_execution_status",
+        "asset_processor_execution_status",
+        "runtime_playback_status",
+        "production_write_status",
+    ):
+        if str(safety.get(safety_field, "")).strip() != "blocked":
+            add_finding(
+                findings,
+                f"{safety_field}_not_blocked",
+                "error",
+                "open",
+                f"safety.{safety_field} must be blocked.",
+                {"actual": safety.get(safety_field)},
             )
 
     source = report.get("source", {}) if isinstance(report.get("source"), dict) else {}
@@ -235,13 +459,13 @@ def main() -> int:
             f"smoke_profile.smoke_contract_id must be {EXPECTED_SMOKE_CONTRACT_ID}.",
             {"actual": smoke_contract_id},
         )
-    if target_skeleton_contract_id != EXPECTED_SKELETON_CONTRACT_ID:
+    if target_skeleton_contract_id != EXPECTED_SKELETON_PROFILE_ID:
         add_finding(
             findings,
             "target_skeleton_contract_id_invalid",
             "error",
             "open",
-            f"smoke_profile.target_skeleton_contract_id must be {EXPECTED_SKELETON_CONTRACT_ID}.",
+            f"smoke_profile.target_skeleton_contract_id must be {EXPECTED_SKELETON_PROFILE_ID}.",
             {"actual": target_skeleton_contract_id},
         )
     if profile.get("evidence_only") is not True:
@@ -263,14 +487,54 @@ def main() -> int:
             {"actual": profile.get("runtime_execution_admitted")},
         )
 
+    smoke_clip_names = report.get("smoke_clip_names", [])
+    if not isinstance(smoke_clip_names, list) or not all(isinstance(x, str) and x.strip() for x in smoke_clip_names):
+        add_finding(
+            findings,
+            "smoke_clip_names_invalid",
+            "error",
+            "open",
+            "smoke_clip_names must be a non-empty string array.",
+        )
+        smoke_clip_names = []
+    if not smoke_clip_names:
+        add_finding(
+            findings,
+            "smoke_clip_names_missing",
+            "error",
+            "open",
+            "At least one smoke-test clip must be represented.",
+        )
+
+    top_clip_count = report.get("clip_count")
+    if not isinstance(top_clip_count, int) or top_clip_count < 0:
+        add_finding(
+            findings,
+            "clip_count_invalid",
+            "error",
+            "open",
+            "clip_count must be integer >= 0.",
+            {"actual": top_clip_count},
+        )
+        top_clip_count = 0
+    if top_clip_count != len(smoke_clip_names):
+        add_finding(
+            findings,
+            "clip_count_mismatch",
+            "warning",
+            "open",
+            "clip_count does not match smoke_clip_names length.",
+            {"clip_count": top_clip_count, "smoke_clip_names_length": len(smoke_clip_names)},
+        )
+
     summary = report.get("animation_summary", {}) if isinstance(report.get("animation_summary"), dict) else {}
     required_clips = summary.get("required_clips", [])
     present_clips = summary.get("present_clips", [])
     reported_missing_clips = summary.get("missing_clips", [])
-    clip_count = summary.get("clip_count")
+    summary_clip_count = summary.get("clip_count")
     loop_status = str(summary.get("loop_playback_status", "")).strip()
     pose_status = str(summary.get("pose_stability_status", "")).strip()
-    root_motion_status = str(summary.get("root_motion_status", "")).strip()
+    summary_root_motion_status = str(summary.get("root_motion_status", "")).strip()
     warning_status_values = summary.get("warning_status_values", ["warn", "unknown"])
 
     if not isinstance(required_clips, list) or not all(isinstance(x, str) and x.strip() for x in required_clips):
@@ -285,17 +549,26 @@ def main() -> int:
     if not isinstance(reported_missing_clips, list) or not all(isinstance(x, str) and x.strip() for x in reported_missing_clips):
         add_finding(findings, "missing_clips_invalid", "error", "open", "missing_clips must be a string array.")
         reported_missing_clips = []
-    if not isinstance(clip_count, int) or clip_count < 0:
-        add_finding(findings, "clip_count_invalid", "error", "open", "clip_count must be integer >= 0.")
-        clip_count = 0
-    if clip_count != len(present_clips):
+    if not isinstance(summary_clip_count, int) or summary_clip_count < 0:
+        add_finding(findings, "summary_clip_count_invalid", "error", "open", "animation_summary.clip_count must be integer >= 0.")
+        summary_clip_count = 0
+    if summary_clip_count != len(present_clips):
         add_finding(
             findings,
-            "clip_count_mismatch",
+            "summary_clip_count_mismatch",
             "warning",
             "open",
-            "clip_count does not match present_clips length.",
-            {"clip_count": clip_count, "present_clips_length": len(present_clips)},
+            "animation_summary.clip_count does not match present_clips length.",
+            {"clip_count": summary_clip_count, "present_clips_length": len(present_clips)},
+        )
+    if sorted(smoke_clip_names) != sorted(present_clips):
+        add_finding(
+            findings,
+            "smoke_clip_names_present_clips_mismatch",
+            "warning",
+            "open",
+            "smoke_clip_names and animation_summary.present_clips differ.",
+            {"smoke_clip_names": smoke_clip_names, "present_clips": present_clips},
         )
 
     computed_missing = sorted(set(required_clips) - set(present_clips))
@@ -318,6 +591,17 @@ def main() -> int:
             {"reported": reported_missing_clips, "computed": computed_missing},
         )
 
+    missing_clip_status = str(report.get("missing_clip_status", "")).strip()
+    if computed_missing and missing_clip_status == "pass":
+        add_finding(
+            findings,
+            "missing_clip_status_mismatch",
+            "error",
+            "open",
+            "missing_clip_status cannot be pass when required clips are missing.",
+            {"missing_clips": computed_missing, "missing_clip_status": missing_clip_status},
+        )
+
     if not isinstance(warning_status_values, list) or not all(isinstance(x, str) and x.strip() for x in warning_status_values):
         add_finding(
             findings,
@@ -331,9 +615,9 @@ def main() -> int:
     for field_name, field_value in (
         ("loop_playback_status", loop_status),
         ("pose_stability_status", pose_status),
-        ("root_motion_status", root_motion_status),
+        ("summary_root_motion_status", summary_root_motion_status),
     ):
-        if field_value not in {"pass", "warn", "fail", "unknown"}:
+        if field_value not in ALLOWED_SUMMARY_STATUS:
             add_finding(
                 findings,
                 f"{field_name}_invalid",
@@ -359,6 +643,41 @@ def main() -> int:
                 "open",
                 f"{field_name} reported warning-level state '{field_value}'.",
             )
+
+    top_root_motion_status = str(report.get("root_motion_status", "")).strip()
+    if summary_root_motion_status == "fail" and top_root_motion_status != "fail":
+        add_finding(
+            findings,
+            "root_motion_status_inconsistent_with_summary",
+            "error",
+            "open",
+            "top-level root_motion_status must be fail when summary root motion reports fail.",
+            {
+                "root_motion_status": top_root_motion_status,
+                "summary_root_motion_status": summary_root_motion_status,
+            },
+        )
+
+    if declared_status == "pass":
+        for field_name in (
+            "skeleton_compatibility_status",
+            "bind_pose_compatibility_status",
+            "clip_duration_status",
+            "missing_clip_status",
+            "retarget_readiness_status",
+            "frame_range_status",
+            "animation_budget_status",
+        ):
+            value = str(report.get(field_name, "")).strip()
+            if value != "pass":
+                add_finding(
+                    findings,
+                    f"{field_name}_must_pass_when_report_pass",
+                    "error",
+                    "open",
+                    f"{field_name} must be pass when report.status is pass.",
+                    {"actual": value},
+                )
 
     input_findings = report.get("findings", [])
     if not isinstance(input_findings, list):
@@ -411,8 +730,9 @@ def main() -> int:
             {"actual": future_target_path},
         )
 
-    combined_findings = findings + input_findings
-    computed_status = derive_status(combined_findings)
+    component_status = _collect_component_status(report)
+    findings_status = derive_status(findings + input_findings)
+    computed_status = _merge_status(component_status, findings_status)
     if declared_status in ALLOWED_STATUS and declared_status != computed_status:
         add_finding(
             findings,
@@ -422,15 +742,19 @@ def main() -> int:
             "report.status does not match computed findings severity.",
             {"declared": declared_status, "computed": computed_status},
         )
-        combined_findings = findings + input_findings
-        computed_status = derive_status(combined_findings)
+        computed_status = "fail"
 
     qc_severity = status_to_qc_severity(computed_status)
     output_payload: Dict[str, Any] = {
         "status": computed_status,
         "check_id": CHECK_ID,
         "contract_id": CONTRACT_ID,
-        "findings": combined_findings,
+        "evidence_class": evidence_class,
+        "claim_status": claim_status,
+        "candidate_id": candidate_id,
+        "source_asset_reference": source_asset_reference,
+        "source_evidence_ref": source_evidence_ref,
+        "findings": findings + input_findings,
         "manifest_attachment": {
             "target_path": TARGET_PATH,
             "future_target_path": FUTURE_TARGET_PATH,
@@ -441,10 +765,42 @@ def main() -> int:
                 "details": {
                     "report_path": str(report_path),
                     "report_status": declared_status,
-                    "validated_at_utc": utc_now()
-                }
-            }
-        }
+                    "candidate_id": candidate_id,
+                    "source_asset_reference": source_asset_reference,
+                    "source_evidence_ref": source_evidence_ref,
+                    "animation_profile_id": animation_profile_id,
+                    "animation_profile_version": animation_profile_version,
+                    "evidence_class": evidence_class,
+                    "actor_asset_reference": actor_asset_reference,
+                    "motion_asset_reference": motion_asset_reference,
+                    "motion_set_reference": motion_set_reference,
+                    "anim_graph_reference": anim_graph_reference,
+                    "skeleton_profile_id": skeleton_profile_id,
+                    "skeleton_compatibility_status": str(report.get("skeleton_compatibility_status", "")).strip(),
+                    "root_motion_status": top_root_motion_status,
+                    "bind_pose_compatibility_status": str(report.get("bind_pose_compatibility_status", "")).strip(),
+                    "clip_count": top_clip_count,
+                    "smoke_clip_names": smoke_clip_names,
+                    "clip_duration_status": str(report.get("clip_duration_status", "")).strip(),
+                    "missing_clip_status": missing_clip_status,
+                    "retarget_readiness_status": str(report.get("retarget_readiness_status", "")).strip(),
+                    "loopability_status": str(report.get("loopability_status", "")).strip(),
+                    "motion_event_status": str(report.get("motion_event_status", "")).strip(),
+                    "frame_range_status": str(report.get("frame_range_status", "")).strip(),
+                    "animation_budget_status": str(report.get("animation_budget_status", "")).strip(),
+                    "claim_status": claim_status,
+                    "safety": {
+                        "dcc_execution_status": str(safety.get("dcc_execution_status", "")).strip(),
+                        "blender_execution_status": str(safety.get("blender_execution_status", "")).strip(),
+                        "o3de_execution_status": str(safety.get("o3de_execution_status", "")).strip(),
+                        "asset_processor_execution_status": str(safety.get("asset_processor_execution_status", "")).strip(),
+                        "runtime_playback_status": str(safety.get("runtime_playback_status", "")).strip(),
+                        "production_write_status": str(safety.get("production_write_status", "")).strip(),
+                    },
+                    "validated_at_utc": utc_now(),
+                },
+            },
+        },
     }
 
     print(json.dumps(output_payload, indent=2))
