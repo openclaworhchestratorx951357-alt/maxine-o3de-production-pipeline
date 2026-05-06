@@ -137,6 +137,15 @@
   - matrix explicitly distinguishes no-op receipt admission from real execution/publication admission
   - only `release_candidate_package_receipt_noop_v1` is admitted (no-op receipt only)
   - real execution and publication candidate admissions remain blocked
+- Execution-admission preflight contracts v1 are implemented (requirements-only, non-executing, non-publishing):
+  - `docs/maxine/execution-admission/execution-admission-preflight-contracts-v1.md`
+  - `schemas/maxine_execution_admission_preflight_contracts.schema.json`
+  - `examples/execution-admission/execution_admission_preflight_contracts_v1.json`
+  - `tools/execution-admission/validate_execution_admission_preflight_contracts.py`
+  - integrated into `tools/release-lane/prove_pilot_release_chain.py` proof output as read-only preflight-contract status evidence
+  - `tests/pytest/test_execution_admission_preflight_contracts.py`
+  - contracts explicitly define preconditions for all matrix candidates without admitting real execution/publication
+  - no real execution/publication preflight contracts are marked passed in this slice
 - Admitted no-op release-candidate package receipt candidate v1 is implemented (bounded receipt generation only, non-executing, non-publishing):
   - approval phrase recorded:
     - `APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1`

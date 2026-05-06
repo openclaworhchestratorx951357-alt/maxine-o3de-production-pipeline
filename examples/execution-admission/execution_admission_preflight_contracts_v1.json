@@ -1,0 +1,761 @@
+﻿{
+  "schema_version": "1.0.0",
+  "record_type": "EXECUTION_ADMISSION_PREFLIGHT_CONTRACTS_v1",
+  "contracts_id": "execution-admission-preflight-contracts-v1",
+  "contracts_version": "v1",
+  "generated_for_branch_or_commit": "bc0f46ebcbb39013e3ccc9aa2b7a945c1b1d4593",
+  "candidate_matrix_ref": "examples/execution-admission/execution_admission_candidate_matrix_v1.json",
+  "approval_phrase_format": "APPROVE EXECUTION ADMISSION <candidate_id>",
+  "production_ready_claimed": false,
+  "publication_admitted_claimed": false,
+  "real_execution_admission_status": "blocked",
+  "publication_admission_status": "blocked",
+  "admitted_noop_receipt_candidate_ids": [
+    "release_candidate_package_receipt_noop_v1"
+  ],
+  "admitted_real_execution_candidate_ids": [],
+  "admitted_publication_candidate_ids": [],
+  "real_execution_preflight_passed_candidate_ids": [],
+  "publication_preflight_passed_candidate_ids": [],
+  "contracts": [
+    {
+      "candidate_id": "release_candidate_package_receipt_noop_v1",
+      "candidate_type": "no_op_receipt",
+      "preflight_contract_version": "v1",
+      "preflight_status": "requirements_defined",
+      "admission_status": "admitted_no_op_only",
+      "current_candidate_matrix_status": "admitted",
+      "requires_explicit_approval": true,
+      "approval_phrase": "APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1",
+      "approval_decision_reference_required": true,
+      "required_inputs": [
+        "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json",
+        "examples/real-pilot-release-candidate-package/max_biped_v1_real_pilot_release_candidate_package_pass.json"
+      ],
+      "forbidden_inputs": [
+        "Cache/**",
+        "**/assetdb.sqlite",
+        "production/**",
+        "engine/**"
+      ],
+      "allowed_sandbox_paths": [
+        "examples/sandbox/execution-receipts/release-candidate-package-receipt-noop"
+      ],
+      "forbidden_paths": [
+        "production/**",
+        "engine/**",
+        "Cache/**",
+        "**/assetdb.sqlite"
+      ],
+      "allowed_outputs": [
+        "examples/sandbox/execution-receipts/release-candidate-package-receipt-noop/*.json"
+      ],
+      "forbidden_outputs": [
+        "production/**",
+        "engine/**",
+        "Cache/**"
+      ],
+      "required_evidence": [
+        "real_pilot_release_candidate_package_v1 pass report",
+        "production_readiness_report_v1 blocked_for_execution",
+        "approved no-op admission decision"
+      ],
+      "required_receipt_schema": "schemas/maxine_release_candidate_package_receipt_noop_report.schema.json",
+      "receipt_required": true,
+      "rollback_plan_required": true,
+      "operator_approval_required": true,
+      "expected_validator": "tools/execution-admission/validate_release_candidate_package_receipt_noop_report.py",
+      "expected_tests": [
+        "tests/pytest/test_release_candidate_package_receipt_noop_admission.py",
+        "tests/pytest/test_release_candidate_package_receipt_noop_report_schema.py"
+      ],
+      "blocked_surfaces": [
+        "o3de_execution",
+        "editor_runtime_execution",
+        "asset_processor_execution",
+        "blender_dcc_execution",
+        "profiler_benchmark_execution",
+        "live_screenshot_capture",
+        "spawn_publish",
+        "cache_live_db_access",
+        "authoritative_source_uuid_claims",
+        "authoritative_asset_id_claims",
+        "authoritative_product_id_claims",
+        "production_write",
+        "engine_write"
+      ],
+      "allowed_surface_summary": "No-op receipt generation only; external execution and publication remain blocked.",
+      "failure_conditions": [
+        "external_execution_performed is true",
+        "publication_performed is true",
+        "receipt output outside sandbox path"
+      ],
+      "production_readiness_effect": "requirements_only_review_ready",
+      "publication_effect": "noop_only_not_publication",
+      "safety_notes": [
+        "No-op receipt admission is not real execution admission.",
+        "No-op receipt admission is not publication admission."
+      ]
+    },
+    {
+      "candidate_id": "dcc_conform_execution_v1",
+      "candidate_type": "real_execution",
+      "preflight_contract_version": "v1",
+      "preflight_status": "requirements_defined",
+      "admission_status": "unadmitted",
+      "current_candidate_matrix_status": "proposed",
+      "requires_explicit_approval": true,
+      "approval_phrase": "APPROVE EXECUTION ADMISSION dcc_conform_execution_v1",
+      "approval_decision_reference_required": true,
+      "required_inputs": [
+        "examples/sandbox/dcc-conform-evidence/pilot-candidates/*.json",
+        "examples/sandbox/max-biped-skeleton-evidence/pilot-candidates/*.json"
+      ],
+      "forbidden_inputs": [
+        "Cache/**",
+        "**/assetdb.sqlite",
+        "production/**",
+        "engine/**"
+      ],
+      "allowed_sandbox_paths": [
+        "examples/sandbox/dcc-conform-evidence",
+        "examples/sandbox/execution-receipts"
+      ],
+      "forbidden_paths": [
+        "production/**",
+        "engine/**",
+        "Cache/**",
+        "**/assetdb.sqlite"
+      ],
+      "allowed_outputs": [
+        "examples/sandbox/dcc-conform-evidence/**",
+        "examples/sandbox/execution-receipts/**"
+      ],
+      "forbidden_outputs": [
+        "production/**",
+        "engine/**",
+        "Cache/**"
+      ],
+      "required_evidence": [
+        "dcc_conform_v1 controlled_real evidence pass",
+        "manual_hero_review_v1 pass",
+        "aaa_performance_budget_v1 pass"
+      ],
+      "required_receipt_schema": "schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
+      "receipt_required": true,
+      "rollback_plan_required": true,
+      "operator_approval_required": true,
+      "expected_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+      "expected_tests": [
+        "tests/pytest/test_execution_admission_preflight_contracts.py",
+        "tests/pytest/test_dcc_conform_report.py"
+      ],
+      "blocked_surfaces": [
+        "o3de_execution",
+        "editor_runtime_execution",
+        "asset_processor_execution",
+        "blender_dcc_execution",
+        "profiler_benchmark_execution",
+        "live_screenshot_capture",
+        "spawn_publish",
+        "cache_live_db_access",
+        "authoritative_source_uuid_claims",
+        "authoritative_asset_id_claims",
+        "authoritative_product_id_claims",
+        "production_write",
+        "engine_write"
+      ],
+      "allowed_surface_summary": "Requirements-only contract; no DCC tool execution admitted in this slice.",
+      "failure_conditions": [
+        "approval phrase missing",
+        "required evidence missing",
+        "blocked surfaces widened"
+      ],
+      "production_readiness_effect": "requirements_only_execution_blocked",
+      "publication_effect": "publication_blocked",
+      "safety_notes": [
+        "Preflight requirements do not grant execution admission.",
+        "Publication remains blocked."
+      ]
+    },
+    {
+      "candidate_id": "asset_processor_batch_execution_v1",
+      "candidate_type": "real_execution",
+      "preflight_contract_version": "v1",
+      "preflight_status": "blocked",
+      "admission_status": "unadmitted",
+      "current_candidate_matrix_status": "blocked",
+      "requires_explicit_approval": true,
+      "approval_phrase": "APPROVE EXECUTION ADMISSION asset_processor_batch_execution_v1",
+      "approval_decision_reference_required": true,
+      "required_inputs": [
+        "examples/sandbox/ap-binary-preflights/*.json",
+        "examples/sandbox/ap-execution-preflights/*.json"
+      ],
+      "forbidden_inputs": [
+        "Cache/**",
+        "**/assetdb.sqlite",
+        "production/**",
+        "engine/**"
+      ],
+      "allowed_sandbox_paths": [
+        "examples/sandbox/ap-diagnostic-executions",
+        "examples/sandbox/ap-real-binary-diagnostic-executions",
+        "examples/sandbox/execution-receipts"
+      ],
+      "forbidden_paths": [
+        "production/**",
+        "engine/**",
+        "Cache/**",
+        "**/assetdb.sqlite"
+      ],
+      "allowed_outputs": [
+        "examples/sandbox/ap-diagnostic-executions/**",
+        "examples/sandbox/ap-real-binary-diagnostic-executions/**",
+        "examples/sandbox/execution-receipts/**"
+      ],
+      "forbidden_outputs": [
+        "production/**",
+        "engine/**",
+        "Cache/**"
+      ],
+      "required_evidence": [
+        "ap execution preflight readiness evidence",
+        "ap binary preflight readiness evidence",
+        "release_publication_gate_set_v1 pass"
+      ],
+      "required_receipt_schema": "schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
+      "receipt_required": true,
+      "rollback_plan_required": true,
+      "operator_approval_required": true,
+      "expected_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+      "expected_tests": [
+        "tests/pytest/test_execution_admission_preflight_contracts.py",
+        "tests/pytest/test_ap_execution_preflight_contract_tools.py"
+      ],
+      "blocked_surfaces": [
+        "o3de_execution",
+        "editor_runtime_execution",
+        "asset_processor_execution",
+        "blender_dcc_execution",
+        "profiler_benchmark_execution",
+        "live_screenshot_capture",
+        "spawn_publish",
+        "cache_live_db_access",
+        "authoritative_source_uuid_claims",
+        "authoritative_asset_id_claims",
+        "authoritative_product_id_claims",
+        "production_write",
+        "engine_write"
+      ],
+      "allowed_surface_summary": "Requirements-only contract; broad AP execution remains blocked.",
+      "failure_conditions": [
+        "admission status not unadmitted",
+        "receipt requirement missing",
+        "sandbox boundary not enforced"
+      ],
+      "production_readiness_effect": "requirements_only_execution_blocked",
+      "publication_effect": "publication_blocked",
+      "safety_notes": [
+        "No AP batch execution admitted.",
+        "No Cache/live DB access admitted."
+      ]
+    },
+    {
+      "candidate_id": "max_biped_skeleton_validation_execution_v1",
+      "candidate_type": "real_execution",
+      "preflight_contract_version": "v1",
+      "preflight_status": "requirements_defined",
+      "admission_status": "unadmitted",
+      "current_candidate_matrix_status": "proposed",
+      "requires_explicit_approval": true,
+      "approval_phrase": "APPROVE EXECUTION ADMISSION max_biped_skeleton_validation_execution_v1",
+      "approval_decision_reference_required": true,
+      "required_inputs": [
+        "examples/sandbox/max-biped-skeleton-evidence/pilot-candidates/*.json",
+        "examples/max-biped-skeleton-evidence/*.json"
+      ],
+      "forbidden_inputs": [
+        "Cache/**",
+        "**/assetdb.sqlite",
+        "production/**",
+        "engine/**"
+      ],
+      "allowed_sandbox_paths": [
+        "examples/sandbox/max-biped-skeleton-evidence",
+        "examples/sandbox/execution-receipts"
+      ],
+      "forbidden_paths": [
+        "production/**",
+        "engine/**",
+        "Cache/**",
+        "**/assetdb.sqlite"
+      ],
+      "allowed_outputs": [
+        "examples/sandbox/max-biped-skeleton-evidence/**",
+        "examples/sandbox/execution-receipts/**"
+      ],
+      "forbidden_outputs": [
+        "production/**",
+        "engine/**",
+        "Cache/**"
+      ],
+      "required_evidence": [
+        "max_biped_v1_skeleton_contract controlled_real evidence pass",
+        "manual_hero_review_v1 pass"
+      ],
+      "required_receipt_schema": "schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
+      "receipt_required": true,
+      "rollback_plan_required": true,
+      "operator_approval_required": true,
+      "expected_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+      "expected_tests": [
+        "tests/pytest/test_execution_admission_preflight_contracts.py",
+        "tests/pytest/test_max_biped_skeleton_evidence_report.py"
+      ],
+      "blocked_surfaces": [
+        "o3de_execution",
+        "editor_runtime_execution",
+        "asset_processor_execution",
+        "blender_dcc_execution",
+        "profiler_benchmark_execution",
+        "live_screenshot_capture",
+        "spawn_publish",
+        "cache_live_db_access",
+        "authoritative_source_uuid_claims",
+        "authoritative_asset_id_claims",
+        "authoritative_product_id_claims",
+        "production_write",
+        "engine_write"
+      ],
+      "allowed_surface_summary": "Requirements-only contract; skeleton execution remains blocked.",
+      "failure_conditions": [
+        "preflight marked passed without approved execution",
+        "missing rollback plan",
+        "blocked surfaces widened"
+      ],
+      "production_readiness_effect": "requirements_only_execution_blocked",
+      "publication_effect": "publication_blocked",
+      "safety_notes": [
+        "No authoritative ID claims allowed.",
+        "No publication authority."
+      ]
+    },
+    {
+      "candidate_id": "material_uv_qc_execution_v1",
+      "candidate_type": "real_execution",
+      "preflight_contract_version": "v1",
+      "preflight_status": "requirements_defined",
+      "admission_status": "unadmitted",
+      "current_candidate_matrix_status": "proposed",
+      "requires_explicit_approval": true,
+      "approval_phrase": "APPROVE EXECUTION ADMISSION material_uv_qc_execution_v1",
+      "approval_decision_reference_required": true,
+      "required_inputs": [
+        "examples/sandbox/material-uv-evidence/pilot-candidates/*.json",
+        "examples/material-uv-qc/*.json"
+      ],
+      "forbidden_inputs": [
+        "Cache/**",
+        "**/assetdb.sqlite",
+        "production/**",
+        "engine/**"
+      ],
+      "allowed_sandbox_paths": [
+        "examples/sandbox/material-uv-evidence",
+        "examples/sandbox/execution-receipts"
+      ],
+      "forbidden_paths": [
+        "production/**",
+        "engine/**",
+        "Cache/**",
+        "**/assetdb.sqlite"
+      ],
+      "allowed_outputs": [
+        "examples/sandbox/material-uv-evidence/**",
+        "examples/sandbox/execution-receipts/**"
+      ],
+      "forbidden_outputs": [
+        "production/**",
+        "engine/**",
+        "Cache/**"
+      ],
+      "required_evidence": [
+        "material_uv_qc_v1 controlled_real evidence pass",
+        "aaa_performance_budget_v1 pass"
+      ],
+      "required_receipt_schema": "schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
+      "receipt_required": true,
+      "rollback_plan_required": true,
+      "operator_approval_required": true,
+      "expected_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+      "expected_tests": [
+        "tests/pytest/test_execution_admission_preflight_contracts.py",
+        "tests/pytest/test_material_uv_qc_report.py"
+      ],
+      "blocked_surfaces": [
+        "o3de_execution",
+        "editor_runtime_execution",
+        "asset_processor_execution",
+        "blender_dcc_execution",
+        "profiler_benchmark_execution",
+        "live_screenshot_capture",
+        "spawn_publish",
+        "cache_live_db_access",
+        "authoritative_source_uuid_claims",
+        "authoritative_asset_id_claims",
+        "authoritative_product_id_claims",
+        "production_write",
+        "engine_write"
+      ],
+      "allowed_surface_summary": "Requirements-only contract; material/UV execution remains blocked.",
+      "failure_conditions": [
+        "missing required evidence",
+        "receipt requirement disabled",
+        "production/engine path writes permitted"
+      ],
+      "production_readiness_effect": "requirements_only_execution_blocked",
+      "publication_effect": "publication_blocked",
+      "safety_notes": [
+        "No DCC/O3DE/AP execution admitted.",
+        "No publication authority."
+      ]
+    },
+    {
+      "candidate_id": "animation_smoke_execution_v1",
+      "candidate_type": "real_execution",
+      "preflight_contract_version": "v1",
+      "preflight_status": "requirements_defined",
+      "admission_status": "unadmitted",
+      "current_candidate_matrix_status": "proposed",
+      "requires_explicit_approval": true,
+      "approval_phrase": "APPROVE EXECUTION ADMISSION animation_smoke_execution_v1",
+      "approval_decision_reference_required": true,
+      "required_inputs": [
+        "examples/sandbox/animation-smoke-evidence/pilot-candidates/*.json",
+        "examples/animation-smoke/*.json"
+      ],
+      "forbidden_inputs": [
+        "Cache/**",
+        "**/assetdb.sqlite",
+        "production/**",
+        "engine/**"
+      ],
+      "allowed_sandbox_paths": [
+        "examples/sandbox/animation-smoke-evidence",
+        "examples/sandbox/execution-receipts"
+      ],
+      "forbidden_paths": [
+        "production/**",
+        "engine/**",
+        "Cache/**",
+        "**/assetdb.sqlite"
+      ],
+      "allowed_outputs": [
+        "examples/sandbox/animation-smoke-evidence/**",
+        "examples/sandbox/execution-receipts/**"
+      ],
+      "forbidden_outputs": [
+        "production/**",
+        "engine/**",
+        "Cache/**"
+      ],
+      "required_evidence": [
+        "animation_smoke_v1 controlled_real evidence pass",
+        "max_biped_v1_skeleton_contract controlled_real evidence pass"
+      ],
+      "required_receipt_schema": "schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
+      "receipt_required": true,
+      "rollback_plan_required": true,
+      "operator_approval_required": true,
+      "expected_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+      "expected_tests": [
+        "tests/pytest/test_execution_admission_preflight_contracts.py",
+        "tests/pytest/test_animation_smoke_report.py"
+      ],
+      "blocked_surfaces": [
+        "o3de_execution",
+        "editor_runtime_execution",
+        "asset_processor_execution",
+        "blender_dcc_execution",
+        "profiler_benchmark_execution",
+        "live_screenshot_capture",
+        "spawn_publish",
+        "cache_live_db_access",
+        "authoritative_source_uuid_claims",
+        "authoritative_asset_id_claims",
+        "authoritative_product_id_claims",
+        "production_write",
+        "engine_write"
+      ],
+      "allowed_surface_summary": "Requirements-only contract; runtime playback and publication remain blocked.",
+      "failure_conditions": [
+        "runtime playback admitted",
+        "preflight status set to passed",
+        "missing operator approval requirement"
+      ],
+      "production_readiness_effect": "requirements_only_execution_blocked",
+      "publication_effect": "publication_blocked",
+      "safety_notes": [
+        "No runtime playback admission.",
+        "No publication authority."
+      ]
+    },
+    {
+      "candidate_id": "visual_evidence_capture_execution_v1",
+      "candidate_type": "real_execution",
+      "preflight_contract_version": "v1",
+      "preflight_status": "blocked",
+      "admission_status": "unadmitted",
+      "current_candidate_matrix_status": "blocked",
+      "requires_explicit_approval": true,
+      "approval_phrase": "APPROVE EXECUTION ADMISSION visual_evidence_capture_execution_v1",
+      "approval_decision_reference_required": true,
+      "required_inputs": [
+        "examples/sandbox/visual-evidence/pilot-candidates/*.json",
+        "examples/screenshot-evidence/*.json"
+      ],
+      "forbidden_inputs": [
+        "Cache/**",
+        "**/assetdb.sqlite",
+        "production/**",
+        "engine/**"
+      ],
+      "allowed_sandbox_paths": [
+        "examples/sandbox/visual-evidence",
+        "examples/sandbox/execution-receipts"
+      ],
+      "forbidden_paths": [
+        "production/**",
+        "engine/**",
+        "Cache/**",
+        "**/assetdb.sqlite"
+      ],
+      "allowed_outputs": [
+        "examples/sandbox/visual-evidence/**",
+        "examples/sandbox/execution-receipts/**"
+      ],
+      "forbidden_outputs": [
+        "production/**",
+        "engine/**",
+        "Cache/**"
+      ],
+      "required_evidence": [
+        "screenshot_evidence_v1 controlled_real evidence pass",
+        "manual_hero_review_v1 pass"
+      ],
+      "required_receipt_schema": "schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
+      "receipt_required": true,
+      "rollback_plan_required": true,
+      "operator_approval_required": true,
+      "expected_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+      "expected_tests": [
+        "tests/pytest/test_execution_admission_preflight_contracts.py",
+        "tests/pytest/test_screenshot_evidence_extractor.py"
+      ],
+      "blocked_surfaces": [
+        "o3de_execution",
+        "editor_runtime_execution",
+        "asset_processor_execution",
+        "blender_dcc_execution",
+        "profiler_benchmark_execution",
+        "live_screenshot_capture",
+        "spawn_publish",
+        "cache_live_db_access",
+        "authoritative_source_uuid_claims",
+        "authoritative_asset_id_claims",
+        "authoritative_product_id_claims",
+        "production_write",
+        "engine_write"
+      ],
+      "allowed_surface_summary": "Requirements-only contract; live screenshot capture and runtime execution remain blocked.",
+      "failure_conditions": [
+        "live screenshot capture admitted",
+        "blocked surfaces widened",
+        "forbidden paths missing"
+      ],
+      "production_readiness_effect": "requirements_only_execution_blocked",
+      "publication_effect": "publication_blocked",
+      "safety_notes": [
+        "No O3DE/Editor/runtime execution admitted.",
+        "No publication authority."
+      ]
+    },
+    {
+      "candidate_id": "release_candidate_package_publish_dry_run_v1",
+      "candidate_type": "dry_run",
+      "preflight_contract_version": "v1",
+      "preflight_status": "requirements_defined",
+      "admission_status": "unadmitted",
+      "current_candidate_matrix_status": "proposed",
+      "requires_explicit_approval": true,
+      "approval_phrase": "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1",
+      "approval_decision_reference_required": true,
+      "required_inputs": [
+        "examples/real-pilot-release-candidate-package/*.json",
+        "examples/production-readiness-report/*.json"
+      ],
+      "forbidden_inputs": [
+        "Cache/**",
+        "**/assetdb.sqlite",
+        "production/**",
+        "engine/**"
+      ],
+      "allowed_sandbox_paths": [
+        "examples/sandbox/manifests/reports",
+        "examples/sandbox/execution-receipts"
+      ],
+      "forbidden_paths": [
+        "production/**",
+        "engine/**",
+        "Cache/**",
+        "**/assetdb.sqlite"
+      ],
+      "allowed_outputs": [
+        "examples/sandbox/manifests/reports/**",
+        "examples/sandbox/execution-receipts/**"
+      ],
+      "forbidden_outputs": [
+        "production/**",
+        "engine/**",
+        "Cache/**"
+      ],
+      "required_evidence": [
+        "release_publication_gate_set_v1 pass",
+        "release_publication_request_approval_v1 pass"
+      ],
+      "required_receipt_schema": "schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
+      "receipt_required": true,
+      "rollback_plan_required": true,
+      "operator_approval_required": true,
+      "expected_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+      "expected_tests": [
+        "tests/pytest/test_execution_admission_preflight_contracts.py",
+        "tests/pytest/test_execution_admission_receipt_dry_run_proof.py"
+      ],
+      "blocked_surfaces": [
+        "o3de_execution",
+        "editor_runtime_execution",
+        "asset_processor_execution",
+        "blender_dcc_execution",
+        "profiler_benchmark_execution",
+        "live_screenshot_capture",
+        "spawn_publish",
+        "cache_live_db_access",
+        "authoritative_source_uuid_claims",
+        "authoritative_asset_id_claims",
+        "authoritative_product_id_claims",
+        "production_write",
+        "engine_write"
+      ],
+      "allowed_surface_summary": "Requirements-only dry-run contract; real publication remains blocked.",
+      "failure_conditions": [
+        "publication performed true",
+        "dry-run output outside sandbox",
+        "approval requirements missing"
+      ],
+      "production_readiness_effect": "requirements_only_publication_blocked",
+      "publication_effect": "dry_run_only_publication_blocked",
+      "safety_notes": [
+        "Dry-run is not publication admission.",
+        "No real execution admission."
+      ]
+    },
+    {
+      "candidate_id": "release_candidate_package_publication_v1",
+      "candidate_type": "publication",
+      "preflight_contract_version": "v1",
+      "preflight_status": "blocked",
+      "admission_status": "unadmitted",
+      "current_candidate_matrix_status": "blocked",
+      "requires_explicit_approval": true,
+      "approval_phrase": "APPROVE EXECUTION ADMISSION release_candidate_package_publication_v1",
+      "approval_decision_reference_required": true,
+      "required_inputs": [
+        "examples/release-publication-request-approval/*.json",
+        "examples/release-publication-gate-set/*.json",
+        "examples/release-publication-execution-admission-gate/*.json"
+      ],
+      "forbidden_inputs": [
+        "Cache/**",
+        "**/assetdb.sqlite",
+        "production/**",
+        "engine/**"
+      ],
+      "allowed_sandbox_paths": [
+        "examples/sandbox/manifests/reports",
+        "examples/sandbox/execution-receipts"
+      ],
+      "forbidden_paths": [
+        "production/**",
+        "engine/**",
+        "Cache/**",
+        "**/assetdb.sqlite"
+      ],
+      "allowed_outputs": [
+        "examples/sandbox/manifests/reports/**",
+        "examples/sandbox/execution-receipts/**"
+      ],
+      "forbidden_outputs": [
+        "production/**",
+        "engine/**",
+        "Cache/**"
+      ],
+      "required_evidence": [
+        "release_publication_request_approval_v1 pass",
+        "release_publication_execution_admission_gate_v1 pass",
+        "release_publication_gate_set_v1 pass",
+        "release_publication_rollback_drill_v1 pass"
+      ],
+      "required_receipt_schema": "schemas/maxine_release_publication_execution_receipt_report.schema.json",
+      "receipt_required": true,
+      "rollback_plan_required": true,
+      "operator_approval_required": true,
+      "expected_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+      "expected_tests": [
+        "tests/pytest/test_execution_admission_preflight_contracts.py",
+        "tests/pytest/test_release_publication_execution_receipt_report.py"
+      ],
+      "blocked_surfaces": [
+        "o3de_execution",
+        "editor_runtime_execution",
+        "asset_processor_execution",
+        "blender_dcc_execution",
+        "profiler_benchmark_execution",
+        "live_screenshot_capture",
+        "spawn_publish",
+        "cache_live_db_access",
+        "authoritative_source_uuid_claims",
+        "authoritative_asset_id_claims",
+        "authoritative_product_id_claims",
+        "production_write",
+        "engine_write"
+      ],
+      "allowed_surface_summary": "Requirements-only publication contract; publication admission remains blocked.",
+      "failure_conditions": [
+        "publication admission status not blocked",
+        "missing rollback plan",
+        "production or engine writes permitted"
+      ],
+      "production_readiness_effect": "requirements_only_publication_blocked",
+      "publication_effect": "publication_blocked",
+      "safety_notes": [
+        "No publication admitted in this slice.",
+        "No real execution admitted in this slice."
+      ]
+    }
+  ],
+  "claim_status": "evidence_only",
+  "safety": {
+    "o3de_execution_status": "blocked",
+    "editor_runtime_execution_status": "blocked",
+    "asset_processor_execution_status": "blocked",
+    "blender_dcc_execution_status": "blocked",
+    "profiler_benchmark_execution_status": "blocked",
+    "live_screenshot_capture_status": "blocked",
+    "spawn_publish_status": "blocked",
+    "cache_live_db_access_status": "blocked",
+    "production_write_status": "blocked",
+    "engine_write_status": "blocked"
+  }
+}

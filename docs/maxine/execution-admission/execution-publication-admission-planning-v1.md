@@ -109,3 +109,14 @@ Matrix posture remains strict:
 - publication admission status:
   - `blocked`
 
+## Candidate-Specific Preflight Contracts v1
+
+Execution/publication widening now also requires candidate-specific preflight contracts:
+
+- `docs/maxine/execution-admission/execution-admission-preflight-contracts-v1.md`
+- `schemas/maxine_execution_admission_preflight_contracts.schema.json`
+- `examples/execution-admission/execution_admission_preflight_contracts_v1.json`
+- `tools/execution-admission/validate_execution_admission_preflight_contracts.py`
+
+These contracts define requirements only and do not admit execution/publication by themselves.
+

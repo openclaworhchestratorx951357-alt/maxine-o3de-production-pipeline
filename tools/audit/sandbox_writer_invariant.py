@@ -139,6 +139,9 @@ CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
 EXECUTION_ADMISSION_CANDIDATE_MATRIX_REL = (
     "examples/execution-admission/execution_admission_candidate_matrix_v1.json"
 )
+EXECUTION_ADMISSION_PREFLIGHT_CONTRACTS_REL = (
+    "examples/execution-admission/execution_admission_preflight_contracts_v1.json"
+)
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
 WORKFLOW_RUNS_DIR_REL = "examples/sandbox/workflow-runs"
@@ -182,6 +185,27 @@ EXPECTED_REAL_EXECUTION_CANDIDATE_IDS = (
 )
 EXPECTED_PUBLICATION_CANDIDATE_IDS = ("release_candidate_package_publication_v1",)
 EXPECTED_DRY_RUN_CANDIDATE_IDS = ("release_candidate_package_publish_dry_run_v1",)
+EXPECTED_EXECUTION_ADMISSION_CANDIDATE_IDS = (
+    NOOP_RECEIPT_CANDIDATE_ID,
+    *EXPECTED_REAL_EXECUTION_CANDIDATE_IDS,
+    *EXPECTED_PUBLICATION_CANDIDATE_IDS,
+    *EXPECTED_DRY_RUN_CANDIDATE_IDS,
+)
+REQUIRED_PREFLIGHT_BLOCKED_SURFACES = {
+    "o3de_execution",
+    "editor_runtime_execution",
+    "asset_processor_execution",
+    "blender_dcc_execution",
+    "profiler_benchmark_execution",
+    "live_screenshot_capture",
+    "spawn_publish",
+    "cache_live_db_access",
+    "authoritative_source_uuid_claims",
+    "authoritative_asset_id_claims",
+    "authoritative_product_id_claims",
+    "production_write",
+    "engine_write",
+}
 
 ADMITTED_SANDBOX_COMMANDS = {
     SANDBOX_WRITER_REL,
@@ -977,6 +1001,9 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     pilot_release_chain_ci_proof = root / PILOT_RELEASE_CHAIN_CI_PROOF_REL
     capability_matrix = root / CAPABILITY_MATRIX_REL
     execution_admission_candidate_matrix = root / EXECUTION_ADMISSION_CANDIDATE_MATRIX_REL
+    execution_admission_preflight_contracts = (
+        root / EXECUTION_ADMISSION_PREFLIGHT_CONTRACTS_REL
+    )
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
     workflow_runs_dir = root / WORKFLOW_RUNS_DIR_REL
@@ -2862,6 +2889,193 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         except Exception as exc:  # pragma: no cover - defensive failure surface
             failures.append(
                 "execution admission candidate matrix is not valid JSON: "
+                f"{exc}"
+            )
+
+    if execution_admission_preflight_contracts.exists():
+        try:
+            contracts = json.loads(
+                execution_admission_preflight_contracts.read_text(encoding="utf-8-sig")
+            )
+
+            if contracts.get("schema_version") != "1.0.0":
+                failures.append(
+                    "execution admission preflight contracts schema_version must be 1.0.0."
+                )
+            if contracts.get("record_type") != "EXECUTION_ADMISSION_PREFLIGHT_CONTRACTS_v1":
+                failures.append(
+                    "execution admission preflight contracts record_type must be EXECUTION_ADMISSION_PREFLIGHT_CONTRACTS_v1."
+                )
+            if contracts.get("production_ready_claimed") is not False:
+                failures.append(
+                    "execution admission preflight contracts must keep production_ready_claimed=false."
+                )
+            if contracts.get("publication_admitted_claimed") is not False:
+                failures.append(
+                    "execution admission preflight contracts must keep publication_admitted_claimed=false."
+                )
+            if contracts.get("real_execution_admission_status") != "blocked":
+                failures.append(
+                    "execution admission preflight contracts must keep real_execution_admission_status=blocked."
+                )
+            if contracts.get("publication_admission_status") != "blocked":
+                failures.append(
+                    "execution admission preflight contracts must keep publication_admission_status=blocked."
+                )
+
+            admitted_noop = {
+                str(item).strip()
+                for item in (contracts.get("admitted_noop_receipt_candidate_ids") or [])
+                if str(item).strip()
+            }
+            admitted_real = {
+                str(item).strip()
+                for item in (contracts.get("admitted_real_execution_candidate_ids") or [])
+                if str(item).strip()
+            }
+            admitted_publication = {
+                str(item).strip()
+                for item in (contracts.get("admitted_publication_candidate_ids") or [])
+                if str(item).strip()
+            }
+            real_preflight_passed = {
+                str(item).strip()
+                for item in (contracts.get("real_execution_preflight_passed_candidate_ids") or [])
+                if str(item).strip()
+            }
+            publication_preflight_passed = {
+                str(item).strip()
+                for item in (contracts.get("publication_preflight_passed_candidate_ids") or [])
+                if str(item).strip()
+            }
+
+            if admitted_noop != {NOOP_RECEIPT_CANDIDATE_ID}:
+                failures.append(
+                    "execution admission preflight contracts must keep only release_candidate_package_receipt_noop_v1 in admitted_noop_receipt_candidate_ids."
+                )
+            if admitted_real:
+                failures.append(
+                    "execution admission preflight contracts must keep admitted_real_execution_candidate_ids empty."
+                )
+            if admitted_publication:
+                failures.append(
+                    "execution admission preflight contracts must keep admitted_publication_candidate_ids empty."
+                )
+            if real_preflight_passed:
+                failures.append(
+                    "execution admission preflight contracts must keep real_execution_preflight_passed_candidate_ids empty."
+                )
+            if publication_preflight_passed:
+                failures.append(
+                    "execution admission preflight contracts must keep publication_preflight_passed_candidate_ids empty."
+                )
+
+            contracts_raw = contracts.get("contracts")
+            if not isinstance(contracts_raw, list):
+                failures.append(
+                    "execution admission preflight contracts contracts field must be an array."
+                )
+            else:
+                contract_map = {}
+                for entry in contracts_raw:
+                    if isinstance(entry, dict):
+                        cid = str(entry.get("candidate_id", "")).strip()
+                        if cid:
+                            contract_map[cid] = entry
+
+                expected_ids = set(EXPECTED_EXECUTION_ADMISSION_CANDIDATE_IDS)
+                missing_ids = sorted(expected_ids - set(contract_map))
+                extra_ids = sorted(set(contract_map) - expected_ids)
+                for missing_id in missing_ids:
+                    failures.append(
+                        "execution admission preflight contracts is missing expected candidate contract: "
+                        f"{missing_id}"
+                    )
+                for extra_id in extra_ids:
+                    failures.append(
+                        "execution admission preflight contracts contains unknown candidate contract: "
+                        f"{extra_id}"
+                    )
+
+                noop_entry = contract_map.get(NOOP_RECEIPT_CANDIDATE_ID)
+                if not isinstance(noop_entry, dict):
+                    failures.append(
+                        "execution admission preflight contracts must include release_candidate_package_receipt_noop_v1 contract."
+                    )
+                else:
+                    if str(noop_entry.get("candidate_type", "")).strip() != "no_op_receipt":
+                        failures.append(
+                            "execution admission preflight contracts no-op candidate must keep candidate_type=no_op_receipt."
+                        )
+                    if str(noop_entry.get("admission_status", "")).strip() != "admitted_no_op_only":
+                        failures.append(
+                            "execution admission preflight contracts no-op candidate must keep admission_status=admitted_no_op_only."
+                        )
+
+                for candidate_id in EXPECTED_REAL_EXECUTION_CANDIDATE_IDS:
+                    entry = contract_map.get(candidate_id)
+                    if not isinstance(entry, dict):
+                        continue
+                    if str(entry.get("candidate_type", "")).strip() != "real_execution":
+                        failures.append(
+                            "execution admission preflight contracts real execution candidate has wrong type: "
+                            f"{candidate_id}"
+                        )
+                    if str(entry.get("admission_status", "")).strip() != "unadmitted":
+                        failures.append(
+                            "execution admission preflight contracts must keep real execution candidates unadmitted: "
+                            f"{candidate_id}"
+                        )
+                    if str(entry.get("preflight_status", "")).strip() == "passed":
+                        failures.append(
+                            "execution admission preflight contracts must not mark real execution preflight as passed in this slice: "
+                            f"{candidate_id}"
+                        )
+
+                for candidate_id in EXPECTED_PUBLICATION_CANDIDATE_IDS:
+                    entry = contract_map.get(candidate_id)
+                    if not isinstance(entry, dict):
+                        continue
+                    if str(entry.get("candidate_type", "")).strip() != "publication":
+                        failures.append(
+                            "execution admission preflight contracts publication candidate has wrong type: "
+                            f"{candidate_id}"
+                        )
+                    if str(entry.get("admission_status", "")).strip() != "unadmitted":
+                        failures.append(
+                            "execution admission preflight contracts must keep publication candidates unadmitted: "
+                            f"{candidate_id}"
+                        )
+                    if str(entry.get("preflight_status", "")).strip() == "passed":
+                        failures.append(
+                            "execution admission preflight contracts must not mark publication preflight as passed in this slice: "
+                            f"{candidate_id}"
+                        )
+
+                for candidate_id in (
+                    *EXPECTED_REAL_EXECUTION_CANDIDATE_IDS,
+                    *EXPECTED_PUBLICATION_CANDIDATE_IDS,
+                    *EXPECTED_DRY_RUN_CANDIDATE_IDS,
+                ):
+                    entry = contract_map.get(candidate_id)
+                    if not isinstance(entry, dict):
+                        continue
+                    blocked_surfaces = {
+                        str(item).strip()
+                        for item in (entry.get("blocked_surfaces") or [])
+                        if str(item).strip()
+                    }
+                    missing_surfaces = sorted(
+                        REQUIRED_PREFLIGHT_BLOCKED_SURFACES - blocked_surfaces
+                    )
+                    if missing_surfaces:
+                        failures.append(
+                            "execution admission preflight contracts candidate is missing blocked surfaces: "
+                            f"{candidate_id} -> {', '.join(missing_surfaces)}"
+                        )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "execution admission preflight contracts is not valid JSON: "
                 f"{exc}"
             )
 

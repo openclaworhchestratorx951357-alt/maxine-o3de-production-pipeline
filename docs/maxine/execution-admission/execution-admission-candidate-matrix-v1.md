@@ -57,6 +57,17 @@ This matrix does not admit real execution or publication by itself.
 - proof integration:
   - `tools/release-lane/prove_pilot_release_chain.py`
 
+## Preflight Contract Link
+
+Candidate-specific preflight requirements are now captured separately and cross-checked against this matrix:
+
+- `docs/maxine/execution-admission/execution-admission-preflight-contracts-v1.md`
+- `schemas/maxine_execution_admission_preflight_contracts.schema.json`
+- `examples/execution-admission/execution_admission_preflight_contracts_v1.json`
+- `tools/execution-admission/validate_execution_admission_preflight_contracts.py`
+
+Preflight contracts are requirements-only. They do not admit execution or publication.
+
 ## Safety Notes
 
 This slice remains non-executing and non-publishing:

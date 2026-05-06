@@ -121,3 +121,25 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
         "proposed_or_blocked_dry_run_candidate_ids"
     ]
     assert candidate_matrix_status["reporter_return_code"] == 0
+    preflight_status = payload["details"]["execution_admission_preflight_contracts_report"]
+    assert preflight_status["status"] == "pass"
+    assert (
+        preflight_status["report_type"]
+        == "EXECUTION_ADMISSION_PREFLIGHT_CONTRACTS_VALIDATION_v1_REPORT"
+    )
+    assert preflight_status["preflight_contracts_present"] is True
+    assert preflight_status["admitted_noop_receipt_candidate_ids"] == [
+        "release_candidate_package_receipt_noop_v1"
+    ]
+    assert preflight_status["admitted_real_execution_candidate_ids"] == []
+    assert preflight_status["admitted_publication_candidate_ids"] == []
+    assert preflight_status["real_execution_preflight_passed_candidate_ids"] == []
+    assert preflight_status["publication_preflight_passed_candidate_ids"] == []
+    assert preflight_status["real_execution_admission_status"] == "blocked"
+    assert preflight_status["publication_admission_status"] == "blocked"
+    assert preflight_status["production_ready_claimed"] is False
+    assert "dcc_conform_execution_v1" in preflight_status["preflight_contract_candidate_ids"]
+    assert "release_candidate_package_publication_v1" in preflight_status[
+        "preflight_contract_candidate_ids"
+    ]
+    assert preflight_status["reporter_return_code"] == 0
