@@ -99,3 +99,25 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
     assert controlled_inventory_status["execution_admitted"] is False
     assert controlled_inventory_status["reporter_return_code"] == 0
     assert Path(controlled_inventory_status["output_path"]).exists()
+    candidate_matrix_status = payload["details"]["execution_admission_candidate_matrix_report"]
+    assert candidate_matrix_status["status"] == "pass"
+    assert (
+        candidate_matrix_status["report_type"]
+        == "EXECUTION_ADMISSION_CANDIDATE_MATRIX_VALIDATION_v1_REPORT"
+    )
+    assert candidate_matrix_status["candidate_matrix_present"] is True
+    assert candidate_matrix_status["admitted_noop_receipt_candidate_ids"] == [
+        "release_candidate_package_receipt_noop_v1"
+    ]
+    assert candidate_matrix_status["admitted_real_execution_candidate_ids"] == []
+    assert candidate_matrix_status["admitted_publication_candidate_ids"] == []
+    assert candidate_matrix_status["real_execution_admission_status"] == "blocked"
+    assert candidate_matrix_status["publication_admission_status"] == "blocked"
+    assert "dcc_conform_execution_v1" in candidate_matrix_status["proposed_or_blocked_real_execution_candidate_ids"]
+    assert "release_candidate_package_publication_v1" in candidate_matrix_status[
+        "proposed_or_blocked_publication_candidate_ids"
+    ]
+    assert "release_candidate_package_publish_dry_run_v1" in candidate_matrix_status[
+        "proposed_or_blocked_dry_run_candidate_ids"
+    ]
+    assert candidate_matrix_status["reporter_return_code"] == 0

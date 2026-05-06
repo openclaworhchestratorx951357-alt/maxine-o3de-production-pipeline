@@ -87,3 +87,25 @@ The first candidate is receipt-only. It must produce an auditable no-op receipt 
 - tests:
   - `tests/pytest/test_execution_publication_admission_plan_schema.py`
 
+## Execution Admission Candidate Matrix v1
+
+The planning stack now includes a machine-readable candidate matrix for future widening:
+
+- `docs/maxine/execution-admission/execution-admission-candidate-matrix-v1.md`
+- `schemas/maxine_execution_admission_candidate_matrix.schema.json`
+- `examples/execution-admission/execution_admission_candidate_matrix_v1.json`
+- `tools/execution-admission/validate_execution_admission_candidate_matrix.py`
+
+Matrix posture remains strict:
+
+- admitted no-op receipt candidates:
+  - `release_candidate_package_receipt_noop_v1`
+- admitted real execution candidates:
+  - none
+- admitted publication candidates:
+  - none
+- real execution admission status:
+  - `blocked`
+- publication admission status:
+  - `blocked`
+

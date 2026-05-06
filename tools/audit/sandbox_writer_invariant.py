@@ -136,6 +136,9 @@ PILOT_RELEASE_CHAIN_CI_PROOF_REL = (
     "tools/release-lane/prove_pilot_release_chain.py"
 )
 CAPABILITY_MATRIX_REL = "examples/capabilities/maxine-capability-matrix.json"
+EXECUTION_ADMISSION_CANDIDATE_MATRIX_REL = (
+    "examples/execution-admission/execution_admission_candidate_matrix_v1.json"
+)
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
 WORKFLOW_RUNS_DIR_REL = "examples/sandbox/workflow-runs"
@@ -167,6 +170,18 @@ AP_REAL_BINARY_DIAGNOSTIC_EXECUTIONS_DIR_REL = (
 AP_REAL_BINARY_DIAGNOSTIC_BUNDLES_DIR_REL = (
     "examples/sandbox/ap-real-binary-diagnostic-bundles"
 )
+
+NOOP_RECEIPT_CANDIDATE_ID = "release_candidate_package_receipt_noop_v1"
+EXPECTED_REAL_EXECUTION_CANDIDATE_IDS = (
+    "dcc_conform_execution_v1",
+    "asset_processor_batch_execution_v1",
+    "max_biped_skeleton_validation_execution_v1",
+    "material_uv_qc_execution_v1",
+    "animation_smoke_execution_v1",
+    "visual_evidence_capture_execution_v1",
+)
+EXPECTED_PUBLICATION_CANDIDATE_IDS = ("release_candidate_package_publication_v1",)
+EXPECTED_DRY_RUN_CANDIDATE_IDS = ("release_candidate_package_publish_dry_run_v1",)
 
 ADMITTED_SANDBOX_COMMANDS = {
     SANDBOX_WRITER_REL,
@@ -961,6 +976,7 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     pilot_release_chain_runner = root / PILOT_RELEASE_CHAIN_RUNNER_REL
     pilot_release_chain_ci_proof = root / PILOT_RELEASE_CHAIN_CI_PROOF_REL
     capability_matrix = root / CAPABILITY_MATRIX_REL
+    execution_admission_candidate_matrix = root / EXECUTION_ADMISSION_CANDIDATE_MATRIX_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
     workflow_runs_dir = root / WORKFLOW_RUNS_DIR_REL
@@ -2701,5 +2717,152 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
                         )
         except Exception as exc:  # pragma: no cover - defensive failure surface
             failures.append(f"capability matrix is not valid JSON: {exc}")
+
+    if execution_admission_candidate_matrix.exists():
+        try:
+            matrix = json.loads(
+                execution_admission_candidate_matrix.read_text(encoding="utf-8-sig")
+            )
+
+            if matrix.get("schema_version") != "1.0.0":
+                failures.append(
+                    "execution admission candidate matrix schema_version must be 1.0.0."
+                )
+            if matrix.get("production_ready_claimed") is not False:
+                failures.append(
+                    "execution admission candidate matrix must keep production_ready_claimed=false."
+                )
+
+            if matrix.get("real_execution_admission_status") != "blocked":
+                failures.append(
+                    "execution admission candidate matrix must keep real_execution_admission_status=blocked."
+                )
+            if matrix.get("publication_admission_status") != "blocked":
+                failures.append(
+                    "execution admission candidate matrix must keep publication_admission_status=blocked."
+                )
+
+            admitted_noop = {
+                str(item).strip()
+                for item in (matrix.get("admitted_noop_receipt_candidate_ids") or [])
+                if str(item).strip()
+            }
+            receipt_backed = {
+                str(item).strip()
+                for item in (matrix.get("receipt_backed_candidate_ids") or [])
+                if str(item).strip()
+            }
+            admitted_real = {
+                str(item).strip()
+                for item in (matrix.get("admitted_real_execution_candidate_ids") or [])
+                if str(item).strip()
+            }
+            admitted_publication = {
+                str(item).strip()
+                for item in (matrix.get("admitted_publication_candidate_ids") or [])
+                if str(item).strip()
+            }
+
+            if admitted_noop != {NOOP_RECEIPT_CANDIDATE_ID}:
+                failures.append(
+                    "execution admission candidate matrix must keep only release_candidate_package_receipt_noop_v1 in admitted_noop_receipt_candidate_ids."
+                )
+            if receipt_backed != {NOOP_RECEIPT_CANDIDATE_ID}:
+                failures.append(
+                    "execution admission candidate matrix must keep only release_candidate_package_receipt_noop_v1 in receipt_backed_candidate_ids."
+                )
+            if admitted_real:
+                failures.append(
+                    "execution admission candidate matrix must keep admitted_real_execution_candidate_ids empty."
+                )
+            if admitted_publication:
+                failures.append(
+                    "execution admission candidate matrix must keep admitted_publication_candidate_ids empty."
+                )
+
+            candidates_raw = matrix.get("candidates")
+            if not isinstance(candidates_raw, list):
+                failures.append(
+                    "execution admission candidate matrix candidates field must be an array."
+                )
+            else:
+                candidate_map = {}
+                for entry in candidates_raw:
+                    if isinstance(entry, dict):
+                        cid = str(entry.get("candidate_id", "")).strip()
+                        if cid:
+                            candidate_map[cid] = entry
+
+                noop_entry = candidate_map.get(NOOP_RECEIPT_CANDIDATE_ID)
+                if not isinstance(noop_entry, dict):
+                    failures.append(
+                        "execution admission candidate matrix must include release_candidate_package_receipt_noop_v1 candidate entry."
+                    )
+                else:
+                    if str(noop_entry.get("candidate_type", "")).strip() != "no_op_receipt":
+                        failures.append(
+                            "execution admission candidate matrix no-op candidate must keep candidate_type=no_op_receipt."
+                        )
+                    if str(noop_entry.get("current_status", "")).strip() != "admitted":
+                        failures.append(
+                            "execution admission candidate matrix no-op candidate must keep current_status=admitted."
+                        )
+
+                for required_id in EXPECTED_REAL_EXECUTION_CANDIDATE_IDS:
+                    entry = candidate_map.get(required_id)
+                    if not isinstance(entry, dict):
+                        failures.append(
+                            "execution admission candidate matrix is missing expected real execution candidate: "
+                            f"{required_id}"
+                        )
+                        continue
+                    if str(entry.get("candidate_type", "")).strip() != "real_execution":
+                        failures.append(
+                            "execution admission candidate matrix real execution candidate has wrong type: "
+                            f"{required_id}"
+                        )
+                    if str(entry.get("current_status", "")).strip() == "admitted":
+                        failures.append(
+                            "execution admission candidate matrix must not admit real execution candidates in this slice: "
+                            f"{required_id}"
+                        )
+
+                for required_id in EXPECTED_PUBLICATION_CANDIDATE_IDS:
+                    entry = candidate_map.get(required_id)
+                    if not isinstance(entry, dict):
+                        failures.append(
+                            "execution admission candidate matrix is missing expected publication candidate: "
+                            f"{required_id}"
+                        )
+                        continue
+                    if str(entry.get("candidate_type", "")).strip() != "publication":
+                        failures.append(
+                            "execution admission candidate matrix publication candidate has wrong type: "
+                            f"{required_id}"
+                        )
+                    if str(entry.get("current_status", "")).strip() == "admitted":
+                        failures.append(
+                            "execution admission candidate matrix must not admit publication candidates in this slice: "
+                            f"{required_id}"
+                        )
+
+                for required_id in EXPECTED_DRY_RUN_CANDIDATE_IDS:
+                    entry = candidate_map.get(required_id)
+                    if not isinstance(entry, dict):
+                        failures.append(
+                            "execution admission candidate matrix is missing expected dry-run candidate: "
+                            f"{required_id}"
+                        )
+                        continue
+                    if str(entry.get("candidate_type", "")).strip() != "dry_run":
+                        failures.append(
+                            "execution admission candidate matrix dry-run candidate has wrong type: "
+                            f"{required_id}"
+                        )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "execution admission candidate matrix is not valid JSON: "
+                f"{exc}"
+            )
 
     return failures

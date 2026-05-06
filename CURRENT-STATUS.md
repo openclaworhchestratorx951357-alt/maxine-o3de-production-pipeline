@@ -127,6 +127,16 @@
   - `examples/execution-admission/release_candidate_package_receipt_noop_blocked.json`
   - `tests/pytest/test_execution_publication_admission_plan_schema.py`
   - current readiness remains `review_ready` / `blocked_for_execution` with no-op receipt admission recognized while real execution/publication remain blocked
+- Execution-admission candidate matrix v1 is implemented (planning/status inventory only, non-executing, non-publishing):
+  - `docs/maxine/execution-admission/execution-admission-candidate-matrix-v1.md`
+  - `schemas/maxine_execution_admission_candidate_matrix.schema.json`
+  - `examples/execution-admission/execution_admission_candidate_matrix_v1.json`
+  - `tools/execution-admission/validate_execution_admission_candidate_matrix.py`
+  - integrated into `tools/release-lane/prove_pilot_release_chain.py` proof output as read-only candidate-matrix status evidence
+  - `tests/pytest/test_execution_admission_candidate_matrix.py`
+  - matrix explicitly distinguishes no-op receipt admission from real execution/publication admission
+  - only `release_candidate_package_receipt_noop_v1` is admitted (no-op receipt only)
+  - real execution and publication candidate admissions remain blocked
 - Admitted no-op release-candidate package receipt candidate v1 is implemented (bounded receipt generation only, non-executing, non-publishing):
   - approval phrase recorded:
     - `APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1`

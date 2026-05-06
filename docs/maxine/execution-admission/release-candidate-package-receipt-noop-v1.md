@@ -93,4 +93,6 @@ Required receipt fields include:
 - this admission does not authorize publication
 - this admission does not authorize any real O3DE/AP/Blender/runtime execution
 - any stronger candidate must be reviewed and explicitly approved in a separate slice
+- stronger candidates are inventoried in:
+  - `docs/maxine/execution-admission/execution-admission-candidate-matrix-v1.md`
 

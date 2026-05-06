@@ -28,6 +28,12 @@ RELEASE_CANDIDATE_PACKAGE_RECEIPT_NOOP_REL = (
 CONTROLLED_REAL_EVIDENCE_INVENTORY_REL = (
     "tools/release-lane/report_controlled_real_evidence_inventory.py"
 )
+EXECUTION_ADMISSION_CANDIDATE_MATRIX_VALIDATOR_REL = (
+    "tools/execution-admission/validate_execution_admission_candidate_matrix.py"
+)
+EXECUTION_ADMISSION_CANDIDATE_MATRIX_EXAMPLE_REL = (
+    "examples/execution-admission/execution_admission_candidate_matrix_v1.json"
+)
 PROJECT_INVENTORY_FIXTURE_REL = (
     "examples/sandbox/project-inventory/max_biped_v1_project_inventory.fixture.json"
 )
@@ -245,6 +251,25 @@ def run_controlled_real_evidence_inventory(
     return proc.returncode, payload
 
 
+def run_execution_admission_candidate_matrix(
+    repo_root: Path,
+) -> Tuple[int, Dict[str, Any]]:
+    cmd: List[str] = [
+        sys.executable,
+        str((repo_root / EXECUTION_ADMISSION_CANDIDATE_MATRIX_VALIDATOR_REL).resolve()),
+        str((repo_root / EXECUTION_ADMISSION_CANDIDATE_MATRIX_EXAMPLE_REL).resolve()),
+    ]
+    proc = subprocess.run(
+        cmd,
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+    )
+    payload = parse_payload_from_stdout(proc.stdout)
+    payload["reporter_return_code"] = proc.returncode
+    return proc.returncode, payload
+
+
 def write_json(path: Path, payload: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2) + os.linesep, encoding="utf-8")
@@ -302,6 +327,9 @@ def main() -> int:
         controlled_inventory_code, controlled_inventory_payload = run_controlled_real_evidence_inventory(
             repo_root=repo_root,
             output_root=output_root,
+        )
+        candidate_matrix_code, candidate_matrix_payload = run_execution_admission_candidate_matrix(
+            repo_root=repo_root,
         )
     except Exception as exc:
         print(f"FAIL: pilot chain proof runner execution failed: {exc}")
@@ -367,6 +395,28 @@ def main() -> int:
         failures.append("controlled real evidence inventory report status must be pass.")
     if controlled_inventory_payload.get("execution_admitted") is not False:
         failures.append("controlled real evidence inventory report must keep execution_admitted=false.")
+    if candidate_matrix_code != 0:
+        failures.append("execution-admission candidate matrix validator must return 0.")
+    if candidate_matrix_payload.get("report_type") != "EXECUTION_ADMISSION_CANDIDATE_MATRIX_VALIDATION_v1_REPORT":
+        failures.append(
+            "execution-admission candidate matrix validator must emit EXECUTION_ADMISSION_CANDIDATE_MATRIX_VALIDATION_v1_REPORT."
+        )
+    if candidate_matrix_payload.get("status") != "pass":
+        failures.append("execution-admission candidate matrix validator status must be pass.")
+    if candidate_matrix_payload.get("candidate_matrix_present") is not True:
+        failures.append("execution-admission candidate matrix report must confirm candidate_matrix_present=true.")
+    if candidate_matrix_payload.get("admitted_noop_receipt_candidate_ids") != ["release_candidate_package_receipt_noop_v1"]:
+        failures.append(
+            "execution-admission candidate matrix report must keep admitted_noop_receipt_candidate_ids limited to release_candidate_package_receipt_noop_v1."
+        )
+    if candidate_matrix_payload.get("admitted_real_execution_candidate_ids") not in ([], None):
+        failures.append("execution-admission candidate matrix report must keep admitted_real_execution_candidate_ids empty.")
+    if candidate_matrix_payload.get("admitted_publication_candidate_ids") not in ([], None):
+        failures.append("execution-admission candidate matrix report must keep admitted_publication_candidate_ids empty.")
+    if candidate_matrix_payload.get("real_execution_admission_status") != "blocked":
+        failures.append("execution-admission candidate matrix report must keep real_execution_admission_status=blocked.")
+    if candidate_matrix_payload.get("publication_admission_status") != "blocked":
+        failures.append("execution-admission candidate matrix report must keep publication_admission_status=blocked.")
 
     summary: Dict[str, Any] = {
         "status": "pass" if not failures else "fail",
@@ -381,6 +431,7 @@ def main() -> int:
             "production_readiness_report": production_readiness_payload,
             "release_candidate_package_receipt_noop_report": receipt_payload,
             "controlled_real_evidence_inventory_report": controlled_inventory_payload,
+            "execution_admission_candidate_matrix_report": candidate_matrix_payload,
             "failures": failures,
         },
     }

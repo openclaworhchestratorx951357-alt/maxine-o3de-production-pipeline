@@ -1,0 +1,586 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "EXECUTION_ADMISSION_CANDIDATE_MATRIX_v1",
+  "matrix_id": "execution-admission-candidate-matrix-v1",
+  "matrix_version": "v1",
+  "generated_for_branch_or_commit": "d96524b4f08a6bdb0e204b9005152bd52affeced",
+  "approval_phrase_format": "APPROVE EXECUTION ADMISSION <candidate_id>",
+  "candidate_types": [
+    "evidence_only",
+    "no_op_receipt",
+    "dry_run",
+    "real_execution",
+    "publication"
+  ],
+  "candidate_statuses": [
+    "proposed",
+    "blocked",
+    "review_ready",
+    "admitted",
+    "superseded",
+    "rejected"
+  ],
+  "production_ready_claimed": false,
+  "real_execution_admission_status": "blocked",
+  "publication_admission_status": "blocked",
+  "admitted_noop_receipt_candidate_ids": [
+    "release_candidate_package_receipt_noop_v1"
+  ],
+  "receipt_backed_candidate_ids": [
+    "release_candidate_package_receipt_noop_v1"
+  ],
+  "admitted_real_execution_candidate_ids": [],
+  "admitted_publication_candidate_ids": [],
+  "candidates": [
+    {
+      "candidate_id": "release_candidate_package_receipt_noop_v1",
+      "candidate_type": "no_op_receipt",
+      "current_status": "admitted",
+      "candidate_title": "Release candidate package no-op receipt generation",
+      "intended_future_purpose": "Generate a bounded receipt from existing release-candidate package proof inputs without external tool execution.",
+      "requires_explicit_approval": true,
+      "approval_phrase": "APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1",
+      "explicit_admission_decision_ref": "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json",
+      "allowed_scope": [
+        "no-op receipt generation only",
+        "local repo evidence inputs only",
+        "sandbox/example output path only"
+      ],
+      "sandbox_boundary": "examples/sandbox/execution-receipts/release-candidate-package-receipt-noop/",
+      "allowed_inputs": [
+        "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json",
+        "examples/real-pilot-release-candidate-package/max_biped_v1_real_pilot_release_candidate_package_pass.json"
+      ],
+      "expected_outputs": [
+        "examples/sandbox/execution-receipts/release-candidate-package-receipt-noop/*.json"
+      ],
+      "blocked_surfaces": [
+        "o3de_execution",
+        "editor_runtime_execution",
+        "asset_processor_execution",
+        "blender_dcc_execution",
+        "profiler_benchmark_execution",
+        "live_screenshot_capture",
+        "spawn_publish",
+        "cache_live_db_access",
+        "authoritative_source_uuid_claims",
+        "authoritative_asset_id_claims",
+        "authoritative_product_id_claims",
+        "production_write",
+        "engine_write"
+      ],
+      "evidence_requirements": [
+        "real_pilot_release_candidate_package_v1 pass report",
+        "production_readiness_report_v1 remains blocked_for_execution",
+        "approved no-op decision record present"
+      ],
+      "receipt_required": true,
+      "receipt_requirements": [
+        "receipt schema validation pass",
+        "external_execution_performed=false",
+        "publication_performed=false",
+        "blocked surfaces recorded"
+      ],
+      "rollback_plan_required": true,
+      "rollback_requirements": [
+        "non-destructive receipt generation only",
+        "no production or engine writes"
+      ],
+      "validator_required": true,
+      "tests_required": true,
+      "validator_test_requirements": [
+        "validator rejects execution/publication claims",
+        "schema validation coverage remains green"
+      ],
+      "production_readiness_relationship": "Supports receipt-backed admission telemetry while production readiness remains blocked for real execution/publication.",
+      "publication_relationship": "No publication admission; publication remains blocked.",
+      "safety_notes": [
+        "This admitted candidate is no_op_receipt only.",
+        "This candidate is not a real_execution admission and not a publication admission."
+      ]
+    },
+    {
+      "candidate_id": "dcc_conform_execution_v1",
+      "candidate_type": "real_execution",
+      "current_status": "proposed",
+      "candidate_title": "Bounded DCC conform execution candidate",
+      "intended_future_purpose": "Run bounded DCC conform evidence generation for a release-candidate asset under explicit admission.",
+      "requires_explicit_approval": true,
+      "approval_phrase": "APPROVE EXECUTION ADMISSION dcc_conform_execution_v1",
+      "allowed_scope": [
+        "single approved candidate asset",
+        "bounded tool invocation with deterministic args",
+        "sandbox-only receipts and evidence output"
+      ],
+      "sandbox_boundary": "examples/sandbox/dcc-conform-evidence/",
+      "allowed_inputs": [
+        "examples/sandbox/dcc-conform-evidence/pilot-candidates/*.json"
+      ],
+      "expected_outputs": [
+        "examples/sandbox/dcc-conform-evidence/**",
+        "examples/sandbox/execution-receipts/**"
+      ],
+      "blocked_surfaces": [
+        "o3de_execution",
+        "editor_runtime_execution",
+        "asset_processor_execution",
+        "blender_dcc_execution",
+        "profiler_benchmark_execution",
+        "live_screenshot_capture",
+        "spawn_publish",
+        "cache_live_db_access",
+        "authoritative_source_uuid_claims",
+        "authoritative_asset_id_claims",
+        "authoritative_product_id_claims",
+        "production_write",
+        "engine_write"
+      ],
+      "evidence_requirements": [
+        "manual_hero_review_v1 pass",
+        "aaa_performance_budget_v1 pass"
+      ],
+      "receipt_required": true,
+      "receipt_requirements": [
+        "execution receipt with deterministic inputs/outputs",
+        "post-validation command pass"
+      ],
+      "rollback_plan_required": true,
+      "rollback_requirements": [
+        "rollback drill evidence reference required",
+        "path-limited cleanup procedure required"
+      ],
+      "validator_required": true,
+      "tests_required": true,
+      "validator_test_requirements": [
+        "candidate-specific preflight validator",
+        "negative tests for blocked surface widening"
+      ],
+      "production_readiness_relationship": "Future bridge from review_ready to execution_ready after explicit admission and receipt proof.",
+      "publication_relationship": "Does not grant publication admission.",
+      "safety_notes": [
+        "Remains unadmitted in this matrix slice."
+      ]
+    },
+    {
+      "candidate_id": "asset_processor_batch_execution_v1",
+      "candidate_type": "real_execution",
+      "current_status": "blocked",
+      "candidate_title": "Bounded Asset Processor batch execution candidate",
+      "intended_future_purpose": "Run bounded Asset Processor build evidence for release-candidate package verification.",
+      "requires_explicit_approval": true,
+      "approval_phrase": "APPROVE EXECUTION ADMISSION asset_processor_batch_execution_v1",
+      "allowed_scope": [
+        "single approved batch command profile",
+        "sandbox evidence and receipt output"
+      ],
+      "sandbox_boundary": "examples/sandbox/ap-diagnostic-executions/",
+      "allowed_inputs": [
+        "examples/sandbox/ap-execution-preflights/**",
+        "examples/sandbox/ap-evidence-imports/**"
+      ],
+      "expected_outputs": [
+        "examples/sandbox/ap-diagnostic-executions/**",
+        "examples/sandbox/execution-receipts/**"
+      ],
+      "blocked_surfaces": [
+        "o3de_execution",
+        "editor_runtime_execution",
+        "asset_processor_execution",
+        "blender_dcc_execution",
+        "profiler_benchmark_execution",
+        "live_screenshot_capture",
+        "spawn_publish",
+        "cache_live_db_access",
+        "authoritative_source_uuid_claims",
+        "authoritative_asset_id_claims",
+        "authoritative_product_id_claims",
+        "production_write",
+        "engine_write"
+      ],
+      "evidence_requirements": [
+        "ap execution preflight pass",
+        "publication gate-set evidence pass"
+      ],
+      "receipt_required": true,
+      "receipt_requirements": [
+        "execution receipt with command hash and bounded outputs"
+      ],
+      "rollback_plan_required": true,
+      "rollback_requirements": [
+        "sandbox rollback plan record"
+      ],
+      "validator_required": true,
+      "tests_required": true,
+      "validator_test_requirements": [
+        "read-only preflight assertions",
+        "blocked status assertions"
+      ],
+      "production_readiness_relationship": "Potential future execution_ready evidence, still blocked.",
+      "publication_relationship": "No publication permission.",
+      "safety_notes": [
+        "Remains blocked until explicit candidate-specific approval."
+      ]
+    },
+    {
+      "candidate_id": "max_biped_skeleton_validation_execution_v1",
+      "candidate_type": "real_execution",
+      "current_status": "proposed",
+      "candidate_title": "MAX_BIPED skeleton validation execution candidate",
+      "intended_future_purpose": "Run bounded executable skeleton conformance checks tied to MAX_BIPED_v1 profile.",
+      "requires_explicit_approval": true,
+      "approval_phrase": "APPROVE EXECUTION ADMISSION max_biped_skeleton_validation_execution_v1",
+      "allowed_scope": [
+        "single profile validation run",
+        "sandbox-only receipt and evidence outputs"
+      ],
+      "sandbox_boundary": "examples/sandbox/max-biped-skeleton-evidence/",
+      "allowed_inputs": [
+        "examples/sandbox/max-biped-skeleton-evidence/**"
+      ],
+      "expected_outputs": [
+        "examples/sandbox/max-biped-skeleton-evidence/**",
+        "examples/sandbox/execution-receipts/**"
+      ],
+      "blocked_surfaces": [
+        "o3de_execution",
+        "editor_runtime_execution",
+        "asset_processor_execution",
+        "blender_dcc_execution",
+        "profiler_benchmark_execution",
+        "live_screenshot_capture",
+        "spawn_publish",
+        "cache_live_db_access",
+        "authoritative_source_uuid_claims",
+        "authoritative_asset_id_claims",
+        "authoritative_product_id_claims",
+        "production_write",
+        "engine_write"
+      ],
+      "evidence_requirements": [
+        "max_biped_v1_skeleton_contract controlled_real evidence present"
+      ],
+      "receipt_required": true,
+      "receipt_requirements": [
+        "execution receipt with deterministic candidate id and profile id"
+      ],
+      "rollback_plan_required": true,
+      "rollback_requirements": [
+        "rollback plan reference for generated artifacts"
+      ],
+      "validator_required": true,
+      "tests_required": true,
+      "validator_test_requirements": [
+        "schema and policy validation for executable outputs"
+      ],
+      "production_readiness_relationship": "Potential future execution bridge for skeleton evidence hardening.",
+      "publication_relationship": "No publication permission.",
+      "safety_notes": [
+        "Must remain blocked until separate explicit approval."
+      ]
+    },
+    {
+      "candidate_id": "material_uv_qc_execution_v1",
+      "candidate_type": "real_execution",
+      "current_status": "proposed",
+      "candidate_title": "Material/UV QC execution candidate",
+      "intended_future_purpose": "Run bounded material/UV QC execution for release-candidate assets.",
+      "requires_explicit_approval": true,
+      "approval_phrase": "APPROVE EXECUTION ADMISSION material_uv_qc_execution_v1",
+      "allowed_scope": [
+        "single candidate execution lane",
+        "sandbox-only outputs"
+      ],
+      "sandbox_boundary": "examples/sandbox/material-uv-evidence/",
+      "allowed_inputs": [
+        "examples/sandbox/material-uv-evidence/**"
+      ],
+      "expected_outputs": [
+        "examples/sandbox/material-uv-evidence/**",
+        "examples/sandbox/execution-receipts/**"
+      ],
+      "blocked_surfaces": [
+        "o3de_execution",
+        "editor_runtime_execution",
+        "asset_processor_execution",
+        "blender_dcc_execution",
+        "profiler_benchmark_execution",
+        "live_screenshot_capture",
+        "spawn_publish",
+        "cache_live_db_access",
+        "authoritative_source_uuid_claims",
+        "authoritative_asset_id_claims",
+        "authoritative_product_id_claims",
+        "production_write",
+        "engine_write"
+      ],
+      "evidence_requirements": [
+        "material_uv_qc_v1 controlled_real evidence pass"
+      ],
+      "receipt_required": true,
+      "receipt_requirements": [
+        "execution receipt with blocked surface attestations"
+      ],
+      "rollback_plan_required": true,
+      "rollback_requirements": [
+        "reversible sandbox artifact output plan"
+      ],
+      "validator_required": true,
+      "tests_required": true,
+      "validator_test_requirements": [
+        "budget and missing-texture fail-path tests"
+      ],
+      "production_readiness_relationship": "Potential execution hardening candidate after explicit approval.",
+      "publication_relationship": "No publication permission.",
+      "safety_notes": [
+        "Remains unadmitted."
+      ]
+    },
+    {
+      "candidate_id": "animation_smoke_execution_v1",
+      "candidate_type": "real_execution",
+      "current_status": "proposed",
+      "candidate_title": "Animation smoke execution candidate",
+      "intended_future_purpose": "Run bounded animation smoke execution checks with strict non-publication outputs.",
+      "requires_explicit_approval": true,
+      "approval_phrase": "APPROVE EXECUTION ADMISSION animation_smoke_execution_v1",
+      "allowed_scope": [
+        "bounded animation smoke run",
+        "sandbox receipts and evidence only"
+      ],
+      "sandbox_boundary": "examples/sandbox/animation-smoke-evidence/",
+      "allowed_inputs": [
+        "examples/sandbox/animation-smoke-evidence/**"
+      ],
+      "expected_outputs": [
+        "examples/sandbox/animation-smoke-evidence/**",
+        "examples/sandbox/execution-receipts/**"
+      ],
+      "blocked_surfaces": [
+        "o3de_execution",
+        "editor_runtime_execution",
+        "asset_processor_execution",
+        "blender_dcc_execution",
+        "profiler_benchmark_execution",
+        "live_screenshot_capture",
+        "spawn_publish",
+        "cache_live_db_access",
+        "authoritative_source_uuid_claims",
+        "authoritative_asset_id_claims",
+        "authoritative_product_id_claims",
+        "production_write",
+        "engine_write"
+      ],
+      "evidence_requirements": [
+        "animation_smoke_v1 controlled_real evidence pass"
+      ],
+      "receipt_required": true,
+      "receipt_requirements": [
+        "execution receipt with clip summary and no runtime publication"
+      ],
+      "rollback_plan_required": true,
+      "rollback_requirements": [
+        "revert generated sandbox artifacts"
+      ],
+      "validator_required": true,
+      "tests_required": true,
+      "validator_test_requirements": [
+        "clip-missing and compatibility failure tests"
+      ],
+      "production_readiness_relationship": "Potential future execution bridge for animation verification.",
+      "publication_relationship": "No publication permission.",
+      "safety_notes": [
+        "Runtime execution remains blocked in this planning slice."
+      ]
+    },
+    {
+      "candidate_id": "visual_evidence_capture_execution_v1",
+      "candidate_type": "real_execution",
+      "current_status": "blocked",
+      "candidate_title": "Visual evidence capture execution candidate",
+      "intended_future_purpose": "Run bounded screenshot/visual evidence capture execution in a future admitted slice.",
+      "requires_explicit_approval": true,
+      "approval_phrase": "APPROVE EXECUTION ADMISSION visual_evidence_capture_execution_v1",
+      "allowed_scope": [
+        "single candidate visual capture scope",
+        "sandbox references only"
+      ],
+      "sandbox_boundary": "examples/sandbox/visual-evidence/",
+      "allowed_inputs": [
+        "examples/sandbox/visual-evidence/**"
+      ],
+      "expected_outputs": [
+        "examples/sandbox/visual-evidence/**",
+        "examples/sandbox/execution-receipts/**"
+      ],
+      "blocked_surfaces": [
+        "o3de_execution",
+        "editor_runtime_execution",
+        "asset_processor_execution",
+        "blender_dcc_execution",
+        "profiler_benchmark_execution",
+        "live_screenshot_capture",
+        "spawn_publish",
+        "cache_live_db_access",
+        "authoritative_source_uuid_claims",
+        "authoritative_asset_id_claims",
+        "authoritative_product_id_claims",
+        "production_write",
+        "engine_write"
+      ],
+      "evidence_requirements": [
+        "screenshot_evidence_v1 controlled_real evidence pass"
+      ],
+      "receipt_required": true,
+      "receipt_requirements": [
+        "capture receipt with bounded view set and metadata hash"
+      ],
+      "rollback_plan_required": true,
+      "rollback_requirements": [
+        "sandbox-only cleanup scope"
+      ],
+      "validator_required": true,
+      "tests_required": true,
+      "validator_test_requirements": [
+        "required-view and resolution policy tests"
+      ],
+      "production_readiness_relationship": "Future visual execution bridge, currently blocked.",
+      "publication_relationship": "No publication permission.",
+      "safety_notes": [
+        "Live screenshot capture remains blocked."
+      ]
+    },
+    {
+      "candidate_id": "release_candidate_package_publish_dry_run_v1",
+      "candidate_type": "dry_run",
+      "current_status": "proposed",
+      "candidate_title": "Release-candidate package publish dry-run",
+      "intended_future_purpose": "Exercise publication planning and receipts without publishing artifacts.",
+      "requires_explicit_approval": true,
+      "approval_phrase": "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1",
+      "allowed_scope": [
+        "dry-run publication planning only",
+        "no external publication call"
+      ],
+      "sandbox_boundary": "examples/sandbox/manifests/reports/",
+      "allowed_inputs": [
+        "examples/real-pilot-release-candidate-package/**",
+        "examples/production-readiness-report/**"
+      ],
+      "expected_outputs": [
+        "examples/sandbox/manifests/reports/**",
+        "examples/sandbox/execution-receipts/**"
+      ],
+      "blocked_surfaces": [
+        "o3de_execution",
+        "editor_runtime_execution",
+        "asset_processor_execution",
+        "blender_dcc_execution",
+        "profiler_benchmark_execution",
+        "live_screenshot_capture",
+        "spawn_publish",
+        "cache_live_db_access",
+        "authoritative_source_uuid_claims",
+        "authoritative_asset_id_claims",
+        "authoritative_product_id_claims",
+        "production_write",
+        "engine_write"
+      ],
+      "evidence_requirements": [
+        "release_publication_gate_set_v1 pass"
+      ],
+      "receipt_required": true,
+      "receipt_requirements": [
+        "dry-run receipt indicating publication_performed=false"
+      ],
+      "rollback_plan_required": true,
+      "rollback_requirements": [
+        "no-op rollback confirmation for dry-run outputs"
+      ],
+      "validator_required": true,
+      "tests_required": true,
+      "validator_test_requirements": [
+        "dry-run output schema validation"
+      ],
+      "production_readiness_relationship": "Supports planning transition toward publication readiness without admission.",
+      "publication_relationship": "Dry-run only; real publication remains blocked.",
+      "safety_notes": [
+        "Not a publication admission."
+      ]
+    },
+    {
+      "candidate_id": "release_candidate_package_publication_v1",
+      "candidate_type": "publication",
+      "current_status": "blocked",
+      "candidate_title": "Release-candidate package publication candidate",
+      "intended_future_purpose": "Future bounded publication of release-candidate package after explicit publication admission.",
+      "requires_explicit_approval": true,
+      "approval_phrase": "APPROVE EXECUTION ADMISSION release_candidate_package_publication_v1",
+      "allowed_scope": [
+        "single candidate package publication scope",
+        "deterministic publication receipt requirements"
+      ],
+      "sandbox_boundary": "examples/sandbox/manifests/reports/",
+      "allowed_inputs": [
+        "examples/release-package-bundle/**",
+        "examples/release-publication-gate-set/**",
+        "examples/release-publication-request-approval/**"
+      ],
+      "expected_outputs": [
+        "examples/sandbox/manifests/reports/**",
+        "examples/sandbox/execution-receipts/**"
+      ],
+      "blocked_surfaces": [
+        "o3de_execution",
+        "editor_runtime_execution",
+        "asset_processor_execution",
+        "blender_dcc_execution",
+        "profiler_benchmark_execution",
+        "live_screenshot_capture",
+        "spawn_publish",
+        "cache_live_db_access",
+        "authoritative_source_uuid_claims",
+        "authoritative_asset_id_claims",
+        "authoritative_product_id_claims",
+        "production_write",
+        "engine_write"
+      ],
+      "evidence_requirements": [
+        "release_publication_request_approval_v1 pass",
+        "release_publication_execution_admission_gate_v1 pass",
+        "release_publication_gate_set_v1 pass"
+      ],
+      "receipt_required": true,
+      "receipt_requirements": [
+        "publication receipt with immutable evidence hash index"
+      ],
+      "rollback_plan_required": true,
+      "rollback_requirements": [
+        "publication rollback drill evidence required"
+      ],
+      "validator_required": true,
+      "tests_required": true,
+      "validator_test_requirements": [
+        "publication candidate admission tests",
+        "blocked-status enforcement tests"
+      ],
+      "production_readiness_relationship": "Required for future production_ready, currently blocked.",
+      "publication_relationship": "This is the future publication admission candidate and remains unadmitted.",
+      "safety_notes": [
+        "Publication remains blocked in this matrix slice."
+      ]
+    }
+  ],
+  "claim_status": "evidence_only",
+  "safety": {
+    "o3de_execution_status": "blocked",
+    "editor_runtime_execution_status": "blocked",
+    "asset_processor_execution_status": "blocked",
+    "blender_dcc_execution_status": "blocked",
+    "profiler_benchmark_execution_status": "blocked",
+    "live_screenshot_capture_status": "blocked",
+    "spawn_publish_status": "blocked",
+    "cache_live_db_access_status": "blocked",
+    "production_write_status": "blocked",
+    "engine_write_status": "blocked"
+  }
+}
