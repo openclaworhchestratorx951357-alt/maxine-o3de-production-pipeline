@@ -44,6 +44,10 @@ DEFAULT_ANIMATION_SMOKE_CONTROLLED_REAL_REPORT = (
     "examples/sandbox/animation-smoke-evidence/pilot-candidates/"
     "max_biped_v1_animation_smoke_controlled_real.fixture.json"
 )
+DEFAULT_VISUAL_EVIDENCE_CONTROLLED_REAL_REPORT = (
+    "examples/sandbox/visual-evidence/pilot-candidates/"
+    "max_biped_v1_visual_evidence_controlled_real.fixture.json"
+)
 DEFAULT_RESOLVER_AP_EVIDENCE_IMPORTS = [
     (
         "examples/sandbox/ap-evidence-imports/pilot-candidates/"
@@ -397,7 +401,7 @@ def main() -> int:
                 sys.executable,
                 "tools/screenshot-evidence/extract_screenshot_evidence_index.py",
                 "--source-index",
-                "examples/screenshot-evidence/max_biped_v1_screenshot_source_index.json",
+                DEFAULT_VISUAL_EVIDENCE_CONTROLLED_REAL_REPORT,
             ],
             "payload_path": attachment_dir / "screenshot_evidence_v1.json",
         },

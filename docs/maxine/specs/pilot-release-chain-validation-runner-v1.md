@@ -11,7 +11,7 @@
   - `source_product_evidence_resolver_v1`
   - `material_uv_qc_v1`
   - `animation_smoke_v1`
-- runs controlled screenshot evidence extraction:
+- runs controlled screenshot/visual evidence validation:
   - `screenshot_evidence_v1`
 - runs manual hero review validator evidence:
   - `manual_hero_review_v1`
@@ -76,6 +76,7 @@ python tools/release-lane/run_pilot_release_chain_validation.py --strict-chain
   - `examples/sandbox/max-biped-skeleton-evidence/pilot-candidates/max_biped_v1_skeleton_controlled_real.fixture.json`
   - `examples/sandbox/dcc-conform-evidence/pilot-candidates/max_biped_v1_dcc_conform_controlled_real.fixture.json`
   - `examples/sandbox/material-uv-evidence/pilot-candidates/max_biped_v1_material_uv_controlled_real.fixture.json`
+  - `examples/sandbox/visual-evidence/pilot-candidates/max_biped_v1_visual_evidence_controlled_real.fixture.json`
 - runtime-artifact policy:
   - `examples/sandbox/manifests/reports/**` is runtime-only and gitignored (except `.gitkeep`)
 

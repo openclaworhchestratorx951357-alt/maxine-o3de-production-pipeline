@@ -83,6 +83,14 @@ def test_runner_builds_generated_manifest_and_attaches_expected_checks(repo_tmp_
     )
     assert animation_payload.get("status") == "pass"
     assert animation_payload.get("evidence_class") == "controlled_real"
+    screenshot_payload = json.loads(
+        Path(step_map["screenshot_evidence_extractor"]["payload_path"]).read_text(encoding="utf-8-sig")
+    )
+    assert screenshot_payload.get("status") == "pass"
+    assert screenshot_payload.get("evidence_class") == "controlled_real"
+    screenshot_details = screenshot_payload.get("manifest_attachment", {}).get("qc_check", {}).get("details", {})
+    assert screenshot_details.get("evidence_class") == "controlled_real"
+    assert screenshot_details.get("safety", {}).get("runtime_execution_status") == "blocked"
     extraction_report = json.loads(
         Path(step_map["source_product_resolver_extract"]["payload_path"]).read_text(encoding="utf-8-sig")
     )

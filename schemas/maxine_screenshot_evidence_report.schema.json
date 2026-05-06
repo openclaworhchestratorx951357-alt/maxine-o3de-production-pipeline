@@ -1,0 +1,352 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_screenshot_evidence_report.schema.json",
+  "title": "MAXINE Screenshot Visual Evidence Report",
+  "description": "Evidence-only screenshot/visual evidence report contract for release-lane readiness.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "report_type",
+    "job_id",
+    "package_id",
+    "lane",
+    "candidate_id",
+    "source_asset_reference",
+    "source_evidence_ref",
+    "visual_profile_id",
+    "visual_profile_version",
+    "evidence_class",
+    "screenshot_set_id",
+    "screenshot_refs",
+    "screenshot_count",
+    "required_views_present",
+    "image_resolution_status",
+    "file_reference_status",
+    "visual_identity_status",
+    "silhouette_status",
+    "scale_visual_status",
+    "material_visual_status",
+    "uv_texture_visual_status",
+    "skeleton_pose_visual_status",
+    "missing_asset_visual_status",
+    "artifact_or_corruption_status",
+    "lighting_context_status",
+    "viewport_context_status",
+    "review_frame_status",
+    "claim_status",
+    "safety",
+    "status",
+    "findings",
+    "manifest_attachment"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "report_type": {
+      "type": "string",
+      "const": "SCREENSHOT_EVIDENCE_v1_REPORT"
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "package_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lane": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidate_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_asset_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_evidence_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "visual_profile_id": {
+      "type": "string",
+      "const": "SCREENSHOT_VISUAL_v1"
+    },
+    "visual_profile_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_class": {
+      "type": "string",
+      "enum": [
+        "fixture",
+        "imported",
+        "controlled_real"
+      ]
+    },
+    "screenshot_set_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "screenshot_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "view",
+          "path"
+        ],
+        "properties": {
+          "view": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "screenshot_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "required_views_present": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "front",
+        "side",
+        "back",
+        "three_quarter",
+        "detail"
+      ],
+      "properties": {
+        "front": {
+          "type": "boolean"
+        },
+        "side": {
+          "type": "boolean"
+        },
+        "back": {
+          "type": "boolean"
+        },
+        "three_quarter": {
+          "type": "boolean"
+        },
+        "detail": {
+          "type": "boolean"
+        }
+      }
+    },
+    "image_resolution_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "file_reference_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "visual_identity_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "silhouette_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "scale_visual_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "material_visual_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "uv_texture_visual_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "skeleton_pose_visual_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "animation_pose_visual_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "missing_asset_visual_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "artifact_or_corruption_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "lighting_context_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "viewport_context_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "review_frame_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "claim_status": {
+      "type": "string",
+      "enum": [
+        "evidence_only",
+        "not_authoritative"
+      ]
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "screenshot_capture_status",
+        "o3de_execution_status",
+        "editor_execution_status",
+        "runtime_execution_status",
+        "dcc_execution_status",
+        "blender_execution_status",
+        "asset_processor_execution_status",
+        "production_write_status"
+      ],
+      "properties": {
+        "screenshot_capture_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "o3de_execution_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "editor_execution_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "runtime_execution_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "dcc_execution_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "blender_execution_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "asset_processor_execution_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "production_write_status": {
+          "type": "string",
+          "const": "blocked"
+        }
+      }
+    },
+    "status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "severity",
+          "status",
+          "message"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "error",
+              "manual_review"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "manifest_attachment": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "target_path",
+        "future_target_path",
+        "qc_check"
+      ],
+      "properties": {
+        "target_path": {
+          "type": "string",
+          "const": "qc.gates[]"
+        },
+        "future_target_path": {
+          "type": "string",
+          "const": "qc.checks[]"
+        },
+        "qc_check": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "check_id",
+            "result",
+            "severity",
+            "details"
+          ],
+          "properties": {
+            "check_id": {
+              "type": "string",
+              "const": "screenshot_evidence_v1"
+            },
+            "result": {
+              "$ref": "#/$defs/checkStatus"
+            },
+            "severity": {
+              "type": "string",
+              "enum": [
+                "info",
+                "warning",
+                "error",
+                "manual_review"
+              ]
+            },
+            "details": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "checkStatus": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ]
+    }
+  }
+}
