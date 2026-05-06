@@ -288,3 +288,55 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
     assert receipt_plan_alignment["planned_candidate_id"] == "release_candidate_package_publish_dry_run_v1"
     assert receipt_plan_alignment["alignment_status"] == "aligned"
     assert dry_run_receipt_contract_status["reporter_return_code"] == 0
+    dry_run_admission_blockers_status = payload["details"][
+        "release_candidate_publication_dry_run_admission_blockers_report"
+    ]
+    assert dry_run_admission_blockers_status["status"] == "pass"
+    assert (
+        dry_run_admission_blockers_status["report_type"]
+        == "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_ADMISSION_BLOCKERS_VALIDATION_v1_REPORT"
+    )
+    assert (
+        dry_run_admission_blockers_status[
+            "release_candidate_publication_dry_run_admission_blockers_present"
+        ]
+        is True
+    )
+    assert (
+        dry_run_admission_blockers_status["planned_candidate_id"]
+        == "release_candidate_package_publish_dry_run_v1"
+    )
+    assert dry_run_admission_blockers_status["candidate_type"] == "dry_run"
+    assert dry_run_admission_blockers_status["checklist_status"] == "static_checklist_valid_blocked"
+    assert dry_run_admission_blockers_status["admission_status"] == "unadmitted"
+    assert dry_run_admission_blockers_status["approval_review_ready"] is False
+    assert dry_run_admission_blockers_status["ready_to_request_approval"] is False
+    assert dry_run_admission_blockers_status["dry_run_admitted"] is False
+    assert dry_run_admission_blockers_status["receipt_issued"] is False
+    assert dry_run_admission_blockers_status["publication_admitted"] is False
+    assert dry_run_admission_blockers_status["real_execution_admitted"] is False
+    assert dry_run_admission_blockers_status["production_ready_claimed"] is False
+    assert (
+        dry_run_admission_blockers_status["approval_phrase_required"]
+        == "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1"
+    )
+    assert len(dry_run_admission_blockers_status["admission_blockers"]) > 0
+    assert len(dry_run_admission_blockers_status["approval_blockers"]) > 0
+    assert len(dry_run_admission_blockers_status["evidence_blockers"]) > 0
+    assert len(dry_run_admission_blockers_status["receipt_blockers"]) > 0
+    assert len(dry_run_admission_blockers_status["rollback_or_cleanup_blockers"]) > 0
+    assert len(dry_run_admission_blockers_status["publication_blockers"]) > 0
+    assert len(dry_run_admission_blockers_status["execution_blockers"]) > 0
+    blockers_source_status = dry_run_admission_blockers_status[
+        "computed_source_artifact_validation_status"
+    ]
+    assert blockers_source_status["candidate_matrix_status"] == "pass"
+    assert blockers_source_status["preflight_contracts_status"] == "pass"
+    assert blockers_source_status["preflight_proof_packages_status"] == "pass"
+    assert blockers_source_status["readiness_rollup_status"] == "pass"
+    assert blockers_source_status["dry_run_plan_status"] == "pass"
+    assert blockers_source_status["dry_run_receipt_contract_status"] == "pass"
+    assert blockers_source_status["blocked_unissued_receipt_status"] == "pass"
+    assert blockers_source_status["production_readiness_status"] == "pass"
+    assert blockers_source_status["noop_receipt_status"] == "pass"
+    assert dry_run_admission_blockers_status["reporter_return_code"] == 0

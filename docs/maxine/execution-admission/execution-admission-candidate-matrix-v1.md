@@ -109,6 +109,15 @@ The dry-run candidate now also has a static receipt-boundary contract that keeps
 - `examples/execution-admission/release_candidate_package_publish_dry_run_receipt_blocked_v1.json`
 - `tools/execution-admission/validate_release_candidate_publication_dry_run_receipt.py`
 
+## Candidate-Specific Dry-Run Admission Blockers Link
+
+The dry-run candidate now also has a static final pre-approval checklist that keeps approval readiness/admission blocked while consolidating remaining blockers:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-admission-blockers-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_admission_blockers.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_admission_blockers_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_admission_blockers.py`
+
 ## Safety Notes
 
 This slice remains non-executing and non-publishing:

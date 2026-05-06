@@ -64,6 +64,12 @@ RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_CONTRACT_VALIDATOR_REL = (
 RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_CONTRACT_EXAMPLE_REL = (
     "examples/execution-admission/release_candidate_package_publish_dry_run_receipt_contract_v1.json"
 )
+RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_ADMISSION_BLOCKERS_VALIDATOR_REL = (
+    "tools/execution-admission/validate_release_candidate_publication_dry_run_admission_blockers.py"
+)
+RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_ADMISSION_BLOCKERS_EXAMPLE_REL = (
+    "examples/execution-admission/release_candidate_package_publish_dry_run_admission_blockers_v1.json"
+)
 PROJECT_INVENTORY_FIXTURE_REL = (
     "examples/sandbox/project-inventory/max_biped_v1_project_inventory.fixture.json"
 )
@@ -431,6 +437,35 @@ def run_release_candidate_publication_dry_run_receipt_contract(
     return proc.returncode, payload
 
 
+def run_release_candidate_publication_dry_run_admission_blockers(
+    repo_root: Path,
+) -> Tuple[int, Dict[str, Any]]:
+    cmd: List[str] = [
+        sys.executable,
+        str(
+            (
+                repo_root
+                / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_ADMISSION_BLOCKERS_VALIDATOR_REL
+            ).resolve()
+        ),
+        str(
+            (
+                repo_root
+                / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_ADMISSION_BLOCKERS_EXAMPLE_REL
+            ).resolve()
+        ),
+    ]
+    proc = subprocess.run(
+        cmd,
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+    )
+    payload = parse_payload_from_stdout(proc.stdout)
+    payload["reporter_return_code"] = proc.returncode
+    return proc.returncode, payload
+
+
 def write_json(path: Path, payload: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2) + os.linesep, encoding="utf-8")
@@ -520,6 +555,12 @@ def main() -> int:
             dry_run_receipt_contract_code,
             dry_run_receipt_contract_payload,
         ) = run_release_candidate_publication_dry_run_receipt_contract(
+            repo_root=repo_root,
+        )
+        (
+            dry_run_admission_blockers_code,
+            dry_run_admission_blockers_payload,
+        ) = run_release_candidate_publication_dry_run_admission_blockers(
             repo_root=repo_root,
         )
     except Exception as exc:
@@ -916,6 +957,117 @@ def main() -> int:
         failures.append(
             "release-candidate publication dry-run receipt contract report must keep dry_run_plan_alignment.alignment_status=aligned."
         )
+    if dry_run_admission_blockers_code != 0:
+        failures.append(
+            "release-candidate publication dry-run admission blockers validator must return 0."
+        )
+    if (
+        dry_run_admission_blockers_payload.get("report_type")
+        != "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_ADMISSION_BLOCKERS_VALIDATION_v1_REPORT"
+    ):
+        failures.append(
+            "release-candidate publication dry-run admission blockers validator must emit RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_ADMISSION_BLOCKERS_VALIDATION_v1_REPORT."
+        )
+    if dry_run_admission_blockers_payload.get("status") != "pass":
+        failures.append("release-candidate publication dry-run admission blockers validator status must be pass.")
+    if (
+        dry_run_admission_blockers_payload.get(
+            "release_candidate_publication_dry_run_admission_blockers_present"
+        )
+        is not True
+    ):
+        failures.append(
+            "release-candidate publication dry-run admission blockers report must confirm release_candidate_publication_dry_run_admission_blockers_present=true."
+        )
+    if (
+        dry_run_admission_blockers_payload.get("planned_candidate_id")
+        != "release_candidate_package_publish_dry_run_v1"
+    ):
+        failures.append(
+            "release-candidate publication dry-run admission blockers report must keep planned_candidate_id=release_candidate_package_publish_dry_run_v1."
+        )
+    if dry_run_admission_blockers_payload.get("candidate_type") != "dry_run":
+        failures.append(
+            "release-candidate publication dry-run admission blockers report must keep candidate_type=dry_run."
+        )
+    if dry_run_admission_blockers_payload.get("checklist_status") != "static_checklist_valid_blocked":
+        failures.append(
+            "release-candidate publication dry-run admission blockers report must keep checklist_status=static_checklist_valid_blocked."
+        )
+    if dry_run_admission_blockers_payload.get("admission_status") != "unadmitted":
+        failures.append(
+            "release-candidate publication dry-run admission blockers report must keep admission_status=unadmitted."
+        )
+    if dry_run_admission_blockers_payload.get("approval_review_ready") is not False:
+        failures.append(
+            "release-candidate publication dry-run admission blockers report must keep approval_review_ready=false."
+        )
+    if dry_run_admission_blockers_payload.get("ready_to_request_approval") is not False:
+        failures.append(
+            "release-candidate publication dry-run admission blockers report must keep ready_to_request_approval=false."
+        )
+    if dry_run_admission_blockers_payload.get("dry_run_admitted") is not False:
+        failures.append(
+            "release-candidate publication dry-run admission blockers report must keep dry_run_admitted=false."
+        )
+    if dry_run_admission_blockers_payload.get("receipt_issued") is not False:
+        failures.append(
+            "release-candidate publication dry-run admission blockers report must keep receipt_issued=false."
+        )
+    if dry_run_admission_blockers_payload.get("publication_admitted") is not False:
+        failures.append(
+            "release-candidate publication dry-run admission blockers report must keep publication_admitted=false."
+        )
+    if dry_run_admission_blockers_payload.get("real_execution_admitted") is not False:
+        failures.append(
+            "release-candidate publication dry-run admission blockers report must keep real_execution_admitted=false."
+        )
+    if dry_run_admission_blockers_payload.get("production_ready_claimed") is not False:
+        failures.append(
+            "release-candidate publication dry-run admission blockers report must keep production_ready_claimed=false."
+        )
+    if dry_run_admission_blockers_payload.get("approval_phrase_required") != (
+        "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1"
+    ):
+        failures.append(
+            "release-candidate publication dry-run admission blockers report must keep exact candidate-specific approval phrase."
+        )
+    for key in (
+        "admission_blockers",
+        "approval_blockers",
+        "evidence_blockers",
+        "receipt_blockers",
+        "rollback_or_cleanup_blockers",
+        "publication_blockers",
+        "execution_blockers",
+    ):
+        if not dry_run_admission_blockers_payload.get(key):
+            failures.append(
+                f"release-candidate publication dry-run admission blockers report must keep {key} non-empty."
+            )
+    blockers_source_status = (
+        dry_run_admission_blockers_payload.get("computed_source_artifact_validation_status")
+        if isinstance(
+            dry_run_admission_blockers_payload.get("computed_source_artifact_validation_status"),
+            dict,
+        )
+        else {}
+    )
+    for key in (
+        "candidate_matrix_status",
+        "preflight_contracts_status",
+        "preflight_proof_packages_status",
+        "readiness_rollup_status",
+        "dry_run_plan_status",
+        "dry_run_receipt_contract_status",
+        "blocked_unissued_receipt_status",
+        "production_readiness_status",
+        "noop_receipt_status",
+    ):
+        if blockers_source_status.get(key) != "pass":
+            failures.append(
+                f"release-candidate publication dry-run admission blockers computed source status must keep {key}=pass."
+            )
 
     summary: Dict[str, Any] = {
         "status": "pass" if not failures else "fail",
@@ -936,6 +1088,7 @@ def main() -> int:
             "execution_admission_readiness_rollup_report": readiness_rollup_payload,
             "release_candidate_publication_dry_run_plan_report": dry_run_plan_payload,
             "release_candidate_publication_dry_run_receipt_contract_report": dry_run_receipt_contract_payload,
+            "release_candidate_publication_dry_run_admission_blockers_report": dry_run_admission_blockers_payload,
             "failures": failures,
         },
     }

@@ -77,6 +77,17 @@ The same candidate now has a static receipt-boundary contract:
 
 This receipt contract remains blocked/unissued (`receipt_issued=false`) and does not admit dry-run execution, real execution, or publication.
 
+## Candidate-Specific Dry-Run Admission Blockers Link
+
+The same candidate now also has a static final pre-approval blocker checklist:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-admission-blockers-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_admission_blockers.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_admission_blockers_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_admission_blockers.py`
+
+This checklist remains blocked (`static_checklist_valid_blocked`) with `approval_review_ready=false` and `ready_to_request_approval=false`.
+
 ## Approval Phrase
 
 Future real execution/publication admission still requires:

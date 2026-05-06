@@ -88,6 +88,17 @@ The receipt contract is static and aligned to:
 - production-readiness report
 - admitted no-op receipt decision status
 
+## Admission Blockers Link
+
+A static admission-blocker checklist now tracks whether this candidate is ready to request approval:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-admission-blockers-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_admission_blockers.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_admission_blockers_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_admission_blockers.py`
+
+Checklist posture remains blocked (`ready_to_request_approval=false`) and does not approve or admit dry-run execution.
+
 ## Artifacts
 
 - schema:
