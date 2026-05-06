@@ -28,6 +28,10 @@ DEFAULT_PROJECT_INVENTORY = (
 DEFAULT_ASSET_CANDIDATE_INVENTORY = (
     "examples/sandbox/asset-candidates/max_biped_v1_asset_candidate_inventory.fixture.json"
 )
+DEFAULT_MAX_BIPED_SKELETON_CONTROLLED_REAL_REPORT = (
+    "examples/sandbox/max-biped-skeleton-evidence/pilot-candidates/"
+    "max_biped_v1_skeleton_controlled_real.fixture.json"
+)
 DEFAULT_DCC_CONFORM_CONTROLLED_REAL_REPORT = (
     "examples/sandbox/dcc-conform-evidence/pilot-candidates/"
     "max_biped_v1_dcc_conform_controlled_real.fixture.json"
@@ -338,9 +342,8 @@ def main() -> int:
             "name": "skeleton",
             "command": [
                 sys.executable,
-                "tools/skeleton-validator/validate_skeleton_contract.py",
-                "examples/skeleton-contracts/MAX_BIPED_v1.json",
-                "examples/skeletons/max_biped_v1_pass.json",
+                "tools/max-biped-skeleton/validate_max_biped_skeleton_evidence_report.py",
+                DEFAULT_MAX_BIPED_SKELETON_CONTROLLED_REAL_REPORT,
             ],
             "payload_path": attachment_dir / "max_biped_v1_skeleton_contract.json",
         },

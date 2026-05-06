@@ -38,7 +38,7 @@ REQUIRED_CHAIN_GATE_IDS = [
     "release_publication_gate_set_v1",
 ]
 EVIDENCE_CLASS_BY_CHECK_ID = {
-    "max_biped_v1_skeleton_contract": "fixture",
+    "max_biped_v1_skeleton_contract": "controlled_real",
     "dcc_conform_v1": "controlled_real",
     "source_product_evidence_resolver_v1": "imported",
     "material_uv_qc_v1": "manual",

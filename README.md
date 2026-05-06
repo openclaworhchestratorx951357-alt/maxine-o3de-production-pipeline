@@ -59,6 +59,7 @@ Get-ChildItem .\examples\manifests
 - Controlled real evidence inventory reporting from approved local inputs/evidence sources is integrated into proof flow (inventory-only).
 - Bounded source/product evidence resolver extraction from admitted evidence sources is integrated into the pilot runner (non-executing).
 - Bounded AP-evidence-import pilot fixtures are integrated, and resolver pass now requires imported coverage for required source/product types so fixture fallback alone can no longer carry pass.
+- Controlled real MAX_BIPED skeleton evidence is integrated for pilot candidates through bounded sandbox fixtures (non-executing).
 - Controlled real DCC conform evidence is integrated for pilot candidates through bounded sandbox fixtures (non-executing).
 - AAA-quality output is not yet fully operational.
 - Execution admission remains future work requiring explicit approval.
@@ -72,6 +73,7 @@ Start here for PR readiness, review, and merge details:
 - `docs/maxine/execution-admission/release-execution-receipt-dry-run-framework-v1.md`
 - `docs/maxine/specs/controlled-real-evidence-inventory-v1.md`
 - `docs/maxine/specs/source-product-evidence-real-extraction-v1.md`
+- `docs/maxine/specs/controlled-real-max-biped-skeleton-evidence-v1.md`
 - `docs/maxine/specs/controlled-real-dcc-conform-evidence-v1.md`
 
 ## M.A.X.I.N.E. Resolver Ladder

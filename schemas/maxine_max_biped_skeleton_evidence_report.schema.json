@@ -1,0 +1,305 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_max_biped_skeleton_evidence_report.schema.json",
+  "title": "MAXINE MAX_BIPED Skeleton Evidence Report",
+  "description": "Evidence-only controlled-real MAX_BIPED skeleton contract report.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "report_type",
+    "job_id",
+    "package_id",
+    "lane",
+    "candidate_id",
+    "source_asset_reference",
+    "source_evidence_ref",
+    "skeleton_profile_id",
+    "skeleton_profile_version",
+    "skeleton_evidence_class",
+    "root_bone_status",
+    "pelvis_bone_status",
+    "spine_chain_status",
+    "neck_head_status",
+    "left_arm_chain_status",
+    "right_arm_chain_status",
+    "left_leg_chain_status",
+    "right_leg_chain_status",
+    "hand_finger_status",
+    "naming_convention_status",
+    "hierarchy_status",
+    "orientation_status",
+    "scale_status",
+    "bind_pose_status",
+    "bone_count",
+    "required_bones_present",
+    "missing_required_bones",
+    "extra_bones",
+    "retarget_readiness_status",
+    "animation_smoke_dependency_status",
+    "claim_status",
+    "safety",
+    "status",
+    "findings",
+    "manifest_attachment"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "report_type": {
+      "type": "string",
+      "const": "MAX_BIPED_SKELETON_CONTRACT_v1_REPORT"
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "package_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lane": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidate_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_asset_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_evidence_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "skeleton_profile_id": {
+      "type": "string",
+      "const": "MAX_BIPED_v1"
+    },
+    "skeleton_profile_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "skeleton_evidence_class": {
+      "type": "string",
+      "enum": [
+        "fixture",
+        "imported",
+        "controlled_real"
+      ]
+    },
+    "root_bone_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "pelvis_bone_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "spine_chain_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "neck_head_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "left_arm_chain_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "right_arm_chain_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "left_leg_chain_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "right_leg_chain_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "hand_finger_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "naming_convention_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "hierarchy_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "orientation_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "scale_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "bind_pose_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "bone_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "required_bones_present": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "missing_required_bones": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "extra_bones": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "retarget_readiness_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "animation_smoke_dependency_status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "claim_status": {
+      "type": "string",
+      "enum": [
+        "evidence_only",
+        "not_authoritative"
+      ]
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "dcc_execution_status",
+        "blender_execution_status",
+        "o3de_execution_status",
+        "production_write_status"
+      ],
+      "properties": {
+        "dcc_execution_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "blender_execution_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "o3de_execution_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "production_write_status": {
+          "type": "string",
+          "const": "blocked"
+        }
+      }
+    },
+    "status": {
+      "$ref": "#/$defs/checkStatus"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "severity",
+          "status",
+          "message"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "error",
+              "manual_review"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "manifest_attachment": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "target_path",
+        "future_target_path",
+        "qc_check"
+      ],
+      "properties": {
+        "target_path": {
+          "type": "string",
+          "const": "qc.gates[]"
+        },
+        "future_target_path": {
+          "type": "string",
+          "const": "qc.checks[]"
+        },
+        "qc_check": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "check_id",
+            "result",
+            "severity",
+            "details"
+          ],
+          "properties": {
+            "check_id": {
+              "type": "string",
+              "const": "max_biped_v1_skeleton_contract"
+            },
+            "result": {
+              "$ref": "#/$defs/checkStatus"
+            },
+            "severity": {
+              "type": "string",
+              "enum": [
+                "info",
+                "warning",
+                "error",
+                "manual_review"
+              ]
+            },
+            "details": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "checkStatus": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ]
+    }
+  }
+}
