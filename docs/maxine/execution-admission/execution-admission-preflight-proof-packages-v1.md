@@ -107,6 +107,16 @@ The safest-next dry-run planning slice for `release_candidate_package_publish_dr
 
 This does not admit dry-run execution, real execution, or publication.
 
+## Dry-Run Receipt Contract Link
+
+The dry-run candidate now has a static receipt contract and blocked/unissued examples that define future receipt requirements while keeping `receipt_issued=false` and candidate admission blocked:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-receipt-contract-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_receipt.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_receipt_contract_v1.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_receipt_blocked_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_receipt.py`
+
 ## Safety Notes
 
 This slice preserves blocked surfaces:

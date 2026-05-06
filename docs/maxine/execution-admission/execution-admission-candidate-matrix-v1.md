@@ -99,6 +99,16 @@ The rollup-recommended next slice is now represented as a static planning artifa
 
 `release_candidate_package_publish_dry_run_v1` remains `dry_run` and `unadmitted`.
 
+## Candidate-Specific Dry-Run Receipt Contract Link
+
+The dry-run candidate now also has a static receipt-boundary contract that keeps receipt issuance blocked while defining required future receipt fields and attestations:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-receipt-contract-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_receipt.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_receipt_contract_v1.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_receipt_blocked_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_receipt.py`
+
 ## Safety Notes
 
 This slice remains non-executing and non-publishing:

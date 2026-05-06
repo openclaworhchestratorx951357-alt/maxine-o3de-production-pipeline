@@ -1,0 +1,704 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_release_candidate_publication_dry_run_receipt.schema.json",
+  "title": "MAXINE Release Candidate Publication Dry-Run Receipt Contract v1",
+  "description": "Static receipt contract for release_candidate_package_publish_dry_run_v1. This contract defines future non-publication dry-run receipt requirements only and must not imply receipt issuance, dry-run admission, execution admission, publication admission, or production readiness.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_type",
+    "contract_id",
+    "contract_version",
+    "candidate_id",
+    "candidate_type",
+    "admission_status",
+    "receipt_type",
+    "receipt_contract_status",
+    "receipt_status",
+    "receipt_issued",
+    "dry_run_admitted",
+    "publication_admitted",
+    "real_execution_admitted",
+    "production_ready_claimed",
+    "generated_from_static_artifacts_only",
+    "source_artifacts",
+    "source_artifact_validation_status",
+    "allowed_receipt_status_values",
+    "allowed_receipt_output_scope",
+    "required_receipt_fields",
+    "required_source_references",
+    "required_input_evidence",
+    "required_sandbox_output_index",
+    "required_hashes",
+    "required_validation_summary",
+    "required_rollback_or_cleanup_evidence",
+    "required_blocked_surface_attestations",
+    "required_approval_decision_reference",
+    "approval_phrase_required",
+    "approval_decision_reference",
+    "forbidden_receipt_claims",
+    "forbidden_outputs",
+    "forbidden_paths",
+    "publication_surfaces_blocked",
+    "execution_surfaces_blocked",
+    "cache_live_db_access_blocked",
+    "authoritative_id_claims_blocked",
+    "unsafe_claims_detected",
+    "blocked_reason_codes",
+    "missing_evidence_items",
+    "dry_run_plan_alignment",
+    "readiness_rollup_alignment",
+    "next_required_action",
+    "safety_posture",
+    "safety_notes"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "record_type": {
+      "type": "string",
+      "const": "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_CONTRACT_v1"
+    },
+    "contract_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contract_version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "candidate_id": {
+      "type": "string",
+      "const": "release_candidate_package_publish_dry_run_v1"
+    },
+    "candidate_type": {
+      "type": "string",
+      "const": "dry_run"
+    },
+    "admission_status": {
+      "type": "string",
+      "const": "unadmitted"
+    },
+    "receipt_type": {
+      "type": "string",
+      "const": "release_candidate_package_publish_dry_run_receipt_v1"
+    },
+    "receipt_contract_status": {
+      "type": "string",
+      "enum": [
+        "static_contract_valid_blocked",
+        "static_contract_invalid",
+        "blocked_missing_source_artifact",
+        "blocked_inconsistent_source_artifacts",
+        "superseded"
+      ]
+    },
+    "receipt_status": {
+      "type": "string",
+      "enum": [
+        "receipt_not_issued_contract_only",
+        "blocked_unissued_contract_only",
+        "dry_run_completed_no_publication",
+        "dry_run_blocked_no_publication",
+        "dry_run_failed_safe_no_publication"
+      ]
+    },
+    "receipt_issued": {
+      "type": "boolean",
+      "const": false
+    },
+    "dry_run_admitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "publication_admitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "real_execution_admitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "production_ready_claimed": {
+      "type": "boolean",
+      "const": false
+    },
+    "generated_from_static_artifacts_only": {
+      "type": "boolean",
+      "const": true
+    },
+    "source_artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_matrix_ref",
+        "preflight_contracts_ref",
+        "preflight_proof_packages_ref",
+        "readiness_rollup_ref",
+        "dry_run_plan_ref",
+        "production_readiness_report_ref",
+        "noop_receipt_status_ref"
+      ],
+      "properties": {
+        "candidate_matrix_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "preflight_contracts_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "preflight_proof_packages_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "readiness_rollup_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dry_run_plan_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "production_readiness_report_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "noop_receipt_status_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "source_artifact_validation_status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_matrix_status",
+        "preflight_contracts_status",
+        "preflight_proof_packages_status",
+        "readiness_rollup_status",
+        "dry_run_plan_status",
+        "production_readiness_status",
+        "noop_receipt_status"
+      ],
+      "properties": {
+        "candidate_matrix_status": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "warn",
+            "fail"
+          ]
+        },
+        "preflight_contracts_status": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "warn",
+            "fail"
+          ]
+        },
+        "preflight_proof_packages_status": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "warn",
+            "fail"
+          ]
+        },
+        "readiness_rollup_status": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "warn",
+            "fail"
+          ]
+        },
+        "dry_run_plan_status": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "warn",
+            "fail"
+          ]
+        },
+        "production_readiness_status": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "warn",
+            "fail"
+          ]
+        },
+        "noop_receipt_status": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "warn",
+            "fail"
+          ]
+        }
+      }
+    },
+    "allowed_receipt_status_values": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "allowed_receipt_output_scope": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "required_receipt_fields": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "required_source_references": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "required_input_evidence": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "required_sandbox_output_index": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "output_root",
+        "index_format",
+        "required_index_fields"
+      ],
+      "properties": {
+        "output_root": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^examples/sandbox/.+"
+        },
+        "index_format": {
+          "type": "string",
+          "enum": [
+            "json"
+          ]
+        },
+        "required_index_fields": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        }
+      }
+    },
+    "required_hashes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "algorithms",
+        "required_fields"
+      ],
+      "properties": {
+        "algorithms": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "required_fields": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        }
+      }
+    },
+    "required_validation_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_fields",
+        "required_status_fields"
+      ],
+      "properties": {
+        "required_fields": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "required_status_fields": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        }
+      }
+    },
+    "required_rollback_or_cleanup_evidence": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "required_blocked_surface_attestations": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "required_approval_decision_reference": {
+      "type": "boolean",
+      "const": true
+    },
+    "approval_phrase_required": {
+      "type": "string",
+      "const": "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1"
+    },
+    "approval_decision_reference": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "forbidden_receipt_claims": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "forbidden_outputs": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "forbidden_paths": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "publication_surfaces_blocked": {
+      "type": "boolean",
+      "const": true
+    },
+    "execution_surfaces_blocked": {
+      "type": "boolean",
+      "const": true
+    },
+    "cache_live_db_access_blocked": {
+      "type": "boolean",
+      "const": true
+    },
+    "authoritative_id_claims_blocked": {
+      "type": "boolean",
+      "const": true
+    },
+    "unsafe_claims_detected": {
+      "type": "boolean",
+      "const": false
+    },
+    "blocked_reason_codes": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "missing_evidence_items": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "dry_run_plan_alignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dry_run_plan_ref",
+        "planned_candidate_id",
+        "alignment_status"
+      ],
+      "properties": {
+        "dry_run_plan_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "planned_candidate_id": {
+          "type": "string",
+          "const": "release_candidate_package_publish_dry_run_v1"
+        },
+        "alignment_status": {
+          "type": "string",
+          "const": "aligned"
+        }
+      }
+    },
+    "readiness_rollup_alignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "readiness_rollup_ref",
+        "safest_next_preparation_slice_id",
+        "safest_next_preparation_candidate_id",
+        "alignment_status"
+      ],
+      "properties": {
+        "readiness_rollup_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "safest_next_preparation_slice_id": {
+          "type": "string",
+          "const": "candidate_specific_dry_run_planning_v1"
+        },
+        "safest_next_preparation_candidate_id": {
+          "type": "string",
+          "const": "release_candidate_package_publish_dry_run_v1"
+        },
+        "alignment_status": {
+          "type": "string",
+          "const": "aligned"
+        }
+      }
+    },
+    "next_required_action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "safety_posture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_uuid_status",
+        "asset_id_status",
+        "product_id_status"
+      ],
+      "properties": {
+        "source_uuid_status": {
+          "type": "string",
+          "const": "not_authoritative"
+        },
+        "asset_id_status": {
+          "type": "string",
+          "const": "not_authoritative"
+        },
+        "product_id_status": {
+          "type": "string",
+          "const": "not_authoritative"
+        }
+      }
+    },
+    "safety_notes": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    }
+  },
+  "$defs": {
+    "nonEmptyStringArray": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "approval_decision_reference": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "approval_decision_reference"
+        ]
+      },
+      "then": {
+        "properties": {
+          "approval_decision_reference": {
+            "maxLength": 0
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_receipt_fields": {
+          "contains": {
+            "const": "candidate_id"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_receipt_fields": {
+          "contains": {
+            "const": "receipt_type"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_receipt_fields": {
+          "contains": {
+            "const": "receipt_status"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_receipt_fields": {
+          "contains": {
+            "const": "approval_decision_reference"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_receipt_fields": {
+          "contains": {
+            "const": "source_artifact_references"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_receipt_fields": {
+          "contains": {
+            "const": "input_evidence_references"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_receipt_fields": {
+          "contains": {
+            "const": "sandbox_output_index"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_receipt_fields": {
+          "contains": {
+            "const": "validation_summary"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_receipt_fields": {
+          "contains": {
+            "const": "blocked_surface_attestations"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_receipt_fields": {
+          "contains": {
+            "const": "rollback_or_cleanup_evidence"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_receipt_fields": {
+          "contains": {
+            "const": "hashes"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_receipt_fields": {
+          "contains": {
+            "const": "safety_posture"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "forbidden_paths": {
+          "contains": {
+            "const": "production_path_category"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "forbidden_paths": {
+          "contains": {
+            "const": "engine_path_category"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "forbidden_paths": {
+          "contains": {
+            "const": "cache_live_db_category"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "forbidden_paths": {
+          "contains": {
+            "const": "destructive_cleanup_category"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "forbidden_outputs": {
+          "contains": {
+            "const": "publish_operation"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "forbidden_outputs": {
+          "contains": {
+            "const": "spawn_operation"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "forbidden_outputs": {
+          "contains": {
+            "const": "production_path_writes"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "forbidden_outputs": {
+          "contains": {
+            "const": "engine_path_writes"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "forbidden_outputs": {
+          "contains": {
+            "const": "cache_live_db_access"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "forbidden_outputs": {
+          "contains": {
+            "const": "authoritative_source_uuid_claims"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "forbidden_outputs": {
+          "contains": {
+            "const": "authoritative_asset_id_claims"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "forbidden_outputs": {
+          "contains": {
+            "const": "authoritative_product_id_claims"
+          }
+        }
+      }
+    }
+  ]
+}

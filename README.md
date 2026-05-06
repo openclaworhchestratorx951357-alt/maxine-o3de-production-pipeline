@@ -74,6 +74,7 @@ Get-ChildItem .\examples\manifests
 - Candidate-specific execution-admission preflight proof packages v1 are integrated as static, machine-checkable proof-evaluation artifacts for every matrix/preflight-contract candidate; they explain present/missing evidence and blocked reasons while keeping all future real execution/publication candidates unadmitted.
 - Execution-admission readiness rollup v1 is integrated as a static control-tower artifact that consolidates matrix, preflight contracts, preflight proof packages, production-readiness posture, and safest-next-slice planning while keeping real execution/publication blocked and production-ready unclaimed.
 - Candidate-specific dry-run planning v1 for `release_candidate_package_publish_dry_run_v1` is integrated as a static, machine-checkable planning artifact that defines future dry-run scope/inputs/forbidden outputs/receipts/validators/rollback requirements while keeping dry-run execution, real execution, and publication unadmitted.
+- Candidate-specific dry-run receipt contract v1 for `release_candidate_package_publish_dry_run_v1` is integrated as a static, machine-checkable receipt boundary contract (with blocked/unissued examples) that defines required future receipt fields/attestations/hashes/rollback evidence while keeping `receipt_issued=false`, dry-run unadmitted, real execution unadmitted, and publication unadmitted.
 - AAA-quality output is not yet fully operational.
 - Execution admission remains future work requiring explicit approval.
 
@@ -103,6 +104,7 @@ Start here for PR readiness, review, and merge details:
 - `docs/maxine/execution-admission/execution-admission-preflight-proof-packages-v1.md`
 - `docs/maxine/execution-admission/execution-admission-readiness-rollup-v1.md`
 - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-planning-v1.md`
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-receipt-contract-v1.md`
 
 ## M.A.X.I.N.E. Resolver Ladder
 

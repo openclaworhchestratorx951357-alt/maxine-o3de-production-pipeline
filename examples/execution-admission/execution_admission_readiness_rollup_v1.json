@@ -104,8 +104,8 @@
         "missing_execution_receipt",
         "missing_rollback_proof"
       ],
-      "required_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
-      "required_receipt_schema": "schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
+      "required_validator": "tools/execution-admission/validate_release_candidate_publication_dry_run_receipt.py",
+      "required_receipt_schema": "schemas/maxine_release_candidate_publication_dry_run_receipt.schema.json",
       "approval_phrase_required": "APPROVE EXECUTION ADMISSION dcc_conform_execution_v1",
       "safest_next_action": "Define candidate-specific decision record + receipt proof plan before any admission review.",
       "can_advance_without_explicit_approval": false,
@@ -292,7 +292,7 @@
       "required_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
       "required_receipt_schema": "schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
       "approval_phrase_required": "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1",
-      "safest_next_action": "Prepare narrow dry-run admission package that preserves publication_performed=false.",
+      "safest_next_action": "Keep candidate unadmitted and complete admission-blocker checklist review with receipt_contract_status=static_contract_valid_blocked.",
       "can_advance_without_explicit_approval": false,
       "safety_notes": [
         "Dry-run candidate is still unadmitted.",

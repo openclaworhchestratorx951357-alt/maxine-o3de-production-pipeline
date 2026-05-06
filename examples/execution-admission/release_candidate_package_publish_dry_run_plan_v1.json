@@ -82,12 +82,13 @@
   "publication_surfaces_blocked": true,
   "execution_surfaces_blocked": true,
   "required_future_receipts": [
-    "dry-run candidate receipt with publication_performed=false",
+    "schemas/maxine_release_candidate_publication_dry_run_receipt.schema.json contract-compliant dry-run receipt",
     "dry-run rollback/no-op cleanup confirmation receipt",
     "sandbox output hash/index receipt for dry-run artifacts"
   ],
   "required_future_validators": [
     "tools/execution-admission/validate_release_candidate_publication_dry_run_plan.py",
+    "tools/execution-admission/validate_release_candidate_publication_dry_run_receipt.py",
     "tools/execution-admission/validate_execution_admission_readiness_rollup.py",
     "tools/execution-admission/validate_execution_admission_preflight_proof_packages.py",
     "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
@@ -95,6 +96,7 @@
   ],
   "required_future_tests": [
     "tests/pytest/test_release_candidate_publication_dry_run_plan.py",
+    "tests/pytest/test_release_candidate_publication_dry_run_receipt_contract.py",
     "tests/pytest/test_execution_admission_readiness_rollup.py",
     "tests/pytest/test_execution_admission_preflight_proof_packages.py",
     "tests/pytest/test_execution_admission_preflight_contracts.py",
@@ -127,7 +129,7 @@
     "safest_next_preparation_candidate_id": "release_candidate_package_publish_dry_run_v1",
     "alignment_status": "aligned"
   },
-  "next_required_action": "Keep candidate unadmitted and add static dry-run receipt-contract requirements before any future admission request.",
+  "next_required_action": "Keep candidate unadmitted and complete admission-blocker checklist review now that static dry-run receipt-contract requirements are defined.",
   "claim_status": {
     "source_uuid_status": "not_authoritative",
     "asset_id_status": "not_authoritative",
