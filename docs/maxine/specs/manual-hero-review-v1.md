@@ -2,22 +2,21 @@
 
 ## What This Slice Does
 
-`Manual hero review v1` defines an evidence-only contract for release-lane human review gating for hero-tier characters.
+`manual_hero_review_v1` defines an evidence-only contract for release-lane human review gating for hero-tier candidates.
 
-- validates structured manual-review report JSON
-- enforces hero-tier manual gate requirements
-- checks required evidence attachment completeness
-- checks approval/rejection state consistency
+- validates structured manual-review JSON reports
+- requires hero-tier review to reference required controlled-real gate evidence
+- validates decision/recommendation consistency and waiver policy
 - emits manifest-attachable QC output
 
-## What This Slice Does Not Do Yet
+## What This Slice Does Not Do
 
-- does not execute Blender
-- does not execute O3DE
-- does not execute Asset Processor
-- does not perform runtime spawning or publishing
-- does not read Cache or live asset databases
-- does not mutate source art assets
+- does not execute O3DE, Editor, runtime, Asset Processor, Blender, or DCC
+- does not capture live screenshots
+- does not spawn/publish
+- does not access Cache/live asset DB
+- does not create authoritative source UUID / Asset ID / Product ID claims
+- does not admit execution or publication
 
 ## Report Contract
 
@@ -25,36 +24,35 @@ Schema:
 
 - `schemas/maxine_manual_hero_review_report.schema.json`
 
-Core fields:
+Core fields include:
 
-- identity/routing: `job_id`, `package_id`, `lane`, `status`
-- source evidence: `source.source_path`, `source.source_kind`, optional `source.sha256`
-- review scope:
-  - `review_contract_id=MANUAL_HERO_REVIEW_v1`
-  - `target_tier=hero`
-  - `required_reviewers`
-  - `required_evidence_ids`
-  - `evidence_only=true`
-  - `runtime_execution_admitted=false`
-- review decision:
-  - `review_required`
-  - `review_state` (`not_required|pending|approved|rejected`)
-  - `reviewer_count`
-  - `approver_ids`
-  - `attached_evidence_ids`
-  - `missing_evidence_ids`
-  - `rejection_reasons`
-  - optional `approved_at_utc`
-- findings
+- identity/routing: `job_id`, `package_id`, `lane`, `candidate_id`, `review_id`
+- review profile: `review_profile_id`, `review_profile_version`, `review_tier`
+- reviewer identity: `reviewer_identity_status`, `reviewer_name_or_handle`, `review_timestamp`
+- evidence references: `reviewed_evidence_refs`, `required_evidence_present_status`
+- quality statuses: visual/material/skeleton/animation/scale/package readiness
+- review governance: `waiver_status`, `waiver_reasons`, `reviewer_findings`, `decision`, `release_recommendation`
+- claim/safety posture: `claim_status`, blocked execution/write safety fields
 - manifest attachment payload
+
+Required hero evidence refs:
+
+- `dcc_conform_v1`
+- `max_biped_v1_skeleton_contract`
+- `material_uv_qc_v1`
+- `animation_smoke_v1`
+- `screenshot_evidence_v1`
+- `source_product_evidence_resolver_v1`
 
 ## Validation Logic
 
-- Hero tier requires manual review gate.
-- Missing required evidence is fail-level.
-- `approved` requires enough reviewers/approvers and no rejection reasons.
-- `rejected` requires explicit rejection reasons.
-- `pending` emits manual-review status for operator follow-up.
+- Hero tier must reference all required controlled-real evidence gates.
+- Missing required evidence is fail-level or pending-manual depending on decision state.
+- `pass` requires approved reviewer identity, complete required evidence, and no blocking findings.
+- `warn` requires non-blocking concerns only and explicit warning/waiver signal.
+- `fail` requires blocking quality or evidence findings.
+- `pending_manual` requires an explicit pending signal.
+- Manual review cannot admit execution or publication.
 
 ## Manifest Integration
 
@@ -85,17 +83,13 @@ Behavior:
 
 ## Safety Boundaries
 
-This slice is report-validation-only and preserves blocked/unadmitted surfaces:
+This slice is review-workflow validation only and keeps blocked/unadmitted surfaces:
 
-- no Blender execution
 - no O3DE execution
-- no real Asset Processor execution
+- no Editor/runtime execution
+- no Asset Processor execution
+- no Blender/DCC execution
+- no live screenshot capture
 - no spawn/publish
 - no Cache/live DB access
-- no source/product UUID claims
-- no new generation lanes
-- no destructive cleanup
-
-## Future Path (Not Implemented Here)
-
-A future slice may attach this gate directly to release promotion controls. That promotion execution path is not implemented in v1.
+- no authoritative source/product identity claims

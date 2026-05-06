@@ -48,6 +48,10 @@ DEFAULT_VISUAL_EVIDENCE_CONTROLLED_REAL_REPORT = (
     "examples/sandbox/visual-evidence/pilot-candidates/"
     "max_biped_v1_visual_evidence_controlled_real.fixture.json"
 )
+DEFAULT_MANUAL_HERO_REVIEW_CONTROLLED_REAL_REPORT = (
+    "examples/sandbox/manual-hero-review-evidence/pilot-candidates/"
+    "max_biped_v1_manual_hero_review_controlled_real.fixture.json"
+)
 DEFAULT_RESOLVER_AP_EVIDENCE_IMPORTS = [
     (
         "examples/sandbox/ap-evidence-imports/pilot-candidates/"
@@ -410,7 +414,7 @@ def main() -> int:
             "command": [
                 sys.executable,
                 "tools/manual-hero-review/validate_manual_hero_review_report.py",
-                "examples/manual-hero-review/max_biped_v1_manual_hero_review_pass.json",
+                DEFAULT_MANUAL_HERO_REVIEW_CONTROLLED_REAL_REPORT,
             ],
             "payload_path": attachment_dir / "manual_hero_review_v1.json",
         },
