@@ -142,6 +142,9 @@ EXECUTION_ADMISSION_CANDIDATE_MATRIX_REL = (
 EXECUTION_ADMISSION_PREFLIGHT_CONTRACTS_REL = (
     "examples/execution-admission/execution_admission_preflight_contracts_v1.json"
 )
+EXECUTION_ADMISSION_PREFLIGHT_PROOF_PACKAGES_REL = (
+    "examples/execution-admission/execution_admission_preflight_proof_packages_v1.json"
+)
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
 WORKFLOW_RUNS_DIR_REL = "examples/sandbox/workflow-runs"
@@ -1003,6 +1006,9 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     execution_admission_candidate_matrix = root / EXECUTION_ADMISSION_CANDIDATE_MATRIX_REL
     execution_admission_preflight_contracts = (
         root / EXECUTION_ADMISSION_PREFLIGHT_CONTRACTS_REL
+    )
+    execution_admission_preflight_proof_packages = (
+        root / EXECUTION_ADMISSION_PREFLIGHT_PROOF_PACKAGES_REL
     )
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -3076,6 +3082,330 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         except Exception as exc:  # pragma: no cover - defensive failure surface
             failures.append(
                 "execution admission preflight contracts is not valid JSON: "
+                f"{exc}"
+            )
+
+    if execution_admission_preflight_proof_packages.exists():
+        try:
+            proof_packages = json.loads(
+                execution_admission_preflight_proof_packages.read_text(
+                    encoding="utf-8-sig"
+                )
+            )
+
+            if proof_packages.get("schema_version") != "1.0.0":
+                failures.append(
+                    "execution admission preflight proof packages schema_version must be 1.0.0."
+                )
+            if (
+                proof_packages.get("record_type")
+                != "EXECUTION_ADMISSION_PREFLIGHT_PROOF_PACKAGES_v1"
+            ):
+                failures.append(
+                    "execution admission preflight proof packages record_type must be EXECUTION_ADMISSION_PREFLIGHT_PROOF_PACKAGES_v1."
+                )
+            if proof_packages.get("production_ready_claimed") is not False:
+                failures.append(
+                    "execution admission preflight proof packages must keep production_ready_claimed=false."
+                )
+            if proof_packages.get("publication_admitted_claimed") is not False:
+                failures.append(
+                    "execution admission preflight proof packages must keep publication_admitted_claimed=false."
+                )
+            if proof_packages.get("real_execution_admission_status") != "blocked":
+                failures.append(
+                    "execution admission preflight proof packages must keep real_execution_admission_status=blocked."
+                )
+            if proof_packages.get("publication_admission_status") != "blocked":
+                failures.append(
+                    "execution admission preflight proof packages must keep publication_admission_status=blocked."
+                )
+
+            admitted_noop = {
+                str(item).strip()
+                for item in (
+                    proof_packages.get("admitted_noop_receipt_candidate_ids") or []
+                )
+                if str(item).strip()
+            }
+            admitted_real = {
+                str(item).strip()
+                for item in (
+                    proof_packages.get("admitted_real_execution_candidate_ids") or []
+                )
+                if str(item).strip()
+            }
+            admitted_publication = {
+                str(item).strip()
+                for item in (
+                    proof_packages.get("admitted_publication_candidate_ids") or []
+                )
+                if str(item).strip()
+            }
+            real_preflight_passed = {
+                str(item).strip()
+                for item in (
+                    proof_packages.get("real_execution_preflight_passed_candidate_ids")
+                    or []
+                )
+                if str(item).strip()
+            }
+            publication_preflight_passed = {
+                str(item).strip()
+                for item in (
+                    proof_packages.get("publication_preflight_passed_candidate_ids")
+                    or []
+                )
+                if str(item).strip()
+            }
+            blocked_real_preflight = {
+                str(item).strip()
+                for item in (
+                    proof_packages.get("blocked_real_execution_preflight_candidate_ids")
+                    or []
+                )
+                if str(item).strip()
+            }
+            blocked_publication_preflight = {
+                str(item).strip()
+                for item in (
+                    proof_packages.get("blocked_publication_preflight_candidate_ids")
+                    or []
+                )
+                if str(item).strip()
+            }
+            blocked_dry_run_preflight = {
+                str(item).strip()
+                for item in (
+                    proof_packages.get("blocked_dry_run_preflight_candidate_ids")
+                    or []
+                )
+                if str(item).strip()
+            }
+
+            if admitted_noop != {NOOP_RECEIPT_CANDIDATE_ID}:
+                failures.append(
+                    "execution admission preflight proof packages must keep only release_candidate_package_receipt_noop_v1 in admitted_noop_receipt_candidate_ids."
+                )
+            if admitted_real:
+                failures.append(
+                    "execution admission preflight proof packages must keep admitted_real_execution_candidate_ids empty."
+                )
+            if admitted_publication:
+                failures.append(
+                    "execution admission preflight proof packages must keep admitted_publication_candidate_ids empty."
+                )
+            if real_preflight_passed:
+                failures.append(
+                    "execution admission preflight proof packages must keep real_execution_preflight_passed_candidate_ids empty."
+                )
+            if publication_preflight_passed:
+                failures.append(
+                    "execution admission preflight proof packages must keep publication_preflight_passed_candidate_ids empty."
+                )
+
+            if blocked_real_preflight != set(EXPECTED_REAL_EXECUTION_CANDIDATE_IDS):
+                failures.append(
+                    "execution admission preflight proof packages blocked_real_execution_preflight_candidate_ids must match expected real execution candidate ids."
+                )
+            if blocked_publication_preflight != set(
+                EXPECTED_PUBLICATION_CANDIDATE_IDS
+            ):
+                failures.append(
+                    "execution admission preflight proof packages blocked_publication_preflight_candidate_ids must match expected publication candidate ids."
+                )
+            if blocked_dry_run_preflight != set(EXPECTED_DRY_RUN_CANDIDATE_IDS):
+                failures.append(
+                    "execution admission preflight proof packages blocked_dry_run_preflight_candidate_ids must match expected dry-run candidate ids."
+                )
+
+            packages_raw = proof_packages.get("proof_packages")
+            if not isinstance(packages_raw, list):
+                failures.append(
+                    "execution admission preflight proof packages proof_packages field must be an array."
+                )
+            else:
+                package_map = {}
+                for entry in packages_raw:
+                    if isinstance(entry, dict):
+                        cid = str(entry.get("candidate_id", "")).strip()
+                        if cid:
+                            package_map[cid] = entry
+
+                expected_ids = set(EXPECTED_EXECUTION_ADMISSION_CANDIDATE_IDS)
+                missing_ids = sorted(expected_ids - set(package_map))
+                extra_ids = sorted(set(package_map) - expected_ids)
+                for missing_id in missing_ids:
+                    failures.append(
+                        "execution admission preflight proof packages is missing expected candidate proof package: "
+                        f"{missing_id}"
+                    )
+                for extra_id in extra_ids:
+                    failures.append(
+                        "execution admission preflight proof packages contains unknown candidate proof package: "
+                        f"{extra_id}"
+                    )
+
+                noop_entry = package_map.get(NOOP_RECEIPT_CANDIDATE_ID)
+                if not isinstance(noop_entry, dict):
+                    failures.append(
+                        "execution admission preflight proof packages must include release_candidate_package_receipt_noop_v1 package."
+                    )
+                else:
+                    if str(noop_entry.get("candidate_type", "")).strip() != "no_op_receipt":
+                        failures.append(
+                            "execution admission preflight proof packages no-op candidate must keep candidate_type=no_op_receipt."
+                        )
+                    if str(noop_entry.get("admission_status", "")).strip() != "admitted_no_op_only":
+                        failures.append(
+                            "execution admission preflight proof packages no-op candidate must keep admission_status=admitted_no_op_only."
+                        )
+                    if (
+                        str(noop_entry.get("proof_package_status", "")).strip()
+                        not in {"satisfied_no_op_only", "satisfied_non_execution_only"}
+                    ):
+                        failures.append(
+                            "execution admission preflight proof packages no-op candidate must keep a no-op-only satisfied proof status."
+                        )
+
+                for candidate_id in EXPECTED_REAL_EXECUTION_CANDIDATE_IDS:
+                    entry = package_map.get(candidate_id)
+                    if not isinstance(entry, dict):
+                        continue
+                    if str(entry.get("candidate_type", "")).strip() != "real_execution":
+                        failures.append(
+                            "execution admission preflight proof packages real execution candidate has wrong type: "
+                            f"{candidate_id}"
+                        )
+                    if str(entry.get("admission_status", "")).strip() != "unadmitted":
+                        failures.append(
+                            "execution admission preflight proof packages must keep real execution candidates unadmitted: "
+                            f"{candidate_id}"
+                        )
+                    if bool(entry.get("preflight_passed", False)):
+                        failures.append(
+                            "execution admission preflight proof packages must keep real execution preflight_passed=false in this slice: "
+                            f"{candidate_id}"
+                        )
+                    if str(entry.get("proof_package_status", "")).strip() in {
+                        "satisfied_no_op_only",
+                        "satisfied_non_execution_only",
+                    }:
+                        failures.append(
+                            "execution admission preflight proof packages must not mark real execution candidates as fully satisfied in this slice: "
+                            f"{candidate_id}"
+                        )
+                    missing_evidence = {
+                        str(item).strip()
+                        for item in (entry.get("missing_evidence_items") or [])
+                        if str(item).strip()
+                    }
+                    if not missing_evidence:
+                        failures.append(
+                            "execution admission preflight proof packages real execution candidate must include missing_evidence_items: "
+                            f"{candidate_id}"
+                        )
+                    blocked_reason_codes = {
+                        str(item).strip()
+                        for item in (entry.get("blocked_reason_codes") or [])
+                        if str(item).strip()
+                    }
+                    if not blocked_reason_codes:
+                        failures.append(
+                            "execution admission preflight proof packages real execution candidate must include blocked_reason_codes: "
+                            f"{candidate_id}"
+                        )
+                    if not str(entry.get("required_validator", "")).strip():
+                        failures.append(
+                            "execution admission preflight proof packages real execution candidate must include required_validator: "
+                            f"{candidate_id}"
+                        )
+                    if not str(entry.get("required_receipt_schema", "")).strip():
+                        failures.append(
+                            "execution admission preflight proof packages real execution candidate must include required_receipt_schema: "
+                            f"{candidate_id}"
+                        )
+                    if not str(entry.get("approval_phrase_required", "")).strip():
+                        failures.append(
+                            "execution admission preflight proof packages real execution candidate must include approval_phrase_required: "
+                            f"{candidate_id}"
+                        )
+                    if bool(entry.get("unsafe_claims_detected", False)):
+                        failures.append(
+                            "execution admission preflight proof packages real execution candidate must keep unsafe_claims_detected=false: "
+                            f"{candidate_id}"
+                        )
+
+                for candidate_id in EXPECTED_PUBLICATION_CANDIDATE_IDS:
+                    entry = package_map.get(candidate_id)
+                    if not isinstance(entry, dict):
+                        continue
+                    if str(entry.get("candidate_type", "")).strip() != "publication":
+                        failures.append(
+                            "execution admission preflight proof packages publication candidate has wrong type: "
+                            f"{candidate_id}"
+                        )
+                    if str(entry.get("admission_status", "")).strip() != "unadmitted":
+                        failures.append(
+                            "execution admission preflight proof packages must keep publication candidates unadmitted: "
+                            f"{candidate_id}"
+                        )
+                    if bool(entry.get("preflight_passed", False)):
+                        failures.append(
+                            "execution admission preflight proof packages must keep publication preflight_passed=false in this slice: "
+                            f"{candidate_id}"
+                        )
+                    if str(entry.get("proof_package_status", "")).strip() in {
+                        "satisfied_no_op_only",
+                        "satisfied_non_execution_only",
+                    }:
+                        failures.append(
+                            "execution admission preflight proof packages must not mark publication candidates as fully satisfied in this slice: "
+                            f"{candidate_id}"
+                        )
+                    missing_evidence = {
+                        str(item).strip()
+                        for item in (entry.get("missing_evidence_items") or [])
+                        if str(item).strip()
+                    }
+                    if not missing_evidence:
+                        failures.append(
+                            "execution admission preflight proof packages publication candidate must include missing_evidence_items: "
+                            f"{candidate_id}"
+                        )
+                    blocked_reason_codes = {
+                        str(item).strip()
+                        for item in (entry.get("blocked_reason_codes") or [])
+                        if str(item).strip()
+                    }
+                    if not blocked_reason_codes:
+                        failures.append(
+                            "execution admission preflight proof packages publication candidate must include blocked_reason_codes: "
+                            f"{candidate_id}"
+                        )
+                    if not str(entry.get("required_validator", "")).strip():
+                        failures.append(
+                            "execution admission preflight proof packages publication candidate must include required_validator: "
+                            f"{candidate_id}"
+                        )
+                    if not str(entry.get("required_receipt_schema", "")).strip():
+                        failures.append(
+                            "execution admission preflight proof packages publication candidate must include required_receipt_schema: "
+                            f"{candidate_id}"
+                        )
+                    if not str(entry.get("approval_phrase_required", "")).strip():
+                        failures.append(
+                            "execution admission preflight proof packages publication candidate must include approval_phrase_required: "
+                            f"{candidate_id}"
+                        )
+                    if bool(entry.get("unsafe_claims_detected", False)):
+                        failures.append(
+                            "execution admission preflight proof packages publication candidate must keep unsafe_claims_detected=false: "
+                            f"{candidate_id}"
+                        )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "execution admission preflight proof packages is not valid JSON: "
                 f"{exc}"
             )
 

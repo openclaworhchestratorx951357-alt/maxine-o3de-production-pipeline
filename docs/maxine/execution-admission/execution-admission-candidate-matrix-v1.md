@@ -68,6 +68,17 @@ Candidate-specific preflight requirements are now captured separately and cross-
 
 Preflight contracts are requirements-only. They do not admit execution or publication.
 
+## Preflight Proof Package Link
+
+Static preflight proof packages are now defined and cross-checked against both matrix and contracts:
+
+- `docs/maxine/execution-admission/execution-admission-preflight-proof-packages-v1.md`
+- `schemas/maxine_execution_admission_preflight_proof_packages.schema.json`
+- `examples/execution-admission/execution_admission_preflight_proof_packages_v1.json`
+- `tools/execution-admission/validate_execution_admission_preflight_proof_packages.py`
+
+These proof packages remain static evidence-only explanations. They do not admit execution or publication.
+
 ## Safety Notes
 
 This slice remains non-executing and non-publishing:
