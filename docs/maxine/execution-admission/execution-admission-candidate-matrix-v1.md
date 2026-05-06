@@ -79,6 +79,15 @@ Static preflight proof packages are now defined and cross-checked against both m
 
 These proof packages remain static evidence-only explanations. They do not admit execution or publication.
 
+## Readiness Rollup Link
+
+The control-tower readiness rollup now consolidates matrix/contracts/proof-package posture into one static blocked-status view:
+
+- `docs/maxine/execution-admission/execution-admission-readiness-rollup-v1.md`
+- `schemas/maxine_execution_admission_readiness_rollup.schema.json`
+- `examples/execution-admission/execution_admission_readiness_rollup_v1.json`
+- `tools/execution-admission/validate_execution_admission_readiness_rollup.py`
+
 ## Safety Notes
 
 This slice remains non-executing and non-publishing:
