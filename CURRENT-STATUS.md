@@ -164,6 +164,16 @@
   - `tests/pytest/test_execution_admission_readiness_rollup.py`
   - rollup consolidates matrix/contracts/proof-packages/production-readiness posture without admitting execution/publication
   - no real-execution/publication preflight candidate is marked passed in this slice
+- Release-candidate publication dry-run planning v1 is implemented (candidate-specific static planning only, non-executing, non-publishing):
+  - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-planning-v1.md`
+  - `schemas/maxine_release_candidate_publication_dry_run_plan.schema.json`
+  - `examples/execution-admission/release_candidate_package_publish_dry_run_plan_v1.json`
+  - `tools/execution-admission/validate_release_candidate_publication_dry_run_plan.py`
+  - integrated into `tools/release-lane/prove_pilot_release_chain.py` proof output as read-only dry-run-planning status evidence
+  - `tests/pytest/test_release_candidate_publication_dry_run_plan.py`
+  - target candidate remains `release_candidate_package_publish_dry_run_v1`
+  - candidate remains `dry_run` / `unadmitted` with `dry_run_admitted=false`, `publication_admitted=false`, `real_execution_admitted=false`
+  - artifact defines future scope/inputs/forbidden outputs/receipt+validator+rollback requirements only and does not run or admit dry-run execution
 - Admitted no-op release-candidate package receipt candidate v1 is implemented (bounded receipt generation only, non-executing, non-publishing):
   - approval phrase recorded:
     - `APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1`

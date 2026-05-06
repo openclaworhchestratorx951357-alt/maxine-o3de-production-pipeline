@@ -1,0 +1,141 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_PLAN_v1",
+  "plan_id": "release-candidate-package-publish-dry-run-planning-v1",
+  "plan_version": "v1",
+  "candidate_id": "release_candidate_package_publish_dry_run_v1",
+  "candidate_type": "dry_run",
+  "admission_status": "unadmitted",
+  "dry_run_admitted": false,
+  "publication_admitted": false,
+  "real_execution_admitted": false,
+  "production_ready_claimed": false,
+  "generated_from_static_artifacts_only": true,
+  "source_artifacts": {
+    "candidate_matrix_ref": "examples/execution-admission/execution_admission_candidate_matrix_v1.json",
+    "preflight_contracts_ref": "examples/execution-admission/execution_admission_preflight_contracts_v1.json",
+    "preflight_proof_packages_ref": "examples/execution-admission/execution_admission_preflight_proof_packages_v1.json",
+    "readiness_rollup_ref": "examples/execution-admission/execution_admission_readiness_rollup_v1.json",
+    "production_readiness_report_ref": "examples/production-readiness-report/max_biped_v1_production_readiness_report_pass.json",
+    "noop_receipt_status_ref": "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json"
+  },
+  "source_artifact_validation_status": {
+    "candidate_matrix_status": "pass",
+    "preflight_contracts_status": "pass",
+    "preflight_proof_packages_status": "pass",
+    "readiness_rollup_status": "pass",
+    "production_readiness_status": "pass",
+    "noop_receipt_status": "pass"
+  },
+  "plan_status": "static_plan_valid_blocked",
+  "planning_scope": "candidate_specific_publication_dry_run_planning_only",
+  "out_of_scope_surfaces": [
+    "publication_execution",
+    "spawn_execution",
+    "production_path_write",
+    "engine_path_write",
+    "cache_live_db_access",
+    "o3de_editor_runtime_execution",
+    "asset_processor_execution",
+    "blender_dcc_execution",
+    "profiler_benchmark_execution",
+    "live_screenshot_capture",
+    "authoritative_id_claims"
+  ],
+  "future_dry_run_objective": "Static non-publication verification planning for release-candidate package publication dry-run candidate only.",
+  "future_dry_run_inputs": [
+    "examples/execution-admission/execution_admission_candidate_matrix_v1.json",
+    "examples/execution-admission/execution_admission_preflight_contracts_v1.json",
+    "examples/execution-admission/execution_admission_preflight_proof_packages_v1.json",
+    "examples/execution-admission/execution_admission_readiness_rollup_v1.json",
+    "examples/production-readiness-report/max_biped_v1_production_readiness_report_pass.json",
+    "examples/real-pilot-release-candidate-package/max_biped_v1_real_pilot_release_candidate_package_pass.json"
+  ],
+  "forbidden_inputs": [
+    "production/**",
+    "engine/**",
+    "Cache/**",
+    "**/assetdb.sqlite",
+    "live-db/**"
+  ],
+  "future_allowed_sandbox_outputs": [
+    "examples/sandbox/manifests/reports/release-candidate-publication-dry-run-plans/release_candidate_package_publish_dry_run_plan_evaluation.json",
+    "examples/sandbox/execution-receipts/release-candidate-package-publication-dry-run/release_candidate_package_publish_dry_run_receipt.json"
+  ],
+  "forbidden_outputs": [
+    "production/**",
+    "engine/**",
+    "Cache/**",
+    "spawn/**",
+    "publish/**"
+  ],
+  "allowed_sandbox_paths": [
+    "examples/sandbox/manifests/reports/release-candidate-publication-dry-run-plans",
+    "examples/sandbox/execution-receipts/release-candidate-package-publication-dry-run"
+  ],
+  "forbidden_paths": [
+    "production_path_category",
+    "engine_path_category",
+    "cache_live_db_category",
+    "destructive_cleanup_category"
+  ],
+  "publication_surfaces_blocked": true,
+  "execution_surfaces_blocked": true,
+  "required_future_receipts": [
+    "dry-run candidate receipt with publication_performed=false",
+    "dry-run rollback/no-op cleanup confirmation receipt",
+    "sandbox output hash/index receipt for dry-run artifacts"
+  ],
+  "required_future_validators": [
+    "tools/execution-admission/validate_release_candidate_publication_dry_run_plan.py",
+    "tools/execution-admission/validate_execution_admission_readiness_rollup.py",
+    "tools/execution-admission/validate_execution_admission_preflight_proof_packages.py",
+    "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+    "tools/execution-admission/validate_execution_admission_candidate_matrix.py"
+  ],
+  "required_future_tests": [
+    "tests/pytest/test_release_candidate_publication_dry_run_plan.py",
+    "tests/pytest/test_execution_admission_readiness_rollup.py",
+    "tests/pytest/test_execution_admission_preflight_proof_packages.py",
+    "tests/pytest/test_execution_admission_preflight_contracts.py",
+    "tests/pytest/test_execution_admission_candidate_matrix.py"
+  ],
+  "required_future_rollback_or_cleanup_evidence": [
+    "dry-run rollback/no-op cleanup checklist evidence artifact",
+    "explicit proof that no publication endpoint was invoked",
+    "explicit proof that no spawn/runtime/editor/o3de/ap execution occurred"
+  ],
+  "approval_phrase_required": "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1",
+  "approval_decision_reference": null,
+  "blocked_reason_codes": [
+    "unadmitted_candidate",
+    "missing_approval_decision",
+    "missing_dry_run_receipt",
+    "missing_rollback_cleanup_evidence",
+    "publication_surfaces_blocked_by_policy"
+  ],
+  "missing_evidence_items": [
+    "explicit admitted decision for release_candidate_package_publish_dry_run_v1",
+    "dry-run receipt generated under admitted scope",
+    "dry-run rollback confirmation artifact",
+    "proof of non-publication output boundary enforcement"
+  ],
+  "unsafe_claims_detected": false,
+  "readiness_rollup_alignment": {
+    "readiness_rollup_ref": "examples/execution-admission/execution_admission_readiness_rollup_v1.json",
+    "safest_next_preparation_slice_id": "candidate_specific_dry_run_planning_v1",
+    "safest_next_preparation_candidate_id": "release_candidate_package_publish_dry_run_v1",
+    "alignment_status": "aligned"
+  },
+  "next_required_action": "Keep candidate unadmitted and add static dry-run receipt-contract requirements before any future admission request.",
+  "claim_status": {
+    "source_uuid_status": "not_authoritative",
+    "asset_id_status": "not_authoritative",
+    "product_id_status": "not_authoritative"
+  },
+  "safety_notes": [
+    "This artifact is static planning only and does not run dry-run logic.",
+    "This artifact does not admit dry-run execution, real execution, or publication.",
+    "All blocked execution/publication surfaces remain blocked."
+  ]
+}

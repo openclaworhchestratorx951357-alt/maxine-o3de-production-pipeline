@@ -206,3 +206,37 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
     assert next_slice["requires_future_pr"] is True
     assert next_slice["requires_explicit_approval_before_admission"] is True
     assert readiness_rollup_status["reporter_return_code"] == 0
+    dry_run_plan_status = payload["details"]["release_candidate_publication_dry_run_plan_report"]
+    assert dry_run_plan_status["status"] == "pass"
+    assert (
+        dry_run_plan_status["report_type"]
+        == "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_PLAN_VALIDATION_v1_REPORT"
+    )
+    assert dry_run_plan_status["release_candidate_publication_dry_run_plan_present"] is True
+    assert dry_run_plan_status["planned_candidate_id"] == "release_candidate_package_publish_dry_run_v1"
+    assert dry_run_plan_status["candidate_type"] == "dry_run"
+    assert dry_run_plan_status["plan_status"] == "static_plan_valid_blocked"
+    assert dry_run_plan_status["dry_run_admitted"] is False
+    assert dry_run_plan_status["publication_admitted"] is False
+    assert dry_run_plan_status["real_execution_admitted"] is False
+    assert dry_run_plan_status["production_ready_claimed"] is False
+    assert dry_run_plan_status["publication_surfaces_blocked"] is True
+    assert dry_run_plan_status["execution_surfaces_blocked"] is True
+    assert dry_run_plan_status["missing_evidence_items_count"] > 0
+    assert len(dry_run_plan_status["blocked_reason_codes"]) > 0
+    assert (
+        dry_run_plan_status["approval_phrase_required"]
+        == "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1"
+    )
+    dry_run_alignment = dry_run_plan_status["readiness_rollup_alignment"]
+    assert dry_run_alignment["safest_next_preparation_slice_id"] == "candidate_specific_dry_run_planning_v1"
+    assert dry_run_alignment["safest_next_preparation_candidate_id"] == "release_candidate_package_publish_dry_run_v1"
+    assert dry_run_alignment["alignment_status"] == "aligned"
+    source_status = dry_run_plan_status["computed_source_artifact_validation_status"]
+    assert source_status["candidate_matrix_status"] == "pass"
+    assert source_status["preflight_contracts_status"] == "pass"
+    assert source_status["preflight_proof_packages_status"] == "pass"
+    assert source_status["readiness_rollup_status"] == "pass"
+    assert source_status["production_readiness_status"] == "pass"
+    assert source_status["noop_receipt_status"] == "pass"
+    assert dry_run_plan_status["reporter_return_code"] == 0

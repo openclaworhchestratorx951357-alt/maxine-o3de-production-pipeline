@@ -90,6 +90,17 @@ Readiness rollup now consolidates candidate matrix, preflight contracts, and pre
 - `examples/execution-admission/execution_admission_readiness_rollup_v1.json`
 - `tools/execution-admission/validate_execution_admission_readiness_rollup.py`
 
+## Dry-Run Planning Link
+
+The next candidate-specific dry-run planning slice is now explicitly captured for `release_candidate_package_publish_dry_run_v1`:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-planning-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_plan.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_plan_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_plan.py`
+
+This planning artifact remains static and unadmitted.
+
 ## Safety Notes
 
 This milestone preserves blocked execution/publication surfaces:

@@ -88,6 +88,17 @@ The control-tower readiness rollup now consolidates matrix/contracts/proof-packa
 - `examples/execution-admission/execution_admission_readiness_rollup_v1.json`
 - `tools/execution-admission/validate_execution_admission_readiness_rollup.py`
 
+## Candidate-Specific Dry-Run Planning Link
+
+The rollup-recommended next slice is now represented as a static planning artifact for the dry-run candidate:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-planning-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_plan.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_plan_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_plan.py`
+
+`release_candidate_package_publish_dry_run_v1` remains `dry_run` and `unadmitted`.
+
 ## Safety Notes
 
 This slice remains non-executing and non-publishing:

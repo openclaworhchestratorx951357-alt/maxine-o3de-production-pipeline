@@ -142,3 +142,17 @@ Execution/publication planning posture is now also summarized by a static contro
 
 The rollup remains reporting-only and does not admit execution/publication.
 
+## Candidate-Specific Dry-Run Planning v1
+
+The rollup-recommended next preparation slice is now implemented as a static planning artifact:
+
+- candidate id:
+  - `release_candidate_package_publish_dry_run_v1`
+- planning artifact:
+  - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-planning-v1.md`
+  - `schemas/maxine_release_candidate_publication_dry_run_plan.schema.json`
+  - `examples/execution-admission/release_candidate_package_publish_dry_run_plan_v1.json`
+  - `tools/execution-admission/validate_release_candidate_publication_dry_run_plan.py`
+
+This artifact does not admit dry-run execution, real execution, or publication.
+

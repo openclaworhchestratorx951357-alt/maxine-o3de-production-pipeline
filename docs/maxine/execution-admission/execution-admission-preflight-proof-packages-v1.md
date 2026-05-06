@@ -96,6 +96,17 @@ The static readiness rollup now aggregates matrix/contracts/proof-package postur
 - `examples/execution-admission/execution_admission_readiness_rollup_v1.json`
 - `tools/execution-admission/validate_execution_admission_readiness_rollup.py`
 
+## Dry-Run Planning Link
+
+The safest-next dry-run planning slice for `release_candidate_package_publish_dry_run_v1` is now explicitly modeled as static planning-only:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-planning-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_plan.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_plan_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_plan.py`
+
+This does not admit dry-run execution, real execution, or publication.
+
 ## Safety Notes
 
 This slice preserves blocked surfaces:

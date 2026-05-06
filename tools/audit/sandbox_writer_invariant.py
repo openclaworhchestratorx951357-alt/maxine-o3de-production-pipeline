@@ -148,6 +148,9 @@ EXECUTION_ADMISSION_PREFLIGHT_PROOF_PACKAGES_REL = (
 EXECUTION_ADMISSION_READINESS_ROLLUP_REL = (
     "examples/execution-admission/execution_admission_readiness_rollup_v1.json"
 )
+RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_PLAN_REL = (
+    "examples/execution-admission/release_candidate_package_publish_dry_run_plan_v1.json"
+)
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
 WORKFLOW_RUNS_DIR_REL = "examples/sandbox/workflow-runs"
@@ -200,6 +203,9 @@ EXPECTED_EXECUTION_ADMISSION_CANDIDATE_IDS = (
 EXPECTED_ROLLUP_NEXT_SLICE_ID = "candidate_specific_dry_run_planning_v1"
 EXPECTED_ROLLUP_NEXT_SLICE_CANDIDATE_ID = (
     "release_candidate_package_publish_dry_run_v1"
+)
+EXPECTED_DRY_RUN_PLAN_APPROVAL_PHRASE = (
+    "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1"
 )
 REQUIRED_PREFLIGHT_BLOCKED_SURFACES = {
     "o3de_execution",
@@ -1019,6 +1025,9 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     )
     execution_admission_readiness_rollup = (
         root / EXECUTION_ADMISSION_READINESS_ROLLUP_REL
+    )
+    release_candidate_publication_dry_run_plan = (
+        root / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_PLAN_REL
     )
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -3698,6 +3707,259 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         except Exception as exc:  # pragma: no cover - defensive failure surface
             failures.append(
                 "execution admission readiness rollup is not valid JSON: "
+                f"{exc}"
+            )
+
+    if release_candidate_publication_dry_run_plan.exists():
+        try:
+            dry_run_plan = json.loads(
+                release_candidate_publication_dry_run_plan.read_text(encoding="utf-8-sig")
+            )
+
+            if dry_run_plan.get("schema_version") != "1.0.0":
+                failures.append(
+                    "release candidate publication dry-run plan schema_version must be 1.0.0."
+                )
+            if (
+                dry_run_plan.get("record_type")
+                != "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_PLAN_v1"
+            ):
+                failures.append(
+                    "release candidate publication dry-run plan record_type must be RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_PLAN_v1."
+                )
+            if (
+                str(dry_run_plan.get("candidate_id", "")).strip()
+                != EXPECTED_ROLLUP_NEXT_SLICE_CANDIDATE_ID
+            ):
+                failures.append(
+                    "release candidate publication dry-run plan candidate_id must be release_candidate_package_publish_dry_run_v1."
+                )
+            if str(dry_run_plan.get("candidate_type", "")).strip() != "dry_run":
+                failures.append(
+                    "release candidate publication dry-run plan candidate_type must be dry_run."
+                )
+            if str(dry_run_plan.get("admission_status", "")).strip() != "unadmitted":
+                failures.append(
+                    "release candidate publication dry-run plan admission_status must remain unadmitted."
+                )
+            if bool(dry_run_plan.get("dry_run_admitted", False)):
+                failures.append(
+                    "release candidate publication dry-run plan must keep dry_run_admitted=false."
+                )
+            if bool(dry_run_plan.get("publication_admitted", False)):
+                failures.append(
+                    "release candidate publication dry-run plan must keep publication_admitted=false."
+                )
+            if bool(dry_run_plan.get("real_execution_admitted", False)):
+                failures.append(
+                    "release candidate publication dry-run plan must keep real_execution_admitted=false."
+                )
+            if bool(dry_run_plan.get("production_ready_claimed", False)):
+                failures.append(
+                    "release candidate publication dry-run plan must keep production_ready_claimed=false."
+                )
+            if dry_run_plan.get("generated_from_static_artifacts_only") is not True:
+                failures.append(
+                    "release candidate publication dry-run plan must keep generated_from_static_artifacts_only=true."
+                )
+            if str(dry_run_plan.get("plan_status", "")).strip() != "static_plan_valid_blocked":
+                failures.append(
+                    "release candidate publication dry-run plan must keep plan_status=static_plan_valid_blocked."
+                )
+            if (
+                str(dry_run_plan.get("planning_scope", "")).strip()
+                != "candidate_specific_publication_dry_run_planning_only"
+            ):
+                failures.append(
+                    "release candidate publication dry-run plan planning_scope must be candidate_specific_publication_dry_run_planning_only."
+                )
+            if dry_run_plan.get("publication_surfaces_blocked") is not True:
+                failures.append(
+                    "release candidate publication dry-run plan must keep publication_surfaces_blocked=true."
+                )
+            if dry_run_plan.get("execution_surfaces_blocked") is not True:
+                failures.append(
+                    "release candidate publication dry-run plan must keep execution_surfaces_blocked=true."
+                )
+            if (
+                str(dry_run_plan.get("approval_phrase_required", "")).strip()
+                != EXPECTED_DRY_RUN_PLAN_APPROVAL_PHRASE
+            ):
+                failures.append(
+                    "release candidate publication dry-run plan must keep exact approval phrase for release_candidate_package_publish_dry_run_v1."
+                )
+            approval_decision_reference = dry_run_plan.get("approval_decision_reference")
+            if isinstance(approval_decision_reference, str) and approval_decision_reference.strip():
+                failures.append(
+                    "release candidate publication dry-run plan approval_decision_reference must be null/empty while unadmitted."
+                )
+
+            blocked_reason_codes = {
+                str(item).strip()
+                for item in (dry_run_plan.get("blocked_reason_codes") or [])
+                if str(item).strip()
+            }
+            missing_evidence_items = {
+                str(item).strip()
+                for item in (dry_run_plan.get("missing_evidence_items") or [])
+                if str(item).strip()
+            }
+            if not blocked_reason_codes:
+                failures.append(
+                    "release candidate publication dry-run plan must include blocked_reason_codes."
+                )
+            if not missing_evidence_items:
+                failures.append(
+                    "release candidate publication dry-run plan must include missing_evidence_items."
+                )
+
+            out_of_scope_surfaces = {
+                str(item).strip()
+                for item in (dry_run_plan.get("out_of_scope_surfaces") or [])
+                if str(item).strip()
+            }
+            for required_surface in (
+                "publication_execution",
+                "spawn_execution",
+                "production_path_write",
+                "engine_path_write",
+                "cache_live_db_access",
+            ):
+                if required_surface not in out_of_scope_surfaces:
+                    failures.append(
+                        "release candidate publication dry-run plan out_of_scope_surfaces must include: "
+                        f"{required_surface}"
+                    )
+
+            forbidden_paths = {
+                str(item).strip()
+                for item in (dry_run_plan.get("forbidden_paths") or [])
+                if str(item).strip()
+            }
+            for required_path_category in (
+                "production_path_category",
+                "engine_path_category",
+                "cache_live_db_category",
+                "destructive_cleanup_category",
+            ):
+                if required_path_category not in forbidden_paths:
+                    failures.append(
+                        "release candidate publication dry-run plan forbidden_paths must include: "
+                        f"{required_path_category}"
+                    )
+
+            for output in dry_run_plan.get("future_allowed_sandbox_outputs") or []:
+                normalized_output = str(output).replace("\\", "/").strip().lower()
+                if not normalized_output.startswith("examples/sandbox/"):
+                    failures.append(
+                        "release candidate publication dry-run plan future_allowed_sandbox_outputs must stay under examples/sandbox/: "
+                        f"{output}"
+                    )
+                if "production" in normalized_output:
+                    failures.append(
+                        "release candidate publication dry-run plan must not allow production-path outputs: "
+                        f"{output}"
+                    )
+                if "engine" in normalized_output:
+                    failures.append(
+                        "release candidate publication dry-run plan must not allow engine-path outputs: "
+                        f"{output}"
+                    )
+
+            claim_status = (
+                dry_run_plan.get("claim_status")
+                if isinstance(dry_run_plan.get("claim_status"), dict)
+                else {}
+            )
+            if str(claim_status.get("source_uuid_status", "")).strip() != "not_authoritative":
+                failures.append(
+                    "release candidate publication dry-run plan must keep claim_status.source_uuid_status=not_authoritative."
+                )
+            if str(claim_status.get("asset_id_status", "")).strip() != "not_authoritative":
+                failures.append(
+                    "release candidate publication dry-run plan must keep claim_status.asset_id_status=not_authoritative."
+                )
+            if str(claim_status.get("product_id_status", "")).strip() != "not_authoritative":
+                failures.append(
+                    "release candidate publication dry-run plan must keep claim_status.product_id_status=not_authoritative."
+                )
+
+            if bool(dry_run_plan.get("unsafe_claims_detected", False)):
+                failures.append(
+                    "release candidate publication dry-run plan must keep unsafe_claims_detected=false."
+                )
+
+            source_artifacts = (
+                dry_run_plan.get("source_artifacts")
+                if isinstance(dry_run_plan.get("source_artifacts"), dict)
+                else {}
+            )
+            expected_source_refs = {
+                "candidate_matrix_ref": EXECUTION_ADMISSION_CANDIDATE_MATRIX_REL,
+                "preflight_contracts_ref": EXECUTION_ADMISSION_PREFLIGHT_CONTRACTS_REL,
+                "preflight_proof_packages_ref": EXECUTION_ADMISSION_PREFLIGHT_PROOF_PACKAGES_REL,
+                "readiness_rollup_ref": EXECUTION_ADMISSION_READINESS_ROLLUP_REL,
+                "noop_receipt_status_ref": "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json",
+            }
+            for field, expected_path in expected_source_refs.items():
+                actual_ref = str(source_artifacts.get(field, "")).replace("\\", "/").strip()
+                if not actual_ref:
+                    failures.append(
+                        "release candidate publication dry-run plan source_artifacts is missing field: "
+                        f"{field}"
+                    )
+                    continue
+                if actual_ref != expected_path:
+                    failures.append(
+                        "release candidate publication dry-run plan source_artifacts field has unexpected path: "
+                        f"{field} -> {actual_ref}"
+                    )
+
+            source_status = (
+                dry_run_plan.get("source_artifact_validation_status")
+                if isinstance(dry_run_plan.get("source_artifact_validation_status"), dict)
+                else {}
+            )
+            for field in (
+                "candidate_matrix_status",
+                "preflight_contracts_status",
+                "preflight_proof_packages_status",
+                "readiness_rollup_status",
+                "production_readiness_status",
+                "noop_receipt_status",
+            ):
+                if str(source_status.get(field, "")).strip() != "pass":
+                    failures.append(
+                        "release candidate publication dry-run plan source_artifact_validation_status must keep field pass: "
+                        f"{field}"
+                    )
+
+            alignment = (
+                dry_run_plan.get("readiness_rollup_alignment")
+                if isinstance(dry_run_plan.get("readiness_rollup_alignment"), dict)
+                else {}
+            )
+            if (
+                str(alignment.get("safest_next_preparation_slice_id", "")).strip()
+                != EXPECTED_ROLLUP_NEXT_SLICE_ID
+            ):
+                failures.append(
+                    "release candidate publication dry-run plan readiness_rollup_alignment must keep safest_next_preparation_slice_id=candidate_specific_dry_run_planning_v1."
+                )
+            if (
+                str(alignment.get("safest_next_preparation_candidate_id", "")).strip()
+                != EXPECTED_ROLLUP_NEXT_SLICE_CANDIDATE_ID
+            ):
+                failures.append(
+                    "release candidate publication dry-run plan readiness_rollup_alignment must keep safest_next_preparation_candidate_id=release_candidate_package_publish_dry_run_v1."
+                )
+            if str(alignment.get("alignment_status", "")).strip() != "aligned":
+                failures.append(
+                    "release candidate publication dry-run plan readiness_rollup_alignment must keep alignment_status=aligned."
+                )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "release candidate publication dry-run plan is not valid JSON: "
                 f"{exc}"
             )
 
