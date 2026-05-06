@@ -115,6 +115,14 @@ def test_runner_builds_generated_manifest_and_attaches_expected_checks(repo_tmp_
     assert package_payload.get("claim_status") == "evidence_only"
     assert package_payload.get("safety", {}).get("package_publication_status") == "blocked"
     assert "pilot_release_chain_v1" in package_payload.get("required_gate_refs", [])
+    production_readiness_payload = json.loads(
+        Path(step_map["production_readiness_report"]["payload_path"]).read_text(encoding="utf-8-sig")
+    )
+    assert production_readiness_payload.get("status") == "pass"
+    assert production_readiness_payload.get("readiness_decision") == "blocked_for_execution"
+    assert production_readiness_payload.get("production_readiness_level") == "review_ready"
+    assert production_readiness_payload.get("execution_admission_status") == "blocked"
+    assert production_readiness_payload.get("publication_admission_status") == "blocked"
     extraction_report = json.loads(
         Path(step_map["source_product_resolver_extract"]["payload_path"]).read_text(encoding="utf-8-sig")
     )
@@ -154,6 +162,7 @@ def test_runner_builds_generated_manifest_and_attaches_expected_checks(repo_tmp_
     assert "release_publication_gate_set_v1" in gate_ids
     assert "pilot_release_chain_v1" in gate_ids
     assert "real_pilot_release_candidate_package_v1" in gate_ids
+    assert "production_readiness_report_v1" in gate_ids
 
 
 def test_runner_strict_chain_passes_for_pass_chain(repo_tmp_dir: Path):

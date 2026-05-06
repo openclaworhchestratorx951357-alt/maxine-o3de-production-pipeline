@@ -1,0 +1,410 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_production_readiness_report.schema.json",
+  "title": "MAXINE Production Readiness Report",
+  "description": "Evidence-first production readiness report for the release lane.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "report_type",
+    "report_id",
+    "report_version",
+    "status",
+    "generated_for_branch_or_commit",
+    "evaluated_manifest_ref",
+    "evaluated_release_candidate_package_ref",
+    "evaluated_gate_chain_ref",
+    "pilot_chain_status",
+    "final_gate_count",
+    "evidence_summary",
+    "controlled_real_gate_ids",
+    "imported_gate_ids",
+    "manual_gate_ids",
+    "fixture_only_gate_ids",
+    "missing_required_gate_ids",
+    "release_candidate_package_status",
+    "aaa_quality_gate_status",
+    "performance_budget_status",
+    "manual_hero_review_status",
+    "rollback_readiness_status",
+    "evidence_integrity_status",
+    "execution_admission_status",
+    "publication_admission_status",
+    "source_product_authority_status",
+    "cache_live_db_status",
+    "production_write_status",
+    "production_readiness_level",
+    "readiness_decision",
+    "blocking_findings",
+    "warning_findings",
+    "remaining_required_actions",
+    "recommended_next_milestone",
+    "claim_status",
+    "safety",
+    "manifest_attachment"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "report_type": {
+      "type": "string",
+      "const": "PRODUCTION_READINESS_REPORT_v1_REPORT"
+    },
+    "report_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "report_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail"
+      ]
+    },
+    "generated_for_branch_or_commit": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evaluated_manifest_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evaluated_release_candidate_package_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evaluated_gate_chain_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pilot_chain_status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual",
+        "missing",
+        "unknown"
+      ]
+    },
+    "final_gate_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "evidence_summary": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "total_gate_count",
+        "required_gate_count",
+        "required_pass_count",
+        "pass_count",
+        "warn_count",
+        "fail_count",
+        "pending_manual_count",
+        "evidence_ready",
+        "review_ready"
+      ],
+      "properties": {
+        "total_gate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "required_gate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "required_pass_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pass_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warn_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fail_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pending_manual_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "evidence_ready": {
+          "type": "boolean"
+        },
+        "review_ready": {
+          "type": "boolean"
+        }
+      }
+    },
+    "controlled_real_gate_ids": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "imported_gate_ids": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "manual_gate_ids": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "fixture_only_gate_ids": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "missing_required_gate_ids": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "release_candidate_package_status": {
+      "$ref": "#/$defs/gateLikeStatus"
+    },
+    "aaa_quality_gate_status": {
+      "$ref": "#/$defs/readinessStatus"
+    },
+    "performance_budget_status": {
+      "$ref": "#/$defs/readinessStatus"
+    },
+    "manual_hero_review_status": {
+      "$ref": "#/$defs/readinessStatus"
+    },
+    "rollback_readiness_status": {
+      "$ref": "#/$defs/readinessStatus"
+    },
+    "evidence_integrity_status": {
+      "$ref": "#/$defs/readinessStatus"
+    },
+    "execution_admission_status": {
+      "type": "string",
+      "enum": [
+        "blocked",
+        "admitted"
+      ]
+    },
+    "execution_admission_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "publication_admission_status": {
+      "type": "string",
+      "enum": [
+        "blocked",
+        "admitted"
+      ]
+    },
+    "publication_admission_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_product_authority_status": {
+      "type": "string",
+      "enum": [
+        "evidence_only",
+        "not_authoritative",
+        "admitted_authoritative"
+      ]
+    },
+    "cache_live_db_status": {
+      "type": "string",
+      "enum": [
+        "blocked",
+        "admitted"
+      ]
+    },
+    "production_write_status": {
+      "type": "string",
+      "enum": [
+        "blocked",
+        "admitted"
+      ]
+    },
+    "production_readiness_level": {
+      "type": "string",
+      "enum": [
+        "evidence_ready",
+        "review_ready",
+        "execution_ready",
+        "production_ready",
+        "blocked"
+      ]
+    },
+    "readiness_decision": {
+      "type": "string",
+      "enum": [
+        "pass_evidence_only",
+        "warn_evidence_only",
+        "blocked_for_execution",
+        "blocked_for_publication",
+        "fail"
+      ]
+    },
+    "blocking_findings": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "warning_findings": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "remaining_required_actions": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "recommended_next_milestone": {
+      "type": "string",
+      "minLength": 1
+    },
+    "claim_status": {
+      "type": "string",
+      "enum": [
+        "evidence_only",
+        "not_authoritative"
+      ]
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "o3de_execution_status",
+        "editor_execution_status",
+        "runtime_execution_status",
+        "asset_processor_execution_status",
+        "dcc_execution_status",
+        "blender_execution_status",
+        "profiler_execution_status",
+        "screenshot_capture_status",
+        "spawn_publish_status",
+        "production_write_status"
+      ],
+      "properties": {
+        "o3de_execution_status": {
+          "$ref": "#/$defs/blockedStatus"
+        },
+        "editor_execution_status": {
+          "$ref": "#/$defs/blockedStatus"
+        },
+        "runtime_execution_status": {
+          "$ref": "#/$defs/blockedStatus"
+        },
+        "asset_processor_execution_status": {
+          "$ref": "#/$defs/blockedStatus"
+        },
+        "dcc_execution_status": {
+          "$ref": "#/$defs/blockedStatus"
+        },
+        "blender_execution_status": {
+          "$ref": "#/$defs/blockedStatus"
+        },
+        "profiler_execution_status": {
+          "$ref": "#/$defs/blockedStatus"
+        },
+        "screenshot_capture_status": {
+          "$ref": "#/$defs/blockedStatus"
+        },
+        "spawn_publish_status": {
+          "$ref": "#/$defs/blockedStatus"
+        },
+        "production_write_status": {
+          "$ref": "#/$defs/blockedStatus"
+        }
+      }
+    },
+    "manifest_attachment": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "target_path",
+        "future_target_path",
+        "qc_check"
+      ],
+      "properties": {
+        "target_path": {
+          "type": "string",
+          "const": "qc.gates[]"
+        },
+        "future_target_path": {
+          "type": "string",
+          "const": "qc.checks[]"
+        },
+        "qc_check": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "check_id",
+            "result",
+            "severity",
+            "details"
+          ],
+          "properties": {
+            "check_id": {
+              "type": "string",
+              "const": "production_readiness_report_v1"
+            },
+            "result": {
+              "type": "string",
+              "enum": [
+                "pass",
+                "warn",
+                "fail"
+              ]
+            },
+            "severity": {
+              "type": "string",
+              "enum": [
+                "info",
+                "warning",
+                "error",
+                "manual_review"
+              ]
+            },
+            "details": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "stringArray": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "gateLikeStatus": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual",
+        "missing"
+      ]
+    },
+    "readinessStatus": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "blocked",
+        "missing"
+      ]
+    },
+    "blockedStatus": {
+      "type": "string",
+      "const": "blocked"
+    }
+  }
+}
+

@@ -6,6 +6,8 @@ This report summarizes release-lane integration readiness for branch-level PR re
 
 This report does **not** claim admitted execution readiness.
 
+For current post-pilot readiness state, see `docs/maxine/specs/production-readiness-report-v1.md`.
+
 ## 1. Branch Identity
 
 - branch: `codex/pilot-rollback-readiness-evidence-v1`

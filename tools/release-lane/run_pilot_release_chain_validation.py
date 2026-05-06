@@ -87,6 +87,7 @@ REQUIRED_IMPLEMENTED_CHECK_IDS = [
     "release_publication_execution_admission_request_packet_v1",
     "release_publication_gate_set_v1",
     "real_pilot_release_candidate_package_v1",
+    "production_readiness_report_v1",
 ]
 
 
@@ -977,6 +978,85 @@ def main() -> int:
             "status": real_pilot_package_payload.get("status"),
             "payload_path": str(real_pilot_package_payload_path),
             "check_id": real_pilot_check_id,
+        }
+    )
+
+    production_readiness_cmd: List[str] = [
+        sys.executable,
+        "tools/production-readiness-report/validate_production_readiness_report.py",
+        str(output_manifest_path),
+    ]
+    production_readiness_proc = run_command(repo_root, production_readiness_cmd)
+    if production_readiness_proc.returncode != 0:
+        print(
+            json.dumps(
+                {
+                    "status": "failed",
+                    "failed_step": "production_readiness_report",
+                    "command": production_readiness_cmd,
+                    "stdout": production_readiness_proc.stdout,
+                    "stderr": production_readiness_proc.stderr,
+                },
+                indent=2,
+            )
+        )
+        return 1
+    try:
+        production_readiness_payload = parse_payload_from_stdout(production_readiness_proc.stdout)
+        ensure_attachment_paths(production_readiness_payload, "production_readiness_report")
+    except Exception as exc:
+        print(
+            json.dumps(
+                {
+                    "status": "failed",
+                    "failed_step": "production_readiness_report",
+                    "reason": f"payload_parse_error: {exc}",
+                    "stdout": production_readiness_proc.stdout,
+                },
+                indent=2,
+            )
+        )
+        return 1
+    production_readiness_payload_path = attachment_dir / "production_readiness_report_v1.json"
+    write_json(production_readiness_payload_path, production_readiness_payload)
+    snapshot_paths.append(str(production_readiness_payload_path))
+
+    attach_production_readiness_cmd = [
+        sys.executable,
+        "tools/manifest-validator/attach_qc_gate.py",
+        "--manifest",
+        str(output_manifest_path),
+        "--attachment",
+        str(production_readiness_payload_path),
+    ]
+    attach_production_readiness_proc = run_command(repo_root, attach_production_readiness_cmd)
+    if attach_production_readiness_proc.returncode != 0:
+        print(
+            json.dumps(
+                {
+                    "status": "failed",
+                    "failed_step": "attach_production_readiness_report_payload",
+                    "command": attach_production_readiness_cmd,
+                    "stdout": attach_production_readiness_proc.stdout,
+                    "stderr": attach_production_readiness_proc.stderr,
+                },
+                indent=2,
+            )
+        )
+        return 1
+    production_readiness_check_id = (
+        production_readiness_payload.get("manifest_attachment", {})
+        .get("qc_check", {})
+        .get("check_id", "")
+    )
+    if isinstance(production_readiness_check_id, str) and production_readiness_check_id.strip():
+        attached_check_ids.append(production_readiness_check_id.strip())
+    step_results.append(
+        {
+            "step": "production_readiness_report",
+            "status": production_readiness_payload.get("status"),
+            "payload_path": str(production_readiness_payload_path),
+            "check_id": production_readiness_check_id,
         }
     )
 

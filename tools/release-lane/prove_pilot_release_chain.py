@@ -19,6 +19,9 @@ ATTACHMENT_FUTURE_TARGET_PATH = "qc.checks[]"
 DEFAULT_OUTPUT_ROOT = "examples/sandbox/manifests/reports/pilot-release-chain-proof"
 RUNNER_REL = "tools/release-lane/run_pilot_release_chain_validation.py"
 EVIDENCE_ADMISSION_STATUS_REL = "tools/release-lane/report_release_lane_evidence_admission_status.py"
+PRODUCTION_READINESS_REPORT_REL = (
+    "tools/production-readiness-report/validate_production_readiness_report.py"
+)
 EXECUTION_ADMISSION_RECEIPT_DRY_RUN_REL = (
     "tools/release-lane/generate_execution_admission_receipt_dry_run.py"
 )
@@ -154,6 +157,31 @@ def run_evidence_admission_status(
     return proc.returncode, payload
 
 
+def run_production_readiness_report(
+    repo_root: Path,
+    output_root: Path,
+    manifest_path: Path,
+) -> Tuple[int, Dict[str, Any]]:
+    output_path = output_root / "production-readiness-report.json"
+    cmd: List[str] = [
+        sys.executable,
+        str((repo_root / PRODUCTION_READINESS_REPORT_REL).resolve()),
+        str(manifest_path),
+        "--output",
+        str(output_path),
+    ]
+    proc = subprocess.run(
+        cmd,
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+    )
+    payload = parse_payload_from_stdout(proc.stdout)
+    payload["output_path"] = str(output_path)
+    payload["reporter_return_code"] = proc.returncode
+    return proc.returncode, payload
+
+
 def run_execution_admission_receipt_dry_run(
     repo_root: Path,
     output_root: Path,
@@ -239,6 +267,11 @@ def main() -> int:
             output_root=output_root,
             manifest_path=Path(strict_payload["output_manifest"]),
         )
+        production_readiness_code, production_readiness_payload = run_production_readiness_report(
+            repo_root=repo_root,
+            output_root=output_root,
+            manifest_path=Path(strict_payload["output_manifest"]),
+        )
         receipt_code, receipt_payload = run_execution_admission_receipt_dry_run(
             repo_root=repo_root,
             output_root=output_root,
@@ -268,6 +301,23 @@ def main() -> int:
         )
     if evidence_payload.get("status") != "pass":
         failures.append("evidence admission status report status must be pass.")
+    if production_readiness_code != 0:
+        failures.append("production readiness report command must return 0.")
+    if production_readiness_payload.get("report_type") != "PRODUCTION_READINESS_REPORT_v1_REPORT":
+        failures.append(
+            "production readiness report must emit PRODUCTION_READINESS_REPORT_v1_REPORT."
+        )
+    if production_readiness_payload.get("status") != "pass":
+        failures.append("production readiness report status must be pass.")
+    if production_readiness_payload.get("readiness_decision") not in {
+        "blocked_for_execution",
+        "blocked_for_publication",
+        "pass_evidence_only",
+        "warn_evidence_only",
+    }:
+        failures.append(
+            "production readiness report must classify evidence-only readiness without claiming full production readiness."
+        )
     if receipt_code != 0:
         failures.append("execution-admission receipt dry-run report command must return 0.")
     if receipt_payload.get("report_type") != "EXECUTION_ADMISSION_RECEIPT_DRY_RUN_v1_REPORT":
@@ -299,6 +349,7 @@ def main() -> int:
             "normal_run": normal_payload,
             "strict_run": strict_payload,
             "evidence_admission_report": evidence_payload,
+            "production_readiness_report": production_readiness_payload,
             "execution_admission_receipt_dry_run_report": receipt_payload,
             "controlled_real_evidence_inventory_report": controlled_inventory_payload,
             "failures": failures,

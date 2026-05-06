@@ -67,6 +67,15 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
     assert "real_pilot_release_candidate_package_v1" in evidence_status["evidence_classification"]["manual_check_ids"]
     assert evidence_status["reporter_return_code"] == 0
     assert Path(evidence_status["output_path"]).exists()
+    readiness_status = payload["details"]["production_readiness_report"]
+    assert readiness_status["status"] == "pass"
+    assert readiness_status["report_type"] == "PRODUCTION_READINESS_REPORT_v1_REPORT"
+    assert readiness_status["production_readiness_level"] == "review_ready"
+    assert readiness_status["readiness_decision"] == "blocked_for_execution"
+    assert readiness_status["execution_admission_status"] == "blocked"
+    assert readiness_status["publication_admission_status"] == "blocked"
+    assert readiness_status["reporter_return_code"] == 0
+    assert Path(readiness_status["output_path"]).exists()
     receipt_status = payload["details"]["execution_admission_receipt_dry_run_report"]
     assert receipt_status["status"] == "pass"
     assert receipt_status["report_type"] == "EXECUTION_ADMISSION_RECEIPT_DRY_RUN_v1_REPORT"
