@@ -69,6 +69,7 @@ Get-ChildItem .\examples\manifests
 - Real pilot release-candidate package proof is integrated as an evidence-only package binder requiring required gate references and core controlled/imported/manual evidence coverage (non-executing, non-publishing).
 - Production-readiness reporting is integrated and now explicitly distinguishes no-op receipt admission from real execution admission and publication admission; current posture remains review-ready with real execution/publication blocked (evidence-only, non-executing, non-publishing).
 - Execution/publication admission planning artifacts are integrated, and the first narrow no-op receipt candidate (`release_candidate_package_receipt_noop_v1`) is admitted only for bounded receipt generation; real execution/publication surfaces remain blocked.
+- Execution-admission candidate matrix v1 is integrated as a machine-readable planning/status inventory of future real execution, dry-run, and publication candidates while preserving blocked real execution/publication posture; only the no-op receipt candidate remains admitted.
 - AAA-quality output is not yet fully operational.
 - Execution admission remains future work requiring explicit approval.
 
@@ -93,6 +94,7 @@ Start here for PR readiness, review, and merge details:
 - `docs/maxine/specs/production-readiness-report-v1.md`
 - `docs/maxine/execution-admission/execution-publication-admission-planning-v1.md`
 - `docs/maxine/execution-admission/release-candidate-package-receipt-noop-v1.md`
+- `docs/maxine/execution-admission/execution-admission-candidate-matrix-v1.md`
 
 ## M.A.X.I.N.E. Resolver Ladder
 
