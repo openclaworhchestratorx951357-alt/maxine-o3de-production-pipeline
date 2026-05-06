@@ -1,0 +1,77 @@
+﻿{
+  "schema_version": "1.0.0",
+  "report_type": "AAA_PERFORMANCE_BUDGET_v1_REPORT",
+  "job_id": "job-release-character-performance-pass-001",
+  "package_id": "char.maxine.knight_arden",
+  "lane": "release_character",
+  "status": "pass",
+  "candidate_id": "max_biped_v1_candidate_001",
+  "source_asset_reference": "fixtures://source/max_biped_v1/source_character.fbx",
+  "source_evidence_ref": "examples/aaa-performance-budget/max_biped_v1_aaa_performance_budget_pass.json",
+  "performance_profile_id": "AAA_PERFORMANCE_BUDGET_v1",
+  "performance_profile_version": "1.0.0",
+  "asset_tier": "hero",
+  "evidence_class": "fixture",
+  "triangle_count": 110000,
+  "triangle_budget_status": "pass",
+  "material_slot_count": 6,
+  "material_slot_budget_status": "pass",
+  "texture_count": 18,
+  "texture_resolution_max": 4096,
+  "texture_memory_estimate_mb": 220.5,
+  "texture_budget_status": "pass",
+  "uv_set_count": 2,
+  "uv_budget_status": "pass",
+  "bone_count": 150,
+  "bone_budget_status": "pass",
+  "skin_influence_max": 4,
+  "skin_influence_budget_status": "pass",
+  "lod_count": 4,
+  "lod_budget_status": "pass",
+  "animation_clip_count": 8,
+  "animation_budget_status": "pass",
+  "package_size_estimate_mb": 310.2,
+  "package_size_budget_status": "pass",
+  "import_time_estimate_status": "pass",
+  "runtime_load_readiness_status": "pass",
+  "review_tier_status": "pass",
+  "waiver_status": "none",
+  "waiver_ids": [],
+  "waiver_reasons": [],
+  "claim_status": "evidence_only",
+  "safety": {
+    "o3de_execution_status": "blocked",
+    "editor_execution_status": "blocked",
+    "runtime_execution_status": "blocked",
+    "asset_processor_execution_status": "blocked",
+    "dcc_execution_status": "blocked",
+    "blender_execution_status": "blocked",
+    "benchmark_execution_status": "blocked",
+    "production_write_status": "blocked"
+  },
+  "source": {
+    "source_path": "artifacts/jobs/job-release-character-performance-pass-001/o3de/source/knight_arden_conformed.fbx",
+    "source_kind": "fbx",
+    "sha256": "0ec9e8d5bf9a3956f72cbccb0f78ca5a53d4f3e8192b71e2e7055041fe4f5b7e"
+  },
+  "budget_thresholds": {
+    "package_size_warn_mb": 350,
+    "package_size_fail_mb": 500,
+    "texture_memory_warn_mb": 260,
+    "texture_memory_fail_mb": 360
+  },
+  "findings": [],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "aaa_performance_budget_v1",
+      "result": "pass",
+      "severity": "info",
+      "details": {
+        "summary": "Performance budget metrics satisfy hero-tier baseline policy.",
+        "evidence_class": "fixture"
+      }
+    }
+  }
+}

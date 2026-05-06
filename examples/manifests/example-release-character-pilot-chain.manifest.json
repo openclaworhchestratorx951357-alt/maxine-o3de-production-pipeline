@@ -108,6 +108,19 @@
         }
       },
       {
+        "check_id": "aaa_performance_budget_v1",
+        "result": "pass",
+        "severity": "info",
+        "details": {
+          "contract_id": "AAA_PERFORMANCE_BUDGET_v1",
+          "evidence_source": "controlled_real_fixture",
+          "evidence_class": "controlled_real",
+          "summary": "AAA performance budget evidence validates tiered triangle/material/texture/bone/LOD/package-size readiness without live benchmark execution.",
+          "benchmark_execution_status": "blocked",
+          "runtime_execution_status": "blocked"
+        }
+      },
+      {
         "check_id": "ci_artifact_retention_v1",
         "result": "pass",
         "severity": "info",

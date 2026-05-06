@@ -52,6 +52,10 @@ DEFAULT_MANUAL_HERO_REVIEW_CONTROLLED_REAL_REPORT = (
     "examples/sandbox/manual-hero-review-evidence/pilot-candidates/"
     "max_biped_v1_manual_hero_review_controlled_real.fixture.json"
 )
+DEFAULT_AAA_PERFORMANCE_BUDGET_CONTROLLED_REAL_REPORT = (
+    "examples/sandbox/aaa-performance-budget-evidence/pilot-candidates/"
+    "max_biped_v1_aaa_performance_budget_controlled_real.fixture.json"
+)
 DEFAULT_RESOLVER_AP_EVIDENCE_IMPORTS = [
     (
         "examples/sandbox/ap-evidence-imports/pilot-candidates/"
@@ -66,6 +70,7 @@ REQUIRED_IMPLEMENTED_CHECK_IDS = [
     "animation_smoke_v1",
     "screenshot_evidence_v1",
     "manual_hero_review_v1",
+    "aaa_performance_budget_v1",
     "ci_artifact_retention_v1",
     "release_package_bundle_v1",
     "release_promotion_decision_v1",
@@ -417,6 +422,15 @@ def main() -> int:
                 DEFAULT_MANUAL_HERO_REVIEW_CONTROLLED_REAL_REPORT,
             ],
             "payload_path": attachment_dir / "manual_hero_review_v1.json",
+        },
+        {
+            "name": "aaa_performance_budget",
+            "command": [
+                sys.executable,
+                "tools/aaa-performance-budget/validate_aaa_performance_budget_report.py",
+                DEFAULT_AAA_PERFORMANCE_BUDGET_CONTROLLED_REAL_REPORT,
+            ],
+            "payload_path": attachment_dir / "aaa_performance_budget_v1.json",
         },
         {
             "name": "ci_artifact_retention",
