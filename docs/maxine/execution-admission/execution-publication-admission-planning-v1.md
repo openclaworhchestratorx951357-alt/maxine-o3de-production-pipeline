@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Define a review-only bridge from evidence/review readiness to future bounded admission requests.
+Define the bridge from evidence/review readiness to bounded admission requests.
 
-This slice does not admit execution or publication.
+The planning baseline is review-first. Follow-on slices can admit only explicitly approved narrow candidates.
 
 ## Current State Snapshot
 
@@ -14,12 +14,13 @@ This slice does not admit execution or publication.
 - publication admission: blocked/unadmitted
 - pilot chain: evidence-only, passing
 
-## First Narrow Candidate (Review-Only)
+## First Narrow Candidate
 
 - candidate id: `release_candidate_package_receipt_noop_v1`
 - candidate title: release-candidate package no-op receipt generation
-- candidate status in this slice: `review_only`
-- execution/publication admission in this slice: not approved
+- original planning status: `review_only`
+- current implementation status: admitted for no-op receipt generation only
+- execution/publication admission in this slice: publication remains blocked
 
 ## Candidate Scope
 
@@ -32,15 +33,15 @@ This slice does not admit execution or publication.
 - no production/engine path writes
 - no authoritative source UUID / Asset ID / Product ID claims
 
-## Future Approval Phrase
+## Approval Phrase
 
-Any future attempt to admit this candidate requires the exact phrase:
+Required phrase:
 
 - `APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1`
 
-This planning slice does not include that approval.
+This phrase is now recorded in the admitted decision record for the no-op receipt candidate only.
 
-## Required Preconditions (Future Admission Attempt)
+## Required Preconditions
 
 1. production-readiness report remains present and truthful.
 2. release-candidate package proof remains pass.
@@ -49,7 +50,7 @@ This planning slice does not include that approval.
 5. explicit operator approval phrase is recorded for this candidate id.
 6. bounded input/output paths are listed and reviewed.
 
-## Required Postconditions (Future Admission Attempt)
+## Required Postconditions
 
 1. a no-op receipt artifact is produced.
 2. receipt confirms `execution_performed=false`.
@@ -77,6 +78,12 @@ The first candidate is receipt-only. It must produce an auditable no-op receipt 
   - `examples/execution-admission/release_candidate_package_receipt_noop_blocked.json`
 - candidate detail:
   - `docs/maxine/execution-admission/release-candidate-package-receipt-noop-v1.md`
+- admitted decision record:
+  - `examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json`
+- admitted no-op receipt contract/tooling:
+  - `schemas/maxine_release_candidate_package_receipt_noop_report.schema.json`
+  - `tools/execution-admission/generate_release_candidate_package_receipt_noop.py`
+  - `tools/execution-admission/validate_release_candidate_package_receipt_noop_report.py`
 - tests:
   - `tests/pytest/test_execution_publication_admission_plan_schema.py`
 

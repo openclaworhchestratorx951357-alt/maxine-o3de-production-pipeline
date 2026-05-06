@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "EXECUTION_ADMISSION_DECISION_v1",
+  "decision_id": "dec-release-candidate-package-receipt-noop-001",
+  "candidate_id": "release_candidate_package_receipt_noop_v1",
+  "decision_state": "approved",
+  "requested_execution": {
+    "surface_id": "release_candidate_package_receipt_noop_execution",
+    "command_or_tool_path": "tools/execution-admission/generate_release_candidate_package_receipt_noop.py",
+    "arguments": [
+      "--decision-record",
+      "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json",
+      "--release-candidate-package-report",
+      "examples/real-pilot-release-candidate-package/max_biped_v1_real_pilot_release_candidate_package_pass.json",
+      "--output",
+      "examples/sandbox/execution-receipts/release-candidate-package-receipt-noop/release_candidate_package_receipt_noop_v1.receipt.json"
+    ]
+  },
+  "scope": {
+    "allowed_input_paths": [
+      "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json",
+      "examples/real-pilot-release-candidate-package/max_biped_v1_real_pilot_release_candidate_package_pass.json"
+    ],
+    "allowed_output_paths": [
+      "examples/sandbox/execution-receipts/release-candidate-package-receipt-noop/"
+    ],
+    "blocked_surfaces_confirmed": [
+      "o3de_editor_execution",
+      "o3de_cli_execution",
+      "asset_processor_execution",
+      "blender_or_dcc_execution",
+      "spawn_or_publish_execution",
+      "cache_read",
+      "live_asset_database_read",
+      "authoritative_source_uuid_claims",
+      "authoritative_asset_id_claims",
+      "authoritative_product_id_claims",
+      "production_path_write",
+      "engine_path_write"
+    ]
+  },
+  "approval": {
+    "required_phrase_format": "APPROVE EXECUTION ADMISSION <candidate_id>",
+    "approval_received": true,
+    "approval_phrase_received": "APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1"
+  },
+  "references": {
+    "decision_review_report_path": "docs/maxine/execution-admission/release-candidate-package-receipt-noop-v1.md",
+    "receipt_contract_reference": "schemas/maxine_release_candidate_package_receipt_noop_report.schema.json",
+    "rollback_readiness_reference": "docs/maxine/specs/release-publication-rollback-drill-v1.md",
+    "safety_verifier_reference": "tools/audit/verify_sandbox_writer_safety.py"
+  },
+  "post_execution_validation_commands": [
+    "python tools/audit/verify_sandbox_writer_safety.py",
+    "powershell -ExecutionPolicy Bypass -File .\\scripts\\powershell\\Test-MaxineSandboxWriterSafety.ps1",
+    "python tools/release-lane/run_pilot_release_chain_validation.py",
+    "python tools/release-lane/prove_pilot_release_chain.py",
+    "git diff --check"
+  ],
+  "admission_outcome": {
+    "execution_admitted": true,
+    "admission_scope": "bounded_candidate_only",
+    "notes": "Approved only for deterministic no-op receipt generation from existing release-candidate package proof evidence."
+  }
+}

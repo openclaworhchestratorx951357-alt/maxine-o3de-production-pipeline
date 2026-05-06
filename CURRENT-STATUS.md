@@ -13,7 +13,7 @@
   - `schemas/maxine_execution_admission_receipt_dry_run_report.schema.json`
   - `examples/execution-admission/max_biped_v1_execution_admission_receipt_dry_run_pass.json`
   - `tools/release-lane/generate_execution_admission_receipt_dry_run.py`
-  - integrated into `tools/release-lane/prove_pilot_release_chain.py`
+  - retained as generic dry-run receipt framework (non-admitting baseline)
   - `tests/pytest/test_execution_admission_receipt_dry_run_report_schema.py`
   - `tests/pytest/test_execution_admission_receipt_dry_run_proof.py`
 - Controlled real evidence inventory framework v1 is implemented (approved-local-input inventory only, non-executing):
@@ -118,7 +118,7 @@
   - `tests/pytest/test_production_readiness_report.py`
   - distinction is now explicit between evidence/review readiness and blocked execution/publication readiness
   - pilot runner now attaches `production_readiness_report_v1` and reports `final_gate_count=26` on the generated manifest path
-- Execution/publication admission planning v1 is implemented (review-only planning, non-executing, non-publishing):
+- Execution/publication admission planning v1 is implemented (planning baseline, non-executing, non-publishing):
   - `docs/maxine/execution-admission/execution-publication-admission-planning-v1.md`
   - `docs/maxine/execution-admission/release-candidate-package-receipt-noop-v1.md`
   - `schemas/maxine_execution_publication_admission_plan.schema.json`
@@ -126,9 +126,24 @@
   - `examples/execution-admission/release_candidate_package_receipt_noop_blocked.json`
   - `tests/pytest/test_execution_publication_admission_plan_schema.py`
   - current readiness remains `review_ready` / `blocked_for_execution`
-  - first candidate remains `review_only`; no execution or publication is admitted in this slice
-- Execution admission remains future work requiring explicit operator approval.
-- No execution surfaces are newly admitted in this slice.
+- Admitted no-op release-candidate package receipt candidate v1 is implemented (bounded receipt generation only, non-executing, non-publishing):
+  - approval phrase recorded:
+    - `APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1`
+  - decision record:
+    - `examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json`
+  - receipt schema and tooling:
+    - `schemas/maxine_release_candidate_package_receipt_noop_report.schema.json`
+    - `tools/execution-admission/generate_release_candidate_package_receipt_noop.py`
+    - `tools/execution-admission/validate_release_candidate_package_receipt_noop_report.py`
+  - pass fixture:
+    - `examples/execution-admission/release_candidate_package_receipt_noop_report_pass.json`
+  - proof-flow integration:
+    - `tools/release-lane/prove_pilot_release_chain.py`
+  - tests:
+    - `tests/pytest/test_release_candidate_package_receipt_noop_report_schema.py`
+    - `tests/pytest/test_release_candidate_package_receipt_noop_admission.py`
+  - admitted scope is no-op receipt generation only; O3DE/AP/Blender/runtime/publication remain blocked
+- Broad execution admission remains future work requiring explicit operator approval per candidate.
 - Sandbox-only writer skeleton is implemented for generated-asset resolver placeholders.
 - Command: `scripts/powershell/Invoke-MaxineSandboxResolverWrite.ps1`
 - Paired rollback skeleton: `scripts/powershell/Invoke-MaxineSandboxRollback.ps1`

@@ -1,0 +1,74 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "RELEASE_CANDIDATE_PACKAGE_RECEIPT_NOOP_v1_REPORT",
+  "status": "pass",
+  "receipt_id": "receipt-noop-release-candidate-package-0001",
+  "candidate_id": "release_candidate_package_receipt_noop_v1",
+  "admission_decision_ref": "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json",
+  "approval_phrase": "APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1",
+  "approval_status": "approved",
+  "operator_approval_required": true,
+  "operator_approval_present": true,
+  "started_at": "2026-05-06T00:00:00Z",
+  "finished_at": "2026-05-06T00:00:01Z",
+  "input_refs": [
+    "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json",
+    "examples/real-pilot-release-candidate-package/max_biped_v1_real_pilot_release_candidate_package_pass.json"
+  ],
+  "output_refs": [
+    "examples/sandbox/execution-receipts/release-candidate-package-receipt-noop/release_candidate_package_receipt_noop_v1.receipt.json"
+  ],
+  "evidence_hashes": {
+    "input_sha256": [
+      {
+        "path": "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      {
+        "path": "examples/real-pilot-release-candidate-package/max_biped_v1_real_pilot_release_candidate_package_pass.json",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    ]
+  },
+  "command_invoked": "python tools/execution-admission/generate_release_candidate_package_receipt_noop.py --decision-record examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json --release-candidate-package-report examples/real-pilot-release-candidate-package/max_biped_v1_real_pilot_release_candidate_package_pass.json --output examples/sandbox/execution-receipts/release-candidate-package-receipt-noop/release_candidate_package_receipt_noop_v1.receipt.json",
+  "command_mode": "noop",
+  "external_execution_performed": false,
+  "publication_performed": false,
+  "o3de_execution_status": "blocked",
+  "editor_execution_status": "blocked",
+  "runtime_execution_status": "blocked",
+  "asset_processor_execution_status": "blocked",
+  "blender_dcc_execution_status": "blocked",
+  "cache_live_db_access_status": "blocked",
+  "spawn_publish_status": "blocked",
+  "production_write_status": "blocked",
+  "source_uuid_claim_status": "not_authoritative",
+  "asset_id_claim_status": "not_authoritative",
+  "product_id_claim_status": "not_authoritative",
+  "result": "pass",
+  "findings": [],
+  "post_validation": {
+    "safety_verifier_required": true,
+    "proof_flow_required": true,
+    "working_tree_clean_required": true
+  },
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "release_candidate_package_receipt_noop_v1",
+      "result": "pass",
+      "severity": "info",
+      "details": {
+        "contract_id": "RELEASE_CANDIDATE_PACKAGE_RECEIPT_NOOP_v1",
+        "candidate_id": "release_candidate_package_receipt_noop_v1",
+        "command_mode": "noop",
+        "external_execution_performed": false,
+        "publication_performed": false,
+        "execution_admission_status": "admitted_noop_only",
+        "publication_admission_status": "blocked",
+        "claim_status": "not_authoritative"
+      }
+    }
+  }
+}

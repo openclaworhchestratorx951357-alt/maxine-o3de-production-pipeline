@@ -21,6 +21,12 @@ REJECTED_PATH = (
     / "execution-admission"
     / "max_biped_v1_execution_admission_decision_rejected.json"
 )
+NOOP_APPROVED_PATH = (
+    REPO_ROOT
+    / "examples"
+    / "execution-admission"
+    / "release_candidate_package_receipt_noop_execution_admission_decision_approved.json"
+)
 
 
 def _load_json(path: Path) -> dict:
@@ -51,7 +57,7 @@ def _is_state_consistent(instance: dict) -> bool:
 def test_examples_validate_against_schema_or_minimal_rules():
     schema = _load_json(SCHEMA_PATH)
     validator_cls = _try_jsonschema_validator()
-    for example_path in [PENDING_PATH, APPROVED_PATH, REJECTED_PATH]:
+    for example_path in [PENDING_PATH, APPROVED_PATH, REJECTED_PATH, NOOP_APPROVED_PATH]:
         instance = _load_json(example_path)
         if validator_cls is not None:
             validator = validator_cls(schema)
