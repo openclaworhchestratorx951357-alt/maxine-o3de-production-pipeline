@@ -33,6 +33,7 @@ def test_report_default_manifest_outputs_controlled_evidence_ready_execution_blo
     assert "source_product_evidence_resolver_v1" in evidence["imported_check_ids"]
     assert "manual_hero_review_v1" in evidence["manual_check_ids"]
     assert "screenshot_evidence_v1" in evidence["fixture_check_ids"]
+    assert "max_biped_v1_skeleton_contract" in evidence["controlled_real_check_ids"]
     assert "dcc_conform_v1" in evidence["controlled_real_check_ids"]
 
     execution = payload["execution_admission_status"]

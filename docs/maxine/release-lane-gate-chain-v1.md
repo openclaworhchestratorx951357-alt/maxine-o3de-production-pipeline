@@ -11,7 +11,7 @@ This consolidation checkpoint indexes the release-lane gates in sequence and mar
 
 | order | check_id | purpose | schema path | validator path | golden example path | manifest attachment | required tier | current evidence source | execution admitted | required before publication-ready | status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | `max_biped_v1_skeleton_contract` | skeleton contract compliance | `schemas/maxine_skeleton_contract.schema.json` | `tools/skeleton-validator/validate_skeleton_contract.py` | `examples/skeletons/max_biped_v1_pass.json` | `qc.gates[]` now, `qc.checks[]` later | all | fixture | no | yes | implemented |
+| 1 | `max_biped_v1_skeleton_contract` | MAX_BIPED skeleton contract evidence quality | `schemas/maxine_max_biped_skeleton_evidence_report.schema.json` | `tools/max-biped-skeleton/validate_max_biped_skeleton_evidence_report.py` | `examples/sandbox/max-biped-skeleton-evidence/pilot-candidates/max_biped_v1_skeleton_controlled_real.fixture.json` | `qc.gates[]` now, `qc.checks[]` later | all | controlled real fixture/import evidence | no | yes | implemented |
 | 2 | `dcc_conform_v1` | DCC conform evidence quality | `schemas/maxine_dcc_conform_report.schema.json` | `tools/dcc-conform/validate_dcc_conform_report.py` | `examples/sandbox/dcc-conform-evidence/pilot-candidates/max_biped_v1_dcc_conform_controlled_real.fixture.json` | `qc.gates[]` now, `qc.checks[]` later | all | controlled real fixture/import evidence | no | yes | implemented |
 | 3 | `source_product_evidence_resolver_v1` | deterministic source->product evidence bridge without live ID claims | `schemas/maxine_source_product_evidence_resolver_report.schema.json` | `tools/source-product-evidence-resolver/validate_source_product_evidence_resolver_report.py` | `examples/source-product-evidence-resolver/max_biped_v1_source_product_resolver_pass.json` | `qc.gates[]` now, `qc.checks[]` later | all | fixture/imported AP evidence | no | yes | implemented |
 | 4 | `material_uv_qc_v1` | material/UV evidence quality | `schemas/maxine_material_uv_qc_report.schema.json` | `tools/material-uv-qc/validate_material_uv_qc_report.py` | `examples/material-uv-qc/max_biped_v1_material_uv_pass.json` | `qc.gates[]` now, `qc.checks[]` later | all | fixture/manual report | no | yes | implemented |
@@ -50,6 +50,9 @@ AAA-quality output is still not fully operational. Before that state, the projec
 - bounded source/product evidence extraction is now available:
   - `tools/release-lane/extract_source_product_evidence_resolver_report.py`
   - `docs/maxine/specs/source-product-evidence-real-extraction-v1.md`
+- bounded controlled-real MAX_BIPED skeleton evidence is now available:
+  - `docs/maxine/specs/controlled-real-max-biped-skeleton-evidence-v1.md`
+  - `examples/sandbox/max-biped-skeleton-evidence/pilot-candidates/max_biped_v1_skeleton_controlled_real.fixture.json`
 - bounded controlled-real DCC conform evidence is now available:
   - `docs/maxine/specs/controlled-real-dcc-conform-evidence-v1.md`
   - `examples/sandbox/dcc-conform-evidence/pilot-candidates/max_biped_v1_dcc_conform_controlled_real.fixture.json`

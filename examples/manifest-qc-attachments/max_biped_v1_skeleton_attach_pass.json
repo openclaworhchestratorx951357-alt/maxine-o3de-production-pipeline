@@ -11,8 +11,9 @@
       "result": "pass",
       "severity": "info",
       "details": {
-        "source_report": "examples/skeletons/max_biped_v1_pass.json",
-        "summary": "Skeleton contract passed."
+        "source_report": "examples/sandbox/max-biped-skeleton-evidence/pilot-candidates/max_biped_v1_skeleton_controlled_real.fixture.json",
+        "summary": "Controlled-real MAX_BIPED skeleton evidence passed.",
+        "evidence_class": "controlled_real"
       }
     }
   }

@@ -42,6 +42,14 @@
   - integrated into `tools/release-lane/run_pilot_release_chain_validation.py`
   - release-lane evidence admission status now classifies `dcc_conform_v1` as controlled-real evidence
   - `tests/pytest/test_dcc_conform_report.py`
+- Controlled real MAX_BIPED skeleton evidence v1 is implemented (bounded evidence-only, non-executing):
+  - `docs/maxine/specs/controlled-real-max-biped-skeleton-evidence-v1.md`
+  - `schemas/maxine_max_biped_skeleton_evidence_report.schema.json`
+  - `tools/max-biped-skeleton/validate_max_biped_skeleton_evidence_report.py`
+  - `examples/sandbox/max-biped-skeleton-evidence/pilot-candidates/max_biped_v1_skeleton_controlled_real.fixture.json`
+  - integrated into `tools/release-lane/run_pilot_release_chain_validation.py`
+  - release-lane evidence admission status now classifies `max_biped_v1_skeleton_contract` as controlled-real evidence
+  - `tests/pytest/test_max_biped_skeleton_evidence_report.py`
 - Execution admission remains future work requiring explicit operator approval.
 - No execution surfaces are newly admitted in this slice.
 - Sandbox-only writer skeleton is implemented for generated-asset resolver placeholders.
@@ -102,6 +110,13 @@
   - `schemas/maxine_skeleton_contract.schema.json`
   - `examples/skeleton-contracts/MAX_BIPED_v1.json`
   - `tools/skeleton-validator/validate_skeleton_contract.py`
+- MAX_BIPED_v1 controlled-real skeleton evidence report validation is implemented (contract-first, non-executing evidence only):
+  - `schemas/maxine_max_biped_skeleton_evidence_report.schema.json`
+  - `tools/max-biped-skeleton/validate_max_biped_skeleton_evidence_report.py`
+  - `examples/max-biped-skeleton-evidence/max_biped_v1_skeleton_pass.json`
+  - `examples/max-biped-skeleton-evidence/max_biped_v1_skeleton_warn.json`
+  - `examples/max-biped-skeleton-evidence/max_biped_v1_skeleton_fail.json`
+  - `docs/maxine/specs/controlled-real-max-biped-skeleton-evidence-v1.md`
 - DCC conform v1 evidence report validation is implemented (contract-first, non-executing evidence only):
   - `schemas/maxine_dcc_conform_report.schema.json`
   - `tools/dcc-conform/validate_dcc_conform_report.py`
@@ -342,6 +357,11 @@
   - validates normalized skeleton inventory JSON against contract rules
   - emits manifest-attachable QC check payloads
   - does not execute O3DE/AP, spawn, publish, or Cache/live DB access
+- MAX_BIPED_v1 controlled-real skeleton evidence validation remains non-executing evidence-only:
+  - validates controlled-real skeleton evidence report JSON against `MAX_BIPED_v1` and manifest attachment rules
+  - validates skeleton evidence status dimensions, profile metadata, claim status, and blocked safety statuses
+  - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
+  - does not execute Blender/DCC/O3DE/AP, spawn, publish, or Cache/live DB access
 - DCC conform v1 report validation remains non-executing evidence-only:
   - validates DCC conform report JSON against `MAX_BIPED_v1` and manifest attachment rules
   - validates controlled-real evidence fields (`candidate_id`, source references, conform profile, evidence class, claim status, blocked safety statuses)
