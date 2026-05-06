@@ -24,6 +24,7 @@ The report distinguishes and records:
 - AAA-quality gate readiness
 - execution admission posture
 - publication admission posture
+- execution-admission candidate matrix and preflight-contract requirement posture
 - remaining blockers before true production operation
 
 ## Required Gate Coverage
@@ -40,6 +41,7 @@ It fails when required gate-chain summary coverage is missing.
 
 - evidence-ready/review-ready may be recognized when required evidence gates pass.
 - no-op receipt admission is tracked separately and does not satisfy real execution admission.
+- candidate-specific preflight contracts are tracked as requirements only and do not satisfy execution/publication admission.
 - execution-ready remains blocked unless explicit real-execution candidate admission exists with reference evidence.
 - production-ready remains blocked unless both execution and publication are explicitly admitted.
 - source/product authority remains evidence-only/not-authoritative unless an admitted authority path exists.
@@ -82,4 +84,5 @@ Execution/publication remains blocked for real tool execution and publication. T
 - `docs/maxine/execution-admission/execution-publication-admission-planning-v1.md`
 - `docs/maxine/execution-admission/release-candidate-package-receipt-noop-v1.md`
 - `docs/maxine/execution-admission/execution-admission-candidate-matrix-v1.md`
+- `docs/maxine/execution-admission/execution-admission-preflight-contracts-v1.md`
 - `examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json`
