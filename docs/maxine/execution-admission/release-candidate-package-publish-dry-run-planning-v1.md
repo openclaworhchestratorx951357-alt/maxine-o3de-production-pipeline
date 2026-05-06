@@ -115,6 +115,17 @@ The same candidate now also has a static operator approval packet template:
 
 This packet remains blocked/template-only (`approval_request_ready=false`, `operator_approval_granted=false`, `approval_phrase_present=false`) and does not grant approval or admission.
 
+## Operator Packet Completeness Link
+
+The operator packet now also has a static completeness self-check:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-operator-approval-packet-completeness-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_operator_approval_packet_completeness.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_operator_approval_packet_completeness_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_operator_approval_packet_completeness.py`
+
+Completeness status remains static/blocked and does not mark the candidate approval-ready.
+
 ## Artifacts
 
 - schema:

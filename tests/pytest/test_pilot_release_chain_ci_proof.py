@@ -397,3 +397,68 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
     assert operator_source_status["production_readiness_status"] == "pass"
     assert operator_source_status["noop_receipt_status"] == "pass"
     assert dry_run_operator_packet_status["reporter_return_code"] == 0
+    dry_run_operator_packet_completeness_status = payload["details"][
+        "release_candidate_publication_dry_run_operator_approval_packet_completeness_report"
+    ]
+    assert dry_run_operator_packet_completeness_status["status"] == "pass"
+    assert (
+        dry_run_operator_packet_completeness_status["report_type"]
+        == "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_OPERATOR_APPROVAL_PACKET_COMPLETENESS_VALIDATION_v1_REPORT"
+    )
+    assert (
+        dry_run_operator_packet_completeness_status[
+            "release_candidate_publication_dry_run_operator_approval_packet_completeness_present"
+        ]
+        is True
+    )
+    assert (
+        dry_run_operator_packet_completeness_status["planned_candidate_id"]
+        == "release_candidate_package_publish_dry_run_v1"
+    )
+    assert dry_run_operator_packet_completeness_status["candidate_type"] == "dry_run"
+    assert (
+        dry_run_operator_packet_completeness_status["completeness_review_status"]
+        == "static_completeness_valid_blocked"
+    )
+    assert dry_run_operator_packet_completeness_status["admission_status"] == "unadmitted"
+    assert dry_run_operator_packet_completeness_status["packet_structurally_complete"] is True
+    assert dry_run_operator_packet_completeness_status["packet_internally_consistent"] is True
+    assert (
+        dry_run_operator_packet_completeness_status[
+            "packet_complete_for_future_review_template"
+        ]
+        is True
+    )
+    assert dry_run_operator_packet_completeness_status["approval_request_ready"] is False
+    assert dry_run_operator_packet_completeness_status["operator_approval_granted"] is False
+    assert dry_run_operator_packet_completeness_status["approval_phrase_present"] is False
+    assert dry_run_operator_packet_completeness_status["dry_run_admitted"] is False
+    assert dry_run_operator_packet_completeness_status["receipt_issued"] is False
+    assert dry_run_operator_packet_completeness_status["publication_admitted"] is False
+    assert dry_run_operator_packet_completeness_status["real_execution_admitted"] is False
+    assert dry_run_operator_packet_completeness_status["production_ready_claimed"] is False
+    assert (
+        dry_run_operator_packet_completeness_status["approval_phrase_required"]
+        == "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1"
+    )
+    assert len(dry_run_operator_packet_completeness_status["completeness_checks"]) > 0
+    assert len(dry_run_operator_packet_completeness_status["consistency_checks"]) > 0
+    assert len(dry_run_operator_packet_completeness_status["unresolved_approval_blockers"]) > 0
+    assert len(dry_run_operator_packet_completeness_status["unresolved_execution_blockers"]) > 0
+    assert len(dry_run_operator_packet_completeness_status["unresolved_receipt_blockers"]) > 0
+    assert len(dry_run_operator_packet_completeness_status["unresolved_publication_blockers"]) > 0
+    completeness_source_status = dry_run_operator_packet_completeness_status[
+        "computed_source_artifact_validation_status"
+    ]
+    assert completeness_source_status["candidate_matrix_status"] == "pass"
+    assert completeness_source_status["preflight_contracts_status"] == "pass"
+    assert completeness_source_status["preflight_proof_packages_status"] == "pass"
+    assert completeness_source_status["readiness_rollup_status"] == "pass"
+    assert completeness_source_status["dry_run_plan_status"] == "pass"
+    assert completeness_source_status["dry_run_receipt_contract_status"] == "pass"
+    assert completeness_source_status["blocked_unissued_receipt_status"] == "pass"
+    assert completeness_source_status["admission_blocker_checklist_status"] == "pass"
+    assert completeness_source_status["operator_approval_packet_status"] == "pass"
+    assert completeness_source_status["production_readiness_status"] == "pass"
+    assert completeness_source_status["noop_receipt_status"] == "pass"
+    assert dry_run_operator_packet_completeness_status["reporter_return_code"] == 0
