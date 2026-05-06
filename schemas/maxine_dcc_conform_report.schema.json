@@ -11,6 +11,26 @@
     "job_id",
     "package_id",
     "lane",
+    "candidate_id",
+    "source_asset_reference",
+    "source_evidence_ref",
+    "dcc_tool_name",
+    "dcc_tool_version",
+    "conform_profile_id",
+    "conform_profile_version",
+    "unit_scale_status",
+    "orientation_status",
+    "origin_status",
+    "transform_freeze_status",
+    "mesh_naming_status",
+    "material_slot_naming_status",
+    "skeleton_reference_status",
+    "export_format_status",
+    "required_axes",
+    "required_units",
+    "evidence_class",
+    "claim_status",
+    "safety",
     "status",
     "source",
     "target",
@@ -40,6 +60,171 @@
     "lane": {
       "type": "string",
       "minLength": 1
+    },
+    "candidate_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_asset_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_evidence_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "dcc_tool_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "dcc_tool_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "conform_profile_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "conform_profile_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "unit_scale_status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ]
+    },
+    "orientation_status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ]
+    },
+    "origin_status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ]
+    },
+    "transform_freeze_status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ]
+    },
+    "mesh_naming_status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ]
+    },
+    "material_slot_naming_status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ]
+    },
+    "skeleton_reference_status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ]
+    },
+    "export_format_status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ]
+    },
+    "required_axes": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "up_axis",
+        "forward_axis",
+        "handedness"
+      ],
+      "properties": {
+        "up_axis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "forward_axis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "handedness": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "required_units": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_class": {
+      "type": "string",
+      "enum": [
+        "fixture",
+        "imported",
+        "controlled_real"
+      ]
+    },
+    "claim_status": {
+      "type": "string",
+      "enum": [
+        "evidence_only",
+        "not_authoritative"
+      ]
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "dcc_execution_status",
+        "blender_execution_status",
+        "production_write_status"
+      ],
+      "properties": {
+        "dcc_execution_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "blender_execution_status": {
+          "type": "string",
+          "const": "blocked"
+        },
+        "production_write_status": {
+          "type": "string",
+          "const": "blocked"
+        }
+      }
     },
     "status": {
       "type": "string",

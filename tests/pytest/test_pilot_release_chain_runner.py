@@ -62,8 +62,12 @@ def test_runner_builds_generated_manifest_and_attaches_expected_checks(repo_tmp_
     step_map = {step["step"]: step for step in payload["validator_steps"]}
     assert "controlled_real_evidence_inventory" in step_map
     assert "source_product_resolver_extract" in step_map
+    assert "dcc_conform" in step_map
     assert Path(step_map["controlled_real_evidence_inventory"]["payload_path"]).exists()
     assert Path(step_map["source_product_resolver_extract"]["payload_path"]).exists()
+    dcc_payload = json.loads(Path(step_map["dcc_conform"]["payload_path"]).read_text(encoding="utf-8-sig"))
+    assert dcc_payload.get("status") == "pass"
+    assert dcc_payload.get("evidence_class") == "controlled_real"
     extraction_report = json.loads(
         Path(step_map["source_product_resolver_extract"]["payload_path"]).read_text(encoding="utf-8-sig")
     )

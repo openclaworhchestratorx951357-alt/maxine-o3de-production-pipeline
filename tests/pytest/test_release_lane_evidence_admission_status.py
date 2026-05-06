@@ -18,7 +18,7 @@ def run_cmd(*args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_report_default_manifest_outputs_evidence_only_status():
+def test_report_default_manifest_outputs_controlled_evidence_ready_execution_blocked_status():
     result = run_cmd("--manifest", str(MANIFEST))
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
@@ -27,20 +27,20 @@ def test_report_default_manifest_outputs_evidence_only_status():
     assert payload["report_type"] == "RELEASE_LANE_EVIDENCE_ADMISSION_STATUS_v1_REPORT"
     assert payload["manifest_attachment_target_path"] == "qc.gates[]"
     assert payload["future_manifest_attachment_target_path"] == "qc.checks[]"
-    assert payload["overall_release_lane_state"] == "evidence_only_pre_production"
+    assert payload["overall_release_lane_state"] == "controlled_evidence_ready_execution_blocked"
 
     evidence = payload["evidence_classification"]
     assert "source_product_evidence_resolver_v1" in evidence["imported_check_ids"]
     assert "manual_hero_review_v1" in evidence["manual_check_ids"]
     assert "screenshot_evidence_v1" in evidence["fixture_check_ids"]
-    assert evidence["controlled_real_check_ids"] == []
+    assert "dcc_conform_v1" in evidence["controlled_real_check_ids"]
 
     execution = payload["execution_admission_status"]
     assert execution["execution_admitted"] is False
     assert "o3de_editor_execution" in execution["blocked_surfaces"]
 
     missing = payload["missing_for_operational"]
-    assert any("controlled real evidence" in item for item in missing)
+    assert not any("controlled real evidence" in item for item in missing)
     assert any("execution-admission decision" in item for item in missing)
 
 

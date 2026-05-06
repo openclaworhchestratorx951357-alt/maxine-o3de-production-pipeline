@@ -28,6 +28,10 @@ DEFAULT_PROJECT_INVENTORY = (
 DEFAULT_ASSET_CANDIDATE_INVENTORY = (
     "examples/sandbox/asset-candidates/max_biped_v1_asset_candidate_inventory.fixture.json"
 )
+DEFAULT_DCC_CONFORM_CONTROLLED_REAL_REPORT = (
+    "examples/sandbox/dcc-conform-evidence/pilot-candidates/"
+    "max_biped_v1_dcc_conform_controlled_real.fixture.json"
+)
 DEFAULT_RESOLVER_AP_EVIDENCE_IMPORTS = [
     (
         "examples/sandbox/ap-evidence-imports/pilot-candidates/"
@@ -345,7 +349,7 @@ def main() -> int:
             "command": [
                 sys.executable,
                 "tools/dcc-conform/validate_dcc_conform_report.py",
-                "examples/dcc-conform/max_biped_v1_conform_pass.json",
+                DEFAULT_DCC_CONFORM_CONTROLLED_REAL_REPORT,
             ],
             "payload_path": attachment_dir / "dcc_conform_v1.json",
         },

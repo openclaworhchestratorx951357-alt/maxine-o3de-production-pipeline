@@ -33,9 +33,9 @@ python tools/release-lane/report_release_lane_evidence_admission_status.py --man
 
 For the representative pilot fixture:
 
-- `overall_release_lane_state = evidence_only_pre_production`
+- `overall_release_lane_state = controlled_evidence_ready_execution_blocked`
 - required release-lane gate chain can be pass-complete
-- controlled real evidence remains missing
+- controlled real evidence is present for `dcc_conform_v1`
 - explicit approved execution-admission remains missing
 
 This report provides the deterministic status statement required before any execution-admission discussion.

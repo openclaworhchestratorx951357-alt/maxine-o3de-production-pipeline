@@ -13,6 +13,8 @@ from typing import Any, Dict, List, Tuple
 
 ALLOWED_STATUS = {"pass", "warn", "fail", "pending_manual"}
 ALLOWED_FINDING_SEVERITY = {"info", "warning", "error", "manual_review"}
+ALLOWED_EVIDENCE_CLASS = {"fixture", "imported", "controlled_real"}
+ALLOWED_CLAIM_STATUS = {"evidence_only", "not_authoritative"}
 EXPECTED_SCHEMA_VERSION = "1.0.0"
 EXPECTED_REPORT_TYPE = "DCC_CONFORM_v1_REPORT"
 EXPECTED_SKELETON_CONTRACT = "MAX_BIPED_v1"
@@ -123,6 +125,22 @@ def _contains_unsafe_path_tokens(path_text: str) -> bool:
     return any(token in lowered for token in blocked)
 
 
+def _validate_status_field(
+    findings: List[Dict[str, Any]],
+    field_name: str,
+    value: str,
+) -> None:
+    if value not in ALLOWED_STATUS:
+        add_finding(
+            findings,
+            f"{field_name}_invalid",
+            "error",
+            "open",
+            f"{field_name} must be pass|warn|fail|pending_manual.",
+            {"actual": value},
+        )
+
+
 def main() -> int:
     args = parse_args()
     repo_root = Path(__file__).resolve().parents[2]
@@ -212,6 +230,160 @@ def main() -> int:
                 f"{required} is required.",
             )
 
+    candidate_id = str(report.get("candidate_id", "")).strip()
+    if not candidate_id:
+        add_finding(findings, "candidate_id_missing", "error", "open", "candidate_id is required.")
+
+    source_asset_reference = str(report.get("source_asset_reference", "")).strip()
+    if not source_asset_reference:
+        add_finding(
+            findings,
+            "source_asset_reference_missing",
+            "error",
+            "open",
+            "source_asset_reference is required.",
+        )
+
+    source_evidence_ref = str(report.get("source_evidence_ref", "")).strip()
+    if not source_evidence_ref:
+        add_finding(
+            findings,
+            "source_evidence_ref_missing",
+            "error",
+            "open",
+            "source_evidence_ref is required.",
+        )
+    elif _contains_unsafe_path_tokens(source_evidence_ref):
+        add_finding(
+            findings,
+            "source_evidence_ref_unsafe",
+            "error",
+            "open",
+            "source_evidence_ref contains unsafe traversal or shell tokens.",
+            {"source_evidence_ref": source_evidence_ref},
+        )
+
+    dcc_tool_name = str(report.get("dcc_tool_name", "")).strip()
+    dcc_tool_version = str(report.get("dcc_tool_version", "")).strip()
+    conform_profile_id = str(report.get("conform_profile_id", "")).strip()
+    conform_profile_version = str(report.get("conform_profile_version", "")).strip()
+    if not dcc_tool_name:
+        add_finding(findings, "dcc_tool_name_missing", "error", "open", "dcc_tool_name is required.")
+    if not dcc_tool_version:
+        add_finding(findings, "dcc_tool_version_missing", "error", "open", "dcc_tool_version is required.")
+    if not conform_profile_id:
+        add_finding(findings, "conform_profile_id_missing", "error", "open", "conform_profile_id is required.")
+    if not conform_profile_version:
+        add_finding(
+            findings,
+            "conform_profile_version_missing",
+            "error",
+            "open",
+            "conform_profile_version is required.",
+        )
+
+    unit_scale_status = str(report.get("unit_scale_status", "")).strip()
+    orientation_status = str(report.get("orientation_status", "")).strip()
+    origin_status = str(report.get("origin_status", "")).strip()
+    transform_freeze_status = str(report.get("transform_freeze_status", "")).strip()
+    mesh_naming_status = str(report.get("mesh_naming_status", "")).strip()
+    material_slot_naming_status = str(report.get("material_slot_naming_status", "")).strip()
+    skeleton_reference_status = str(report.get("skeleton_reference_status", "")).strip()
+    export_format_status = str(report.get("export_format_status", "")).strip()
+    for field_name, value in (
+        ("unit_scale_status", unit_scale_status),
+        ("orientation_status", orientation_status),
+        ("origin_status", origin_status),
+        ("transform_freeze_status", transform_freeze_status),
+        ("mesh_naming_status", mesh_naming_status),
+        ("material_slot_naming_status", material_slot_naming_status),
+        ("skeleton_reference_status", skeleton_reference_status),
+        ("export_format_status", export_format_status),
+    ):
+        _validate_status_field(findings, field_name, value)
+
+    required_units = str(report.get("required_units", "")).strip()
+    if not required_units:
+        add_finding(findings, "required_units_missing", "error", "open", "required_units is required.")
+
+    required_axes = report.get("required_axes", {})
+    if not isinstance(required_axes, dict):
+        required_axes = {}
+        add_finding(findings, "required_axes_not_object", "error", "open", "required_axes must be an object.")
+    required_up_axis = str(required_axes.get("up_axis", "")).strip()
+    required_forward_axis = str(required_axes.get("forward_axis", "")).strip()
+    required_handedness = str(required_axes.get("handedness", "")).strip()
+    if not required_up_axis:
+        add_finding(findings, "required_up_axis_missing", "error", "open", "required_axes.up_axis is required.")
+    if not required_forward_axis:
+        add_finding(
+            findings,
+            "required_forward_axis_missing",
+            "error",
+            "open",
+            "required_axes.forward_axis is required.",
+        )
+    if not required_handedness:
+        add_finding(
+            findings,
+            "required_handedness_missing",
+            "error",
+            "open",
+            "required_axes.handedness is required.",
+        )
+
+    evidence_class = str(report.get("evidence_class", "")).strip()
+    if evidence_class not in ALLOWED_EVIDENCE_CLASS:
+        add_finding(
+            findings,
+            "evidence_class_invalid",
+            "error",
+            "open",
+            "evidence_class must be fixture|imported|controlled_real.",
+            {"actual": evidence_class},
+        )
+    elif evidence_class == "controlled_real":
+        normalized_ref = source_evidence_ref.replace("\\", "/")
+        if not normalized_ref.startswith("examples/sandbox/"):
+            add_finding(
+                findings,
+                "controlled_real_source_evidence_ref_outside_sandbox",
+                "error",
+                "open",
+                "controlled_real evidence must reference sandbox evidence roots.",
+                {"source_evidence_ref": source_evidence_ref},
+            )
+
+    claim_status = str(report.get("claim_status", "")).strip()
+    if claim_status not in ALLOWED_CLAIM_STATUS:
+        add_finding(
+            findings,
+            "claim_status_invalid",
+            "error",
+            "open",
+            "claim_status must be evidence_only|not_authoritative.",
+            {"actual": claim_status},
+        )
+
+    safety = report.get("safety", {})
+    if not isinstance(safety, dict):
+        safety = {}
+        add_finding(findings, "safety_not_object", "error", "open", "safety must be an object.")
+    for safety_field in (
+        "dcc_execution_status",
+        "blender_execution_status",
+        "production_write_status",
+    ):
+        if str(safety.get(safety_field, "")).strip() != "blocked":
+            add_finding(
+                findings,
+                f"{safety_field}_not_blocked",
+                "error",
+                "open",
+                f"safety.{safety_field} must be blocked.",
+                {"actual": safety.get(safety_field)},
+            )
+
     source = report.get("source", {}) if isinstance(report.get("source"), dict) else {}
     source_path = str(source.get("source_path", "")).strip()
     source_kind = str(source.get("source_kind", "")).strip()
@@ -247,13 +419,43 @@ def main() -> int:
 
     dcc = report.get("dcc", {}) if isinstance(report.get("dcc"), dict) else {}
     tool_name = str(dcc.get("tool_name", "")).strip()
+    tool_version = str(dcc.get("tool_version", "")).strip()
     export_preset = str(dcc.get("export_preset", "")).strip()
     intended_output_path = str(dcc.get("intended_output_path", "")).strip()
     evidence_only = dcc.get("evidence_only")
     if not tool_name:
         add_finding(findings, "tool_name_missing", "error", "open", "dcc.tool_name is required.")
+    elif dcc_tool_name and tool_name != dcc_tool_name:
+        add_finding(
+            findings,
+            "dcc_tool_name_mismatch",
+            "error",
+            "open",
+            "dcc_tool_name must match dcc.tool_name.",
+            {"dcc_tool_name": dcc_tool_name, "dcc.tool_name": tool_name},
+        )
+    if not tool_version:
+        add_finding(findings, "tool_version_missing", "error", "open", "dcc.tool_version is required.")
+    elif dcc_tool_version and tool_version != dcc_tool_version:
+        add_finding(
+            findings,
+            "dcc_tool_version_mismatch",
+            "error",
+            "open",
+            "dcc_tool_version must match dcc.tool_version.",
+            {"dcc_tool_version": dcc_tool_version, "dcc.tool_version": tool_version},
+        )
     if not export_preset:
         add_finding(findings, "export_preset_missing", "error", "open", "dcc.export_preset is required.")
+    elif conform_profile_id and export_preset != conform_profile_id:
+        add_finding(
+            findings,
+            "conform_profile_mismatch",
+            "error",
+            "open",
+            "conform_profile_id must match dcc.export_preset.",
+            {"conform_profile_id": conform_profile_id, "dcc.export_preset": export_preset},
+        )
     if not intended_output_path:
         add_finding(
             findings,
@@ -285,6 +487,15 @@ def main() -> int:
     units = str(transform.get("units", "")).strip()
     if not units:
         add_finding(findings, "units_missing", "error", "open", "transform.units is required.")
+    elif required_units and units.lower() != required_units.lower():
+        add_finding(
+            findings,
+            "required_units_mismatch",
+            "error",
+            "open",
+            "transform.units must match required_units.",
+            {"required_units": required_units, "transform.units": units},
+        )
     if transform.get("units_normalized") is not True:
         add_finding(
             findings,
@@ -324,6 +535,36 @@ def main() -> int:
     handedness = str(transform.get("handedness", "")).strip()
     if not handedness:
         add_finding(findings, "handedness_missing", "error", "open", "transform.handedness is required.")
+    if required_up_axis and str(transform.get("up_axis", "")).strip() != required_up_axis:
+        add_finding(
+            findings,
+            "required_up_axis_mismatch",
+            "error",
+            "open",
+            "transform.up_axis must match required_axes.up_axis.",
+            {"required_axes.up_axis": required_up_axis, "transform.up_axis": transform.get("up_axis")},
+        )
+    if required_forward_axis and str(transform.get("forward_axis", "")).strip() != required_forward_axis:
+        add_finding(
+            findings,
+            "required_forward_axis_mismatch",
+            "error",
+            "open",
+            "transform.forward_axis must match required_axes.forward_axis.",
+            {
+                "required_axes.forward_axis": required_forward_axis,
+                "transform.forward_axis": transform.get("forward_axis"),
+            },
+        )
+    if required_handedness and handedness and handedness != required_handedness:
+        add_finding(
+            findings,
+            "required_handedness_mismatch",
+            "error",
+            "open",
+            "transform.handedness must match required_axes.handedness.",
+            {"required_axes.handedness": required_handedness, "transform.handedness": handedness},
+        )
 
     bounds = transform.get("bounds", {}) if isinstance(transform.get("bounds"), dict) else {}
     for key in ("min", "max", "size"):
@@ -336,6 +577,27 @@ def main() -> int:
                 f"transform.bounds.{key} must be an array of three numbers.",
                 {"actual": bounds.get(key)},
             )
+
+    if declared_status == "pass":
+        for field_name, value in (
+            ("unit_scale_status", unit_scale_status),
+            ("orientation_status", orientation_status),
+            ("origin_status", origin_status),
+            ("transform_freeze_status", transform_freeze_status),
+            ("mesh_naming_status", mesh_naming_status),
+            ("material_slot_naming_status", material_slot_naming_status),
+            ("skeleton_reference_status", skeleton_reference_status),
+            ("export_format_status", export_format_status),
+        ):
+            if value != "pass":
+                add_finding(
+                    findings,
+                    f"{field_name}_must_pass_when_report_pass",
+                    "error",
+                    "open",
+                    f"{field_name} must be pass when report.status is pass.",
+                    {"actual": value},
+                )
 
     skeleton = report.get("skeleton", {}) if isinstance(report.get("skeleton"), dict) else {}
     if "root_bone_present" not in skeleton:
@@ -365,6 +627,18 @@ def main() -> int:
             "open",
             "skeleton.skeleton_contract_result must be pass|warn|fail|pending_manual.",
             {"actual": skeleton_contract_result},
+        )
+    if skeleton_reference_status == "pass" and skeleton_contract_result != "pass":
+        add_finding(
+            findings,
+            "skeleton_reference_status_mismatch",
+            "error",
+            "open",
+            "skeleton_reference_status cannot be pass when skeleton.skeleton_contract_result is not pass.",
+            {
+                "skeleton_reference_status": skeleton_reference_status,
+                "skeleton_contract_result": skeleton_contract_result,
+            },
         )
 
     output_ref = str(skeleton.get("skeleton_validator_output_ref", "")).strip()
@@ -470,6 +744,11 @@ def main() -> int:
         "check_id": CHECK_ID,
         "contract_id": CONTRACT_ID,
         "target_skeleton_contract_id": EXPECTED_SKELETON_CONTRACT,
+        "evidence_class": evidence_class,
+        "claim_status": claim_status,
+        "candidate_id": candidate_id,
+        "source_asset_reference": source_asset_reference,
+        "source_evidence_ref": source_evidence_ref,
         "findings": findings + (input_findings if isinstance(input_findings, list) else []),
         "manifest_attachment": {
             "target_path": TARGET_PATH,
@@ -482,6 +761,26 @@ def main() -> int:
                     "report_path": str(report_path),
                     "report_status": declared_status,
                     "target_skeleton_contract_id": EXPECTED_SKELETON_CONTRACT,
+                    "candidate_id": candidate_id,
+                    "source_asset_reference": source_asset_reference,
+                    "source_evidence_ref": source_evidence_ref,
+                    "dcc_tool_name": dcc_tool_name,
+                    "dcc_tool_version": dcc_tool_version,
+                    "conform_profile_id": conform_profile_id,
+                    "conform_profile_version": conform_profile_version,
+                    "required_axes": {
+                        "up_axis": required_up_axis,
+                        "forward_axis": required_forward_axis,
+                        "handedness": required_handedness,
+                    },
+                    "required_units": required_units,
+                    "evidence_class": evidence_class,
+                    "claim_status": claim_status,
+                    "safety": {
+                        "dcc_execution_status": str(safety.get("dcc_execution_status", "")).strip(),
+                        "blender_execution_status": str(safety.get("blender_execution_status", "")).strip(),
+                        "production_write_status": str(safety.get("production_write_status", "")).strip(),
+                    },
                     "validated_at_utc": utc_now(),
                 },
             },
