@@ -1,0 +1,67 @@
+﻿{
+  "schema_version": "1.0.0",
+  "ap_evidence_import_id": "ap-evidence-import-max-biped-v1-fixture",
+  "source_proposal_id": "product-resolution-proposal-max-biped-v1-fixture",
+  "source_project_inventory_id": "sandbox-project-inventory-max-biped-v1-fixture",
+  "source_asset_candidate_inventory_id": "sandbox-asset-candidate-inventory-max-biped-v1-fixture",
+  "sandbox_root": "examples/sandbox",
+  "input_evidence_paths": [
+    "examples/sandbox/evidence-sources/approved-local-inputs/max_biped_v1_source_character.fbx",
+    "examples/sandbox/evidence-sources/approved-local-inputs/max_biped_v1_ap_snapshot.metadata.json"
+  ],
+  "imported_log_paths": [
+    "examples/sandbox/evidence-sources/approved-local-inputs/max_biped_v1_ap_import.log"
+  ],
+  "imported_snapshot_metadata_paths": [
+    "examples/sandbox/evidence-sources/approved-local-inputs/max_biped_v1_ap_snapshot.metadata.json"
+  ],
+  "observed_source_paths": [
+    "examples/sandbox/evidence-sources/approved-local-inputs/max_biped_v1_source_character.fbx"
+  ],
+  "observed_product_like_mentions": [
+    "evidence-hint://ap-import/objects/max_biped_v1.actor",
+    "evidence-hint://ap-import/objects/max_biped_v1.motion",
+    "evidence-hint://ap-import/prefabs/max_biped_v1.procprefab",
+    "evidence-hint://ap-import/objects/max_biped_v1.azmodel",
+    "evidence-hint://ap-import/materials/max_biped_v1.material",
+    "evidence-hint://ap-import/textures/max_biped_v1.streamingimage",
+    "evidence-hint://ap-import/physics/max_biped_v1.pxmesh"
+  ],
+  "observed_warning_mentions": [],
+  "observed_error_mentions": [],
+  "observed_asset_processor_state": "snapshot_imported_read_only",
+  "evidence_quality": "strong_snapshot_only",
+  "required_next_evidence": [
+    "manual_hero_review_v1",
+    "performance_budget_definition_v1"
+  ],
+  "blocking_reasons": [
+    "execution admission remains blocked",
+    "authoritative source/asset/product ids are not claimed"
+  ],
+  "warnings": [],
+  "read_only": true,
+  "asset_processor_execution_admitted": false,
+  "o3de_execution_admitted": false,
+  "cache_access_admitted": false,
+  "live_database_access_admitted": false,
+  "product_ids_claimed": false,
+  "asset_ids_claimed": false,
+  "source_uuids_claimed": false,
+  "product_resolution_claimed": false,
+  "spawn_admitted": false,
+  "publish_admitted": false,
+  "explicit_non_admissions": [
+    "no live cache read",
+    "no live db read",
+    "no source uuid claim",
+    "no asset id claim",
+    "no product id claim",
+    "no asset processor execution",
+    "no o3de execution",
+    "no spawn",
+    "no publish"
+  ],
+  "output_path": "examples/sandbox/ap-evidence-imports/pilot-candidates/max_biped_v1_ap_evidence_import.fixture.json",
+  "created_utc": "2026-05-06T00:00:00Z"
+}

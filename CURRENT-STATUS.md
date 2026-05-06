@@ -29,6 +29,9 @@
   - `docs/maxine/specs/source-product-evidence-real-extraction-v1.md`
   - `tools/release-lane/extract_source_product_evidence_resolver_report.py`
   - integrated into `tools/release-lane/run_pilot_release_chain_validation.py`
+  - bounded AP-evidence-import fixture set for pilot candidates:
+    - `examples/sandbox/ap-evidence-imports/pilot-candidates/max_biped_v1_ap_evidence_import.fixture.json`
+  - pass now requires imported AP evidence coverage for required resolver product types (fixture fallback cannot carry pass for required types)
   - extracted report is validated by `tools/source-product-evidence-resolver/validate_source_product_evidence_resolver_report.py`
   - `tests/pytest/test_source_product_evidence_resolver_extraction.py`
 - Execution admission remains future work requiring explicit operator approval.

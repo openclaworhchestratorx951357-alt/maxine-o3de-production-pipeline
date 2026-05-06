@@ -6,9 +6,9 @@ This slice adds a bounded extraction step that builds the resolver report using 
 
 - controlled real evidence inventory report
 - approved local input inventories
-- optional imported AP evidence import records
+- bounded imported AP evidence import records for pilot candidates
 - sandbox evidence links carried by candidate inventory
-- fixture-backed resolver hints as non-authoritative fallback
+- fixture-backed resolver hints as non-authoritative fallback (non-pass-enabling for required types)
 
 No execution is admitted in this slice.
 
@@ -23,6 +23,10 @@ Optional inputs/output:
 ```powershell
 python tools/release-lane/extract_source_product_evidence_resolver_report.py --project-inventory examples/sandbox/project-inventory/max_biped_v1_project_inventory.fixture.json --asset-candidate-inventory examples/sandbox/asset-candidates/max_biped_v1_asset_candidate_inventory.fixture.json --controlled-inventory-report examples/controlled-real-evidence-inventory/max_biped_v1_controlled_real_evidence_inventory_pass.json --output examples/sandbox/manifests/reports/pilot-release-chain-proof/source-product-evidence-resolver-extracted.json
 ```
+
+Bounded pilot AP evidence fixture set:
+
+- `examples/sandbox/ap-evidence-imports/pilot-candidates/max_biped_v1_ap_evidence_import.fixture.json`
 
 ## Runner Integration
 
@@ -48,4 +52,12 @@ python tools/release-lane/extract_source_product_evidence_resolver_report.py --p
 
 - `evidence_source_type=imported_ap_evidence` when admitted AP import records provide product-like mentions.
 - otherwise `evidence_source_type=fixture` with fixture-backed resolver hints.
-- both paths remain non-authoritative and non-executing.
+- pass requires imported AP evidence coverage for required resolver product types:
+  - `actor`
+  - `motion`
+  - `procprefab`
+  - `azmodel`
+  - `material`
+  - `texture`
+  - `pxmesh`
+- fallback hints remain non-authoritative and non-executing.

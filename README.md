@@ -58,6 +58,7 @@ Get-ChildItem .\examples\manifests
 - The evidence-only pilot release chain is operational (`pilot_chain_status=pass`, `final_gate_count=23`).
 - Controlled real evidence inventory reporting from approved local inputs/evidence sources is integrated into proof flow (inventory-only).
 - Bounded source/product evidence resolver extraction from admitted evidence sources is integrated into the pilot runner (non-executing).
+- Bounded AP-evidence-import pilot fixtures are integrated, and resolver pass now requires imported coverage for required source/product types so fixture fallback alone can no longer carry pass.
 - AAA-quality output is not yet fully operational.
 - Execution admission remains future work requiring explicit approval.
 
