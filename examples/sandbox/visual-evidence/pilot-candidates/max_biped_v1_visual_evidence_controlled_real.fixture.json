@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "SCREENSHOT_EVIDENCE_v1_REPORT",
+  "job_id": "job-release-character-controlled-real-visual-evidence-001",
+  "package_id": "char.maxine.release_pilot.max_biped_v1",
+  "lane": "release_character",
+  "candidate_id": "max_biped_v1_candidate_001",
+  "source_asset_reference": "examples/sandbox/evidence-sources/approved-local-inputs/characters/max_biped_v1/source_character.fbx",
+  "source_evidence_ref": "examples/sandbox/evidence-bundles/max_biped_v1_candidate_001_controlled_real_visual.bundle.json",
+  "visual_profile_id": "SCREENSHOT_VISUAL_v1",
+  "visual_profile_version": "1.0.0",
+  "evidence_class": "controlled_real",
+  "screenshot_set_id": "max_biped_v1_visual_set_001",
+  "screenshot_refs": [
+    {
+      "view": "front",
+      "path": "examples/sandbox/evidence-sources/screenshots/pilot-shot-001.txt",
+      "label": "front_pose"
+    },
+    {
+      "view": "side",
+      "path": "examples/sandbox/evidence-sources/screenshots/pilot-shot-002.txt",
+      "label": "side_pose"
+    },
+    {
+      "view": "back",
+      "path": "examples/sandbox/evidence-sources/screenshots/pilot-shot-003.txt",
+      "label": "back_pose"
+    },
+    {
+      "view": "three_quarter",
+      "path": "examples/sandbox/evidence-sources/screenshots/pilot-shot-004.txt",
+      "label": "three_quarter_pose"
+    },
+    {
+      "view": "detail",
+      "path": "examples/sandbox/evidence-sources/screenshots/pilot-shot-005.txt",
+      "label": "detail_pose"
+    }
+  ],
+  "screenshot_count": 5,
+  "required_views_present": {
+    "front": true,
+    "side": true,
+    "back": true,
+    "three_quarter": true,
+    "detail": true
+  },
+  "image_resolution_status": "pass",
+  "file_reference_status": "pass",
+  "visual_identity_status": "pass",
+  "silhouette_status": "pass",
+  "scale_visual_status": "pass",
+  "material_visual_status": "pass",
+  "uv_texture_visual_status": "pass",
+  "skeleton_pose_visual_status": "pass",
+  "animation_pose_visual_status": "pass",
+  "missing_asset_visual_status": "pass",
+  "artifact_or_corruption_status": "pass",
+  "lighting_context_status": "pass",
+  "viewport_context_status": "pass",
+  "review_frame_status": "pass",
+  "claim_status": "evidence_only",
+  "safety": {
+    "screenshot_capture_status": "blocked",
+    "o3de_execution_status": "blocked",
+    "editor_execution_status": "blocked",
+    "runtime_execution_status": "blocked",
+    "dcc_execution_status": "blocked",
+    "blender_execution_status": "blocked",
+    "asset_processor_execution_status": "blocked",
+    "production_write_status": "blocked"
+  },
+  "status": "pass",
+  "findings": [],
+  "manifest_attachment": {
+    "target_path": "qc.gates[]",
+    "future_target_path": "qc.checks[]",
+    "qc_check": {
+      "check_id": "screenshot_evidence_v1",
+      "result": "pass",
+      "severity": "info",
+      "details": {
+        "summary": "Controlled-real visual evidence validated for required review views and blocked execution surfaces.",
+        "evidence_class": "controlled_real"
+      }
+    }
+  }
+}

@@ -66,6 +66,14 @@
   - integrated into `tools/release-lane/run_pilot_release_chain_validation.py`
   - release-lane evidence admission status now classifies `animation_smoke_v1` as controlled-real evidence
   - `tests/pytest/test_animation_smoke_report.py`
+- Controlled real screenshot/visual evidence v1 is implemented (bounded evidence-only, non-executing):
+  - `docs/maxine/specs/controlled-real-visual-evidence-v1.md`
+  - `schemas/maxine_screenshot_evidence_report.schema.json` (controlled-real evidence fields and blocked screenshot/O3DE/runtime/DCC/AP statuses)
+  - `tools/screenshot-evidence/extract_screenshot_evidence_index.py`
+  - `examples/sandbox/visual-evidence/pilot-candidates/max_biped_v1_visual_evidence_controlled_real.fixture.json`
+  - integrated into `tools/release-lane/run_pilot_release_chain_validation.py`
+  - release-lane evidence admission status now classifies `screenshot_evidence_v1` as controlled-real evidence
+  - `tests/pytest/test_screenshot_evidence_extractor.py`
 - Execution admission remains future work requiring explicit operator approval.
 - No execution surfaces are newly admitted in this slice.
 - Sandbox-only writer skeleton is implemented for generated-asset resolver placeholders.
@@ -158,12 +166,21 @@
   - `examples/animation-smoke/max_biped_v1_animation_smoke_fail.json`
   - `docs/maxine/specs/animation-smoke-v1.md`
   - `docs/maxine/specs/controlled-real-animation-smoke-evidence-v1.md`
-- Screenshot evidence extractor v1 is implemented (controlled-input, non-executing evidence extraction only):
+- Screenshot evidence extractor v1 is implemented (controlled report input, non-executing evidence validation only):
   - `tools/screenshot-evidence/extract_screenshot_evidence_index.py`
+  - `schemas/maxine_screenshot_evidence_report.schema.json`
+  - `examples/sandbox/visual-evidence/pilot-candidates/max_biped_v1_visual_evidence_controlled_real.fixture.json`
+  - `examples/screenshot-evidence/max_biped_v1_visual_evidence_pass.json`
+  - `examples/screenshot-evidence/max_biped_v1_visual_evidence_warn.json`
+  - `examples/screenshot-evidence/max_biped_v1_visual_evidence_fail.json`
   - `examples/screenshot-evidence/max_biped_v1_screenshot_source_index.json`
   - `examples/sandbox/evidence-sources/screenshots/pilot-shot-001.txt`
   - `examples/sandbox/evidence-sources/screenshots/pilot-shot-002.txt`
+  - `examples/sandbox/evidence-sources/screenshots/pilot-shot-003.txt`
+  - `examples/sandbox/evidence-sources/screenshots/pilot-shot-004.txt`
+  - `examples/sandbox/evidence-sources/screenshots/pilot-shot-005.txt`
   - `docs/maxine/specs/screenshot-evidence-extractor-v1.md`
+  - `docs/maxine/specs/controlled-real-visual-evidence-v1.md`
 - Manual hero review v1 report validation is implemented (contract-first, non-executing evidence only):
   - `schemas/maxine_manual_hero_review_report.schema.json`
   - `tools/manual-hero-review/validate_manual_hero_review_report.py`
@@ -398,9 +415,9 @@
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP/runtime playback, spawn, publish, or Cache/live DB access
 - Screenshot evidence extraction v1 remains non-executing evidence-only:
-  - validates controlled screenshot source-index input under `examples/sandbox`
+  - validates controlled screenshot/visual report input under `examples/sandbox`
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
-  - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+  - does not execute screenshot capture/O3DE/Editor/runtime/Blender/DCC/AP, spawn, publish, or Cache/live DB access
 - Source Product Evidence Resolver v1 remains non-executing evidence-only:
   - validates source-asset to expected/observed product evidence mapping
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`

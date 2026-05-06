@@ -63,6 +63,7 @@ Get-ChildItem .\examples\manifests
 - Controlled real DCC conform evidence is integrated for pilot candidates through bounded sandbox fixtures (non-executing).
 - Controlled real material/UV evidence is integrated for pilot candidates through bounded sandbox fixtures (non-executing).
 - Controlled real animation smoke evidence is integrated for pilot candidates through bounded sandbox fixtures (non-executing, no runtime playback).
+- Controlled real screenshot/visual evidence is integrated for pilot candidates through bounded sandbox fixtures (non-executing, no live screenshot capture).
 - AAA-quality output is not yet fully operational.
 - Execution admission remains future work requiring explicit approval.
 
@@ -79,6 +80,7 @@ Start here for PR readiness, review, and merge details:
 - `docs/maxine/specs/controlled-real-dcc-conform-evidence-v1.md`
 - `docs/maxine/specs/controlled-real-material-uv-evidence-v1.md`
 - `docs/maxine/specs/controlled-real-animation-smoke-evidence-v1.md`
+- `docs/maxine/specs/controlled-real-visual-evidence-v1.md`
 
 ## M.A.X.I.N.E. Resolver Ladder
 
