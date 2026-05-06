@@ -68,7 +68,8 @@
         "severity": "info",
         "details": {
           "contract_id": "MATERIAL_UV_QC_v1",
-          "evidence_source": "fixture"
+          "evidence_source": "controlled_real_fixture",
+          "evidence_class": "controlled_real"
         }
       },
       {

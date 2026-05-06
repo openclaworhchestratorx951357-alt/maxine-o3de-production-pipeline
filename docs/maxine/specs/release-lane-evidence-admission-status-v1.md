@@ -35,7 +35,7 @@ For the representative pilot fixture:
 
 - `overall_release_lane_state = controlled_evidence_ready_execution_blocked`
 - required release-lane gate chain can be pass-complete
-- controlled real evidence is present for `max_biped_v1_skeleton_contract` and `dcc_conform_v1`
+- controlled real evidence is present for `max_biped_v1_skeleton_contract`, `dcc_conform_v1`, and `material_uv_qc_v1`
 - explicit approved execution-admission remains missing
 
 This report provides the deterministic status statement required before any execution-admission discussion.

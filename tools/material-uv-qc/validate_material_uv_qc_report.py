@@ -12,13 +12,32 @@ from typing import Any, Dict, List, Tuple
 
 ALLOWED_STATUS = {"pass", "warn", "fail", "pending_manual"}
 ALLOWED_FINDING_SEVERITY = {"info", "warning", "error", "manual_review"}
+ALLOWED_EVIDENCE_CLASS = {"fixture", "imported", "controlled_real"}
+ALLOWED_CLAIM_STATUS = {"evidence_only", "not_authoritative"}
 SEVERITY_FROM_RULE = {"warning", "error", "manual_review"}
 EXPECTED_SCHEMA_VERSION = "1.0.0"
 EXPECTED_REPORT_TYPE = "MATERIAL_UV_QC_v1_REPORT"
+EXPECTED_PROFILE_ID = "MATERIAL_UV_QC_v1"
 TARGET_PATH = "qc.gates[]"
 FUTURE_TARGET_PATH = "qc.checks[]"
 CHECK_ID = "material_uv_qc_v1"
 CONTRACT_ID = "MATERIAL_UV_QC_v1"
+STATUS_FIELDS = [
+    "material_slot_status",
+    "material_naming_status",
+    "standard_pbr_status",
+    "texture_reference_status",
+    "missing_texture_status",
+    "texture_resolution_status",
+    "texture_count_status",
+    "required_uv_sets_present",
+    "uv_overlap_status",
+    "uv_out_of_bounds_status",
+    "texel_density_status",
+    "lightmap_uv_status",
+    "material_budget_status",
+    "texture_budget_status",
+]
 
 
 def utc_now() -> str:
@@ -89,8 +108,33 @@ def validate_schema_with_jsonschema(report: Dict[str, Any], schema: Dict[str, An
     return False, messages
 
 
-def derive_status(findings: List[Dict[str, Any]]) -> str:
-    severities = {str(item.get("severity", "")) for item in findings}
+def _status_severity(status: str) -> str:
+    if status == "fail":
+        return "error"
+    if status == "pending_manual":
+        return "manual_review"
+    if status == "warn":
+        return "warning"
+    return "info"
+
+
+def _collect_component_status(report: Dict[str, Any]) -> str:
+    seen: List[str] = []
+    for field in STATUS_FIELDS:
+        value = str(report.get(field, "")).strip()
+        if value in ALLOWED_STATUS:
+            seen.append(value)
+    if "fail" in seen:
+        return "fail"
+    if "pending_manual" in seen:
+        return "pending_manual"
+    if "warn" in seen:
+        return "warn"
+    return "pass"
+
+
+def _collect_findings_status(findings: List[Dict[str, Any]]) -> str:
+    severities = {str(item.get("severity", "")).strip() for item in findings}
     if "error" in severities:
         return "fail"
     if "manual_review" in severities:
@@ -100,14 +144,9 @@ def derive_status(findings: List[Dict[str, Any]]) -> str:
     return "pass"
 
 
-def status_to_qc_severity(status: str) -> str:
-    if status == "pass":
-        return "info"
-    if status == "warn":
-        return "warning"
-    if status == "pending_manual":
-        return "manual_review"
-    return "error"
+def _merge_status(a: str, b: str) -> str:
+    order = ["pass", "warn", "pending_manual", "fail"]
+    return max(a, b, key=lambda value: order.index(value))
 
 
 def _severity_or_default(raw: Any, default: str = "warning") -> str:
@@ -201,7 +240,16 @@ def main() -> int:
             {"actual": declared_status},
         )
 
-    for required in ("job_id", "package_id", "lane"):
+    for required in (
+        "job_id",
+        "package_id",
+        "lane",
+        "candidate_id",
+        "source_asset_reference",
+        "source_evidence_ref",
+        "material_uv_profile_id",
+        "material_uv_profile_version",
+    ):
         value = str(report.get(required, "")).strip()
         if not value:
             add_finding(
@@ -211,6 +259,130 @@ def main() -> int:
                 "open",
                 f"{required} is required.",
             )
+
+    candidate_id = str(report.get("candidate_id", "")).strip()
+    source_asset_reference = str(report.get("source_asset_reference", "")).strip()
+    source_evidence_ref = str(report.get("source_evidence_ref", "")).strip()
+    material_uv_profile_id = str(report.get("material_uv_profile_id", "")).strip()
+    material_uv_profile_version = str(report.get("material_uv_profile_version", "")).strip()
+
+    if material_uv_profile_id and material_uv_profile_id != EXPECTED_PROFILE_ID:
+        add_finding(
+            findings,
+            "material_uv_profile_id_invalid",
+            "error",
+            "open",
+            f"material_uv_profile_id must be {EXPECTED_PROFILE_ID}.",
+            {"actual": material_uv_profile_id},
+        )
+
+    if source_evidence_ref and _contains_unsafe_path_tokens(source_evidence_ref):
+        add_finding(
+            findings,
+            "source_evidence_ref_unsafe",
+            "error",
+            "open",
+            "source_evidence_ref contains unsafe traversal or shell tokens.",
+            {"source_evidence_ref": source_evidence_ref},
+        )
+
+    evidence_class = str(report.get("evidence_class", "")).strip()
+    if evidence_class not in ALLOWED_EVIDENCE_CLASS:
+        add_finding(
+            findings,
+            "evidence_class_invalid",
+            "error",
+            "open",
+            "evidence_class must be fixture|imported|controlled_real.",
+            {"actual": evidence_class},
+        )
+    elif evidence_class == "controlled_real":
+        normalized_ref = source_evidence_ref.replace("\\", "/")
+        if not normalized_ref.startswith("examples/sandbox/"):
+            add_finding(
+                findings,
+                "controlled_real_source_evidence_ref_outside_sandbox",
+                "error",
+                "open",
+                "controlled_real evidence must reference sandbox evidence roots.",
+                {"source_evidence_ref": source_evidence_ref},
+            )
+
+    claim_status = str(report.get("claim_status", "")).strip()
+    if claim_status not in ALLOWED_CLAIM_STATUS:
+        add_finding(
+            findings,
+            "claim_status_invalid",
+            "error",
+            "open",
+            "claim_status must be evidence_only|not_authoritative.",
+            {"actual": claim_status},
+        )
+
+    safety = report.get("safety", {})
+    if not isinstance(safety, dict):
+        safety = {}
+        add_finding(findings, "safety_not_object", "error", "open", "safety must be an object.")
+    for safety_field in (
+        "dcc_execution_status",
+        "blender_execution_status",
+        "o3de_execution_status",
+        "asset_processor_execution_status",
+        "production_write_status",
+    ):
+        if str(safety.get(safety_field, "")).strip() != "blocked":
+            add_finding(
+                findings,
+                f"{safety_field}_not_blocked",
+                "error",
+                "open",
+                f"safety.{safety_field} must be blocked.",
+                {"actual": safety.get(safety_field)},
+            )
+
+    for field_name in STATUS_FIELDS:
+        value = str(report.get(field_name, "")).strip()
+        if value not in ALLOWED_STATUS:
+            add_finding(
+                findings,
+                f"{field_name}_invalid",
+                "error",
+                "open",
+                f"{field_name} must be pass|warn|fail|pending_manual.",
+                {"actual": value},
+            )
+
+    material_slot_count = report.get("material_slot_count")
+    if not isinstance(material_slot_count, int) or material_slot_count < 0:
+        add_finding(
+            findings,
+            "material_slot_count_invalid",
+            "error",
+            "open",
+            "material_slot_count must be an integer >= 0.",
+            {"actual": material_slot_count},
+        )
+        material_slot_count = 0
+    elif material_slot_count == 0:
+        add_finding(
+            findings,
+            "material_slot_count_zero",
+            "error",
+            "open",
+            "material slots must be named and non-empty for release candidates.",
+        )
+
+    uv_set_count = report.get("uv_set_count")
+    if not isinstance(uv_set_count, int) or uv_set_count < 0:
+        add_finding(
+            findings,
+            "uv_set_count_invalid",
+            "error",
+            "open",
+            "uv_set_count must be an integer >= 0.",
+            {"actual": uv_set_count},
+        )
+        uv_set_count = 0
 
     source = report.get("source", {}) if isinstance(report.get("source"), dict) else {}
     source_path = str(source.get("source_path", "")).strip()
@@ -247,8 +419,17 @@ def main() -> int:
     missing_textures = material.get("missing_textures", [])
 
     if not isinstance(slot_count_raw, int) or slot_count_raw < 0:
-        add_finding(findings, "material_slot_count_invalid", "error", "open", "material_slot_count must be >= 0 integer.")
+        add_finding(findings, "material_summary_slot_count_invalid", "error", "open", "material_summary.material_slot_count must be >= 0 integer.")
         slot_count_raw = 0
+    if slot_count_raw != material_slot_count:
+        add_finding(
+            findings,
+            "material_slot_count_mismatch",
+            "error",
+            "open",
+            "material_slot_count must match material_summary.material_slot_count.",
+            {"material_slot_count": material_slot_count, "material_summary.material_slot_count": slot_count_raw},
+        )
     if not isinstance(slot_budget_raw, int) or slot_budget_raw < 0:
         add_finding(findings, "material_slot_budget_invalid", "error", "open", "material_slot_budget must be >= 0 integer.")
         slot_budget_raw = 0
@@ -286,6 +467,16 @@ def main() -> int:
             "open",
             "Unsupported materials were reported.",
             {"unsupported_materials": unsupported_materials},
+        )
+
+    if material_profile and material_profile != "StandardPBR" and str(report.get("standard_pbr_status", "")).strip() == "pass":
+        add_finding(
+            findings,
+            "standard_pbr_status_mismatch",
+            "error",
+            "open",
+            "standard_pbr_status cannot be pass when target.material_profile is not StandardPBR.",
+            {"material_profile": material_profile, "standard_pbr_status": report.get("standard_pbr_status")},
         )
 
     if not isinstance(texture_refs, list):
@@ -351,6 +542,35 @@ def main() -> int:
         add_finding(findings, "missing_uv_sets_invalid", "error", "open", "missing_uv_sets must be a string array.")
         reported_missing_uv_sets = []
 
+    if "UV0" not in required_uv_sets:
+        add_finding(
+            findings,
+            "required_uv0_missing",
+            "error",
+            "open",
+            "UV0 must be present in uv_summary.required_uv_sets.",
+            {"required_uv_sets": required_uv_sets},
+        )
+    if "UV0" not in present_uv_sets:
+        add_finding(
+            findings,
+            "present_uv0_missing",
+            "error",
+            "open",
+            "UV0 must exist in uv_summary.present_uv_sets.",
+            {"present_uv_sets": present_uv_sets},
+        )
+
+    if len(present_uv_sets) != uv_set_count:
+        add_finding(
+            findings,
+            "uv_set_count_mismatch",
+            "error",
+            "open",
+            "uv_set_count must match len(uv_summary.present_uv_sets).",
+            {"uv_set_count": uv_set_count, "present_uv_set_count": len(present_uv_sets)},
+        )
+
     missing_from_calc = sorted(set(required_uv_sets) - set(present_uv_sets))
     if missing_from_calc:
         add_finding(
@@ -399,6 +619,7 @@ def main() -> int:
         max_res = 1
     if not isinstance(texture_count, int) or texture_count < 0:
         add_finding(findings, "texture_count_invalid", "error", "open", "texture_count must be integer >= 0.")
+        texture_count = 0
 
     if not isinstance(oversized, list):
         add_finding(findings, "oversized_textures_invalid", "error", "open", "oversized_textures must be an array.")
@@ -436,6 +657,36 @@ def main() -> int:
             "open",
             "One or more textures exceed max_texture_resolution.",
             {"count": len(oversized), "max_texture_resolution": max_res},
+        )
+
+    if texture_count < len(texture_refs):
+        add_finding(
+            findings,
+            "texture_count_below_references",
+            "error",
+            "open",
+            "texture_budget.texture_count cannot be lower than material_summary.texture_references count.",
+            {"texture_count": texture_count, "texture_reference_count": len(texture_refs)},
+        )
+
+    if missing_from_calc and str(report.get("required_uv_sets_present", "")).strip() == "pass":
+        add_finding(
+            findings,
+            "required_uv_sets_present_status_mismatch",
+            "error",
+            "open",
+            "required_uv_sets_present cannot be pass when required UV sets are missing.",
+            {"missing_uv_sets": missing_from_calc},
+        )
+
+    if missing_textures and str(report.get("missing_texture_status", "")).strip() == "pass":
+        add_finding(
+            findings,
+            "missing_texture_status_mismatch",
+            "error",
+            "open",
+            "missing_texture_status cannot be pass when missing textures are present.",
+            {"missing_textures": missing_textures},
         )
 
     input_findings = report.get("findings", [])
@@ -489,26 +740,31 @@ def main() -> int:
             {"actual": future_target_path},
         )
 
-    combined_findings = findings + input_findings
-    computed_status = derive_status(combined_findings)
+    component_status = _collect_component_status(report)
+    findings_status = _collect_findings_status(findings + input_findings)
+    computed_status = _merge_status(component_status, findings_status)
     if declared_status in ALLOWED_STATUS and declared_status != computed_status:
         add_finding(
             findings,
             "status_mismatch",
             "error",
             "open",
-            "report.status does not match computed findings severity.",
+            "report.status does not match computed status.",
             {"declared": declared_status, "computed": computed_status},
         )
-        combined_findings = findings + input_findings
-        computed_status = derive_status(combined_findings)
+        computed_status = "fail"
 
-    qc_severity = status_to_qc_severity(computed_status)
+    qc_severity = _status_severity(computed_status)
     output_payload: Dict[str, Any] = {
         "status": computed_status,
         "check_id": CHECK_ID,
         "contract_id": CONTRACT_ID,
-        "findings": combined_findings,
+        "evidence_class": evidence_class,
+        "claim_status": claim_status,
+        "candidate_id": candidate_id,
+        "source_asset_reference": source_asset_reference,
+        "source_evidence_ref": source_evidence_ref,
+        "findings": findings + input_findings,
         "manifest_attachment": {
             "target_path": TARGET_PATH,
             "future_target_path": FUTURE_TARGET_PATH,
@@ -519,6 +775,36 @@ def main() -> int:
                 "details": {
                     "report_path": str(report_path),
                     "report_status": declared_status,
+                    "candidate_id": candidate_id,
+                    "source_asset_reference": source_asset_reference,
+                    "source_evidence_ref": source_evidence_ref,
+                    "material_uv_profile_id": material_uv_profile_id,
+                    "material_uv_profile_version": material_uv_profile_version,
+                    "evidence_class": evidence_class,
+                    "claim_status": claim_status,
+                    "material_slot_count": material_slot_count,
+                    "material_slot_status": str(report.get("material_slot_status", "")).strip(),
+                    "material_naming_status": str(report.get("material_naming_status", "")).strip(),
+                    "standard_pbr_status": str(report.get("standard_pbr_status", "")).strip(),
+                    "texture_reference_status": str(report.get("texture_reference_status", "")).strip(),
+                    "missing_texture_status": str(report.get("missing_texture_status", "")).strip(),
+                    "texture_resolution_status": str(report.get("texture_resolution_status", "")).strip(),
+                    "texture_count_status": str(report.get("texture_count_status", "")).strip(),
+                    "uv_set_count": uv_set_count,
+                    "required_uv_sets_present": str(report.get("required_uv_sets_present", "")).strip(),
+                    "uv_overlap_status": str(report.get("uv_overlap_status", "")).strip(),
+                    "uv_out_of_bounds_status": str(report.get("uv_out_of_bounds_status", "")).strip(),
+                    "texel_density_status": str(report.get("texel_density_status", "")).strip(),
+                    "lightmap_uv_status": str(report.get("lightmap_uv_status", "")).strip(),
+                    "material_budget_status": str(report.get("material_budget_status", "")).strip(),
+                    "texture_budget_status": str(report.get("texture_budget_status", "")).strip(),
+                    "safety": {
+                        "dcc_execution_status": str(safety.get("dcc_execution_status", "")).strip(),
+                        "blender_execution_status": str(safety.get("blender_execution_status", "")).strip(),
+                        "o3de_execution_status": str(safety.get("o3de_execution_status", "")).strip(),
+                        "asset_processor_execution_status": str(safety.get("asset_processor_execution_status", "")).strip(),
+                        "production_write_status": str(safety.get("production_write_status", "")).strip(),
+                    },
                     "validated_at_utc": utc_now(),
                 },
             },

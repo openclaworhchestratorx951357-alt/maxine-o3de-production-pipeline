@@ -72,6 +72,10 @@ python tools/release-lane/run_pilot_release_chain_validation.py --strict-chain
   - `examples/sandbox/manifests/reports/example-release-character-pilot-chain.generated.manifest.json`
 - payload snapshots and summary:
   - `examples/sandbox/manifests/reports/pilot-release-chain-validation/`
+- controlled-real fixture inputs used by runner:
+  - `examples/sandbox/max-biped-skeleton-evidence/pilot-candidates/max_biped_v1_skeleton_controlled_real.fixture.json`
+  - `examples/sandbox/dcc-conform-evidence/pilot-candidates/max_biped_v1_dcc_conform_controlled_real.fixture.json`
+  - `examples/sandbox/material-uv-evidence/pilot-candidates/max_biped_v1_material_uv_controlled_real.fixture.json`
 - runtime-artifact policy:
   - `examples/sandbox/manifests/reports/**` is runtime-only and gitignored (except `.gitkeep`)
 

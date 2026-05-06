@@ -41,7 +41,7 @@ EVIDENCE_CLASS_BY_CHECK_ID = {
     "max_biped_v1_skeleton_contract": "controlled_real",
     "dcc_conform_v1": "controlled_real",
     "source_product_evidence_resolver_v1": "imported",
-    "material_uv_qc_v1": "manual",
+    "material_uv_qc_v1": "controlled_real",
     "animation_smoke_v1": "manual",
     "screenshot_evidence_v1": "fixture",
     "manual_hero_review_v1": "manual",

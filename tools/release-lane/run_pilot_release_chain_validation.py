@@ -36,6 +36,10 @@ DEFAULT_DCC_CONFORM_CONTROLLED_REAL_REPORT = (
     "examples/sandbox/dcc-conform-evidence/pilot-candidates/"
     "max_biped_v1_dcc_conform_controlled_real.fixture.json"
 )
+DEFAULT_MATERIAL_UV_CONTROLLED_REAL_REPORT = (
+    "examples/sandbox/material-uv-evidence/pilot-candidates/"
+    "max_biped_v1_material_uv_controlled_real.fixture.json"
+)
 DEFAULT_RESOLVER_AP_EVIDENCE_IMPORTS = [
     (
         "examples/sandbox/ap-evidence-imports/pilot-candidates/"
@@ -370,7 +374,7 @@ def main() -> int:
             "command": [
                 sys.executable,
                 "tools/material-uv-qc/validate_material_uv_qc_report.py",
-                "examples/material-uv-qc/max_biped_v1_material_uv_pass.json",
+                DEFAULT_MATERIAL_UV_CONTROLLED_REAL_REPORT,
             ],
             "payload_path": attachment_dir / "material_uv_qc_v1.json",
         },

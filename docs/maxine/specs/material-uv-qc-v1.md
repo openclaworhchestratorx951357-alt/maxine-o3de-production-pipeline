@@ -2,9 +2,11 @@
 
 ## What This Slice Does
 
-`Material/UV QC v1` defines an evidence-only validation contract for release-lane material and UV readiness reports.
+`Material/UV QC v1` defines an evidence-only validation contract for release-lane material and UV readiness reports, including controlled-real pilot evidence integration.
 
 - validates structured Material/UV QC report JSON
+- validates controlled-real evidence metadata (`candidate_id`, evidence references, profile id/version, evidence class, claim status)
+- validates blocked safety statuses (`dcc_execution_status`, `blender_execution_status`, `o3de_execution_status`, `asset_processor_execution_status`, `production_write_status`)
 - checks required UV-set presence and missing set reporting
 - checks material slot budgets with explicit severity policy
 - checks missing required materials/textures
@@ -30,6 +32,29 @@ Schema:
 Core fields:
 
 - identity/routing: `job_id`, `package_id`, `lane`, `status`
+- controlled-real identity/reference:
+  - `candidate_id`
+  - `source_asset_reference`
+  - `source_evidence_ref`
+  - `material_uv_profile_id`
+  - `material_uv_profile_version`
+  - `evidence_class`
+  - `claim_status`
+- policy status dimensions:
+  - `material_slot_status`
+  - `material_naming_status`
+  - `standard_pbr_status`
+  - `texture_reference_status`
+  - `missing_texture_status`
+  - `texture_resolution_status`
+  - `texture_count_status`
+  - `required_uv_sets_present`
+  - `uv_overlap_status`
+  - `uv_out_of_bounds_status`
+  - `texel_density_status`
+  - `lightmap_uv_status`
+  - `material_budget_status`
+  - `texture_budget_status`
 - source evidence: `source_path`, `source_kind`, optional `sha256`
 - target profile: `package_tier`, `material_profile`
 - material summary:
@@ -54,6 +79,10 @@ Core fields:
 - structured findings
 - manifest attachment payload
 
+Controlled-real sandbox fixture used by the pilot runner:
+
+- `examples/sandbox/material-uv-evidence/pilot-candidates/max_biped_v1_material_uv_controlled_real.fixture.json`
+
 ## Material Budget Logic
 
 - If `material_slot_count > material_slot_budget`, the validator emits a finding using `slot_budget_exceeded_severity`.
@@ -62,6 +91,7 @@ Core fields:
 ## UV Requirement Logic
 
 - Required UV sets are computed from `required_uv_sets - present_uv_sets`.
+- `UV0` is required in both `required_uv_sets` and `present_uv_sets`.
 - Any missing required UV sets produce a fail-level finding.
 - `missing_uv_sets` is checked against computed values to catch reporting mismatches.
 
@@ -110,7 +140,3 @@ This slice is report-validation-only and preserves blocked/unadmitted surfaces:
 - no source/product UUID claims
 - no new generation lanes
 - no destructive cleanup
-
-## Future Path (Not Implemented Here)
-
-A future bounded slice may add real DCC extraction steps and evidence capture from controlled tooling. That execution path is not implemented in this slice.
