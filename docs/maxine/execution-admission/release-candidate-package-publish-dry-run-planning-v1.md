@@ -104,6 +104,17 @@ The final static pre-approval checklist layer is now defined for the same candid
 
 This checklist remains blocked (`approval_review_ready=false`, `ready_to_request_approval=false`) and does not approve or admit the candidate.
 
+## Operator Approval Packet Link
+
+The same candidate now also has a static operator approval packet template:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-operator-approval-packet-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_operator_approval_packet.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_operator_approval_packet_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_operator_approval_packet.py`
+
+This packet remains blocked/template-only (`approval_request_ready=false`, `operator_approval_granted=false`, `approval_phrase_present=false`) and does not grant approval or admission.
+
 ## Artifacts
 
 - schema:

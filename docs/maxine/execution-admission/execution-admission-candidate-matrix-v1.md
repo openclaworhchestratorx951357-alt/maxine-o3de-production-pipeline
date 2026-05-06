@@ -118,6 +118,15 @@ The dry-run candidate now also has a static final pre-approval checklist that ke
 - `examples/execution-admission/release_candidate_package_publish_dry_run_admission_blockers_v1.json`
 - `tools/execution-admission/validate_release_candidate_publication_dry_run_admission_blockers.py`
 
+## Candidate-Specific Operator Approval Packet Link
+
+The dry-run candidate now also has a static operator approval packet template that remains blocked/template-only and does not grant approval:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-operator-approval-packet-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_operator_approval_packet.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_operator_approval_packet_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_operator_approval_packet.py`
+
 ## Safety Notes
 
 This slice remains non-executing and non-publishing:

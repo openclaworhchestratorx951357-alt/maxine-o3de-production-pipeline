@@ -67,7 +67,7 @@
   "approval_blockers": [
     "missing_approval_decision",
     "approval_review_not_ready",
-    "operator_approval_packet_not_present"
+    "operator_approval_packet_template_only_not_approval_decision"
   ],
   "evidence_blockers": [
     "dry_run_not_executed",

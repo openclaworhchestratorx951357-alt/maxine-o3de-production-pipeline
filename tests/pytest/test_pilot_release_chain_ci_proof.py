@@ -340,3 +340,60 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
     assert blockers_source_status["production_readiness_status"] == "pass"
     assert blockers_source_status["noop_receipt_status"] == "pass"
     assert dry_run_admission_blockers_status["reporter_return_code"] == 0
+    dry_run_operator_packet_status = payload["details"][
+        "release_candidate_publication_dry_run_operator_approval_packet_report"
+    ]
+    assert dry_run_operator_packet_status["status"] == "pass"
+    assert (
+        dry_run_operator_packet_status["report_type"]
+        == "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_OPERATOR_APPROVAL_PACKET_VALIDATION_v1_REPORT"
+    )
+    assert (
+        dry_run_operator_packet_status[
+            "release_candidate_publication_dry_run_operator_approval_packet_present"
+        ]
+        is True
+    )
+    assert (
+        dry_run_operator_packet_status["planned_candidate_id"]
+        == "release_candidate_package_publish_dry_run_v1"
+    )
+    assert dry_run_operator_packet_status["candidate_type"] == "dry_run"
+    assert (
+        dry_run_operator_packet_status["approval_packet_status"]
+        == "static_template_valid_blocked"
+    )
+    assert dry_run_operator_packet_status["admission_status"] == "unadmitted"
+    assert dry_run_operator_packet_status["approval_request_ready"] is False
+    assert dry_run_operator_packet_status["operator_approval_granted"] is False
+    assert dry_run_operator_packet_status["approval_phrase_present"] is False
+    assert dry_run_operator_packet_status["dry_run_admitted"] is False
+    assert dry_run_operator_packet_status["receipt_issued"] is False
+    assert dry_run_operator_packet_status["publication_admitted"] is False
+    assert dry_run_operator_packet_status["real_execution_admitted"] is False
+    assert dry_run_operator_packet_status["production_ready_claimed"] is False
+    assert (
+        dry_run_operator_packet_status["approval_phrase_required"]
+        == "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1"
+    )
+    assert len(dry_run_operator_packet_status["approval_blocker_summary"]) > 0
+    assert len(dry_run_operator_packet_status["required_operator_review_items"]) > 0
+    assert len(dry_run_operator_packet_status["required_validation_commands"]) > 0
+    assert len(dry_run_operator_packet_status["blocked_surface_attestations"]) > 0
+    assert len(dry_run_operator_packet_status["forbidden_actions"]) > 0
+    assert len(dry_run_operator_packet_status["forbidden_outputs"]) > 0
+    assert len(dry_run_operator_packet_status["forbidden_paths"]) > 0
+    operator_source_status = dry_run_operator_packet_status[
+        "computed_source_artifact_validation_status"
+    ]
+    assert operator_source_status["candidate_matrix_status"] == "pass"
+    assert operator_source_status["preflight_contracts_status"] == "pass"
+    assert operator_source_status["preflight_proof_packages_status"] == "pass"
+    assert operator_source_status["readiness_rollup_status"] == "pass"
+    assert operator_source_status["dry_run_plan_status"] == "pass"
+    assert operator_source_status["dry_run_receipt_contract_status"] == "pass"
+    assert operator_source_status["blocked_unissued_receipt_status"] == "pass"
+    assert operator_source_status["admission_blocker_checklist_status"] == "pass"
+    assert operator_source_status["production_readiness_status"] == "pass"
+    assert operator_source_status["noop_receipt_status"] == "pass"
+    assert dry_run_operator_packet_status["reporter_return_code"] == 0

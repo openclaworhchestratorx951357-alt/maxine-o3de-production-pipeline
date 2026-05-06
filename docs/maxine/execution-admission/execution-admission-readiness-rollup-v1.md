@@ -88,6 +88,17 @@ The same candidate now also has a static final pre-approval blocker checklist:
 
 This checklist remains blocked (`static_checklist_valid_blocked`) with `approval_review_ready=false` and `ready_to_request_approval=false`.
 
+## Candidate-Specific Operator Approval Packet Link
+
+The same candidate now also has a static operator-review packet template:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-operator-approval-packet-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_operator_approval_packet.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_operator_approval_packet_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_operator_approval_packet.py`
+
+This packet remains blocked/template-only (`static_template_valid_blocked`) with `approval_request_ready=false`, `operator_approval_granted=false`, and `approval_phrase_present=false`.
+
 ## Approval Phrase
 
 Future real execution/publication admission still requires:

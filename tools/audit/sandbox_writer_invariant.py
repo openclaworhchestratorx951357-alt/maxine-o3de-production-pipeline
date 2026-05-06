@@ -160,6 +160,9 @@ RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_BLOCKED_REL = (
 RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_ADMISSION_BLOCKERS_REL = (
     "examples/execution-admission/release_candidate_package_publish_dry_run_admission_blockers_v1.json"
 )
+RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_OPERATOR_APPROVAL_PACKET_REL = (
+    "examples/execution-admission/release_candidate_package_publish_dry_run_operator_approval_packet_v1.json"
+)
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
 WORKFLOW_RUNS_DIR_REL = "examples/sandbox/workflow-runs"
@@ -217,7 +220,9 @@ EXPECTED_DRY_RUN_PLAN_APPROVAL_PHRASE = (
     "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1"
 )
 EXPECTED_DRY_RUN_RECEIPT_TYPE = "release_candidate_package_publish_dry_run_receipt_v1"
+EXPECTED_DRY_RUN_RECEIPT_CONTRACT_STATUS = "static_contract_valid_blocked"
 EXPECTED_DRY_RUN_ADMISSION_BLOCKERS_STATUS = "static_checklist_valid_blocked"
+EXPECTED_DRY_RUN_OPERATOR_APPROVAL_PACKET_STATUS = "static_template_valid_blocked"
 REQUIRED_DRY_RUN_ADMISSION_BLOCKERS = (
     "missing_approval_decision",
     "dry_run_not_admitted",
@@ -1056,6 +1061,9 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     )
     release_candidate_publication_dry_run_admission_blockers = (
         root / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_ADMISSION_BLOCKERS_REL
+    )
+    release_candidate_publication_dry_run_operator_approval_packet = (
+        root / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_OPERATOR_APPROVAL_PACKET_REL
     )
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -4514,6 +4522,289 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         except Exception as exc:  # pragma: no cover - defensive failure surface
             failures.append(
                 "release candidate publication dry-run admission blockers is not valid JSON: "
+                f"{exc}"
+            )
+
+    if release_candidate_publication_dry_run_operator_approval_packet.exists():
+        try:
+            operator_packet = json.loads(
+                release_candidate_publication_dry_run_operator_approval_packet.read_text(
+                    encoding="utf-8-sig"
+                )
+            )
+            if operator_packet.get("schema_version") != "1.0.0":
+                failures.append(
+                    "release candidate publication dry-run operator approval packet schema_version must be 1.0.0."
+                )
+            if (
+                operator_packet.get("record_type")
+                != "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_OPERATOR_APPROVAL_PACKET_v1"
+            ):
+                failures.append(
+                    "release candidate publication dry-run operator approval packet record_type must be RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_OPERATOR_APPROVAL_PACKET_v1."
+                )
+            if (
+                str(operator_packet.get("candidate_id", "")).strip()
+                != EXPECTED_ROLLUP_NEXT_SLICE_CANDIDATE_ID
+            ):
+                failures.append(
+                    "release candidate publication dry-run operator approval packet candidate_id must be release_candidate_package_publish_dry_run_v1."
+                )
+            if str(operator_packet.get("candidate_type", "")).strip() != "dry_run":
+                failures.append(
+                    "release candidate publication dry-run operator approval packet candidate_type must be dry_run."
+                )
+            if (
+                str(operator_packet.get("approval_packet_status", "")).strip()
+                != EXPECTED_DRY_RUN_OPERATOR_APPROVAL_PACKET_STATUS
+            ):
+                failures.append(
+                    "release candidate publication dry-run operator approval packet must keep approval_packet_status=static_template_valid_blocked."
+                )
+            if str(operator_packet.get("admission_status", "")).strip() != "unadmitted":
+                failures.append(
+                    "release candidate publication dry-run operator approval packet admission_status must remain unadmitted."
+                )
+            for field in (
+                "approval_request_ready",
+                "operator_approval_granted",
+                "approval_phrase_present",
+                "dry_run_admitted",
+                "receipt_issued",
+                "publication_admitted",
+                "real_execution_admitted",
+                "production_ready_claimed",
+            ):
+                if bool(operator_packet.get(field, False)):
+                    failures.append(
+                        "release candidate publication dry-run operator approval packet must keep field false: "
+                        f"{field}"
+                    )
+            if (
+                str(operator_packet.get("approval_phrase_required", "")).strip()
+                != EXPECTED_DRY_RUN_PLAN_APPROVAL_PHRASE
+            ):
+                failures.append(
+                    "release candidate publication dry-run operator approval packet must keep exact approval phrase for release_candidate_package_publish_dry_run_v1."
+                )
+            approval_decision_reference = operator_packet.get("approval_decision_reference")
+            if isinstance(approval_decision_reference, str) and approval_decision_reference.strip():
+                failures.append(
+                    "release candidate publication dry-run operator approval packet approval_decision_reference must be null/empty while unadmitted."
+                )
+
+            approval_decision_fields = (
+                operator_packet.get("approval_decision_fields")
+                if isinstance(operator_packet.get("approval_decision_fields"), dict)
+                else {}
+            )
+            for key, value in approval_decision_fields.items():
+                if isinstance(value, str):
+                    if value.strip():
+                        failures.append(
+                            "release candidate publication dry-run operator approval packet approval_decision_fields must remain empty: "
+                            f"{key}"
+                        )
+                elif value is not None:
+                    failures.append(
+                        "release candidate publication dry-run operator approval packet approval_decision_fields must remain null/empty: "
+                        f"{key}"
+                    )
+
+            for key in (
+                "operator_review_summary",
+                "approval_blocker_summary",
+                "required_operator_review_items",
+                "required_validation_commands",
+                "rollback_or_cleanup_expectations",
+                "blocked_surface_attestations",
+                "forbidden_actions",
+                "forbidden_outputs",
+                "forbidden_paths",
+                "required_post_approval_controls",
+            ):
+                values = {
+                    str(item).strip()
+                    for item in (operator_packet.get(key) or [])
+                    if str(item).strip()
+                }
+                if not values:
+                    failures.append(
+                        "release candidate publication dry-run operator approval packet list must be non-empty: "
+                        f"{key}"
+                    )
+
+            operator_decision_options = (
+                operator_packet.get("operator_decision_options")
+                if isinstance(operator_packet.get("operator_decision_options"), dict)
+                else {}
+            )
+            default_option = str(operator_decision_options.get("default_option", "")).strip()
+            if default_option != "do_not_approve":
+                failures.append(
+                    "release candidate publication dry-run operator approval packet operator_decision_options.default_option must remain do_not_approve."
+                )
+
+            required_validation_commands = {
+                str(item).strip()
+                for item in (operator_packet.get("required_validation_commands") or [])
+                if str(item).strip()
+            }
+            for command_path in (
+                "tools/execution-admission/validate_execution_admission_candidate_matrix.py",
+                "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+                "tools/execution-admission/validate_execution_admission_preflight_proof_packages.py",
+                "tools/execution-admission/validate_execution_admission_readiness_rollup.py",
+                "tools/execution-admission/validate_release_candidate_publication_dry_run_plan.py",
+                "tools/execution-admission/validate_release_candidate_publication_dry_run_receipt.py",
+                "tools/execution-admission/validate_release_candidate_publication_dry_run_admission_blockers.py",
+                "tools/audit/verify_sandbox_writer_safety.py",
+                "tools/release-lane/prove_pilot_release_chain.py",
+            ):
+                if command_path not in required_validation_commands:
+                    failures.append(
+                        "release candidate publication dry-run operator approval packet required_validation_commands must include: "
+                        f"{command_path}"
+                    )
+
+            forbidden_paths = {
+                str(item).strip()
+                for item in (operator_packet.get("forbidden_paths") or [])
+                if str(item).strip()
+            }
+            for token in (
+                "production_path_category",
+                "engine_path_category",
+                "cache_live_db_category",
+                "destructive_cleanup_category",
+            ):
+                if token not in forbidden_paths:
+                    failures.append(
+                        "release candidate publication dry-run operator approval packet forbidden_paths must include: "
+                        f"{token}"
+                    )
+
+            forbidden_outputs = {
+                str(item).strip()
+                for item in (operator_packet.get("forbidden_outputs") or [])
+                if str(item).strip()
+            }
+            for token in (
+                "publish_operation",
+                "spawn_operation",
+                "production_path_writes",
+                "engine_path_writes",
+                "cache_live_db_access",
+                "authoritative_source_uuid_claims",
+                "authoritative_asset_id_claims",
+                "authoritative_product_id_claims",
+            ):
+                if token not in forbidden_outputs:
+                    failures.append(
+                        "release candidate publication dry-run operator approval packet forbidden_outputs must include: "
+                        f"{token}"
+                    )
+
+            source_artifacts = (
+                operator_packet.get("source_artifacts")
+                if isinstance(operator_packet.get("source_artifacts"), dict)
+                else {}
+            )
+            expected_source_refs = {
+                "candidate_matrix_ref": EXECUTION_ADMISSION_CANDIDATE_MATRIX_REL,
+                "preflight_contracts_ref": EXECUTION_ADMISSION_PREFLIGHT_CONTRACTS_REL,
+                "preflight_proof_packages_ref": EXECUTION_ADMISSION_PREFLIGHT_PROOF_PACKAGES_REL,
+                "readiness_rollup_ref": EXECUTION_ADMISSION_READINESS_ROLLUP_REL,
+                "dry_run_plan_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_PLAN_REL,
+                "dry_run_receipt_contract_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_CONTRACT_REL,
+                "blocked_unissued_receipt_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_BLOCKED_REL,
+                "admission_blocker_checklist_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_ADMISSION_BLOCKERS_REL,
+                "production_readiness_report_ref": "examples/production-readiness-report/max_biped_v1_production_readiness_report_pass.json",
+                "noop_receipt_status_ref": "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json",
+            }
+            for field, expected_path in expected_source_refs.items():
+                actual_ref = str(source_artifacts.get(field, "")).replace("\\", "/").strip()
+                if not actual_ref:
+                    failures.append(
+                        "release candidate publication dry-run operator approval packet source_artifacts is missing field: "
+                        f"{field}"
+                    )
+                    continue
+                if actual_ref != expected_path:
+                    failures.append(
+                        "release candidate publication dry-run operator approval packet source_artifacts field has unexpected path: "
+                        f"{field} -> {actual_ref}"
+                    )
+
+            source_status = (
+                operator_packet.get("source_artifact_validation_status")
+                if isinstance(operator_packet.get("source_artifact_validation_status"), dict)
+                else {}
+            )
+            for field in (
+                "candidate_matrix_status",
+                "preflight_contracts_status",
+                "preflight_proof_packages_status",
+                "readiness_rollup_status",
+                "dry_run_plan_status",
+                "dry_run_receipt_contract_status",
+                "blocked_unissued_receipt_status",
+                "admission_blocker_checklist_status",
+                "production_readiness_status",
+                "noop_receipt_status",
+            ):
+                if str(source_status.get(field, "")).strip() != "pass":
+                    failures.append(
+                        "release candidate publication dry-run operator approval packet source_artifact_validation_status must keep field pass: "
+                        f"{field}"
+                    )
+
+            expected_future_receipt_contract = (
+                operator_packet.get("expected_future_receipt_contract")
+                if isinstance(operator_packet.get("expected_future_receipt_contract"), dict)
+                else {}
+            )
+            if (
+                str(expected_future_receipt_contract.get("receipt_type", "")).strip()
+                != EXPECTED_DRY_RUN_RECEIPT_TYPE
+            ):
+                failures.append(
+                    "release candidate publication dry-run operator approval packet expected_future_receipt_contract.receipt_type must keep release_candidate_package_publish_dry_run_receipt_v1."
+                )
+            if (
+                str(
+                    expected_future_receipt_contract.get(
+                        "receipt_contract_status_expected", ""
+                    )
+                ).strip()
+                != EXPECTED_DRY_RUN_RECEIPT_CONTRACT_STATUS
+            ):
+                failures.append(
+                    "release candidate publication dry-run operator approval packet expected_future_receipt_contract.receipt_contract_status_expected must keep static_contract_valid_blocked."
+                )
+
+            safety_posture = (
+                operator_packet.get("safety_posture")
+                if isinstance(operator_packet.get("safety_posture"), dict)
+                else {}
+            )
+            for field in (
+                "source_uuid_status",
+                "asset_id_status",
+                "product_id_status",
+            ):
+                if str(safety_posture.get(field, "")).strip() != "not_authoritative":
+                    failures.append(
+                        "release candidate publication dry-run operator approval packet safety_posture must keep not_authoritative: "
+                        f"{field}"
+                    )
+            if bool(operator_packet.get("unsafe_claims_detected", False)):
+                failures.append(
+                    "release candidate publication dry-run operator approval packet must keep unsafe_claims_detected=false."
+                )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "release candidate publication dry-run operator approval packet is not valid JSON: "
                 f"{exc}"
             )
 
