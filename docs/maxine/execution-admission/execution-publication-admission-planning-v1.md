@@ -1,0 +1,82 @@
+# Execution Publication Admission Planning v1
+
+## Purpose
+
+Define a review-only bridge from evidence/review readiness to future bounded admission requests.
+
+This slice does not admit execution or publication.
+
+## Current State Snapshot
+
+- production readiness level: `review_ready`
+- readiness decision: `blocked_for_execution`
+- execution admission: blocked/unadmitted
+- publication admission: blocked/unadmitted
+- pilot chain: evidence-only, passing
+
+## First Narrow Candidate (Review-Only)
+
+- candidate id: `release_candidate_package_receipt_noop_v1`
+- candidate title: release-candidate package no-op receipt generation
+- candidate status in this slice: `review_only`
+- execution/publication admission in this slice: not approved
+
+## Candidate Scope
+
+- no-op receipt generation only
+- local repo evidence inputs only
+- sandbox/example outputs only
+- no O3DE/Editor/runtime/AP/Blender/DCC/profiler/live screenshot execution
+- no spawn/publish
+- no Cache/live DB access
+- no production/engine path writes
+- no authoritative source UUID / Asset ID / Product ID claims
+
+## Future Approval Phrase
+
+Any future attempt to admit this candidate requires the exact phrase:
+
+- `APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1`
+
+This planning slice does not include that approval.
+
+## Required Preconditions (Future Admission Attempt)
+
+1. production-readiness report remains present and truthful.
+2. release-candidate package proof remains pass.
+3. safety verifier pass is current.
+4. PowerShell safety wrapper pass is current.
+5. explicit operator approval phrase is recorded for this candidate id.
+6. bounded input/output paths are listed and reviewed.
+
+## Required Postconditions (Future Admission Attempt)
+
+1. a no-op receipt artifact is produced.
+2. receipt confirms `execution_performed=false`.
+3. receipt confirms blocked surfaces remain blocked.
+4. post-execution validation commands pass.
+5. no publication action occurs.
+
+## Required Receipt Focus
+
+The first candidate is receipt-only. It must produce an auditable no-op receipt before stronger candidates are considered.
+
+## Why Broad Execution Remains Blocked
+
+- no approved broad execution decision exists.
+- publication admission remains blocked.
+- authoritative ID claim paths remain blocked.
+- no production/engine write admission exists.
+
+## Implementation Artifacts
+
+- planning schema:
+  - `schemas/maxine_execution_publication_admission_plan.schema.json`
+- planning examples:
+  - `examples/execution-admission/release_candidate_package_receipt_noop_review_only.json`
+  - `examples/execution-admission/release_candidate_package_receipt_noop_blocked.json`
+- candidate detail:
+  - `docs/maxine/execution-admission/release-candidate-package-receipt-noop-v1.md`
+- tests:
+  - `tests/pytest/test_execution_publication_admission_plan_schema.py`
+

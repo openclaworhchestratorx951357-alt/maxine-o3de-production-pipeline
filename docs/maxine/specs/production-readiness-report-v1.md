@@ -70,3 +70,10 @@ No execution or publication is admitted by this report:
 - runner/proof integration:
   - `tools/release-lane/run_pilot_release_chain_validation.py`
   - `tools/release-lane/prove_pilot_release_chain.py`
+
+## Follow-On Planning
+
+Execution/publication admission remains blocked. Review-only planning for the first narrow no-op receipt candidate is documented in:
+
+- `docs/maxine/execution-admission/execution-publication-admission-planning-v1.md`
+- `docs/maxine/execution-admission/release-candidate-package-receipt-noop-v1.md`
