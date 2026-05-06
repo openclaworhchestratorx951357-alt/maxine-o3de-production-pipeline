@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate evidence-only manual hero review reports for release-lane integration."""
+"""Validate manual hero review reports with controlled-real evidence references."""
 
 from __future__ import annotations
 
@@ -12,14 +12,54 @@ from typing import Any, Dict, List, Tuple
 
 ALLOWED_STATUS = {"pass", "warn", "fail", "pending_manual"}
 ALLOWED_FINDING_SEVERITY = {"info", "warning", "error", "manual_review"}
+ALLOWED_EVIDENCE_CLASS = {"fixture", "imported", "controlled_real", "manual"}
+ALLOWED_REVIEWER_IDENTITY = {"fixture_reviewer", "assigned_reviewer", "approved_reviewer"}
+ALLOWED_REVIEW_TIER = {"hero", "npc", "prop"}
+ALLOWED_RELEASE_RECOMMENDATION = {
+    "approve_for_release_candidate",
+    "approve_with_warnings",
+    "reject",
+    "pending_manual_review",
+}
+EXPECTED_RECOMMENDATION_BY_DECISION = {
+    "pass": "approve_for_release_candidate",
+    "warn": "approve_with_warnings",
+    "fail": "reject",
+    "pending_manual": "pending_manual_review",
+}
 EXPECTED_SCHEMA_VERSION = "1.0.0"
 EXPECTED_REPORT_TYPE = "MANUAL_HERO_REVIEW_v1_REPORT"
 EXPECTED_REVIEW_CONTRACT_ID = "MANUAL_HERO_REVIEW_v1"
-EXPECTED_TARGET_TIER = "hero"
 TARGET_PATH = "qc.gates[]"
 FUTURE_TARGET_PATH = "qc.checks[]"
 CHECK_ID = "manual_hero_review_v1"
 CONTRACT_ID = "MANUAL_HERO_REVIEW_v1"
+REQUIRED_HERO_EVIDENCE_REFS = [
+    "dcc_conform_v1",
+    "max_biped_v1_skeleton_contract",
+    "material_uv_qc_v1",
+    "animation_smoke_v1",
+    "screenshot_evidence_v1",
+    "source_product_evidence_resolver_v1",
+]
+QUALITY_STATUS_FIELDS = [
+    "required_evidence_present_status",
+    "visual_quality_status",
+    "material_quality_status",
+    "skeleton_quality_status",
+    "animation_quality_status",
+    "scale_orientation_status",
+    "package_readiness_status",
+]
+SAFETY_BLOCKED_FIELDS = [
+    "execution_status",
+    "o3de_execution_status",
+    "editor_execution_status",
+    "runtime_execution_status",
+    "dcc_execution_status",
+    "asset_processor_execution_status",
+    "production_write_status",
+]
 
 
 def utc_now() -> str:
@@ -121,6 +161,73 @@ def _is_string_array(raw: Any) -> bool:
     return isinstance(raw, list) and all(isinstance(x, str) and x.strip() for x in raw)
 
 
+def _validate_findings_array(
+    raw_findings: Any,
+    findings: List[Dict[str, Any]],
+    field_name: str,
+) -> List[Dict[str, Any]]:
+    parsed: List[Dict[str, Any]] = []
+    if not isinstance(raw_findings, list):
+        add_finding(
+            findings,
+            f"{field_name}_not_array",
+            "error",
+            "open",
+            f"{field_name} must be an array.",
+        )
+        return parsed
+
+    for idx, item in enumerate(raw_findings):
+        if not isinstance(item, dict):
+            add_finding(
+                findings,
+                f"{field_name}_item_invalid",
+                "error",
+                "open",
+                f"{field_name}[{idx}] must be an object.",
+            )
+            continue
+        fid = str(item.get("id", "")).strip()
+        sev = str(item.get("severity", "")).strip()
+        fstatus = str(item.get("status", "")).strip()
+        msg = str(item.get("message", "")).strip()
+        if not fid:
+            add_finding(
+                findings,
+                f"{field_name}_id_missing",
+                "error",
+                "open",
+                f"{field_name}[{idx}].id is required.",
+            )
+        if sev not in ALLOWED_FINDING_SEVERITY:
+            add_finding(
+                findings,
+                f"{field_name}_severity_invalid",
+                "error",
+                "open",
+                f"{field_name}[{idx}].severity must be info|warning|error|manual_review.",
+                {"actual": sev},
+            )
+        if not fstatus:
+            add_finding(
+                findings,
+                f"{field_name}_status_missing",
+                "error",
+                "open",
+                f"{field_name}[{idx}].status is required.",
+            )
+        if not msg:
+            add_finding(
+                findings,
+                f"{field_name}_message_missing",
+                "error",
+                "open",
+                f"{field_name}[{idx}].message is required.",
+            )
+        parsed.append(item)
+    return parsed
+
+
 def main() -> int:
     args = parse_args()
     repo_root = Path(__file__).resolve().parents[2]
@@ -199,10 +306,107 @@ def main() -> int:
             {"actual": declared_status},
         )
 
-    for required in ("job_id", "package_id", "lane"):
+    decision = str(report.get("decision", "")).strip()
+    if decision not in ALLOWED_STATUS:
+        add_finding(
+            findings,
+            "decision_invalid",
+            "error",
+            "open",
+            "decision must be one of pass|warn|fail|pending_manual.",
+            {"actual": decision},
+        )
+
+    for required in (
+        "job_id",
+        "package_id",
+        "lane",
+        "candidate_id",
+        "review_id",
+        "review_profile_version",
+        "reviewer_name_or_handle",
+        "review_timestamp",
+    ):
         value = str(report.get(required, "")).strip()
         if not value:
             add_finding(findings, f"{required}_missing", "error", "open", f"{required} is required.")
+
+    review_profile_id = str(report.get("review_profile_id", "")).strip()
+    if review_profile_id != EXPECTED_REVIEW_CONTRACT_ID:
+        add_finding(
+            findings,
+            "review_profile_id_invalid",
+            "error",
+            "open",
+            f"review_profile_id must be {EXPECTED_REVIEW_CONTRACT_ID}.",
+            {"actual": review_profile_id},
+        )
+
+    review_tier = str(report.get("review_tier", "")).strip()
+    if review_tier not in ALLOWED_REVIEW_TIER:
+        add_finding(
+            findings,
+            "review_tier_invalid",
+            "error",
+            "open",
+            "review_tier must be hero|npc|prop.",
+            {"actual": review_tier},
+        )
+
+    evidence_class = str(report.get("evidence_class", "")).strip()
+    if evidence_class not in ALLOWED_EVIDENCE_CLASS:
+        add_finding(
+            findings,
+            "evidence_class_invalid",
+            "error",
+            "open",
+            "evidence_class must be fixture|imported|controlled_real|manual.",
+            {"actual": evidence_class},
+        )
+
+    reviewer_identity_status = str(report.get("reviewer_identity_status", "")).strip()
+    if reviewer_identity_status not in ALLOWED_REVIEWER_IDENTITY:
+        add_finding(
+            findings,
+            "reviewer_identity_status_invalid",
+            "error",
+            "open",
+            "reviewer_identity_status must be fixture_reviewer|assigned_reviewer|approved_reviewer.",
+            {"actual": reviewer_identity_status},
+        )
+
+    release_recommendation = str(report.get("release_recommendation", "")).strip()
+    if release_recommendation not in ALLOWED_RELEASE_RECOMMENDATION:
+        add_finding(
+            findings,
+            "release_recommendation_invalid",
+            "error",
+            "open",
+            "release_recommendation must be approve_for_release_candidate|approve_with_warnings|reject|pending_manual_review.",
+            {"actual": release_recommendation},
+        )
+
+    expected_recommendation = EXPECTED_RECOMMENDATION_BY_DECISION.get(decision)
+    if expected_recommendation and release_recommendation != expected_recommendation:
+        add_finding(
+            findings,
+            "release_recommendation_mismatch",
+            "error",
+            "open",
+            "release_recommendation must match decision policy.",
+            {"decision": decision, "expected": expected_recommendation, "actual": release_recommendation},
+        )
+
+    claim_status = str(report.get("claim_status", "")).strip()
+    if claim_status not in {"evidence_only", "not_authoritative"}:
+        add_finding(
+            findings,
+            "claim_status_invalid",
+            "error",
+            "open",
+            "claim_status must be evidence_only|not_authoritative.",
+            {"actual": claim_status},
+        )
 
     source = report.get("source", {}) if isinstance(report.get("source"), dict) else {}
     source_path = str(source.get("source_path", "")).strip()
@@ -221,278 +425,236 @@ def main() -> int:
     if not source_kind:
         add_finding(findings, "source_kind_missing", "error", "open", "source.source_kind is required.")
 
-    review_scope = report.get("review_scope", {}) if isinstance(report.get("review_scope"), dict) else {}
-    review_contract_id = str(review_scope.get("review_contract_id", "")).strip()
-    target_tier = str(review_scope.get("target_tier", "")).strip()
-    required_reviewers = review_scope.get("required_reviewers")
-    required_evidence_ids = review_scope.get("required_evidence_ids", [])
+    reviewed_evidence_refs_raw = report.get("reviewed_evidence_refs", [])
+    if not _is_string_array(reviewed_evidence_refs_raw):
+        add_finding(
+            findings,
+            "reviewed_evidence_refs_invalid",
+            "error",
+            "open",
+            "reviewed_evidence_refs must be a non-empty string array.",
+        )
+        reviewed_evidence_refs_raw = []
+    reviewed_evidence_refs = sorted(
+        set(str(x).strip() for x in reviewed_evidence_refs_raw if isinstance(x, str) and str(x).strip())
+    )
 
-    if review_contract_id != EXPECTED_REVIEW_CONTRACT_ID:
-        add_finding(
-            findings,
-            "review_contract_id_invalid",
-            "error",
-            "open",
-            f"review_scope.review_contract_id must be {EXPECTED_REVIEW_CONTRACT_ID}.",
-            {"actual": review_contract_id},
-        )
-    if target_tier != EXPECTED_TARGET_TIER:
-        add_finding(
-            findings,
-            "target_tier_invalid_for_contract",
-            "error",
-            "open",
-            f"review_scope.target_tier must be {EXPECTED_TARGET_TIER} for this contract.",
-            {"actual": target_tier},
-        )
-    if review_scope.get("evidence_only") is not True:
-        add_finding(
-            findings,
-            "evidence_only_required",
-            "error",
-            "open",
-            "review_scope.evidence_only must be true.",
-            {"actual": review_scope.get("evidence_only")},
-        )
-    if review_scope.get("runtime_execution_admitted") is not False:
-        add_finding(
-            findings,
-            "runtime_execution_admitted_must_be_false",
-            "error",
-            "open",
-            "review_scope.runtime_execution_admitted must be false.",
-            {"actual": review_scope.get("runtime_execution_admitted")},
-        )
-    if not isinstance(required_reviewers, int) or required_reviewers < 1:
-        add_finding(
-            findings,
-            "required_reviewers_invalid",
-            "error",
-            "open",
-            "review_scope.required_reviewers must be integer >= 1.",
-            {"actual": required_reviewers},
-        )
-        required_reviewers = 1
-    if not _is_string_array(required_evidence_ids):
-        add_finding(
-            findings,
-            "required_evidence_ids_invalid",
-            "error",
-            "open",
-            "review_scope.required_evidence_ids must be a non-empty string array.",
-        )
-        required_evidence_ids = []
-    if not required_evidence_ids:
-        add_finding(
-            findings,
-            "required_evidence_ids_missing",
-            "error",
-            "open",
-            "review_scope.required_evidence_ids must not be empty.",
-        )
-    required_evidence_ids = sorted(set(str(x).strip() for x in required_evidence_ids if str(x).strip()))
-
-    decision = report.get("review_decision", {}) if isinstance(report.get("review_decision"), dict) else {}
-    review_required = decision.get("review_required")
-    review_state = str(decision.get("review_state", "")).strip()
-    reviewer_count = decision.get("reviewer_count")
-    approver_ids = decision.get("approver_ids", [])
-    missing_evidence_ids = decision.get("missing_evidence_ids", [])
-    attached_evidence_ids = decision.get("attached_evidence_ids", [])
-    rejection_reasons = decision.get("rejection_reasons", [])
-    approved_at_utc = str(decision.get("approved_at_utc", "")).strip()
-
-    if not isinstance(review_required, bool):
-        add_finding(
-            findings,
-            "review_required_invalid",
-            "error",
-            "open",
-            "review_decision.review_required must be boolean.",
-            {"actual": review_required},
-        )
-        review_required = True
-    if review_state not in {"not_required", "pending", "approved", "rejected"}:
-        add_finding(
-            findings,
-            "review_state_invalid",
-            "error",
-            "open",
-            "review_decision.review_state must be not_required|pending|approved|rejected.",
-            {"actual": review_state},
-        )
-        review_state = "pending"
-    if not isinstance(reviewer_count, int) or reviewer_count < 0:
-        add_finding(
-            findings,
-            "reviewer_count_invalid",
-            "error",
-            "open",
-            "review_decision.reviewer_count must be integer >= 0.",
-            {"actual": reviewer_count},
-        )
-        reviewer_count = 0
-    for field_name, value in (
-        ("approver_ids", approver_ids),
-        ("missing_evidence_ids", missing_evidence_ids),
-        ("attached_evidence_ids", attached_evidence_ids),
-        ("rejection_reasons", rejection_reasons),
-    ):
-        if not _is_string_array(value) and value != []:
+    quality_status_values: Dict[str, str] = {}
+    for field in QUALITY_STATUS_FIELDS:
+        value = str(report.get(field, "")).strip()
+        quality_status_values[field] = value
+        if value not in ALLOWED_STATUS:
             add_finding(
                 findings,
-                f"{field_name}_invalid",
+                f"{field}_invalid",
                 "error",
                 "open",
-                f"review_decision.{field_name} must be a string array.",
+                f"{field} must be one of pass|warn|fail|pending_manual.",
+                {"actual": value},
             )
-    approver_ids = sorted(set(str(x).strip() for x in approver_ids if isinstance(x, str) and x.strip()))
-    missing_evidence_ids = sorted(
-        set(str(x).strip() for x in missing_evidence_ids if isinstance(x, str) and x.strip())
-    )
-    attached_evidence_ids = sorted(
-        set(str(x).strip() for x in attached_evidence_ids if isinstance(x, str) and x.strip())
-    )
-    rejection_reasons = [str(x).strip() for x in rejection_reasons if isinstance(x, str) and str(x).strip()]
 
-    computed_missing = sorted(set(required_evidence_ids) - set(attached_evidence_ids))
-    if computed_missing != missing_evidence_ids:
-        add_finding(
-            findings,
-            "missing_evidence_ids_mismatch",
-            "warning",
-            "open",
-            "review_decision.missing_evidence_ids does not match required-vs-attached computation.",
-            {"reported": missing_evidence_ids, "computed": computed_missing},
-        )
-    if computed_missing:
-        missing_severity = "manual_review" if review_state == "pending" else "error"
-        add_finding(
-            findings,
-            "required_evidence_missing",
-            missing_severity,
-            "open",
-            "Required review evidence is missing.",
-            {"missing_evidence_ids": computed_missing},
-        )
-
-    if review_required and review_state == "not_required":
-        add_finding(
-            findings,
-            "review_state_not_required_invalid",
-            "error",
-            "open",
-            "review_state cannot be not_required when review_required=true.",
-        )
-    if not review_required and target_tier == EXPECTED_TARGET_TIER:
-        add_finding(
-            findings,
-            "hero_review_required",
-            "error",
-            "open",
-            "Hero tier requires manual review gate to be enabled.",
-        )
-
-    if review_required:
-        if review_state == "pending":
+    missing_required_refs: List[str] = []
+    if review_tier == "hero":
+        missing_required_refs = sorted(set(REQUIRED_HERO_EVIDENCE_REFS) - set(reviewed_evidence_refs))
+        if missing_required_refs:
             add_finding(
                 findings,
-                "manual_review_pending",
-                "manual_review",
+                "required_controlled_real_evidence_refs_missing",
+                "error" if decision != "pending_manual" else "manual_review",
                 "open",
-                "Manual hero review is pending.",
+                "Hero manual review must reference all required controlled-real evidence gates.",
+                {
+                    "missing_refs": missing_required_refs,
+                    "required_refs": REQUIRED_HERO_EVIDENCE_REFS,
+                },
             )
-        elif review_state == "approved":
-            if reviewer_count < required_reviewers:
-                add_finding(
-                    findings,
-                    "insufficient_reviewer_count",
-                    "error",
-                    "open",
-                    "reviewer_count is lower than required_reviewers.",
-                    {"reviewer_count": reviewer_count, "required_reviewers": required_reviewers},
-                )
-            if len(approver_ids) < required_reviewers:
-                add_finding(
-                    findings,
-                    "insufficient_approver_ids",
-                    "error",
-                    "open",
-                    "approver_ids count is lower than required_reviewers.",
-                    {"approver_ids": approver_ids, "required_reviewers": required_reviewers},
-                )
-            if rejection_reasons:
-                add_finding(
-                    findings,
-                    "approved_with_rejection_reasons",
-                    "error",
-                    "open",
-                    "approved review_state must not include rejection_reasons.",
-                    {"rejection_reasons": rejection_reasons},
-                )
-            if not approved_at_utc:
-                add_finding(
-                    findings,
-                    "approved_at_utc_missing",
-                    "warning",
-                    "open",
-                    "approved review_state should include approved_at_utc evidence.",
-                )
-        elif review_state == "rejected":
-            if not rejection_reasons:
-                add_finding(
-                    findings,
-                    "rejection_reasons_missing",
-                    "error",
-                    "open",
-                    "rejected review_state must include rejection_reasons.",
-                )
-            if approver_ids:
-                add_finding(
-                    findings,
-                    "rejected_with_approver_ids",
-                    "warning",
-                    "open",
-                    "rejected review_state normally leaves approver_ids empty.",
-                    {"approver_ids": approver_ids},
-                )
-    elif review_state != "not_required":
+
+    required_evidence_present_status = quality_status_values.get("required_evidence_present_status", "")
+    if missing_required_refs and required_evidence_present_status == "pass":
         add_finding(
             findings,
-            "review_state_expected_not_required",
-            "warning",
+            "required_evidence_present_status_mismatch",
+            "error",
             "open",
-            "review_state should be not_required when review_required=false.",
+            "required_evidence_present_status cannot be pass when required refs are missing.",
+            {"missing_refs": missing_required_refs},
         )
 
-    input_findings = report.get("findings", [])
-    if not isinstance(input_findings, list):
-        add_finding(findings, "findings_not_array", "error", "open", "findings must be an array.")
-        input_findings = []
-    else:
-        for idx, item in enumerate(input_findings):
-            if not isinstance(item, dict):
-                add_finding(findings, "finding_invalid", "error", "open", f"findings[{idx}] must be an object.")
-                continue
-            fid = str(item.get("id", "")).strip()
-            sev = str(item.get("severity", "")).strip()
-            fstatus = str(item.get("status", "")).strip()
-            msg = str(item.get("message", "")).strip()
-            if not fid:
-                add_finding(findings, "finding_id_missing", "error", "open", f"findings[{idx}].id is required.")
-            if sev not in ALLOWED_FINDING_SEVERITY:
-                add_finding(
-                    findings,
-                    "finding_severity_invalid",
-                    "error",
-                    "open",
-                    f"findings[{idx}].severity must be info|warning|error|manual_review.",
-                    {"actual": sev},
-                )
-            if not fstatus:
-                add_finding(findings, "finding_status_missing", "error", "open", f"findings[{idx}].status is required.")
-            if not msg:
-                add_finding(findings, "finding_message_missing", "error", "open", f"findings[{idx}].message is required.")
+    failed_quality_fields = sorted(
+        [field for field, value in quality_status_values.items() if value == "fail"]
+    )
+    pending_quality_fields = sorted(
+        [field for field, value in quality_status_values.items() if value == "pending_manual"]
+    )
+    warn_quality_fields = sorted(
+        [field for field, value in quality_status_values.items() if value == "warn"]
+    )
+
+    waiver_status = str(report.get("waiver_status", "")).strip()
+    waiver_reasons_raw = report.get("waiver_reasons", [])
+    if waiver_status not in {"none", "waived"}:
+        add_finding(
+            findings,
+            "waiver_status_invalid",
+            "error",
+            "open",
+            "waiver_status must be none|waived.",
+            {"actual": waiver_status},
+        )
+    if not isinstance(waiver_reasons_raw, list):
+        add_finding(
+            findings,
+            "waiver_reasons_invalid",
+            "error",
+            "open",
+            "waiver_reasons must be a string array.",
+        )
+        waiver_reasons_raw = []
+    waiver_reasons = [str(x).strip() for x in waiver_reasons_raw if isinstance(x, str) and str(x).strip()]
+    if waiver_status == "waived" and not waiver_reasons:
+        add_finding(
+            findings,
+            "waiver_reasons_required",
+            "error",
+            "open",
+            "waiver_reasons must be provided when waiver_status=waived.",
+        )
+    if waiver_status == "none" and waiver_reasons:
+        add_finding(
+            findings,
+            "waiver_reasons_present_without_waiver",
+            "warning",
+            "open",
+            "waiver_reasons were provided while waiver_status=none.",
+        )
+
+    reviewer_findings = _validate_findings_array(report.get("reviewer_findings", []), findings, "reviewer_findings")
+    report_findings = _validate_findings_array(report.get("findings", []), findings, "findings")
+
+    combined_policy_findings = reviewer_findings + report_findings
+    combined_policy_severities = {str(item.get("severity", "")) for item in combined_policy_findings}
+    has_error_finding = "error" in combined_policy_severities
+    has_warning_finding = "warning" in combined_policy_severities
+    has_manual_review_finding = "manual_review" in combined_policy_severities
+
+    if decision == "pass":
+        if reviewer_identity_status != "approved_reviewer":
+            add_finding(
+                findings,
+                "pass_requires_approved_reviewer",
+                "error",
+                "open",
+                "pass decision requires reviewer_identity_status=approved_reviewer.",
+            )
+        if failed_quality_fields or pending_quality_fields or warn_quality_fields:
+            add_finding(
+                findings,
+                "pass_requires_all_quality_pass",
+                "error",
+                "open",
+                "pass decision requires all quality status fields to be pass.",
+                {
+                    "failed_quality_fields": failed_quality_fields,
+                    "pending_quality_fields": pending_quality_fields,
+                    "warn_quality_fields": warn_quality_fields,
+                },
+            )
+        if missing_required_refs:
+            add_finding(
+                findings,
+                "pass_requires_complete_required_refs",
+                "error",
+                "open",
+                "pass decision requires complete required reviewed evidence refs.",
+                {"missing_refs": missing_required_refs},
+            )
+        if has_error_finding or has_manual_review_finding:
+            add_finding(
+                findings,
+                "pass_has_blocking_findings",
+                "error",
+                "open",
+                "pass decision cannot include error/manual_review findings.",
+            )
+        if waiver_status == "waived":
+            add_finding(
+                findings,
+                "pass_with_waiver_not_allowed",
+                "error",
+                "open",
+                "waived reviews must not use pass decision; use warn or fail.",
+            )
+
+    if decision == "warn":
+        if reviewer_identity_status != "approved_reviewer":
+            add_finding(
+                findings,
+                "warn_requires_approved_reviewer",
+                "error",
+                "open",
+                "warn decision requires reviewer_identity_status=approved_reviewer.",
+            )
+        if failed_quality_fields or has_error_finding:
+            add_finding(
+                findings,
+                "warn_has_blocking_failures",
+                "error",
+                "open",
+                "warn decision cannot include fail quality states or error findings.",
+                {"failed_quality_fields": failed_quality_fields},
+            )
+        if not (warn_quality_fields or has_warning_finding or waiver_status == "waived"):
+            add_finding(
+                findings,
+                "warn_without_warn_signals",
+                "warning",
+                "open",
+                "warn decision should include warn quality status, warning finding, or explicit waiver.",
+            )
+
+    if decision == "fail":
+        blocking_signals = bool(
+            failed_quality_fields
+            or missing_required_refs
+            or has_error_finding
+        )
+        if not blocking_signals:
+            add_finding(
+                findings,
+                "fail_without_blocking_signal",
+                "error",
+                "open",
+                "fail decision requires at least one blocking signal.",
+            )
+
+    if decision == "pending_manual":
+        pending_signals = bool(
+            pending_quality_fields
+            or missing_required_refs
+            or has_manual_review_finding
+            or reviewer_identity_status == "assigned_reviewer"
+        )
+        if not pending_signals:
+            add_finding(
+                findings,
+                "pending_manual_without_pending_signal",
+                "manual_review",
+                "open",
+                "pending_manual decision should include pending/manual-review signals.",
+            )
+
+    safety = report.get("safety", {}) if isinstance(report.get("safety"), dict) else {}
+    for field in SAFETY_BLOCKED_FIELDS:
+        value = str(safety.get(field, "")).strip()
+        if value != "blocked":
+            add_finding(
+                findings,
+                f"{field}_must_be_blocked",
+                "error",
+                "open",
+                f"safety.{field} must be blocked.",
+                {"actual": value},
+            )
 
     attachment = report.get("manifest_attachment", {}) if isinstance(report.get("manifest_attachment"), dict) else {}
     target_path = str(attachment.get("target_path", "")).strip()
@@ -516,7 +678,7 @@ def main() -> int:
             {"actual": future_target_path},
         )
 
-    combined_findings = findings + input_findings
+    combined_findings = findings + reviewer_findings + report_findings
     computed_status = derive_status(combined_findings)
     if declared_status in ALLOWED_STATUS and declared_status != computed_status:
         add_finding(
@@ -527,7 +689,19 @@ def main() -> int:
             "report.status does not match computed findings severity.",
             {"declared": declared_status, "computed": computed_status},
         )
-        combined_findings = findings + input_findings
+        combined_findings = findings + reviewer_findings + report_findings
+        computed_status = derive_status(combined_findings)
+
+    if decision in ALLOWED_STATUS and decision != computed_status:
+        add_finding(
+            findings,
+            "decision_mismatch",
+            "error",
+            "open",
+            "decision does not match computed findings severity.",
+            {"decision": decision, "computed": computed_status},
+        )
+        combined_findings = findings + reviewer_findings + report_findings
         computed_status = derive_status(combined_findings)
 
     qc_severity = status_to_qc_severity(computed_status)
@@ -535,6 +709,11 @@ def main() -> int:
         "status": computed_status,
         "check_id": CHECK_ID,
         "contract_id": CONTRACT_ID,
+        "evidence_class": evidence_class if evidence_class in ALLOWED_EVIDENCE_CLASS else "manual",
+        "review_tier": review_tier,
+        "reviewed_evidence_refs": reviewed_evidence_refs,
+        "required_hero_evidence_refs": REQUIRED_HERO_EVIDENCE_REFS,
+        "missing_required_evidence_refs": missing_required_refs,
         "findings": combined_findings,
         "manifest_attachment": {
             "target_path": TARGET_PATH,
@@ -546,6 +725,14 @@ def main() -> int:
                 "details": {
                     "report_path": str(report_path),
                     "report_status": declared_status,
+                    "review_decision": decision,
+                    "release_recommendation": release_recommendation,
+                    "review_tier": review_tier,
+                    "evidence_class": evidence_class,
+                    "reviewed_evidence_refs": reviewed_evidence_refs,
+                    "missing_required_evidence_refs": missing_required_refs,
+                    "execution_admitted": False,
+                    "publication_admitted": False,
                     "validated_at_utc": utc_now(),
                 },
             },

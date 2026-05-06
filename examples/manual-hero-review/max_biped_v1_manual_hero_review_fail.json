@@ -1,53 +1,70 @@
 {
   "schema_version": "1.0.0",
   "report_type": "MANUAL_HERO_REVIEW_v1_REPORT",
-  "job_id": "job-release-character-review-fail-001",
-  "package_id": "char.maxine.raider_khal",
+  "job_id": "job-release-character-manual-hero-review-fail-001",
+  "package_id": "char.maxine.release_pilot.max_biped_v1",
   "lane": "release_character",
   "status": "fail",
+  "candidate_id": "max_biped_v1_candidate_001",
+  "review_id": "review-max-biped-v1-hero-002",
+  "review_profile_id": "MANUAL_HERO_REVIEW_v1",
+  "review_profile_version": "1.0.0",
+  "review_tier": "hero",
+  "evidence_class": "manual",
+  "reviewer_identity_status": "approved_reviewer",
+  "reviewer_name_or_handle": "art.lead_b",
+  "review_timestamp": "2026-05-05T00:30:00Z",
+  "reviewed_evidence_refs": [
+    "dcc_conform_v1",
+    "max_biped_v1_skeleton_contract",
+    "material_uv_qc_v1",
+    "animation_smoke_v1"
+  ],
+  "required_evidence_present_status": "fail",
+  "visual_quality_status": "fail",
+  "material_quality_status": "pass",
+  "skeleton_quality_status": "pass",
+  "animation_quality_status": "warn",
+  "scale_orientation_status": "pass",
+  "package_readiness_status": "fail",
+  "waiver_status": "none",
+  "waiver_reasons": [],
+  "reviewer_findings": [
+    {
+      "id": "missing_visual_reference_gate",
+      "severity": "error",
+      "status": "open",
+      "message": "Required screenshot evidence gate reference is missing for hero review."
+    },
+    {
+      "id": "silhouette_blocker",
+      "severity": "error",
+      "status": "open",
+      "message": "Visual silhouette quality failed hero-tier acceptance."
+    }
+  ],
+  "decision": "fail",
+  "release_recommendation": "reject",
+  "claim_status": "not_authoritative",
+  "safety": {
+    "execution_status": "blocked",
+    "o3de_execution_status": "blocked",
+    "editor_execution_status": "blocked",
+    "runtime_execution_status": "blocked",
+    "dcc_execution_status": "blocked",
+    "asset_processor_execution_status": "blocked",
+    "production_write_status": "blocked"
+  },
   "source": {
-    "source_path": "artifacts/jobs/job-release-character-review-fail-001/manifest.json",
-    "source_kind": "manifest"
-  },
-  "review_scope": {
-    "review_contract_id": "MANUAL_HERO_REVIEW_v1",
-    "target_tier": "hero",
-    "required_reviewers": 2,
-    "required_evidence_ids": [
-      "max_biped_v1_skeleton_contract",
-      "dcc_conform_v1",
-      "material_uv_qc_v1",
-      "animation_smoke_v1",
-      "screenshot_evidence_v1"
-    ],
-    "evidence_only": true,
-    "runtime_execution_admitted": false
-  },
-  "review_decision": {
-    "review_required": true,
-    "review_state": "rejected",
-    "reviewer_count": 2,
-    "approver_ids": [],
-    "missing_evidence_ids": [
-      "screenshot_evidence_v1"
-    ],
-    "attached_evidence_ids": [
-      "max_biped_v1_skeleton_contract",
-      "dcc_conform_v1",
-      "material_uv_qc_v1",
-      "animation_smoke_v1"
-    ],
-    "rejection_reasons": [
-      "Missing required screenshot evidence package.",
-      "Animation smoke report indicates unstable foot contact."
-    ]
+    "source_path": "examples/sandbox/review-packets/max_biped_v1_manual_review_packet.fixture.json",
+    "source_kind": "review_packet"
   },
   "findings": [
     {
-      "id": "review_rejected",
+      "id": "manual_review_rejected",
       "severity": "error",
       "status": "open",
-      "message": "Manual hero review rejected this package."
+      "message": "Manual hero review rejected this package due blocking quality findings."
     }
   ],
   "manifest_attachment": {
@@ -58,7 +75,10 @@
       "result": "fail",
       "severity": "error",
       "details": {
-        "summary": "Hero package rejected by manual review gate."
+        "summary": "Hero package rejected by manual review gate.",
+        "evidence_class": "manual",
+        "execution_admitted": false,
+        "publication_admitted": false
       }
     }
   }

@@ -91,6 +91,15 @@ def test_runner_builds_generated_manifest_and_attaches_expected_checks(repo_tmp_
     screenshot_details = screenshot_payload.get("manifest_attachment", {}).get("qc_check", {}).get("details", {})
     assert screenshot_details.get("evidence_class") == "controlled_real"
     assert screenshot_details.get("safety", {}).get("runtime_execution_status") == "blocked"
+    manual_payload = json.loads(
+        Path(step_map["manual_hero_review"]["payload_path"]).read_text(encoding="utf-8-sig")
+    )
+    assert manual_payload.get("status") == "pass"
+    assert manual_payload.get("evidence_class") == "manual"
+    assert "source_product_evidence_resolver_v1" in manual_payload.get("reviewed_evidence_refs", [])
+    assert manual_payload.get("manifest_attachment", {}).get("qc_check", {}).get("details", {}).get(
+        "publication_admitted"
+    ) is False
     extraction_report = json.loads(
         Path(step_map["source_product_resolver_extract"]["payload_path"]).read_text(encoding="utf-8-sig")
     )

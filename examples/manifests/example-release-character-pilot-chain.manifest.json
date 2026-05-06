@@ -99,9 +99,12 @@
         "result": "pass",
         "severity": "info",
         "details": {
-          "implemented_on_main": false,
-          "evidence_source": "future_manual_review",
-          "summary": "Hero manual review approved with complete evidence."
+          "implemented_on_main": true,
+          "evidence_source": "manual_review_controlled_real_references",
+          "evidence_class": "manual",
+          "summary": "Hero manual review approved with required controlled-real evidence references.",
+          "execution_admitted": false,
+          "publication_admitted": false
         }
       },
       {

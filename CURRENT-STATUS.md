@@ -74,6 +74,13 @@
   - integrated into `tools/release-lane/run_pilot_release_chain_validation.py`
   - release-lane evidence admission status now classifies `screenshot_evidence_v1` as controlled-real evidence
   - `tests/pytest/test_screenshot_evidence_extractor.py`
+- Manual hero review controlled-real evidence hardening v1 is implemented (bounded evidence-only, non-executing, non-publishing):
+  - `docs/maxine/specs/manual-hero-review-controlled-real-evidence-v1.md`
+  - `schemas/maxine_manual_hero_review_report.schema.json` (hero-tier controlled-real gate-reference requirements)
+  - `tools/manual-hero-review/validate_manual_hero_review_report.py`
+  - `examples/sandbox/manual-hero-review-evidence/pilot-candidates/max_biped_v1_manual_hero_review_controlled_real.fixture.json`
+  - integrated into `tools/release-lane/run_pilot_release_chain_validation.py`
+  - `tests/pytest/test_manual_hero_review_report.py`
 - Execution admission remains future work requiring explicit operator approval.
 - No execution surfaces are newly admitted in this slice.
 - Sandbox-only writer skeleton is implemented for generated-asset resolver placeholders.
@@ -185,9 +192,12 @@
   - `schemas/maxine_manual_hero_review_report.schema.json`
   - `tools/manual-hero-review/validate_manual_hero_review_report.py`
   - `examples/manual-hero-review/max_biped_v1_manual_hero_review_pass.json`
+  - `examples/manual-hero-review/max_biped_v1_manual_hero_review_warn.json`
   - `examples/manual-hero-review/max_biped_v1_manual_hero_review_pending.json`
   - `examples/manual-hero-review/max_biped_v1_manual_hero_review_fail.json`
+  - `examples/sandbox/manual-hero-review-evidence/pilot-candidates/max_biped_v1_manual_hero_review_controlled_real.fixture.json`
   - `docs/maxine/specs/manual-hero-review-v1.md`
+  - `docs/maxine/specs/manual-hero-review-controlled-real-evidence-v1.md`
 - CI artifact retention v1 report validation is implemented (contract-first, non-executing evidence only):
   - `schemas/maxine_ci_artifact_retention_report.schema.json`
   - `tools/ci-artifact-retention/validate_ci_artifact_retention_report.py`
@@ -445,9 +455,10 @@
   - writes proof artifacts only under approved repo/sandbox paths
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
 - Manual hero review v1 report validation remains non-executing evidence-only:
-  - validates hero-tier manual review decision reports against required evidence and approval-state rules
+  - validates hero-tier manual review decision reports against required controlled-real gate references, waiver policy, and approval-state rules
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`
   - does not execute Blender/O3DE/AP, spawn, publish, or Cache/live DB access
+  - does not authorize publication or execution admission
 - CI artifact retention v1 report validation remains non-executing evidence-only:
   - validates retention policy evidence metadata for release-lane artifacts
   - emits manifest-attachable QC check payload at `qc.gates[]` with future `qc.checks[]`

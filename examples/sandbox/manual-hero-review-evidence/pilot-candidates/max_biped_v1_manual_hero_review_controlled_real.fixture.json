@@ -1,44 +1,39 @@
 {
   "schema_version": "1.0.0",
   "report_type": "MANUAL_HERO_REVIEW_v1_REPORT",
-  "job_id": "job-release-character-manual-hero-review-pending-001",
+  "job_id": "job-release-character-manual-hero-review-controlled-real-001",
   "package_id": "char.maxine.release_pilot.max_biped_v1",
   "lane": "release_character",
-  "status": "pending_manual",
+  "status": "pass",
   "candidate_id": "max_biped_v1_candidate_001",
-  "review_id": "review-max-biped-v1-hero-003",
+  "review_id": "review-max-biped-v1-hero-controlled-real-001",
   "review_profile_id": "MANUAL_HERO_REVIEW_v1",
   "review_profile_version": "1.0.0",
   "review_tier": "hero",
   "evidence_class": "manual",
-  "reviewer_identity_status": "assigned_reviewer",
+  "reviewer_identity_status": "approved_reviewer",
   "reviewer_name_or_handle": "art.lead_b",
-  "review_timestamp": "2026-05-05T00:45:00Z",
+  "review_timestamp": "2026-05-05T01:00:00Z",
   "reviewed_evidence_refs": [
     "dcc_conform_v1",
     "max_biped_v1_skeleton_contract",
     "material_uv_qc_v1",
-    "animation_smoke_v1"
+    "animation_smoke_v1",
+    "screenshot_evidence_v1",
+    "source_product_evidence_resolver_v1"
   ],
-  "required_evidence_present_status": "pending_manual",
-  "visual_quality_status": "pending_manual",
+  "required_evidence_present_status": "pass",
+  "visual_quality_status": "pass",
   "material_quality_status": "pass",
   "skeleton_quality_status": "pass",
-  "animation_quality_status": "warn",
+  "animation_quality_status": "pass",
   "scale_orientation_status": "pass",
-  "package_readiness_status": "pending_manual",
+  "package_readiness_status": "pass",
   "waiver_status": "none",
   "waiver_reasons": [],
-  "reviewer_findings": [
-    {
-      "id": "pending_visual_evidence_review",
-      "severity": "manual_review",
-      "status": "open",
-      "message": "Awaiting final screenshot evidence references and secondary reviewer sign-off."
-    }
-  ],
-  "decision": "pending_manual",
-  "release_recommendation": "pending_manual_review",
+  "reviewer_findings": [],
+  "decision": "pass",
+  "release_recommendation": "approve_for_release_candidate",
   "claim_status": "evidence_only",
   "safety": {
     "execution_status": "blocked",
@@ -52,25 +47,18 @@
   "source": {
     "source_path": "examples/sandbox/review-packets/max_biped_v1_manual_review_packet.fixture.json",
     "source_kind": "review_packet",
-    "sha256": "c7a1fef3a7a7f9082b64f92ef2e7a36225f772f3f7dc61059c8f9a25ca8f6537"
+    "sha256": "913241d4ac9f2d8e35f3a0ef2f9e2209df7547a739f778da9142f741ec0aa8e5"
   },
-  "findings": [
-    {
-      "id": "manual_review_pending",
-      "severity": "manual_review",
-      "status": "open",
-      "message": "Hero package remains pending manual review."
-    }
-  ],
+  "findings": [],
   "manifest_attachment": {
     "target_path": "qc.gates[]",
     "future_target_path": "qc.checks[]",
     "qc_check": {
       "check_id": "manual_hero_review_v1",
-      "result": "pending_manual",
-      "severity": "manual_review",
+      "result": "pass",
+      "severity": "info",
       "details": {
-        "summary": "Hero manual review still pending.",
+        "summary": "Manual hero review references required controlled-real evidence gates.",
         "evidence_class": "manual",
         "execution_admitted": false,
         "publication_admitted": false

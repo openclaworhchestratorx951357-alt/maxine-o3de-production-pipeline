@@ -1,48 +1,53 @@
 {
   "schema_version": "1.0.0",
   "report_type": "MANUAL_HERO_REVIEW_v1_REPORT",
-  "job_id": "job-release-character-review-pass-001",
-  "package_id": "char.maxine.knight_arden",
+  "job_id": "job-release-character-manual-hero-review-pass-001",
+  "package_id": "char.maxine.release_pilot.max_biped_v1",
   "lane": "release_character",
   "status": "pass",
+  "candidate_id": "max_biped_v1_candidate_001",
+  "review_id": "review-max-biped-v1-hero-001",
+  "review_profile_id": "MANUAL_HERO_REVIEW_v1",
+  "review_profile_version": "1.0.0",
+  "review_tier": "hero",
+  "evidence_class": "manual",
+  "reviewer_identity_status": "approved_reviewer",
+  "reviewer_name_or_handle": "art.lead_b",
+  "review_timestamp": "2026-05-05T00:00:00Z",
+  "reviewed_evidence_refs": [
+    "dcc_conform_v1",
+    "max_biped_v1_skeleton_contract",
+    "material_uv_qc_v1",
+    "animation_smoke_v1",
+    "screenshot_evidence_v1",
+    "source_product_evidence_resolver_v1"
+  ],
+  "required_evidence_present_status": "pass",
+  "visual_quality_status": "pass",
+  "material_quality_status": "pass",
+  "skeleton_quality_status": "pass",
+  "animation_quality_status": "pass",
+  "scale_orientation_status": "pass",
+  "package_readiness_status": "pass",
+  "waiver_status": "none",
+  "waiver_reasons": [],
+  "reviewer_findings": [],
+  "decision": "pass",
+  "release_recommendation": "approve_for_release_candidate",
+  "claim_status": "evidence_only",
+  "safety": {
+    "execution_status": "blocked",
+    "o3de_execution_status": "blocked",
+    "editor_execution_status": "blocked",
+    "runtime_execution_status": "blocked",
+    "dcc_execution_status": "blocked",
+    "asset_processor_execution_status": "blocked",
+    "production_write_status": "blocked"
+  },
   "source": {
-    "source_path": "artifacts/jobs/job-release-character-review-pass-001/manifest.json",
-    "source_kind": "manifest",
+    "source_path": "examples/sandbox/review-packets/max_biped_v1_manual_review_packet.fixture.json",
+    "source_kind": "review_packet",
     "sha256": "f670a27cbf4f6b87f850f8939f62b5ed1a30fd9354ea343ddf6d8825ef0cdad7"
-  },
-  "review_scope": {
-    "review_contract_id": "MANUAL_HERO_REVIEW_v1",
-    "target_tier": "hero",
-    "required_reviewers": 2,
-    "required_evidence_ids": [
-      "max_biped_v1_skeleton_contract",
-      "dcc_conform_v1",
-      "material_uv_qc_v1",
-      "animation_smoke_v1",
-      "screenshot_evidence_v1"
-    ],
-    "evidence_only": true,
-    "runtime_execution_admitted": false
-  },
-  "review_decision": {
-    "review_required": true,
-    "review_state": "approved",
-    "reviewer_count": 2,
-    "approver_ids": [
-      "ops.lead_a",
-      "art.lead_b"
-    ],
-    "missing_evidence_ids": [],
-    "attached_evidence_ids": [
-      "max_biped_v1_skeleton_contract",
-      "dcc_conform_v1",
-      "material_uv_qc_v1",
-      "animation_smoke_v1",
-      "screenshot_evidence_v1"
-    ],
-    "rejection_reasons": [],
-    "approved_at_utc": "2026-05-05T00:00:00Z",
-    "notes": "Hero release gate approved with complete evidence."
   },
   "findings": [],
   "manifest_attachment": {
@@ -53,7 +58,10 @@
       "result": "pass",
       "severity": "info",
       "details": {
-        "summary": "Hero manual review approved with complete evidence."
+        "summary": "Hero manual review approved with complete controlled-real evidence references.",
+        "evidence_class": "manual",
+        "execution_admitted": false,
+        "publication_admitted": false
       }
     }
   }

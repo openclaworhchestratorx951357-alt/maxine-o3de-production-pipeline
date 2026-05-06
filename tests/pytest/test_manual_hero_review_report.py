@@ -36,6 +36,20 @@ def test_pass_report_returns_pass_and_exit_zero():
     assert payload["status"] == "pass"
 
 
+def test_warn_report_returns_nonzero_without_allow_warn():
+    result = _run_validator(_report_path("max_biped_v1_manual_hero_review_warn.json"))
+    assert result.returncode != 0, "warn should return nonzero without --allow-warn"
+    payload = _extract_payload(result.stdout)
+    assert payload["status"] == "warn"
+
+
+def test_warn_report_returns_zero_with_allow_warn():
+    result = _run_validator(_report_path("max_biped_v1_manual_hero_review_warn.json"), allow_warn=True)
+    assert result.returncode == 0, f"Unexpected failure:\n{result.stdout}\n{result.stderr}"
+    payload = _extract_payload(result.stdout)
+    assert payload["status"] == "warn"
+
+
 def test_pending_report_returns_pending_manual_and_nonzero():
     result = _run_validator(_report_path("max_biped_v1_manual_hero_review_pending.json"))
     assert result.returncode != 0, "pending_manual should return nonzero"
@@ -50,73 +64,47 @@ def test_fail_report_returns_fail_and_nonzero():
     assert payload["status"] == "fail"
 
 
-def test_missing_required_evidence_fails(tmp_path: Path):
+def test_missing_required_controlled_real_refs_fails(tmp_path: Path):
     report = json.loads(_report_path("max_biped_v1_manual_hero_review_pass.json").read_text(encoding="utf-8-sig"))
     report["status"] = "fail"
-    report["review_decision"]["attached_evidence_ids"] = [
-        "max_biped_v1_skeleton_contract",
+    report["decision"] = "fail"
+    report["release_recommendation"] = "reject"
+    report["reviewed_evidence_refs"] = [
         "dcc_conform_v1",
-        "material_uv_qc_v1"
+        "max_biped_v1_skeleton_contract",
+        "material_uv_qc_v1",
     ]
-    report["review_decision"]["missing_evidence_ids"] = [
-        "animation_smoke_v1",
-        "screenshot_evidence_v1"
+    report["required_evidence_present_status"] = "fail"
+    report["reviewer_findings"] = [
+        {
+            "id": "required_refs_missing",
+            "severity": "error",
+            "status": "open",
+            "message": "Required controlled-real evidence references are missing.",
+        }
     ]
-    report["review_decision"]["review_state"] = "approved"
-    test_file = tmp_path / "missing-required-evidence.json"
+    test_file = tmp_path / "missing-required-refs.json"
     test_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
     result = _run_validator(test_file)
     payload = _extract_payload(result.stdout)
     assert result.returncode != 0
     assert payload["status"] == "fail"
-    assert any(item.get("id") == "required_evidence_missing" for item in payload["findings"])
+    assert any(item.get("id") == "required_controlled_real_evidence_refs_missing" for item in payload["findings"])
 
 
-def test_insufficient_reviewer_count_fails(tmp_path: Path):
+def test_pass_decision_with_waiver_fails(tmp_path: Path):
     report = json.loads(_report_path("max_biped_v1_manual_hero_review_pass.json").read_text(encoding="utf-8-sig"))
-    report["status"] = "fail"
-    report["review_decision"]["reviewer_count"] = 1
-    report["review_decision"]["approver_ids"] = ["ops.lead_a"]
-    test_file = tmp_path / "insufficient-reviewers.json"
+    report["waiver_status"] = "waived"
+    report["waiver_reasons"] = ["Temporary waiver for review packet formatting."]
+    test_file = tmp_path / "pass-with-waiver.json"
     test_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
     result = _run_validator(test_file)
     payload = _extract_payload(result.stdout)
     assert result.returncode != 0
     assert payload["status"] == "fail"
-    ids = {item.get("id") for item in payload["findings"]}
-    assert "insufficient_reviewer_count" in ids
-    assert "insufficient_approver_ids" in ids
-
-
-def test_missing_approved_timestamp_warns_with_allow_warn(tmp_path: Path):
-    report = json.loads(_report_path("max_biped_v1_manual_hero_review_pass.json").read_text(encoding="utf-8-sig"))
-    report["status"] = "warn"
-    report["review_decision"].pop("approved_at_utc", None)
-    test_file = tmp_path / "approved-without-timestamp.json"
-    test_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
-
-    result = _run_validator(test_file, allow_warn=True)
-    payload = _extract_payload(result.stdout)
-    assert result.returncode == 0
-    assert payload["status"] == "warn"
-    assert any(item.get("id") == "approved_at_utc_missing" for item in payload["findings"])
-
-
-def test_hero_review_disabled_fails(tmp_path: Path):
-    report = json.loads(_report_path("max_biped_v1_manual_hero_review_pass.json").read_text(encoding="utf-8-sig"))
-    report["status"] = "fail"
-    report["review_decision"]["review_required"] = False
-    report["review_decision"]["review_state"] = "not_required"
-    test_file = tmp_path / "hero-review-disabled.json"
-    test_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
-
-    result = _run_validator(test_file)
-    payload = _extract_payload(result.stdout)
-    assert result.returncode != 0
-    assert payload["status"] == "fail"
-    assert any(item.get("id") == "hero_review_required" for item in payload["findings"])
+    assert any(item.get("id") == "pass_with_waiver_not_allowed" for item in payload["findings"])
 
 
 def test_output_contains_manifest_attachable_qc_payload():
