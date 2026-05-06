@@ -5,9 +5,9 @@
 `Animation smoke v1` defines an evidence-only contract for reporting clip-level smoke readiness in the release lane.
 
 - validates structured animation smoke report JSON
-- checks required clip presence against reported available clips
-- checks clip count consistency
-- checks loop/pose/root-motion status fields
+- validates controlled-real metadata for candidate/source/profile/skeleton linkage
+- validates required clip presence against reported available clips
+- validates clip count consistency and per-dimension readiness statuses
 - emits manifest-attachable QC output
 
 ## What This Slice Does Not Do Yet
@@ -26,33 +26,60 @@ Schema:
 
 - `schemas/maxine_animation_smoke_report.schema.json`
 
-Core fields:
+Core controlled-real fields:
 
-- identity/routing: `job_id`, `package_id`, `lane`, `status`
-- source evidence: `source_path`, `source_kind`, optional `sha256`
-- smoke profile:
-  - `smoke_contract_id=ANIMATION_SMOKE_v1`
-  - `target_skeleton_contract_id=MAX_BIPED_v1`
-  - `evidence_only=true`
-  - `runtime_execution_admitted=false`
-- animation summary:
-  - `required_clips`
-  - `present_clips`
-  - `missing_clips`
-  - `clip_count`
-  - `loop_playback_status`
-  - `pose_stability_status`
+- identity/reference:
+  - `candidate_id`
+  - `source_asset_reference`
+  - `source_evidence_ref`
+- profile:
+  - `animation_profile_id=ANIMATION_SMOKE_v1`
+  - `animation_profile_version`
+  - `evidence_class` (`fixture|imported|controlled_real`)
+- asset links:
+  - `actor_asset_reference`
+  - `motion_asset_reference`
+  - optional `motion_set_reference`
+  - optional `anim_graph_reference`
+- skeleton compatibility:
+  - `skeleton_profile_id=MAX_BIPED_v1`
+  - `skeleton_compatibility_status`
+  - `bind_pose_compatibility_status`
   - `root_motion_status`
-- findings
-- manifest attachment payload
+- clip/readiness statuses:
+  - `clip_count`
+  - `smoke_clip_names`
+  - `clip_duration_status`
+  - `missing_clip_status`
+  - `retarget_readiness_status`
+  - optional `loopability_status`
+  - optional `motion_event_status`
+  - `frame_range_status`
+  - `animation_budget_status`
+- claim/safety:
+  - `claim_status` (`evidence_only|not_authoritative`)
+  - `dcc_execution_status=blocked`
+  - `blender_execution_status=blocked`
+  - `o3de_execution_status=blocked`
+  - `asset_processor_execution_status=blocked`
+  - `runtime_playback_status=blocked`
+  - `production_write_status=blocked`
+
+Legacy summary fields remain validated for continuity:
+
+- `required_clips`
+- `present_clips`
+- `missing_clips`
+- summary clip/status dimensions
 
 ## Validation Logic
 
+- At least one smoke-test clip must be present.
 - Missing required clips are fail-level.
-- `clip_count` mismatch is warning-level.
-- `loop_playback_status`, `pose_stability_status`, `root_motion_status` are interpreted as:
-  - `fail` -> fail-level finding
-  - warning-state values (`warn`, `unknown`) -> warning-level finding
+- Clip-count mismatch is warning-level.
+- Summary clip data and top-level smoke clip data are cross-checked.
+- `controlled_real` reports must reference sandbox evidence roots.
+- All execution/runtime safety statuses must remain `blocked`.
 
 ## Manifest Integration
 
@@ -88,12 +115,8 @@ This slice is report-validation-only and preserves blocked/unadmitted surfaces:
 - no Blender execution
 - no O3DE execution
 - no real Asset Processor execution
+- no runtime playback execution
 - no spawn/publish
 - no Cache/live DB access
 - no source/product UUID claims
-- no new generation lanes
 - no destructive cleanup
-
-## Future Path (Not Implemented Here)
-
-A future slice may consume runtime playback evidence from controlled execution surfaces. That path is not implemented in v1.

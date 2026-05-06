@@ -1,33 +1,34 @@
 {
   "schema_version": "1.0.0",
   "report_type": "ANIMATION_SMOKE_v1_REPORT",
-  "job_id": "job-release-character-animation-smoke-warn-001",
-  "package_id": "char.maxine.guard_mira",
+  "job_id": "job-release-character-controlled-real-animation-smoke-001",
+  "package_id": "char.maxine.release_pilot.max_biped_v1",
   "lane": "release_character",
-  "candidate_id": "max_biped_v1_candidate_warn_001",
-  "source_asset_reference": "fixtures://source/max_biped_v1/source_character.fbx",
-  "source_evidence_ref": "examples/animation-smoke/max_biped_v1_animation_smoke_warn.json",
+  "candidate_id": "max_biped_v1_candidate_001",
+  "source_asset_reference": "examples/sandbox/evidence-sources/approved-local-inputs/characters/max_biped_v1/source_character.fbx",
+  "source_evidence_ref": "examples/sandbox/evidence-bundles/max_biped_v1_candidate_001_controlled_real_animation_smoke.bundle.json",
   "animation_profile_id": "ANIMATION_SMOKE_v1",
   "animation_profile_version": "1.0.0",
-  "evidence_class": "fixture",
+  "evidence_class": "controlled_real",
   "actor_asset_reference": "assets/characters/max_biped_v1/max_biped_v1.actor",
   "motion_asset_reference": "assets/characters/max_biped_v1/motions/max_biped_v1_locomotion.motion",
   "motion_set_reference": "assets/characters/max_biped_v1/motionsets/max_biped_v1.motionset",
   "anim_graph_reference": "assets/characters/max_biped_v1/animgraphs/max_biped_v1.animgraph",
   "skeleton_profile_id": "MAX_BIPED_v1",
   "skeleton_compatibility_status": "pass",
-  "root_motion_status": "warn",
+  "root_motion_status": "pass",
   "bind_pose_compatibility_status": "pass",
-  "clip_count": 3,
+  "clip_count": 4,
   "smoke_clip_names": [
     "idle",
     "walk",
-    "run"
+    "run",
+    "turn_left"
   ],
-  "clip_duration_status": "warn",
+  "clip_duration_status": "pass",
   "missing_clip_status": "pass",
-  "retarget_readiness_status": "warn",
-  "loopability_status": "warn",
+  "retarget_readiness_status": "pass",
+  "loopability_status": "pass",
   "motion_event_status": "pass",
   "frame_range_status": "pass",
   "animation_budget_status": "pass",
@@ -40,16 +41,16 @@
     "runtime_playback_status": "blocked",
     "production_write_status": "blocked"
   },
-  "status": "warn",
+  "status": "pass",
   "source": {
-    "source_path": "artifacts/jobs/job-release-character-animation-smoke-warn-001/o3de/source/guard_mira_conformed.fbx",
+    "source_path": "artifacts/jobs/job-release-character-controlled-real-animation-smoke-001/o3de/source/max_biped_v1/source_character_conformed.fbx",
     "source_kind": "fbx",
-    "sha256": "5af2e716d51d743f4f0f44ec30cb8cf59f0c29b6ffceff1a2e47d2ef4f9a12aa"
+    "sha256": "c6fe9fa5f22f3e4c2b53d835f6d52022e8778f6a6d19c6f5b4d9b3e2a2a77f41"
   },
   "smoke_profile": {
     "smoke_contract_id": "ANIMATION_SMOKE_v1",
     "target_skeleton_contract_id": "MAX_BIPED_v1",
-    "package_tier": "npc",
+    "package_tier": "hero",
     "evidence_only": true,
     "runtime_execution_admitted": false
   },
@@ -62,36 +63,30 @@
     "present_clips": [
       "idle",
       "walk",
-      "run"
+      "run",
+      "turn_left"
     ],
     "missing_clips": [],
-    "clip_count": 3,
-    "loop_playback_status": "warn",
+    "clip_count": 4,
+    "loop_playback_status": "pass",
     "pose_stability_status": "pass",
-    "root_motion_status": "unknown",
+    "root_motion_status": "pass",
     "warning_status_values": [
       "warn",
       "unknown"
     ]
   },
-  "findings": [
-    {
-      "id": "loop_playback_minor_variance",
-      "severity": "warning",
-      "status": "open",
-      "message": "Loop playback has minor interpolation drift near clip seam."
-    }
-  ],
+  "findings": [],
   "manifest_attachment": {
     "target_path": "qc.gates[]",
     "future_target_path": "qc.checks[]",
     "qc_check": {
       "check_id": "animation_smoke_v1",
-      "result": "warn",
-      "severity": "warning",
+      "result": "pass",
+      "severity": "info",
       "details": {
-        "summary": "Animation smoke accepted with non-blocking warnings.",
-        "evidence_class": "fixture"
+        "summary": "Controlled-real animation smoke evidence validated against clip and compatibility policies.",
+        "evidence_class": "controlled_real"
       }
     }
   }

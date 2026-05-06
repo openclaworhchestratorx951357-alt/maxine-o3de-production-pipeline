@@ -40,6 +40,10 @@ DEFAULT_MATERIAL_UV_CONTROLLED_REAL_REPORT = (
     "examples/sandbox/material-uv-evidence/pilot-candidates/"
     "max_biped_v1_material_uv_controlled_real.fixture.json"
 )
+DEFAULT_ANIMATION_SMOKE_CONTROLLED_REAL_REPORT = (
+    "examples/sandbox/animation-smoke-evidence/pilot-candidates/"
+    "max_biped_v1_animation_smoke_controlled_real.fixture.json"
+)
 DEFAULT_RESOLVER_AP_EVIDENCE_IMPORTS = [
     (
         "examples/sandbox/ap-evidence-imports/pilot-candidates/"
@@ -383,7 +387,7 @@ def main() -> int:
             "command": [
                 sys.executable,
                 "tools/animation-smoke/validate_animation_smoke_report.py",
-                "examples/animation-smoke/max_biped_v1_animation_smoke_pass.json",
+                DEFAULT_ANIMATION_SMOKE_CONTROLLED_REAL_REPORT,
             ],
             "payload_path": attachment_dir / "animation_smoke_v1.json",
         },
