@@ -126,6 +126,17 @@ The operator packet now also has a static completeness self-check:
 
 Completeness status remains static/blocked and does not mark the candidate approval-ready.
 
+## Approval Request Readiness Link
+
+The same candidate now also has a static final approval-request readiness report:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-approval-request-readiness-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_approval_request_readiness.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_approval_request_readiness_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_approval_request_readiness.py`
+
+This readiness report keeps `approval_request_ready=false` and `final_recommendation=do_not_request_approval_yet`.
+
 ## Artifacts
 
 - schema:

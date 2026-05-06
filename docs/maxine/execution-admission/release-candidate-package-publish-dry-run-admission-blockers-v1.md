@@ -92,6 +92,15 @@ A static completeness review now verifies that the operator packet template is s
 
 Completeness remains static-only and does not make approval request ready.
 
+## Approval Request Readiness Link
+
+A static approval request readiness report now explicitly keeps `approval_request_ready=false` even while structural packet completeness is true:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-approval-request-readiness-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_approval_request_readiness.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_approval_request_readiness_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_approval_request_readiness.py`
+
 ## Safety Model
 
 Blocked surfaces remain blocked:

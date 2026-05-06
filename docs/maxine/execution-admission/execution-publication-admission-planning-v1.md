@@ -268,3 +268,39 @@ Artifacts:
 - `tools/execution-admission/validate_release_candidate_publication_dry_run_operator_approval_packet_completeness.py`
 
 Structural completeness in this slice is static-only and does not mark approval readiness, grant approval, or admit dry-run/publication execution.
+
+## Candidate-Specific Approval Request Readiness v1
+
+The dry-run candidate now also has a static approval-request readiness report:
+
+- candidate id:
+  - `release_candidate_package_publish_dry_run_v1`
+- approval request readiness status:
+  - `static_request_readiness_valid_blocked`
+- packet structurally complete:
+  - `true`
+- packet complete for future review template:
+  - `true`
+- approval request ready:
+  - `false`
+- operator approval granted:
+  - `false`
+- approval phrase present:
+  - `false`
+- dry-run admitted:
+  - `false`
+- dry-run executed:
+  - `false`
+- receipt issued:
+  - `false`
+- final recommendation:
+  - `do_not_request_approval_yet`
+
+Artifacts:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-approval-request-readiness-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_approval_request_readiness.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_approval_request_readiness_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_approval_request_readiness.py`
+
+This layer is static-only and does not mark approval-ready, grant approval, admit dry-run execution, or issue receipts.

@@ -32,6 +32,7 @@ The report distinguishes and records:
 - candidate-specific dry-run admission blocker checklist posture for `release_candidate_package_publish_dry_run_v1` (static checklist-only, not approval-ready, unadmitted)
 - candidate-specific operator approval packet template posture for `release_candidate_package_publish_dry_run_v1` (static template-only, approval_request_ready=false, operator_approval_granted=false, approval_phrase_present=false, unadmitted)
 - candidate-specific operator approval packet completeness posture for `release_candidate_package_publish_dry_run_v1` (static completeness-only, packet structurally complete/internal-consistency true, approval_request_ready=false, operator_approval_granted=false, approval_phrase_present=false, unadmitted)
+- candidate-specific approval request readiness report posture for `release_candidate_package_publish_dry_run_v1` (static request-readiness-only, packet structurally complete=true, packet complete for future review template=true, approval_request_ready=false, operator_approval_granted=false, approval_phrase_present=false, dry_run_executed=false, unadmitted)
 - remaining blockers before true production operation
 
 ## Required Gate Coverage
@@ -99,4 +100,5 @@ Execution/publication remains blocked for real tool execution and publication. T
 - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-admission-blockers-v1.md`
 - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-operator-approval-packet-v1.md`
 - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-operator-approval-packet-completeness-v1.md`
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-approval-request-readiness-v1.md`
 - `examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json`
