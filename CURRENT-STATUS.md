@@ -116,7 +116,8 @@
   - integrated into `tools/release-lane/run_pilot_release_chain_validation.py` as post-chain/post-package readiness summary attachment
   - integrated into `tools/release-lane/prove_pilot_release_chain.py` proof artifacts
   - `tests/pytest/test_production_readiness_report.py`
-  - distinction is now explicit between evidence/review readiness and blocked execution/publication readiness
+  - distinction is now explicit between no-op receipt admission, real execution admission, and publication admission
+  - production readiness now reports `admitted_noop_receipt_candidate_ids` and `receipt_backed_candidate_ids` separately from real/publication candidate admissions
   - pilot runner now attaches `production_readiness_report_v1` and reports `final_gate_count=26` on the generated manifest path
 - Execution/publication admission planning v1 is implemented (planning baseline, non-executing, non-publishing):
   - `docs/maxine/execution-admission/execution-publication-admission-planning-v1.md`
@@ -125,7 +126,7 @@
   - `examples/execution-admission/release_candidate_package_receipt_noop_review_only.json`
   - `examples/execution-admission/release_candidate_package_receipt_noop_blocked.json`
   - `tests/pytest/test_execution_publication_admission_plan_schema.py`
-  - current readiness remains `review_ready` / `blocked_for_execution`
+  - current readiness remains `review_ready` / `blocked_for_execution` with no-op receipt admission recognized while real execution/publication remain blocked
 - Admitted no-op release-candidate package receipt candidate v1 is implemented (bounded receipt generation only, non-executing, non-publishing):
   - approval phrase recorded:
     - `APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1`

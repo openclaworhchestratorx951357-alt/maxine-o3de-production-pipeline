@@ -67,7 +67,7 @@ Get-ChildItem .\examples\manifests
 - Manual hero review is now hardened to require required controlled-real gate references for hero-tier candidates (evidence-only, no execution/publication admission).
 - AAA performance budget gating is integrated for pilot candidates with tiered metric policy and explicit waiver visibility (evidence-only, no live benchmark/profiler execution).
 - Real pilot release-candidate package proof is integrated as an evidence-only package binder requiring required gate references and core controlled/imported/manual evidence coverage (non-executing, non-publishing).
-- Production-readiness reporting is integrated and now distinguishes evidence/review readiness from blocked execution/publication readiness (evidence-only, non-executing, non-publishing).
+- Production-readiness reporting is integrated and now explicitly distinguishes no-op receipt admission from real execution admission and publication admission; current posture remains review-ready with real execution/publication blocked (evidence-only, non-executing, non-publishing).
 - Execution/publication admission planning artifacts are integrated, and the first narrow no-op receipt candidate (`release_candidate_package_receipt_noop_v1`) is admitted only for bounded receipt generation; real execution/publication surfaces remain blocked.
 - AAA-quality output is not yet fully operational.
 - Execution admission remains future work requiring explicit approval.

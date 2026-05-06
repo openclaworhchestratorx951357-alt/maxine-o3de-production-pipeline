@@ -29,7 +29,12 @@
     "manual_hero_review_status",
     "rollback_readiness_status",
     "evidence_integrity_status",
+    "admitted_noop_receipt_candidate_ids",
+    "receipt_backed_candidate_ids",
+    "admitted_real_execution_candidate_ids",
+    "admitted_publication_candidate_ids",
     "execution_admission_status",
+    "real_execution_admission_status",
     "publication_admission_status",
     "source_product_authority_status",
     "cache_live_db_status",
@@ -184,7 +189,26 @@
     "evidence_integrity_status": {
       "$ref": "#/$defs/readinessStatus"
     },
+    "admitted_noop_receipt_candidate_ids": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "receipt_backed_candidate_ids": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "admitted_real_execution_candidate_ids": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "admitted_publication_candidate_ids": {
+      "$ref": "#/$defs/stringArray"
+    },
     "execution_admission_status": {
+      "type": "string",
+      "enum": [
+        "blocked",
+        "admitted"
+      ]
+    },
+    "real_execution_admission_status": {
       "type": "string",
       "enum": [
         "blocked",
@@ -373,6 +397,159 @@
       }
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "real_execution_admission_status": {
+            "const": "admitted"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "admitted_real_execution_candidate_ids": {
+            "minItems": 1
+          },
+          "execution_admission_status": {
+            "const": "admitted"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "real_execution_admission_status": {
+            "const": "blocked"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "admitted_real_execution_candidate_ids": {
+            "maxItems": 0
+          },
+          "execution_admission_status": {
+            "const": "blocked"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "publication_admission_status": {
+            "const": "admitted"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "admitted_publication_candidate_ids": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "publication_admission_status": {
+            "const": "blocked"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "admitted_publication_candidate_ids": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "production_readiness_level": {
+            "const": "production_ready"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "real_execution_admission_status": {
+            "const": "admitted"
+          },
+          "publication_admission_status": {
+            "const": "admitted"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "receipt_backed_candidate_ids": {
+            "contains": {
+              "const": "release_candidate_package_receipt_noop_v1"
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "admitted_noop_receipt_candidate_ids": {
+            "contains": {
+              "const": "release_candidate_package_receipt_noop_v1"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "admitted_noop_receipt_candidate_ids": {
+            "contains": {
+              "const": "release_candidate_package_receipt_noop_v1"
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "receipt_backed_candidate_ids": {
+            "contains": {
+              "const": "release_candidate_package_receipt_noop_v1"
+            }
+          }
+        }
+      }
+    },
+    {
+      "not": {
+        "properties": {
+          "admitted_real_execution_candidate_ids": {
+            "contains": {
+              "const": "release_candidate_package_receipt_noop_v1"
+            }
+          }
+        }
+      }
+    },
+    {
+      "not": {
+        "properties": {
+          "admitted_publication_candidate_ids": {
+            "contains": {
+              "const": "release_candidate_package_receipt_noop_v1"
+            }
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "stringArray": {
       "type": "array",

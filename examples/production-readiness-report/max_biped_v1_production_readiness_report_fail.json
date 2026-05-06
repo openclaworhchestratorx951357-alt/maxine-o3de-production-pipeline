@@ -64,7 +64,16 @@
   "manual_hero_review_status": "missing",
   "rollback_readiness_status": "pass",
   "evidence_integrity_status": "pass",
+  "admitted_noop_receipt_candidate_ids": [
+    "release_candidate_package_receipt_noop_v1"
+  ],
+  "receipt_backed_candidate_ids": [
+    "release_candidate_package_receipt_noop_v1"
+  ],
+  "admitted_real_execution_candidate_ids": [],
+  "admitted_publication_candidate_ids": [],
   "execution_admission_status": "blocked",
+  "real_execution_admission_status": "blocked",
   "publication_admission_status": "blocked",
   "source_product_authority_status": "admitted_authoritative",
   "cache_live_db_status": "blocked",
@@ -79,7 +88,8 @@
   "remaining_required_actions": [
     "record explicit approved execution admission before execution-ready/production-ready claims",
     "record explicit approved publication admission before publication claims",
-    "restore source/product identity claims to evidence-only posture"
+    "restore source/product identity claims to evidence-only posture",
+    "treat no-op receipt admission as receipt-only; real execution admission remains separately blocked"
   ],
   "recommended_next_milestone": "execution_publication_admission_planning_v1",
   "claim_status": "evidence_only",
@@ -128,7 +138,16 @@
         "final_gate_count": 25,
         "production_readiness_level": "blocked",
         "readiness_decision": "fail",
+        "admitted_noop_receipt_candidate_ids": [
+          "release_candidate_package_receipt_noop_v1"
+        ],
+        "receipt_backed_candidate_ids": [
+          "release_candidate_package_receipt_noop_v1"
+        ],
+        "admitted_real_execution_candidate_ids": [],
+        "admitted_publication_candidate_ids": [],
         "execution_admission_status": "blocked",
+        "real_execution_admission_status": "blocked",
         "publication_admission_status": "blocked",
         "claim_status": "evidence_only",
         "validated_at_utc": "2026-05-05T00:00:00Z",
