@@ -1,0 +1,504 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "EXECUTION_ADMISSION_PREFLIGHT_PROOF_PACKAGES_v1",
+  "proof_packages_id": "execution-admission-preflight-proof-packages-v1",
+  "proof_packages_version": "v1",
+  "generated_for_branch_or_commit": "b8373c81dc05c4d014ae15eb8434d9005896fcd4",
+  "candidate_matrix_ref": "examples/execution-admission/execution_admission_candidate_matrix_v1.json",
+  "preflight_contracts_ref": "examples/execution-admission/execution_admission_preflight_contracts_v1.json",
+  "approval_phrase_format": "APPROVE EXECUTION ADMISSION <candidate_id>",
+  "production_ready_claimed": false,
+  "publication_admitted_claimed": false,
+  "real_execution_admission_status": "blocked",
+  "publication_admission_status": "blocked",
+  "admitted_noop_receipt_candidate_ids": [
+    "release_candidate_package_receipt_noop_v1"
+  ],
+  "admitted_real_execution_candidate_ids": [],
+  "admitted_publication_candidate_ids": [],
+  "real_execution_preflight_passed_candidate_ids": [],
+  "publication_preflight_passed_candidate_ids": [],
+  "blocked_real_execution_preflight_candidate_ids": [
+    "dcc_conform_execution_v1",
+    "asset_processor_batch_execution_v1",
+    "max_biped_skeleton_validation_execution_v1",
+    "material_uv_qc_execution_v1",
+    "animation_smoke_execution_v1",
+    "visual_evidence_capture_execution_v1"
+  ],
+  "blocked_publication_preflight_candidate_ids": [
+    "release_candidate_package_publication_v1"
+  ],
+  "blocked_dry_run_preflight_candidate_ids": [
+    "release_candidate_package_publish_dry_run_v1"
+  ],
+  "proof_packages": [
+    {
+      "candidate_id": "release_candidate_package_receipt_noop_v1",
+      "candidate_type": "no_op_receipt",
+      "proof_package_version": "v1",
+      "proof_package_status": "satisfied_no_op_only",
+      "admission_status": "admitted_no_op_only",
+      "preflight_contract_status": "requirements_defined",
+      "preflight_passed": true,
+      "matrix_candidate_status": "admitted",
+      "contract_reference": "examples/execution-admission/execution_admission_preflight_contracts_v1.json#release_candidate_package_receipt_noop_v1",
+      "matrix_reference": "examples/execution-admission/execution_admission_candidate_matrix_v1.json#release_candidate_package_receipt_noop_v1",
+      "required_evidence_items": [
+        "approved no-op admission decision record",
+        "real_pilot_release_candidate_package_v1 pass report",
+        "release_candidate_package_receipt_noop_v1 pass receipt"
+      ],
+      "present_evidence_items": [
+        "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json",
+        "examples/real-pilot-release-candidate-package/max_biped_v1_real_pilot_release_candidate_package_pass.json",
+        "examples/execution-admission/release_candidate_package_receipt_noop_report_pass.json"
+      ],
+      "missing_evidence_items": [],
+      "blocked_reason_codes": [],
+      "blocked_reason_summary": "No blocking reasons for no-op-only receipt admission. Real execution/publication remain blocked.",
+      "required_validator": "tools/execution-admission/validate_release_candidate_package_receipt_noop_report.py",
+      "validator_status": "present",
+      "required_receipt_schema": "schemas/maxine_release_candidate_package_receipt_noop_report.schema.json",
+      "receipt_status": "receipt_backed_noop",
+      "rollback_plan_status": "defined",
+      "approval_status": "approved_noop_only",
+      "approval_phrase_required": "APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1",
+      "approval_decision_reference": "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json",
+      "allowed_sandbox_paths_status": "sandbox_only",
+      "forbidden_paths_status": "forbidden_paths_present",
+      "blocked_surfaces_status": "all_blocked",
+      "unsafe_claims_detected": false,
+      "production_readiness_effect": "noop_receipt_only_review_ready_blocked_for_execution",
+      "publication_effect": "noop_only_not_publication",
+      "next_required_action": "Keep this candidate scoped to no-op receipt generation only.",
+      "safety_notes": [
+        "No-op receipt admission is not real execution admission.",
+        "No-op receipt admission is not publication admission."
+      ]
+    },
+    {
+      "candidate_id": "dcc_conform_execution_v1",
+      "candidate_type": "real_execution",
+      "proof_package_version": "v1",
+      "proof_package_status": "blocked_missing_evidence",
+      "admission_status": "unadmitted",
+      "preflight_contract_status": "requirements_defined",
+      "preflight_passed": false,
+      "matrix_candidate_status": "proposed",
+      "contract_reference": "examples/execution-admission/execution_admission_preflight_contracts_v1.json#dcc_conform_execution_v1",
+      "matrix_reference": "examples/execution-admission/execution_admission_candidate_matrix_v1.json#dcc_conform_execution_v1",
+      "required_evidence_items": [
+        "candidate-specific execution admission decision record",
+        "candidate-specific bounded execution receipt",
+        "candidate-specific rollback drill evidence"
+      ],
+      "present_evidence_items": [
+        "dcc_conform_v1 controlled_real fixture evidence",
+        "manual_hero_review_v1 controlled_real evidence",
+        "aaa_performance_budget_v1 controlled_real evidence"
+      ],
+      "missing_evidence_items": [
+        "explicit admitted decision for dcc_conform_execution_v1",
+        "execution receipt generated by admitted bounded execution",
+        "validated rollback drill for execution artifacts"
+      ],
+      "blocked_reason_codes": [
+        "unadmitted_candidate",
+        "missing_approval_decision",
+        "missing_execution_receipt",
+        "missing_rollback_proof"
+      ],
+      "blocked_reason_summary": "Requirements exist but execution evidence is still static-only; candidate remains blocked/unadmitted.",
+      "required_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+      "validator_status": "present",
+      "required_receipt_schema": "schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
+      "receipt_status": "required_not_generated",
+      "rollback_plan_status": "required_not_proven",
+      "approval_status": "blocked_missing_approval",
+      "approval_phrase_required": "APPROVE EXECUTION ADMISSION dcc_conform_execution_v1",
+      "allowed_sandbox_paths_status": "sandbox_only",
+      "forbidden_paths_status": "forbidden_paths_present",
+      "blocked_surfaces_status": "all_blocked",
+      "unsafe_claims_detected": false,
+      "production_readiness_effect": "execution_blocked_missing_preflight_proof",
+      "publication_effect": "publication_blocked",
+      "next_required_action": "Define candidate-specific decision record + receipt proof plan before any admission review.",
+      "safety_notes": [
+        "This proof package is static evaluation only.",
+        "No DCC execution is admitted."
+      ]
+    },
+    {
+      "candidate_id": "asset_processor_batch_execution_v1",
+      "candidate_type": "real_execution",
+      "proof_package_version": "v1",
+      "proof_package_status": "blocked_missing_evidence",
+      "admission_status": "unadmitted",
+      "preflight_contract_status": "blocked",
+      "preflight_passed": false,
+      "matrix_candidate_status": "blocked",
+      "contract_reference": "examples/execution-admission/execution_admission_preflight_contracts_v1.json#asset_processor_batch_execution_v1",
+      "matrix_reference": "examples/execution-admission/execution_admission_candidate_matrix_v1.json#asset_processor_batch_execution_v1",
+      "required_evidence_items": [
+        "candidate-specific execution admission decision record",
+        "bounded AP execution receipt from admitted run",
+        "candidate-specific rollback drill evidence"
+      ],
+      "present_evidence_items": [
+        "AP execution preflight fixtures",
+        "AP binary preflight fixtures",
+        "release_publication_gate_set_v1 evidence fixture"
+      ],
+      "missing_evidence_items": [
+        "explicit admitted decision for asset_processor_batch_execution_v1",
+        "execution receipt generated by admitted AP batch scope",
+        "rollback proof for admitted AP batch outputs"
+      ],
+      "blocked_reason_codes": [
+        "unadmitted_candidate",
+        "missing_approval_decision",
+        "missing_execution_receipt",
+        "missing_rollback_proof"
+      ],
+      "blocked_reason_summary": "AP batch candidate remains blocked; this package documents required but currently missing admitted-execution proof artifacts.",
+      "required_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+      "validator_status": "present",
+      "required_receipt_schema": "schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
+      "receipt_status": "required_not_generated",
+      "rollback_plan_status": "required_not_proven",
+      "approval_status": "blocked_missing_approval",
+      "approval_phrase_required": "APPROVE EXECUTION ADMISSION asset_processor_batch_execution_v1",
+      "allowed_sandbox_paths_status": "sandbox_only",
+      "forbidden_paths_status": "forbidden_paths_present",
+      "blocked_surfaces_status": "all_blocked",
+      "unsafe_claims_detected": false,
+      "production_readiness_effect": "execution_blocked_missing_preflight_proof",
+      "publication_effect": "publication_blocked",
+      "next_required_action": "Add candidate-specific AP batch admission packet before any execution admission consideration.",
+      "safety_notes": [
+        "Broad/real Asset Processor execution remains blocked.",
+        "No cache/live DB access is admitted."
+      ]
+    },
+    {
+      "candidate_id": "max_biped_skeleton_validation_execution_v1",
+      "candidate_type": "real_execution",
+      "proof_package_version": "v1",
+      "proof_package_status": "blocked_missing_evidence",
+      "admission_status": "unadmitted",
+      "preflight_contract_status": "requirements_defined",
+      "preflight_passed": false,
+      "matrix_candidate_status": "proposed",
+      "contract_reference": "examples/execution-admission/execution_admission_preflight_contracts_v1.json#max_biped_skeleton_validation_execution_v1",
+      "matrix_reference": "examples/execution-admission/execution_admission_candidate_matrix_v1.json#max_biped_skeleton_validation_execution_v1",
+      "required_evidence_items": [
+        "candidate-specific execution admission decision record",
+        "candidate-specific execution receipt",
+        "candidate-specific rollback drill evidence"
+      ],
+      "present_evidence_items": [
+        "max_biped_v1_skeleton_contract controlled_real evidence",
+        "manual_hero_review_v1 controlled_real evidence"
+      ],
+      "missing_evidence_items": [
+        "explicit admitted decision for max_biped_skeleton_validation_execution_v1",
+        "execution receipt generated by admitted bounded skeleton validation",
+        "rollback proof for admitted skeleton execution outputs"
+      ],
+      "blocked_reason_codes": [
+        "unadmitted_candidate",
+        "missing_approval_decision",
+        "missing_execution_receipt",
+        "missing_rollback_proof"
+      ],
+      "blocked_reason_summary": "Skeleton execution candidate remains unadmitted with missing admitted-execution receipt/rollback evidence.",
+      "required_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+      "validator_status": "present",
+      "required_receipt_schema": "schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
+      "receipt_status": "required_not_generated",
+      "rollback_plan_status": "required_not_proven",
+      "approval_status": "blocked_missing_approval",
+      "approval_phrase_required": "APPROVE EXECUTION ADMISSION max_biped_skeleton_validation_execution_v1",
+      "allowed_sandbox_paths_status": "sandbox_only",
+      "forbidden_paths_status": "forbidden_paths_present",
+      "blocked_surfaces_status": "all_blocked",
+      "unsafe_claims_detected": false,
+      "production_readiness_effect": "execution_blocked_missing_preflight_proof",
+      "publication_effect": "publication_blocked",
+      "next_required_action": "Prepare candidate-specific admission and receipt proof bundle before any execution request.",
+      "safety_notes": [
+        "This is not execution admission.",
+        "Publication remains blocked."
+      ]
+    },
+    {
+      "candidate_id": "material_uv_qc_execution_v1",
+      "candidate_type": "real_execution",
+      "proof_package_version": "v1",
+      "proof_package_status": "blocked_missing_evidence",
+      "admission_status": "unadmitted",
+      "preflight_contract_status": "requirements_defined",
+      "preflight_passed": false,
+      "matrix_candidate_status": "proposed",
+      "contract_reference": "examples/execution-admission/execution_admission_preflight_contracts_v1.json#material_uv_qc_execution_v1",
+      "matrix_reference": "examples/execution-admission/execution_admission_candidate_matrix_v1.json#material_uv_qc_execution_v1",
+      "required_evidence_items": [
+        "candidate-specific execution admission decision record",
+        "candidate-specific execution receipt",
+        "candidate-specific rollback drill evidence"
+      ],
+      "present_evidence_items": [
+        "material_uv_qc_v1 controlled_real evidence",
+        "aaa_performance_budget_v1 controlled_real evidence"
+      ],
+      "missing_evidence_items": [
+        "explicit admitted decision for material_uv_qc_execution_v1",
+        "execution receipt generated by admitted bounded material/uv execution",
+        "rollback proof for admitted material/uv outputs"
+      ],
+      "blocked_reason_codes": [
+        "unadmitted_candidate",
+        "missing_approval_decision",
+        "missing_execution_receipt",
+        "missing_rollback_proof"
+      ],
+      "blocked_reason_summary": "Material/UV execution candidate remains unadmitted with missing admitted-execution proof artifacts.",
+      "required_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+      "validator_status": "present",
+      "required_receipt_schema": "schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
+      "receipt_status": "required_not_generated",
+      "rollback_plan_status": "required_not_proven",
+      "approval_status": "blocked_missing_approval",
+      "approval_phrase_required": "APPROVE EXECUTION ADMISSION material_uv_qc_execution_v1",
+      "allowed_sandbox_paths_status": "sandbox_only",
+      "forbidden_paths_status": "forbidden_paths_present",
+      "blocked_surfaces_status": "all_blocked",
+      "unsafe_claims_detected": false,
+      "production_readiness_effect": "execution_blocked_missing_preflight_proof",
+      "publication_effect": "publication_blocked",
+      "next_required_action": "Define admitted execution packet and receipt validation path for material/UV candidate.",
+      "safety_notes": [
+        "No Blender/DCC execution is admitted.",
+        "No publication is admitted."
+      ]
+    },
+    {
+      "candidate_id": "animation_smoke_execution_v1",
+      "candidate_type": "real_execution",
+      "proof_package_version": "v1",
+      "proof_package_status": "blocked_missing_evidence",
+      "admission_status": "unadmitted",
+      "preflight_contract_status": "requirements_defined",
+      "preflight_passed": false,
+      "matrix_candidate_status": "proposed",
+      "contract_reference": "examples/execution-admission/execution_admission_preflight_contracts_v1.json#animation_smoke_execution_v1",
+      "matrix_reference": "examples/execution-admission/execution_admission_candidate_matrix_v1.json#animation_smoke_execution_v1",
+      "required_evidence_items": [
+        "candidate-specific execution admission decision record",
+        "candidate-specific execution receipt",
+        "candidate-specific rollback drill evidence"
+      ],
+      "present_evidence_items": [
+        "animation_smoke_v1 controlled_real evidence",
+        "max_biped_v1_skeleton_contract controlled_real evidence"
+      ],
+      "missing_evidence_items": [
+        "explicit admitted decision for animation_smoke_execution_v1",
+        "execution receipt generated by admitted bounded animation smoke execution",
+        "rollback proof for admitted animation smoke outputs"
+      ],
+      "blocked_reason_codes": [
+        "unadmitted_candidate",
+        "missing_approval_decision",
+        "missing_execution_receipt",
+        "missing_rollback_proof"
+      ],
+      "blocked_reason_summary": "Animation smoke execution candidate remains blocked pending admitted-execution evidence artifacts.",
+      "required_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+      "validator_status": "present",
+      "required_receipt_schema": "schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
+      "receipt_status": "required_not_generated",
+      "rollback_plan_status": "required_not_proven",
+      "approval_status": "blocked_missing_approval",
+      "approval_phrase_required": "APPROVE EXECUTION ADMISSION animation_smoke_execution_v1",
+      "allowed_sandbox_paths_status": "sandbox_only",
+      "forbidden_paths_status": "forbidden_paths_present",
+      "blocked_surfaces_status": "all_blocked",
+      "unsafe_claims_detected": false,
+      "production_readiness_effect": "execution_blocked_missing_preflight_proof",
+      "publication_effect": "publication_blocked",
+      "next_required_action": "Prepare admitted execution request packet with bounded runtime safety guarantees.",
+      "safety_notes": [
+        "Runtime execution remains blocked.",
+        "No publication is admitted."
+      ]
+    },
+    {
+      "candidate_id": "visual_evidence_capture_execution_v1",
+      "candidate_type": "real_execution",
+      "proof_package_version": "v1",
+      "proof_package_status": "blocked_missing_evidence",
+      "admission_status": "unadmitted",
+      "preflight_contract_status": "blocked",
+      "preflight_passed": false,
+      "matrix_candidate_status": "blocked",
+      "contract_reference": "examples/execution-admission/execution_admission_preflight_contracts_v1.json#visual_evidence_capture_execution_v1",
+      "matrix_reference": "examples/execution-admission/execution_admission_candidate_matrix_v1.json#visual_evidence_capture_execution_v1",
+      "required_evidence_items": [
+        "candidate-specific execution admission decision record",
+        "candidate-specific execution receipt",
+        "candidate-specific rollback drill evidence"
+      ],
+      "present_evidence_items": [
+        "screenshot_evidence_v1 controlled_real evidence",
+        "manual_hero_review_v1 controlled_real evidence"
+      ],
+      "missing_evidence_items": [
+        "explicit admitted decision for visual_evidence_capture_execution_v1",
+        "execution receipt generated by admitted bounded visual capture execution",
+        "rollback proof for admitted visual capture outputs"
+      ],
+      "blocked_reason_codes": [
+        "unadmitted_candidate",
+        "missing_approval_decision",
+        "missing_execution_receipt",
+        "missing_rollback_proof"
+      ],
+      "blocked_reason_summary": "Visual capture execution candidate remains blocked while live capture remains unadmitted and receipt evidence absent.",
+      "required_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+      "validator_status": "present",
+      "required_receipt_schema": "schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
+      "receipt_status": "required_not_generated",
+      "rollback_plan_status": "required_not_proven",
+      "approval_status": "blocked_missing_approval",
+      "approval_phrase_required": "APPROVE EXECUTION ADMISSION visual_evidence_capture_execution_v1",
+      "allowed_sandbox_paths_status": "sandbox_only",
+      "forbidden_paths_status": "forbidden_paths_present",
+      "blocked_surfaces_status": "all_blocked",
+      "unsafe_claims_detected": false,
+      "production_readiness_effect": "execution_blocked_missing_preflight_proof",
+      "publication_effect": "publication_blocked",
+      "next_required_action": "Keep live screenshot capture blocked and require explicit bounded-capture admission plan before review.",
+      "safety_notes": [
+        "Live screenshot capture remains blocked.",
+        "No publication is admitted."
+      ]
+    },
+    {
+      "candidate_id": "release_candidate_package_publish_dry_run_v1",
+      "candidate_type": "dry_run",
+      "proof_package_version": "v1",
+      "proof_package_status": "requirements_only",
+      "admission_status": "unadmitted",
+      "preflight_contract_status": "requirements_defined",
+      "preflight_passed": false,
+      "matrix_candidate_status": "proposed",
+      "contract_reference": "examples/execution-admission/execution_admission_preflight_contracts_v1.json#release_candidate_package_publish_dry_run_v1",
+      "matrix_reference": "examples/execution-admission/execution_admission_candidate_matrix_v1.json#release_candidate_package_publish_dry_run_v1",
+      "required_evidence_items": [
+        "candidate-specific dry-run admission decision record",
+        "dry-run execution receipt with publication_performed=false",
+        "dry-run rollback confirmation evidence"
+      ],
+      "present_evidence_items": [
+        "release_publication_gate_set_v1 evidence",
+        "release_publication_request_approval_v1 evidence"
+      ],
+      "missing_evidence_items": [
+        "explicit admitted decision for release_candidate_package_publish_dry_run_v1",
+        "dry-run receipt generated under admitted scope",
+        "dry-run rollback confirmation artifact"
+      ],
+      "blocked_reason_codes": [
+        "unadmitted_candidate",
+        "missing_approval_decision",
+        "missing_dry_run_receipt"
+      ],
+      "blocked_reason_summary": "Dry-run candidate remains requirements-only and unadmitted until explicit decision and receipt generation exist.",
+      "required_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+      "validator_status": "present",
+      "required_receipt_schema": "schemas/maxine_execution_admission_receipt_dry_run_report.schema.json",
+      "receipt_status": "required_not_generated",
+      "rollback_plan_status": "required_not_proven",
+      "approval_status": "blocked_missing_approval",
+      "approval_phrase_required": "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1",
+      "allowed_sandbox_paths_status": "sandbox_only",
+      "forbidden_paths_status": "forbidden_paths_present",
+      "blocked_surfaces_status": "all_blocked",
+      "unsafe_claims_detected": false,
+      "production_readiness_effect": "publication_blocked_missing_preflight_proof",
+      "publication_effect": "dry_run_only_publication_blocked",
+      "next_required_action": "Prepare narrow dry-run admission package that preserves publication_performed=false.",
+      "safety_notes": [
+        "Dry-run planning is not publication admission.",
+        "No real execution is admitted."
+      ]
+    },
+    {
+      "candidate_id": "release_candidate_package_publication_v1",
+      "candidate_type": "publication",
+      "proof_package_version": "v1",
+      "proof_package_status": "blocked_missing_evidence",
+      "admission_status": "unadmitted",
+      "preflight_contract_status": "blocked",
+      "preflight_passed": false,
+      "matrix_candidate_status": "blocked",
+      "contract_reference": "examples/execution-admission/execution_admission_preflight_contracts_v1.json#release_candidate_package_publication_v1",
+      "matrix_reference": "examples/execution-admission/execution_admission_candidate_matrix_v1.json#release_candidate_package_publication_v1",
+      "required_evidence_items": [
+        "candidate-specific publication admission decision record",
+        "publication execution receipt generated under admitted scope",
+        "publication rollback drill evidence linked to admitted candidate"
+      ],
+      "present_evidence_items": [
+        "release_publication_request_approval_v1 evidence",
+        "release_publication_execution_admission_gate_v1 evidence",
+        "release_publication_gate_set_v1 evidence"
+      ],
+      "missing_evidence_items": [
+        "explicit admitted decision for release_candidate_package_publication_v1",
+        "publication execution receipt from admitted publication scope",
+        "publication rollback proof from admitted publication scope"
+      ],
+      "blocked_reason_codes": [
+        "unadmitted_candidate",
+        "missing_approval_decision",
+        "missing_publication_receipt",
+        "missing_rollback_proof"
+      ],
+      "blocked_reason_summary": "Publication candidate remains blocked/unadmitted with missing explicit admission decision and admitted publication receipt evidence.",
+      "required_validator": "tools/execution-admission/validate_execution_admission_preflight_contracts.py",
+      "validator_status": "present",
+      "required_receipt_schema": "schemas/maxine_release_publication_execution_receipt_report.schema.json",
+      "receipt_status": "required_not_generated",
+      "rollback_plan_status": "required_not_proven",
+      "approval_status": "blocked_missing_approval",
+      "approval_phrase_required": "APPROVE EXECUTION ADMISSION release_candidate_package_publication_v1",
+      "allowed_sandbox_paths_status": "sandbox_only",
+      "forbidden_paths_status": "forbidden_paths_present",
+      "blocked_surfaces_status": "all_blocked",
+      "unsafe_claims_detected": false,
+      "production_readiness_effect": "publication_blocked_missing_preflight_proof",
+      "publication_effect": "publication_blocked_missing_preflight_proof",
+      "next_required_action": "Keep publication blocked until explicit admission decision and publication receipt path are approved.",
+      "safety_notes": [
+        "Publication is not admitted.",
+        "Production-ready cannot be claimed."
+      ]
+    }
+  ],
+  "claim_status": "evidence_only",
+  "safety": {
+    "o3de_execution_status": "blocked",
+    "editor_runtime_execution_status": "blocked",
+    "asset_processor_execution_status": "blocked",
+    "blender_dcc_execution_status": "blocked",
+    "profiler_benchmark_execution_status": "blocked",
+    "live_screenshot_capture_status": "blocked",
+    "spawn_publish_status": "blocked",
+    "cache_live_db_access_status": "blocked",
+    "production_write_status": "blocked",
+    "engine_write_status": "blocked"
+  }
+}

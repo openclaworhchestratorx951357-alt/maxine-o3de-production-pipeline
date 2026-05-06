@@ -120,3 +120,14 @@ Execution/publication widening now also requires candidate-specific preflight co
 
 These contracts define requirements only and do not admit execution/publication by themselves.
 
+## Candidate-Specific Preflight Proof Packages v1
+
+A static proof-evaluation layer now explains present/missing evidence and blocked reasons for each candidate:
+
+- `docs/maxine/execution-admission/execution-admission-preflight-proof-packages-v1.md`
+- `schemas/maxine_execution_admission_preflight_proof_packages.schema.json`
+- `examples/execution-admission/execution_admission_preflight_proof_packages_v1.json`
+- `tools/execution-admission/validate_execution_admission_preflight_proof_packages.py`
+
+These proof packages are static explanations only and do not admit execution/publication.
+

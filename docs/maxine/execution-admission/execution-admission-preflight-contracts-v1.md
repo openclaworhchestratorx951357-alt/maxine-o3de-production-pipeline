@@ -70,6 +70,17 @@ Preflight contracts are defined for all current matrix entries:
 - tests:
   - `tests/pytest/test_execution_admission_preflight_contracts.py`
 
+## Preflight Proof Package Layer
+
+A static proof-evaluation layer now explains current evidence coverage and missing requirements per candidate:
+
+- `docs/maxine/execution-admission/execution-admission-preflight-proof-packages-v1.md`
+- `schemas/maxine_execution_admission_preflight_proof_packages.schema.json`
+- `examples/execution-admission/execution_admission_preflight_proof_packages_v1.json`
+- `tools/execution-admission/validate_execution_admission_preflight_proof_packages.py`
+
+This layer remains requirements/reporting only. It does not admit execution or publication.
+
 ## Safety Notes
 
 This milestone preserves blocked execution/publication surfaces:
