@@ -195,6 +195,16 @@
   - target candidate remains `release_candidate_package_publish_dry_run_v1`
   - checklist remains static and blocked with `approval_review_ready=false`, `ready_to_request_approval=false`, `dry_run_admitted=false`, `receipt_issued=false`
   - artifact consolidates remaining approval/evidence/receipt/rollback/publication/execution blockers and does not approve or admit the candidate
+- Release-candidate publication dry-run operator approval packet v1 is implemented (candidate-specific static operator review template only, non-executing, non-publishing):
+  - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-operator-approval-packet-v1.md`
+  - `schemas/maxine_release_candidate_publication_dry_run_operator_approval_packet.schema.json`
+  - `examples/execution-admission/release_candidate_package_publish_dry_run_operator_approval_packet_v1.json`
+  - `tools/execution-admission/validate_release_candidate_publication_dry_run_operator_approval_packet.py`
+  - integrated into `tools/release-lane/prove_pilot_release_chain.py` proof output as read-only operator-approval-packet status evidence
+  - `tests/pytest/test_release_candidate_publication_dry_run_operator_approval_packet.py`
+  - target candidate remains `release_candidate_package_publish_dry_run_v1`
+  - packet remains static and blocked with `approval_request_ready=false`, `operator_approval_granted=false`, `approval_phrase_present=false`, `dry_run_admitted=false`, `receipt_issued=false`
+  - artifact defines the future operator review packet format only and does not grant approval or admission
 - Admitted no-op release-candidate package receipt candidate v1 is implemented (bounded receipt generation only, non-executing, non-publishing):
   - approval phrase recorded:
     - `APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1`

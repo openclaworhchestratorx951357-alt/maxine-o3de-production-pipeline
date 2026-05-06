@@ -206,3 +206,31 @@ Artifacts:
 - `tools/execution-admission/validate_release_candidate_publication_dry_run_admission_blockers.py`
 
 This layer is checklist-only and does not approve or admit dry-run/publication execution.
+
+## Candidate-Specific Operator Approval Packet Template v1
+
+The dry-run candidate now also has a static operator approval packet template:
+
+- candidate id:
+  - `release_candidate_package_publish_dry_run_v1`
+- packet status:
+  - `static_template_valid_blocked`
+- approval request ready:
+  - `false`
+- operator approval granted:
+  - `false`
+- approval phrase present:
+  - `false`
+- dry-run admitted:
+  - `false`
+- receipt issued:
+  - `false`
+
+Artifacts:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-operator-approval-packet-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_operator_approval_packet.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_operator_approval_packet_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_operator_approval_packet.py`
+
+This layer is template-only and does not mark approval-ready, grant approval, or admit dry-run/publication execution.
