@@ -8,6 +8,8 @@
 
 This artifact is completeness-review only. Structural completeness is not approval readiness, not approval, not admission, not execution, not receipt issuance, and not publication.
 
+This slice now feeds a separate readiness report artifact that still keeps approval request readiness blocked.
+
 ## Current Posture
 
 - candidate id:
@@ -66,6 +68,15 @@ Any future admission request for this candidate still requires:
 - `APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1`
 
 This slice does not include an approval decision reference and does not present the phrase as granted.
+
+## Approval Request Readiness Link
+
+A separate static readiness report now answers whether approval should be requested and keeps the answer blocked:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-approval-request-readiness-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_approval_request_readiness.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_approval_request_readiness_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_approval_request_readiness.py`
 
 ## Unresolved Blockers (Required)
 

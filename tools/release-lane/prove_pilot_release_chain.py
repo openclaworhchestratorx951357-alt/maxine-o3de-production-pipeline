@@ -82,6 +82,12 @@ RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_OPERATOR_APPROVAL_PACKET_COMPLETENESS_VALI
 RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_OPERATOR_APPROVAL_PACKET_COMPLETENESS_EXAMPLE_REL = (
     "examples/execution-admission/release_candidate_package_publish_dry_run_operator_approval_packet_completeness_v1.json"
 )
+RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_APPROVAL_REQUEST_READINESS_VALIDATOR_REL = (
+    "tools/execution-admission/validate_release_candidate_publication_dry_run_approval_request_readiness.py"
+)
+RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_APPROVAL_REQUEST_READINESS_EXAMPLE_REL = (
+    "examples/execution-admission/release_candidate_package_publish_dry_run_approval_request_readiness_v1.json"
+)
 PROJECT_INVENTORY_FIXTURE_REL = (
     "examples/sandbox/project-inventory/max_biped_v1_project_inventory.fixture.json"
 )
@@ -536,6 +542,35 @@ def run_release_candidate_publication_dry_run_operator_approval_packet_completen
     return proc.returncode, payload
 
 
+def run_release_candidate_publication_dry_run_approval_request_readiness(
+    repo_root: Path,
+) -> Tuple[int, Dict[str, Any]]:
+    cmd: List[str] = [
+        sys.executable,
+        str(
+            (
+                repo_root
+                / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_APPROVAL_REQUEST_READINESS_VALIDATOR_REL
+            ).resolve()
+        ),
+        str(
+            (
+                repo_root
+                / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_APPROVAL_REQUEST_READINESS_EXAMPLE_REL
+            ).resolve()
+        ),
+    ]
+    proc = subprocess.run(
+        cmd,
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+    )
+    payload = parse_payload_from_stdout(proc.stdout)
+    payload["reporter_return_code"] = proc.returncode
+    return proc.returncode, payload
+
+
 def write_json(path: Path, payload: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2) + os.linesep, encoding="utf-8")
@@ -643,6 +678,12 @@ def main() -> int:
             dry_run_operator_approval_packet_completeness_code,
             dry_run_operator_approval_packet_completeness_payload,
         ) = run_release_candidate_publication_dry_run_operator_approval_packet_completeness(
+            repo_root=repo_root,
+        )
+        (
+            dry_run_approval_request_readiness_code,
+            dry_run_approval_request_readiness_payload,
+        ) = run_release_candidate_publication_dry_run_approval_request_readiness(
             repo_root=repo_root,
         )
     except Exception as exc:
@@ -1414,6 +1455,129 @@ def main() -> int:
                 "release-candidate publication dry-run operator approval packet completeness computed source status must keep "
                 f"{key}=pass."
             )
+    if dry_run_approval_request_readiness_code != 0:
+        failures.append(
+            "release-candidate publication dry-run approval request readiness validator must return 0."
+        )
+    if (
+        dry_run_approval_request_readiness_payload.get("report_type")
+        != "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_APPROVAL_REQUEST_READINESS_VALIDATION_v1_REPORT"
+    ):
+        failures.append(
+            "release-candidate publication dry-run approval request readiness validator must emit RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_APPROVAL_REQUEST_READINESS_VALIDATION_v1_REPORT."
+        )
+    if dry_run_approval_request_readiness_payload.get("status") != "pass":
+        failures.append(
+            "release-candidate publication dry-run approval request readiness validator status must be pass."
+        )
+    if (
+        dry_run_approval_request_readiness_payload.get(
+            "release_candidate_publication_dry_run_approval_request_readiness_present"
+        )
+        is not True
+    ):
+        failures.append(
+            "release-candidate publication dry-run approval request readiness report must confirm release_candidate_publication_dry_run_approval_request_readiness_present=true."
+        )
+    if (
+        dry_run_approval_request_readiness_payload.get("planned_candidate_id")
+        != "release_candidate_package_publish_dry_run_v1"
+    ):
+        failures.append(
+            "release-candidate publication dry-run approval request readiness report must keep planned_candidate_id=release_candidate_package_publish_dry_run_v1."
+        )
+    if (
+        dry_run_approval_request_readiness_payload.get(
+            "approval_request_readiness_status"
+        )
+        != "static_request_readiness_valid_blocked"
+    ):
+        failures.append(
+            "release-candidate publication dry-run approval request readiness report must keep approval_request_readiness_status=static_request_readiness_valid_blocked."
+        )
+    for field in (
+        "packet_structurally_complete",
+        "packet_complete_for_future_review_template",
+    ):
+        if dry_run_approval_request_readiness_payload.get(field) is not True:
+            failures.append(
+                "release-candidate publication dry-run approval request readiness report must keep field true: "
+                f"{field}."
+            )
+    for field in (
+        "approval_request_ready",
+        "operator_approval_granted",
+        "approval_phrase_present",
+        "dry_run_admitted",
+        "dry_run_executed",
+        "receipt_issued",
+        "publication_admitted",
+        "real_execution_admitted",
+        "production_ready_claimed",
+    ):
+        if dry_run_approval_request_readiness_payload.get(field) is not False:
+            failures.append(
+                "release-candidate publication dry-run approval request readiness report must keep field false: "
+                f"{field}."
+            )
+    if dry_run_approval_request_readiness_payload.get("final_recommendation") != (
+        "do_not_request_approval_yet"
+    ):
+        failures.append(
+            "release-candidate publication dry-run approval request readiness report must keep final_recommendation=do_not_request_approval_yet."
+        )
+    if dry_run_approval_request_readiness_payload.get("approval_phrase_required") != (
+        "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1"
+    ):
+        failures.append(
+            "release-candidate publication dry-run approval request readiness report must keep exact candidate-specific approval phrase."
+        )
+    for key in (
+        "request_readiness_blockers",
+        "approval_blockers",
+        "execution_blockers",
+        "receipt_blockers",
+        "publication_blockers",
+        "production_readiness_blockers",
+        "required_before_requesting_approval",
+        "required_validation_commands",
+    ):
+        if not dry_run_approval_request_readiness_payload.get(key):
+            failures.append(
+                "release-candidate publication dry-run approval request readiness report must keep "
+                f"{key} non-empty."
+            )
+    readiness_source_status = (
+        dry_run_approval_request_readiness_payload.get(
+            "computed_source_artifact_validation_status"
+        )
+        if isinstance(
+            dry_run_approval_request_readiness_payload.get(
+                "computed_source_artifact_validation_status"
+            ),
+            dict,
+        )
+        else {}
+    )
+    for key in (
+        "candidate_matrix_status",
+        "preflight_contracts_status",
+        "preflight_proof_packages_status",
+        "readiness_rollup_status",
+        "dry_run_plan_status",
+        "dry_run_receipt_contract_status",
+        "blocked_unissued_receipt_status",
+        "admission_blocker_checklist_status",
+        "operator_approval_packet_status",
+        "operator_approval_packet_completeness_status",
+        "production_readiness_status",
+        "noop_receipt_status",
+    ):
+        if readiness_source_status.get(key) != "pass":
+            failures.append(
+                "release-candidate publication dry-run approval request readiness computed source status must keep "
+                f"{key}=pass."
+            )
 
     summary: Dict[str, Any] = {
         "status": "pass" if not failures else "fail",
@@ -1437,6 +1601,7 @@ def main() -> int:
             "release_candidate_publication_dry_run_admission_blockers_report": dry_run_admission_blockers_payload,
             "release_candidate_publication_dry_run_operator_approval_packet_report": dry_run_operator_approval_packet_payload,
             "release_candidate_publication_dry_run_operator_approval_packet_completeness_report": dry_run_operator_approval_packet_completeness_payload,
+            "release_candidate_publication_dry_run_approval_request_readiness_report": dry_run_approval_request_readiness_payload,
             "failures": failures,
         },
     }

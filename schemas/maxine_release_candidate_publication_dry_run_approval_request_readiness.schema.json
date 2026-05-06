@@ -1,0 +1,595 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_release_candidate_publication_dry_run_approval_request_readiness.schema.json",
+  "title": "MAXINE Release Candidate Publication Dry-Run Approval Request Readiness v1",
+  "description": "Static approval-request readiness report for release_candidate_package_publish_dry_run_v1. This report is not approval, not admission, not execution, not receipt issuance, and not publication admission.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_type",
+    "report_id",
+    "report_version",
+    "candidate_id",
+    "candidate_type",
+    "approval_request_readiness_status",
+    "admission_status",
+    "packet_structurally_complete",
+    "packet_complete_for_future_review_template",
+    "approval_request_ready",
+    "operator_approval_granted",
+    "approval_phrase_present",
+    "dry_run_admitted",
+    "dry_run_executed",
+    "receipt_issued",
+    "publication_admitted",
+    "real_execution_admitted",
+    "production_ready_claimed",
+    "generated_from_static_artifacts_only",
+    "source_artifacts",
+    "source_artifact_validation_status",
+    "readiness_summary",
+    "structural_completeness_summary",
+    "request_readiness_blockers",
+    "approval_blockers",
+    "execution_blockers",
+    "receipt_blockers",
+    "publication_blockers",
+    "production_readiness_blockers",
+    "required_before_requesting_approval",
+    "required_validation_commands",
+    "approval_phrase_required",
+    "approval_decision_reference",
+    "final_recommendation",
+    "unsafe_claims_detected",
+    "safety_notes"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "record_type": {
+      "type": "string",
+      "const": "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_APPROVAL_REQUEST_READINESS_v1"
+    },
+    "report_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "report_version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "candidate_id": {
+      "type": "string",
+      "const": "release_candidate_package_publish_dry_run_v1"
+    },
+    "candidate_type": {
+      "type": "string",
+      "const": "dry_run"
+    },
+    "approval_request_readiness_status": {
+      "type": "string",
+      "enum": [
+        "static_request_readiness_valid_blocked",
+        "static_request_readiness_invalid",
+        "blocked_missing_source_artifact",
+        "blocked_inconsistent_source_artifacts",
+        "superseded"
+      ]
+    },
+    "admission_status": {
+      "type": "string",
+      "const": "unadmitted"
+    },
+    "packet_structurally_complete": {
+      "type": "boolean",
+      "const": true
+    },
+    "packet_complete_for_future_review_template": {
+      "type": "boolean",
+      "const": true
+    },
+    "approval_request_ready": {
+      "type": "boolean",
+      "const": false
+    },
+    "operator_approval_granted": {
+      "type": "boolean",
+      "const": false
+    },
+    "approval_phrase_present": {
+      "type": "boolean",
+      "const": false
+    },
+    "dry_run_admitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "dry_run_executed": {
+      "type": "boolean",
+      "const": false
+    },
+    "receipt_issued": {
+      "type": "boolean",
+      "const": false
+    },
+    "publication_admitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "real_execution_admitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "production_ready_claimed": {
+      "type": "boolean",
+      "const": false
+    },
+    "generated_from_static_artifacts_only": {
+      "type": "boolean",
+      "const": true
+    },
+    "source_artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_matrix_ref",
+        "preflight_contracts_ref",
+        "preflight_proof_packages_ref",
+        "readiness_rollup_ref",
+        "dry_run_plan_ref",
+        "dry_run_receipt_contract_ref",
+        "blocked_unissued_receipt_ref",
+        "admission_blocker_checklist_ref",
+        "operator_approval_packet_ref",
+        "operator_approval_packet_completeness_ref",
+        "production_readiness_report_ref",
+        "noop_receipt_status_ref"
+      ],
+      "properties": {
+        "candidate_matrix_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "preflight_contracts_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "preflight_proof_packages_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "readiness_rollup_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dry_run_plan_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dry_run_receipt_contract_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "blocked_unissued_receipt_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "admission_blocker_checklist_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operator_approval_packet_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operator_approval_packet_completeness_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "production_readiness_report_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "noop_receipt_status_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "source_artifact_validation_status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_matrix_status",
+        "preflight_contracts_status",
+        "preflight_proof_packages_status",
+        "readiness_rollup_status",
+        "dry_run_plan_status",
+        "dry_run_receipt_contract_status",
+        "blocked_unissued_receipt_status",
+        "admission_blocker_checklist_status",
+        "operator_approval_packet_status",
+        "operator_approval_packet_completeness_status",
+        "production_readiness_status",
+        "noop_receipt_status"
+      ],
+      "properties": {
+        "candidate_matrix_status": {
+          "$ref": "#/$defs/statusValue"
+        },
+        "preflight_contracts_status": {
+          "$ref": "#/$defs/statusValue"
+        },
+        "preflight_proof_packages_status": {
+          "$ref": "#/$defs/statusValue"
+        },
+        "readiness_rollup_status": {
+          "$ref": "#/$defs/statusValue"
+        },
+        "dry_run_plan_status": {
+          "$ref": "#/$defs/statusValue"
+        },
+        "dry_run_receipt_contract_status": {
+          "$ref": "#/$defs/statusValue"
+        },
+        "blocked_unissued_receipt_status": {
+          "$ref": "#/$defs/statusValue"
+        },
+        "admission_blocker_checklist_status": {
+          "$ref": "#/$defs/statusValue"
+        },
+        "operator_approval_packet_status": {
+          "$ref": "#/$defs/statusValue"
+        },
+        "operator_approval_packet_completeness_status": {
+          "$ref": "#/$defs/statusValue"
+        },
+        "production_readiness_status": {
+          "$ref": "#/$defs/statusValue"
+        },
+        "noop_receipt_status": {
+          "$ref": "#/$defs/statusValue"
+        }
+      }
+    },
+    "readiness_summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "structural_completeness_summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "request_readiness_blockers": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "approval_blockers": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "execution_blockers": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "receipt_blockers": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "publication_blockers": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "production_readiness_blockers": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "required_before_requesting_approval": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "required_validation_commands": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    },
+    "approval_phrase_required": {
+      "type": "string",
+      "const": "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1"
+    },
+    "approval_decision_reference": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "final_recommendation": {
+      "type": "string",
+      "const": "do_not_request_approval_yet"
+    },
+    "unsafe_claims_detected": {
+      "type": "boolean",
+      "const": false
+    },
+    "safety_notes": {
+      "$ref": "#/$defs/nonEmptyStringArray"
+    }
+  },
+  "$defs": {
+    "nonEmptyStringArray": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "statusValue": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "approval_decision_reference": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "approval_decision_reference"
+        ]
+      },
+      "then": {
+        "properties": {
+          "approval_decision_reference": {
+            "maxLength": 0
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "request_readiness_blockers": {
+          "contains": {
+            "const": "approval_request_not_ready"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "request_readiness_blockers": {
+          "contains": {
+            "const": "unresolved_approval_blockers_present"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "request_readiness_blockers": {
+          "contains": {
+            "const": "no_operator_approval_decision"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "request_readiness_blockers": {
+          "contains": {
+            "const": "approval_phrase_not_present"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "approval_blockers": {
+          "contains": {
+            "const": "missing_approval_decision"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "approval_blockers": {
+          "contains": {
+            "const": "operator_approval_not_granted"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "execution_blockers": {
+          "contains": {
+            "const": "dry_run_not_admitted"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "execution_blockers": {
+          "contains": {
+            "const": "dry_run_not_executed"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "receipt_blockers": {
+          "contains": {
+            "const": "receipt_not_issued"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "receipt_blockers": {
+          "contains": {
+            "const": "rollback_cleanup_evidence_missing"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "publication_blockers": {
+          "contains": {
+            "const": "publication_surfaces_blocked_by_policy"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "publication_blockers": {
+          "contains": {
+            "const": "publication_not_admitted"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "production_readiness_blockers": {
+          "contains": {
+            "const": "production_ready_not_claimed"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "production_readiness_blockers": {
+          "contains": {
+            "const": "real_execution_not_admitted"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "production_readiness_blockers": {
+          "contains": {
+            "const": "publication_not_admitted"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_validation_commands": {
+          "contains": {
+            "const": "tools/execution-admission/validate_execution_admission_candidate_matrix.py"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_validation_commands": {
+          "contains": {
+            "const": "tools/execution-admission/validate_execution_admission_preflight_contracts.py"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_validation_commands": {
+          "contains": {
+            "const": "tools/execution-admission/validate_execution_admission_preflight_proof_packages.py"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_validation_commands": {
+          "contains": {
+            "const": "tools/execution-admission/validate_execution_admission_readiness_rollup.py"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_validation_commands": {
+          "contains": {
+            "const": "tools/execution-admission/validate_release_candidate_publication_dry_run_plan.py"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_validation_commands": {
+          "contains": {
+            "const": "tools/execution-admission/validate_release_candidate_publication_dry_run_receipt.py"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_validation_commands": {
+          "contains": {
+            "const": "tools/execution-admission/validate_release_candidate_publication_dry_run_admission_blockers.py"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_validation_commands": {
+          "contains": {
+            "const": "tools/execution-admission/validate_release_candidate_publication_dry_run_operator_approval_packet.py"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_validation_commands": {
+          "contains": {
+            "const": "tools/execution-admission/validate_release_candidate_publication_dry_run_operator_approval_packet_completeness.py"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_validation_commands": {
+          "contains": {
+            "const": "tools/audit/verify_sandbox_writer_safety.py"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_validation_commands": {
+          "contains": {
+            "const": "tools/release-lane/prove_pilot_release_chain.py"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "required_validation_commands": {
+          "contains": {
+            "const": "tools/production-readiness-report/validate_production_readiness_report.py"
+          }
+        }
+      }
+    }
+  ]
+}
