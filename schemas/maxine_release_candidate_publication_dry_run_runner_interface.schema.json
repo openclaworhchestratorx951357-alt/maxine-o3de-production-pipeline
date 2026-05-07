@@ -1,0 +1,314 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_release_candidate_publication_dry_run_runner_interface.schema.json",
+  "title": "MAXINE Release Candidate Publication Dry-Run Runner Interface v1",
+  "description": "Static runner interface contract for release_candidate_package_publish_dry_run_v1. This contract is not implementation, not admission, not execution, not receipt issuance, and not publication.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_type",
+    "interface_id",
+    "interface_version",
+    "candidate_id",
+    "candidate_type",
+    "decision_type",
+    "runner_interface_status",
+    "admission_status",
+    "runner_implemented",
+    "runner_admitted",
+    "runner_executed",
+    "generated_from_static_artifacts_only",
+    "source_artifacts",
+    "source_artifact_validation_status",
+    "approval_request_ready",
+    "operator_approval_granted",
+    "approval_phrase_present",
+    "dry_run_admitted",
+    "dry_run_executed",
+    "receipt_issued",
+    "publication_admitted",
+    "real_execution_admitted",
+    "production_ready_claimed",
+    "interface_lifecycle_states",
+    "current_lifecycle_state",
+    "required_inputs",
+    "forbidden_inputs",
+    "required_outputs",
+    "current_emitted_outputs",
+    "forbidden_outputs",
+    "boundary_validation_requirements",
+    "receipt_contract_requirements",
+    "fail_closed_requirements",
+    "pre_run_validation_requirements",
+    "post_run_validation_requirements",
+    "required_safety_attestations",
+    "forbidden_runtime_calls",
+    "forbidden_filesystem_operations",
+    "invalidation_conditions",
+    "required_receipt_fields",
+    "required_log_report_fields",
+    "allowed_runner_modes",
+    "disallowed_runner_modes",
+    "future_admission_requirements",
+    "unsafe_claims_detected",
+    "safety_notes"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "record_type": {
+      "type": "string",
+      "const": "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RUNNER_INTERFACE_v1"
+    },
+    "interface_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "interface_version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "candidate_id": {
+      "type": "string",
+      "const": "release_candidate_package_publish_dry_run_v1"
+    },
+    "candidate_type": {
+      "type": "string",
+      "const": "dry_run"
+    },
+    "decision_type": {
+      "type": "string",
+      "const": "non_approval"
+    },
+    "runner_interface_status": {
+      "type": "string",
+      "const": "static_interface_valid_blocked"
+    },
+    "admission_status": {
+      "type": "string",
+      "const": "unadmitted"
+    },
+    "runner_implemented": {
+      "type": "boolean",
+      "const": false
+    },
+    "runner_admitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "runner_executed": {
+      "type": "boolean",
+      "const": false
+    },
+    "generated_from_static_artifacts_only": {
+      "type": "boolean",
+      "const": true
+    },
+    "source_artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_matrix_ref",
+        "preflight_contracts_ref",
+        "preflight_proof_packages_ref",
+        "readiness_rollup_ref",
+        "dry_run_plan_ref",
+        "dry_run_receipt_contract_ref",
+        "blocked_unissued_receipt_ref",
+        "admission_blocker_checklist_ref",
+        "operator_approval_packet_ref",
+        "operator_approval_packet_completeness_ref",
+        "approval_request_readiness_ref",
+        "non_approval_decision_ref",
+        "sandbox_boundary_ref",
+        "production_readiness_report_ref",
+        "noop_receipt_status_ref"
+      ],
+      "properties": {
+        "candidate_matrix_ref": { "type": "string", "minLength": 1 },
+        "preflight_contracts_ref": { "type": "string", "minLength": 1 },
+        "preflight_proof_packages_ref": { "type": "string", "minLength": 1 },
+        "readiness_rollup_ref": { "type": "string", "minLength": 1 },
+        "dry_run_plan_ref": { "type": "string", "minLength": 1 },
+        "dry_run_receipt_contract_ref": { "type": "string", "minLength": 1 },
+        "blocked_unissued_receipt_ref": { "type": "string", "minLength": 1 },
+        "admission_blocker_checklist_ref": { "type": "string", "minLength": 1 },
+        "operator_approval_packet_ref": { "type": "string", "minLength": 1 },
+        "operator_approval_packet_completeness_ref": { "type": "string", "minLength": 1 },
+        "approval_request_readiness_ref": { "type": "string", "minLength": 1 },
+        "non_approval_decision_ref": { "type": "string", "minLength": 1 },
+        "sandbox_boundary_ref": { "type": "string", "minLength": 1 },
+        "production_readiness_report_ref": { "type": "string", "minLength": 1 },
+        "noop_receipt_status_ref": { "type": "string", "minLength": 1 }
+      }
+    },
+    "source_artifact_validation_status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_matrix_status",
+        "preflight_contracts_status",
+        "preflight_proof_packages_status",
+        "readiness_rollup_status",
+        "dry_run_plan_status",
+        "dry_run_receipt_contract_status",
+        "blocked_unissued_receipt_status",
+        "admission_blocker_checklist_status",
+        "operator_approval_packet_status",
+        "operator_approval_packet_completeness_status",
+        "approval_request_readiness_status",
+        "non_approval_decision_status",
+        "sandbox_boundary_status",
+        "production_readiness_status",
+        "noop_receipt_status"
+      ],
+      "properties": {
+        "candidate_matrix_status": { "$ref": "#/$defs/statusValue" },
+        "preflight_contracts_status": { "$ref": "#/$defs/statusValue" },
+        "preflight_proof_packages_status": { "$ref": "#/$defs/statusValue" },
+        "readiness_rollup_status": { "$ref": "#/$defs/statusValue" },
+        "dry_run_plan_status": { "$ref": "#/$defs/statusValue" },
+        "dry_run_receipt_contract_status": { "$ref": "#/$defs/statusValue" },
+        "blocked_unissued_receipt_status": { "$ref": "#/$defs/statusValue" },
+        "admission_blocker_checklist_status": { "$ref": "#/$defs/statusValue" },
+        "operator_approval_packet_status": { "$ref": "#/$defs/statusValue" },
+        "operator_approval_packet_completeness_status": { "$ref": "#/$defs/statusValue" },
+        "approval_request_readiness_status": { "$ref": "#/$defs/statusValue" },
+        "non_approval_decision_status": { "$ref": "#/$defs/statusValue" },
+        "sandbox_boundary_status": { "$ref": "#/$defs/statusValue" },
+        "production_readiness_status": { "$ref": "#/$defs/statusValue" },
+        "noop_receipt_status": { "$ref": "#/$defs/statusValue" }
+      }
+    },
+    "approval_request_ready": { "type": "boolean", "const": false },
+    "operator_approval_granted": { "type": "boolean", "const": false },
+    "approval_phrase_present": { "type": "boolean", "const": false },
+    "dry_run_admitted": { "type": "boolean", "const": false },
+    "dry_run_executed": { "type": "boolean", "const": false },
+    "receipt_issued": { "type": "boolean", "const": false },
+    "publication_admitted": { "type": "boolean", "const": false },
+    "real_execution_admitted": { "type": "boolean", "const": false },
+    "production_ready_claimed": { "type": "boolean", "const": false },
+    "interface_lifecycle_states": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "current_lifecycle_state": {
+      "type": "string",
+      "enum": ["not_started", "blocked_failed_safe", "invalidated_failed_safe"]
+    },
+    "required_inputs": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "forbidden_inputs": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "required_outputs": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "current_emitted_outputs": {
+      "type": "array",
+      "maxItems": 0,
+      "items": { "type": "string" }
+    },
+    "forbidden_outputs": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "boundary_validation_requirements": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "receipt_contract_requirements": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "fail_closed_requirements": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "pre_run_validation_requirements": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "post_run_validation_requirements": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "required_safety_attestations": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "forbidden_runtime_calls": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "forbidden_filesystem_operations": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "invalidation_conditions": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "required_receipt_fields": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "required_log_report_fields": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "allowed_runner_modes": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "disallowed_runner_modes": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "future_admission_requirements": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "unsafe_claims_detected": { "type": "boolean", "const": false },
+    "safety_notes": { "$ref": "#/$defs/nonEmptyStringArray" }
+  },
+  "$defs": {
+    "nonEmptyStringArray": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "statusValue": {
+      "type": "string",
+      "enum": ["pass", "warn", "fail"]
+    }
+  },
+  "allOf": [
+    {
+      "properties": {
+        "interface_lifecycle_states": {
+          "contains": { "const": "not_started" }
+        }
+      }
+    },
+    {
+      "properties": {
+        "allowed_runner_modes": {
+          "contains": { "const": "static_contract_review_only" }
+        }
+      }
+    },
+    {
+      "properties": {
+        "disallowed_runner_modes": {
+          "contains": { "const": "execution_mode" }
+        }
+      }
+    },
+    {
+      "properties": {
+        "disallowed_runner_modes": {
+          "contains": { "const": "admission_mode" }
+        }
+      }
+    },
+    {
+      "properties": {
+        "disallowed_runner_modes": {
+          "contains": { "const": "publication_mode" }
+        }
+      }
+    },
+    {
+      "properties": {
+        "disallowed_runner_modes": {
+          "contains": { "const": "spawn_mode" }
+        }
+      }
+    },
+    {
+      "properties": {
+        "disallowed_runner_modes": {
+          "contains": { "const": "live_runtime_mode" }
+        }
+      }
+    },
+    {
+      "properties": {
+        "disallowed_runner_modes": {
+          "contains": { "const": "receipt_emission_mode" }
+        }
+      }
+    },
+    {
+      "properties": {
+        "receipt_contract_requirements": {
+          "contains": {
+            "const": "receipt_type_must_equal_release_candidate_package_publish_dry_run_receipt_v1"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "future_admission_requirements": {
+          "contains": {
+            "const": "future_admission_requires_exact_phrase: APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1"
+          }
+        }
+      }
+    }
+  ]
+}

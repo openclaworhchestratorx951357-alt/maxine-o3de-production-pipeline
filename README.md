@@ -81,6 +81,7 @@ Get-ChildItem .\examples\manifests
 - Candidate-specific approval request readiness report v1 for `release_candidate_package_publish_dry_run_v1` is integrated as a static, machine-checkable final pre-request report that explicitly keeps `packet_structurally_complete=true`, `packet_complete_for_future_review_template=true`, `approval_request_ready=false`, `operator_approval_granted=false`, `approval_phrase_present=false`, `dry_run_admitted=false`, `dry_run_executed=false`, `receipt_issued=false`, real execution unadmitted, and publication unadmitted.
 - Candidate-specific explicit non-approval decision record v1 for `release_candidate_package_publish_dry_run_v1` is integrated as a static, machine-checkable auditable decision record that explicitly keeps `decision_type=non_approval`, `decision_status=active_non_approval`, `selected_operator_decision=do_not_approve`, `next_recommended_action=continue_hardening_no_execution`, `approval_request_ready=false`, `operator_approval_granted=false`, `approval_phrase_present=false`, `dry_run_admitted=false`, `dry_run_executed=false`, `receipt_issued=false`, real execution unadmitted, and publication unadmitted.
 - Candidate-specific dry-run sandbox boundary contract v1 for `release_candidate_package_publish_dry_run_v1` is integrated as a static, machine-checkable sandbox-only boundary contract that explicitly keeps `sandbox_boundary_status=static_boundary_valid_blocked`, `runner_implemented=false`, `approval_request_ready=false`, `operator_approval_granted=false`, `approval_phrase_present=false`, `dry_run_admitted=false`, `dry_run_executed=false`, `receipt_issued=false`, real execution unadmitted, and publication unadmitted.
+- Candidate-specific dry-run runner interface contract v1 for `release_candidate_package_publish_dry_run_v1` is integrated as a static, machine-checkable future-interface contract that explicitly keeps `runner_interface_status=static_interface_valid_blocked`, `runner_implemented=false`, `runner_admitted=false`, `runner_executed=false`, `approval_request_ready=false`, `operator_approval_granted=false`, `approval_phrase_present=false`, `dry_run_admitted=false`, `dry_run_executed=false`, `receipt_issued=false`, real execution unadmitted, and publication unadmitted.
 - AAA-quality output is not yet fully operational.
 - Execution admission remains future work requiring explicit approval.
 
@@ -117,6 +118,7 @@ Start here for PR readiness, review, and merge details:
 - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-approval-request-readiness-v1.md`
 - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-non-approval-decision-v1.md`
 - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-sandbox-boundary-v1.md`
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-runner-interface-v1.md`
 
 ## M.A.X.I.N.E. Resolver Ladder
 
