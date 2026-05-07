@@ -234,6 +234,15 @@
   - `tests/pytest/test_release_candidate_publication_dry_run_non_approval_decision.py`
   - target candidate remains `release_candidate_package_publish_dry_run_v1`
   - non-approval decision remains static and blocked with `decision_type=non_approval`, `decision_status=active_non_approval`, `selected_operator_decision=do_not_approve`, `next_recommended_action=continue_hardening_no_execution`, `approval_request_ready=false`, `operator_approval_granted=false`, `approval_phrase_present=false`, `dry_run_admitted=false`, `dry_run_executed=false`, `receipt_issued=false`
+- Release-candidate publication dry-run sandbox boundary v1 is implemented (candidate-specific static sandbox boundary contract only, non-executing, non-publishing):
+  - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-sandbox-boundary-v1.md`
+  - `schemas/maxine_release_candidate_publication_dry_run_sandbox_boundary.schema.json`
+  - `examples/execution-admission/release_candidate_package_publish_dry_run_sandbox_boundary_v1.json`
+  - `tools/execution-admission/validate_release_candidate_publication_dry_run_sandbox_boundary.py`
+  - integrated into `tools/release-lane/prove_pilot_release_chain.py` proof output as read-only sandbox-boundary status evidence
+  - `tests/pytest/test_release_candidate_publication_dry_run_sandbox_boundary.py`
+  - target candidate remains `release_candidate_package_publish_dry_run_v1`
+  - sandbox boundary remains static and blocked with `sandbox_boundary_status=static_boundary_valid_blocked`, `runner_implemented=false`, `approval_request_ready=false`, `operator_approval_granted=false`, `approval_phrase_present=false`, `dry_run_admitted=false`, `dry_run_executed=false`, `receipt_issued=false`
 - Admitted no-op release-candidate package receipt candidate v1 is implemented (bounded receipt generation only, non-executing, non-publishing):
   - approval phrase recorded:
     - `APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1`

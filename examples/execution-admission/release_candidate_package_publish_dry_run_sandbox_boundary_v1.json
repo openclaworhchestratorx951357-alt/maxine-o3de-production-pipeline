@@ -1,0 +1,205 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_SANDBOX_BOUNDARY_v1",
+  "boundary_id": "release-candidate-package-publish-dry-run-sandbox-boundary-v1",
+  "boundary_version": "v1",
+  "candidate_id": "release_candidate_package_publish_dry_run_v1",
+  "candidate_type": "dry_run",
+  "decision_type": "non_approval",
+  "sandbox_boundary_status": "static_boundary_valid_blocked",
+  "admission_status": "unadmitted",
+  "runner_implemented": false,
+  "generated_from_static_artifacts_only": true,
+  "source_artifacts": {
+    "candidate_matrix_ref": "examples/execution-admission/execution_admission_candidate_matrix_v1.json",
+    "preflight_contracts_ref": "examples/execution-admission/execution_admission_preflight_contracts_v1.json",
+    "preflight_proof_packages_ref": "examples/execution-admission/execution_admission_preflight_proof_packages_v1.json",
+    "readiness_rollup_ref": "examples/execution-admission/execution_admission_readiness_rollup_v1.json",
+    "dry_run_plan_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_plan_v1.json",
+    "dry_run_receipt_contract_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_receipt_contract_v1.json",
+    "blocked_unissued_receipt_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_receipt_blocked_v1.json",
+    "admission_blocker_checklist_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_admission_blockers_v1.json",
+    "operator_approval_packet_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_operator_approval_packet_v1.json",
+    "operator_approval_packet_completeness_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_operator_approval_packet_completeness_v1.json",
+    "approval_request_readiness_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_approval_request_readiness_v1.json",
+    "non_approval_decision_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_non_approval_decision_v1.json",
+    "production_readiness_report_ref": "examples/production-readiness-report/max_biped_v1_production_readiness_report_pass.json",
+    "noop_receipt_status_ref": "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json"
+  },
+  "source_artifact_validation_status": {
+    "candidate_matrix_status": "pass",
+    "preflight_contracts_status": "pass",
+    "preflight_proof_packages_status": "pass",
+    "readiness_rollup_status": "pass",
+    "dry_run_plan_status": "pass",
+    "dry_run_receipt_contract_status": "pass",
+    "blocked_unissued_receipt_status": "pass",
+    "admission_blocker_checklist_status": "pass",
+    "operator_approval_packet_status": "pass",
+    "operator_approval_packet_completeness_status": "pass",
+    "approval_request_readiness_status": "pass",
+    "non_approval_decision_status": "pass",
+    "production_readiness_status": "pass",
+    "noop_receipt_status": "pass"
+  },
+  "approval_request_ready": false,
+  "operator_approval_granted": false,
+  "approval_phrase_present": false,
+  "dry_run_admitted": false,
+  "dry_run_executed": false,
+  "receipt_issued": false,
+  "publication_admitted": false,
+  "real_execution_admitted": false,
+  "production_ready_claimed": false,
+  "allowed_read_roots": [
+    "examples/execution-admission/",
+    "examples/production-readiness-report/",
+    "examples/real-pilot-release-candidate-package/",
+    "examples/sandbox/manifests/reports/"
+  ],
+  "allowed_write_roots": [
+    "examples/sandbox/execution-dry-runs/release-candidate-package-publish-dry-run/",
+    "examples/sandbox/execution-receipts/release-candidate-package-publish-dry-run/",
+    "examples/sandbox/manifests/reports/",
+    "examples/sandbox/validation-reports/release-candidate-package-publish-dry-run/"
+  ],
+  "allowed_receipt_roots": [
+    "examples/sandbox/execution-receipts/release-candidate-package-publish-dry-run/"
+  ],
+  "allowed_report_roots": [
+    "examples/sandbox/manifests/reports/",
+    "examples/sandbox/validation-reports/release-candidate-package-publish-dry-run/"
+  ],
+  "allowed_temp_roots": [
+    "examples/sandbox/tmp/release-candidate-package-publish-dry-run/"
+  ],
+  "forbidden_roots": [
+    "engine_root_paths",
+    "production_deployment_paths",
+    "o3de_cache_paths",
+    "live_database_paths",
+    "publish_export_destinations",
+    "spawn_output_locations",
+    "destructive_cleanup_targets",
+    "user_profile_home_paths"
+  ],
+  "forbidden_path_patterns": [
+    "parent_traversal",
+    "absolute_path_escape",
+    "network_path_escape",
+    "symlink_escape",
+    "junction_escape"
+  ],
+  "allowed_file_extensions": [
+    ".json",
+    ".md",
+    ".txt",
+    ".sha256"
+  ],
+  "forbidden_file_extensions": [
+    ".exe",
+    ".dll",
+    ".bat",
+    ".cmd",
+    ".ps1",
+    ".py",
+    ".pak",
+    ".zip",
+    ".7z",
+    ".db",
+    ".sqlite",
+    ".cache"
+  ],
+  "required_path_normalization": [
+    "repo_relative_paths_only",
+    "no_parent_traversal",
+    "no_absolute_path_writes_outside_allowed_sandbox",
+    "no_environment_variable_expansion_to_uncontrolled_destinations",
+    "no_symlink_traversal",
+    "no_junction_traversal",
+    "no_network_shares",
+    "canonical_path_must_remain_within_allowed_sandbox_root",
+    "case_normalized_path_comparison_on_windows",
+    "normalized_path_separators_before_validation"
+  ],
+  "required_output_index": {
+    "required": true,
+    "format": "sandbox_output_index_v1",
+    "required_fields": [
+      "generated_artifacts",
+      "source_artifacts",
+      "validation_summary",
+      "blocked_surface_attestations",
+      "cleanup_rollback_evidence_references",
+      "no_publication_attestation",
+      "no_spawn_attestation",
+      "no_live_access_attestation"
+    ]
+  },
+  "required_hashing": {
+    "required": true,
+    "algorithm": "sha256",
+    "scope": "generated_reports_and_receipts"
+  },
+  "cleanup_rollback_requirements": [
+    "future admitted dry-run must provide rollback and cleanup evidence references",
+    "future admitted dry-run must provide no-op cleanup attestation",
+    "future admitted dry-run must include path-scoped cleanup inventory under sandbox roots only"
+  ],
+  "live_surface_blocks": [
+    "o3de_execution",
+    "editor_runtime_execution",
+    "asset_processor_execution",
+    "blender_dcc_execution",
+    "profiler_benchmark_execution",
+    "screenshot_capture",
+    "spawn",
+    "publish_export",
+    "cache_live_db_access",
+    "production_path_writes",
+    "engine_path_writes",
+    "destructive_cleanup",
+    "authoritative_source_uuid_claims",
+    "authoritative_asset_id_claims",
+    "authoritative_product_id_claims"
+  ],
+  "invalidation_conditions": [
+    "write_outside_allowed_sandbox_root",
+    "production_path_write_attempt",
+    "engine_path_write_attempt",
+    "cache_or_live_db_access_attempt",
+    "spawn_or_publish_attempt",
+    "live_tool_or_runtime_invocation_attempt",
+    "executable_or_binary_output_not_allowed",
+    "receipt_issued_without_explicit_admission",
+    "approval_phrase_present_without_approval_decision_record",
+    "missing_required_output_hash_or_index",
+    "path_traversal_or_symlink_or_junction_escape",
+    "authoritative_id_claim_attempt"
+  ],
+  "runner_interface_constraints": {
+    "runner_implemented": false,
+    "future_runner_requires_separate_proposal": true,
+    "future_runner_must_consume_boundary_contract": true,
+    "future_runner_must_fail_closed_on_boundary_violation": true,
+    "future_runner_must_not_publish": true,
+    "future_runner_must_not_spawn": true,
+    "future_runner_must_not_invoke_blocked_live_tools": true,
+    "future_runner_must_only_write_allowed_sandbox_roots": true,
+    "future_runner_must_emit_contract_receipt_only_after_explicit_admission": true
+  },
+  "future_admission_requirements": [
+    "future admission must remain candidate-specific",
+    "future admission requires explicit operator approval decision in a separate slice",
+    "future admission requires exact approval phrase: APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1",
+    "future admission must keep publication blocked",
+    "future admission must keep receipt contract binding",
+    "future admission must keep sandbox-only scope"
+  ],
+  "unsafe_claims_detected": false,
+  "safety_notes": [
+    "This sandbox boundary contract is static and auditable status only.",
+    "This sandbox boundary contract does not approve or admit the dry-run candidate.",
+    "Runner remains unimplemented and all blocked live surfaces remain blocked."
+  ]
+}

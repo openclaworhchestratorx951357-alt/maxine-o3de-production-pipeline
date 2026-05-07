@@ -1,4 +1,4 @@
-# Release Candidate Package Publish Dry-Run Operator Approval Packet v1
+﻿# Release Candidate Package Publish Dry-Run Operator Approval Packet v1
 
 ## Purpose
 
@@ -126,3 +126,14 @@ Blocked surfaces remain blocked:
   - `tools/release-lane/prove_pilot_release_chain.py`
 - tests:
   - `tests/pytest/test_release_candidate_publication_dry_run_operator_approval_packet.py`
+
+## Candidate-Specific Sandbox Boundary Link
+
+A separate static sandbox-boundary contract now defines future sandbox-only dry-run path/type limits while keeping admission and execution blocked:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-sandbox-boundary-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_sandbox_boundary.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_sandbox_boundary_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_sandbox_boundary.py`
+
+The boundary remains `static_boundary_valid_blocked`, `runner_implemented=false`, `approval_request_ready=false`, `operator_approval_granted=false`, `approval_phrase_present=false`, `dry_run_admitted=false`, `dry_run_executed=false`, `receipt_issued=false`, `publication_admitted=false`, and `real_execution_admitted=false`.
