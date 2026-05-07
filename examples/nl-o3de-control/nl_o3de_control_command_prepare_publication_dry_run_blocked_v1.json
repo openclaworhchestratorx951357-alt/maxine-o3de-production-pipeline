@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "NL_O3DE_CONTROL_COMMAND_v1",
+  "command_id": "prepare-publication-dry-run-blocked-v1",
+  "command_version": "v1",
+  "natural_language_request": "Prepare a publication dry run for the latest MAXINE release candidate, but do not publish anything.",
+  "normalized_intent": "prepare_publication_dry_run",
+  "intent_confidence": 0.91,
+  "target": {
+    "candidate_id": "release_candidate_package_publish_dry_run_v1",
+    "manifest_ref": "examples/manifests/example-release-character-pilot-chain.manifest.json",
+    "asset_query": "latest MAXINE release candidate",
+    "o3de_project_path": null
+  },
+  "execution_mode": "dry_run_planning",
+  "admission_status": "unadmitted",
+  "allowed_actions": [
+    "read_file",
+    "validate_schema",
+    "run_validator",
+    "write_sandbox_report"
+  ],
+  "forbidden_actions": [
+    "write_production_asset",
+    "live_o3de_editor_execution",
+    "asset_processor_execution",
+    "real_execution",
+    "publication",
+    "engine_path_write",
+    "production_path_write",
+    "cache_live_db_access",
+    "destructive_cleanup"
+  ],
+  "source_artifacts": {
+    "candidate_matrix_ref": "examples/execution-admission/execution_admission_candidate_matrix_v1.json",
+    "preflight_contracts_ref": "examples/execution-admission/execution_admission_preflight_contracts_v1.json",
+    "preflight_proof_packages_ref": "examples/execution-admission/execution_admission_preflight_proof_packages_v1.json",
+    "readiness_rollup_ref": "examples/execution-admission/execution_admission_readiness_rollup_v1.json",
+    "production_readiness_report_ref": "examples/production-readiness-report/max_biped_v1_production_readiness_report_pass.json"
+  },
+  "approval": {
+    "required": true,
+    "phrase_required": "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1",
+    "phrase_present": false,
+    "decision_ref": null
+  },
+  "safety": {
+    "sandbox_only": true,
+    "writes_allowed": true,
+    "real_execution_allowed": false,
+    "publication_allowed": false,
+    "production_ready_claimed": false,
+    "requires_human_review": true
+  },
+  "output_contract": {
+    "receipt_required": true,
+    "allowed_output_paths": [
+      "examples/sandbox/manifests/reports/nl-o3de-control",
+      "examples/sandbox/execution-receipts/release-candidate-package-publication-dry-run"
+    ],
+    "forbidden_path_tokens": [
+      ".git",
+      "engine",
+      "cache",
+      "production",
+      "site-packages"
+    ]
+  },
+  "expected_result": "A blocked dry-run planning report that prepares required checks and receipts without executing O3DE, Asset Processor, publication, or production writes."
+}

@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "NL_O3DE_CONTROL_COMMAND_v1",
+  "command_id": "inspect-maxine-actor-products-v1",
+  "command_version": "v1",
+  "natural_language_request": "Inspect the MAXINE actor products and tell me whether the O3DE Asset Processor output looks complete.",
+  "normalized_intent": "inspect_actor_products",
+  "intent_confidence": 0.86,
+  "target": {
+    "candidate_id": "max_biped_v1",
+    "manifest_ref": null,
+    "asset_query": "MAXINE actor products",
+    "o3de_project_path": null
+  },
+  "execution_mode": "read_only",
+  "admission_status": "unadmitted",
+  "allowed_actions": [
+    "read_file",
+    "validate_schema",
+    "run_validator",
+    "query_asset_processor_metadata"
+  ],
+  "forbidden_actions": [
+    "write_production_asset",
+    "live_o3de_editor_execution",
+    "asset_processor_execution",
+    "real_execution",
+    "publication",
+    "engine_path_write",
+    "production_path_write",
+    "cache_live_db_access",
+    "destructive_cleanup"
+  ],
+  "source_artifacts": {
+    "candidate_matrix_ref": "examples/execution-admission/execution_admission_candidate_matrix_v1.json",
+    "preflight_contracts_ref": "examples/execution-admission/execution_admission_preflight_contracts_v1.json",
+    "preflight_proof_packages_ref": "examples/execution-admission/execution_admission_preflight_proof_packages_v1.json",
+    "readiness_rollup_ref": "examples/execution-admission/execution_admission_readiness_rollup_v1.json",
+    "production_readiness_report_ref": "examples/production-readiness-report/max_biped_v1_production_readiness_report_pass.json"
+  },
+  "approval": {
+    "required": false,
+    "phrase_required": null,
+    "phrase_present": false,
+    "decision_ref": null
+  },
+  "safety": {
+    "sandbox_only": true,
+    "writes_allowed": false,
+    "real_execution_allowed": false,
+    "publication_allowed": false,
+    "production_ready_claimed": false,
+    "requires_human_review": false
+  },
+  "output_contract": {
+    "receipt_required": false,
+    "allowed_output_paths": [
+      "examples/sandbox/manifests/reports/nl-o3de-control"
+    ],
+    "forbidden_path_tokens": [
+      ".git",
+      "engine",
+      "cache",
+      "production",
+      "site-packages"
+    ]
+  },
+  "expected_result": "A read-only report describing whether expected actor products can be found from admitted evidence sources."
+}

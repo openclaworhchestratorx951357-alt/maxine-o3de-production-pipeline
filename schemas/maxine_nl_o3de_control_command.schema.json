@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_nl_o3de_control_command.schema.json",
+  "title": "MAXINE Natural Language O3DE Control Command v1",
+  "description": "A natural-language command envelope for O3DE control. The envelope records the user's request, normalized intent, execution mode, safety posture, approval state, and allowed output boundary before any O3DE-facing action is attempted.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_type",
+    "command_id",
+    "command_version",
+    "natural_language_request",
+    "normalized_intent",
+    "intent_confidence",
+    "target",
+    "execution_mode",
+    "admission_status",
+    "allowed_actions",
+    "forbidden_actions",
+    "source_artifacts",
+    "approval",
+    "safety",
+    "output_contract",
+    "expected_result"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "record_type": {
+      "type": "string",
+      "const": "NL_O3DE_CONTROL_COMMAND_v1"
+    },
+    "command_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$"
+    },
+    "command_version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "natural_language_request": {
+      "type": "string",
+      "minLength": 1
+    },
+    "normalized_intent": {
+      "type": "string",
+      "enum": [
+        "inspect_o3de_project",
+        "inspect_actor_products",
+        "validate_manifest",
+        "run_pilot_release_chain_proof",
+        "generate_noop_receipt",
+        "prepare_publication_dry_run",
+        "unknown_or_unsupported"
+      ]
+    },
+    "intent_confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "manifest_ref",
+        "asset_query",
+        "o3de_project_path"
+      ],
+      "properties": {
+        "candidate_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "manifest_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "asset_query": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "o3de_project_path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "execution_mode": {
+      "type": "string",
+      "enum": [
+        "read_only",
+        "evidence_only",
+        "noop_receipt",
+        "dry_run_planning",
+        "sandbox_dry_run",
+        "real_execution",
+        "publication"
+      ]
+    },
+    "admission_status": {
+      "type": "string",
+      "enum": [
+        "unadmitted",
+        "admitted_noop_only",
+        "admitted_dry_run",
+        "admitted_real_execution",
+        "admitted_publication"
+      ]
+    },
+    "allowed_actions": {
+      "$ref": "#/$defs/actionArray"
+    },
+    "forbidden_actions": {
+      "$ref": "#/$defs/actionArray"
+    },
+    "source_artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_matrix_ref",
+        "preflight_contracts_ref",
+        "preflight_proof_packages_ref",
+        "readiness_rollup_ref",
+        "production_readiness_report_ref"
+      ],
+      "properties": {
+        "candidate_matrix_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "preflight_contracts_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "preflight_proof_packages_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "readiness_rollup_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "production_readiness_report_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "phrase_required",
+        "phrase_present",
+        "decision_ref"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "phrase_required": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "phrase_present": {
+          "type": "boolean"
+        },
+        "decision_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sandbox_only",
+        "writes_allowed",
+        "real_execution_allowed",
+        "publication_allowed",
+        "production_ready_claimed",
+        "requires_human_review"
+      ],
+      "properties": {
+        "sandbox_only": {
+          "type": "boolean"
+        },
+        "writes_allowed": {
+          "type": "boolean"
+        },
+        "real_execution_allowed": {
+          "type": "boolean"
+        },
+        "publication_allowed": {
+          "type": "boolean"
+        },
+        "production_ready_claimed": {
+          "type": "boolean"
+        },
+        "requires_human_review": {
+          "type": "boolean"
+        }
+      }
+    },
+    "output_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receipt_required",
+        "allowed_output_paths",
+        "forbidden_path_tokens"
+      ],
+      "properties": {
+        "receipt_required": {
+          "type": "boolean"
+        },
+        "allowed_output_paths": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "forbidden_path_tokens": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        }
+      }
+    },
+    "expected_result": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "$defs": {
+    "nonEmptyStringArray": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "actionArray": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "read_file",
+          "validate_schema",
+          "run_validator",
+          "query_asset_processor_metadata",
+          "generate_noop_receipt",
+          "write_sandbox_report",
+          "write_production_asset",
+          "live_o3de_editor_execution",
+          "asset_processor_execution",
+          "real_execution",
+          "publication",
+          "engine_path_write",
+          "production_path_write",
+          "cache_live_db_access",
+          "destructive_cleanup"
+        ]
+      }
+    }
+  }
+}

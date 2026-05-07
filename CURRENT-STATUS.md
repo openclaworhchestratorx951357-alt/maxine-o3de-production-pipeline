@@ -1,6 +1,16 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- Natural-language O3DE control pack v1 is implemented as the first guarded command-envelope layer:
+  - `docs/maxine/nl-o3de-control/nl-o3de-control-pack-v1.md`
+  - `schemas/maxine_nl_o3de_control_command.schema.json`
+  - `tools/nl-o3de-control/compile_nl_o3de_command.py`
+  - `tools/nl-o3de-control/validate_nl_o3de_control_command.py`
+  - `examples/nl-o3de-control/nl_o3de_control_command_inspect_actor_products_v1.json`
+  - `examples/nl-o3de-control/nl_o3de_control_command_prepare_publication_dry_run_blocked_v1.json`
+  - `tests/pytest/test_nl_o3de_control_command.py`
+  - current admitted modes are `read_only`, `evidence_only`, `noop_receipt`, and `dry_run_planning`
+  - `sandbox_dry_run`, `real_execution`, and `publication` remain represented but blocked until explicit admission and adapter implementation exist
 - Execution-admission review/decision framework v1 is implemented (review-only, non-executing policy framework):
   - `docs/maxine/execution-admission/release-execution-admission-review-framework-v1.md`
   - `schemas/maxine_execution_admission_decision_record.schema.json`
