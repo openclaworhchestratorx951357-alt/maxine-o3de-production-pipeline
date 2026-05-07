@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_natural_language_o3de_command_pack.schema.json",
+  "title": "MAXINE Natural Language O3DE Command Pack v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_type",
+    "pack_id",
+    "pack_version",
+    "relationship_to_pr_92",
+    "command_pack_status",
+    "command_pack_scope",
+    "runner_implemented",
+    "runner_admitted",
+    "execution_admitted",
+    "publication_admitted",
+    "production_ready_claimed",
+    "approval_phrase_present",
+    "command_envelope_refs",
+    "safety_attestations"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "record_type": {
+      "type": "string",
+      "const": "NATURAL_LANGUAGE_O3DE_COMMAND_PACK_v1"
+    },
+    "pack_id": {
+      "type": "string",
+      "const": "natural-language-o3de-command-pack-boundary-v1"
+    },
+    "pack_version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "relationship_to_pr_92": {
+      "type": "string",
+      "minLength": 1
+    },
+    "command_pack_status": {
+      "type": "string",
+      "const": "static_pack_valid_blocked_for_execution"
+    },
+    "command_pack_scope": {
+      "type": "string",
+      "const": "static_command_envelope_layer_only"
+    },
+    "runner_implemented": {
+      "type": "boolean",
+      "const": false
+    },
+    "runner_admitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "execution_admitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "publication_admitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "production_ready_claimed": {
+      "type": "boolean",
+      "const": false
+    },
+    "approval_phrase_present": {
+      "type": "boolean",
+      "const": false
+    },
+    "command_envelope_refs": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "expected_status"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected_status": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "blocked"
+            ]
+          }
+        }
+      }
+    },
+    "safety_attestations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "NATURAL_LANGUAGE_O3DE_COMMAND_PACK_v1",
+  "pack_id": "natural-language-o3de-command-pack-boundary-v1",
+  "pack_version": "v1",
+  "relationship_to_pr_92": "This hardening layer supersedes the unsafe early PR #92 path as the merge-safe static command-envelope boundary; PR #92 remains unmerged and unapproved until reconciled with this contract.",
+  "command_pack_status": "static_pack_valid_blocked_for_execution",
+  "command_pack_scope": "static_command_envelope_layer_only",
+  "runner_implemented": false,
+  "runner_admitted": false,
+  "execution_admitted": false,
+  "publication_admitted": false,
+  "production_ready_claimed": false,
+  "approval_phrase_present": false,
+  "command_envelope_refs": [
+    {
+      "path": "examples/nl-o3de-control/natural_language_o3de_command_inspect_actor_products_static_v1.json",
+      "expected_status": "pass"
+    },
+    {
+      "path": "examples/nl-o3de-control/natural_language_o3de_command_prepare_publication_dry_run_blocked_v1.json",
+      "expected_status": "blocked"
+    }
+  ],
+  "safety_attestations": [
+    "command envelopes are static only",
+    "compiler and validator are static only",
+    "unsupported or unsafe commands fail closed",
+    "non-read-only commands remain blocked unless a separate candidate-specific admission exists",
+    "future execution must route through candidate-specific admission, runner interface contract, sandbox boundary contract, receipt contract, safety verifier, and proof flow",
+    "no command envelope can bypass admission",
+    "no command envelope can claim approval, execution, publication, or production readiness",
+    "future MaxineAgentControl Gem adapter work is separate and unimplemented",
+    "future command execution is separate and unadmitted"
+  ]
+}
