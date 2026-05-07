@@ -1,0 +1,561 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_pr_92_natural_language_command_pack_audit.schema.json",
+  "title": "MAXINE PR 92 Natural Language Command Pack Audit v1",
+  "description": "Audit report contract for PR #92 natural-language O3DE control command pack against execution-admission boundaries.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "audit_id",
+    "audit_version",
+    "audited_pr",
+    "audit_status",
+    "recommendation",
+    "merge_recommendation",
+    "source_artifact_references",
+    "changed_files_summary",
+    "scope_classification",
+    "command_layer_classification",
+    "strict_acceptance_criteria",
+    "execution_surface_findings",
+    "admission_surface_findings",
+    "publication_surface_findings",
+    "runner_surface_findings",
+    "gem_surface_findings",
+    "filesystem_surface_findings",
+    "proof_receipt_surface_findings",
+    "production_readiness_surface_findings",
+    "safety_invariant_results",
+    "required_follow_up_before_merge",
+    "unsafe_claims_detected",
+    "final_notes"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "audit_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$"
+    },
+    "audit_version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "audited_pr": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repo",
+        "pr_number",
+        "title",
+        "url",
+        "head_branch",
+        "base_branch",
+        "head_sha"
+      ],
+      "properties": {
+        "repo": {
+          "type": "string",
+          "const": "openclaworhchestratorx951357-alt/maxine-o3de-production-pipeline"
+        },
+        "pr_number": {
+          "type": "integer",
+          "const": 92
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1
+        },
+        "head_branch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "base_branch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "head_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "audit_status": {
+      "type": "string",
+      "enum": [
+        "audit_complete_block_merge_pending_hardening",
+        "audit_complete_merge_safe_if_static_only",
+        "audit_failed_unable_to_fetch_pr",
+        "audit_failed_unsafe_surface_detected",
+        "audit_inconclusive"
+      ]
+    },
+    "recommendation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "merge_recommendation": {
+      "type": "string",
+      "enum": [
+        "do_not_merge_yet",
+        "safe_to_merge_after_follow_up",
+        "unsafe_do_not_merge",
+        "inconclusive_do_not_merge"
+      ]
+    },
+    "source_artifact_references": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_matrix_ref",
+        "preflight_contracts_ref",
+        "preflight_proof_packages_ref",
+        "readiness_rollup_ref",
+        "dry_run_plan_ref",
+        "dry_run_receipt_contract_ref",
+        "blocked_unissued_receipt_ref",
+        "admission_blocker_checklist_ref",
+        "operator_approval_packet_ref",
+        "operator_approval_packet_completeness_ref",
+        "approval_request_readiness_ref",
+        "non_approval_decision_ref",
+        "sandbox_boundary_ref",
+        "runner_interface_ref",
+        "production_readiness_report_ref",
+        "noop_receipt_status_ref",
+        "pr_diff_ref",
+        "pr_head_ref"
+      ],
+      "properties": {
+        "candidate_matrix_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "preflight_contracts_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "preflight_proof_packages_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "readiness_rollup_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "dry_run_plan_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "dry_run_receipt_contract_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "blocked_unissued_receipt_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "admission_blocker_checklist_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "operator_approval_packet_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "operator_approval_packet_completeness_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "approval_request_readiness_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "non_approval_decision_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sandbox_boundary_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "runner_interface_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "production_readiness_report_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "noop_receipt_status_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "pr_diff_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "pr_head_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "changed_files_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "files_changed_count",
+        "insertions",
+        "deletions",
+        "files",
+        "introduces_runtime_calls",
+        "introduces_runner_implementation",
+        "introduces_gem_adapter_implementation"
+      ],
+      "properties": {
+        "files_changed_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "insertions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deletions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "introduces_runtime_calls": {
+          "type": "boolean"
+        },
+        "introduces_runner_implementation": {
+          "type": "boolean"
+        },
+        "introduces_gem_adapter_implementation": {
+          "type": "boolean"
+        }
+      }
+    },
+    "scope_classification": {
+      "type": "string",
+      "enum": [
+        "static_command_envelope_only",
+        "mixed_static_and_execution",
+        "execution_surface_widening_detected"
+      ]
+    },
+    "command_layer_classification": {
+      "type": "string",
+      "enum": [
+        "schema_compiler_validator_only",
+        "schema_compiler_validator_plus_execution",
+        "unclear_or_mixed"
+      ]
+    },
+    "strict_acceptance_criteria": {
+      "type": "array",
+      "minItems": 26,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "description",
+          "pass"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^(?:[1-9]|1[0-9]|2[0-6])$"
+          },
+          "description": {
+            "$ref": "#/$defs/nonEmptyString"
+          },
+          "pass": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "execution_surface_findings": {
+      "$ref": "#/$defs/executionSurfaceFindings"
+    },
+    "admission_surface_findings": {
+      "$ref": "#/$defs/admissionSurfaceFindings"
+    },
+    "publication_surface_findings": {
+      "$ref": "#/$defs/publicationSurfaceFindings"
+    },
+    "runner_surface_findings": {
+      "$ref": "#/$defs/runnerSurfaceFindings"
+    },
+    "gem_surface_findings": {
+      "$ref": "#/$defs/gemSurfaceFindings"
+    },
+    "filesystem_surface_findings": {
+      "$ref": "#/$defs/filesystemSurfaceFindings"
+    },
+    "proof_receipt_surface_findings": {
+      "$ref": "#/$defs/proofReceiptSurfaceFindings"
+    },
+    "production_readiness_surface_findings": {
+      "$ref": "#/$defs/productionReadinessSurfaceFindings"
+    },
+    "safety_invariant_results": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "all_blocked_surfaces_preserved",
+        "fail_closed_behavior_for_unadmitted_modes",
+        "routing_through_candidate_specific_admission",
+        "routing_through_runner_interface_contract",
+        "routing_through_sandbox_boundary_contract",
+        "routing_through_receipt_contract",
+        "routing_through_safety_verifier_and_proof_flow",
+        "notes"
+      ],
+      "properties": {
+        "all_blocked_surfaces_preserved": {
+          "type": "boolean"
+        },
+        "fail_closed_behavior_for_unadmitted_modes": {
+          "type": "boolean"
+        },
+        "routing_through_candidate_specific_admission": {
+          "type": "boolean"
+        },
+        "routing_through_runner_interface_contract": {
+          "type": "boolean"
+        },
+        "routing_through_sandbox_boundary_contract": {
+          "type": "boolean"
+        },
+        "routing_through_receipt_contract": {
+          "type": "boolean"
+        },
+        "routing_through_safety_verifier_and_proof_flow": {
+          "type": "boolean"
+        },
+        "notes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        }
+      }
+    },
+    "required_follow_up_before_merge": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
+    },
+    "unsafe_claims_detected": {
+      "type": "boolean"
+    },
+    "final_notes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "executionSurfaceFindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "direct_o3de_execution_detected",
+        "editor_runtime_execution_detected",
+        "asset_processor_execution_detected",
+        "blender_dcc_execution_detected",
+        "screenshot_capture_execution_detected",
+        "notes"
+      ],
+      "properties": {
+        "direct_o3de_execution_detected": {
+          "type": "boolean"
+        },
+        "editor_runtime_execution_detected": {
+          "type": "boolean"
+        },
+        "asset_processor_execution_detected": {
+          "type": "boolean"
+        },
+        "blender_dcc_execution_detected": {
+          "type": "boolean"
+        },
+        "screenshot_capture_execution_detected": {
+          "type": "boolean"
+        },
+        "notes": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "admissionSurfaceFindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command_admission_detected",
+        "approval_ready_claim_detected",
+        "operator_approval_granted_detected",
+        "approval_phrase_decision_detected",
+        "notes"
+      ],
+      "properties": {
+        "command_admission_detected": {
+          "type": "boolean"
+        },
+        "approval_ready_claim_detected": {
+          "type": "boolean"
+        },
+        "operator_approval_granted_detected": {
+          "type": "boolean"
+        },
+        "approval_phrase_decision_detected": {
+          "type": "boolean"
+        },
+        "notes": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "publicationSurfaceFindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "publication_admission_claim_detected",
+        "publish_or_spawn_path_detected",
+        "notes"
+      ],
+      "properties": {
+        "publication_admission_claim_detected": {
+          "type": "boolean"
+        },
+        "publish_or_spawn_path_detected": {
+          "type": "boolean"
+        },
+        "notes": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "runnerSurfaceFindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runner_implementation_detected",
+        "runner_admission_detected",
+        "runner_execution_detected",
+        "notes"
+      ],
+      "properties": {
+        "runner_implementation_detected": {
+          "type": "boolean"
+        },
+        "runner_admission_detected": {
+          "type": "boolean"
+        },
+        "runner_execution_detected": {
+          "type": "boolean"
+        },
+        "notes": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "gemSurfaceFindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxine_agent_control_gem_implementation_detected",
+        "gem_adapter_implementation_detected",
+        "notes"
+      ],
+      "properties": {
+        "maxine_agent_control_gem_implementation_detected": {
+          "type": "boolean"
+        },
+        "gem_adapter_implementation_detected": {
+          "type": "boolean"
+        },
+        "notes": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "filesystemSurfaceFindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "production_path_write_capability_detected",
+        "engine_path_write_capability_detected",
+        "cache_live_db_access_detected",
+        "notes"
+      ],
+      "properties": {
+        "production_path_write_capability_detected": {
+          "type": "boolean"
+        },
+        "engine_path_write_capability_detected": {
+          "type": "boolean"
+        },
+        "cache_live_db_access_detected": {
+          "type": "boolean"
+        },
+        "notes": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "proofReceiptSurfaceFindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dry_run_receipt_issuance_detected",
+        "receipt_contract_bypass_detected",
+        "notes"
+      ],
+      "properties": {
+        "dry_run_receipt_issuance_detected": {
+          "type": "boolean"
+        },
+        "receipt_contract_bypass_detected": {
+          "type": "boolean"
+        },
+        "notes": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "productionReadinessSurfaceFindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "real_execution_admission_claim_detected",
+        "publication_admission_claim_detected",
+        "production_ready_claim_detected",
+        "notes"
+      ],
+      "properties": {
+        "real_execution_admission_claim_detected": {
+          "type": "boolean"
+        },
+        "publication_admission_claim_detected": {
+          "type": "boolean"
+        },
+        "production_ready_claim_detected": {
+          "type": "boolean"
+        },
+        "notes": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    }
+  }
+}

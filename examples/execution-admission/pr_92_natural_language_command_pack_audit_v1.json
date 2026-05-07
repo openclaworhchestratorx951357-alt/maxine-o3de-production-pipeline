@@ -1,0 +1,263 @@
+{
+  "schema_version": "1.0.0",
+  "audit_id": "pr_92_natural_language_command_pack_audit_v1",
+  "audit_version": "v1",
+  "audited_pr": {
+    "repo": "openclaworhchestratorx951357-alt/maxine-o3de-production-pipeline",
+    "pr_number": 92,
+    "title": "Add natural language O3DE control command pack v1",
+    "url": "https://github.com/openclaworhchestratorx951357-alt/maxine-o3de-production-pipeline/pull/92",
+    "head_branch": "codex/nl-o3de-control-pack-v1",
+    "base_branch": "main",
+    "head_sha": "2099825e351c39793cc64f342048d19ee3026bcf"
+  },
+  "audit_status": "audit_complete_block_merge_pending_hardening",
+  "recommendation": "hold_and_harden_static_command_envelope_only",
+  "merge_recommendation": "do_not_merge_yet",
+  "source_artifact_references": {
+    "candidate_matrix_ref": "examples/execution-admission/execution_admission_candidate_matrix_v1.json",
+    "preflight_contracts_ref": "examples/execution-admission/execution_admission_preflight_contracts_v1.json",
+    "preflight_proof_packages_ref": "examples/execution-admission/execution_admission_preflight_proof_packages_v1.json",
+    "readiness_rollup_ref": "examples/execution-admission/execution_admission_readiness_rollup_v1.json",
+    "dry_run_plan_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_plan_v1.json",
+    "dry_run_receipt_contract_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_receipt_contract_v1.json",
+    "blocked_unissued_receipt_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_receipt_blocked_v1.json",
+    "admission_blocker_checklist_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_admission_blockers_v1.json",
+    "operator_approval_packet_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_operator_approval_packet_v1.json",
+    "operator_approval_packet_completeness_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_operator_approval_packet_completeness_v1.json",
+    "approval_request_readiness_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_approval_request_readiness_v1.json",
+    "non_approval_decision_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_non_approval_decision_v1.json",
+    "sandbox_boundary_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_sandbox_boundary_v1.json",
+    "runner_interface_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_runner_interface_v1.json",
+    "production_readiness_report_ref": "examples/production-readiness-report/max_biped_v1_production_readiness_report_pass.json",
+    "noop_receipt_status_ref": "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json",
+    "pr_diff_ref": "examples/sandbox/audit/pr-92-nl-command-pack.diff",
+    "pr_head_ref": "refs/remotes/origin/pr-92-audit"
+  },
+  "changed_files_summary": {
+    "files_changed_count": 9,
+    "insertions": 1174,
+    "deletions": 0,
+    "files": [
+      "CURRENT-STATUS.md",
+      "README.md",
+      "docs/maxine/nl-o3de-control/nl-o3de-control-pack-v1.md",
+      "examples/nl-o3de-control/nl_o3de_control_command_inspect_actor_products_v1.json",
+      "examples/nl-o3de-control/nl_o3de_control_command_prepare_publication_dry_run_blocked_v1.json",
+      "schemas/maxine_nl_o3de_control_command.schema.json",
+      "tests/pytest/test_nl_o3de_control_command.py",
+      "tools/nl-o3de-control/compile_nl_o3de_command.py",
+      "tools/nl-o3de-control/validate_nl_o3de_control_command.py"
+    ],
+    "introduces_runtime_calls": false,
+    "introduces_runner_implementation": false,
+    "introduces_gem_adapter_implementation": false
+  },
+  "scope_classification": "static_command_envelope_only",
+  "command_layer_classification": "schema_compiler_validator_only",
+  "strict_acceptance_criteria": [
+    {
+      "id": "1",
+      "description": "Schema/compiler/validator/documentation/tests only.",
+      "pass": true
+    },
+    {
+      "id": "2",
+      "description": "Does not implement O3DE execution.",
+      "pass": true
+    },
+    {
+      "id": "3",
+      "description": "Does not implement Editor/runtime execution.",
+      "pass": true
+    },
+    {
+      "id": "4",
+      "description": "Does not implement Asset Processor execution.",
+      "pass": true
+    },
+    {
+      "id": "5",
+      "description": "Does not implement Blender/DCC execution.",
+      "pass": true
+    },
+    {
+      "id": "6",
+      "description": "Does not implement screenshot capture execution.",
+      "pass": true
+    },
+    {
+      "id": "7",
+      "description": "Does not implement spawn/publish execution.",
+      "pass": true
+    },
+    {
+      "id": "8",
+      "description": "Does not implement Cache/live DB access.",
+      "pass": true
+    },
+    {
+      "id": "9",
+      "description": "Does not allow production path writes.",
+      "pass": false
+    },
+    {
+      "id": "10",
+      "description": "Does not allow engine path writes.",
+      "pass": false
+    },
+    {
+      "id": "11",
+      "description": "Does not implement a runner.",
+      "pass": true
+    },
+    {
+      "id": "12",
+      "description": "Does not implement MaxineAgentControl Gem.",
+      "pass": true
+    },
+    {
+      "id": "13",
+      "description": "Does not implement Gem adapters.",
+      "pass": true
+    },
+    {
+      "id": "14",
+      "description": "Does not admit any command for execution.",
+      "pass": true
+    },
+    {
+      "id": "15",
+      "description": "Does not mark any command approval-ready.",
+      "pass": true
+    },
+    {
+      "id": "16",
+      "description": "Does not grant operator approval.",
+      "pass": true
+    },
+    {
+      "id": "17",
+      "description": "Does not treat approval phrase as an approval decision.",
+      "pass": true
+    },
+    {
+      "id": "18",
+      "description": "Does not claim dry-run admission.",
+      "pass": true
+    },
+    {
+      "id": "19",
+      "description": "Does not claim real execution admission.",
+      "pass": true
+    },
+    {
+      "id": "20",
+      "description": "Does not claim publication admission.",
+      "pass": true
+    },
+    {
+      "id": "21",
+      "description": "Does not claim production_ready.",
+      "pass": true
+    },
+    {
+      "id": "22",
+      "description": "Routes all future execution through admission + runner interface + sandbox boundary + receipt contract + safety/proof flow.",
+      "pass": false
+    },
+    {
+      "id": "23",
+      "description": "Fails closed for unsupported or unadmitted commands.",
+      "pass": true
+    },
+    {
+      "id": "24",
+      "description": "Uses blocked/refused status for execution-requiring commands.",
+      "pass": true
+    },
+    {
+      "id": "25",
+      "description": "Includes tests rejecting unsafe direct execution pathways comprehensively.",
+      "pass": false
+    },
+    {
+      "id": "26",
+      "description": "Docs explicitly state not execution, not admission, not Gem adapter, not runner implementation, not production_ready.",
+      "pass": false
+    }
+  ],
+  "execution_surface_findings": {
+    "direct_o3de_execution_detected": false,
+    "editor_runtime_execution_detected": false,
+    "asset_processor_execution_detected": false,
+    "blender_dcc_execution_detected": false,
+    "screenshot_capture_execution_detected": false,
+    "notes": "No direct O3DE/Editor/AP/Blender/screenshot runtime invocation code paths were found in PR #92."
+  },
+  "admission_surface_findings": {
+    "command_admission_detected": false,
+    "approval_ready_claim_detected": false,
+    "operator_approval_granted_detected": false,
+    "approval_phrase_decision_detected": false,
+    "notes": "PR #92 does not grant admissions or approvals; blocked statuses remain represented for higher-risk modes."
+  },
+  "publication_surface_findings": {
+    "publication_admission_claim_detected": false,
+    "publish_or_spawn_path_detected": false,
+    "notes": "No publication admission or spawn/publish implementation was found."
+  },
+  "runner_surface_findings": {
+    "runner_implementation_detected": false,
+    "runner_admission_detected": false,
+    "runner_execution_detected": false,
+    "notes": "PR #92 does not implement or admit a runner."
+  },
+  "gem_surface_findings": {
+    "maxine_agent_control_gem_implementation_detected": false,
+    "gem_adapter_implementation_detected": false,
+    "notes": "No MaxineAgentControl Gem implementation or O3DE Gem adapter code was introduced."
+  },
+  "filesystem_surface_findings": {
+    "production_path_write_capability_detected": false,
+    "engine_path_write_capability_detected": false,
+    "cache_live_db_access_detected": false,
+    "notes": "No direct production/engine/cache-live-db write implementation was found; output path hardening is still needed."
+  },
+  "proof_receipt_surface_findings": {
+    "dry_run_receipt_issuance_detected": false,
+    "receipt_contract_bypass_detected": false,
+    "notes": "No dry-run receipt was emitted by this PR; receipt contract routing is not yet fully bound in the command schema."
+  },
+  "production_readiness_surface_findings": {
+    "real_execution_admission_claim_detected": false,
+    "publication_admission_claim_detected": false,
+    "production_ready_claim_detected": false,
+    "notes": "No production_ready claim or execution/publication admission claim was introduced."
+  },
+  "safety_invariant_results": {
+    "all_blocked_surfaces_preserved": true,
+    "fail_closed_behavior_for_unadmitted_modes": true,
+    "routing_through_candidate_specific_admission": false,
+    "routing_through_runner_interface_contract": false,
+    "routing_through_sandbox_boundary_contract": false,
+    "routing_through_receipt_contract": false,
+    "routing_through_safety_verifier_and_proof_flow": false,
+    "notes": [
+      "PR #92 remains static envelope/compiler/validator/test code and does not directly execute O3DE surfaces.",
+      "PR #92 is not yet fully chained to the post-PR93 execution-admission gate stack and therefore should not merge yet."
+    ]
+  },
+  "required_follow_up_before_merge": [
+    "Bind command schema source artifacts to approval-request-readiness, non-approval decision, sandbox boundary, and runner interface contract references.",
+    "Require candidate-specific admission + runner-interface + sandbox-boundary + receipt-contract checks before any non-read-only mode can pass.",
+    "Harden compiler output path handling to sandbox-only roots with canonical path validation and fail-closed behavior.",
+    "Add tests that explicitly block execution/publication/sandbox_dry_run mode advancement without admitted decision records and contract alignment.",
+    "Update docs to explicitly state this layer is not runner implementation, not Gem adapter implementation, not admission, and not production_ready."
+  ],
+  "unsafe_claims_detected": false,
+  "final_notes": [
+    "PR #92 should be held as a static command-envelope layer only.",
+    "Merge recommendation remains do_not_merge_yet until hardening closes boundary and routing gaps against the merged PR #93 safety chain."
+  ]
+}
