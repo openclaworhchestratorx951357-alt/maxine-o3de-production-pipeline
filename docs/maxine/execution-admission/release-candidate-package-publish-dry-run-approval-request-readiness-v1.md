@@ -155,3 +155,14 @@ A separate static sandbox-boundary contract now defines future sandbox-only dry-
 - `tools/execution-admission/validate_release_candidate_publication_dry_run_sandbox_boundary.py`
 
 The boundary remains `static_boundary_valid_blocked`, `runner_implemented=false`, `approval_request_ready=false`, `operator_approval_granted=false`, `approval_phrase_present=false`, `dry_run_admitted=false`, `dry_run_executed=false`, `receipt_issued=false`, `publication_admitted=false`, and `real_execution_admitted=false`.
+
+## Candidate-Specific Runner Interface Link
+
+A separate static runner-interface contract now defines the future runner interface requirements while keeping runner and dry-run status blocked:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-runner-interface-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_runner_interface.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_runner_interface_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_runner_interface.py`
+
+The interface remains `static_interface_valid_blocked`, `runner_implemented=false`, `runner_admitted=false`, `runner_executed=false`, `approval_request_ready=false`, `operator_approval_granted=false`, `approval_phrase_present=false`, `dry_run_admitted=false`, `dry_run_executed=false`, `receipt_issued=false`, `publication_admitted=false`, and `real_execution_admitted=false`.

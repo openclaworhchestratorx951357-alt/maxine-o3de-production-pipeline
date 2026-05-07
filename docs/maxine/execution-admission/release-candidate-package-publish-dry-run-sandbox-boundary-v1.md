@@ -96,6 +96,7 @@ This contract cross-checks and remains aligned with:
 - operator approval packet completeness
 - approval request readiness report
 - non-approval decision record
+- runner interface contract
 - production-readiness report
 - admitted no-op receipt decision status
 
@@ -115,6 +116,17 @@ Runner remains unimplemented in this milestone:
 - any future runner must be proposed in a separate slice
 - any future runner must consume this contract and fail closed on violation
 - any future runner must remain sandbox-only and must not publish/spawn/live-access
+
+## Runner Interface Link
+
+A separate static runner-interface contract now captures the candidate-specific future runner interface without implementing a runner:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-runner-interface-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_runner_interface.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_runner_interface_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_runner_interface.py`
+
+That interface remains `static_interface_valid_blocked`, `runner_implemented=false`, `runner_admitted=false`, and `runner_executed=false`.
 
 ## Artifacts
 

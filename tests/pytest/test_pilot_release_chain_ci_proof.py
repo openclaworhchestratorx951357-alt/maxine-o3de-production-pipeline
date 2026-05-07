@@ -677,3 +677,76 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
     assert sandbox_source_status["production_readiness_status"] == "pass"
     assert sandbox_source_status["noop_receipt_status"] == "pass"
     assert dry_run_sandbox_boundary_status["reporter_return_code"] == 0
+    dry_run_runner_interface_status = payload["details"][
+        "release_candidate_publication_dry_run_runner_interface_report"
+    ]
+    assert dry_run_runner_interface_status["status"] == "pass"
+    assert (
+        dry_run_runner_interface_status["report_type"]
+        == "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RUNNER_INTERFACE_VALIDATION_v1_REPORT"
+    )
+    assert (
+        dry_run_runner_interface_status[
+            "release_candidate_publication_dry_run_runner_interface_present"
+        ]
+        is True
+    )
+    assert (
+        dry_run_runner_interface_status["planned_candidate_id"]
+        == "release_candidate_package_publish_dry_run_v1"
+    )
+    assert dry_run_runner_interface_status["candidate_type"] == "dry_run"
+    assert (
+        dry_run_runner_interface_status["runner_interface_status"]
+        == "static_interface_valid_blocked"
+    )
+    assert dry_run_runner_interface_status["admission_status"] == "unadmitted"
+    assert dry_run_runner_interface_status["runner_implemented"] is False
+    assert dry_run_runner_interface_status["runner_admitted"] is False
+    assert dry_run_runner_interface_status["runner_executed"] is False
+    assert dry_run_runner_interface_status["approval_request_ready"] is False
+    assert dry_run_runner_interface_status["operator_approval_granted"] is False
+    assert dry_run_runner_interface_status["approval_phrase_present"] is False
+    assert dry_run_runner_interface_status["dry_run_admitted"] is False
+    assert dry_run_runner_interface_status["dry_run_executed"] is False
+    assert dry_run_runner_interface_status["receipt_issued"] is False
+    assert dry_run_runner_interface_status["publication_admitted"] is False
+    assert dry_run_runner_interface_status["real_execution_admitted"] is False
+    assert dry_run_runner_interface_status["production_ready_claimed"] is False
+    assert dry_run_runner_interface_status["current_lifecycle_state"] == "not_started"
+    assert len(dry_run_runner_interface_status["interface_lifecycle_states"]) > 0
+    assert len(dry_run_runner_interface_status["required_inputs"]) > 0
+    assert len(dry_run_runner_interface_status["forbidden_inputs"]) > 0
+    assert len(dry_run_runner_interface_status["required_outputs"]) > 0
+    assert dry_run_runner_interface_status["current_emitted_outputs"] == []
+    assert len(dry_run_runner_interface_status["forbidden_outputs"]) > 0
+    assert len(dry_run_runner_interface_status["boundary_validation_requirements"]) > 0
+    assert len(dry_run_runner_interface_status["receipt_contract_requirements"]) > 0
+    assert len(dry_run_runner_interface_status["fail_closed_requirements"]) > 0
+    assert len(dry_run_runner_interface_status["forbidden_runtime_calls"]) > 0
+    assert len(dry_run_runner_interface_status["forbidden_filesystem_operations"]) > 0
+    assert len(dry_run_runner_interface_status["invalidation_conditions"]) > 0
+    assert len(dry_run_runner_interface_status["allowed_runner_modes"]) > 0
+    assert len(dry_run_runner_interface_status["disallowed_runner_modes"]) > 0
+    runner_interface_source_status = dry_run_runner_interface_status[
+        "computed_source_artifact_validation_status"
+    ]
+    assert runner_interface_source_status["candidate_matrix_status"] == "pass"
+    assert runner_interface_source_status["preflight_contracts_status"] == "pass"
+    assert runner_interface_source_status["preflight_proof_packages_status"] == "pass"
+    assert runner_interface_source_status["readiness_rollup_status"] == "pass"
+    assert runner_interface_source_status["dry_run_plan_status"] == "pass"
+    assert runner_interface_source_status["dry_run_receipt_contract_status"] == "pass"
+    assert runner_interface_source_status["blocked_unissued_receipt_status"] == "pass"
+    assert runner_interface_source_status["admission_blocker_checklist_status"] == "pass"
+    assert runner_interface_source_status["operator_approval_packet_status"] == "pass"
+    assert (
+        runner_interface_source_status["operator_approval_packet_completeness_status"]
+        == "pass"
+    )
+    assert runner_interface_source_status["approval_request_readiness_status"] == "pass"
+    assert runner_interface_source_status["non_approval_decision_status"] == "pass"
+    assert runner_interface_source_status["sandbox_boundary_status"] == "pass"
+    assert runner_interface_source_status["production_readiness_status"] == "pass"
+    assert runner_interface_source_status["noop_receipt_status"] == "pass"
+    assert dry_run_runner_interface_status["reporter_return_code"] == 0

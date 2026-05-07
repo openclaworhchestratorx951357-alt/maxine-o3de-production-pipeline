@@ -100,6 +100,12 @@ RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_SANDBOX_BOUNDARY_VALIDATOR_REL = (
 RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_SANDBOX_BOUNDARY_EXAMPLE_REL = (
     "examples/execution-admission/release_candidate_package_publish_dry_run_sandbox_boundary_v1.json"
 )
+RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RUNNER_INTERFACE_VALIDATOR_REL = (
+    "tools/execution-admission/validate_release_candidate_publication_dry_run_runner_interface.py"
+)
+RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RUNNER_INTERFACE_EXAMPLE_REL = (
+    "examples/execution-admission/release_candidate_package_publish_dry_run_runner_interface_v1.json"
+)
 PROJECT_INVENTORY_FIXTURE_REL = (
     "examples/sandbox/project-inventory/max_biped_v1_project_inventory.fixture.json"
 )
@@ -641,6 +647,35 @@ def run_release_candidate_publication_dry_run_sandbox_boundary(
     return proc.returncode, payload
 
 
+def run_release_candidate_publication_dry_run_runner_interface(
+    repo_root: Path,
+) -> Tuple[int, Dict[str, Any]]:
+    cmd: List[str] = [
+        sys.executable,
+        str(
+            (
+                repo_root
+                / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RUNNER_INTERFACE_VALIDATOR_REL
+            ).resolve()
+        ),
+        str(
+            (
+                repo_root
+                / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RUNNER_INTERFACE_EXAMPLE_REL
+            ).resolve()
+        ),
+    ]
+    proc = subprocess.run(
+        cmd,
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+    )
+    payload = parse_payload_from_stdout(proc.stdout)
+    payload["reporter_return_code"] = proc.returncode
+    return proc.returncode, payload
+
+
 def write_json(path: Path, payload: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2) + os.linesep, encoding="utf-8")
@@ -766,6 +801,12 @@ def main() -> int:
             dry_run_sandbox_boundary_code,
             dry_run_sandbox_boundary_payload,
         ) = run_release_candidate_publication_dry_run_sandbox_boundary(
+            repo_root=repo_root,
+        )
+        (
+            dry_run_runner_interface_code,
+            dry_run_runner_interface_payload,
+        ) = run_release_candidate_publication_dry_run_runner_interface(
             repo_root=repo_root,
         )
     except Exception as exc:
@@ -1924,6 +1965,152 @@ def main() -> int:
                 "release-candidate publication dry-run sandbox boundary computed source status must keep "
                 f"{key}=pass."
             )
+    if dry_run_runner_interface_code != 0:
+        failures.append(
+            "release-candidate publication dry-run runner interface validator must return 0."
+        )
+    if (
+        dry_run_runner_interface_payload.get("report_type")
+        != "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RUNNER_INTERFACE_VALIDATION_v1_REPORT"
+    ):
+        failures.append(
+            "release-candidate publication dry-run runner interface validator must emit RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RUNNER_INTERFACE_VALIDATION_v1_REPORT."
+        )
+    if dry_run_runner_interface_payload.get("status") != "pass":
+        failures.append(
+            "release-candidate publication dry-run runner interface validator status must be pass."
+        )
+    if (
+        dry_run_runner_interface_payload.get(
+            "release_candidate_publication_dry_run_runner_interface_present"
+        )
+        is not True
+    ):
+        failures.append(
+            "release-candidate publication dry-run runner interface report must confirm release_candidate_publication_dry_run_runner_interface_present=true."
+        )
+    if (
+        dry_run_runner_interface_payload.get("planned_candidate_id")
+        != "release_candidate_package_publish_dry_run_v1"
+    ):
+        failures.append(
+            "release-candidate publication dry-run runner interface report must keep planned_candidate_id=release_candidate_package_publish_dry_run_v1."
+        )
+    if dry_run_runner_interface_payload.get("candidate_type") != "dry_run":
+        failures.append(
+            "release-candidate publication dry-run runner interface report must keep candidate_type=dry_run."
+        )
+    if (
+        dry_run_runner_interface_payload.get("runner_interface_status")
+        != "static_interface_valid_blocked"
+    ):
+        failures.append(
+            "release-candidate publication dry-run runner interface report must keep runner_interface_status=static_interface_valid_blocked."
+        )
+    if dry_run_runner_interface_payload.get("admission_status") != "unadmitted":
+        failures.append(
+            "release-candidate publication dry-run runner interface report must keep admission_status=unadmitted."
+        )
+    if dry_run_runner_interface_payload.get("runner_implemented") is not False:
+        failures.append(
+            "release-candidate publication dry-run runner interface report must keep runner_implemented=false."
+        )
+    if dry_run_runner_interface_payload.get("runner_admitted") is not False:
+        failures.append(
+            "release-candidate publication dry-run runner interface report must keep runner_admitted=false."
+        )
+    if dry_run_runner_interface_payload.get("runner_executed") is not False:
+        failures.append(
+            "release-candidate publication dry-run runner interface report must keep runner_executed=false."
+        )
+    for field in (
+        "approval_request_ready",
+        "operator_approval_granted",
+        "approval_phrase_present",
+        "dry_run_admitted",
+        "dry_run_executed",
+        "receipt_issued",
+        "publication_admitted",
+        "real_execution_admitted",
+        "production_ready_claimed",
+    ):
+        if dry_run_runner_interface_payload.get(field) is not False:
+            failures.append(
+                "release-candidate publication dry-run runner interface report must keep field false: "
+                f"{field}."
+            )
+    if dry_run_runner_interface_payload.get("current_lifecycle_state") not in {
+        "not_started",
+        "blocked_failed_safe",
+        "invalidated_failed_safe",
+    }:
+        failures.append(
+            "release-candidate publication dry-run runner interface report must keep current_lifecycle_state in safe blocked states."
+        )
+    for key in (
+        "interface_lifecycle_states",
+        "required_inputs",
+        "forbidden_inputs",
+        "required_outputs",
+        "forbidden_outputs",
+        "boundary_validation_requirements",
+        "receipt_contract_requirements",
+        "fail_closed_requirements",
+        "pre_run_validation_requirements",
+        "post_run_validation_requirements",
+        "required_safety_attestations",
+        "forbidden_runtime_calls",
+        "forbidden_filesystem_operations",
+        "invalidation_conditions",
+        "required_receipt_fields",
+        "required_log_report_fields",
+        "allowed_runner_modes",
+        "disallowed_runner_modes",
+        "future_admission_requirements",
+        "safety_notes",
+    ):
+        if not dry_run_runner_interface_payload.get(key):
+            failures.append(
+                "release-candidate publication dry-run runner interface report must keep "
+                f"{key} non-empty."
+            )
+    current_emitted_outputs = dry_run_runner_interface_payload.get("current_emitted_outputs")
+    if not isinstance(current_emitted_outputs, list) or current_emitted_outputs:
+        failures.append(
+            "release-candidate publication dry-run runner interface report must keep current_emitted_outputs as an empty list."
+        )
+    runner_interface_source_status = (
+        dry_run_runner_interface_payload.get("computed_source_artifact_validation_status")
+        if isinstance(
+            dry_run_runner_interface_payload.get(
+                "computed_source_artifact_validation_status"
+            ),
+            dict,
+        )
+        else {}
+    )
+    for key in (
+        "candidate_matrix_status",
+        "preflight_contracts_status",
+        "preflight_proof_packages_status",
+        "readiness_rollup_status",
+        "dry_run_plan_status",
+        "dry_run_receipt_contract_status",
+        "blocked_unissued_receipt_status",
+        "admission_blocker_checklist_status",
+        "operator_approval_packet_status",
+        "operator_approval_packet_completeness_status",
+        "approval_request_readiness_status",
+        "non_approval_decision_status",
+        "sandbox_boundary_status",
+        "production_readiness_status",
+        "noop_receipt_status",
+    ):
+        if runner_interface_source_status.get(key) != "pass":
+            failures.append(
+                "release-candidate publication dry-run runner interface computed source status must keep "
+                f"{key}=pass."
+            )
 
     summary: Dict[str, Any] = {
         "status": "pass" if not failures else "fail",
@@ -1950,6 +2137,7 @@ def main() -> int:
             "release_candidate_publication_dry_run_approval_request_readiness_report": dry_run_approval_request_readiness_payload,
             "release_candidate_publication_dry_run_non_approval_decision_report": dry_run_non_approval_decision_payload,
             "release_candidate_publication_dry_run_sandbox_boundary_report": dry_run_sandbox_boundary_payload,
+            "release_candidate_publication_dry_run_runner_interface_report": dry_run_runner_interface_payload,
             "failures": failures,
         },
     }
