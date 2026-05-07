@@ -614,3 +614,66 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
     assert non_approval_source_status["production_readiness_status"] == "pass"
     assert non_approval_source_status["noop_receipt_status"] == "pass"
     assert dry_run_non_approval_decision_status["reporter_return_code"] == 0
+    dry_run_sandbox_boundary_status = payload["details"][
+        "release_candidate_publication_dry_run_sandbox_boundary_report"
+    ]
+    assert dry_run_sandbox_boundary_status["status"] == "pass"
+    assert (
+        dry_run_sandbox_boundary_status["report_type"]
+        == "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_SANDBOX_BOUNDARY_VALIDATION_v1_REPORT"
+    )
+    assert (
+        dry_run_sandbox_boundary_status[
+            "release_candidate_publication_dry_run_sandbox_boundary_present"
+        ]
+        is True
+    )
+    assert (
+        dry_run_sandbox_boundary_status["planned_candidate_id"]
+        == "release_candidate_package_publish_dry_run_v1"
+    )
+    assert dry_run_sandbox_boundary_status["candidate_type"] == "dry_run"
+    assert dry_run_sandbox_boundary_status["sandbox_boundary_status"] == "static_boundary_valid_blocked"
+    assert dry_run_sandbox_boundary_status["admission_status"] == "unadmitted"
+    assert dry_run_sandbox_boundary_status["runner_implemented"] is False
+    assert dry_run_sandbox_boundary_status["approval_request_ready"] is False
+    assert dry_run_sandbox_boundary_status["operator_approval_granted"] is False
+    assert dry_run_sandbox_boundary_status["approval_phrase_present"] is False
+    assert dry_run_sandbox_boundary_status["dry_run_admitted"] is False
+    assert dry_run_sandbox_boundary_status["dry_run_executed"] is False
+    assert dry_run_sandbox_boundary_status["receipt_issued"] is False
+    assert dry_run_sandbox_boundary_status["publication_admitted"] is False
+    assert dry_run_sandbox_boundary_status["real_execution_admitted"] is False
+    assert dry_run_sandbox_boundary_status["production_ready_claimed"] is False
+    assert len(dry_run_sandbox_boundary_status["allowed_read_roots"]) > 0
+    assert len(dry_run_sandbox_boundary_status["allowed_write_roots"]) > 0
+    assert len(dry_run_sandbox_boundary_status["allowed_receipt_roots"]) > 0
+    assert len(dry_run_sandbox_boundary_status["allowed_report_roots"]) > 0
+    assert len(dry_run_sandbox_boundary_status["forbidden_roots"]) > 0
+    assert len(dry_run_sandbox_boundary_status["forbidden_path_patterns"]) > 0
+    assert len(dry_run_sandbox_boundary_status["allowed_file_extensions"]) > 0
+    assert len(dry_run_sandbox_boundary_status["forbidden_file_extensions"]) > 0
+    assert len(dry_run_sandbox_boundary_status["required_path_normalization"]) > 0
+    assert dry_run_sandbox_boundary_status["required_output_index"]
+    assert dry_run_sandbox_boundary_status["required_hashing"]
+    assert len(dry_run_sandbox_boundary_status["cleanup_rollback_requirements"]) > 0
+    assert len(dry_run_sandbox_boundary_status["live_surface_blocks"]) > 0
+    assert len(dry_run_sandbox_boundary_status["invalidation_conditions"]) > 0
+    sandbox_source_status = dry_run_sandbox_boundary_status[
+        "computed_source_artifact_validation_status"
+    ]
+    assert sandbox_source_status["candidate_matrix_status"] == "pass"
+    assert sandbox_source_status["preflight_contracts_status"] == "pass"
+    assert sandbox_source_status["preflight_proof_packages_status"] == "pass"
+    assert sandbox_source_status["readiness_rollup_status"] == "pass"
+    assert sandbox_source_status["dry_run_plan_status"] == "pass"
+    assert sandbox_source_status["dry_run_receipt_contract_status"] == "pass"
+    assert sandbox_source_status["blocked_unissued_receipt_status"] == "pass"
+    assert sandbox_source_status["admission_blocker_checklist_status"] == "pass"
+    assert sandbox_source_status["operator_approval_packet_status"] == "pass"
+    assert sandbox_source_status["operator_approval_packet_completeness_status"] == "pass"
+    assert sandbox_source_status["approval_request_readiness_status"] == "pass"
+    assert sandbox_source_status["non_approval_decision_status"] == "pass"
+    assert sandbox_source_status["production_readiness_status"] == "pass"
+    assert sandbox_source_status["noop_receipt_status"] == "pass"
+    assert dry_run_sandbox_boundary_status["reporter_return_code"] == 0

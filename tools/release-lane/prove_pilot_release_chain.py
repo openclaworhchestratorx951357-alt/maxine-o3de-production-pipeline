@@ -94,6 +94,12 @@ RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_NON_APPROVAL_DECISION_VALIDATOR_REL = (
 RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_NON_APPROVAL_DECISION_EXAMPLE_REL = (
     "examples/execution-admission/release_candidate_package_publish_dry_run_non_approval_decision_v1.json"
 )
+RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_SANDBOX_BOUNDARY_VALIDATOR_REL = (
+    "tools/execution-admission/validate_release_candidate_publication_dry_run_sandbox_boundary.py"
+)
+RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_SANDBOX_BOUNDARY_EXAMPLE_REL = (
+    "examples/execution-admission/release_candidate_package_publish_dry_run_sandbox_boundary_v1.json"
+)
 PROJECT_INVENTORY_FIXTURE_REL = (
     "examples/sandbox/project-inventory/max_biped_v1_project_inventory.fixture.json"
 )
@@ -606,6 +612,35 @@ def run_release_candidate_publication_dry_run_non_approval_decision(
     return proc.returncode, payload
 
 
+def run_release_candidate_publication_dry_run_sandbox_boundary(
+    repo_root: Path,
+) -> Tuple[int, Dict[str, Any]]:
+    cmd: List[str] = [
+        sys.executable,
+        str(
+            (
+                repo_root
+                / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_SANDBOX_BOUNDARY_VALIDATOR_REL
+            ).resolve()
+        ),
+        str(
+            (
+                repo_root
+                / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_SANDBOX_BOUNDARY_EXAMPLE_REL
+            ).resolve()
+        ),
+    ]
+    proc = subprocess.run(
+        cmd,
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+    )
+    payload = parse_payload_from_stdout(proc.stdout)
+    payload["reporter_return_code"] = proc.returncode
+    return proc.returncode, payload
+
+
 def write_json(path: Path, payload: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2) + os.linesep, encoding="utf-8")
@@ -725,6 +760,12 @@ def main() -> int:
             dry_run_non_approval_decision_code,
             dry_run_non_approval_decision_payload,
         ) = run_release_candidate_publication_dry_run_non_approval_decision(
+            repo_root=repo_root,
+        )
+        (
+            dry_run_sandbox_boundary_code,
+            dry_run_sandbox_boundary_payload,
+        ) = run_release_candidate_publication_dry_run_sandbox_boundary(
             repo_root=repo_root,
         )
     except Exception as exc:
@@ -1750,6 +1791,139 @@ def main() -> int:
                 "release-candidate publication dry-run non-approval decision computed source status must keep "
                 f"{key}=pass."
             )
+    if dry_run_sandbox_boundary_code != 0:
+        failures.append(
+            "release-candidate publication dry-run sandbox boundary validator must return 0."
+        )
+    if (
+        dry_run_sandbox_boundary_payload.get("report_type")
+        != "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_SANDBOX_BOUNDARY_VALIDATION_v1_REPORT"
+    ):
+        failures.append(
+            "release-candidate publication dry-run sandbox boundary validator must emit RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_SANDBOX_BOUNDARY_VALIDATION_v1_REPORT."
+        )
+    if dry_run_sandbox_boundary_payload.get("status") != "pass":
+        failures.append(
+            "release-candidate publication dry-run sandbox boundary validator status must be pass."
+        )
+    if (
+        dry_run_sandbox_boundary_payload.get(
+            "release_candidate_publication_dry_run_sandbox_boundary_present"
+        )
+        is not True
+    ):
+        failures.append(
+            "release-candidate publication dry-run sandbox boundary report must confirm release_candidate_publication_dry_run_sandbox_boundary_present=true."
+        )
+    if (
+        dry_run_sandbox_boundary_payload.get("planned_candidate_id")
+        != "release_candidate_package_publish_dry_run_v1"
+    ):
+        failures.append(
+            "release-candidate publication dry-run sandbox boundary report must keep planned_candidate_id=release_candidate_package_publish_dry_run_v1."
+        )
+    if dry_run_sandbox_boundary_payload.get("candidate_type") != "dry_run":
+        failures.append(
+            "release-candidate publication dry-run sandbox boundary report must keep candidate_type=dry_run."
+        )
+    if (
+        dry_run_sandbox_boundary_payload.get("sandbox_boundary_status")
+        != "static_boundary_valid_blocked"
+    ):
+        failures.append(
+            "release-candidate publication dry-run sandbox boundary report must keep sandbox_boundary_status=static_boundary_valid_blocked."
+        )
+    if dry_run_sandbox_boundary_payload.get("admission_status") != "unadmitted":
+        failures.append(
+            "release-candidate publication dry-run sandbox boundary report must keep admission_status=unadmitted."
+        )
+    if dry_run_sandbox_boundary_payload.get("runner_implemented") is not False:
+        failures.append(
+            "release-candidate publication dry-run sandbox boundary report must keep runner_implemented=false."
+        )
+    for field in (
+        "approval_request_ready",
+        "operator_approval_granted",
+        "approval_phrase_present",
+        "dry_run_admitted",
+        "dry_run_executed",
+        "receipt_issued",
+        "publication_admitted",
+        "real_execution_admitted",
+        "production_ready_claimed",
+    ):
+        if dry_run_sandbox_boundary_payload.get(field) is not False:
+            failures.append(
+                "release-candidate publication dry-run sandbox boundary report must keep field false: "
+                f"{field}."
+            )
+    for key in (
+        "allowed_read_roots",
+        "allowed_write_roots",
+        "allowed_receipt_roots",
+        "allowed_report_roots",
+        "forbidden_roots",
+        "forbidden_path_patterns",
+        "allowed_file_extensions",
+        "forbidden_file_extensions",
+        "required_path_normalization",
+        "cleanup_rollback_requirements",
+        "live_surface_blocks",
+        "invalidation_conditions",
+    ):
+        if not dry_run_sandbox_boundary_payload.get(key):
+            failures.append(
+                "release-candidate publication dry-run sandbox boundary report must keep "
+                f"{key} non-empty."
+            )
+    if not dry_run_sandbox_boundary_payload.get("required_output_index"):
+        failures.append(
+            "release-candidate publication dry-run sandbox boundary report must keep required_output_index present."
+        )
+    if not dry_run_sandbox_boundary_payload.get("required_hashing"):
+        failures.append(
+            "release-candidate publication dry-run sandbox boundary report must keep required_hashing present."
+        )
+    runner_interface_constraints = (
+        dry_run_sandbox_boundary_payload.get("runner_interface_constraints")
+        if isinstance(dry_run_sandbox_boundary_payload.get("runner_interface_constraints"), dict)
+        else {}
+    )
+    if runner_interface_constraints.get("runner_implemented") is not False:
+        failures.append(
+            "release-candidate publication dry-run sandbox boundary report runner_interface_constraints must keep runner_implemented=false."
+        )
+    sandbox_source_status = (
+        dry_run_sandbox_boundary_payload.get("computed_source_artifact_validation_status")
+        if isinstance(
+            dry_run_sandbox_boundary_payload.get(
+                "computed_source_artifact_validation_status"
+            ),
+            dict,
+        )
+        else {}
+    )
+    for key in (
+        "candidate_matrix_status",
+        "preflight_contracts_status",
+        "preflight_proof_packages_status",
+        "readiness_rollup_status",
+        "dry_run_plan_status",
+        "dry_run_receipt_contract_status",
+        "blocked_unissued_receipt_status",
+        "admission_blocker_checklist_status",
+        "operator_approval_packet_status",
+        "operator_approval_packet_completeness_status",
+        "approval_request_readiness_status",
+        "non_approval_decision_status",
+        "production_readiness_status",
+        "noop_receipt_status",
+    ):
+        if sandbox_source_status.get(key) != "pass":
+            failures.append(
+                "release-candidate publication dry-run sandbox boundary computed source status must keep "
+                f"{key}=pass."
+            )
 
     summary: Dict[str, Any] = {
         "status": "pass" if not failures else "fail",
@@ -1775,6 +1949,7 @@ def main() -> int:
             "release_candidate_publication_dry_run_operator_approval_packet_completeness_report": dry_run_operator_approval_packet_completeness_payload,
             "release_candidate_publication_dry_run_approval_request_readiness_report": dry_run_approval_request_readiness_payload,
             "release_candidate_publication_dry_run_non_approval_decision_report": dry_run_non_approval_decision_payload,
+            "release_candidate_publication_dry_run_sandbox_boundary_report": dry_run_sandbox_boundary_payload,
             "failures": failures,
         },
     }
