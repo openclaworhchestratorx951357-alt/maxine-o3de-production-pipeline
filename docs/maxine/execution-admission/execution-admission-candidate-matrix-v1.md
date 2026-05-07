@@ -127,6 +127,15 @@ The dry-run candidate now also has a static operator approval packet template th
 - `examples/execution-admission/release_candidate_package_publish_dry_run_operator_approval_packet_v1.json`
 - `tools/execution-admission/validate_release_candidate_publication_dry_run_operator_approval_packet.py`
 
+## Candidate-Specific Non-Approval Decision Link
+
+The same candidate now also has an explicit static non-approval decision record:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-non-approval-decision-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_non_approval_decision.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_non_approval_decision_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_non_approval_decision.py`
+
 ## Safety Notes
 
 This slice remains non-executing and non-publishing:

@@ -304,3 +304,39 @@ Artifacts:
 - `tools/execution-admission/validate_release_candidate_publication_dry_run_approval_request_readiness.py`
 
 This layer is static-only and does not mark approval-ready, grant approval, admit dry-run execution, or issue receipts.
+
+## Candidate-Specific Explicit Non-Approval Decision v1
+
+The dry-run candidate now also has an explicit static non-approval decision record:
+
+- candidate id:
+  - `release_candidate_package_publish_dry_run_v1`
+- decision type:
+  - `non_approval`
+- decision status:
+  - `active_non_approval`
+- selected operator decision:
+  - `do_not_approve`
+- next recommended action:
+  - `continue_hardening_no_execution`
+- approval request ready:
+  - `false`
+- operator approval granted:
+  - `false`
+- approval phrase present:
+  - `false`
+- dry-run admitted:
+  - `false`
+- dry-run executed:
+  - `false`
+- receipt issued:
+  - `false`
+
+Artifacts:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-non-approval-decision-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_non_approval_decision.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_non_approval_decision_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_non_approval_decision.py`
+
+This layer is static-only and does not grant approval, admit dry-run execution, issue receipts, admit publication, or admit real execution.

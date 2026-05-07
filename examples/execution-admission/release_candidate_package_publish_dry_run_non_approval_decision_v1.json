@@ -1,0 +1,145 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_NON_APPROVAL_DECISION_v1",
+  "decision_id": "release-candidate-package-publish-dry-run-non-approval-decision-v1",
+  "decision_version": "v1",
+  "candidate_id": "release_candidate_package_publish_dry_run_v1",
+  "candidate_type": "dry_run",
+  "decision_type": "non_approval",
+  "decision_status": "active_non_approval",
+  "decision_effect": "candidate_remains_blocked_unadmitted",
+  "decision_source": "approval_request_readiness_report_v1_and_static_cross_checks",
+  "generated_from_static_artifacts_only": true,
+  "source_artifacts": {
+    "candidate_matrix_ref": "examples/execution-admission/execution_admission_candidate_matrix_v1.json",
+    "preflight_contracts_ref": "examples/execution-admission/execution_admission_preflight_contracts_v1.json",
+    "preflight_proof_packages_ref": "examples/execution-admission/execution_admission_preflight_proof_packages_v1.json",
+    "readiness_rollup_ref": "examples/execution-admission/execution_admission_readiness_rollup_v1.json",
+    "dry_run_plan_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_plan_v1.json",
+    "dry_run_receipt_contract_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_receipt_contract_v1.json",
+    "blocked_unissued_receipt_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_receipt_blocked_v1.json",
+    "admission_blocker_checklist_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_admission_blockers_v1.json",
+    "operator_approval_packet_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_operator_approval_packet_v1.json",
+    "operator_approval_packet_completeness_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_operator_approval_packet_completeness_v1.json",
+    "approval_request_readiness_ref": "examples/execution-admission/release_candidate_package_publish_dry_run_approval_request_readiness_v1.json",
+    "production_readiness_report_ref": "examples/production-readiness-report/max_biped_v1_production_readiness_report_pass.json",
+    "noop_receipt_status_ref": "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json"
+  },
+  "source_artifact_validation_status": {
+    "candidate_matrix_status": "pass",
+    "preflight_contracts_status": "pass",
+    "preflight_proof_packages_status": "pass",
+    "readiness_rollup_status": "pass",
+    "dry_run_plan_status": "pass",
+    "dry_run_receipt_contract_status": "pass",
+    "blocked_unissued_receipt_status": "pass",
+    "admission_blocker_checklist_status": "pass",
+    "operator_approval_packet_status": "pass",
+    "operator_approval_packet_completeness_status": "pass",
+    "approval_request_readiness_status": "pass",
+    "production_readiness_status": "pass",
+    "noop_receipt_status": "pass"
+  },
+  "approval_request_ready": false,
+  "operator_approval_granted": false,
+  "approval_phrase_present": false,
+  "dry_run_admitted": false,
+  "dry_run_executed": false,
+  "receipt_issued": false,
+  "publication_admitted": false,
+  "real_execution_admitted": false,
+  "production_ready_claimed": false,
+  "non_approval_reason_codes": [
+    "approval_request_not_ready",
+    "readiness_report_recommends_do_not_request_approval_yet",
+    "no_operator_approval_decision",
+    "approval_phrase_not_present",
+    "dry_run_not_admitted",
+    "dry_run_not_executed",
+    "receipt_not_issued",
+    "rollback_cleanup_evidence_missing",
+    "publication_surfaces_blocked_by_policy",
+    "publication_not_admitted",
+    "real_execution_not_admitted",
+    "production_ready_not_claimed"
+  ],
+  "non_approval_summary": "Approval request readiness remains blocked and recommends do_not_request_approval_yet; therefore selected operator decision is do_not_approve and candidate remains blocked/unadmitted with continued hardening only.",
+  "continuing_blockers": {
+    "approval_blockers": [
+      "missing_approval_decision",
+      "operator_approval_not_granted"
+    ],
+    "request_readiness_blockers": [
+      "approval_request_not_ready",
+      "unresolved_approval_blockers_present",
+      "no_operator_approval_decision",
+      "approval_phrase_not_present"
+    ],
+    "execution_blockers": [
+      "dry_run_not_admitted",
+      "dry_run_not_executed"
+    ],
+    "receipt_blockers": [
+      "receipt_not_issued",
+      "rollback_cleanup_evidence_missing"
+    ],
+    "publication_blockers": [
+      "publication_surfaces_blocked_by_policy",
+      "publication_not_admitted"
+    ],
+    "production_readiness_blockers": [
+      "production_ready_not_claimed",
+      "real_execution_not_admitted",
+      "publication_not_admitted"
+    ]
+  },
+  "required_before_reconsideration": [
+    "resolve or explicitly accept current approval blockers by policy",
+    "create a separate future approval decision record if approval is ever considered",
+    "require exact candidate-specific approval phrase only in that future approval decision",
+    "rerun all validators immediately before reconsideration",
+    "rerun safety verifier immediately before reconsideration",
+    "rerun proof flow immediately before reconsideration",
+    "rerun production-readiness validator against generated manifest",
+    "preserve publication blocked status",
+    "preserve receipt contract binding",
+    "preserve rollback/no-op cleanup expectations",
+    "preserve sandbox-only scope for any later dry-run admission"
+  ],
+  "selected_operator_decision": "do_not_approve",
+  "approval_phrase_required_for_future_reconsideration": "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1",
+  "approval_decision_reference": null,
+  "next_recommended_action": "continue_hardening_no_execution",
+  "forbidden_actions": [
+    "publish_operation",
+    "spawn_operation",
+    "production_path_writes",
+    "engine_path_writes",
+    "cache_live_db_access",
+    "authoritative_source_uuid_claims",
+    "authoritative_asset_id_claims",
+    "authoritative_product_id_claims"
+  ],
+  "forbidden_outputs": [
+    "publish_operation",
+    "spawn_operation",
+    "production_path_writes",
+    "engine_path_writes",
+    "cache_live_db_access",
+    "authoritative_source_uuid_claims",
+    "authoritative_asset_id_claims",
+    "authoritative_product_id_claims"
+  ],
+  "forbidden_paths": [
+    "production_path_category",
+    "engine_path_category",
+    "cache_live_db_category",
+    "destructive_cleanup_category"
+  ],
+  "unsafe_claims_detected": false,
+  "safety_notes": [
+    "This non-approval decision record is static and auditable status only.",
+    "This non-approval decision record does not grant approval or admission.",
+    "Selected decision is do_not_approve and next action is continue_hardening_no_execution."
+  ]
+}
