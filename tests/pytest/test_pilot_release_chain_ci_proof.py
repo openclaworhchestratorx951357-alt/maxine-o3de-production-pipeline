@@ -544,3 +544,73 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
     assert readiness_source_status["production_readiness_status"] == "pass"
     assert readiness_source_status["noop_receipt_status"] == "pass"
     assert dry_run_approval_request_readiness_status["reporter_return_code"] == 0
+    dry_run_non_approval_decision_status = payload["details"][
+        "release_candidate_publication_dry_run_non_approval_decision_report"
+    ]
+    assert dry_run_non_approval_decision_status["status"] == "pass"
+    assert (
+        dry_run_non_approval_decision_status["report_type"]
+        == "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_NON_APPROVAL_DECISION_VALIDATION_v1_REPORT"
+    )
+    assert (
+        dry_run_non_approval_decision_status[
+            "release_candidate_publication_dry_run_non_approval_decision_present"
+        ]
+        is True
+    )
+    assert (
+        dry_run_non_approval_decision_status["planned_candidate_id"]
+        == "release_candidate_package_publish_dry_run_v1"
+    )
+    assert dry_run_non_approval_decision_status["candidate_type"] == "dry_run"
+    assert dry_run_non_approval_decision_status["decision_type"] == "non_approval"
+    assert dry_run_non_approval_decision_status["decision_status"] == "active_non_approval"
+    assert (
+        dry_run_non_approval_decision_status["decision_effect"]
+        == "candidate_remains_blocked_unadmitted"
+    )
+    assert (
+        dry_run_non_approval_decision_status["selected_operator_decision"]
+        == "do_not_approve"
+    )
+    assert (
+        dry_run_non_approval_decision_status["next_recommended_action"]
+        == "continue_hardening_no_execution"
+    )
+    assert dry_run_non_approval_decision_status["approval_request_ready"] is False
+    assert dry_run_non_approval_decision_status["operator_approval_granted"] is False
+    assert dry_run_non_approval_decision_status["approval_phrase_present"] is False
+    assert dry_run_non_approval_decision_status["dry_run_admitted"] is False
+    assert dry_run_non_approval_decision_status["dry_run_executed"] is False
+    assert dry_run_non_approval_decision_status["receipt_issued"] is False
+    assert dry_run_non_approval_decision_status["publication_admitted"] is False
+    assert dry_run_non_approval_decision_status["real_execution_admitted"] is False
+    assert dry_run_non_approval_decision_status["production_ready_claimed"] is False
+    assert (
+        dry_run_non_approval_decision_status[
+            "approval_phrase_required_for_future_reconsideration"
+        ]
+        == "APPROVE EXECUTION ADMISSION release_candidate_package_publish_dry_run_v1"
+    )
+    assert len(dry_run_non_approval_decision_status["non_approval_reason_codes"]) > 0
+    assert len(dry_run_non_approval_decision_status["required_before_reconsideration"]) > 0
+    assert len(dry_run_non_approval_decision_status["forbidden_actions"]) > 0
+    assert len(dry_run_non_approval_decision_status["forbidden_outputs"]) > 0
+    assert len(dry_run_non_approval_decision_status["forbidden_paths"]) > 0
+    non_approval_source_status = dry_run_non_approval_decision_status[
+        "computed_source_artifact_validation_status"
+    ]
+    assert non_approval_source_status["candidate_matrix_status"] == "pass"
+    assert non_approval_source_status["preflight_contracts_status"] == "pass"
+    assert non_approval_source_status["preflight_proof_packages_status"] == "pass"
+    assert non_approval_source_status["readiness_rollup_status"] == "pass"
+    assert non_approval_source_status["dry_run_plan_status"] == "pass"
+    assert non_approval_source_status["dry_run_receipt_contract_status"] == "pass"
+    assert non_approval_source_status["blocked_unissued_receipt_status"] == "pass"
+    assert non_approval_source_status["admission_blocker_checklist_status"] == "pass"
+    assert non_approval_source_status["operator_approval_packet_status"] == "pass"
+    assert non_approval_source_status["operator_approval_packet_completeness_status"] == "pass"
+    assert non_approval_source_status["approval_request_readiness_status"] == "pass"
+    assert non_approval_source_status["production_readiness_status"] == "pass"
+    assert non_approval_source_status["noop_receipt_status"] == "pass"
+    assert dry_run_non_approval_decision_status["reporter_return_code"] == 0

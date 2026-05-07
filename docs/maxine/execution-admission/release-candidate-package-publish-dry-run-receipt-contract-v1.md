@@ -132,6 +132,15 @@ The same candidate now also has a static approval-request readiness report that 
 
 The readiness report keeps `approval_request_ready=false`, `operator_approval_granted=false`, `approval_phrase_present=false`, and `dry_run_executed=false`.
 
+## Explicit Non-Approval Decision Link
+
+An explicit static non-approval decision record now captures the active decision state that keeps this receipt contract unissued:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-non-approval-decision-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_non_approval_decision.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_non_approval_decision_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_non_approval_decision.py`
+
 ## Artifacts
 
 - schema:

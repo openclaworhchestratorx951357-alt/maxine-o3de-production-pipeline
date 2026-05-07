@@ -121,6 +121,17 @@ The same candidate now also has a static approval-request readiness report:
 
 This report explicitly keeps packet structural completeness true while keeping approval request readiness false.
 
+## Candidate-Specific Non-Approval Decision Link
+
+The same candidate now also has an explicit static non-approval decision record:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-non-approval-decision-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_non_approval_decision.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_non_approval_decision_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_non_approval_decision.py`
+
+This decision remains `do_not_approve` with next action `continue_hardening_no_execution`.
+
 ## Approval Phrase
 
 Future real execution/publication admission still requires:

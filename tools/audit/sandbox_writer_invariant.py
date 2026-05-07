@@ -169,6 +169,9 @@ RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_OPERATOR_APPROVAL_PACKET_COMPLETENESS_REL 
 RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_APPROVAL_REQUEST_READINESS_REL = (
     "examples/execution-admission/release_candidate_package_publish_dry_run_approval_request_readiness_v1.json"
 )
+RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_NON_APPROVAL_DECISION_REL = (
+    "examples/execution-admission/release_candidate_package_publish_dry_run_non_approval_decision_v1.json"
+)
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
 WORKFLOW_RUNS_DIR_REL = "examples/sandbox/workflow-runs"
@@ -234,6 +237,11 @@ EXPECTED_DRY_RUN_OPERATOR_APPROVAL_PACKET_COMPLETENESS_STATUS = (
 )
 EXPECTED_DRY_RUN_APPROVAL_REQUEST_READINESS_STATUS = (
     "static_request_readiness_valid_blocked"
+)
+EXPECTED_DRY_RUN_NON_APPROVAL_DECISION_TYPE = "non_approval"
+EXPECTED_DRY_RUN_NON_APPROVAL_DECISION_STATUS = "active_non_approval"
+EXPECTED_DRY_RUN_NON_APPROVAL_DECISION_EFFECT = (
+    "candidate_remains_blocked_unadmitted"
 )
 REQUIRED_DRY_RUN_ADMISSION_BLOCKERS = (
     "missing_approval_decision",
@@ -1083,6 +1091,9 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     )
     release_candidate_publication_dry_run_approval_request_readiness = (
         root / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_APPROVAL_REQUEST_READINESS_REL
+    )
+    release_candidate_publication_dry_run_non_approval_decision = (
+        root / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_NON_APPROVAL_DECISION_REL
     )
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -5425,6 +5436,297 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         except Exception as exc:  # pragma: no cover - defensive failure surface
             failures.append(
                 "release candidate publication dry-run approval request readiness is not valid JSON: "
+                f"{exc}"
+            )
+
+    if release_candidate_publication_dry_run_non_approval_decision.exists():
+        try:
+            non_approval_decision = json.loads(
+                release_candidate_publication_dry_run_non_approval_decision.read_text(
+                    encoding="utf-8-sig"
+                )
+            )
+            if non_approval_decision.get("schema_version") != "1.0.0":
+                failures.append(
+                    "release candidate publication dry-run non-approval decision schema_version must be 1.0.0."
+                )
+            if (
+                non_approval_decision.get("record_type")
+                != "RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_NON_APPROVAL_DECISION_v1"
+            ):
+                failures.append(
+                    "release candidate publication dry-run non-approval decision record_type must be RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_NON_APPROVAL_DECISION_v1."
+                )
+            if (
+                str(non_approval_decision.get("candidate_id", "")).strip()
+                != EXPECTED_ROLLUP_NEXT_SLICE_CANDIDATE_ID
+            ):
+                failures.append(
+                    "release candidate publication dry-run non-approval decision candidate_id must be release_candidate_package_publish_dry_run_v1."
+                )
+            if str(non_approval_decision.get("candidate_type", "")).strip() != "dry_run":
+                failures.append(
+                    "release candidate publication dry-run non-approval decision candidate_type must be dry_run."
+                )
+            if (
+                str(non_approval_decision.get("decision_type", "")).strip()
+                != EXPECTED_DRY_RUN_NON_APPROVAL_DECISION_TYPE
+            ):
+                failures.append(
+                    "release candidate publication dry-run non-approval decision must keep decision_type=non_approval."
+                )
+            if (
+                str(non_approval_decision.get("decision_status", "")).strip()
+                != EXPECTED_DRY_RUN_NON_APPROVAL_DECISION_STATUS
+            ):
+                failures.append(
+                    "release candidate publication dry-run non-approval decision must keep decision_status=active_non_approval."
+                )
+            if (
+                str(non_approval_decision.get("decision_effect", "")).strip()
+                != EXPECTED_DRY_RUN_NON_APPROVAL_DECISION_EFFECT
+            ):
+                failures.append(
+                    "release candidate publication dry-run non-approval decision must keep decision_effect=candidate_remains_blocked_unadmitted."
+                )
+            if (
+                str(non_approval_decision.get("selected_operator_decision", "")).strip()
+                != "do_not_approve"
+            ):
+                failures.append(
+                    "release candidate publication dry-run non-approval decision must keep selected_operator_decision=do_not_approve."
+                )
+            if (
+                str(non_approval_decision.get("next_recommended_action", "")).strip()
+                != "continue_hardening_no_execution"
+            ):
+                failures.append(
+                    "release candidate publication dry-run non-approval decision must keep next_recommended_action=continue_hardening_no_execution."
+                )
+            for field in (
+                "approval_request_ready",
+                "operator_approval_granted",
+                "approval_phrase_present",
+                "dry_run_admitted",
+                "dry_run_executed",
+                "receipt_issued",
+                "publication_admitted",
+                "real_execution_admitted",
+                "production_ready_claimed",
+            ):
+                if bool(non_approval_decision.get(field, False)):
+                    failures.append(
+                        "release candidate publication dry-run non-approval decision must keep field false: "
+                        f"{field}"
+                    )
+            if (
+                str(
+                    non_approval_decision.get(
+                        "approval_phrase_required_for_future_reconsideration", ""
+                    )
+                ).strip()
+                != EXPECTED_DRY_RUN_PLAN_APPROVAL_PHRASE
+            ):
+                failures.append(
+                    "release candidate publication dry-run non-approval decision must keep exact approval phrase for release_candidate_package_publish_dry_run_v1."
+                )
+            approval_decision_reference = non_approval_decision.get(
+                "approval_decision_reference"
+            )
+            if isinstance(approval_decision_reference, str) and approval_decision_reference.strip():
+                failures.append(
+                    "release candidate publication dry-run non-approval decision approval_decision_reference must be null/empty while unadmitted."
+                )
+
+            for key in (
+                "non_approval_reason_codes",
+                "required_before_reconsideration",
+                "forbidden_actions",
+                "forbidden_outputs",
+                "forbidden_paths",
+                "safety_notes",
+            ):
+                values = {
+                    str(item).strip()
+                    for item in (non_approval_decision.get(key) or [])
+                    if str(item).strip()
+                }
+                if not values:
+                    failures.append(
+                        "release candidate publication dry-run non-approval decision list must be non-empty: "
+                        f"{key}"
+                    )
+
+            non_approval_reason_codes = {
+                str(item).strip()
+                for item in (non_approval_decision.get("non_approval_reason_codes") or [])
+                if str(item).strip()
+            }
+            for token in (
+                "approval_request_not_ready",
+                "readiness_report_recommends_do_not_request_approval_yet",
+                "no_operator_approval_decision",
+                "approval_phrase_not_present",
+                "dry_run_not_admitted",
+                "dry_run_not_executed",
+                "receipt_not_issued",
+                "rollback_cleanup_evidence_missing",
+                "publication_surfaces_blocked_by_policy",
+                "publication_not_admitted",
+                "real_execution_not_admitted",
+                "production_ready_not_claimed",
+            ):
+                if token not in non_approval_reason_codes:
+                    failures.append(
+                        "release candidate publication dry-run non-approval decision non_approval_reason_codes must include: "
+                        f"{token}"
+                    )
+
+            continuing_blockers = (
+                non_approval_decision.get("continuing_blockers")
+                if isinstance(non_approval_decision.get("continuing_blockers"), dict)
+                else {}
+            )
+            required_blocker_groups = {
+                "approval_blockers": (
+                    "missing_approval_decision",
+                    "operator_approval_not_granted",
+                ),
+                "request_readiness_blockers": (
+                    "approval_request_not_ready",
+                    "unresolved_approval_blockers_present",
+                    "no_operator_approval_decision",
+                    "approval_phrase_not_present",
+                ),
+                "execution_blockers": (
+                    "dry_run_not_admitted",
+                    "dry_run_not_executed",
+                ),
+                "receipt_blockers": (
+                    "receipt_not_issued",
+                    "rollback_cleanup_evidence_missing",
+                ),
+                "publication_blockers": (
+                    "publication_surfaces_blocked_by_policy",
+                    "publication_not_admitted",
+                ),
+                "production_readiness_blockers": (
+                    "production_ready_not_claimed",
+                    "real_execution_not_admitted",
+                    "publication_not_admitted",
+                ),
+            }
+            for group, tokens in required_blocker_groups.items():
+                values = {
+                    str(item).strip()
+                    for item in (continuing_blockers.get(group) or [])
+                    if str(item).strip()
+                }
+                if not values:
+                    failures.append(
+                        "release candidate publication dry-run non-approval decision continuing_blockers group must be non-empty: "
+                        f"{group}"
+                    )
+                    continue
+                for token in tokens:
+                    if token not in values:
+                        failures.append(
+                            "release candidate publication dry-run non-approval decision continuing_blockers group missing required token: "
+                            f"{group} -> {token}"
+                        )
+
+            source_artifacts = (
+                non_approval_decision.get("source_artifacts")
+                if isinstance(non_approval_decision.get("source_artifacts"), dict)
+                else {}
+            )
+            expected_source_refs = {
+                "candidate_matrix_ref": EXECUTION_ADMISSION_CANDIDATE_MATRIX_REL,
+                "preflight_contracts_ref": EXECUTION_ADMISSION_PREFLIGHT_CONTRACTS_REL,
+                "preflight_proof_packages_ref": EXECUTION_ADMISSION_PREFLIGHT_PROOF_PACKAGES_REL,
+                "readiness_rollup_ref": EXECUTION_ADMISSION_READINESS_ROLLUP_REL,
+                "dry_run_plan_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_PLAN_REL,
+                "dry_run_receipt_contract_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_CONTRACT_REL,
+                "blocked_unissued_receipt_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_BLOCKED_REL,
+                "admission_blocker_checklist_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_ADMISSION_BLOCKERS_REL,
+                "operator_approval_packet_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_OPERATOR_APPROVAL_PACKET_REL,
+                "operator_approval_packet_completeness_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_OPERATOR_APPROVAL_PACKET_COMPLETENESS_REL,
+                "approval_request_readiness_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_APPROVAL_REQUEST_READINESS_REL,
+                "production_readiness_report_ref": "examples/production-readiness-report/max_biped_v1_production_readiness_report_pass.json",
+                "noop_receipt_status_ref": "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json",
+            }
+            for field, expected_path in expected_source_refs.items():
+                actual_ref = str(source_artifacts.get(field, "")).replace("\\", "/").strip()
+                if not actual_ref:
+                    failures.append(
+                        "release candidate publication dry-run non-approval decision source_artifacts is missing field: "
+                        f"{field}"
+                    )
+                    continue
+                if actual_ref != expected_path:
+                    failures.append(
+                        "release candidate publication dry-run non-approval decision source_artifacts field has unexpected path: "
+                        f"{field} -> {actual_ref}"
+                    )
+
+            source_status = (
+                non_approval_decision.get("source_artifact_validation_status")
+                if isinstance(non_approval_decision.get("source_artifact_validation_status"), dict)
+                else {}
+            )
+            for field in (
+                "candidate_matrix_status",
+                "preflight_contracts_status",
+                "preflight_proof_packages_status",
+                "readiness_rollup_status",
+                "dry_run_plan_status",
+                "dry_run_receipt_contract_status",
+                "blocked_unissued_receipt_status",
+                "admission_blocker_checklist_status",
+                "operator_approval_packet_status",
+                "operator_approval_packet_completeness_status",
+                "approval_request_readiness_status",
+                "production_readiness_status",
+                "noop_receipt_status",
+            ):
+                if str(source_status.get(field, "")).strip() != "pass":
+                    failures.append(
+                        "release candidate publication dry-run non-approval decision source_artifact_validation_status must keep field pass: "
+                        f"{field}"
+                    )
+
+            text = json.dumps(non_approval_decision, sort_keys=True).lower()
+            for forbidden in (
+                "publish allowed",
+                "spawn allowed",
+                "production path writes allowed",
+                "engine path writes allowed",
+                "cache/live db access allowed",
+                "authoritative source uuid claims allowed",
+                "authoritative asset id claims allowed",
+                "authoritative product id claims allowed",
+                "non-approval decision record equals approval",
+                "non-approval decision record equals approval-ready",
+                "non-approval decision record equals dry-run admission",
+                "non-approval decision record equals receipt issuance",
+                "non-approval decision record equals execution admission",
+                "non-approval decision record equals publication admission",
+                "non-approval decision record equals production_ready",
+                "dry-run executed",
+            ):
+                if forbidden in text:
+                    failures.append(
+                        "release candidate publication dry-run non-approval decision contains forbidden allowance/claim phrase: "
+                        f"{forbidden}"
+                    )
+
+            if bool(non_approval_decision.get("unsafe_claims_detected", False)):
+                failures.append(
+                    "release candidate publication dry-run non-approval decision must keep unsafe_claims_detected=false."
+                )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "release candidate publication dry-run non-approval decision is not valid JSON: "
                 f"{exc}"
             )
 

@@ -225,6 +225,15 @@
   - target candidate remains `release_candidate_package_publish_dry_run_v1`
   - readiness report remains static and blocked with `packet_structurally_complete=true`, `packet_complete_for_future_review_template=true`, `approval_request_ready=false`, `operator_approval_granted=false`, `approval_phrase_present=false`, `dry_run_admitted=false`, `dry_run_executed=false`, `receipt_issued=false`
   - report explicitly distinguishes packet structural completeness from approval request readiness and keeps `final_recommendation=do_not_request_approval_yet`
+- Release-candidate publication dry-run explicit non-approval decision v1 is implemented (candidate-specific static non-approval decision record only, non-executing, non-publishing):
+  - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-non-approval-decision-v1.md`
+  - `schemas/maxine_release_candidate_publication_dry_run_non_approval_decision.schema.json`
+  - `examples/execution-admission/release_candidate_package_publish_dry_run_non_approval_decision_v1.json`
+  - `tools/execution-admission/validate_release_candidate_publication_dry_run_non_approval_decision.py`
+  - integrated into `tools/release-lane/prove_pilot_release_chain.py` proof output as read-only non-approval-decision status evidence
+  - `tests/pytest/test_release_candidate_publication_dry_run_non_approval_decision.py`
+  - target candidate remains `release_candidate_package_publish_dry_run_v1`
+  - non-approval decision remains static and blocked with `decision_type=non_approval`, `decision_status=active_non_approval`, `selected_operator_decision=do_not_approve`, `next_recommended_action=continue_hardening_no_execution`, `approval_request_ready=false`, `operator_approval_granted=false`, `approval_phrase_present=false`, `dry_run_admitted=false`, `dry_run_executed=false`, `receipt_issued=false`
 - Admitted no-op release-candidate package receipt candidate v1 is implemented (bounded receipt generation only, non-executing, non-publishing):
   - approval phrase recorded:
     - `APPROVE EXECUTION ADMISSION release_candidate_package_receipt_noop_v1`

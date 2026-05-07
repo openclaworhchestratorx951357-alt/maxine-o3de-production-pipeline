@@ -105,6 +105,17 @@ Blockers remain non-empty:
 
 These blockers are why approval request readiness remains false.
 
+## Explicit Non-Approval Decision Link
+
+A separate static non-approval decision record now captures the active operator decision posture for the same candidate:
+
+- `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-non-approval-decision-v1.md`
+- `schemas/maxine_release_candidate_publication_dry_run_non_approval_decision.schema.json`
+- `examples/execution-admission/release_candidate_package_publish_dry_run_non_approval_decision_v1.json`
+- `tools/execution-admission/validate_release_candidate_publication_dry_run_non_approval_decision.py`
+
+The record keeps `selected_operator_decision=do_not_approve`, `next_recommended_action=continue_hardening_no_execution`, and all approval/admission/execution/publication fields blocked.
+
 ## Safety Model
 
 Blocked surfaces remain blocked:
