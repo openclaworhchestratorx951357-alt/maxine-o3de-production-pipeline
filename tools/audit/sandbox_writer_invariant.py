@@ -178,6 +178,30 @@ RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_SANDBOX_BOUNDARY_REL = (
 RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RUNNER_INTERFACE_REL = (
     "examples/execution-admission/release_candidate_package_publish_dry_run_runner_interface_v1.json"
 )
+NATURAL_LANGUAGE_O3DE_COMMAND_PACK_REL = (
+    "examples/execution-admission/natural_language_o3de_command_pack_v1.json"
+)
+NATURAL_LANGUAGE_O3DE_COMMAND_PACK_DOC_REL = (
+    "docs/maxine/nl-o3de-control/nl-o3de-command-pack-boundary-v1.md"
+)
+NATURAL_LANGUAGE_O3DE_COMMAND_ENVELOPE_SCHEMA_REL = (
+    "schemas/maxine_natural_language_o3de_command_envelope.schema.json"
+)
+NATURAL_LANGUAGE_O3DE_COMMAND_PACK_SCHEMA_REL = (
+    "schemas/maxine_natural_language_o3de_command_pack.schema.json"
+)
+NATURAL_LANGUAGE_O3DE_COMMAND_PACK_VALIDATOR_REL = (
+    "tools/execution-admission/validate_natural_language_o3de_command_pack.py"
+)
+NATURAL_LANGUAGE_O3DE_COMMAND_COMPILER_REL = (
+    "tools/nl-o3de-control/compile_nl_o3de_command.py"
+)
+NATURAL_LANGUAGE_O3DE_COMMAND_SAFE_EXAMPLE_REL = (
+    "examples/nl-o3de-control/natural_language_o3de_command_inspect_actor_products_static_v1.json"
+)
+NATURAL_LANGUAGE_O3DE_COMMAND_BLOCKED_EXAMPLE_REL = (
+    "examples/nl-o3de-control/natural_language_o3de_command_prepare_publication_dry_run_blocked_v1.json"
+)
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
 WORKFLOW_RUNS_DIR_REL = "examples/sandbox/workflow-runs"
@@ -1108,6 +1132,24 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     )
     release_candidate_publication_dry_run_runner_interface = (
         root / RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RUNNER_INTERFACE_REL
+    )
+    natural_language_o3de_command_pack = root / NATURAL_LANGUAGE_O3DE_COMMAND_PACK_REL
+    natural_language_o3de_command_pack_doc = root / NATURAL_LANGUAGE_O3DE_COMMAND_PACK_DOC_REL
+    natural_language_o3de_command_envelope_schema = (
+        root / NATURAL_LANGUAGE_O3DE_COMMAND_ENVELOPE_SCHEMA_REL
+    )
+    natural_language_o3de_command_pack_schema = (
+        root / NATURAL_LANGUAGE_O3DE_COMMAND_PACK_SCHEMA_REL
+    )
+    natural_language_o3de_command_pack_validator = (
+        root / NATURAL_LANGUAGE_O3DE_COMMAND_PACK_VALIDATOR_REL
+    )
+    natural_language_o3de_command_compiler = root / NATURAL_LANGUAGE_O3DE_COMMAND_COMPILER_REL
+    natural_language_o3de_command_safe_example = (
+        root / NATURAL_LANGUAGE_O3DE_COMMAND_SAFE_EXAMPLE_REL
+    )
+    natural_language_o3de_command_blocked_example = (
+        root / NATURAL_LANGUAGE_O3DE_COMMAND_BLOCKED_EXAMPLE_REL
     )
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
@@ -6174,6 +6216,283 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
             failures.append(
                 "release candidate publication dry-run runner interface is not valid JSON: "
                 f"{exc}"
+            )
+
+    natural_language_paths = [
+        natural_language_o3de_command_pack,
+        natural_language_o3de_command_pack_doc,
+        natural_language_o3de_command_envelope_schema,
+        natural_language_o3de_command_pack_schema,
+        natural_language_o3de_command_pack_validator,
+        natural_language_o3de_command_compiler,
+        natural_language_o3de_command_safe_example,
+        natural_language_o3de_command_blocked_example,
+    ]
+    for path in natural_language_paths:
+        if not path.exists():
+            failures.append(
+                "natural-language O3DE command pack hardening file is missing: "
+                f"{path.relative_to(root)}"
+            )
+
+    forbidden_nl_claim_phrases = (
+        "command envelope equals execution",
+        "command envelope equals admission",
+        "command envelope equals runner implementation",
+        "command envelope equals gem adapter implementation",
+        "command envelope equals maxineagentcontrol gem implementation",
+        "command envelope equals publication",
+        "command envelope equals production_ready",
+        "natural-language command pack can bypass runner interface",
+        "natural-language command pack can bypass sandbox boundary",
+        "natural-language command pack can bypass receipt contract",
+        "natural-language command pack can bypass approval",
+        "natural-language command pack can bypass admission",
+    )
+    natural_language_scan_paths = [
+        natural_language_o3de_command_pack,
+        natural_language_o3de_command_pack_doc,
+        natural_language_o3de_command_safe_example,
+        natural_language_o3de_command_blocked_example,
+    ]
+    for path in natural_language_scan_paths:
+        if path.exists() and path.is_file():
+            text = path.read_text(encoding="utf-8-sig").lower()
+            for forbidden in forbidden_nl_claim_phrases:
+                if forbidden in text:
+                    failures.append(
+                        "natural-language O3DE command pack contains forbidden unsafe claim phrase: "
+                        f"{path.relative_to(root)} -> {forbidden}"
+                    )
+
+    if natural_language_o3de_command_pack_doc.exists():
+        doc_text = natural_language_o3de_command_pack_doc.read_text(
+            encoding="utf-8-sig"
+        ).lower()
+        for phrase in (
+            "not a runner implementation",
+            "not runner admission",
+            "not command admission",
+            "not direct o3de execution",
+            "not gem adapter implementation",
+            "not maxineagentcontrol gem implementation",
+            "not publication",
+            "not production-ready",
+            "cannot bypass runner interface",
+            "cannot bypass sandbox boundary",
+            "cannot bypass receipt contract",
+            "cannot bypass approval or admission gates",
+        ):
+            if phrase not in doc_text:
+                failures.append(
+                    "natural-language O3DE command pack docs are missing required disclaimer: "
+                    f"{phrase}"
+                )
+
+    expected_nl_source_refs = {
+        "candidate_matrix_ref": EXECUTION_ADMISSION_CANDIDATE_MATRIX_REL,
+        "preflight_contracts_ref": EXECUTION_ADMISSION_PREFLIGHT_CONTRACTS_REL,
+        "preflight_proof_packages_ref": EXECUTION_ADMISSION_PREFLIGHT_PROOF_PACKAGES_REL,
+        "readiness_rollup_ref": EXECUTION_ADMISSION_READINESS_ROLLUP_REL,
+        "dry_run_plan_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_PLAN_REL,
+        "dry_run_receipt_contract_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_CONTRACT_REL,
+        "blocked_unissued_receipt_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_BLOCKED_REL,
+        "admission_blocker_checklist_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_ADMISSION_BLOCKERS_REL,
+        "operator_approval_packet_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_OPERATOR_APPROVAL_PACKET_REL,
+        "operator_approval_packet_completeness_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_OPERATOR_APPROVAL_PACKET_COMPLETENESS_REL,
+        "approval_request_readiness_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_APPROVAL_REQUEST_READINESS_REL,
+        "non_approval_decision_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_NON_APPROVAL_DECISION_REL,
+        "sandbox_boundary_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_SANDBOX_BOUNDARY_REL,
+        "runner_interface_ref": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RUNNER_INTERFACE_REL,
+        "production_readiness_report_ref": "examples/production-readiness-report/max_biped_v1_production_readiness_report_pass.json",
+        "noop_receipt_status_ref": "examples/execution-admission/release_candidate_package_receipt_noop_execution_admission_decision_approved.json",
+    }
+
+    if natural_language_o3de_command_pack.exists():
+        try:
+            pack = json.loads(
+                natural_language_o3de_command_pack.read_text(encoding="utf-8-sig")
+            )
+            if pack.get("record_type") != "NATURAL_LANGUAGE_O3DE_COMMAND_PACK_v1":
+                failures.append(
+                    "natural-language O3DE command pack record_type must be NATURAL_LANGUAGE_O3DE_COMMAND_PACK_v1."
+                )
+            if (
+                str(pack.get("command_pack_status", "")).strip()
+                != "static_pack_valid_blocked_for_execution"
+            ):
+                failures.append(
+                    "natural-language O3DE command pack must keep command_pack_status=static_pack_valid_blocked_for_execution."
+                )
+            if (
+                str(pack.get("command_pack_scope", "")).strip()
+                != "static_command_envelope_layer_only"
+            ):
+                failures.append(
+                    "natural-language O3DE command pack must keep command_pack_scope=static_command_envelope_layer_only."
+                )
+            for field in (
+                "runner_implemented",
+                "runner_admitted",
+                "execution_admitted",
+                "publication_admitted",
+                "production_ready_claimed",
+                "approval_phrase_present",
+            ):
+                if bool(pack.get(field, False)):
+                    failures.append(
+                        "natural-language O3DE command pack must keep field false: "
+                        f"{field}"
+                    )
+
+            refs = pack.get("command_envelope_refs")
+            if not isinstance(refs, list) or len(refs) < 2:
+                failures.append(
+                    "natural-language O3DE command pack must include at least safe and blocked envelope refs."
+                )
+            else:
+                for ref in refs:
+                    rel = str(ref.get("path", "") if isinstance(ref, dict) else "")
+                    expected_status = str(
+                        ref.get("expected_status", "") if isinstance(ref, dict) else ""
+                    )
+                    envelope_path = root / rel
+                    if expected_status not in {"pass", "blocked"}:
+                        failures.append(
+                            "natural-language O3DE command pack envelope ref has invalid expected_status: "
+                            f"{rel}"
+                        )
+                    if not rel or not envelope_path.exists():
+                        failures.append(
+                            "natural-language O3DE command pack envelope ref path is missing: "
+                            f"{rel}"
+                        )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "natural-language O3DE command pack is not valid JSON: "
+                f"{exc}"
+            )
+
+    for envelope_path in (
+        natural_language_o3de_command_safe_example,
+        natural_language_o3de_command_blocked_example,
+    ):
+        if not envelope_path.exists():
+            continue
+        try:
+            envelope = json.loads(envelope_path.read_text(encoding="utf-8-sig"))
+            if (
+                envelope.get("record_type")
+                != "NATURAL_LANGUAGE_O3DE_COMMAND_ENVELOPE_v1"
+            ):
+                failures.append(
+                    "natural-language O3DE command envelope record_type must be NATURAL_LANGUAGE_O3DE_COMMAND_ENVELOPE_v1: "
+                    f"{envelope_path.relative_to(root)}"
+                )
+            if str(envelope.get("command_admission_status", "")).strip() not in {
+                "unadmitted",
+                "blocked",
+            }:
+                failures.append(
+                    "natural-language O3DE command envelope cannot admit a command: "
+                    f"{envelope_path.relative_to(root)}"
+                )
+            for field in (
+                "runner_implemented",
+                "runner_admitted",
+                "runner_executed",
+                "execution_admitted",
+                "publication_admitted",
+                "production_ready_claimed",
+                "approval_phrase_present",
+            ):
+                if bool(envelope.get(field, False)):
+                    failures.append(
+                        "natural-language O3DE command envelope must keep field false: "
+                        f"{envelope_path.relative_to(root)} -> {field}"
+                    )
+            if envelope.get("planned_actions") != []:
+                failures.append(
+                    "natural-language O3DE command envelope must keep planned_actions empty: "
+                    f"{envelope_path.relative_to(root)}"
+                )
+
+            source_artifacts = (
+                envelope.get("source_artifacts")
+                if isinstance(envelope.get("source_artifacts"), dict)
+                else {}
+            )
+            for field, expected_path in expected_nl_source_refs.items():
+                actual_ref = str(source_artifacts.get(field, "")).replace("\\", "/").strip()
+                if actual_ref != expected_path:
+                    failures.append(
+                        "natural-language O3DE command envelope source_artifacts field has unexpected path: "
+                        f"{envelope_path.relative_to(root)} -> {field} -> {actual_ref}"
+                    )
+
+            if str(envelope.get("command_envelope_status", "")).strip() == "static_envelope_blocked":
+                for field in (
+                    "runner_required",
+                    "runner_interface_required",
+                    "sandbox_boundary_required",
+                    "sandbox_boundary_validation_required",
+                    "receipt_contract_required",
+                    "receipt_contract_validation_required",
+                    "candidate_admission_required",
+                    "approval_required",
+                ):
+                    if envelope.get(field) is not True:
+                        failures.append(
+                            "blocked natural-language O3DE command envelope must require gate field: "
+                            f"{envelope_path.relative_to(root)} -> {field}"
+                        )
+                if not str(envelope.get("refusal_reason_code", "")).strip():
+                    failures.append(
+                        "blocked natural-language O3DE command envelope must include refusal_reason_code: "
+                        f"{envelope_path.relative_to(root)}"
+                    )
+
+            output_contract = (
+                envelope.get("output_contract")
+                if isinstance(envelope.get("output_contract"), dict)
+                else {}
+            )
+            for raw_path in output_contract.get("planned_outputs", []):
+                rel_path = Path(str(raw_path))
+                lower_parts = {part.lower() for part in rel_path.parts}
+                if rel_path.is_absolute() or ".." in rel_path.parts:
+                    failures.append(
+                        "natural-language O3DE command envelope output path must be repo-relative and traversal-free: "
+                        f"{raw_path}"
+                    )
+                if not str(raw_path).replace("\\", "/").startswith("examples/sandbox/"):
+                    failures.append(
+                        "natural-language O3DE command envelope output path must remain in examples/sandbox: "
+                        f"{raw_path}"
+                    )
+                if lower_parts & {
+                    ".git",
+                    "cache",
+                    "engine",
+                    "export",
+                    "publish",
+                    "publication",
+                    "production",
+                    "spawn",
+                }:
+                    failures.append(
+                        "natural-language O3DE command envelope output path contains forbidden root token: "
+                        f"{raw_path}"
+                    )
+                if rel_path.suffix.lower() not in {".json", ".md", ".txt", ".sha256"}:
+                    failures.append(
+                        "natural-language O3DE command envelope output path extension is not static-report-only: "
+                        f"{raw_path}"
+                    )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "natural-language O3DE command envelope is not valid JSON: "
+                f"{envelope_path.relative_to(root)} -> {exc}"
             )
 
     return failures

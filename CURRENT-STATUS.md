@@ -1,6 +1,17 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- Natural-language O3DE command pack boundary v1 is integrated as a static, non-executing PR #92 hardening/superseding layer:
+  - `docs/maxine/nl-o3de-control/nl-o3de-command-pack-boundary-v1.md`
+  - `schemas/maxine_natural_language_o3de_command_envelope.schema.json`
+  - `schemas/maxine_natural_language_o3de_command_pack.schema.json`
+  - `tools/nl-o3de-control/compile_nl_o3de_command.py`
+  - `tools/execution-admission/validate_natural_language_o3de_command_pack.py`
+  - `examples/execution-admission/natural_language_o3de_command_pack_v1.json`
+  - `examples/nl-o3de-control/natural_language_o3de_command_inspect_actor_products_static_v1.json`
+  - `examples/nl-o3de-control/natural_language_o3de_command_prepare_publication_dry_run_blocked_v1.json`
+  - `tests/pytest/test_natural_language_o3de_command_pack_hardening.py`
+  - PR #92 remains unmerged and unapproved; this layer keeps command admission, runner implementation, O3DE execution, Gem adapters, publication, and production-ready claims blocked.
 - Execution-admission review/decision framework v1 is implemented (review-only, non-executing policy framework):
   - `docs/maxine/execution-admission/release-execution-admission-review-framework-v1.md`
   - `schemas/maxine_execution_admission_decision_record.schema.json`
