@@ -1,6 +1,13 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- Command-pack admission precheck report v1 is integrated as a static, non-admitting classification layer on top of the PR #95 command-pack boundary:
+  - `docs/maxine/execution-admission/command-pack-admission-precheck-report-v1.md`
+  - `schemas/maxine_command_pack_admission_precheck_report.schema.json`
+  - `examples/execution-admission/command_pack_admission_precheck_report_v1.json`
+  - `tools/execution-admission/validate_command_pack_admission_precheck_report.py`
+  - `tests/pytest/test_command_pack_admission_precheck_report.py`
+  - The precheck keeps `admission_request_eligible=false`, `command_admitted=false`, `runner_implemented=false`, `dry_run_admitted=false`, `receipt_issued=false`, `publication_admitted=false`, and `production_ready_claimed=false`.
 - PR #92 supersession record v1 is integrated as a static governance record after PR #95:
   - `docs/maxine/execution-admission/pr-92-supersession-record-v1.md`
   - `schemas/maxine_pr_92_supersession_record.schema.json`

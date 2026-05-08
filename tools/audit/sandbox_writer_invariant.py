@@ -214,6 +214,18 @@ PR_92_SUPERSESSION_RECORD_SCHEMA_REL = (
 PR_92_SUPERSESSION_RECORD_VALIDATOR_REL = (
     "tools/execution-admission/validate_pr_92_supersession_record.py"
 )
+COMMAND_PACK_ADMISSION_PRECHECK_REPORT_REL = (
+    "examples/execution-admission/command_pack_admission_precheck_report_v1.json"
+)
+COMMAND_PACK_ADMISSION_PRECHECK_DOC_REL = (
+    "docs/maxine/execution-admission/command-pack-admission-precheck-report-v1.md"
+)
+COMMAND_PACK_ADMISSION_PRECHECK_SCHEMA_REL = (
+    "schemas/maxine_command_pack_admission_precheck_report.schema.json"
+)
+COMMAND_PACK_ADMISSION_PRECHECK_VALIDATOR_REL = (
+    "tools/execution-admission/validate_command_pack_admission_precheck_report.py"
+)
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
 WORKFLOW_RUNS_DIR_REL = "examples/sandbox/workflow-runs"
@@ -1167,6 +1179,18 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     pr_92_supersession_record_doc = root / PR_92_SUPERSESSION_RECORD_DOC_REL
     pr_92_supersession_record_schema = root / PR_92_SUPERSESSION_RECORD_SCHEMA_REL
     pr_92_supersession_record_validator = root / PR_92_SUPERSESSION_RECORD_VALIDATOR_REL
+    command_pack_admission_precheck_report = (
+        root / COMMAND_PACK_ADMISSION_PRECHECK_REPORT_REL
+    )
+    command_pack_admission_precheck_doc = (
+        root / COMMAND_PACK_ADMISSION_PRECHECK_DOC_REL
+    )
+    command_pack_admission_precheck_schema = (
+        root / COMMAND_PACK_ADMISSION_PRECHECK_SCHEMA_REL
+    )
+    command_pack_admission_precheck_validator = (
+        root / COMMAND_PACK_ADMISSION_PRECHECK_VALIDATOR_REL
+    )
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
     workflow_runs_dir = root / WORKFLOW_RUNS_DIR_REL
@@ -6657,6 +6681,224 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
         except Exception as exc:  # pragma: no cover - defensive failure surface
             failures.append(
                 "PR #92 supersession record is not valid JSON: "
+                f"{exc}"
+            )
+
+    command_pack_admission_precheck_paths = [
+        command_pack_admission_precheck_report,
+        command_pack_admission_precheck_doc,
+        command_pack_admission_precheck_schema,
+        command_pack_admission_precheck_validator,
+    ]
+    for path in command_pack_admission_precheck_paths:
+        if not path.exists():
+            failures.append(
+                "command-pack admission precheck file is missing: "
+                f"{path.relative_to(root)}"
+            )
+
+    if command_pack_admission_precheck_doc.exists():
+        doc_text = command_pack_admission_precheck_doc.read_text(
+            encoding="utf-8-sig"
+        ).lower()
+        for phrase in (
+            "command-pack admission precheck is static only",
+            "precheck is not approval",
+            "precheck is not admission",
+            "precheck is not approval-ready",
+            "precheck is not execution",
+            "precheck is not runner implementation",
+            "precheck is not gem adapter implementation",
+            "precheck is not publication",
+            "precheck is not production-ready",
+            "precheck does not issue a receipt",
+            "command-pack validator",
+            "candidate-specific admission",
+            "runner interface contract",
+            "sandbox boundary contract",
+            "receipt contract",
+            "safety verifier",
+            "proof flow",
+            "production-readiness gate",
+        ):
+            if phrase not in doc_text:
+                failures.append(
+                    "command-pack admission precheck docs are missing required phrase: "
+                    f"{phrase}"
+                )
+        for forbidden in (
+            "precheck equals approval",
+            "precheck equals approval-ready",
+            "precheck equals command admission",
+            "precheck equals dry-run admission",
+            "precheck equals execution",
+            "precheck equals runner implementation",
+            "precheck equals gem adapter implementation",
+            "precheck equals direct o3de control",
+            "precheck equals publication",
+            "precheck equals production_ready",
+            "natural-language command pack can bypass runner interface",
+            "natural-language command pack can bypass sandbox boundary",
+            "natural-language command pack can bypass receipt contract",
+            "natural-language command pack can bypass approval",
+            "natural-language command pack can bypass admission",
+        ):
+            if forbidden in doc_text:
+                failures.append(
+                    "command-pack admission precheck docs contain forbidden unsafe phrase: "
+                    f"{forbidden}"
+                )
+
+    if command_pack_admission_precheck_report.exists():
+        try:
+            report = json.loads(
+                command_pack_admission_precheck_report.read_text(
+                    encoding="utf-8-sig"
+                )
+            )
+            if report.get("report_type") != "COMMAND_PACK_ADMISSION_PRECHECK_REPORT_v1":
+                failures.append(
+                    "command-pack admission precheck report_type must be COMMAND_PACK_ADMISSION_PRECHECK_REPORT_v1."
+                )
+            if report.get("precheck_status") != "static_precheck_valid_blocked":
+                failures.append(
+                    "command-pack admission precheck report must keep precheck_status=static_precheck_valid_blocked."
+                )
+            if report.get("generated_from_static_artifacts_only") is not True:
+                failures.append(
+                    "command-pack admission precheck report must be generated from static artifacts only."
+                )
+            for field in (
+                "admission_request_eligible",
+                "operator_approval_granted",
+                "approval_phrase_present",
+                "command_admitted",
+                "runner_implemented",
+                "runner_admitted",
+                "runner_executed",
+                "dry_run_admitted",
+                "dry_run_executed",
+                "receipt_issued",
+                "real_execution_admitted",
+                "publication_admitted",
+                "production_ready_claimed",
+                "direct_o3de_execution",
+                "gem_adapter_implemented",
+                "spawn_publish_allowed",
+                "production_path_writes_allowed",
+                "engine_path_writes_allowed",
+                "cache_live_db_access_allowed",
+                "unsafe_claims_detected",
+            ):
+                if report.get(field) is not False:
+                    failures.append(
+                        "command-pack admission precheck report must keep field false: "
+                        f"{field}"
+                    )
+
+            source_artifacts = (
+                report.get("source_artifacts")
+                if isinstance(report.get("source_artifacts"), dict)
+                else {}
+            )
+            expected_precheck_sources = {
+                "command_pack": NATURAL_LANGUAGE_O3DE_COMMAND_PACK_REL,
+                "command_pack_validator": NATURAL_LANGUAGE_O3DE_COMMAND_PACK_VALIDATOR_REL,
+                "pr_92_audit": "examples/execution-admission/pr_92_natural_language_command_pack_audit_v1.json",
+                "pr_92_supersession": PR_92_SUPERSESSION_RECORD_REL,
+                "candidate_matrix": EXECUTION_ADMISSION_CANDIDATE_MATRIX_REL,
+                "runner_interface": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RUNNER_INTERFACE_REL,
+                "sandbox_boundary": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_SANDBOX_BOUNDARY_REL,
+                "receipt_contract": RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RECEIPT_CONTRACT_REL,
+                "safety_verifier": "tools/audit/verify_sandbox_writer_safety.py",
+                "proof_flow": PILOT_RELEASE_CHAIN_CI_PROOF_REL,
+                "production_readiness_report": "examples/production-readiness-report/max_biped_v1_production_readiness_report_pass.json",
+            }
+            for field, expected in expected_precheck_sources.items():
+                artifact = (
+                    source_artifacts.get(field)
+                    if isinstance(source_artifacts.get(field), dict)
+                    else {}
+                )
+                actual = str(artifact.get("path", "")).replace("\\", "/").strip()
+                if actual != expected:
+                    failures.append(
+                        "command-pack admission precheck report has unexpected source artifact path: "
+                        f"{field} -> {actual}"
+                    )
+
+            classifications = {
+                str(item.get("classification", "")).strip()
+                for item in report.get("command_envelope_prechecks", [])
+                if isinstance(item, dict)
+            }
+            for classification in (
+                "static_evidence_only",
+                "read_only_status_candidate",
+                "dry_run_candidate",
+                "write_execute_candidate",
+                "publish_spawn_candidate",
+                "gem_adapter_candidate",
+                "runner_candidate",
+                "unsafe_command",
+            ):
+                if classification not in classifications:
+                    failures.append(
+                        "command-pack admission precheck report is missing classification: "
+                        f"{classification}"
+                    )
+
+            for required in (
+                "command-pack validator",
+                "candidate-specific admission",
+                "runner interface contract",
+                "sandbox boundary contract",
+                "receipt contract",
+                "safety verifier",
+                "proof flow",
+                "production-readiness gate",
+            ):
+                if required not in set(report.get("required_future_routing", [])):
+                    failures.append(
+                        "command-pack admission precheck report is missing required future routing: "
+                        f"{required}"
+                    )
+
+            for required in (
+                "direct_o3de_execution",
+                "editor_runtime_execution",
+                "asset_processor_execution",
+                "blender_dcc_execution",
+                "screenshot_capture",
+                "spawn_publish",
+                "cache_live_db_access",
+                "production_path_write",
+                "engine_path_write",
+                "approval_phrase_as_command",
+                "bypass_admission_chain",
+            ):
+                if required not in set(report.get("refused_command_categories", [])):
+                    failures.append(
+                        "command-pack admission precheck report is missing refused category: "
+                        f"{required}"
+                    )
+
+            for required in (
+                "runner_required_runner_unimplemented",
+                "gem_adapter_required_adapter_unimplemented",
+                "dry_run_required_candidate_unadmitted",
+                "receipt_required_receipt_unissued",
+                "publication_required_publication_unadmitted",
+                "production_ready_required_not_claimed",
+            ):
+                if required not in set(report.get("blocked_command_categories", [])):
+                    failures.append(
+                        "command-pack admission precheck report is missing blocked category: "
+                        f"{required}"
+                    )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "command-pack admission precheck report is not valid JSON: "
                 f"{exc}"
             )
 

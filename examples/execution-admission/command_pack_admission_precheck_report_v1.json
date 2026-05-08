@@ -1,0 +1,426 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "COMMAND_PACK_ADMISSION_PRECHECK_REPORT_v1",
+  "report_id": "command_pack_admission_precheck_report_v1",
+  "report_version": "v1",
+  "command_pack_id": "natural-language-o3de-command-pack-boundary-v1",
+  "command_pack_version": "v1",
+  "precheck_status": "static_precheck_valid_blocked",
+  "admission_precheck_scope": "static_pre_admission_classification_only",
+  "generated_from_static_artifacts_only": true,
+  "source_artifacts": {
+    "command_pack": {
+      "path": "examples/execution-admission/natural_language_o3de_command_pack_v1.json",
+      "validation_status": "pass"
+    },
+    "command_pack_validator": {
+      "path": "tools/execution-admission/validate_natural_language_o3de_command_pack.py",
+      "validation_status": "pass"
+    },
+    "pr_92_audit": {
+      "path": "examples/execution-admission/pr_92_natural_language_command_pack_audit_v1.json",
+      "validation_status": "pass"
+    },
+    "pr_92_supersession": {
+      "path": "examples/execution-admission/pr_92_supersession_record_v1.json",
+      "validation_status": "pass"
+    },
+    "candidate_matrix": {
+      "path": "examples/execution-admission/execution_admission_candidate_matrix_v1.json",
+      "validation_status": "pass"
+    },
+    "runner_interface": {
+      "path": "examples/execution-admission/release_candidate_package_publish_dry_run_runner_interface_v1.json",
+      "validation_status": "pass"
+    },
+    "sandbox_boundary": {
+      "path": "examples/execution-admission/release_candidate_package_publish_dry_run_sandbox_boundary_v1.json",
+      "validation_status": "pass"
+    },
+    "receipt_contract": {
+      "path": "examples/execution-admission/release_candidate_package_publish_dry_run_receipt_contract_v1.json",
+      "validation_status": "pass"
+    },
+    "safety_verifier": {
+      "path": "tools/audit/verify_sandbox_writer_safety.py",
+      "validation_status": "pass"
+    },
+    "proof_flow": {
+      "path": "tools/release-lane/prove_pilot_release_chain.py",
+      "validation_status": "pass"
+    },
+    "production_readiness_report": {
+      "path": "examples/production-readiness-report/max_biped_v1_production_readiness_report_pass.json",
+      "validation_status": "pass"
+    }
+  },
+  "source_artifact_validation_status": {
+    "command_pack_validator_status": "pass",
+    "pr_92_audit_validator_status": "pass",
+    "pr_92_supersession_validator_status": "pass",
+    "candidate_matrix_validator_status": "pass",
+    "runner_interface_validator_status": "pass",
+    "sandbox_boundary_validator_status": "pass",
+    "receipt_contract_validator_status": "pass",
+    "safety_verifier_status": "pass",
+    "proof_flow_status": "pass",
+    "production_readiness_gate_status": "blocked_for_execution"
+  },
+  "command_envelope_prechecks": [
+    {
+      "precheck_id": "static_evidence_only_precheck_v1",
+      "classification": "static_evidence_only",
+      "source_envelope_ref": "examples/nl-o3de-control/natural_language_o3de_command_inspect_actor_products_static_v1.json",
+      "execution_required": false,
+      "admission_required": false,
+      "runner_required": false,
+      "runner_implemented": false,
+      "runner_admitted": false,
+      "candidate_specific_admission_required": false,
+      "sandbox_boundary_validation_required": false,
+      "receipt_contract_validation_required": false,
+      "operator_approval_required": false,
+      "gem_adapter_implementation_required": false,
+      "gem_adapter_implemented": false,
+      "direct_o3de_execution_required": false,
+      "live_o3de_readback_performed": false,
+      "admitted": false,
+      "admission_request_eligible": false,
+      "result": "allowed_as_static_non_executing_artifact",
+      "required_gates": [],
+      "blockers": [],
+      "reason": "Static evidence-only envelopes may remain valid as non-executing artifacts and do not request admission in this slice."
+    },
+    {
+      "precheck_id": "read_only_status_candidate_precheck_v1",
+      "classification": "read_only_status_candidate",
+      "source_envelope_ref": "future-static-read-only-status-envelope",
+      "execution_required": "future_policy_dependent",
+      "admission_required": "future_policy_dependent",
+      "runner_required": false,
+      "runner_implemented": false,
+      "runner_admitted": false,
+      "candidate_specific_admission_required": true,
+      "sandbox_boundary_validation_required": true,
+      "receipt_contract_validation_required": false,
+      "operator_approval_required": false,
+      "gem_adapter_implementation_required": false,
+      "gem_adapter_implemented": false,
+      "direct_o3de_execution_required": false,
+      "live_o3de_readback_performed": false,
+      "admitted": false,
+      "admission_request_eligible": false,
+      "result": "blocked_pending_read_only_policy_or_candidate_admission",
+      "required_gates": [
+        "candidate-specific admission",
+        "sandbox boundary contract",
+        "safety verifier",
+        "proof flow"
+      ],
+      "blockers": [
+        "read_only_policy_not_established",
+        "candidate_specific_admission_not_requested"
+      ],
+      "reason": "Read-only/status commands remain policy and candidate gated; no live O3DE readback is performed."
+    },
+    {
+      "precheck_id": "dry_run_candidate_precheck_v1",
+      "classification": "dry_run_candidate",
+      "source_envelope_ref": "examples/nl-o3de-control/natural_language_o3de_command_prepare_publication_dry_run_blocked_v1.json",
+      "execution_required": true,
+      "admission_required": true,
+      "runner_required": true,
+      "runner_implemented": false,
+      "runner_admitted": false,
+      "candidate_specific_admission_required": true,
+      "sandbox_boundary_validation_required": true,
+      "receipt_contract_validation_required": true,
+      "operator_approval_required": true,
+      "gem_adapter_implementation_required": false,
+      "gem_adapter_implemented": false,
+      "direct_o3de_execution_required": false,
+      "live_o3de_readback_performed": false,
+      "admitted": false,
+      "admission_request_eligible": false,
+      "result": "blocked_pending_candidate_specific_admission",
+      "required_gates": [
+        "runner interface contract",
+        "sandbox boundary contract",
+        "receipt contract",
+        "safety verifier",
+        "proof flow"
+      ],
+      "blockers": [
+        "candidate_specific_admission_missing",
+        "runner_unimplemented",
+        "receipt_unissued"
+      ],
+      "reason": "Dry-run commands require future candidate-specific admission and remain blocked."
+    },
+    {
+      "precheck_id": "write_execute_candidate_precheck_v1",
+      "classification": "write_execute_candidate",
+      "source_envelope_ref": "future-write-execute-envelope",
+      "execution_required": true,
+      "admission_required": true,
+      "runner_required": true,
+      "runner_implemented": false,
+      "runner_admitted": false,
+      "candidate_specific_admission_required": true,
+      "sandbox_boundary_validation_required": true,
+      "receipt_contract_validation_required": true,
+      "operator_approval_required": true,
+      "gem_adapter_implementation_required": false,
+      "gem_adapter_implemented": false,
+      "direct_o3de_execution_required": true,
+      "live_o3de_readback_performed": false,
+      "admitted": false,
+      "admission_request_eligible": false,
+      "result": "refused_or_blocked",
+      "required_gates": [
+        "candidate-specific admission",
+        "runner interface contract",
+        "sandbox boundary contract",
+        "receipt contract",
+        "safety verifier",
+        "proof flow"
+      ],
+      "blockers": [
+        "direct_execution_surfaces_not_admitted",
+        "write_surfaces_not_admitted"
+      ],
+      "reason": "Direct execution and write surfaces are not admitted by this static precheck."
+    },
+    {
+      "precheck_id": "publish_spawn_candidate_precheck_v1",
+      "classification": "publish_spawn_candidate",
+      "source_envelope_ref": "future-publish-spawn-envelope",
+      "execution_required": true,
+      "admission_required": true,
+      "runner_required": true,
+      "runner_implemented": false,
+      "runner_admitted": false,
+      "candidate_specific_admission_required": true,
+      "sandbox_boundary_validation_required": true,
+      "receipt_contract_validation_required": true,
+      "operator_approval_required": true,
+      "gem_adapter_implementation_required": false,
+      "gem_adapter_implemented": false,
+      "direct_o3de_execution_required": true,
+      "live_o3de_readback_performed": false,
+      "admitted": false,
+      "admission_request_eligible": false,
+      "result": "refused",
+      "required_gates": [
+        "candidate-specific admission",
+        "runner interface contract",
+        "sandbox boundary contract",
+        "receipt contract",
+        "safety verifier",
+        "proof flow"
+      ],
+      "blockers": [
+        "spawn_publish_blocked",
+        "publication_unadmitted"
+      ],
+      "reason": "Publication and spawn surfaces remain refused."
+    },
+    {
+      "precheck_id": "gem_adapter_candidate_precheck_v1",
+      "classification": "gem_adapter_candidate",
+      "source_envelope_ref": "future-gem-adapter-envelope",
+      "execution_required": true,
+      "admission_required": true,
+      "runner_required": true,
+      "runner_implemented": false,
+      "runner_admitted": false,
+      "candidate_specific_admission_required": true,
+      "sandbox_boundary_validation_required": true,
+      "receipt_contract_validation_required": true,
+      "operator_approval_required": true,
+      "gem_adapter_implementation_required": true,
+      "gem_adapter_implemented": false,
+      "direct_o3de_execution_required": true,
+      "live_o3de_readback_performed": false,
+      "admitted": false,
+      "admission_request_eligible": false,
+      "result": "blocked",
+      "required_gates": [
+        "separate Gem adapter implementation slice",
+        "candidate-specific admission",
+        "runner interface contract",
+        "sandbox boundary contract",
+        "receipt contract",
+        "safety verifier",
+        "proof flow"
+      ],
+      "blockers": [
+        "gem_adapter_unimplemented",
+        "maxine_agent_control_gem_unimplemented"
+      ],
+      "reason": "Gem adapter work is separate and unimplemented."
+    },
+    {
+      "precheck_id": "runner_candidate_precheck_v1",
+      "classification": "runner_candidate",
+      "source_envelope_ref": "future-runner-envelope",
+      "execution_required": true,
+      "admission_required": true,
+      "runner_required": true,
+      "runner_implemented": false,
+      "runner_admitted": false,
+      "candidate_specific_admission_required": true,
+      "sandbox_boundary_validation_required": true,
+      "receipt_contract_validation_required": true,
+      "operator_approval_required": true,
+      "gem_adapter_implementation_required": false,
+      "gem_adapter_implemented": false,
+      "direct_o3de_execution_required": false,
+      "live_o3de_readback_performed": false,
+      "admitted": false,
+      "admission_request_eligible": false,
+      "result": "blocked",
+      "required_gates": [
+        "separate runner implementation slice",
+        "candidate-specific admission",
+        "runner interface contract",
+        "sandbox boundary contract",
+        "receipt contract",
+        "safety verifier",
+        "proof flow"
+      ],
+      "blockers": [
+        "runner_unimplemented",
+        "runner_unadmitted",
+        "runner_unexecuted"
+      ],
+      "reason": "Runner implementation, admission, and execution remain false."
+    },
+    {
+      "precheck_id": "unsafe_command_precheck_v1",
+      "classification": "unsafe_command",
+      "source_envelope_ref": "future-unsafe-command-envelope",
+      "execution_required": true,
+      "admission_required": true,
+      "runner_required": true,
+      "runner_implemented": false,
+      "runner_admitted": false,
+      "candidate_specific_admission_required": true,
+      "sandbox_boundary_validation_required": true,
+      "receipt_contract_validation_required": true,
+      "operator_approval_required": true,
+      "gem_adapter_implementation_required": false,
+      "gem_adapter_implemented": false,
+      "direct_o3de_execution_required": true,
+      "live_o3de_readback_performed": false,
+      "admitted": false,
+      "admission_request_eligible": false,
+      "result": "refused",
+      "required_gates": [
+        "candidate-specific admission",
+        "runner interface contract",
+        "sandbox boundary contract",
+        "receipt contract",
+        "safety verifier",
+        "proof flow"
+      ],
+      "blockers": [
+        "bypass_admission_chain",
+        "bypass_sandbox_boundary",
+        "bypass_receipt_contract",
+        "unsafe_command_refused"
+      ],
+      "reason": "Commands that attempt to bypass admission, sandbox, receipt, safety, or proof routing are refused."
+    }
+  ],
+  "global_precheck_result": {
+    "structurally_valid": true,
+    "static_command_envelopes_allowed_only_as_non_executing_artifacts": true,
+    "execution_admission_runner_gem_publish_spawn_blocked_or_refused": true,
+    "no_command_eligible_for_admission_request": true,
+    "no_command_admitted": true,
+    "no_runner_implemented": true,
+    "no_gem_adapter_implemented": true,
+    "no_direct_o3de_control": true,
+    "production_readiness_unclaimed": true,
+    "summary": "Command-pack precheck is structurally valid, static only, and blocked from admission request eligibility in this slice."
+  },
+  "admission_request_eligible": false,
+  "operator_approval_granted": false,
+  "approval_phrase_present": false,
+  "command_admitted": false,
+  "runner_implemented": false,
+  "runner_admitted": false,
+  "runner_executed": false,
+  "dry_run_admitted": false,
+  "dry_run_executed": false,
+  "receipt_issued": false,
+  "real_execution_admitted": false,
+  "publication_admitted": false,
+  "production_ready_claimed": false,
+  "direct_o3de_execution": false,
+  "gem_adapter_implemented": false,
+  "spawn_publish_allowed": false,
+  "production_path_writes_allowed": false,
+  "engine_path_writes_allowed": false,
+  "cache_live_db_access_allowed": false,
+  "required_future_routing": [
+    "command-pack validator",
+    "candidate-specific admission",
+    "runner interface contract",
+    "sandbox boundary contract",
+    "receipt contract",
+    "safety verifier",
+    "proof flow",
+    "production-readiness gate"
+  ],
+  "required_before_admission_request": [
+    "explicit candidate ID selected",
+    "command classification complete",
+    "command maps to known candidate matrix entry or a new candidate matrix entry is proposed",
+    "runner interface status validated",
+    "sandbox boundary status validated",
+    "receipt contract status validated",
+    "admission blockers reviewed",
+    "non-approval or approval decision state reviewed",
+    "safety verifier passes",
+    "proof flow passes",
+    "production-readiness validator passes against generated manifest",
+    "explicit operator approval only in future authorized slice if admission is requested"
+  ],
+  "refused_command_categories": [
+    "direct_o3de_execution",
+    "editor_runtime_execution",
+    "asset_processor_execution",
+    "blender_dcc_execution",
+    "screenshot_capture",
+    "spawn_publish",
+    "cache_live_db_access",
+    "production_path_write",
+    "engine_path_write",
+    "authoritative_id_claim",
+    "hidden_binary_execution",
+    "approval_phrase_as_command",
+    "bypass_admission_chain"
+  ],
+  "blocked_command_categories": [
+    "runner_required_runner_unimplemented",
+    "gem_adapter_required_adapter_unimplemented",
+    "dry_run_required_candidate_unadmitted",
+    "receipt_required_receipt_unissued",
+    "publication_required_publication_unadmitted",
+    "production_ready_required_not_claimed"
+  ],
+  "eligible_static_categories": [
+    "static_evidence_only",
+    "static_validation_report",
+    "static_refusal_report",
+    "static_command_envelope"
+  ],
+  "unsafe_claims_detected": false,
+  "safety_notes": [
+    "This command-pack admission precheck report is static only.",
+    "The precheck is not approval, admission, approval-ready status, execution, publication, runner implementation, Gem adapter implementation, receipt issuance, or production readiness.",
+    "Future command execution work must route through command-pack validation, candidate-specific admission, runner interface, sandbox boundary, receipt contract, safety verifier, proof flow, and production-readiness gate."
+  ]
+}
