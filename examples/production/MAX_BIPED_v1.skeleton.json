@@ -1,0 +1,228 @@
+{
+  "schema_version": "1.0.0",
+  "skeleton_id": "MAX_BIPED_v1",
+  "character_tier": "hero",
+  "coordinate_system": {
+    "up_axis": "Z",
+    "forward_axis": "Y",
+    "handedness": "right"
+  },
+  "units": {
+    "meters_per_unit": 1.0
+  },
+  "release_export": {
+    "origin_centered": true,
+    "root_at_scene_origin": true,
+    "identical_hierarchy_required_unless_waived": true
+  },
+  "bones": [
+    {
+      "name": "root",
+      "parent": "",
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "pelvis",
+      "parent": "root",
+      "position": [
+        0,
+        0,
+        0.95
+      ]
+    },
+    {
+      "name": "spine_01",
+      "parent": "pelvis",
+      "position": [
+        0,
+        0,
+        1.1
+      ]
+    },
+    {
+      "name": "spine_02",
+      "parent": "spine_01",
+      "position": [
+        0,
+        0,
+        1.35
+      ]
+    },
+    {
+      "name": "neck",
+      "parent": "spine_02",
+      "position": [
+        0,
+        0,
+        1.55
+      ]
+    },
+    {
+      "name": "head",
+      "parent": "neck",
+      "position": [
+        0,
+        0,
+        1.7
+      ]
+    },
+    {
+      "name": "clavicle_l",
+      "parent": "spine_02",
+      "position": [
+        -0.12,
+        0,
+        1.46
+      ]
+    },
+    {
+      "name": "upperarm_l",
+      "parent": "clavicle_l",
+      "position": [
+        -0.32,
+        0,
+        1.43
+      ]
+    },
+    {
+      "name": "lowerarm_l",
+      "parent": "upperarm_l",
+      "position": [
+        -0.62,
+        0,
+        1.35
+      ]
+    },
+    {
+      "name": "hand_l",
+      "parent": "lowerarm_l",
+      "position": [
+        -0.86,
+        0,
+        1.28
+      ]
+    },
+    {
+      "name": "clavicle_r",
+      "parent": "spine_02",
+      "position": [
+        0.12,
+        0,
+        1.46
+      ]
+    },
+    {
+      "name": "upperarm_r",
+      "parent": "clavicle_r",
+      "position": [
+        0.32,
+        0,
+        1.43
+      ]
+    },
+    {
+      "name": "lowerarm_r",
+      "parent": "upperarm_r",
+      "position": [
+        0.62,
+        0,
+        1.35
+      ]
+    },
+    {
+      "name": "hand_r",
+      "parent": "lowerarm_r",
+      "position": [
+        0.86,
+        0,
+        1.28
+      ]
+    },
+    {
+      "name": "thigh_l",
+      "parent": "pelvis",
+      "position": [
+        -0.12,
+        0,
+        0.88
+      ]
+    },
+    {
+      "name": "calf_l",
+      "parent": "thigh_l",
+      "position": [
+        -0.12,
+        0,
+        0.46
+      ]
+    },
+    {
+      "name": "foot_l",
+      "parent": "calf_l",
+      "position": [
+        -0.12,
+        0.09,
+        0.08
+      ]
+    },
+    {
+      "name": "ball_l",
+      "parent": "foot_l",
+      "position": [
+        -0.12,
+        0.22,
+        0.03
+      ]
+    },
+    {
+      "name": "thigh_r",
+      "parent": "pelvis",
+      "position": [
+        0.12,
+        0,
+        0.88
+      ]
+    },
+    {
+      "name": "calf_r",
+      "parent": "thigh_r",
+      "position": [
+        0.12,
+        0,
+        0.46
+      ]
+    },
+    {
+      "name": "foot_r",
+      "parent": "calf_r",
+      "position": [
+        0.12,
+        0.09,
+        0.08
+      ]
+    },
+    {
+      "name": "ball_r",
+      "parent": "foot_r",
+      "position": [
+        0.12,
+        0.22,
+        0.03
+      ]
+    }
+  ],
+  "facial_morphs": [
+    "blink_l",
+    "blink_r",
+    "jaw_open",
+    "smile_l",
+    "smile_r"
+  ],
+  "collision_policy": {
+    "dynamic_characters_use_primitive_or_convex": true
+  }
+}

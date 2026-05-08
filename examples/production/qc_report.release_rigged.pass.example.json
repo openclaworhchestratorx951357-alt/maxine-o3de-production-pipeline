@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0.0",
+  "report_id": "qc-release-rigged-pass-fixture",
+  "manifest_ref": "examples/manifests/release_rigged.pass.example.json",
+  "status": "pass",
+  "checks": [
+    {
+      "check_id": "input_integrity",
+      "result": "pass"
+    },
+    {
+      "check_id": "asset_processing_completion",
+      "result": "pass"
+    },
+    {
+      "check_id": "skeleton_contract",
+      "result": "pass"
+    },
+    {
+      "check_id": "runtime_smoke",
+      "result": "pass",
+      "evidence_class": "fixture",
+      "live_runtime_executed": false
+    }
+  ],
+  "error_codes": [],
+  "warning_codes": [],
+  "no_live_o3de_execution_attestation": true
+}

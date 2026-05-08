@@ -1,0 +1,132 @@
+{
+  "schema_version": "1.0.0",
+  "job": {
+    "job_id": "job-draft-mesh-0001",
+    "lane": "draft_mesh",
+    "status": "pass",
+    "created_utc": "2026-05-08T00:00:00Z"
+  },
+  "identity": {
+    "character_id": "maxine_draft_mesh_fixture",
+    "package_version": "0.1.0",
+    "character_tier": "draft"
+  },
+  "inputs": {
+    "sources": [
+      {
+        "path": "Assets/Characters/MAXINE/draft_mesh_source.fbx",
+        "relative_path": "Assets/Characters/MAXINE/draft_mesh_source.fbx",
+        "sha256": "fixture-draft-source-sha256",
+        "license": "local-fixture"
+      }
+    ]
+  },
+  "generation": {
+    "method": "fixture",
+    "tool_versions": {
+      "maxine_validation": "1.0.0"
+    }
+  },
+  "dcc_conform": {
+    "transform": {
+      "meters_per_unit": 1.0,
+      "origin_centered": true,
+      "forward": "Y"
+    },
+    "geometry": {
+      "valid": true
+    },
+    "uv": {
+      "present": true
+    },
+    "materials": {
+      "present": true
+    },
+    "skeleton_ref": "examples/production/MAX_BIPED_v1.skeleton.json",
+    "skinning": {
+      "valid": true
+    },
+    "facial": {
+      "morphs": [
+        "blink_l",
+        "blink_r"
+      ]
+    },
+    "collision": {
+      "valid": true
+    }
+  },
+  "o3de": {
+    "project_name": "MaxineO3DE",
+    "source_uuid": "source-draft-mesh-0001",
+    "expected_product_types": [
+      "azmodel"
+    ],
+    "actual_products": [
+      {
+        "product_type": "azmodel",
+        "product_path": "Cache/pc/maxine_draft_mesh.azmodel",
+        "platform": "pc",
+        "status": "ready"
+      }
+    ],
+    "product_resolution": {
+      "adapter": "fixture",
+      "publish_tier": "draft",
+      "cache_heuristic_used": false
+    }
+  },
+  "qc": {
+    "overall": "pass",
+    "summary": "Draft mesh fixture passes static production-readiness checks."
+  },
+  "runtime_validation": {
+    "smoke": {
+      "result": "pass_fixture",
+      "evidence_class": "fixture",
+      "live_runtime_executed": false
+    }
+  },
+  "evidence": {
+    "bundle_ref": "examples/production/evidence_bundle.release_rigged.pass.example.json",
+    "refs": [
+      {
+        "id": "draft-qc-report",
+        "kind": "qc_report",
+        "path": "examples/production/qc_report.release_rigged.pass.example.json"
+      }
+    ]
+  },
+  "provenance": {
+    "source_hashes": [
+      {
+        "path": "Assets/Characters/MAXINE/draft_mesh_source.fbx",
+        "sha256": "fixture-draft-source-sha256"
+      }
+    ],
+    "tool_versions": {
+      "maxine_validation": "1.0.0"
+    }
+  },
+  "undo": {
+    "plan_ref": "docs/production/maxine-production-contract.md#undo-and-cleanup",
+    "steps": [
+      "Remove fixture draft package outputs under sandbox roots only."
+    ]
+  },
+  "cleanup": {
+    "plan_ref": "docs/production/maxine-production-contract.md#undo-and-cleanup",
+    "steps": [
+      "No live cleanup is performed by validators."
+    ]
+  },
+  "publication": {
+    "package": {
+      "package_root": "examples/sandbox/packages/draft_mesh",
+      "prefab_ref": "",
+      "source_asset_refs": [
+        "Assets/Characters/MAXINE/draft_mesh_source.fbx"
+      ]
+    }
+  }
+}

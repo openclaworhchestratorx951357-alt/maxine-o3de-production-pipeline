@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine.error-taxonomy.schema.json",
+  "title": "MAXINE Error Taxonomy",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "errors"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "code",
+          "title",
+          "severity"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^MXN_[A-Z0-9_]+$"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "error",
+              "warning",
+              "manual"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

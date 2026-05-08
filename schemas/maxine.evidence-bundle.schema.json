@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine.evidence-bundle.schema.json",
+  "title": "MAXINE Evidence Bundle",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "bundle_id",
+    "job_ref",
+    "status",
+    "evidence_refs",
+    "no_live_execution_attestation"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "bundle_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "job_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "pending_manual"
+      ]
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "kind",
+          "path"
+        ]
+      }
+    },
+    "no_live_execution_attestation": {
+      "type": "boolean",
+      "const": true
+    }
+  }
+}

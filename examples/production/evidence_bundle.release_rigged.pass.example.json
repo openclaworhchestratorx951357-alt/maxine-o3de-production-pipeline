@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0.0",
+  "bundle_id": "evidence-release-rigged-pass-fixture",
+  "job_ref": "examples/manifests/release_rigged.pass.example.json",
+  "status": "pass",
+  "evidence_refs": [
+    {
+      "id": "qc-report",
+      "kind": "qc_report",
+      "path": "examples/production/qc_report.release_rigged.pass.example.json",
+      "sha256": "fixture-recorded-in-review"
+    },
+    {
+      "id": "skeleton-spec",
+      "kind": "skeleton_spec",
+      "path": "examples/production/MAX_BIPED_v1.skeleton.json",
+      "sha256": "fixture-recorded-in-review"
+    },
+    {
+      "id": "product-matrix",
+      "kind": "product_matrix",
+      "path": "examples/production/product_matrix_v1.json",
+      "sha256": "fixture-recorded-in-review"
+    }
+  ],
+  "no_live_execution_attestation": true,
+  "no_external_service_attestation": true,
+  "no_cache_heuristic_attestation": true
+}

@@ -1,0 +1,118 @@
+{
+  "schema_version": "1.0.0",
+  "job": {
+    "job_id": "job-release-failure-0001",
+    "lane": "release_rigged",
+    "status": "fail",
+    "created_utc": "2026-05-08T00:00:00Z"
+  },
+  "identity": {
+    "character_id": "maxine_failure_fixture",
+    "package_version": "0.0.0",
+    "character_tier": "hero"
+  },
+  "inputs": {
+    "sources": [
+      {
+        "path": "Assets/Characters/MAXINE/failure/missing.fbx",
+        "relative_path": "Assets/Characters/MAXINE/failure/missing.fbx",
+        "sha256": "fixture-failure-source-sha256",
+        "license": "local-fixture"
+      }
+    ]
+  },
+  "generation": {
+    "method": "fixture_failure"
+  },
+  "dcc_conform": {
+    "transform": {
+      "meters_per_unit": 1.0,
+      "origin_centered": true,
+      "forward": "Y"
+    },
+    "geometry": {
+      "valid": false
+    },
+    "uv": {
+      "present": false
+    },
+    "materials": {
+      "present": false
+    },
+    "skeleton_ref": "",
+    "skinning": {
+      "valid": false
+    },
+    "facial": {
+      "morphs": []
+    },
+    "collision": {
+      "valid": false
+    }
+  },
+  "o3de": {
+    "project_name": "MaxineO3DE",
+    "source_uuid": "",
+    "expected_product_types": [
+      "actor"
+    ],
+    "actual_products": [],
+    "product_resolution": {
+      "adapter": "fixture",
+      "publish_tier": "package",
+      "cache_heuristic_used": false
+    }
+  },
+  "qc": {
+    "overall": "fail",
+    "error_codes": [
+      "MXN_SKELETON_MISSING",
+      "MXN_ASSET_PRODUCT_MISSING"
+    ]
+  },
+  "runtime_validation": {
+    "smoke": {
+      "result": "fail",
+      "live_runtime_executed": false
+    }
+  },
+  "evidence": {
+    "bundle_ref": "examples/production/evidence_bundle.release_rigged.pass.example.json",
+    "refs": [
+      {
+        "id": "failure-qc-report-placeholder",
+        "kind": "qc_report",
+        "path": "examples/production/qc_report.release_rigged.pass.example.json"
+      }
+    ]
+  },
+  "provenance": {
+    "source_hashes": [
+      {
+        "path": "Assets/Characters/MAXINE/failure/missing.fbx",
+        "sha256": "fixture-failure-source-sha256"
+      }
+    ],
+    "tool_versions": {
+      "maxine_validation": "1.0.0"
+    }
+  },
+  "undo": {
+    "plan_ref": "docs/production/maxine-production-contract.md#undo-and-cleanup",
+    "steps": [
+      "No package is published for failed fixture."
+    ]
+  },
+  "cleanup": {
+    "plan_ref": "docs/production/maxine-production-contract.md#undo-and-cleanup",
+    "steps": [
+      "No live cleanup is performed by validators."
+    ]
+  },
+  "publication": {
+    "package": {
+      "package_root": "examples/sandbox/packages/failure",
+      "prefab_ref": ""
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine.product-matrix.schema.json",
+  "title": "MAXINE Product Matrix",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "matrix_id",
+    "lanes"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "matrix_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lanes": {
+      "type": "object",
+      "required": [
+        "draft_mesh",
+        "release_rigged",
+        "external_rig_import"
+      ],
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "required"
+        ],
+        "properties": {
+          "required": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "optional": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "schema_version": "1.0.0",
+  "errors": [
+    {
+      "code": "MXN_INPUT_MISSING",
+      "title": "Input missing",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_INPUT_HASH_MISMATCH",
+      "title": "Input hash mismatch",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_INPUT_LICENSE_MISSING",
+      "title": "Input license missing",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_PATH_UNSAFE",
+      "title": "Unsafe path",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_ASSET_SOURCE_UUID_MISSING",
+      "title": "Asset source UUID missing",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_ASSET_PRODUCTS_PENDING",
+      "title": "Asset products pending",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_ASSET_PRODUCT_MISSING",
+      "title": "Asset product missing",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_ASSET_CACHE_HEURISTIC_FORBIDDEN",
+      "title": "Cache heuristic forbidden",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_SCALE_INVALID",
+      "title": "Scale invalid",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_ORIGIN_INVALID",
+      "title": "Origin invalid",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_FACING_INVALID",
+      "title": "Facing invalid",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_GEOMETRY_INVALID",
+      "title": "Geometry invalid",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_UV_MISSING",
+      "title": "UV missing",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_MATERIAL_MISSING",
+      "title": "Material missing",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_SKELETON_MISSING",
+      "title": "Skeleton missing",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_SKELETON_CONTRACT_FAIL",
+      "title": "Skeleton contract fail",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_ROOT_BONE_INVALID",
+      "title": "Root bone invalid",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_SKINNING_INVALID",
+      "title": "Skinning invalid",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_FACIAL_MORPH_MISSING",
+      "title": "Facial morph missing",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_COLLIDER_INVALID",
+      "title": "Collider invalid",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_ANIMATION_LOAD_FAIL",
+      "title": "Animation load fail",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_RUNTIME_SMOKE_FAIL",
+      "title": "Runtime smoke fail",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_UNDO_PLAN_MISSING",
+      "title": "Undo plan missing",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_PROVENANCE_INCOMPLETE",
+      "title": "Provenance incomplete",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_MIXAMO_PENDING_MANUAL",
+      "title": "Mixamo pending manual",
+      "severity": "manual"
+    },
+    {
+      "code": "MXN_EXTERNAL_SERVICE_BLOCKED",
+      "title": "External service blocked",
+      "severity": "error"
+    },
+    {
+      "code": "MXN_VALIDATION_TOOL_UNAVAILABLE",
+      "title": "Validation tool unavailable",
+      "severity": "warning"
+    }
+  ]
+}
