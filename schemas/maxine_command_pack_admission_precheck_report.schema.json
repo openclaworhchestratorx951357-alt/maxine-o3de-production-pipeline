@@ -1,0 +1,570 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine_command_pack_admission_precheck_report.schema.json",
+  "title": "MAXINE Command Pack Admission Precheck Report v1",
+  "description": "Static report that classifies natural-language command envelopes before any admission request without approving, admitting, executing, publishing, or claiming production readiness.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "report_type",
+    "report_id",
+    "report_version",
+    "command_pack_id",
+    "command_pack_version",
+    "precheck_status",
+    "admission_precheck_scope",
+    "generated_from_static_artifacts_only",
+    "source_artifacts",
+    "source_artifact_validation_status",
+    "command_envelope_prechecks",
+    "global_precheck_result",
+    "admission_request_eligible",
+    "operator_approval_granted",
+    "approval_phrase_present",
+    "command_admitted",
+    "runner_implemented",
+    "runner_admitted",
+    "runner_executed",
+    "dry_run_admitted",
+    "dry_run_executed",
+    "receipt_issued",
+    "real_execution_admitted",
+    "publication_admitted",
+    "production_ready_claimed",
+    "direct_o3de_execution",
+    "gem_adapter_implemented",
+    "spawn_publish_allowed",
+    "production_path_writes_allowed",
+    "engine_path_writes_allowed",
+    "cache_live_db_access_allowed",
+    "required_future_routing",
+    "required_before_admission_request",
+    "refused_command_categories",
+    "blocked_command_categories",
+    "eligible_static_categories",
+    "unsafe_claims_detected",
+    "safety_notes"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "report_type": {
+      "type": "string",
+      "const": "COMMAND_PACK_ADMISSION_PRECHECK_REPORT_v1"
+    },
+    "report_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$"
+    },
+    "report_version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "command_pack_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "command_pack_version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "precheck_status": {
+      "type": "string",
+      "enum": [
+        "static_precheck_valid_blocked",
+        "static_precheck_invalid",
+        "blocked_missing_source_artifact",
+        "blocked_inconsistent_source_artifacts",
+        "superseded"
+      ]
+    },
+    "admission_precheck_scope": {
+      "type": "string",
+      "const": "static_pre_admission_classification_only"
+    },
+    "generated_from_static_artifacts_only": {
+      "type": "boolean",
+      "const": true
+    },
+    "source_artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command_pack",
+        "command_pack_validator",
+        "pr_92_audit",
+        "pr_92_supersession",
+        "candidate_matrix",
+        "runner_interface",
+        "sandbox_boundary",
+        "receipt_contract",
+        "safety_verifier",
+        "proof_flow",
+        "production_readiness_report"
+      ],
+      "properties": {
+        "command_pack": {
+          "$ref": "#/$defs/sourceArtifact"
+        },
+        "command_pack_validator": {
+          "$ref": "#/$defs/sourceArtifact"
+        },
+        "pr_92_audit": {
+          "$ref": "#/$defs/sourceArtifact"
+        },
+        "pr_92_supersession": {
+          "$ref": "#/$defs/sourceArtifact"
+        },
+        "candidate_matrix": {
+          "$ref": "#/$defs/sourceArtifact"
+        },
+        "runner_interface": {
+          "$ref": "#/$defs/sourceArtifact"
+        },
+        "sandbox_boundary": {
+          "$ref": "#/$defs/sourceArtifact"
+        },
+        "receipt_contract": {
+          "$ref": "#/$defs/sourceArtifact"
+        },
+        "safety_verifier": {
+          "$ref": "#/$defs/sourceArtifact"
+        },
+        "proof_flow": {
+          "$ref": "#/$defs/sourceArtifact"
+        },
+        "production_readiness_report": {
+          "$ref": "#/$defs/sourceArtifact"
+        }
+      }
+    },
+    "source_artifact_validation_status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command_pack_validator_status",
+        "pr_92_audit_validator_status",
+        "pr_92_supersession_validator_status",
+        "candidate_matrix_validator_status",
+        "runner_interface_validator_status",
+        "sandbox_boundary_validator_status",
+        "receipt_contract_validator_status",
+        "safety_verifier_status",
+        "proof_flow_status",
+        "production_readiness_gate_status"
+      ],
+      "properties": {
+        "command_pack_validator_status": {
+          "type": "string",
+          "const": "pass"
+        },
+        "pr_92_audit_validator_status": {
+          "type": "string",
+          "const": "pass"
+        },
+        "pr_92_supersession_validator_status": {
+          "type": "string",
+          "const": "pass"
+        },
+        "candidate_matrix_validator_status": {
+          "type": "string",
+          "const": "pass"
+        },
+        "runner_interface_validator_status": {
+          "type": "string",
+          "const": "pass"
+        },
+        "sandbox_boundary_validator_status": {
+          "type": "string",
+          "const": "pass"
+        },
+        "receipt_contract_validator_status": {
+          "type": "string",
+          "const": "pass"
+        },
+        "safety_verifier_status": {
+          "type": "string",
+          "const": "pass"
+        },
+        "proof_flow_status": {
+          "type": "string",
+          "const": "pass"
+        },
+        "production_readiness_gate_status": {
+          "type": "string",
+          "const": "blocked_for_execution"
+        }
+      }
+    },
+    "command_envelope_prechecks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/commandEnvelopePrecheck"
+      }
+    },
+    "global_precheck_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "structurally_valid",
+        "static_command_envelopes_allowed_only_as_non_executing_artifacts",
+        "execution_admission_runner_gem_publish_spawn_blocked_or_refused",
+        "no_command_eligible_for_admission_request",
+        "no_command_admitted",
+        "no_runner_implemented",
+        "no_gem_adapter_implemented",
+        "no_direct_o3de_control",
+        "production_readiness_unclaimed",
+        "summary"
+      ],
+      "properties": {
+        "structurally_valid": {
+          "type": "boolean",
+          "const": true
+        },
+        "static_command_envelopes_allowed_only_as_non_executing_artifacts": {
+          "type": "boolean",
+          "const": true
+        },
+        "execution_admission_runner_gem_publish_spawn_blocked_or_refused": {
+          "type": "boolean",
+          "const": true
+        },
+        "no_command_eligible_for_admission_request": {
+          "type": "boolean",
+          "const": true
+        },
+        "no_command_admitted": {
+          "type": "boolean",
+          "const": true
+        },
+        "no_runner_implemented": {
+          "type": "boolean",
+          "const": true
+        },
+        "no_gem_adapter_implemented": {
+          "type": "boolean",
+          "const": true
+        },
+        "no_direct_o3de_control": {
+          "type": "boolean",
+          "const": true
+        },
+        "production_readiness_unclaimed": {
+          "type": "boolean",
+          "const": true
+        },
+        "summary": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "admission_request_eligible": {
+      "type": "boolean",
+      "const": false
+    },
+    "operator_approval_granted": {
+      "type": "boolean",
+      "const": false
+    },
+    "approval_phrase_present": {
+      "type": "boolean",
+      "const": false
+    },
+    "command_admitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "runner_implemented": {
+      "type": "boolean",
+      "const": false
+    },
+    "runner_admitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "runner_executed": {
+      "type": "boolean",
+      "const": false
+    },
+    "dry_run_admitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "dry_run_executed": {
+      "type": "boolean",
+      "const": false
+    },
+    "receipt_issued": {
+      "type": "boolean",
+      "const": false
+    },
+    "real_execution_admitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "publication_admitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "production_ready_claimed": {
+      "type": "boolean",
+      "const": false
+    },
+    "direct_o3de_execution": {
+      "type": "boolean",
+      "const": false
+    },
+    "gem_adapter_implemented": {
+      "type": "boolean",
+      "const": false
+    },
+    "spawn_publish_allowed": {
+      "type": "boolean",
+      "const": false
+    },
+    "production_path_writes_allowed": {
+      "type": "boolean",
+      "const": false
+    },
+    "engine_path_writes_allowed": {
+      "type": "boolean",
+      "const": false
+    },
+    "cache_live_db_access_allowed": {
+      "type": "boolean",
+      "const": false
+    },
+    "required_future_routing": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
+    },
+    "required_before_admission_request": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
+    },
+    "refused_command_categories": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
+    },
+    "blocked_command_categories": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
+    },
+    "eligible_static_categories": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "static_evidence_only",
+          "static_validation_report",
+          "static_refusal_report",
+          "static_command_envelope"
+        ]
+      }
+    },
+    "unsafe_claims_detected": {
+      "type": "boolean",
+      "const": false
+    },
+    "safety_notes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
+    }
+  },
+  "$defs": {
+    "sourceArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "validation_status"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "validation_status": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "blocked_for_execution"
+          ]
+        }
+      }
+    },
+    "commandEnvelopePrecheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "precheck_id",
+        "classification",
+        "source_envelope_ref",
+        "execution_required",
+        "admission_required",
+        "runner_required",
+        "runner_implemented",
+        "runner_admitted",
+        "candidate_specific_admission_required",
+        "sandbox_boundary_validation_required",
+        "receipt_contract_validation_required",
+        "operator_approval_required",
+        "gem_adapter_implementation_required",
+        "gem_adapter_implemented",
+        "direct_o3de_execution_required",
+        "live_o3de_readback_performed",
+        "admitted",
+        "admission_request_eligible",
+        "result",
+        "required_gates",
+        "blockers",
+        "reason"
+      ],
+      "properties": {
+        "precheck_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]*$"
+        },
+        "classification": {
+          "type": "string",
+          "enum": [
+            "static_evidence_only",
+            "read_only_status_candidate",
+            "dry_run_candidate",
+            "write_execute_candidate",
+            "publish_spawn_candidate",
+            "gem_adapter_candidate",
+            "runner_candidate",
+            "unsafe_command"
+          ]
+        },
+        "source_envelope_ref": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "execution_required": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "const": "future_policy_dependent"
+            }
+          ]
+        },
+        "admission_required": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "const": "future_policy_dependent"
+            }
+          ]
+        },
+        "runner_required": {
+          "type": "boolean"
+        },
+        "runner_implemented": {
+          "type": "boolean",
+          "const": false
+        },
+        "runner_admitted": {
+          "type": "boolean",
+          "const": false
+        },
+        "candidate_specific_admission_required": {
+          "type": "boolean"
+        },
+        "sandbox_boundary_validation_required": {
+          "type": "boolean"
+        },
+        "receipt_contract_validation_required": {
+          "type": "boolean"
+        },
+        "operator_approval_required": {
+          "type": "boolean"
+        },
+        "gem_adapter_implementation_required": {
+          "type": "boolean"
+        },
+        "gem_adapter_implemented": {
+          "type": "boolean",
+          "const": false
+        },
+        "direct_o3de_execution_required": {
+          "type": "boolean"
+        },
+        "live_o3de_readback_performed": {
+          "type": "boolean",
+          "const": false
+        },
+        "admitted": {
+          "type": "boolean",
+          "const": false
+        },
+        "admission_request_eligible": {
+          "type": "boolean",
+          "const": false
+        },
+        "result": {
+          "type": "string",
+          "enum": [
+            "allowed_as_static_non_executing_artifact",
+            "blocked_pending_read_only_policy_or_candidate_admission",
+            "blocked_pending_candidate_specific_admission",
+            "refused_or_blocked",
+            "refused",
+            "blocked"
+          ]
+        },
+        "required_gates": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "blockers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "reason": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

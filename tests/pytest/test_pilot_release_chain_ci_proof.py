@@ -750,3 +750,29 @@ def test_pilot_chain_proof_command_passes_expected_pass_baseline(repo_tmp_dir: P
     assert runner_interface_source_status["production_readiness_status"] == "pass"
     assert runner_interface_source_status["noop_receipt_status"] == "pass"
     assert dry_run_runner_interface_status["reporter_return_code"] == 0
+    command_pack_precheck_status = payload["details"][
+        "command_pack_admission_precheck_report"
+    ]
+    assert command_pack_precheck_status["status"] == "pass"
+    assert (
+        command_pack_precheck_status["report_type"]
+        == "COMMAND_PACK_ADMISSION_PRECHECK_VALIDATION_v1_REPORT"
+    )
+    assert command_pack_precheck_status["command_pack_admission_precheck_present"] is True
+    assert command_pack_precheck_status["command_pack_admission_precheck_valid"] is True
+    assert command_pack_precheck_status["precheck_status"] == "static_precheck_valid_blocked"
+    assert command_pack_precheck_status["admission_request_eligible"] is False
+    assert command_pack_precheck_status["command_admitted"] is False
+    assert command_pack_precheck_status["runner_implemented"] is False
+    assert command_pack_precheck_status["runner_admitted"] is False
+    assert command_pack_precheck_status["runner_executed"] is False
+    assert command_pack_precheck_status["dry_run_admitted"] is False
+    assert command_pack_precheck_status["dry_run_executed"] is False
+    assert command_pack_precheck_status["receipt_issued"] is False
+    assert command_pack_precheck_status["real_execution_admitted"] is False
+    assert command_pack_precheck_status["publication_admitted"] is False
+    assert command_pack_precheck_status["production_ready_claimed"] is False
+    assert command_pack_precheck_status["refused_command_categories_count"] > 0
+    assert command_pack_precheck_status["blocked_command_categories_count"] > 0
+    assert command_pack_precheck_status["eligible_static_categories_count"] > 0
+    assert command_pack_precheck_status["reporter_return_code"] == 0

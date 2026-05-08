@@ -106,6 +106,12 @@ RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RUNNER_INTERFACE_VALIDATOR_REL = (
 RELEASE_CANDIDATE_PUBLICATION_DRY_RUN_RUNNER_INTERFACE_EXAMPLE_REL = (
     "examples/execution-admission/release_candidate_package_publish_dry_run_runner_interface_v1.json"
 )
+COMMAND_PACK_ADMISSION_PRECHECK_VALIDATOR_REL = (
+    "tools/execution-admission/validate_command_pack_admission_precheck_report.py"
+)
+COMMAND_PACK_ADMISSION_PRECHECK_EXAMPLE_REL = (
+    "examples/execution-admission/command_pack_admission_precheck_report_v1.json"
+)
 PROJECT_INVENTORY_FIXTURE_REL = (
     "examples/sandbox/project-inventory/max_biped_v1_project_inventory.fixture.json"
 )
@@ -676,6 +682,25 @@ def run_release_candidate_publication_dry_run_runner_interface(
     return proc.returncode, payload
 
 
+def run_command_pack_admission_precheck(
+    repo_root: Path,
+) -> Tuple[int, Dict[str, Any]]:
+    cmd: List[str] = [
+        sys.executable,
+        str((repo_root / COMMAND_PACK_ADMISSION_PRECHECK_VALIDATOR_REL).resolve()),
+        str((repo_root / COMMAND_PACK_ADMISSION_PRECHECK_EXAMPLE_REL).resolve()),
+    ]
+    proc = subprocess.run(
+        cmd,
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+    )
+    payload = parse_payload_from_stdout(proc.stdout)
+    payload["reporter_return_code"] = proc.returncode
+    return proc.returncode, payload
+
+
 def write_json(path: Path, payload: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2) + os.linesep, encoding="utf-8")
@@ -807,6 +832,12 @@ def main() -> int:
             dry_run_runner_interface_code,
             dry_run_runner_interface_payload,
         ) = run_release_candidate_publication_dry_run_runner_interface(
+            repo_root=repo_root,
+        )
+        (
+            command_pack_admission_precheck_code,
+            command_pack_admission_precheck_payload,
+        ) = run_command_pack_admission_precheck(
             repo_root=repo_root,
         )
     except Exception as exc:
@@ -2112,6 +2143,71 @@ def main() -> int:
                 f"{key}=pass."
             )
 
+    if command_pack_admission_precheck_code != 0:
+        failures.append("command-pack admission precheck validator must return 0.")
+    if (
+        command_pack_admission_precheck_payload.get("report_type")
+        != "COMMAND_PACK_ADMISSION_PRECHECK_VALIDATION_v1_REPORT"
+    ):
+        failures.append(
+            "command-pack admission precheck validator must emit COMMAND_PACK_ADMISSION_PRECHECK_VALIDATION_v1_REPORT."
+        )
+    if command_pack_admission_precheck_payload.get("status") != "pass":
+        failures.append("command-pack admission precheck validator status must be pass.")
+    if (
+        command_pack_admission_precheck_payload.get(
+            "command_pack_admission_precheck_present"
+        )
+        is not True
+    ):
+        failures.append(
+            "command-pack admission precheck proof must confirm command_pack_admission_precheck_present=true."
+        )
+    if (
+        command_pack_admission_precheck_payload.get(
+            "command_pack_admission_precheck_valid"
+        )
+        is not True
+    ):
+        failures.append(
+            "command-pack admission precheck proof must confirm command_pack_admission_precheck_valid=true."
+        )
+    if (
+        command_pack_admission_precheck_payload.get("precheck_status")
+        != "static_precheck_valid_blocked"
+    ):
+        failures.append(
+            "command-pack admission precheck must keep precheck_status=static_precheck_valid_blocked."
+        )
+    for field in (
+        "admission_request_eligible",
+        "command_admitted",
+        "runner_implemented",
+        "runner_admitted",
+        "runner_executed",
+        "dry_run_admitted",
+        "dry_run_executed",
+        "receipt_issued",
+        "real_execution_admitted",
+        "publication_admitted",
+        "production_ready_claimed",
+    ):
+        if command_pack_admission_precheck_payload.get(field) is not False:
+            failures.append(
+                "command-pack admission precheck proof must keep field false: "
+                f"{field}"
+            )
+    for field in (
+        "refused_command_categories_count",
+        "blocked_command_categories_count",
+        "eligible_static_categories_count",
+    ):
+        if int(command_pack_admission_precheck_payload.get(field, 0)) <= 0:
+            failures.append(
+                "command-pack admission precheck proof must include non-empty count: "
+                f"{field}"
+            )
+
     summary: Dict[str, Any] = {
         "status": "pass" if not failures else "fail",
         "check_id": "pilot_release_chain_ci_proof_v1",
@@ -2138,6 +2234,7 @@ def main() -> int:
             "release_candidate_publication_dry_run_non_approval_decision_report": dry_run_non_approval_decision_payload,
             "release_candidate_publication_dry_run_sandbox_boundary_report": dry_run_sandbox_boundary_payload,
             "release_candidate_publication_dry_run_runner_interface_report": dry_run_runner_interface_payload,
+            "command_pack_admission_precheck_report": command_pack_admission_precheck_payload,
             "failures": failures,
         },
     }
