@@ -81,53 +81,114 @@
       {
         "product_type": "actor",
         "product_path": "Cache/pc/maxine_release.actor",
+        "relative_product_path": "Cache/pc/maxine_release.actor",
         "platform": "pc",
-        "status": "ready"
+        "status": "ready",
+        "source_uuid": "source-release-rigged-0001",
+        "asset_id": "source-release-rigged-0001:2001",
+        "source_sub_id": "2001",
+        "sha256_available": false,
+        "produced_by_source_uuid": true,
+        "evidence_source": "fixture"
       },
       {
         "product_type": "motion",
         "product_path": "Cache/pc/maxine_idle.motion",
+        "relative_product_path": "Cache/pc/maxine_idle.motion",
         "platform": "pc",
-        "status": "ready"
+        "status": "ready",
+        "source_uuid": "source-release-rigged-0001",
+        "asset_id": "source-release-rigged-0001:2002",
+        "source_sub_id": "2002",
+        "sha256_available": false,
+        "produced_by_source_uuid": true,
+        "evidence_source": "fixture"
       },
       {
         "product_type": "motionset",
         "product_path": "Cache/pc/maxine.motionset",
+        "relative_product_path": "Cache/pc/maxine.motionset",
         "platform": "pc",
-        "status": "ready"
+        "status": "ready",
+        "source_uuid": "source-release-rigged-0001",
+        "asset_id": "source-release-rigged-0001:2003",
+        "source_sub_id": "2003",
+        "sha256_available": false,
+        "produced_by_source_uuid": true,
+        "evidence_source": "fixture"
       },
       {
         "product_type": "animgraph",
         "product_path": "Cache/pc/maxine.animgraph",
+        "relative_product_path": "Cache/pc/maxine.animgraph",
         "platform": "pc",
-        "status": "ready"
+        "status": "ready",
+        "source_uuid": "source-release-rigged-0001",
+        "asset_id": "source-release-rigged-0001:2004",
+        "source_sub_id": "2004",
+        "sha256_available": false,
+        "produced_by_source_uuid": true,
+        "evidence_source": "fixture"
       },
       {
         "product_type": "procprefab",
         "product_path": "Cache/pc/maxine_release.procprefab",
+        "relative_product_path": "Cache/pc/maxine_release.procprefab",
         "platform": "pc",
-        "status": "ready"
+        "status": "ready",
+        "source_uuid": "source-release-rigged-0001",
+        "asset_id": "source-release-rigged-0001:2005",
+        "source_sub_id": "2005",
+        "sha256_available": false,
+        "produced_by_source_uuid": true,
+        "evidence_source": "fixture"
       },
       {
         "product_type": "pxmesh",
         "product_path": "Cache/pc/maxine_release.pxmesh",
+        "relative_product_path": "Cache/pc/maxine_release.pxmesh",
         "platform": "pc",
-        "status": "ready"
+        "status": "ready",
+        "source_uuid": "source-release-rigged-0001",
+        "asset_id": "source-release-rigged-0001:2006",
+        "source_sub_id": "2006",
+        "sha256_available": false,
+        "produced_by_source_uuid": true,
+        "evidence_source": "fixture"
       },
       {
         "product_type": "azmaterial",
         "product_path": "Cache/pc/maxine_release.azmaterial",
+        "relative_product_path": "Cache/pc/maxine_release.azmaterial",
         "platform": "pc",
-        "status": "ready"
+        "status": "ready",
+        "source_uuid": "source-release-rigged-0001",
+        "asset_id": "source-release-rigged-0001:2007",
+        "source_sub_id": "2007",
+        "sha256_available": false,
+        "produced_by_source_uuid": true,
+        "evidence_source": "fixture"
       }
     ],
     "product_resolution": {
       "adapter": "fixture",
+      "resolver_mode": "fixture",
+      "resolver_status": "pass",
       "publish_tier": "package",
       "physics_enabled": true,
       "materialized": true,
+      "integration_executed": false,
+      "live_o3de_execution": false,
+      "fixture_data_used": true,
       "cache_heuristic_used": false,
-      "source_uuid_authority": "fixture_non_authoritative"
+      "source_uuid_authority": "fixture_non_authoritative",
+      "evidence_refs": [
+        {
+          "id": "fixture-product-resolution",
+          "kind": "product_resolution",
+          "source": "manifest.o3de.actual_products"
+        }
+      ]
     }
   },
   "qc": {

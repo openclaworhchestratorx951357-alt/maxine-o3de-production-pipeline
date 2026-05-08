@@ -25,5 +25,20 @@
   ],
   "no_live_execution_attestation": true,
   "no_external_service_attestation": true,
-  "no_cache_heuristic_attestation": true
+  "no_cache_heuristic_attestation": true,
+  "resolver_evidence": {
+    "resolver_mode": "fixture",
+    "status": "pass",
+    "integration_executed": false,
+    "live_o3de_execution": false,
+    "fixture_data_used": true,
+    "cache_heuristic_used": false,
+    "evidence_refs": [
+      {
+        "id": "fixture-product-resolution",
+        "kind": "product_resolution",
+        "source": "manifest.o3de.actual_products"
+      }
+    ]
+  }
 }

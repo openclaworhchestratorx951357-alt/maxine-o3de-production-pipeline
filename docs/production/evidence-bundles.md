@@ -11,3 +11,16 @@ examples/production/evidence_bundle.release_rigged.pass.example.json
 ```
 
 Strict manifest validation requires referenced evidence files to exist.
+
+## Product Resolver Evidence
+
+Evidence bundles and manifests should record the resolver result when product records are used:
+
+- `resolver_mode`: `fixture`, `local_o3de`, `unavailable`, or `invalid`
+- `integration_executed`: true only when the gated adapter actually performed a local query
+- `live_o3de_execution`: true only when local O3DE tooling actually ran
+- `fixture_data_used`: true for deterministic fixture validation
+- `cache_heuristic_used`: true if any product evidence came from cache guessing
+- `evidence_refs`: local evidence records that explain where the resolver data came from
+
+Fixture examples set `integration_executed` and `live_o3de_execution` to false. Optional O3DE integration checks that are skipped must remain marked skipped or unavailable, not pass.

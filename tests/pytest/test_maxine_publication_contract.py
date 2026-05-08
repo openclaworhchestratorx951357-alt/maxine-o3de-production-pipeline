@@ -40,6 +40,19 @@ def test_release_package_cannot_pass_with_spawn_only_evidence():
     assert "spawn-only" in " ".join(result.messages)
 
 
+def test_release_package_refuses_cache_only_product_evidence():
+    manifest = _load(RELEASE_MANIFEST)
+    for product in manifest["o3de"]["actual_products"]:
+        product["evidence_source"] = "cache_heuristic"
+        product["produced_by_source_uuid"] = False
+    manifest["o3de"]["product_resolution"]["cache_heuristic_used"] = True
+
+    result = validate_publication_contract(manifest, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_ASSET_CACHE_HEURISTIC_FORBIDDEN" in result.error_codes
+
+
 def test_undo_plan_required():
     manifest = _load(RELEASE_MANIFEST)
     manifest["undo"] = {}
