@@ -202,6 +202,18 @@ NATURAL_LANGUAGE_O3DE_COMMAND_SAFE_EXAMPLE_REL = (
 NATURAL_LANGUAGE_O3DE_COMMAND_BLOCKED_EXAMPLE_REL = (
     "examples/nl-o3de-control/natural_language_o3de_command_prepare_publication_dry_run_blocked_v1.json"
 )
+PR_92_SUPERSESSION_RECORD_REL = (
+    "examples/execution-admission/pr_92_supersession_record_v1.json"
+)
+PR_92_SUPERSESSION_RECORD_DOC_REL = (
+    "docs/maxine/execution-admission/pr-92-supersession-record-v1.md"
+)
+PR_92_SUPERSESSION_RECORD_SCHEMA_REL = (
+    "schemas/maxine_pr_92_supersession_record.schema.json"
+)
+PR_92_SUPERSESSION_RECORD_VALIDATOR_REL = (
+    "tools/execution-admission/validate_pr_92_supersession_record.py"
+)
 REVIEW_PACKETS_DIR_REL = "examples/sandbox/review-packets"
 REVIEW_DECISIONS_DIR_REL = "examples/sandbox/review-decisions"
 WORKFLOW_RUNS_DIR_REL = "examples/sandbox/workflow-runs"
@@ -1151,6 +1163,10 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
     natural_language_o3de_command_blocked_example = (
         root / NATURAL_LANGUAGE_O3DE_COMMAND_BLOCKED_EXAMPLE_REL
     )
+    pr_92_supersession_record = root / PR_92_SUPERSESSION_RECORD_REL
+    pr_92_supersession_record_doc = root / PR_92_SUPERSESSION_RECORD_DOC_REL
+    pr_92_supersession_record_schema = root / PR_92_SUPERSESSION_RECORD_SCHEMA_REL
+    pr_92_supersession_record_validator = root / PR_92_SUPERSESSION_RECORD_VALIDATOR_REL
     review_packets_dir = root / REVIEW_PACKETS_DIR_REL
     review_decisions_dir = root / REVIEW_DECISIONS_DIR_REL
     workflow_runs_dir = root / WORKFLOW_RUNS_DIR_REL
@@ -6493,6 +6509,155 @@ def collect_sandbox_writer_invariant_failures(root: Path) -> List[str]:
             failures.append(
                 "natural-language O3DE command envelope is not valid JSON: "
                 f"{envelope_path.relative_to(root)} -> {exc}"
+            )
+
+    pr_92_supersession_paths = [
+        pr_92_supersession_record,
+        pr_92_supersession_record_doc,
+        pr_92_supersession_record_schema,
+        pr_92_supersession_record_validator,
+    ]
+    for path in pr_92_supersession_paths:
+        if not path.exists():
+            failures.append(
+                "PR #92 supersession record file is missing: "
+                f"{path.relative_to(root)}"
+            )
+
+    if pr_92_supersession_record_doc.exists():
+        doc_text = pr_92_supersession_record_doc.read_text(
+            encoding="utf-8-sig"
+        ).lower()
+        for phrase in (
+            "pr #92 should not merge as-is",
+            "close pr #92 as superseded",
+            "must not be interpreted as approval",
+            "command-pack validator",
+            "runner interface contract",
+            "sandbox boundary contract",
+            "receipt contract",
+            "safety verifier",
+            "proof flow",
+            "production-readiness gate",
+        ):
+            if phrase not in doc_text:
+                failures.append(
+                    "PR #92 supersession docs are missing required phrase: "
+                    f"{phrase}"
+                )
+        for forbidden in (
+            "pr #92 is safe to merge as-is",
+            "pr #92 may merge as-is",
+            "pr #92 admits command execution",
+            "pr #92 implements a runner",
+            "pr #92 implements gem adapters",
+            "pr #92 claims production_ready",
+        ):
+            if forbidden in doc_text:
+                failures.append(
+                    "PR #92 supersession docs contain forbidden unsafe phrase: "
+                    f"{forbidden}"
+                )
+
+    if pr_92_supersession_record.exists():
+        try:
+            record = json.loads(
+                pr_92_supersession_record.read_text(encoding="utf-8-sig")
+            )
+            if record.get("record_type") != "PR_92_SUPERSESSION_RECORD_v1":
+                failures.append(
+                    "PR #92 supersession record_type must be PR_92_SUPERSESSION_RECORD_v1."
+                )
+            if record.get("supersession_status") != "active_supersession_record":
+                failures.append(
+                    "PR #92 supersession status must be active_supersession_record."
+                )
+            if record.get("pr_92_merge_allowed") is not False:
+                failures.append("PR #92 supersession record must keep pr_92_merge_allowed=false.")
+            if record.get("pr_92_close_recommended") is not True:
+                failures.append("PR #92 supersession record must keep pr_92_close_recommended=true.")
+            if record.get("pr_92_safe_to_merge_without_revision") is not False:
+                failures.append(
+                    "PR #92 supersession record must not allow merge without revision."
+                )
+            if record.get("unsafe_claims_detected") is not False:
+                failures.append("PR #92 supersession record must keep unsafe_claims_detected=false.")
+
+            superseded_pr = (
+                record.get("superseded_pr")
+                if isinstance(record.get("superseded_pr"), dict)
+                else {}
+            )
+            superseding_pr = (
+                record.get("superseding_pr")
+                if isinstance(record.get("superseding_pr"), dict)
+                else {}
+            )
+            audit_pr = (
+                record.get("audit_pr")
+                if isinstance(record.get("audit_pr"), dict)
+                else {}
+            )
+            if superseded_pr.get("pr_number") != 92:
+                failures.append("PR #92 supersession record must identify superseded_pr.pr_number=92.")
+            if superseding_pr.get("pr_number") != 95:
+                failures.append("PR #92 supersession record must identify superseding_pr.pr_number=95.")
+            if audit_pr.get("pr_number") != 94:
+                failures.append("PR #92 supersession record must identify audit_pr.pr_number=94.")
+            if audit_pr.get("merge_recommendation") != "do_not_merge_yet":
+                failures.append(
+                    "PR #92 supersession record must preserve audit_pr.merge_recommendation=do_not_merge_yet."
+                )
+
+            safety_posture = (
+                record.get("safety_posture")
+                if isinstance(record.get("safety_posture"), dict)
+                else {}
+            )
+            for field in (
+                "direct_o3de_execution",
+                "runner_implemented",
+                "gem_adapter_implemented",
+                "command_admitted",
+                "dry_run_admitted",
+                "real_execution_admitted",
+                "publication_admitted",
+                "production_ready_claimed",
+            ):
+                if safety_posture.get(field) is not False:
+                    failures.append(
+                        "PR #92 supersession record safety posture must keep field false: "
+                        f"{field}"
+                    )
+            if safety_posture.get("blocked_surfaces_preserved") is not True:
+                failures.append(
+                    "PR #92 supersession record must preserve blocked surfaces."
+                )
+
+            required_routing = {
+                str(item).strip()
+                for item in record.get("required_future_routing", [])
+                if str(item).strip()
+            }
+            for required in (
+                "command-pack validator",
+                "candidate-specific admission",
+                "runner interface contract",
+                "sandbox boundary contract",
+                "receipt contract",
+                "safety verifier",
+                "proof flow",
+                "production-readiness gate",
+            ):
+                if required not in required_routing:
+                    failures.append(
+                        "PR #92 supersession record is missing required future routing: "
+                        f"{required}"
+                    )
+        except Exception as exc:  # pragma: no cover - defensive failure surface
+            failures.append(
+                "PR #92 supersession record is not valid JSON: "
+                f"{exc}"
             )
 
     return failures

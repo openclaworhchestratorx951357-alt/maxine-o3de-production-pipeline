@@ -83,6 +83,7 @@ Get-ChildItem .\examples\manifests
 - Candidate-specific dry-run sandbox boundary contract v1 for `release_candidate_package_publish_dry_run_v1` is integrated as a static, machine-checkable sandbox-only boundary contract that explicitly keeps `sandbox_boundary_status=static_boundary_valid_blocked`, `runner_implemented=false`, `approval_request_ready=false`, `operator_approval_granted=false`, `approval_phrase_present=false`, `dry_run_admitted=false`, `dry_run_executed=false`, `receipt_issued=false`, real execution unadmitted, and publication unadmitted.
 - Candidate-specific dry-run runner interface contract v1 for `release_candidate_package_publish_dry_run_v1` is integrated as a static, machine-checkable future-interface contract that explicitly keeps `runner_interface_status=static_interface_valid_blocked`, `runner_implemented=false`, `runner_admitted=false`, `runner_executed=false`, `approval_request_ready=false`, `operator_approval_granted=false`, `approval_phrase_present=false`, `dry_run_admitted=false`, `dry_run_executed=false`, `receipt_issued=false`, real execution unadmitted, and publication unadmitted.
 - Natural-language O3DE command pack boundary v1 is integrated as a static, non-executing PR #92 hardening/superseding layer; it keeps command admission, runner implementation, O3DE execution, Gem adapters, publication, and production-ready claims blocked.
+- PR #92 supersession record v1 is integrated after PR #95; it records that PR #92 should not merge as-is and should be closed as superseded or revised to match the PR #95 boundary before reconsideration.
 - AAA-quality output is not yet fully operational.
 - Execution admission remains future work requiring explicit approval.
 
@@ -118,6 +119,7 @@ Start here for PR readiness, review, and merge details:
 - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-operator-approval-packet-completeness-v1.md`
 - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-approval-request-readiness-v1.md`
 - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-non-approval-decision-v1.md`
+- `docs/maxine/execution-admission/pr-92-supersession-record-v1.md`
 - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-sandbox-boundary-v1.md`
 - `docs/maxine/execution-admission/release-candidate-package-publish-dry-run-runner-interface-v1.md`
 - `docs/maxine/nl-o3de-control/nl-o3de-command-pack-boundary-v1.md`

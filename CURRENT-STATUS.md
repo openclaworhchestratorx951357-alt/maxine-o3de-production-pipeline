@@ -1,6 +1,13 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- PR #92 supersession record v1 is integrated as a static governance record after PR #95:
+  - `docs/maxine/execution-admission/pr-92-supersession-record-v1.md`
+  - `schemas/maxine_pr_92_supersession_record.schema.json`
+  - `examples/execution-admission/pr_92_supersession_record_v1.json`
+  - `tools/execution-admission/validate_pr_92_supersession_record.py`
+  - `tests/pytest/test_pr_92_supersession_record.py`
+  - PR #92 remains unmerged and unapproved; the record recommends closing it as superseded or revising it to match PR #95 before reconsideration.
 - Natural-language O3DE command pack boundary v1 is integrated as a static, non-executing PR #92 hardening/superseding layer:
   - `docs/maxine/nl-o3de-control/nl-o3de-command-pack-boundary-v1.md`
   - `schemas/maxine_natural_language_o3de_command_envelope.schema.json`
