@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine.job-manifest.schema.json",
+  "title": "MAXINE Production Job Manifest",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "job",
+    "identity",
+    "inputs",
+    "generation",
+    "dcc_conform",
+    "o3de",
+    "qc",
+    "runtime_validation",
+    "evidence",
+    "provenance",
+    "undo",
+    "cleanup"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "job": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "job_id",
+        "lane",
+        "status"
+      ],
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lane": {
+          "type": "string",
+          "enum": [
+            "draft_mesh",
+            "release_rigged",
+            "external_rig_import"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "warn",
+            "fail",
+            "pending_manual"
+          ]
+        }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "character_id",
+        "package_version"
+      ],
+      "properties": {
+        "character_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "package_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "character_tier": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "npc",
+            "hero",
+            "test"
+          ]
+        }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "sources"
+      ],
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "path",
+              "sha256"
+            ]
+          }
+        }
+      }
+    },
+    "generation": {
+      "type": "object"
+    },
+    "dcc_conform": {
+      "type": "object"
+    },
+    "o3de": {
+      "type": "object",
+      "required": [
+        "project_name",
+        "expected_product_types",
+        "actual_products"
+      ],
+      "additionalProperties": true
+    },
+    "qc": {
+      "type": "object",
+      "required": [
+        "overall"
+      ],
+      "properties": {
+        "overall": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "warn",
+            "fail",
+            "pending_manual"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "runtime_validation": {
+      "type": "object"
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "refs"
+      ]
+    },
+    "provenance": {
+      "type": "object"
+    },
+    "undo": {
+      "type": "object"
+    },
+    "cleanup": {
+      "type": "object"
+    }
+  }
+}

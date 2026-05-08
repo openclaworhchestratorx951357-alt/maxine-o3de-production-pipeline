@@ -22,6 +22,11 @@ jobs:
         run: |
           python tools/manifest-validator/validate_manifest.py examples/manifests/example-draft-mesh.manifest.json
 
+      - name: Validate production-readiness fixtures
+        shell: pwsh
+        run: |
+          python tools/validation/validate_all.py
+
       - name: Prove pilot release chain integration
         shell: pwsh
         run: |

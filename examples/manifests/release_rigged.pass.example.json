@@ -1,0 +1,213 @@
+{
+  "schema_version": "1.0.0",
+  "job": {
+    "job_id": "job-release-rigged-0001",
+    "lane": "release_rigged",
+    "status": "pass",
+    "created_utc": "2026-05-08T00:00:00Z"
+  },
+  "identity": {
+    "character_id": "maxine_release_rigged_fixture",
+    "package_version": "1.0.0",
+    "character_tier": "hero"
+  },
+  "inputs": {
+    "sources": [
+      {
+        "path": "Assets/Characters/MAXINE/release/maxine_release_source.fbx",
+        "relative_path": "Assets/Characters/MAXINE/release/maxine_release_source.fbx",
+        "sha256": "fixture-release-source-sha256",
+        "license": "local-fixture"
+      }
+    ]
+  },
+  "generation": {
+    "method": "fixture",
+    "tool_versions": {
+      "maxine_validation": "1.0.0",
+      "o3de_contract": "fixture-only"
+    }
+  },
+  "dcc_conform": {
+    "transform": {
+      "meters_per_unit": 1.0,
+      "origin_centered": true,
+      "forward": "Y"
+    },
+    "geometry": {
+      "valid": true,
+      "topology_defect_count": 0
+    },
+    "uv": {
+      "present": true,
+      "coverage": "fixture_complete"
+    },
+    "materials": {
+      "present": true
+    },
+    "skeleton_ref": "examples/production/MAX_BIPED_v1.skeleton.json",
+    "skinning": {
+      "valid": true,
+      "max_influences": 4,
+      "weights_normalized": true
+    },
+    "facial": {
+      "morphs": [
+        "blink_l",
+        "blink_r",
+        "jaw_open",
+        "smile_l",
+        "smile_r"
+      ]
+    },
+    "collision": {
+      "valid": true,
+      "policy": "primitive_or_convex"
+    }
+  },
+  "o3de": {
+    "project_name": "MaxineO3DE",
+    "source_uuid": "source-release-rigged-0001",
+    "expected_product_types": [
+      "actor",
+      "motion",
+      "motionset",
+      "animgraph",
+      "procprefab",
+      "pxmesh",
+      "azmaterial"
+    ],
+    "actual_products": [
+      {
+        "product_type": "actor",
+        "product_path": "Cache/pc/maxine_release.actor",
+        "platform": "pc",
+        "status": "ready"
+      },
+      {
+        "product_type": "motion",
+        "product_path": "Cache/pc/maxine_idle.motion",
+        "platform": "pc",
+        "status": "ready"
+      },
+      {
+        "product_type": "motionset",
+        "product_path": "Cache/pc/maxine.motionset",
+        "platform": "pc",
+        "status": "ready"
+      },
+      {
+        "product_type": "animgraph",
+        "product_path": "Cache/pc/maxine.animgraph",
+        "platform": "pc",
+        "status": "ready"
+      },
+      {
+        "product_type": "procprefab",
+        "product_path": "Cache/pc/maxine_release.procprefab",
+        "platform": "pc",
+        "status": "ready"
+      },
+      {
+        "product_type": "pxmesh",
+        "product_path": "Cache/pc/maxine_release.pxmesh",
+        "platform": "pc",
+        "status": "ready"
+      },
+      {
+        "product_type": "azmaterial",
+        "product_path": "Cache/pc/maxine_release.azmaterial",
+        "platform": "pc",
+        "status": "ready"
+      }
+    ],
+    "product_resolution": {
+      "adapter": "fixture",
+      "publish_tier": "package",
+      "physics_enabled": true,
+      "materialized": true,
+      "cache_heuristic_used": false,
+      "source_uuid_authority": "fixture_non_authoritative"
+    }
+  },
+  "qc": {
+    "overall": "pass",
+    "summary": "Release rigged fixture passes static production-readiness checks."
+  },
+  "runtime_validation": {
+    "smoke": {
+      "result": "pass_fixture",
+      "evidence_class": "fixture",
+      "live_runtime_executed": false,
+      "integration_status": "skipped"
+    }
+  },
+  "evidence": {
+    "bundle_ref": "examples/production/evidence_bundle.release_rigged.pass.example.json",
+    "refs": [
+      {
+        "id": "release-qc-report",
+        "kind": "qc_report",
+        "path": "examples/production/qc_report.release_rigged.pass.example.json"
+      },
+      {
+        "id": "release-evidence-bundle",
+        "kind": "evidence_bundle",
+        "path": "examples/production/evidence_bundle.release_rigged.pass.example.json"
+      },
+      {
+        "id": "skeleton-contract",
+        "kind": "skeleton_spec",
+        "path": "examples/production/MAX_BIPED_v1.skeleton.json"
+      }
+    ]
+  },
+  "provenance": {
+    "source_hashes": [
+      {
+        "path": "Assets/Characters/MAXINE/release/maxine_release_source.fbx",
+        "sha256": "fixture-release-source-sha256"
+      }
+    ],
+    "tool_versions": {
+      "maxine_validation": "1.0.0",
+      "o3de": "integration-skipped"
+    }
+  },
+  "undo": {
+    "plan_ref": "docs/production/maxine-production-contract.md#undo-and-cleanup",
+    "steps": [
+      "Remove fixture package outputs under sandbox roots only.",
+      "Do not touch live project or Cache paths."
+    ]
+  },
+  "cleanup": {
+    "plan_ref": "docs/production/maxine-production-contract.md#undo-and-cleanup",
+    "steps": [
+      "No live cleanup is performed by validators."
+    ]
+  },
+  "publication": {
+    "package": {
+      "package_root": "examples/sandbox/packages/release_rigged",
+      "prefab_ref": "Cache/pc/maxine_release.procprefab",
+      "source_asset_refs": [
+        "Assets/Characters/MAXINE/release/maxine_release_source.fbx"
+      ],
+      "product_asset_records": [
+        "Cache/pc/maxine_release.actor",
+        "Cache/pc/maxine_idle.motion",
+        "Cache/pc/maxine.motionset",
+        "Cache/pc/maxine.animgraph",
+        "Cache/pc/maxine_release.procprefab"
+      ],
+      "manifest_ref": "examples/manifests/release_rigged.pass.example.json",
+      "qc_report_ref": "examples/production/qc_report.release_rigged.pass.example.json",
+      "evidence_bundle_ref": "examples/production/evidence_bundle.release_rigged.pass.example.json"
+    }
+  },
+  "mixamo": {
+    "external_service_optional": true,
+    "status": "not_used"
+  }
+}

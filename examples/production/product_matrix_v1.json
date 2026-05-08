@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0.0",
+  "matrix_id": "maxine_product_matrix_v1",
+  "lanes": {
+    "draft_mesh": {
+      "required": [
+        "azmodel"
+      ],
+      "optional": [
+        "procprefab",
+        "azmaterial"
+      ]
+    },
+    "release_rigged": {
+      "required": [
+        "actor",
+        "motion",
+        "motionset",
+        "animgraph",
+        "procprefab"
+      ],
+      "conditional": [
+        "pxmesh_or_collider_waiver",
+        "azmaterial_or_material_waiver"
+      ]
+    },
+    "external_rig_import": {
+      "required": [
+        "actor",
+        "procprefab"
+      ],
+      "optional": [
+        "motion"
+      ],
+      "conditional": [
+        "motion_if_manifest_requires",
+        "pxmesh_or_collider_waiver",
+        "azmaterial_or_material_waiver"
+      ]
+    }
+  },
+  "forbidden_release_resolution": [
+    "newest_cache_file",
+    "best_looking_cache_file",
+    "cache_heuristic"
+  ]
+}

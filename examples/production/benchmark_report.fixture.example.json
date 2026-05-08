@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0.0",
+  "report_id": "maxine-reconstruction-benchmark-fixture",
+  "status": "warn",
+  "network_calls_performed": false,
+  "elapsed_seconds": 0.0,
+  "candidates": [
+    {
+      "name": "TripoSR",
+      "status": "skipped",
+      "version": "unknown",
+      "license": "MIT",
+      "release_lane_candidate": false,
+      "skip_reason": "candidate is not installed locally",
+      "artifact_hashes": []
+    },
+    {
+      "name": "fixture_local",
+      "status": "pass",
+      "version": "fixture",
+      "license": "fixture-only",
+      "release_lane_candidate": true,
+      "generation_success": true,
+      "runtime_import_success": "fixture",
+      "topology_defect_count": 0,
+      "uv_completeness": "fixture_complete",
+      "material_texture_presence": "fixture_present",
+      "backside_quality_score": null,
+      "o3de_expected_product_success": "fixture",
+      "elapsed_seconds": 0.0,
+      "artifact_hashes": [
+        {
+          "path": "examples/sandbox/benchmark-fixtures/fixture_local/output.obj",
+          "sha256": "fixture-sha256-record"
+        }
+      ]
+    }
+  ]
+}

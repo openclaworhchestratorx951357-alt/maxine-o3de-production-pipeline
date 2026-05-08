@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine.skeleton-spec.schema.json",
+  "title": "MAX_BIPED_v1 Skeleton Spec",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "skeleton_id",
+    "coordinate_system",
+    "units",
+    "bones"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "skeleton_id": {
+      "type": "string",
+      "const": "MAX_BIPED_v1"
+    },
+    "coordinate_system": {
+      "type": "object",
+      "required": [
+        "up_axis",
+        "forward_axis"
+      ]
+    },
+    "units": {
+      "type": "object",
+      "required": [
+        "meters_per_unit"
+      ]
+    },
+    "bones": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "parent",
+          "position"
+        ],
+        "additionalProperties": true
+      }
+    }
+  }
+}
