@@ -1,6 +1,12 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- O3DE Editor Python package/prefab instantiation fixture bridge v1 is in progress as a fixture-backed, integration-gated smoke layer:
+  - default validation uses JSON-only Editor smoke fixtures under `examples/editor-smoke`
+  - local Editor detection is opt-in through `MAXINE_ENABLE_O3DE_EDITOR_SMOKE=1` or `--enable-editor-smoke`
+  - unavailable Editor tooling is reported as skipped by default and fails only in strict integration mode
+  - `live_editor_execution` remains false unless a future gated Editor command actually runs
+  - live publication, production level mutation, and private Windows runner smoke remain future slices
 - Asset Processor Batch golden corpus proof v1 is in progress as a fixture-backed, integration-gated proof layer:
   - default validation uses JSON-only golden corpus fixtures under `examples/golden-corpus`
   - local Asset Processor Batch detection is opt-in through `MAXINE_ENABLE_ASSET_PROCESSOR_BATCH=1` or `--enable-asset-processor-batch`

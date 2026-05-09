@@ -27,6 +27,12 @@
       "kind": "asset_processor_batch_report",
       "path": "examples/golden-corpus/release_rigged/asset_processor_batch.fixture.json",
       "sha256": "fixture-recorded-in-review"
+    },
+    {
+      "id": "editor-smoke-fixture",
+      "kind": "editor_smoke_report",
+      "path": "examples/editor-smoke/release_rigged.fixture.report.json",
+      "sha256": "fixture-recorded-in-review"
     }
   ],
   "no_live_execution_attestation": true,
@@ -44,6 +50,22 @@
         "id": "fixture-product-resolution",
         "kind": "product_resolution",
         "source": "manifest.o3de.actual_products"
+      }
+    ]
+  },
+  "editor_smoke_evidence": {
+    "mode": "fixture",
+    "status": "pass",
+    "integration_enabled": false,
+    "live_editor_execution": false,
+    "cache_heuristic_used": false,
+    "product_resolver_report_ref": "manifest.o3de.actual_products",
+    "asset_processor_batch_report_ref": "examples/golden-corpus/release_rigged/asset_processor_batch.fixture.json",
+    "evidence_refs": [
+      {
+        "id": "editor-smoke-fixture",
+        "kind": "editor_smoke_report",
+        "path": "examples/editor-smoke/release_rigged.fixture.report.json"
       }
     ]
   }
