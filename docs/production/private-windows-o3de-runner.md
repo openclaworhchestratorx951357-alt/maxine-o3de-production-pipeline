@@ -31,6 +31,15 @@ $env:O3DE_EDITOR_EXECUTABLE = "C:\path\to\Editor.exe"
 $env:ASSET_PROCESSOR_BATCH_EXECUTABLE = "C:\path\to\AssetProcessorBatch.exe"
 ```
 
+Validate the golden project fixture before APB or Editor smoke commands:
+
+```powershell
+python tools/o3de/golden_project_fixture.py --fixtures examples/o3de-golden-project
+python tools/o3de/golden_project_fixture.py --fixture examples/o3de-golden-project/maxine-golden-project.fixture.json --check-local-readiness
+```
+
+The fixture defines safe project roots, the `Levels/_maxine_smoke` temp-level policy, evidence/log/screenshot roots, and package/prefab proof requirements. It does not create or mutate a real project.
+
 Integration gates:
 
 ```powershell

@@ -1,0 +1,165 @@
+{
+  "schema_version": "1.0.0",
+  "fixture_type": "maxine_o3de_golden_project_fixture",
+  "fixture_id": "maxine-golden-project",
+  "fixture_version": "1.0.0",
+  "description": "Fixture-only O3DE project contract for mapping MAXINE golden corpus manifests to safe private-runner project paths.",
+  "mode": "fixture",
+  "status": "pass",
+  "integration_enabled": false,
+  "live_o3de_execution": false,
+  "live_asset_processor_batch_execution": false,
+  "live_editor_execution": false,
+  "project": {
+    "project_name": "MAXINE_GoldenCorpus",
+    "project_root_policy": "Use O3DE_PROJECT_PATH only for local readiness; fixture validation uses project-relative paths.",
+    "project_path_env_var": "O3DE_PROJECT_PATH",
+    "engine_root_env_var": "O3DE_ENGINE_ROOT",
+    "allowed_project_relative_roots": [
+      "Assets",
+      "Assets/_maxine_smoke",
+      "Levels/_maxine_smoke",
+      "Saved/MaxineEvidence",
+      "Saved/Logs/Maxine",
+      "Saved/Screenshots/Maxine"
+    ],
+    "forbidden_roots": [
+      "Levels/Production",
+      "Assets/Production",
+      "Cache",
+      "Engine",
+      "Registry"
+    ],
+    "path_safety_policy": "Project outputs must be relative, must not use parent traversal, and must stay under allowed roots."
+  },
+  "lanes": {
+    "draft_mesh": {
+      "manifest_ref": "examples/golden-corpus/draft_mesh/manifest.json",
+      "expected_status": "pass"
+    },
+    "release_rigged": {
+      "manifest_ref": "examples/golden-corpus/release_rigged/manifest.json",
+      "expected_status": "pass"
+    },
+    "external_rig_import": {
+      "manifest_ref": "examples/golden-corpus/external_rig_import/manifest.json",
+      "expected_status": "pass"
+    }
+  },
+  "source_layout": {
+    "asset_scan_root": "Assets",
+    "character_source_root": "Assets/Characters/MAXINE_GoldenCorpus/source",
+    "package_root": "Assets/Characters/MAXINE_GoldenCorpus/packages",
+    "prefab_root": "Assets/Characters/MAXINE_GoldenCorpus/prefabs",
+    "motion_root": "Assets/Characters/MAXINE_GoldenCorpus/motions",
+    "material_root": "Assets/Characters/MAXINE_GoldenCorpus/materials",
+    "collider_root": "Assets/Characters/MAXINE_GoldenCorpus/colliders",
+    "temporary_root": "Assets/_maxine_smoke"
+  },
+  "temp_level_policy": {
+    "enabled": true,
+    "level_root": "Levels/_maxine_smoke",
+    "naming_prefix": "maxine_smoke_",
+    "cleanup_policy": "dry_run_only_no_deletion_in_this_slice_future_cleanup_requires_recorded_undo_plan",
+    "never_use_production_levels": true,
+    "allow_existing_level_readonly": false
+  },
+  "expected_artifact_paths": {
+    "manifests": "Saved/MaxineEvidence/manifests",
+    "product_resolver_reports": "Saved/MaxineEvidence/product-resolver",
+    "asset_processor_batch_reports": "Saved/MaxineEvidence/asset-processor-batch",
+    "editor_smoke_reports": "Saved/MaxineEvidence/editor-smoke",
+    "qc_reports": "Saved/MaxineEvidence/qc",
+    "evidence_bundles": "Saved/MaxineEvidence/bundles",
+    "logs": "Saved/Logs/Maxine",
+    "screenshots": "Saved/Screenshots/Maxine"
+  },
+  "product_expectations": {
+    "product_matrix_ref": "examples/production/product_matrix_v1.json",
+    "by_lane": {
+      "draft_mesh": {
+        "required_products": [
+          "azmodel"
+        ],
+        "optional_products": [
+          "procprefab",
+          "azmaterial"
+        ],
+        "cache_heuristic_used": false
+      },
+      "release_rigged": {
+        "required_products": [
+          "actor",
+          "motion",
+          "motionset",
+          "animgraph",
+          "procprefab"
+        ],
+        "cache_heuristic_used": false,
+        "publication_package_required": true
+      },
+      "external_rig_import": {
+        "required_products": [
+          "actor",
+          "procprefab"
+        ],
+        "motion_required_by_manifest": false,
+        "cache_heuristic_used": false,
+        "publication_package_required": true
+      }
+    }
+  },
+  "evidence_expectations": {
+    "by_lane": {
+      "draft_mesh": {
+        "product_resolver_report_ref": "examples/golden-corpus/draft_mesh/products.fixture.json",
+        "asset_processor_batch_report_ref": "examples/golden-corpus/draft_mesh/asset_processor_batch.fixture.json",
+        "editor_smoke_report_ref": "examples/editor-smoke/draft_mesh.fixture.report.json",
+        "evidence_bundle_ref": "examples/production/evidence_bundle.release_rigged.pass.example.json",
+        "cache_heuristic_used": false
+      },
+      "release_rigged": {
+        "product_resolver_report_ref": "examples/golden-corpus/release_rigged/products.fixture.json",
+        "asset_processor_batch_report_ref": "examples/golden-corpus/release_rigged/asset_processor_batch.fixture.json",
+        "editor_smoke_report_ref": "examples/editor-smoke/release_rigged.fixture.report.json",
+        "qc_report_ref": "examples/production/qc_report.release_rigged.pass.example.json",
+        "evidence_bundle_ref": "examples/production/evidence_bundle.release_rigged.pass.example.json",
+        "package_ref": "Assets/Characters/MAXINE_GoldenCorpus/packages/release_rigged.package.json",
+        "prefab_ref": "Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+        "undo_plan_ref": "Saved/MaxineEvidence/undo/release_rigged.undo.json",
+        "cache_heuristic_used": false
+      },
+      "external_rig_import": {
+        "product_resolver_report_ref": "examples/golden-corpus/external_rig_import/products.fixture.json",
+        "asset_processor_batch_report_ref": "examples/golden-corpus/external_rig_import/asset_processor_batch.fixture.json",
+        "editor_smoke_report_ref": "examples/editor-smoke/release_rigged.fixture.report.json",
+        "package_ref": "Assets/Characters/MAXINE_GoldenCorpus/packages/external_rig_import.package.json",
+        "prefab_ref": "Assets/Characters/MAXINE_GoldenCorpus/prefabs/external_rig_import.prefab",
+        "undo_plan_ref": "Saved/MaxineEvidence/undo/external_rig_import.undo.json",
+        "cache_heuristic_used": false
+      }
+    }
+  },
+  "integration_gates": {
+    "MAXINE_ENABLE_O3DE_INTEGRATION": "1 required for local integration",
+    "MAXINE_ENABLE_ASSET_PROCESSOR_BATCH": "1 required for local APB integration",
+    "MAXINE_ENABLE_O3DE_EDITOR_SMOKE": "1 required for local Editor smoke integration",
+    "MAXINE_ALLOW_LIVE_O3DE_COMMANDS": "1 required before any future live O3DE command"
+  },
+  "safety": {
+    "no_live_publication": true,
+    "no_external_services": true,
+    "no_cache_heuristic_release_proof": true,
+    "no_unscoped_cleanup": true,
+    "production_level_mutation_allowed": false
+  },
+  "errors": [],
+  "warnings": [],
+  "evidence_refs": [
+    {
+      "id": "golden-project-contract",
+      "kind": "fixture_contract",
+      "path": "examples/o3de-golden-project/maxine-golden-project.fixture.json"
+    }
+  ]
+}

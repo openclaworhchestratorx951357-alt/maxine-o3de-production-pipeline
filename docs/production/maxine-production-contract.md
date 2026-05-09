@@ -91,3 +91,11 @@ python tools/ci/run_o3de_integration_suite.py --mode fixture
 ```
 
 The private Windows workflow is manual-only and targets `[self-hosted, Windows, X64, o3de, maxine-private]`. It does not register runners, require secrets, run on push/pull_request, publish, or make live O3DE checks part of normal CI.
+
+Validate the O3DE golden project fixture contract with:
+
+```powershell
+python tools/o3de/golden_project_fixture.py --fixtures examples/o3de-golden-project
+```
+
+The fixture defines safe project-relative roots, `Levels/_maxine_smoke` temp levels, evidence/log/screenshot roots, and package/prefab proof requirements for future private-runner APB and Editor smoke. It is fixture-backed by default and does not mutate a real O3DE project.

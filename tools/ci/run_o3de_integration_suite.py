@@ -20,6 +20,9 @@ if str(REPO_ROOT) not in sys.path:
 from tools.ci.o3de_runner_readiness import MXN_VALIDATION_TOOL_UNAVAILABLE, build_readiness_report
 
 
+DEFAULT_GOLDEN_PROJECT_FIXTURE = REPO_ROOT / "examples" / "o3de-golden-project" / "maxine-golden-project.fixture.json"
+
+
 def run_integration_suite(
     *,
     mode: str = "dry_run",
@@ -27,6 +30,7 @@ def run_integration_suite(
     enable_o3de_integration: bool = False,
     strict_integration: bool = False,
     allow_live_o3de_commands: bool = False,
+    golden_project_fixture: Path | str = DEFAULT_GOLDEN_PROJECT_FIXTURE,
     env: Mapping[str, str] | None = None,
 ) -> Dict[str, Any]:
     env_map = dict(env if env is not None else os.environ)
@@ -38,7 +42,13 @@ def run_integration_suite(
         env_map["MAXINE_ALLOW_LIVE_O3DE_COMMANDS"] = "1"
 
     selected_mode = "dry_run" if dry_run else mode
-    readiness = build_readiness_report(env=env_map, strict=strict_integration if selected_mode == "integration" else False)
+    golden_fixture = Path(golden_project_fixture)
+    golden_fixture = golden_fixture if golden_fixture.is_absolute() else REPO_ROOT / golden_fixture
+    readiness = build_readiness_report(
+        env=env_map,
+        strict=strict_integration if selected_mode == "integration" else False,
+        golden_project_fixture=golden_fixture,
+    )
     commands: List[Dict[str, Any]] = []
     errors: List[str] = []
     warnings: List[str] = []
@@ -80,6 +90,7 @@ def run_integration_suite(
         "live_o3de_execution": False,
         "live_asset_processor_batch_execution": False,
         "live_editor_execution": False,
+        "golden_project_fixture_ref": _repo_relative(golden_fixture),
         "readiness": readiness,
         "commands": commands,
         "errors": _unique(errors),
@@ -89,6 +100,11 @@ def run_integration_suite(
 
 def _run_fixture_commands(env: Mapping[str, str]) -> List[Dict[str, Any]]:
     return [
+        _run_command(
+            "golden_project_fixture fixture",
+            [sys.executable, "tools/o3de/golden_project_fixture.py", "--fixtures", "examples/o3de-golden-project"],
+            env,
+        ),
         _run_command("validate_all fixture", [sys.executable, "tools/validation/validate_all.py"], env),
         _run_command(
             "asset_processor_batch fixture",
@@ -172,6 +188,13 @@ def _unique(values: List[str]) -> List[str]:
     return result
 
 
+def _repo_relative(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(REPO_ROOT.resolve())).replace("\\", "/")
+    except ValueError:
+        return str(path)
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run fixture or gated private O3DE integration checks.")
     parser.add_argument("--dry-run", action="store_true", help="Only report runner readiness; do not run suite commands.")
@@ -179,6 +202,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--enable-o3de-integration", action="store_true", help="Opt into local O3DE/APB/Editor adapter checks.")
     parser.add_argument("--strict-integration", action="store_true", help="Fail when local O3DE tooling is unavailable.")
     parser.add_argument("--allow-live-o3de-commands", action="store_true", help="Set the hard live-command gate for future private runs.")
+    parser.add_argument("--golden-project-fixture", default=str(DEFAULT_GOLDEN_PROJECT_FIXTURE), help="Golden project fixture contract path.")
     parser.add_argument("--json", action="store_true", help="Emit JSON only.")
     return parser.parse_args()
 
@@ -189,6 +213,7 @@ def print_text_report(report: Mapping[str, Any]) -> None:
     print(f"strict_integration: {str(report['strict_integration']).lower()}")
     print(f"live_commands_allowed: {str(report['live_commands_allowed']).lower()}")
     print(f"live_o3de_execution: {str(report['live_o3de_execution']).lower()}")
+    print(f"golden_project_fixture_ref: {report.get('golden_project_fixture_ref', '')}")
     for code in report.get("errors", []):
         print(f"  error: {code}")
     for code in report.get("warnings", []):
@@ -208,6 +233,7 @@ def main() -> int:
         enable_o3de_integration=args.enable_o3de_integration,
         strict_integration=args.strict_integration,
         allow_live_o3de_commands=args.allow_live_o3de_commands,
+        golden_project_fixture=args.golden_project_fixture,
     )
     if args.json:
         print(json.dumps(report, indent=2))
