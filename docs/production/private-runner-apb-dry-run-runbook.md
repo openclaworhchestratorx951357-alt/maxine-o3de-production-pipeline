@@ -43,6 +43,8 @@ $env:MAXINE_RUN_MODE = "readiness"
 
 Keep `MAXINE_ENABLE_O3DE_EDITOR_SMOKE=0` for the APB-only first live run. Keep `MAXINE_ALLOW_LIVE_O3DE_COMMANDS=0` during dry-run readiness.
 
+For APB-only readiness, `O3DE_EDITOR_EXECUTABLE` may remain unset as long as `MAXINE_ENABLE_O3DE_EDITOR_SMOKE=0`. Editor tooling is required only for a future Editor smoke slice.
+
 ## Dry-Run Sequence
 
 Run these from the repository root:
@@ -70,10 +72,24 @@ If no paired APB exists, build only the APB target from the selected engine buil
 
 ```powershell
 $env:CL = "/Zm200"
-cmake --build C:\src\o3de\build\windows --target AssetProcessorBatch --config profile --parallel 1 -- /m:1 /p:CL_MPCount=1 /p:UseMultiToolTask=false
+cmake --build C:\src\o3de\build\windows --target AssetProcessorBatch --config profile --parallel 1 -- /m:1 /nodeReuse:false /p:CL_MPCount=1 /p:UseMultiToolTask=false /v:m
 ```
 
 Stop and preserve logs if the build repeats C1060 or does not produce APB inside the bounded maintenance window. Do not run the full live golden corpus APB command until inventory selects the project/engine-paired APB and bounded diagnostics pass.
+
+To inspect the build environment without running APB:
+
+```powershell
+python tools/o3de/diagnose_o3de_build_environment.py --engine-root C:\src\o3de --project $env:USERPROFILE\O3DE\Projects\MAXINE_GoldenCorpus --json
+```
+
+When the target is produced, verify it before any full APB run:
+
+```powershell
+python tools/o3de/diagnose_asset_processor_batch.py --inventory --engine-root C:\src\o3de --project $env:USERPROFILE\O3DE\Projects\MAXINE_GoldenCorpus
+python tools/o3de/diagnose_asset_processor_batch.py --run-bounded-diagnostics --timeout-seconds 120 --candidate C:\src\o3de\build\windows\bin\profile\AssetProcessorBatch.exe --engine-root C:\src\o3de --project $env:USERPROFILE\O3DE\Projects\MAXINE_GoldenCorpus
+python tools/o3de/asset_processor_batch.py --corpus examples/golden-corpus --check-local-readiness --strict
+```
 
 Expected dry-run behavior:
 
@@ -116,6 +132,8 @@ I_UNDERSTAND_THIS_REQUIRES_A_PRIVATE_SELF_HOSTED_WINDOWS_RUNNER
 - Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE`.
 - Bounded APB diagnostics time out with `MXN_APB_DIAGNOSTIC_STALLED`.
 - Project-paired APB build does not finish producing `AssetProcessorBatch.exe` inside the bounded window.
+- Build environment diagnostics report missing Visual Studio/MSVC, Windows SDK, CMake, or `LY_3RDPARTY_PATH`.
+- A help-like APB diagnostic exits nonzero but does not stall; treat it as a responsiveness probe only, not as full APB success.
 
 ## Safety Checklist Before First Live APB
 
@@ -124,6 +142,8 @@ I_UNDERSTAND_THIS_REQUIRES_A_PRIVATE_SELF_HOSTED_WINDOWS_RUNNER
 - Golden project fixture validates.
 - AssetProcessorBatch executable is detected.
 - AssetProcessorBatch inventory shows a project-paired or engine-paired APB, not an archived RemoteControlHost binary.
+- Build environment diagnostics pass if APB was built locally.
+- Bounded APB diagnostics complete without `MXN_APB_DIAGNOSTIC_STALLED`.
 - Project path is controlled and non-production.
 - Artifact root is safe.
 - Editor smoke gates remain off.

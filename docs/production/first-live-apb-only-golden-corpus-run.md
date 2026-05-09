@@ -120,3 +120,32 @@ Before retrying the full APB-only run, one of these must be true:
 
 - the `AssetProcessorBatch` target finishes in the `C:\src\o3de` build and diagnostic inventory selects it, or
 - a prebuilt APB paired with `C:\src\o3de` and `MAXINE_GoldenCorpus` is provided and bounded diagnostics pass.
+
+## Build Environment Completion Status
+
+The APB build-environment follow-up completed the `AssetProcessorBatch` target from `C:\src\o3de\build\windows` using a low-memory Visual Studio profile build:
+
+```powershell
+$env:CL = "/Zm200"
+cmake --build C:\src\o3de\build\windows --target AssetProcessorBatch --config profile --parallel 1 -- /m:1 /nodeReuse:false /p:CL_MPCount=1 /p:UseMultiToolTask=false /v:m
+```
+
+Produced APB:
+
+```text
+C:\src\o3de\build\windows\bin\profile\AssetProcessorBatch.exe
+```
+
+Diagnostics now show:
+
+- build environment: pass
+- APB inventory: selected engine-paired APB under `C:\src\o3de`
+- RemoteControlHost APB: still rejected for `MAXINE_GoldenCorpus`
+- `AssetProcessor.exe`: still rejected as a substitute
+- bounded APB diagnostics: completed without stall
+- APB readiness: pass
+- live APB execution: false
+- live Editor execution: false
+- live publication: false
+
+The help-like APB diagnostic returns nonzero because APB does not behave like a normal CLI help command in this context; the diagnostic records that as a responsive, non-blocking probe, not as full APB success. The next slice should perform the first bounded full APB-only golden corpus retry with the produced engine-paired APB.

@@ -86,3 +86,46 @@ examples/private-runner/apb-diagnostic.project-paired-apb-build-blocked.example.
 ```
 
 Next action: continue the APB target build in a fully provisioned O3DE build environment, or provide a prebuilt `AssetProcessorBatch.exe` paired with `C:\src\o3de` and `MAXINE_GoldenCorpus`. Do not retry the full live golden corpus APB run until inventory selects the paired APB and bounded diagnostics pass.
+
+## Build Environment Completion
+
+The build-environment follow-up added an offline diagnostic tool:
+
+```powershell
+python tools/o3de/diagnose_o3de_build_environment.py --engine-root C:\src\o3de --project $env:USERPROFILE\O3DE\Projects\MAXINE_GoldenCorpus --json
+```
+
+The local build environment was verified with:
+
+- Visual Studio Build Tools 2022 and x64-hosted MSVC
+- Windows SDK under `C:\Program Files (x86)\Windows Kits\10`
+- CMake from `C:\Program Files\CMake\bin`
+- `LY_3RDPARTY_PATH` from the existing CMake cache, pointing at `C:\o3de-packages`
+- automatic pagefile headroom sufficient for the low-memory build
+- existing build directory `C:\src\o3de\build\windows`
+
+The APB target then completed with the low-memory build shape:
+
+```powershell
+$env:CL = "/Zm200"
+cmake --build C:\src\o3de\build\windows --target AssetProcessorBatch --config profile --parallel 1 -- /m:1 /nodeReuse:false /p:CL_MPCount=1 /p:UseMultiToolTask=false /v:m
+```
+
+Output produced:
+
+```text
+C:\src\o3de\build\windows\bin\profile\AssetProcessorBatch.exe
+```
+
+Post-build inventory selects that engine-paired APB for `C:\src\o3de` and `MAXINE_GoldenCorpus`. The archived RemoteControlHost APB remains rejected, and `AssetProcessor.exe` remains rejected as a substitute.
+
+Bounded diagnostics against the produced APB did not stall. The APB process returned quickly for a help-like command with an unsupported/nonzero response, which is recorded as responsive diagnostic evidence rather than full APB success. The repo readiness wrapper passed.
+
+Sanitized examples:
+
+```text
+examples/private-runner/apb-diagnostic.project-paired-apb-build-blocked.example.json
+examples/private-runner/apb-diagnostic.project-paired-apb-produced.example.json
+```
+
+Next action: perform one bounded full APB-only golden corpus retry in the next slice using the produced engine-paired APB. Keep Editor smoke and publication disabled.

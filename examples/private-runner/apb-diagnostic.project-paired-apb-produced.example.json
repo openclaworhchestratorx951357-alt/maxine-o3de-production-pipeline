@@ -1,0 +1,178 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "maxine_apb_diagnostic_report",
+  "generated_at": "2026-05-09T00:00:00Z",
+  "status": "pass",
+  "selected_engine_root": "C:/src/o3de",
+  "selected_project_path": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+  "selected_project_name": "MAXINE_GoldenCorpus",
+  "apb_candidates": [
+    {
+      "path": "C:/src/o3de/build/windows/bin/profile/AssetProcessorBatch.exe",
+      "basename": "AssetProcessorBatch.exe",
+      "exists": true,
+      "is_file": true,
+      "is_asset_processor_batch": true,
+      "is_rejected_asset_processor_substitute": false,
+      "size_bytes": 5678592,
+      "parent_directory": "C:/src/o3de/build/windows/bin/profile",
+      "under_selected_engine_root": true,
+      "under_selected_project_path": false,
+      "under_build_or_install_output": true,
+      "matching_engine_provenance": true,
+      "matching_project_provenance": false,
+      "provenance_score": 120,
+      "selected_recommendation_rank": -120,
+      "status": "candidate",
+      "reason": "engine-paired AssetProcessorBatch candidate"
+    },
+    {
+      "path": "%USERPROFILE%/O3DE/Projects/_archive/RemoteControlHost-2026-04-20/build/windows/bin/profile/AssetProcessorBatch.exe",
+      "basename": "AssetProcessorBatch.exe",
+      "exists": true,
+      "is_asset_processor_batch": true,
+      "is_rejected_asset_processor_substitute": false,
+      "remotecontrolhost_archive": true,
+      "archived_or_copied": true,
+      "matching_engine_provenance": false,
+      "matching_project_provenance": false,
+      "provenance_score": -580,
+      "status": "rejected",
+      "reason": "project_name mismatch between candidate provenance and selected MAXINE_GoldenCorpus project"
+    }
+  ],
+  "selected_apb_candidate": {
+    "path": "C:/src/o3de/build/windows/bin/profile/AssetProcessorBatch.exe",
+    "basename": "AssetProcessorBatch.exe",
+    "exists": true,
+    "is_file": true,
+    "is_asset_processor_batch": true,
+    "is_rejected_asset_processor_substitute": false,
+    "size_bytes": 5678592,
+    "parent_directory": "C:/src/o3de/build/windows/bin/profile",
+    "under_selected_engine_root": true,
+    "under_selected_project_path": false,
+    "under_build_or_install_output": true,
+    "matching_engine_provenance": true,
+    "matching_project_provenance": false,
+    "provenance_score": 120,
+    "selected_recommendation_rank": -120,
+    "status": "candidate",
+    "reason": "engine-paired AssetProcessorBatch candidate"
+  },
+  "rejected_candidates": [
+    {
+      "path": "%USERPROFILE%/O3DE/Projects/_archive/RemoteControlHost-2026-04-20/build/windows/bin/profile/AssetProcessorBatch.exe",
+      "basename": "AssetProcessorBatch.exe",
+      "exists": true,
+      "is_asset_processor_batch": true,
+      "is_rejected_asset_processor_substitute": false,
+      "remotecontrolhost_archive": true,
+      "archived_or_copied": true,
+      "matching_engine_provenance": false,
+      "matching_project_provenance": false,
+      "provenance_score": -580,
+      "status": "rejected",
+      "reason": "project_name mismatch between candidate provenance and selected MAXINE_GoldenCorpus project"
+    }
+  ],
+  "project_paired_apb_found": true,
+  "project_paired_apb_built": true,
+  "build_attempted": true,
+  "build_result": "success",
+  "build_command": "cmake --build C:/src/o3de/build/windows --target AssetProcessorBatch --config profile --parallel 1 -- /m:1 /nodeReuse:false /p:CL_MPCount=1 /p:UseMultiToolTask=false /v:m",
+  "build_environment": {
+    "compiler_host": "HostX64/x64",
+    "parallelism": 1,
+    "cl_flags": "/Zm200",
+    "pagefile_present": true,
+    "ly_3rdparty_path": "C:/o3de-packages"
+  },
+  "build_logs": {
+    "stdout_log_ref": "artifacts/o3de-integration/setup/build_asset_processor_batch_env_complete_*.stdout.txt",
+    "stderr_log_ref": "artifacts/o3de-integration/setup/build_asset_processor_batch_env_complete_*.stderr.txt"
+  },
+  "command_matrix": [
+    {
+      "label": "candidate_help",
+      "argv": [
+        "C:/src/o3de/build/windows/bin/profile/AssetProcessorBatch.exe",
+        "--help"
+      ],
+      "status": "pass",
+      "diagnostic_result": "responsive_nonzero_tolerated",
+      "exit_code": 1,
+      "duration_seconds": 40.0,
+      "timeout_seconds": 120,
+      "termination_reason": "exited_nonzero_tolerated",
+      "process_cleanup": {
+        "attempted": false,
+        "method": "",
+        "return_code": null
+      },
+      "stdout_log_ref": "artifacts/o3de-integration/apb/diagnostics/apb-diagnostic-*/candidate_help.stdout.txt",
+      "stderr_log_ref": "artifacts/o3de-integration/apb/diagnostics/apb-diagnostic-*/candidate_help.stderr.txt"
+    },
+    {
+      "label": "repo_readiness_wrapper",
+      "argv": [
+        "python",
+        "tools/o3de/asset_processor_batch.py",
+        "--corpus",
+        "examples/golden-corpus",
+        "--check-local-readiness",
+        "--strict-integration"
+      ],
+      "status": "pass",
+      "exit_code": 0,
+      "duration_seconds": 1.0,
+      "timeout_seconds": 60,
+      "termination_reason": "exited",
+      "process_cleanup": {
+        "attempted": false,
+        "method": "",
+        "return_code": null
+      },
+      "stdout_log_ref": "artifacts/o3de-integration/apb/diagnostics/apb-diagnostic-*/repo_readiness_wrapper.stdout.txt",
+      "stderr_log_ref": "artifacts/o3de-integration/apb/diagnostics/apb-diagnostic-*/repo_readiness_wrapper.stderr.txt"
+    }
+  ],
+  "timeout_policy": {
+    "timeout_seconds": 120,
+    "process_tree_cleanup": true,
+    "full_live_apb_retry": false
+  },
+  "process_cleanup": {
+    "required_on_timeout": true,
+    "completed": true
+  },
+  "stall_detected": false,
+  "c1060_detected": false,
+  "live_apb_attempted": false,
+  "live_asset_processor_batch_execution": false,
+  "live_editor_execution": false,
+  "live_publication": false,
+  "product_matrix_result": "not_run",
+  "cache_heuristic_used": false,
+  "errors": [],
+  "warnings": [
+    "MXN_PROVENANCE_INCOMPLETE",
+    "MXN_VALIDATION_TOOL_UNAVAILABLE"
+  ],
+  "evidence_refs": [
+    {
+      "id": "apb-diagnostic-tool",
+      "kind": "diagnostic_tool",
+      "path": "tools/o3de/diagnose_asset_processor_batch.py"
+    },
+    {
+      "id": "build-environment-tool",
+      "kind": "diagnostic_tool",
+      "path": "tools/o3de/diagnose_o3de_build_environment.py"
+    }
+  ],
+  "next_steps": [
+    "Run the next slice's single bounded full APB-only golden corpus retry with the selected engine-paired AssetProcessorBatch.exe.",
+    "Keep live Editor execution and publication disabled."
+  ]
+}

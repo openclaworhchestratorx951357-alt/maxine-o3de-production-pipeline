@@ -74,7 +74,7 @@ def build_diagnostic_report(
 
     stall_detected = any(command.get("status") == "stalled" for command in command_matrix)
     c1060_detected = any(_command_mentions(command, "C1060") for command in command_matrix)
-    warnings = _unique(_candidate_warnings(candidates))
+    warnings = _unique(_candidate_warnings(candidates) + _command_warnings(command_matrix))
     errors = _unique(_candidate_errors(candidates) + _command_errors(command_matrix))
     status = _diagnostic_status(selected=selected, command_matrix=command_matrix, stall_detected=stall_detected)
     if status == "stalled" and MXN_APB_DIAGNOSTIC_STALLED not in errors:
@@ -318,32 +318,36 @@ def _run_diagnostic_matrix(
     diagnostic_env["ASSET_PROCESSOR_BATCH_EXECUTABLE"] = str(diagnostic_candidate)
 
     matrix.append(
-        _bounded_command(
-            label="candidate_help",
-            argv=[str(diagnostic_candidate), "--help"],
-            cwd=cwd,
-            env=diagnostic_env,
-            timeout_seconds=timeout_seconds,
-            output_dir=output_dir,
-            command_runner=command_runner,
+        _normalize_diagnostic_command(
+            _bounded_command(
+                label="candidate_help",
+                argv=[str(diagnostic_candidate), "--help"],
+                cwd=cwd,
+                env=diagnostic_env,
+                timeout_seconds=timeout_seconds,
+                output_dir=output_dir,
+                command_runner=command_runner,
+            )
         )
     )
     matrix.append(
-        _bounded_command(
-            label="repo_readiness_wrapper",
-            argv=[
-                sys.executable,
-                str(REPO_ROOT / "tools" / "o3de" / "asset_processor_batch.py"),
-                "--corpus",
-                str(REPO_ROOT / "examples" / "golden-corpus"),
-                "--check-local-readiness",
-                "--strict-integration",
-            ],
-            cwd=str(REPO_ROOT),
-            env=diagnostic_env,
-            timeout_seconds=min(timeout_seconds, 60),
-            output_dir=output_dir,
-            command_runner=command_runner,
+        _normalize_diagnostic_command(
+            _bounded_command(
+                label="repo_readiness_wrapper",
+                argv=[
+                    sys.executable,
+                    str(REPO_ROOT / "tools" / "o3de" / "asset_processor_batch.py"),
+                    "--corpus",
+                    str(REPO_ROOT / "examples" / "golden-corpus"),
+                    "--check-local-readiness",
+                    "--strict-integration",
+                ],
+                cwd=str(REPO_ROOT),
+                env=diagnostic_env,
+                timeout_seconds=min(timeout_seconds, 60),
+                output_dir=output_dir,
+                command_runner=command_runner,
+            )
         )
     )
     return matrix
@@ -396,6 +400,25 @@ def _bounded_command(
         "errors": errors,
         "warnings": [],
     }
+
+
+def _normalize_diagnostic_command(command: Dict[str, Any]) -> Dict[str, Any]:
+    """Treat responsive unsupported help as signal, while keeping stalls/failures strict."""
+
+    if command.get("label") != "candidate_help" or command.get("status") != "fail":
+        return command
+    if command.get("termination_reason") != "exited" or command.get("exit_code") is None:
+        return command
+    normalized = dict(command)
+    warnings = list(normalized.get("warnings", []))
+    if MXN_VALIDATION_TOOL_UNAVAILABLE not in warnings:
+        warnings.append(MXN_VALIDATION_TOOL_UNAVAILABLE)
+    normalized["status"] = "pass"
+    normalized["diagnostic_result"] = "responsive_nonzero_tolerated"
+    normalized["termination_reason"] = "exited_nonzero_tolerated"
+    normalized["errors"] = []
+    normalized["warnings"] = warnings
+    return normalized
 
 
 def _terminate_process_tree(proc: subprocess.Popen[str]) -> Dict[str, Any]:
@@ -571,6 +594,13 @@ def _command_errors(command_matrix: List[Dict[str, Any]]) -> List[str]:
     for command in command_matrix:
         errors.extend(str(code) for code in command.get("errors", []))
     return errors
+
+
+def _command_warnings(command_matrix: List[Dict[str, Any]]) -> List[str]:
+    warnings: List[str] = []
+    for command in command_matrix:
+        warnings.extend(str(code) for code in command.get("warnings", []))
+    return warnings
 
 
 def _diagnostic_status(

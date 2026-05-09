@@ -34,6 +34,8 @@ def build_readiness_report(
         names=EDITOR_TOOL_NAMES,
         env=env,
     )
+    editor_required = _enabled(env, "MAXINE_ENABLE_O3DE_EDITOR_SMOKE")
+    editor["required"] = editor_required
     apb = _tool_report(
         explicit=env.get("ASSET_PROCESSOR_BATCH_EXECUTABLE", "") or env.get("ASSET_PROCESSOR_BATCH", ""),
         names=APB_TOOL_NAMES,
@@ -47,7 +49,7 @@ def build_readiness_report(
         missing.append("O3DE_ENGINE_ROOT")
     if not project_path["exists"]:
         missing.append("O3DE_PROJECT_PATH")
-    if not editor["available"]:
+    if editor_required and not editor["available"]:
         missing.append("O3DE Editor executable")
     if not apb["available"]:
         missing.append("AssetProcessorBatch executable")
@@ -160,7 +162,7 @@ def _would_run(env: Mapping[str, str], *, live_commands_allowed: bool) -> Dict[s
         "fixture_suite": True,
         "local_o3de_adapter": enable_o3de,
         "asset_processor_batch": enable_o3de or _enabled(env, "MAXINE_ENABLE_ASSET_PROCESSOR_BATCH"),
-        "editor_smoke": enable_o3de or _enabled(env, "MAXINE_ENABLE_O3DE_EDITOR_SMOKE"),
+        "editor_smoke": _enabled(env, "MAXINE_ENABLE_O3DE_EDITOR_SMOKE"),
         "live_o3de_commands": live_commands_allowed,
     }
 
@@ -178,11 +180,13 @@ def _messages(missing: list[str], *, live_commands_allowed: bool) -> list[str]:
 def _next_steps(missing: list[str]) -> list[str]:
     if not missing:
         return ["Run the fixture suite, then opt into non-strict integration checks on the private runner."]
-    return [
+    steps = [
         "Set O3DE_ENGINE_ROOT and O3DE_PROJECT_PATH on the private runner.",
-        "Set O3DE_EDITOR_EXECUTABLE or make Editor available on PATH.",
         "Set ASSET_PROCESSOR_BATCH_EXECUTABLE or make AssetProcessorBatch available on PATH.",
     ]
+    if "O3DE Editor executable" in missing:
+        steps.insert(1, "Set O3DE_EDITOR_EXECUTABLE or make Editor available on PATH.")
+    return steps
 
 
 def _repo_relative(path: Path) -> str:

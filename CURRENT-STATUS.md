@@ -1,6 +1,16 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- Complete O3DE AssetProcessorBatch Build Environment v1 is in progress:
+  - PR #108 is merged and its project-paired APB build-blocker documentation is now the baseline
+  - verifies `C:\src\o3de` as the selected O3DE engine root and `%USERPROFILE%\O3DE\Projects\MAXINE_GoldenCorpus` as the controlled project
+  - adds `tools/o3de/diagnose_o3de_build_environment.py` for offline build-environment diagnostics covering CMake, Visual Studio/MSVC, Windows SDK, `LY_3RDPARTY_PATH`, memory/pagefile, build-dir health, and expected APB output
+  - completed a low-memory `AssetProcessorBatch` target build from `C:\src\o3de\build\windows` using profile config, `--parallel 1`, MSBuild `/m:1`, `/nodeReuse:false`, `CL_MPCount=1`, `UseMultiToolTask=false`, and `CL=/Zm200`
+  - produced `C:\src\o3de\build\windows\bin\profile\AssetProcessorBatch.exe`; post-build diagnostics classify the build environment as pass
+  - APB inventory now selects the engine-paired APB and continues to reject the archived RemoteControlHost APB and `AssetProcessor.exe` substitutes
+  - bounded APB diagnostics against the produced APB completed without a stall; unsupported help-like exit is recorded as responsive/non-blocking, and repo APB readiness passes
+  - APB-only runner readiness no longer requires an Editor executable when `MAXINE_ENABLE_O3DE_EDITOR_SMOKE=0`
+  - full live golden corpus APB retry is deferred to the next slice; live Editor execution, release packaging, publication, cache deletion, and source deletion did not occur
 - Diagnose RemoteControlHost APB Stall and Produce Project-Paired APB Path v1 is in progress:
   - adds `tools/o3de/diagnose_asset_processor_batch.py` for APB candidate inventory, provenance scoring, and timeout-bounded diagnostics
   - adds `schemas/maxine.apb-diagnostic-report.schema.json` and a sanitized RemoteControlHost stall example
