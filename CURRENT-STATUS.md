@@ -1,6 +1,12 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- Real O3DE Asset System adapter v1 is in progress as an integration-gated product resolver slice:
+  - deterministic fixture resolver remains the default for CI and local validation
+  - local O3DE adapter detection is opt-in through `MAXINE_ENABLE_O3DE_INTEGRATION=1` or `--enable-o3de-integration`
+  - unavailable local O3DE tooling is reported as skipped by default and fails only in strict integration mode
+  - live O3DE execution, publication, Editor smoke, and Asset Processor execution remain blocked unless a future slice explicitly admits them
+  - cache-heuristic-only product resolution is forbidden for release lanes
 - Command-pack admission precheck report v1 is integrated as a static, non-admitting classification layer on top of the PR #95 command-pack boundary:
   - `docs/maxine/execution-admission/command-pack-admission-precheck-report-v1.md`
   - `schemas/maxine_command_pack_admission_precheck_report.schema.json`

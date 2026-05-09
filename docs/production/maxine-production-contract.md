@@ -47,3 +47,11 @@ python tools/qc/run_qc.py --manifest examples/manifests/release_rigged.pass.exam
 ```
 
 Integration checks for O3DE Editor, Asset Processor Batch, Blender, Mixamo/Adobe, and model downloads are intentionally skipped unless a future integration job explicitly enables them.
+
+For local O3DE adapter detection, use:
+
+```powershell
+python tools/validation/validate_all.py --enable-o3de-integration
+```
+
+The default resolver remains deterministic fixture mode. Release lanes still fail if product resolution relies on cache guessing rather than source UUID or trusted product metadata.

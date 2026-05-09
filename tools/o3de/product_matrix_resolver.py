@@ -62,10 +62,17 @@ def validate_expected_products(
         else:
             result.add_warning(code, message)
 
-    if lane in {"release_rigged", "external_rig_import"} and cache_heuristic_used:
+    heuristic_products = [product for product in products if _uses_cache_heuristic(product)]
+    heuristic_used = cache_heuristic_used or bool(heuristic_products)
+    if lane in {"release_rigged", "external_rig_import"} and heuristic_used:
         result.add_error(
             "MXN_ASSET_CACHE_HEURISTIC_FORBIDDEN",
             "Release product resolution cannot use cache guessing/newest-file heuristics.",
+        )
+    elif lane == "draft_mesh" and heuristic_used:
+        result.add_warning(
+            "MXN_ASSET_CACHE_HEURISTIC_FORBIDDEN",
+            "Draft cache heuristic evidence is allowed only as draft-only warning evidence.",
         )
 
     if lane == "draft_mesh":
@@ -94,6 +101,15 @@ def validate_expected_products(
 
     result.details["product_type_counts"] = dict(counts)
     return result
+
+
+def _uses_cache_heuristic(product: ProductRecord) -> bool:
+    evidence_source = str(getattr(product, "evidence_source", "")).strip().lower()
+    if evidence_source in {"cache_heuristic", "newest_cache_file", "best_looking_cache_file", "fallback_mesh_selection"}:
+        return True
+    if getattr(product, "produced_by_source_uuid", True) is False and evidence_source not in {"fixture", "local_o3de", "asset_system"}:
+        return True
+    return False
 
 
 def validate_product_matrix_payload(payload: Dict[str, Any]) -> ValidationResult:

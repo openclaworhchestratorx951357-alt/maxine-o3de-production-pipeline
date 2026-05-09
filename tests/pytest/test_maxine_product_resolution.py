@@ -76,6 +76,71 @@ def test_cache_heuristic_use_fails_in_release_mode():
     assert "MXN_ASSET_CACHE_HEURISTIC_FORBIDDEN" in result.error_codes
 
 
+def test_cache_heuristic_product_record_fails_in_release_mode():
+    result = validate_expected_products(
+        "release_rigged",
+        [
+            ProductRecord(
+                product_type=product_type,
+                product_path=f"Cache/pc/maxine.{product_type}",
+                platform="pc",
+                status="ready",
+                evidence_source="cache_heuristic",
+                produced_by_source_uuid=False,
+            )
+            for product_type in ("actor", "motion", "motionset", "animgraph", "procprefab")
+        ],
+    )
+
+    assert result.status == "fail"
+    assert "MXN_ASSET_CACHE_HEURISTIC_FORBIDDEN" in result.error_codes
+
+
+def test_draft_cache_heuristic_warns_without_claiming_release_readiness():
+    result = validate_expected_products(
+        "draft_mesh",
+        [
+            ProductRecord(
+                product_type="azmodel",
+                product_path="Cache/pc/maxine.azmodel",
+                platform="pc",
+                status="ready",
+                evidence_source="cache_heuristic",
+                produced_by_source_uuid=False,
+            )
+        ],
+        cache_heuristic_used=True,
+        strict=False,
+    )
+
+    assert result.status == "warn"
+    assert "MXN_ASSET_CACHE_HEURISTIC_FORBIDDEN" in result.warning_codes
+
+
+def test_materialized_release_missing_azmaterial_without_waiver_fails():
+    result = validate_expected_products(
+        "release_rigged",
+        [_product("actor"), _product("motion"), _product("motionset"), _product("animgraph"), _product("procprefab")],
+        materialized=True,
+        material_waiver=False,
+    )
+
+    assert result.status == "fail"
+    assert "MXN_MATERIAL_MISSING" in result.error_codes
+
+
+def test_physics_release_missing_pxmesh_without_waiver_fails():
+    result = validate_expected_products(
+        "release_rigged",
+        [_product("actor"), _product("motion"), _product("motionset"), _product("animgraph"), _product("procprefab")],
+        physics_enabled=True,
+        collider_waiver=False,
+    )
+
+    assert result.status == "fail"
+    assert "MXN_COLLIDER_INVALID" in result.error_codes
+
+
 def test_fixture_resolver_lists_products_by_source_uuid():
     resolver = FixtureProductResolver(
         sources=[
