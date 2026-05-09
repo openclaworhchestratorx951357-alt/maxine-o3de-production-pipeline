@@ -222,6 +222,13 @@ def _integration_or_live_report(
             messages=[str(detection["project_identity_error"])],
         )
     missing = _missing_live_prerequisites(env, detection, live_requested=live_requested or check_local_readiness)
+    if check_local_readiness and not missing:
+        return _local_readiness_report(
+            strict_integration=strict_integration,
+            platform=platform,
+            detection=detection,
+            golden_project_fixture=golden_project_fixture,
+        )
     if check_local_readiness or missing:
         return _unavailable_integration_report(
             strict_integration=strict_integration,
@@ -241,6 +248,66 @@ def _integration_or_live_report(
         command_runner=command_runner,
         artifact_root=artifact_root,
     )
+
+
+def _local_readiness_report(
+    *,
+    strict_integration: bool,
+    platform: str,
+    detection: Mapping[str, Any],
+    golden_project_fixture: Path,
+) -> Dict[str, Any]:
+    return {
+        "schema_version": "1.0.0",
+        "report_type": "asset_processor_batch_golden_corpus_summary_v1",
+        "report_id": "asset-processor-batch-local-readiness",
+        "mode": "local_asset_processor_batch",
+        "status": "pass",
+        "integration_enabled": True,
+        "integration_executed": False,
+        "strict_integration": strict_integration,
+        "live_asset_processor_batch_execution": False,
+        "live_editor_execution": False,
+        "live_publication": False,
+        "o3de_engine_root_present": bool(detection["engine_root"]),
+        "o3de_project_path_present": bool(detection["project_path"]),
+        "asset_processor_batch_executable": detection["asset_processor_batch_executable"],
+        "command_preview": detection["command_preview"],
+        "exit_code": None,
+        "stdout_log_ref": "",
+        "stderr_log_ref": "",
+        "asset_processor_log_ref": "",
+        "golden_project_fixture_ref": _repo_relative(golden_project_fixture),
+        "runner_context": _runner_context(),
+        "command": {
+            "argv": detection["command_preview"],
+            "working_directory": detection["project_path"],
+            "exit_code": None,
+        },
+        "logs": {
+            "stdout_log_ref": "",
+            "stderr_log_ref": "",
+            "asset_processor_log_ref": "",
+        },
+        "safety": _apb_safety_payload(),
+        "platform": platform,
+        "cases": [],
+        "errors": [],
+        "warnings": [],
+        "messages": list(detection["messages"]),
+        "evidence_refs": [
+            {
+                "id": "local-apb-readiness",
+                "kind": "local_readiness",
+                "source": "detect_asset_processor_batch_environment",
+            },
+            {
+                "id": "golden-project-fixture",
+                "kind": "o3de_golden_project_fixture",
+                "path": _repo_relative(golden_project_fixture),
+            },
+        ],
+    }
 
 
 def _unavailable_integration_report(
@@ -462,6 +529,8 @@ def detect_asset_processor_batch_environment(
     engine_root_exists = bool(engine_root) and Path(engine_root).exists()
     project_path_exists = bool(project_path) and Path(project_path).exists()
     executable_exists = bool(executable) and Path(executable).exists()
+    executable_name_valid = _is_asset_processor_batch_executable(executable)
+    executable_available = executable_exists and executable_name_valid
     expected_project_name = _expected_project_name(golden_project_fixture)
     project_name = _read_project_name(project_path) if project_path_exists else ""
     project_identity_error = ""
@@ -472,6 +541,8 @@ def detect_asset_processor_batch_environment(
         messages.append("O3DE_PROJECT_PATH is not set or does not exist.")
     if not executable_exists:
         messages.append("AssetProcessorBatch executable was not found or does not exist.")
+    elif not executable_name_valid:
+        messages.append("ASSET_PROCESSOR_BATCH_EXECUTABLE must point to AssetProcessorBatch.exe, not another O3DE tool.")
     if project_path_exists and expected_project_name:
         if not project_name:
             project_identity_error = "O3DE_PROJECT_PATH does not contain a readable project.json project_name."
@@ -482,7 +553,7 @@ def detect_asset_processor_batch_environment(
             )
         if project_identity_error:
             messages.append(project_identity_error)
-    if executable_exists and engine_root_exists and project_path_exists:
+    if executable_available and engine_root_exists and project_path_exists:
         messages.append("AssetProcessorBatch tooling was detected; live execution still requires every explicit APB gate.")
     command_preview = [executable, "--project-path", project_path, "--platform", "pc"] if executable and project_path else []
     return {
@@ -495,6 +566,8 @@ def detect_asset_processor_batch_environment(
         "project_identity_error": project_identity_error,
         "asset_processor_batch_executable": executable,
         "asset_processor_batch_executable_exists": executable_exists,
+        "asset_processor_batch_executable_name_valid": executable_name_valid,
+        "asset_processor_batch_executable_available": executable_available,
         "command_preview": command_preview,
         "messages": messages,
     }
@@ -511,7 +584,7 @@ def _missing_live_prerequisites(env: Mapping[str, str], detection: Mapping[str, 
         missing.append("O3DE_ENGINE_ROOT")
     if not detection.get("project_path_exists"):
         missing.append("O3DE_PROJECT_PATH")
-    if not detection.get("asset_processor_batch_executable_exists"):
+    if not detection.get("asset_processor_batch_executable_available"):
         missing.append("ASSET_PROCESSOR_BATCH_EXECUTABLE")
     return _unique(missing)
 
@@ -625,6 +698,12 @@ def _find_apb_on_path(env: Mapping[str, str]) -> str:
             if candidate.exists() and candidate.is_file():
                 return str(candidate)
     return ""
+
+
+def _is_asset_processor_batch_executable(executable: str) -> bool:
+    if not executable:
+        return False
+    return Path(executable).name.lower() in {name.lower() for name in APB_TOOL_NAMES}
 
 
 def _resolve_path(path: Path | str) -> Path:
