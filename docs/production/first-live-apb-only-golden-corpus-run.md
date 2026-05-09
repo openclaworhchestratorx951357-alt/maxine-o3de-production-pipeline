@@ -149,3 +149,52 @@ Diagnostics now show:
 - live publication: false
 
 The help-like APB diagnostic returns nonzero because APB does not behave like a normal CLI help command in this context; the diagnostic records that as a responsive, non-blocking probe, not as full APB success. The next slice should perform the first bounded full APB-only golden corpus retry with the produced engine-paired APB.
+
+## First Full APB-Only Run Result
+
+The first full APB-only golden corpus retry used the project/engine-paired APB:
+
+```text
+C:\src\o3de\build\windows\bin\profile\AssetProcessorBatch.exe
+```
+
+Command:
+
+```powershell
+python tools/o3de/asset_processor_batch.py --corpus examples/golden-corpus --enable-asset-processor-batch --golden-project-fixture examples/o3de-golden-project/maxine-golden-project.fixture.json --strict-integration
+```
+
+The wrapper set an explicit timeout through `MAXINE_APB_TIMEOUT_SECONDS=1800`. APB started, processed the controlled `MAXINE_GoldenCorpus` project, exited `0`, and did not time out. The APB-only integration suite then invoked the same APB path and also reached APB execution.
+
+The run is still recorded as `fail`, not pass, because post-run Asset Processor database evidence did not satisfy the golden corpus product contract:
+
+- produced: `azmodel`, `procprefab`, `azmaterial`
+- missing: `actor`, `motion`, `motionset`, `animgraph`, `pxmesh`
+- error: `MXN_ASSET_PRODUCT_MISSING`
+- cache heuristic used: false
+
+APB exit `0` means the batch processor completed its work queue. It does not prove the golden corpus release products exist. The wrapper now records missing expected products from Asset Processor database evidence and fails closed when release/product expectations are absent.
+
+Safety outcome:
+
+- live Asset Processor Batch execution: true
+- live Editor execution: false
+- live publication: false
+- release packaging: false
+- Asset Cache deletion: false
+- project source deletion: false
+- production mutation: false
+
+Sanitized evidence:
+
+```text
+examples/private-runner/apb-live-full-golden-corpus.failed.example.json
+```
+
+Raw local logs and live reports remain under:
+
+```text
+artifacts/o3de-integration/apb/
+```
+
+Next action: configure or add the controlled golden corpus source assets/gems/settings needed to produce `actor`, `motion`, `motionset`, `animgraph`, and `pxmesh`, then rerun the bounded APB-only command.

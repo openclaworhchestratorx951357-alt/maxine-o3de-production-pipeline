@@ -1,5 +1,6 @@
 import json
 import os
+import sqlite3
 import subprocess as subprocess_module
 import subprocess
 import sys
@@ -22,6 +23,7 @@ GOLDEN_PROJECT_FIXTURE = REPO_ROOT / "examples" / "o3de-golden-project" / "maxin
 INVALID_GOLDEN_PROJECT_FIXTURE = (
     REPO_ROOT / "examples" / "o3de-golden-project" / "maxine-golden-project.invalid-cache-heuristic.fail.json"
 )
+FULL_APB_FAILED_EXAMPLE = REPO_ROOT / "examples" / "private-runner" / "apb-live-full-golden-corpus.failed.example.json"
 
 
 def _fixture(name: str) -> dict:
@@ -49,6 +51,35 @@ def _live_ready_env(tmp_path: Path) -> dict:
     return env
 
 
+def _write_asset_db(project_path: Path, product_names: list[str]) -> Path:
+    db = project_path / "Cache" / "assetdb.sqlite"
+    db.parent.mkdir(parents=True, exist_ok=True)
+    con = sqlite3.connect(db)
+    con.execute("create table Sources (SourceID integer primary key, ScanFolderPK integer, SourceName text, SourceGuid blob)")
+    con.execute(
+        "create table Jobs (JobID integer primary key, SourcePK integer, JobKey text, Fingerprint integer, Platform text, BuilderGuid blob, Status integer, JobRunKey integer, ErrorCount integer, WarningCount integer)"
+    )
+    con.execute(
+        "create table Products (ProductID integer primary key, JobPK integer, ProductName text, SubID integer, AssetType blob, LegacyGuid blob, Hash integer, Flags integer)"
+    )
+    con.execute(
+        "insert into Sources (SourceID, ScanFolderPK, SourceName, SourceGuid) values (1, 1, 'Models/test.fbx', ?)",
+        (bytes.fromhex("00112233445566778899aabbccddeeff"),),
+    )
+    con.execute(
+        "insert into Jobs (JobID, SourcePK, JobKey, Fingerprint, Platform, BuilderGuid, Status, JobRunKey, ErrorCount, WarningCount) values (1, 1, 'Scene Builder', 1, 'pc', ?, 4, 1, 0, 0)",
+        (bytes.fromhex("ffeeddccbbaa99887766554433221100"),),
+    )
+    for idx, product_name in enumerate(product_names, start=1):
+        con.execute(
+            "insert into Products (ProductID, JobPK, ProductName, SubID, AssetType, LegacyGuid, Hash, Flags) values (?, 1, ?, ?, ?, ?, 1, 1)",
+            (idx, product_name, idx, b"", b""),
+        )
+    con.commit()
+    con.close()
+    return db
+
+
 class _RecordingRunner:
     def __init__(self, returncode: int = 0):
         self.returncode = returncode
@@ -62,6 +93,15 @@ class _RecordingRunner:
             stdout="AssetProcessorBatch fixture stdout\n",
             stderr="AssetProcessorBatch fixture stderr\n" if self.returncode else "",
         )
+
+
+class _TimeoutRunner:
+    def __init__(self):
+        self.calls = []
+
+    def __call__(self, argv, **kwargs):
+        self.calls.append((list(argv), kwargs))
+        raise subprocess_module.TimeoutExpired(argv, kwargs.get("timeout", 1), output="partial stdout", stderr="partial stderr")
 
 
 def test_asset_processor_batch_report_schema_validates():
@@ -350,6 +390,64 @@ def test_apb_live_nonzero_exit_fails(tmp_path):
     assert result["status"] == "fail"
     assert result["exit_code"] == 2
     assert result["live_asset_processor_batch_execution"] is True
+
+
+def test_apb_live_exit_zero_records_missing_expected_products_from_asset_db(tmp_path):
+    env = _live_ready_env(tmp_path)
+    project_path = Path(env["O3DE_PROJECT_PATH"])
+    _write_asset_db(project_path, ["pc/models/test.azmodel"])
+
+    result = run_asset_processor_batch_corpus(
+        CORPUS,
+        enable_asset_processor_batch=True,
+        strict_integration=True,
+        golden_project_fixture=GOLDEN_PROJECT_FIXTURE,
+        command_runner=_RecordingRunner(),
+        env=env,
+    )
+
+    assert result["status"] == "fail"
+    assert result["exit_code"] == 0
+    assert result["produced_products"][0]["product_type"] == "azmodel"
+    assert "actor" in result["missing_products"]
+    assert "MXN_ASSET_PRODUCT_MISSING" in result["errors"]
+    assert result["cache_heuristic_used"] is False
+
+
+def test_apb_live_full_failed_example_records_missing_products_without_editor_or_publication():
+    payload = load_json(FULL_APB_FAILED_EXAMPLE)
+
+    assert payload["status"] == "fail"
+    assert payload["live_asset_processor_batch_execution"] is True
+    assert payload["live_editor_execution"] is False
+    assert payload["live_publication"] is False
+    assert payload["cache_heuristic_used"] is False
+    assert "MXN_ASSET_PRODUCT_MISSING" in payload["errors"]
+    assert {"actor", "motion", "motionset", "animgraph", "pxmesh"} <= set(payload["missing_products"])
+
+
+def test_apb_live_timeout_records_stalled_status_without_editor_or_publication(tmp_path):
+    env = _live_ready_env(tmp_path)
+    env["MAXINE_APB_TIMEOUT_SECONDS"] = "1"
+    runner = _TimeoutRunner()
+
+    result = run_asset_processor_batch_corpus(
+        CORPUS,
+        enable_asset_processor_batch=True,
+        strict_integration=True,
+        golden_project_fixture=GOLDEN_PROJECT_FIXTURE,
+        command_runner=runner,
+        env=env,
+    )
+
+    assert result["status"] == "stalled"
+    assert result["timeout_seconds"] == 1
+    assert result["exit_code"] is None
+    assert "MXN_APB_EXECUTION_STALLED" in result["errors"]
+    assert result["live_asset_processor_batch_execution"] is True
+    assert result["live_editor_execution"] is False
+    assert result["live_publication"] is False
+    assert runner.calls[0][1]["timeout"] == 1
 
 
 def test_asset_processor_batch_cli_fixture_passes():

@@ -128,4 +128,35 @@ examples/private-runner/apb-diagnostic.project-paired-apb-build-blocked.example.
 examples/private-runner/apb-diagnostic.project-paired-apb-produced.example.json
 ```
 
-Next action: perform one bounded full APB-only golden corpus retry in the next slice using the produced engine-paired APB. Keep Editor smoke and publication disabled.
+That full APB-only retry has now been performed with the produced engine-paired APB. Keep Editor smoke and publication disabled for all follow-up slices.
+
+## Full APB-Only Retry Outcome
+
+The full retry used:
+
+```text
+C:\src\o3de\build\windows\bin\profile\AssetProcessorBatch.exe
+```
+
+against:
+
+```text
+%USERPROFILE%\O3DE\Projects\MAXINE_GoldenCorpus
+```
+
+The APB executable completed and exited `0` without timing out. The wrapper still records the run as `fail` because Asset Processor database evidence does not satisfy the expected golden corpus product contract:
+
+- produced product types found: `azmodel`, `procprefab`, `azmaterial`
+- missing product types: `actor`, `motion`, `motionset`, `animgraph`, `pxmesh`
+- recorded error: `MXN_ASSET_PRODUCT_MISSING`
+- cache heuristic used: false
+
+This means the previous RemoteControlHost stall and APB production blocker are cleared, but the next blocker is asset/gem/project configuration for the missing skeletal animation and physics product types. APB exit `0` is not treated as release proof when expected product evidence is absent.
+
+Sanitized failed-run evidence:
+
+```text
+examples/private-runner/apb-live-full-golden-corpus.failed.example.json
+```
+
+Next action: fix the controlled golden corpus source assets, gem enablement, or project settings needed to produce `actor`, `motion`, `motionset`, `animgraph`, and `pxmesh`, then rerun the bounded APB-only command. Do not proceed to live Editor smoke until APB product evidence passes.
