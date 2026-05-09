@@ -33,6 +33,12 @@ Default offline validation:
 python tools/validation/validate_all.py
 ```
 
+Private runner dry-run checklist:
+
+```powershell
+python tools/ci/private_runner_apb_dry_run_checklist.py
+```
+
 APB readiness without execution:
 
 ```powershell

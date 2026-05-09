@@ -1,6 +1,11 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- Private Runner Setup Checklist and Live APB Dry-Run Runbook v1 is in progress:
+  - adds a no-secret private runner env template
+  - adds a dry-run checklist that does not execute APB, Editor, or publication
+  - documents the manual private-runner readiness flow before first live APB
+  - keeps normal validation offline and deterministic
 - First Live APB-Only Golden Corpus Run v1 is in progress as a gated private-runner path:
   - fixture/default validation remains offline and deterministic
   - APB live execution requires explicit APB gates, local tool paths, and a valid golden project fixture

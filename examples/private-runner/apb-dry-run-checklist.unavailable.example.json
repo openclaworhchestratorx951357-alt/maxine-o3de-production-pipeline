@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "maxine_private_runner_apb_dry_run_checklist",
+  "generated_at": "2026-05-09T00:00:00Z",
+  "status": "skipped",
+  "strict": false,
+  "live_commands_allowed": false,
+  "live_asset_processor_batch_execution": false,
+  "live_editor_execution": false,
+  "live_publication": false,
+  "env_template_ref": "examples/private-runner/o3de-runner.env.example",
+  "golden_project_fixture_ref": "examples/o3de-golden-project/maxine-golden-project.fixture.json",
+  "golden_corpus_ref": "examples/golden-corpus",
+  "checks": {
+    "env_template_present": {
+      "status": "pass"
+    },
+    "runner_readiness": {
+      "status": "skipped"
+    },
+    "golden_project_fixture": {
+      "status": "pass"
+    },
+    "apb_readiness": {
+      "status": "skipped"
+    },
+    "editor_gates_disabled": {
+      "status": "pass"
+    },
+    "publication_blocked": {
+      "status": "pass"
+    }
+  },
+  "errors": [],
+  "warnings": [
+    "MXN_VALIDATION_TOOL_UNAVAILABLE"
+  ],
+  "messages": [
+    "Dry-run checklist skipped unavailable O3DE/APB readiness; no live APB, Editor, or publication ran."
+  ],
+  "next_steps": [
+    "Fill in O3DE_ENGINE_ROOT, O3DE_PROJECT_PATH, and ASSET_PROCESSOR_BATCH_EXECUTABLE on the private runner.",
+    "Run python tools/ci/o3de_runner_readiness.py --json.",
+    "Run python tools/o3de/asset_processor_batch.py --corpus examples/golden-corpus --check-local-readiness."
+  ]
+}
