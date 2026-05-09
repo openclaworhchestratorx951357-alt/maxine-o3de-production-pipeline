@@ -91,6 +91,14 @@ python tools/o3de/diagnose_asset_processor_batch.py --run-bounded-diagnostics --
 python tools/o3de/asset_processor_batch.py --corpus examples/golden-corpus --check-local-readiness --strict
 ```
 
+For the full APB run, keep a bounded timeout in the session:
+
+```powershell
+$env:MAXINE_APB_TIMEOUT_SECONDS = "1800"
+```
+
+The APB wrapper records `timed_out`, `timeout_seconds`, and process cleanup status in the live report. A timeout is recorded as `MXN_APB_EXECUTION_STALLED` and is not a pass.
+
 Expected dry-run behavior:
 
 - Missing local tools produce skipped/unavailable reports in non-strict mode.
@@ -131,9 +139,11 @@ I_UNDERSTAND_THIS_REQUIRES_A_PRIVATE_SELF_HOSTED_WINDOWS_RUNNER
 - Workflow confirmation phrase does not match.
 - Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE`.
 - Bounded APB diagnostics time out with `MXN_APB_DIAGNOSTIC_STALLED`.
+- Full APB execution times out with `MXN_APB_EXECUTION_STALLED`.
 - Project-paired APB build does not finish producing `AssetProcessorBatch.exe` inside the bounded window.
 - Build environment diagnostics report missing Visual Studio/MSVC, Windows SDK, CMake, or `LY_3RDPARTY_PATH`.
 - A help-like APB diagnostic exits nonzero but does not stall; treat it as a responsiveness probe only, not as full APB success.
+- APB exits `0` but expected product types are missing from Asset Processor database evidence; this is `MXN_ASSET_PRODUCT_MISSING`, not release success.
 
 ## Safety Checklist Before First Live APB
 

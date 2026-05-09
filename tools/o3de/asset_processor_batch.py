@@ -10,6 +10,7 @@ import platform as platform_module
 import subprocess
 import sys
 import time
+import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Sequence, Tuple
@@ -28,9 +29,11 @@ from tools.validation.schema_utils import load_json, schema_validate
 
 MXN_VALIDATION_TOOL_UNAVAILABLE = "MXN_VALIDATION_TOOL_UNAVAILABLE"
 MXN_PATH_UNSAFE = "MXN_PATH_UNSAFE"
+MXN_APB_EXECUTION_STALLED = "MXN_APB_EXECUTION_STALLED"
 SCHEMA_PATH = REPO_ROOT / "schemas" / "maxine.asset-processor-batch-report.schema.json"
 DEFAULT_CORPUS = REPO_ROOT / "examples" / "golden-corpus"
 DEFAULT_ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "o3de-integration" / "apb"
+DEFAULT_APB_TIMEOUT_SECONDS = 1800
 APB_TOOL_NAMES = ("AssetProcessorBatch.exe", "AssetProcessorBatch")
 LIVE_GATE_ENV_VARS = (
     "MAXINE_ENABLE_O3DE_INTEGRATION",
@@ -437,20 +440,47 @@ def _execute_live_apb(
     stderr_path = output_dir / "stderr.txt"
     report_path = output_dir / "asset_processor_batch_live_report.json"
     argv = list(detection["command_preview"])
-    proc = command_runner(
+    timeout_seconds = _apb_timeout_seconds(env)
+    proc, timed_out, process_cleanup = _run_live_apb_command(
         argv,
         cwd=str(detection["project_path"]),
-        text=True,
-        capture_output=True,
         env=dict(env),
+        timeout_seconds=timeout_seconds,
+        command_runner=command_runner,
     )
     finished_at = _utc_now()
     stdout_path.write_text(proc.stdout or "", encoding="utf-8")
     stderr_path.write_text(proc.stderr or "", encoding="utf-8")
     duration_seconds = round(time.monotonic() - start_time, 3)
-    status = "pass" if proc.returncode == 0 else "fail"
-    errors = [] if proc.returncode == 0 else ["MXN_VALIDATION_TOOL_UNAVAILABLE"]
-    messages = [] if proc.returncode == 0 else [f"Asset Processor Batch exited with code {proc.returncode}."]
+    expected_products = _expected_products_from_corpus(corpus)
+    produced_products, source_assets, asset_db_ref = _products_from_asset_database(
+        detection["project_path"],
+        expected_products=expected_products,
+        platform=platform,
+    )
+    produced_product_types = {
+        str(product.get("product_type", "")).strip()
+        for product in produced_products
+        if str(product.get("status", "")).strip() == "ready"
+    }
+    missing_products = [product_type for product_type in expected_products if product_type not in produced_product_types] if asset_db_ref else []
+    status = "stalled" if timed_out else "pass" if proc.returncode == 0 and not missing_products else "fail"
+    errors = (
+        [MXN_APB_EXECUTION_STALLED]
+        if timed_out
+        else ["MXN_ASSET_PRODUCT_MISSING"]
+        if proc.returncode == 0 and missing_products
+        else []
+        if proc.returncode == 0
+        else ["MXN_VALIDATION_TOOL_UNAVAILABLE"]
+    )
+    messages = (
+        [f"Asset Processor Batch exceeded timeout of {timeout_seconds} seconds and was stopped."]
+        if timed_out
+        else ["Asset Processor Batch exited 0, but expected products are missing from the Asset Processor database evidence."]
+        if proc.returncode == 0 and missing_products
+        else [] if proc.returncode == 0 else [f"Asset Processor Batch exited with code {proc.returncode}."]
+    )
     report = {
         "schema_version": "1.0.0",
         "report_type": "asset_processor_batch_golden_corpus_summary_v1",
@@ -472,9 +502,15 @@ def _execute_live_apb(
             "started_at": started_at,
             "finished_at": finished_at,
             "duration_seconds": duration_seconds,
+            "timeout_seconds": timeout_seconds,
+            "timed_out": timed_out,
+            "process_cleanup": process_cleanup,
         },
         "command_preview": _redacted_argv(argv),
         "exit_code": proc.returncode,
+        "timeout_seconds": timeout_seconds,
+        "timed_out": timed_out,
+        "process_cleanup": process_cleanup,
         "stdout_log_ref": _repo_relative(stdout_path),
         "stderr_log_ref": _repo_relative(stderr_path),
         "asset_processor_log_ref": "",
@@ -485,11 +521,11 @@ def _execute_live_apb(
             "asset_processor_log_ref": "",
         },
         "platform": platform,
-        "source_assets": [],
-        "expected_products": _expected_products_from_corpus(corpus),
-        "produced_products": [],
+        "source_assets": source_assets,
+        "expected_products": expected_products,
+        "produced_products": produced_products,
         "pending_assets": [],
-        "missing_products": [],
+        "missing_products": missing_products,
         "cache_heuristic_used": False,
         "cases": [],
         "errors": errors,
@@ -507,10 +543,153 @@ def _execute_live_apb(
                 "kind": "asset_processor_batch_live_report",
                 "path": _repo_relative(report_path),
             },
-        ],
+        ]
+        + ([{"id": "asset-processor-database", "kind": "asset_processor_database", "path": asset_db_ref}] if asset_db_ref else []),
     }
     report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     return report
+
+
+def _products_from_asset_database(
+    project_path: str,
+    *,
+    expected_products: Sequence[str],
+    platform: str,
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], str]:
+    db_path = Path(project_path) / "Cache" / "assetdb.sqlite"
+    if not db_path.exists():
+        return [], [], ""
+    products: List[Dict[str, Any]] = []
+    sources: List[Dict[str, Any]] = []
+    seen_sources: set[tuple[str, str]] = set()
+    try:
+        con = sqlite3.connect(db_path)
+        for product_type in expected_products:
+            rows = con.execute(
+                """
+                select p.ProductName, p.SubID, s.SourceName, s.SourceGuid, j.Platform, j.Status
+                from Products p
+                join Jobs j on p.JobPK = j.JobID
+                join Sources s on j.SourcePK = s.SourceID
+                where lower(p.ProductName) like ?
+                order by p.ProductName
+                limit 1
+                """,
+                (f"%.{product_type.lower()}",),
+            ).fetchall()
+            for product_name, sub_id, source_name, source_guid, row_platform, job_status in rows:
+                source_uuid = _blob_to_hex(source_guid)
+                source_key = (source_uuid, str(source_name))
+                if source_key not in seen_sources:
+                    seen_sources.add(source_key)
+                    sources.append(
+                        {
+                            "path": str(source_name),
+                            "source_uuid": source_uuid,
+                            "platform": str(row_platform or platform),
+                            "evidence_source": "asset_processor_database",
+                        }
+                    )
+                products.append(
+                    {
+                        "product_type": product_type,
+                        "product_path": str(product_name),
+                        "relative_product_path": str(product_name),
+                        "platform": str(row_platform or platform),
+                        "status": "ready" if int(job_status) == 4 else "pending",
+                        "source_uuid": source_uuid,
+                        "source_sub_id": str(sub_id),
+                        "produced_by_source_uuid": bool(source_uuid),
+                        "evidence_source": "asset_processor_database",
+                    }
+                )
+    except sqlite3.Error:
+        return [], [], _safe_local_ref(db_path)
+    finally:
+        try:
+            con.close()
+        except Exception:
+            pass
+    return products, sources, _safe_local_ref(db_path)
+
+
+def _blob_to_hex(value: Any) -> str:
+    if isinstance(value, bytes):
+        return value.hex()
+    return str(value or "").strip()
+
+
+def _safe_local_ref(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(REPO_ROOT.resolve())).replace("\\", "/")
+    except ValueError:
+        return str(path).replace("\\", "/")
+
+
+def _run_live_apb_command(
+    argv: List[str],
+    *,
+    cwd: str,
+    env: Mapping[str, str],
+    timeout_seconds: int,
+    command_runner: Callable[..., subprocess.CompletedProcess[str]],
+) -> Tuple[subprocess.CompletedProcess[str], bool, Dict[str, Any]]:
+    if command_runner is subprocess.run:
+        proc = subprocess.Popen(argv, cwd=cwd, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=dict(env))
+        cleanup = {"attempted": False, "method": "", "return_code": None}
+        try:
+            stdout, stderr = proc.communicate(timeout=timeout_seconds)
+            return subprocess.CompletedProcess(argv, proc.returncode, stdout=stdout, stderr=stderr), False, cleanup
+        except subprocess.TimeoutExpired:
+            cleanup = _terminate_process_tree(proc)
+            stdout, stderr = proc.communicate(timeout=10)
+            return subprocess.CompletedProcess(argv, None, stdout=stdout, stderr=stderr), True, cleanup
+    try:
+        return (
+            command_runner(
+                argv,
+                cwd=cwd,
+                text=True,
+                capture_output=True,
+                env=dict(env),
+                timeout=timeout_seconds,
+            ),
+            False,
+            {"attempted": False, "method": "", "return_code": None},
+        )
+    except subprocess.TimeoutExpired as exc:
+        return (
+            subprocess.CompletedProcess(argv, None, stdout=exc.output or "", stderr=exc.stderr or ""),
+            True,
+            {"attempted": False, "method": "command_runner_timeout", "return_code": None},
+        )
+
+
+def _terminate_process_tree(proc: subprocess.Popen[str]) -> Dict[str, Any]:
+    cleanup = {"attempted": True, "method": "kill", "return_code": None}
+    if platform_module.system().lower() == "windows":
+        taskkill = subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], text=True, capture_output=True)
+        cleanup["method"] = "taskkill /T /F"
+        cleanup["return_code"] = taskkill.returncode
+        if taskkill.returncode == 0:
+            return cleanup
+    try:
+        proc.kill()
+        cleanup["return_code"] = 0
+    except Exception:
+        cleanup["return_code"] = 1
+    return cleanup
+
+
+def _apb_timeout_seconds(env: Mapping[str, str]) -> int:
+    raw = str(env.get("MAXINE_APB_TIMEOUT_SECONDS", "")).strip()
+    if not raw:
+        return DEFAULT_APB_TIMEOUT_SECONDS
+    try:
+        value = int(raw)
+    except ValueError:
+        return DEFAULT_APB_TIMEOUT_SECONDS
+    return max(1, value)
 
 
 def detect_asset_processor_batch_environment(
@@ -768,7 +947,7 @@ def main() -> int:
         print(f"  - {message}")
     for case in result.get("cases", []):
         print(f"  {case['case_id']}: expected {case['expected_status']}, observed {case['observed_status']} -> {case['status']}")
-    return 1 if result["status"] == "fail" else 0
+    return 1 if result["status"] in {"fail", "stalled"} else 0
 
 
 if __name__ == "__main__":

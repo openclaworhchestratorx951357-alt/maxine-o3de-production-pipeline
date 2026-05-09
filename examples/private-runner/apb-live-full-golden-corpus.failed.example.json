@@ -1,0 +1,134 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "asset_processor_batch_golden_corpus_summary_v1",
+  "report_id": "apb-live-full-golden-corpus-failed-example",
+  "generated_at": "2026-05-09T00:00:00Z",
+  "mode": "local_asset_processor_batch",
+  "status": "fail",
+  "integration_enabled": true,
+  "integration_executed": true,
+  "strict_integration": true,
+  "live_asset_processor_batch_execution": true,
+  "live_editor_execution": false,
+  "live_publication": false,
+  "golden_project_fixture_ref": "examples/o3de-golden-project/maxine-golden-project.fixture.json",
+  "engine_root_redacted": "C:/src/o3de",
+  "project_path_redacted": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+  "project_name": "MAXINE_GoldenCorpus",
+  "apb_executable_redacted": "C:/src/o3de/build/windows/bin/profile/AssetProcessorBatch.exe",
+  "apb_candidate_provenance": "engine-paired AssetProcessorBatch candidate",
+  "golden_corpus_ref": "examples/golden-corpus",
+  "command": {
+    "argv": [
+      "C:/src/o3de/build/windows/bin/profile/AssetProcessorBatch.exe",
+      "--project-path",
+      "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+      "--platform",
+      "pc"
+    ],
+    "exit_code": 0,
+    "duration_seconds": 32.594,
+    "timeout_seconds": 1800,
+    "timed_out": false
+  },
+  "logs": {
+    "stdout_log_ref": "artifacts/o3de-integration/apb/apb-live-20260509T164349Z/stdout.txt",
+    "stderr_log_ref": "artifacts/o3de-integration/apb/apb-live-20260509T164349Z/stderr.txt",
+    "asset_processor_log_ref": ""
+  },
+  "apb_report_ref": "artifacts/o3de-integration/apb/apb-live-20260509T164349Z/asset_processor_batch_live_report.json",
+  "platform": "pc",
+  "source_assets": [
+    {
+      "path": "MaterialEditor/ViewportModels/BeveledCone.fbx",
+      "source_uuid": "51b1b230910d500d8bdbd72f5da9507e",
+      "platform": "pc",
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "path": "MaterialCanvas/GraphData/Nodes/MaterialOutputs/BasePBR/MaterialGraphName.material",
+      "source_uuid": "65f067852dd95572909891b798d328b8",
+      "platform": "pc",
+      "evidence_source": "asset_processor_database"
+    }
+  ],
+  "expected_products": [
+    "azmodel",
+    "actor",
+    "procprefab",
+    "motion",
+    "motionset",
+    "animgraph",
+    "pxmesh",
+    "azmaterial"
+  ],
+  "produced_products": [
+    {
+      "product_type": "azmodel",
+      "product_path": "pc/materialeditor/viewportmodels/beveledcone.fbx.azmodel",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "51b1b230910d500d8bdbd72f5da9507e",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "procprefab",
+      "product_path": "pc/materialeditor/viewportmodels/beveledcone_fbx.procprefab",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "51b1b230910d500d8bdbd72f5da9507e",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "azmaterial",
+      "product_path": "pc/materialcanvas/graphdata/nodes/materialoutputs/basepbr/materialgraphname.azmaterial",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "65f067852dd95572909891b798d328b8",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    }
+  ],
+  "pending_assets": [],
+  "missing_products": [
+    "actor",
+    "motion",
+    "motionset",
+    "animgraph",
+    "pxmesh"
+  ],
+  "product_matrix_result": "fail",
+  "cache_heuristic_used": false,
+  "errors": [
+    "MXN_ASSET_PRODUCT_MISSING"
+  ],
+  "warnings": [],
+  "messages": [
+    "Asset Processor Batch exited 0, but expected products are missing from the Asset Processor database evidence."
+  ],
+  "safety": {
+    "live_editor_execution": false,
+    "live_publication": false,
+    "release_packaging": false,
+    "asset_cache_deleted": false,
+    "production_project_mutation": false
+  },
+  "evidence_refs": [
+    {
+      "id": "golden-project-fixture",
+      "kind": "o3de_golden_project_fixture",
+      "path": "examples/o3de-golden-project/maxine-golden-project.fixture.json"
+    },
+    {
+      "id": "asset-processor-database",
+      "kind": "asset_processor_database",
+      "path": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus/Cache/assetdb.sqlite"
+    }
+  ],
+  "next_steps": [
+    "Add or configure golden corpus source assets that produce actor, motion, motionset, animgraph, and pxmesh products.",
+    "Rerun the bounded APB-only golden corpus command after product/gem/asset settings are corrected."
+  ]
+}

@@ -58,6 +58,7 @@
         "pass",
         "warn",
         "fail",
+        "stalled",
         "skipped"
       ]
     },

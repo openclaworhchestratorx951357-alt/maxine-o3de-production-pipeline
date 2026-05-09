@@ -1,6 +1,15 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- First Full APB-Only Golden Corpus Run with Project-Paired APB v1 is in progress:
+  - PR #109 is merged and the project/engine-paired APB at `C:\src\o3de\build\windows\bin\profile\AssetProcessorBatch.exe` is now the baseline
+  - validates `C:\src\o3de`, `%USERPROFILE%\O3DE\Projects\MAXINE_GoldenCorpus`, the golden project fixture, APB provenance, build environment diagnostics, APB bounded diagnostics, APB readiness, runner readiness, dry-run, and fixture suite before the full run
+  - hardens the live APB wrapper with `MAXINE_APB_TIMEOUT_SECONDS`, timeout reporting, and process-tree cleanup for stalled APB executions
+  - the full APB-only command executed with the project-paired APB and exited `0` without timing out
+  - post-run Asset Processor database evidence found ready `azmodel`, `procprefab`, and `azmaterial` products, but did not find `actor`, `motion`, `motionset`, `animgraph`, or `pxmesh`
+  - the APB run is therefore recorded as `fail` with `MXN_ASSET_PRODUCT_MISSING`; APB exit `0` is not treated as release/product-matrix success by itself
+  - sanitized failed-run evidence is represented by `examples/private-runner/apb-live-full-golden-corpus.failed.example.json`; raw stdout and live reports remain gitignored under `artifacts/o3de-integration/apb/`
+  - live Editor execution, release packaging, publication, cache deletion, and source deletion did not occur
 - Complete O3DE AssetProcessorBatch Build Environment v1 is in progress:
   - PR #108 is merged and its project-paired APB build-blocker documentation is now the baseline
   - verifies `C:\src\o3de` as the selected O3DE engine root and `%USERPROFILE%\O3DE\Projects\MAXINE_GoldenCorpus` as the controlled project
