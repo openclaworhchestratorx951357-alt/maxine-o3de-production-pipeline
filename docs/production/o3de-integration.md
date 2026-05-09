@@ -56,3 +56,15 @@ python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.p
 ```
 
 The local Editor path requires `O3DE_ENGINE_ROOT`, `O3DE_PROJECT_PATH`, and an Editor executable. Missing tooling is skipped in non-strict mode and fails in strict mode. Fixture reports keep `live_editor_execution=false`; screenshots and Editor logs are fixture-labeled unless a future gated run actually captures them.
+
+Private Windows runner wiring is manual-only and self-hosted only:
+
+```powershell
+python tools/ci/o3de_runner_readiness.py
+python tools/ci/run_o3de_integration_suite.py --dry-run
+python tools/ci/run_o3de_integration_suite.py --mode fixture
+python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration
+python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --strict-integration
+```
+
+See `docs/production/private-windows-o3de-runner.md` for the workflow guard phrase, runner labels, and local environment variables. Normal CI remains fixture/offline.

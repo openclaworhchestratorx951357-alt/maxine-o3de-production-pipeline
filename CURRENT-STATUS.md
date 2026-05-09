@@ -1,6 +1,12 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- Private self-hosted Windows O3DE integration runner wiring v1 is in progress as manual-only runner preparation:
+  - normal CI remains offline, deterministic, and fixture-backed
+  - `.github/workflows/o3de-private-windows-integration.yml` is workflow_dispatch-only and targets private self-hosted Windows labels
+  - `tools/ci/o3de_runner_readiness.py` checks local O3DE/APB/Editor paths without executing O3DE
+  - `tools/ci/run_o3de_integration_suite.py` composes fixture and gated integration adapter commands
+  - no runner registration, runner token handling, live publication, or required live O3DE execution is performed by this slice
 - O3DE Editor Python package/prefab instantiation fixture bridge v1 is in progress as a fixture-backed, integration-gated smoke layer:
   - default validation uses JSON-only Editor smoke fixtures under `examples/editor-smoke`
   - local Editor detection is opt-in through `MAXINE_ENABLE_O3DE_EDITOR_SMOKE=1` or `--enable-editor-smoke`

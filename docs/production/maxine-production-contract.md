@@ -81,3 +81,13 @@ python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.p
 ```
 
 Fixture Editor smoke reports connect package/prefab/procprefab refs to product resolver evidence, Asset Processor Batch proof, source UUID identity, and expected entity/component structure. They must keep `live_editor_execution=false` unless a future admitted integration job actually runs Editor Python.
+
+Run the private-runner readiness and suite wrappers with:
+
+```powershell
+python tools/ci/o3de_runner_readiness.py
+python tools/ci/run_o3de_integration_suite.py --dry-run
+python tools/ci/run_o3de_integration_suite.py --mode fixture
+```
+
+The private Windows workflow is manual-only and targets `[self-hosted, Windows, X64, o3de, maxine-private]`. It does not register runners, require secrets, run on push/pull_request, publish, or make live O3DE checks part of normal CI.

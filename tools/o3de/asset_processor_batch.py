@@ -201,7 +201,11 @@ def detect_asset_processor_batch_environment(env: Mapping[str, str] | None = Non
     env = env if env is not None else os.environ
     engine_root = str(env.get("O3DE_ENGINE_ROOT", "")).strip()
     project_path = str(env.get("O3DE_PROJECT_PATH", "")).strip()
-    executable = str(env.get("ASSET_PROCESSOR_BATCH", "")).strip() or _find_apb_on_path(env)
+    executable = (
+        str(env.get("ASSET_PROCESSOR_BATCH_EXECUTABLE", "")).strip()
+        or str(env.get("ASSET_PROCESSOR_BATCH", "")).strip()
+        or _find_apb_on_path(env)
+    )
     messages: List[str] = []
     if not engine_root:
         messages.append("O3DE_ENGINE_ROOT is not set.")
