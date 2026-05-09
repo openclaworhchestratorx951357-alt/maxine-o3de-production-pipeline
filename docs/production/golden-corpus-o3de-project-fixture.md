@@ -87,3 +87,5 @@ $env:ASSET_PROCESSOR_BATCH_EXECUTABLE = "C:\path\to\AssetProcessorBatch.exe"
 ```
 
 Live O3DE/APB/Editor execution remains opt-in and private-runner-only. This contract prepares the project layout and evidence retention rules; it still does not prove live Editor/runtime gameplay readiness.
+
+The APB-only live path uses this fixture before invoking Asset Processor Batch. It checks safe roots, temp-level policy, package/prefab evidence, and release cache-heuristic rejection first. `O3DE_PROJECT_PATH\project.json` must match the fixture project name before live APB can run.

@@ -64,6 +64,9 @@
     "integration_enabled": {
       "type": "boolean"
     },
+    "integration_executed": {
+      "type": "boolean"
+    },
     "strict_integration": {
       "type": "boolean"
     },
@@ -84,6 +87,34 @@
       "items": {
         "type": "string"
       }
+    },
+    "runner_context": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "golden_project_fixture_ref": {
+      "type": "string"
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "logs": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "apb_report_ref": {
+      "type": "string"
+    },
+    "live_editor_execution": {
+      "type": "boolean"
+    },
+    "live_publication": {
+      "type": "boolean"
     },
     "exit_code": {
       "type": [

@@ -78,3 +78,12 @@ python tools/o3de/golden_project_fixture.py --fixture examples/o3de-golden-proje
 ```
 
 The fixture maps manifests to project-relative source roots, package/prefab roots, `Levels/_maxine_smoke` temp levels, and `Saved/MaxineEvidence` retention paths. It is validated by default, but local readiness is optional and never mutates the project.
+
+The APB-only live path is explicit:
+
+```powershell
+python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --apb-only --allow-live-o3de-commands --golden-project-fixture examples/o3de-golden-project/maxine-golden-project.fixture.json
+python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --apb-only --allow-live-o3de-commands --golden-project-fixture examples/o3de-golden-project/maxine-golden-project.fixture.json --strict-integration
+```
+
+It requires APB gates and local project/tool paths, writes command evidence under `artifacts/o3de-integration/apb/`, does not run Editor, and does not publish.

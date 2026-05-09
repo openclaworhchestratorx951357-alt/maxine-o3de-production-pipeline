@@ -1,6 +1,12 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- First Live APB-Only Golden Corpus Run v1 is in progress as a gated private-runner path:
+  - fixture/default validation remains offline and deterministic
+  - APB live execution requires explicit APB gates, local tool paths, and a valid golden project fixture
+  - APB-only mode does not invoke Editor smoke, Editor Python, release packaging, or publication
+  - generated live APB stdout/stderr/report artifacts are written under gitignored `artifacts/o3de-integration/apb/`
+  - live Editor smoke and live publication remain future blocked work
 - Golden Corpus O3DE Project Fixture Prep v1 is in progress as fixture/contract preparation for future private-runner O3DE checks:
   - `schemas/maxine.o3de-golden-project-fixture.schema.json`
   - `examples/o3de-golden-project/`

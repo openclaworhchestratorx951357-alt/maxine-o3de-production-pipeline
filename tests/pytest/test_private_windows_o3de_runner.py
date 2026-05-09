@@ -121,6 +121,21 @@ def test_integration_suite_integration_unavailable_fails_strict(tmp_path):
     assert report["live_o3de_execution"] is False
 
 
+def test_integration_suite_apb_only_does_not_run_editor_smoke(tmp_path):
+    report = run_integration_suite(
+        mode="integration",
+        enable_o3de_integration=True,
+        apb_only=True,
+        strict_integration=False,
+        env=_unavailable_env(tmp_path),
+    )
+
+    assert report["status"] == "skipped"
+    assert report["apb_only"] is True
+    assert report["live_editor_execution"] is False
+    assert not any("editor_smoke" in command["label"] for command in report["commands"])
+
+
 def test_workflow_is_manual_only():
     text = WORKFLOW.read_text(encoding="utf-8-sig")
 
@@ -140,6 +155,31 @@ def test_workflow_has_private_runner_confirmation_guard():
 
     assert "I_UNDERSTAND_THIS_REQUIRES_A_PRIVATE_SELF_HOSTED_WINDOWS_RUNNER" in text
     assert "confirm_private_runner" in text
+
+
+def test_workflow_apb_live_mode_manual_only():
+    text = WORKFLOW.read_text(encoding="utf-8-sig")
+
+    assert "apb_live_non_strict" in text
+    assert "apb_live_strict" in text
+    assert "workflow_dispatch:" in text
+    assert "pull_request:" not in text
+    assert "\npush:" not in text
+
+
+def test_workflow_sets_apb_gates_only_for_apb_mode():
+    text = WORKFLOW.read_text(encoding="utf-8-sig")
+
+    assert "MAXINE_ENABLE_ASSET_PROCESSOR_BATCH" in text
+    assert "--apb-only" in text
+    assert "MAXINE_ENABLE_O3DE_EDITOR_SMOKE" not in text
+
+
+def test_workflow_does_not_publish():
+    text = WORKFLOW.read_text(encoding="utf-8-sig").lower()
+
+    assert "publish" not in text
+    assert "release packaging" not in text
 
 
 def test_no_secrets_required_by_workflow():

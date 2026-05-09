@@ -85,6 +85,15 @@ python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration
 python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --strict-integration
 ```
 
+APB-only live suite:
+
+```powershell
+python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --apb-only --allow-live-o3de-commands --golden-project-fixture examples/o3de-golden-project/maxine-golden-project.fixture.json
+python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --apb-only --allow-live-o3de-commands --golden-project-fixture examples/o3de-golden-project/maxine-golden-project.fixture.json --strict-integration
+```
+
+The manual workflow modes `apb_live_non_strict` and `apb_live_strict` set APB gates only. They do not set the Editor smoke gate and do not run Editor smoke.
+
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 
 This wiring does not publish, mutate production levels, contact external services, or claim production-ready completion.

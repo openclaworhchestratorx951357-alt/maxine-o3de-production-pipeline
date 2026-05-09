@@ -11,8 +11,8 @@ on:
         options:
           - readiness
           - fixture
-          - integration_non_strict
-          - integration_strict
+          - apb_live_non_strict
+          - apb_live_strict
       confirm_private_runner:
         description: "Type the private runner confirmation phrase"
         required: true
@@ -22,6 +22,11 @@ on:
         required: true
         default: false
         type: boolean
+      golden_project_fixture:
+        description: "Golden project fixture contract path"
+        required: true
+        default: "examples/o3de-golden-project/maxine-golden-project.fixture.json"
+        type: string
 
 permissions:
   contents: read
@@ -50,37 +55,35 @@ jobs:
 
       - name: Readiness report
         shell: pwsh
-        run: python tools/ci/o3de_runner_readiness.py
+        run: python tools/ci/o3de_runner_readiness.py --golden-project-fixture "${{ inputs.golden_project_fixture }}"
 
       - name: Fixture suite
         if: ${{ inputs.mode == 'fixture' }}
         shell: pwsh
         run: python tools/ci/run_o3de_integration_suite.py --mode fixture
 
-      - name: Block integration mode unless live command gate is explicit
-        if: ${{ (inputs.mode == 'integration_non_strict' || inputs.mode == 'integration_strict') && inputs.run_live_o3de_commands == false }}
+      - name: Block APB live mode unless live command gate is explicit
+        if: ${{ (inputs.mode == 'apb_live_non_strict' || inputs.mode == 'apb_live_strict') && inputs.run_live_o3de_commands == false }}
         shell: pwsh
         run: |
-          Write-Host "Integration mode requested without run_live_o3de_commands=true; running readiness only and failing closed."
-          python tools/ci/o3de_runner_readiness.py
+          Write-Host "APB live mode requested without run_live_o3de_commands=true; running readiness only and failing closed."
+          python tools/ci/o3de_runner_readiness.py --golden-project-fixture "${{ inputs.golden_project_fixture }}"
           exit 1
 
-      - name: Non-strict integration suite
-        if: ${{ inputs.mode == 'integration_non_strict' && inputs.run_live_o3de_commands == true }}
+      - name: APB live non-strict suite
+        if: ${{ inputs.mode == 'apb_live_non_strict' && inputs.run_live_o3de_commands == true }}
         shell: pwsh
         env:
           MAXINE_ENABLE_O3DE_INTEGRATION: "1"
           MAXINE_ENABLE_ASSET_PROCESSOR_BATCH: "1"
-          MAXINE_ENABLE_O3DE_EDITOR_SMOKE: "1"
           MAXINE_ALLOW_LIVE_O3DE_COMMANDS: "1"
-        run: python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --allow-live-o3de-commands
+        run: python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --apb-only --allow-live-o3de-commands --golden-project-fixture "${{ inputs.golden_project_fixture }}"
 
-      - name: Strict integration suite
-        if: ${{ inputs.mode == 'integration_strict' && inputs.run_live_o3de_commands == true }}
+      - name: APB live strict suite
+        if: ${{ inputs.mode == 'apb_live_strict' && inputs.run_live_o3de_commands == true }}
         shell: pwsh
         env:
           MAXINE_ENABLE_O3DE_INTEGRATION: "1"
           MAXINE_ENABLE_ASSET_PROCESSOR_BATCH: "1"
-          MAXINE_ENABLE_O3DE_EDITOR_SMOKE: "1"
           MAXINE_ALLOW_LIVE_O3DE_COMMANDS: "1"
-        run: python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --strict-integration --allow-live-o3de-commands
+        run: python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --apb-only --strict-integration --allow-live-o3de-commands --golden-project-fixture "${{ inputs.golden_project_fixture }}"

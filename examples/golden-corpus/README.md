@@ -15,4 +15,12 @@ python tools/o3de/asset_processor_batch.py --corpus examples/golden-corpus --ena
 python tools/o3de/asset_processor_batch.py --corpus examples/golden-corpus --enable-asset-processor-batch --strict-integration
 ```
 
+The APB-only private-runner path must be tied to the golden project fixture:
+
+```powershell
+python tools/o3de/asset_processor_batch.py --corpus examples/golden-corpus --enable-asset-processor-batch --golden-project-fixture examples/o3de-golden-project/maxine-golden-project.fixture.json
+```
+
+Without all live APB gates and local O3DE/APB paths, that command reports skipped/unavailable in non-strict mode. It does not run Editor or publication.
+
 The corpus intentionally includes pass and fail fixtures. The fixture harness passes when each case's observed validation status matches its expected report status.
