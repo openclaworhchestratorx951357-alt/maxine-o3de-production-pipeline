@@ -12,6 +12,7 @@ SCRIPT = REPO_ROOT / "tools" / "o3de" / "diagnose_asset_processor_batch.py"
 SCHEMA = REPO_ROOT / "schemas" / "maxine.apb-diagnostic-report.schema.json"
 EXAMPLE = REPO_ROOT / "examples" / "private-runner" / "apb-diagnostic.remotecontrolhost-stall.example.json"
 BUILD_BLOCKED_EXAMPLE = REPO_ROOT / "examples" / "private-runner" / "apb-diagnostic.project-paired-apb-build-blocked.example.json"
+BUILD_PRODUCED_EXAMPLE = REPO_ROOT / "examples" / "private-runner" / "apb-diagnostic.project-paired-apb-produced.example.json"
 
 
 def _write_json(path: Path, payload: dict) -> None:
@@ -133,6 +134,64 @@ def test_apb_bounded_diagnostics_records_timeout_without_live_success(tmp_path):
     assert report["command_matrix"][0]["process_cleanup"]["attempted"] is True
 
 
+def test_apb_bounded_diagnostics_tolerates_responsive_unsupported_help(tmp_path):
+    engine = _engine(tmp_path / "o3de")
+    project = _project(tmp_path / "Projects" / "MAXINE_GoldenCorpus")
+    paired = _apb(engine / "build" / "windows" / "bin" / "profile" / "AssetProcessorBatch.exe")
+
+    def responsive_runner(**kwargs):
+        if kwargs["label"] == "candidate_help":
+            return {
+                "label": kwargs["label"],
+                "argv": kwargs["argv"],
+                "cwd": kwargs["cwd"],
+                "status": "fail",
+                "exit_code": 1,
+                "duration_seconds": 0.5,
+                "timeout_seconds": kwargs["timeout_seconds"],
+                "termination_reason": "exited",
+                "process_cleanup": {"attempted": False, "method": "", "return_code": None},
+                "stdout_log_ref": "",
+                "stderr_log_ref": "",
+                "errors": ["MXN_VALIDATION_TOOL_UNAVAILABLE"],
+                "warnings": [],
+            }
+        return {
+            "label": kwargs["label"],
+            "argv": kwargs["argv"],
+            "cwd": kwargs["cwd"],
+            "status": "pass",
+            "exit_code": 0,
+            "duration_seconds": 0.5,
+            "timeout_seconds": kwargs["timeout_seconds"],
+            "termination_reason": "exited",
+            "process_cleanup": {"attempted": False, "method": "", "return_code": None},
+            "stdout_log_ref": "",
+            "stderr_log_ref": "",
+            "errors": [],
+            "warnings": [],
+        }
+
+    report = build_diagnostic_report(
+        search_roots=[tmp_path],
+        engine_root=engine,
+        project_path=project,
+        candidate=paired,
+        run_bounded_diagnostics=True,
+        timeout_seconds=2,
+        command_runner=responsive_runner,
+    )
+
+    assert report["status"] == "pass"
+    help_command = report["command_matrix"][0]
+    assert help_command["label"] == "candidate_help"
+    assert help_command["status"] == "pass"
+    assert help_command["diagnostic_result"] == "responsive_nonzero_tolerated"
+    assert "MXN_VALIDATION_TOOL_UNAVAILABLE" in help_command["warnings"]
+    assert report["live_asset_processor_batch_execution"] is False
+    assert report["live_editor_execution"] is False
+
+
 def test_apb_diagnostic_report_schema_validates_example():
     result = schema_validate(load_json(EXAMPLE), load_json(SCHEMA))
 
@@ -148,6 +207,18 @@ def test_apb_diagnostic_report_schema_validates_project_paired_build_blocker_exa
     assert payload["project_paired_apb_built"] is False
     assert payload["build_attempted"] is True
     assert payload["live_asset_processor_batch_execution"] is False
+
+
+def test_apb_diagnostic_report_schema_validates_project_paired_build_produced_example():
+    payload = load_json(BUILD_PRODUCED_EXAMPLE)
+    result = schema_validate(payload, load_json(SCHEMA))
+
+    assert result.status == "pass", result.messages
+    assert payload["project_paired_apb_found"] is True
+    assert payload["project_paired_apb_built"] is True
+    assert payload["build_result"] == "success"
+    assert payload["live_asset_processor_batch_execution"] is False
+    assert payload["live_editor_execution"] is False
 
 
 def test_apb_diagnostic_cli_inventory_json_uses_search_root(tmp_path):

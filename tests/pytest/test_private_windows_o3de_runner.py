@@ -67,6 +67,31 @@ def test_runner_readiness_rejects_asset_processor_exe_substitute(tmp_path):
     assert report["tools"]["asset_processor_batch"]["available"] is False
 
 
+def test_runner_readiness_apb_only_does_not_require_editor_when_editor_gate_disabled(tmp_path):
+    env = _unavailable_env(tmp_path)
+    engine_root = tmp_path / "o3de"
+    project_path = tmp_path / "MAXINE_GoldenCorpus"
+    apb = tmp_path / "AssetProcessorBatch.exe"
+    engine_root.mkdir()
+    project_path.mkdir()
+    apb.write_text("batch placeholder", encoding="utf-8")
+    env["O3DE_ENGINE_ROOT"] = str(engine_root)
+    env["O3DE_PROJECT_PATH"] = str(project_path)
+    env["ASSET_PROCESSOR_BATCH_EXECUTABLE"] = str(apb)
+    env["MAXINE_ENABLE_O3DE_INTEGRATION"] = "1"
+    env["MAXINE_ENABLE_ASSET_PROCESSOR_BATCH"] = "1"
+    env["MAXINE_ENABLE_O3DE_EDITOR_SMOKE"] = "0"
+    env["MAXINE_ALLOW_LIVE_O3DE_COMMANDS"] = "1"
+
+    report = build_readiness_report(env=env, strict=True)
+
+    assert report["status"] == "pass"
+    assert report["tools"]["editor"]["required"] is False
+    assert report["tools"]["editor"]["available"] is False
+    assert report["would_run"]["asset_processor_batch"] is True
+    assert report["would_run"]["editor_smoke"] is False
+
+
 def test_runner_readiness_json_output_schema(tmp_path):
     result = subprocess.run(
         [sys.executable, str(READINESS_SCRIPT), "--json"],
