@@ -11,6 +11,15 @@
   - APB live execution requires explicit APB gates, local tool paths, and a valid golden project fixture
   - APB-only mode does not invoke Editor smoke, Editor Python, release packaging, or publication
   - generated live APB stdout/stderr/report artifacts are written under gitignored `artifacts/o3de-integration/apb/`
+  - 2026-05-09 local private-runner attempt:
+    - selected `C:\src\o3de` as the O3DE engine root
+    - created/found a controlled `%USERPROFILE%\O3DE\Projects\MAXINE_GoldenCorpus` project matching the golden fixture
+    - used an existing `%USERPROFILE%\O3DE\Projects\_archive\RemoteControlHost-2026-04-20\build\windows\bin\profile\AssetProcessorBatch.exe`
+    - readiness and fixture validation passed before live execution
+    - the live APB process stalled past the local timeout and was stopped; no completed APB report was produced
+    - `AssetProcessor.exe` is explicitly not accepted as an APB substitute
+    - fixture-suite mode now strips live O3DE gates before running offline validation commands
+    - live Editor execution, release packaging, publication, cache deletion, and source deletion did not occur
   - live Editor smoke and live publication remain future blocked work
 - Golden Corpus O3DE Project Fixture Prep v1 is in progress as fixture/contract preparation for future private-runner O3DE checks:
   - `schemas/maxine.o3de-golden-project-fixture.schema.json`

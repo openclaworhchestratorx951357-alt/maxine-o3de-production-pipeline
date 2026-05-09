@@ -217,6 +217,47 @@ def test_apb_live_fails_without_gates_strict(tmp_path):
     assert runner.calls == []
 
 
+def test_apb_live_rejects_asset_processor_exe_substitute(tmp_path):
+    env = _live_ready_env(tmp_path)
+    asset_processor = tmp_path / "AssetProcessor.exe"
+    asset_processor.write_text("not the batch executable", encoding="utf-8")
+    env["ASSET_PROCESSOR_BATCH_EXECUTABLE"] = str(asset_processor)
+    runner = _RecordingRunner()
+
+    result = run_asset_processor_batch_corpus(
+        CORPUS,
+        enable_asset_processor_batch=True,
+        strict_integration=True,
+        golden_project_fixture=GOLDEN_PROJECT_FIXTURE,
+        command_runner=runner,
+        env=env,
+    )
+
+    assert result["status"] == "fail"
+    assert result["mode"] == "unavailable"
+    assert "MXN_VALIDATION_TOOL_UNAVAILABLE" in result["errors"]
+    assert result["live_asset_processor_batch_execution"] is False
+    assert runner.calls == []
+
+
+def test_apb_check_local_readiness_passes_when_tools_detected(tmp_path):
+    env = _live_ready_env(tmp_path)
+    runner = _RecordingRunner()
+
+    result = run_asset_processor_batch_corpus(
+        CORPUS,
+        check_local_readiness=True,
+        strict_integration=True,
+        golden_project_fixture=GOLDEN_PROJECT_FIXTURE,
+        command_runner=runner,
+        env=env,
+    )
+
+    assert result["status"] == "pass"
+    assert result["live_asset_processor_batch_execution"] is False
+    assert runner.calls == []
+
+
 def test_apb_live_does_not_invoke_editor(tmp_path):
     env = _live_ready_env(tmp_path)
     runner = _RecordingRunner()

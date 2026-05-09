@@ -112,11 +112,13 @@ def build_readiness_report(
 def _tool_report(*, explicit: str, names: Iterable[str], env: Mapping[str, str]) -> Dict[str, Any]:
     explicit = str(explicit).strip()
     path = explicit or _find_on_path(names, env)
+    name_valid = _tool_name_valid(path, names)
     exists = bool(path) and Path(path).exists()
     return {
         "path": path,
-        "available": bool(path) and exists,
+        "available": bool(path) and exists and name_valid,
         "exists": exists,
+        "name_valid": name_valid,
         "source": "environment" if explicit else "PATH" if path else "unavailable",
     }
 
@@ -140,6 +142,12 @@ def _find_on_path(names: Iterable[str], env: Mapping[str, str]) -> str:
             if candidate.exists() and candidate.is_file():
                 return str(candidate)
     return ""
+
+
+def _tool_name_valid(path: str, names: Iterable[str]) -> bool:
+    if not path:
+        return False
+    return Path(path).name.lower() in {name.lower() for name in names}
 
 
 def _enabled(env: Mapping[str, str], key: str) -> bool:

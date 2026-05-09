@@ -4,6 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import tools.ci.run_o3de_integration_suite as suite_module
 from tools.ci.o3de_runner_readiness import build_readiness_report
 from tools.ci.run_o3de_integration_suite import run_integration_suite
 
@@ -42,6 +43,28 @@ def test_runner_readiness_strict_fails_without_o3de(tmp_path):
 
     assert report["status"] == "fail"
     assert "MXN_VALIDATION_TOOL_UNAVAILABLE" in report["errors"]
+
+
+def test_runner_readiness_rejects_asset_processor_exe_substitute(tmp_path):
+    env = _unavailable_env(tmp_path)
+    engine_root = tmp_path / "o3de"
+    project_path = tmp_path / "MAXINE_GoldenCorpus"
+    editor = tmp_path / "Editor.exe"
+    asset_processor = tmp_path / "AssetProcessor.exe"
+    engine_root.mkdir()
+    project_path.mkdir()
+    editor.write_text("editor placeholder", encoding="utf-8")
+    asset_processor.write_text("not the batch executable", encoding="utf-8")
+    env["O3DE_ENGINE_ROOT"] = str(engine_root)
+    env["O3DE_PROJECT_PATH"] = str(project_path)
+    env["O3DE_EDITOR_EXECUTABLE"] = str(editor)
+    env["ASSET_PROCESSOR_BATCH_EXECUTABLE"] = str(asset_processor)
+
+    report = build_readiness_report(env=env, strict=True)
+
+    assert report["status"] == "fail"
+    assert "MXN_VALIDATION_TOOL_UNAVAILABLE" in report["errors"]
+    assert report["tools"]["asset_processor_batch"]["available"] is False
 
 
 def test_runner_readiness_json_output_schema(tmp_path):
@@ -92,6 +115,36 @@ def test_integration_suite_fixture_mode_runs_offline_commands():
     labels = {command["label"] for command in report["commands"]}
     assert {"validate_all fixture", "asset_processor_batch fixture", "editor_smoke fixture"} <= labels
     assert all(command["return_code"] == 0 for command in report["commands"])
+
+
+def test_integration_suite_fixture_mode_scrubs_live_env_gates(monkeypatch):
+    seen_envs = []
+
+    def fake_run_command(label, args, env):
+        seen_envs.append(dict(env))
+        return {
+            "label": label,
+            "args": args,
+            "return_code": 0,
+            "stdout": "fixture command\n",
+            "stderr": "",
+            "reported_skipped": False,
+        }
+
+    monkeypatch.setattr(suite_module, "_run_command", fake_run_command)
+    env = os.environ.copy()
+    env["MAXINE_ENABLE_O3DE_INTEGRATION"] = "1"
+    env["MAXINE_ENABLE_ASSET_PROCESSOR_BATCH"] = "1"
+    env["MAXINE_ALLOW_LIVE_O3DE_COMMANDS"] = "1"
+
+    report = suite_module.run_integration_suite(mode="fixture", env=env)
+
+    assert report["status"] == "pass"
+    assert seen_envs
+    for command_env in seen_envs:
+        assert command_env.get("MAXINE_ENABLE_O3DE_INTEGRATION") != "1"
+        assert command_env.get("MAXINE_ENABLE_ASSET_PROCESSOR_BATCH") != "1"
+        assert command_env.get("MAXINE_ALLOW_LIVE_O3DE_COMMANDS") != "1"
 
 
 def test_integration_suite_integration_unavailable_skips_non_strict(tmp_path):

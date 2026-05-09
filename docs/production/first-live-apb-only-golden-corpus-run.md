@@ -75,3 +75,28 @@ artifacts/o3de-integration/apb/
 Reports record command argv, working directory, exit code, stdout/stderr refs, APB report ref, golden project fixture ref, runner context, and safety flags. Generated live artifacts are not committed by default.
 
 Skipped/unavailable is not pass. Live APB success is not production publication and is not Editor/runtime success.
+
+## 2026-05-09 Attempt Notes
+
+Local discovery found:
+
+- engine root: `C:\src\o3de`
+- controlled golden project: `%USERPROFILE%\O3DE\Projects\MAXINE_GoldenCorpus`
+- APB executable used for the attempt: `%USERPROFILE%\O3DE\Projects\_archive\RemoteControlHost-2026-04-20\build\windows\bin\profile\AssetProcessorBatch.exe`
+
+Readiness and fixture validation passed before live execution. The live APB command started but did not complete within the local timeout window; the APB process was stopped and the run is recorded as stalled, not passed. The generated attempt directory contained empty stdout/stderr files and no completed APB report.
+
+Safety outcome:
+
+- live Editor execution: false
+- live publication: false
+- release packaging: false
+- production level mutation: false
+- Asset Cache deletion: false
+- project source deletion: false
+
+Follow-up before retrying live APB:
+
+- run APB from a build paired with the controlled golden project when available
+- keep fixture mode offline even when live gates exist in the parent environment
+- do not substitute `AssetProcessor.exe` for `AssetProcessorBatch.exe`

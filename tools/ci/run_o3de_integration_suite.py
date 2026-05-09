@@ -61,7 +61,7 @@ def run_integration_suite(
         warnings.extend(readiness.get("warnings", []))
         errors.extend(readiness.get("errors", []))
     elif selected_mode == "fixture":
-        commands.extend(_run_fixture_commands(env_map))
+        commands.extend(_run_fixture_commands(_fixture_env(env_map)))
         if any(command["return_code"] != 0 for command in commands):
             status = "fail"
     elif selected_mode == "integration":
@@ -143,6 +143,18 @@ def _run_fixture_commands(env: Mapping[str, str]) -> List[Dict[str, Any]]:
             env,
         ),
     ]
+
+
+def _fixture_env(env: Mapping[str, str]) -> Dict[str, str]:
+    fixture_env = dict(env)
+    for key in (
+        "MAXINE_ENABLE_O3DE_INTEGRATION",
+        "MAXINE_ENABLE_ASSET_PROCESSOR_BATCH",
+        "MAXINE_ENABLE_O3DE_EDITOR_SMOKE",
+        "MAXINE_ALLOW_LIVE_O3DE_COMMANDS",
+    ):
+        fixture_env.pop(key, None)
+    return fixture_env
 
 
 def _run_integration_commands(env: Mapping[str, str], *, strict_integration: bool) -> List[Dict[str, Any]]:
