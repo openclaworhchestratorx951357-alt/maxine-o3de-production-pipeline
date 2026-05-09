@@ -38,6 +38,20 @@ Asset Processor Batch proof evidence may be attached as:
 
 Fixture reports must not claim real AP logs or live execution.
 
+When APB live execution is explicitly admitted on a private runner, APB evidence may include:
+
+- `golden_project_fixture_ref`
+- `integration_executed`
+- `live_asset_processor_batch_execution`
+- safe command argv
+- exit code and duration
+- stdout/stderr refs under `artifacts/o3de-integration/apb/`
+- APB live report ref
+- `live_editor_execution=false`
+- `live_publication=false`
+
+Generated live APB logs are not fixture reports and are not committed by default.
+
 ## Editor Smoke Evidence
 
 Editor Python package/prefab smoke evidence may be attached as:

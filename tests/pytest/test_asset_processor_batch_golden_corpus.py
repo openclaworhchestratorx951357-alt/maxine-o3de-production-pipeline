@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess as subprocess_module
 import subprocess
 import sys
 from pathlib import Path
@@ -17,10 +18,50 @@ CORPUS = REPO_ROOT / "examples" / "golden-corpus"
 SCHEMA = REPO_ROOT / "schemas" / "maxine.asset-processor-batch-report.schema.json"
 SCRIPT = REPO_ROOT / "tools" / "o3de" / "asset_processor_batch.py"
 VALIDATE_ALL = REPO_ROOT / "tools" / "validation" / "validate_all.py"
+GOLDEN_PROJECT_FIXTURE = REPO_ROOT / "examples" / "o3de-golden-project" / "maxine-golden-project.fixture.json"
+INVALID_GOLDEN_PROJECT_FIXTURE = (
+    REPO_ROOT / "examples" / "o3de-golden-project" / "maxine-golden-project.invalid-cache-heuristic.fail.json"
+)
 
 
 def _fixture(name: str) -> dict:
     return load_json(CORPUS / name / "asset_processor_batch.fixture.json")
+
+
+def _live_ready_env(tmp_path: Path) -> dict:
+    engine_root = tmp_path / "o3de-engine"
+    project_path = tmp_path / "MAXINE_GoldenCorpus"
+    apb = tmp_path / "AssetProcessorBatch.exe"
+    engine_root.mkdir()
+    project_path.mkdir()
+    (project_path / "project.json").write_text(json.dumps({"project_name": "MAXINE_GoldenCorpus"}), encoding="utf-8")
+    apb.write_text("fixture executable placeholder", encoding="utf-8")
+    env = os.environ.copy()
+    env["PATH"] = str(tmp_path)
+    env["O3DE_ENGINE_ROOT"] = str(engine_root)
+    env["O3DE_PROJECT_PATH"] = str(project_path)
+    env["ASSET_PROCESSOR_BATCH_EXECUTABLE"] = str(apb)
+    env["MAXINE_ENABLE_O3DE_INTEGRATION"] = "1"
+    env["MAXINE_ENABLE_ASSET_PROCESSOR_BATCH"] = "1"
+    env["MAXINE_ALLOW_LIVE_O3DE_COMMANDS"] = "1"
+    env.pop("MAXINE_ENABLE_O3DE_EDITOR_SMOKE", None)
+    env.pop("O3DE_EDITOR_EXECUTABLE", None)
+    return env
+
+
+class _RecordingRunner:
+    def __init__(self, returncode: int = 0):
+        self.returncode = returncode
+        self.calls = []
+
+    def __call__(self, argv, **kwargs):
+        self.calls.append((list(argv), kwargs))
+        return subprocess_module.CompletedProcess(
+            argv,
+            self.returncode,
+            stdout="AssetProcessorBatch fixture stdout\n",
+            stderr="AssetProcessorBatch fixture stderr\n" if self.returncode else "",
+        )
 
 
 def test_asset_processor_batch_report_schema_validates():
@@ -31,6 +72,20 @@ def test_asset_processor_batch_report_schema_validates():
     for _, report in reports:
         result = schema_validate(report, schema)
         assert result.status == "pass", result.messages
+
+
+def test_asset_processor_batch_report_schema_supports_live_fields():
+    schema = load_json(SCHEMA)
+
+    for field in [
+        "integration_executed",
+        "runner_context",
+        "golden_project_fixture_ref",
+        "command",
+        "logs",
+        "safety",
+    ]:
+        assert field in schema["properties"]
 
 
 def test_asset_processor_batch_fixture_corpus_passes():
@@ -121,6 +176,141 @@ def test_asset_processor_batch_integration_unavailable_fails_strict(tmp_path):
     assert "MXN_VALIDATION_TOOL_UNAVAILABLE" in result["errors"]
 
 
+def test_apb_live_requires_all_gates(tmp_path):
+    env = _live_ready_env(tmp_path)
+    env.pop("MAXINE_ALLOW_LIVE_O3DE_COMMANDS")
+    runner = _RecordingRunner()
+
+    result = run_asset_processor_batch_corpus(
+        CORPUS,
+        enable_asset_processor_batch=True,
+        strict_integration=False,
+        golden_project_fixture=GOLDEN_PROJECT_FIXTURE,
+        command_runner=runner,
+        env=env,
+    )
+
+    assert result["status"] == "skipped"
+    assert result["mode"] == "unavailable"
+    assert "MXN_VALIDATION_TOOL_UNAVAILABLE" in result["warnings"]
+    assert result["live_asset_processor_batch_execution"] is False
+    assert runner.calls == []
+
+
+def test_apb_live_fails_without_gates_strict(tmp_path):
+    env = _live_ready_env(tmp_path)
+    env.pop("MAXINE_ALLOW_LIVE_O3DE_COMMANDS")
+    runner = _RecordingRunner()
+
+    result = run_asset_processor_batch_corpus(
+        CORPUS,
+        enable_asset_processor_batch=True,
+        strict_integration=True,
+        golden_project_fixture=GOLDEN_PROJECT_FIXTURE,
+        command_runner=runner,
+        env=env,
+    )
+
+    assert result["status"] == "fail"
+    assert "MXN_VALIDATION_TOOL_UNAVAILABLE" in result["errors"]
+    assert result["live_asset_processor_batch_execution"] is False
+    assert runner.calls == []
+
+
+def test_apb_live_does_not_invoke_editor(tmp_path):
+    env = _live_ready_env(tmp_path)
+    runner = _RecordingRunner()
+
+    result = run_asset_processor_batch_corpus(
+        CORPUS,
+        enable_asset_processor_batch=True,
+        strict_integration=True,
+        golden_project_fixture=GOLDEN_PROJECT_FIXTURE,
+        command_runner=runner,
+        env=env,
+    )
+
+    assert result["mode"] == "local_asset_processor_batch"
+    assert result["status"] == "pass"
+    assert result["integration_executed"] is True
+    assert result["live_asset_processor_batch_execution"] is True
+    assert result["live_editor_execution"] is False
+    assert result["safety"]["live_publication"] is False
+    assert len(runner.calls) == 1
+    assert not any("Editor" in part or "editor" in part for part in runner.calls[0][0])
+
+
+def test_apb_live_uses_golden_project_fixture(tmp_path):
+    env = _live_ready_env(tmp_path)
+
+    result = run_asset_processor_batch_corpus(
+        CORPUS,
+        enable_asset_processor_batch=True,
+        strict_integration=True,
+        golden_project_fixture=GOLDEN_PROJECT_FIXTURE,
+        command_runner=_RecordingRunner(),
+        env=env,
+    )
+
+    assert result["golden_project_fixture_ref"].endswith("examples/o3de-golden-project/maxine-golden-project.fixture.json")
+    assert any(ref.get("kind") == "o3de_golden_project_fixture" for ref in result["evidence_refs"])
+
+
+def test_apb_live_rejects_invalid_project_fixture(tmp_path):
+    env = _live_ready_env(tmp_path)
+    runner = _RecordingRunner()
+
+    result = run_asset_processor_batch_corpus(
+        CORPUS,
+        enable_asset_processor_batch=True,
+        strict_integration=True,
+        golden_project_fixture=INVALID_GOLDEN_PROJECT_FIXTURE,
+        command_runner=runner,
+        env=env,
+    )
+
+    assert result["status"] == "fail"
+    assert result["mode"] == "invalid"
+    assert "MXN_ASSET_CACHE_HEURISTIC_FORBIDDEN" in result["errors"]
+    assert result["live_asset_processor_batch_execution"] is False
+    assert runner.calls == []
+
+
+def test_apb_live_generated_outputs_are_under_artifact_root(tmp_path):
+    env = _live_ready_env(tmp_path)
+
+    result = run_asset_processor_batch_corpus(
+        CORPUS,
+        enable_asset_processor_batch=True,
+        strict_integration=True,
+        golden_project_fixture=GOLDEN_PROJECT_FIXTURE,
+        command_runner=_RecordingRunner(),
+        env=env,
+    )
+
+    assert result["logs"]["stdout_log_ref"].startswith("artifacts/o3de-integration/apb/")
+    assert result["logs"]["stderr_log_ref"].startswith("artifacts/o3de-integration/apb/")
+    assert result["apb_report_ref"].startswith("artifacts/o3de-integration/apb/")
+    assert result["asset_processor_log_ref"] == ""
+
+
+def test_apb_live_nonzero_exit_fails(tmp_path):
+    env = _live_ready_env(tmp_path)
+
+    result = run_asset_processor_batch_corpus(
+        CORPUS,
+        enable_asset_processor_batch=True,
+        strict_integration=True,
+        golden_project_fixture=GOLDEN_PROJECT_FIXTURE,
+        command_runner=_RecordingRunner(returncode=2),
+        env=env,
+    )
+
+    assert result["status"] == "fail"
+    assert result["exit_code"] == 2
+    assert result["live_asset_processor_batch_execution"] is True
+
+
 def test_asset_processor_batch_cli_fixture_passes():
     result = subprocess.run(
         [sys.executable, str(SCRIPT), "--corpus", str(CORPUS), "--mode", "fixture"],
@@ -147,6 +337,8 @@ def test_asset_processor_batch_cli_strict_integration_fails_when_unavailable(tmp
             "--corpus",
             str(CORPUS),
             "--enable-asset-processor-batch",
+            "--golden-project-fixture",
+            str(GOLDEN_PROJECT_FIXTURE),
             "--strict-integration",
         ],
         cwd=str(REPO_ROOT),
@@ -157,6 +349,35 @@ def test_asset_processor_batch_cli_strict_integration_fails_when_unavailable(tmp
 
     assert result.returncode != 0
     assert "MXN_VALIDATION_TOOL_UNAVAILABLE" in result.stdout
+
+
+def test_asset_processor_batch_cli_non_strict_live_attempt_skips_when_unavailable(tmp_path):
+    env = os.environ.copy()
+    env["PATH"] = str(tmp_path)
+    env.pop("O3DE_ENGINE_ROOT", None)
+    env.pop("O3DE_PROJECT_PATH", None)
+    env.pop("ASSET_PROCESSOR_BATCH", None)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "--corpus",
+            str(CORPUS),
+            "--enable-asset-processor-batch",
+            "--golden-project-fixture",
+            str(GOLDEN_PROJECT_FIXTURE),
+        ],
+        cwd=str(REPO_ROOT),
+        text=True,
+        capture_output=True,
+        env=env,
+    )
+
+    assert result.returncode == 0
+    assert "Asset Processor Batch golden corpus: skipped" in result.stdout
+    assert "MXN_VALIDATION_TOOL_UNAVAILABLE" in result.stdout
+    assert "live_asset_processor_batch_execution: false" in result.stdout
 
 
 def test_validate_all_includes_fixture_golden_corpus():

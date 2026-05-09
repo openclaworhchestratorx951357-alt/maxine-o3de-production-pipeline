@@ -28,6 +28,7 @@ def run_integration_suite(
     mode: str = "dry_run",
     dry_run: bool = False,
     enable_o3de_integration: bool = False,
+    apb_only: bool = False,
     strict_integration: bool = False,
     allow_live_o3de_commands: bool = False,
     golden_project_fixture: Path | str = DEFAULT_GOLDEN_PROJECT_FIXTURE,
@@ -37,7 +38,8 @@ def run_integration_suite(
     if enable_o3de_integration:
         env_map["MAXINE_ENABLE_O3DE_INTEGRATION"] = "1"
         env_map["MAXINE_ENABLE_ASSET_PROCESSOR_BATCH"] = "1"
-        env_map["MAXINE_ENABLE_O3DE_EDITOR_SMOKE"] = "1"
+        if not apb_only:
+            env_map["MAXINE_ENABLE_O3DE_EDITOR_SMOKE"] = "1"
     if allow_live_o3de_commands:
         env_map["MAXINE_ALLOW_LIVE_O3DE_COMMANDS"] = "1"
 
@@ -63,7 +65,23 @@ def run_integration_suite(
         if any(command["return_code"] != 0 for command in commands):
             status = "fail"
     elif selected_mode == "integration":
-        if readiness["status"] == "fail":
+        if apb_only:
+            commands.extend(
+                _run_apb_only_commands(
+                    env_map,
+                    strict_integration=strict_integration,
+                    golden_project_fixture=golden_fixture,
+                )
+            )
+            if any(command["return_code"] != 0 for command in commands):
+                status = "fail"
+                errors.extend(_collect_command_error_codes(commands))
+            elif any(command.get("reported_skipped") for command in commands):
+                status = "skipped"
+                warnings.extend([MXN_VALIDATION_TOOL_UNAVAILABLE])
+            else:
+                status = "pass"
+        elif readiness["status"] == "fail":
             status = "fail"
             errors.extend(readiness.get("errors", []))
         else:
@@ -86,9 +104,10 @@ def run_integration_suite(
         "mode": selected_mode,
         "status": status,
         "strict_integration": strict_integration,
+        "apb_only": apb_only,
         "live_commands_allowed": str(env_map.get("MAXINE_ALLOW_LIVE_O3DE_COMMANDS", "")).strip() == "1",
         "live_o3de_execution": False,
-        "live_asset_processor_batch_execution": False,
+        "live_asset_processor_batch_execution": _command_output_has(commands, "live_asset_processor_batch_execution: true"),
         "live_editor_execution": False,
         "golden_project_fixture_ref": _repo_relative(golden_fixture),
         "readiness": readiness,
@@ -168,6 +187,41 @@ def _run_integration_commands(env: Mapping[str, str], *, strict_integration: boo
     ]
 
 
+def _run_apb_only_commands(
+    env: Mapping[str, str],
+    *,
+    strict_integration: bool,
+    golden_project_fixture: Path,
+) -> List[Dict[str, Any]]:
+    strict_args = ["--strict-integration"] if strict_integration else []
+    return [
+        _run_command(
+            "golden_project_fixture readiness",
+            [
+                sys.executable,
+                "tools/o3de/golden_project_fixture.py",
+                "--fixture",
+                _repo_relative(golden_project_fixture),
+            ],
+            env,
+        ),
+        _run_command(
+            "asset_processor_batch apb_only",
+            [
+                sys.executable,
+                "tools/o3de/asset_processor_batch.py",
+                "--corpus",
+                "examples/golden-corpus",
+                "--enable-asset-processor-batch",
+                "--golden-project-fixture",
+                _repo_relative(golden_project_fixture),
+                *strict_args,
+            ],
+            env,
+        ),
+    ]
+
+
 def _run_command(label: str, args: List[str], env: Mapping[str, str]) -> Dict[str, Any]:
     proc = subprocess.run(args, cwd=str(REPO_ROOT), text=True, capture_output=True, env=dict(env))
     return {
@@ -188,6 +242,20 @@ def _unique(values: List[str]) -> List[str]:
     return result
 
 
+def _collect_command_error_codes(commands: List[Dict[str, Any]]) -> List[str]:
+    errors: List[str] = []
+    for command in commands:
+        combined = f"{command.get('stdout', '')}\n{command.get('stderr', '')}"
+        if MXN_VALIDATION_TOOL_UNAVAILABLE in combined:
+            errors.append(MXN_VALIDATION_TOOL_UNAVAILABLE)
+    return _unique(errors)
+
+
+def _command_output_has(commands: List[Dict[str, Any]], needle: str) -> bool:
+    needle = needle.lower()
+    return any(needle in str(command.get("stdout", "")).lower() for command in commands)
+
+
 def _repo_relative(path: Path) -> str:
     try:
         return str(path.resolve().relative_to(REPO_ROOT.resolve())).replace("\\", "/")
@@ -200,6 +268,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--dry-run", action="store_true", help="Only report runner readiness; do not run suite commands.")
     parser.add_argument("--mode", choices=["dry_run", "fixture", "integration"], default="dry_run")
     parser.add_argument("--enable-o3de-integration", action="store_true", help="Opt into local O3DE/APB/Editor adapter checks.")
+    parser.add_argument("--apb-only", action="store_true", help="Run only the APB integration path; do not run Editor smoke.")
     parser.add_argument("--strict-integration", action="store_true", help="Fail when local O3DE tooling is unavailable.")
     parser.add_argument("--allow-live-o3de-commands", action="store_true", help="Set the hard live-command gate for future private runs.")
     parser.add_argument("--golden-project-fixture", default=str(DEFAULT_GOLDEN_PROJECT_FIXTURE), help="Golden project fixture contract path.")
@@ -211,8 +280,11 @@ def print_text_report(report: Mapping[str, Any]) -> None:
     print(f"O3DE integration suite: {report['status']}")
     print(f"mode: {report['mode']}")
     print(f"strict_integration: {str(report['strict_integration']).lower()}")
+    print(f"apb_only: {str(report.get('apb_only', False)).lower()}")
     print(f"live_commands_allowed: {str(report['live_commands_allowed']).lower()}")
     print(f"live_o3de_execution: {str(report['live_o3de_execution']).lower()}")
+    print(f"live_asset_processor_batch_execution: {str(report.get('live_asset_processor_batch_execution', False)).lower()}")
+    print(f"live_editor_execution: {str(report.get('live_editor_execution', False)).lower()}")
     print(f"golden_project_fixture_ref: {report.get('golden_project_fixture_ref', '')}")
     for code in report.get("errors", []):
         print(f"  error: {code}")
@@ -231,6 +303,7 @@ def main() -> int:
         mode=mode,
         dry_run=args.dry_run,
         enable_o3de_integration=args.enable_o3de_integration,
+        apb_only=args.apb_only,
         strict_integration=args.strict_integration,
         allow_live_o3de_commands=args.allow_live_o3de_commands,
         golden_project_fixture=args.golden_project_fixture,

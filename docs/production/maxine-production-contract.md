@@ -68,6 +68,15 @@ Optional local Asset Processor Batch detection is gated:
 python tools/o3de/asset_processor_batch.py --corpus examples/golden-corpus --enable-asset-processor-batch
 ```
 
+The first private-runner live APB path is APB-only and must use the golden project fixture:
+
+```powershell
+python tools/o3de/asset_processor_batch.py --corpus examples/golden-corpus --enable-asset-processor-batch --golden-project-fixture examples/o3de-golden-project/maxine-golden-project.fixture.json
+python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --apb-only --allow-live-o3de-commands --golden-project-fixture examples/o3de-golden-project/maxine-golden-project.fixture.json
+```
+
+Live APB still requires explicit private-runner environment gates and local tool paths. It does not run Editor, Editor smoke, release packaging, or publication.
+
 Run the Editor Python package/prefab smoke fixture bridge with:
 
 ```powershell

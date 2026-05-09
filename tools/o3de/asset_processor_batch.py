@@ -6,9 +6,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import platform as platform_module
+import subprocess
 import sys
+import time
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Sequence, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
@@ -16,14 +20,23 @@ if str(REPO_ROOT) not in sys.path:
 
 from tools.o3de.product_matrix_resolver import validate_expected_products
 from tools.o3de.product_resolver import ProductRecord
+from tools.o3de.golden_project_fixture import DEFAULT_FIXTURE as DEFAULT_GOLDEN_PROJECT_FIXTURE
+from tools.o3de.golden_project_fixture import run_golden_project_fixture
 from tools.validation.results import ValidationResult
 from tools.validation.schema_utils import load_json, schema_validate
 
 
 MXN_VALIDATION_TOOL_UNAVAILABLE = "MXN_VALIDATION_TOOL_UNAVAILABLE"
+MXN_PATH_UNSAFE = "MXN_PATH_UNSAFE"
 SCHEMA_PATH = REPO_ROOT / "schemas" / "maxine.asset-processor-batch-report.schema.json"
 DEFAULT_CORPUS = REPO_ROOT / "examples" / "golden-corpus"
+DEFAULT_ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "o3de-integration" / "apb"
 APB_TOOL_NAMES = ("AssetProcessorBatch.exe", "AssetProcessorBatch")
+LIVE_GATE_ENV_VARS = (
+    "MAXINE_ENABLE_O3DE_INTEGRATION",
+    "MAXINE_ENABLE_ASSET_PROCESSOR_BATCH",
+    "MAXINE_ALLOW_LIVE_O3DE_COMMANDS",
+)
 
 
 def load_corpus_reports(corpus: Path | str) -> List[Tuple[str, Dict[str, Any]]]:
@@ -96,15 +109,32 @@ def run_asset_processor_batch_corpus(
     mode: str = "fixture",
     enable_asset_processor_batch: bool = False,
     strict_integration: bool = False,
+    check_local_readiness: bool = False,
+    golden_project_fixture: Path | str = DEFAULT_GOLDEN_PROJECT_FIXTURE,
     platform: str = "pc",
     env: Mapping[str, str] | None = None,
+    command_runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
+    artifact_root: Path | str = DEFAULT_ARTIFACT_ROOT,
 ) -> Dict[str, Any]:
     env = env if env is not None else os.environ
-    if enable_asset_processor_batch or asset_processor_batch_gate_enabled(env) or mode == "local_asset_processor_batch":
-        return _unavailable_integration_report(
+    integration_requested = (
+        check_local_readiness
+        or enable_asset_processor_batch
+        or asset_processor_batch_gate_enabled(env)
+        or mode == "local_asset_processor_batch"
+    )
+    live_requested = enable_asset_processor_batch or mode == "local_asset_processor_batch"
+    if integration_requested:
+        return _integration_or_live_report(
+            _resolve_path(corpus),
             strict_integration=strict_integration,
+            check_local_readiness=check_local_readiness,
+            live_requested=live_requested,
+            golden_project_fixture=_resolve_path(golden_project_fixture),
             platform=platform,
             env=env,
+            command_runner=command_runner or subprocess.run,
+            artifact_root=_resolve_path(artifact_root),
         )
     return _fixture_corpus_report(_resolve_path(corpus), platform=platform)
 
@@ -160,11 +190,76 @@ def _fixture_corpus_report(corpus: Path, *, platform: str) -> Dict[str, Any]:
     }
 
 
-def _unavailable_integration_report(*, strict_integration: bool, platform: str, env: Mapping[str, str]) -> Dict[str, Any]:
-    detection = detect_asset_processor_batch_environment(env)
+def _integration_or_live_report(
+    corpus: Path,
+    *,
+    strict_integration: bool,
+    check_local_readiness: bool,
+    live_requested: bool,
+    golden_project_fixture: Path,
+    platform: str,
+    env: Mapping[str, str],
+    command_runner: Callable[..., subprocess.CompletedProcess[str]],
+    artifact_root: Path,
+) -> Dict[str, Any]:
+    fixture_report = run_golden_project_fixture(golden_project_fixture)
+    if fixture_report["status"] == "fail":
+        return _invalid_integration_report(
+            platform=platform,
+            golden_project_fixture=golden_project_fixture,
+            errors=list(fixture_report.get("errors", [])),
+            warnings=list(fixture_report.get("warnings", [])),
+            messages=list(fixture_report.get("messages", [])),
+        )
+
+    detection = detect_asset_processor_batch_environment(env, golden_project_fixture=golden_project_fixture)
+    if detection.get("project_identity_error"):
+        return _invalid_integration_report(
+            platform=platform,
+            golden_project_fixture=golden_project_fixture,
+            errors=[MXN_PATH_UNSAFE],
+            warnings=[],
+            messages=[str(detection["project_identity_error"])],
+        )
+    missing = _missing_live_prerequisites(env, detection, live_requested=live_requested or check_local_readiness)
+    if check_local_readiness or missing:
+        return _unavailable_integration_report(
+            strict_integration=strict_integration,
+            platform=platform,
+            env=env,
+            detection=detection,
+            golden_project_fixture=golden_project_fixture,
+            missing=missing,
+        )
+    return _execute_live_apb(
+        corpus=corpus,
+        detection=detection,
+        strict_integration=strict_integration,
+        golden_project_fixture=golden_project_fixture,
+        platform=platform,
+        env=env,
+        command_runner=command_runner,
+        artifact_root=artifact_root,
+    )
+
+
+def _unavailable_integration_report(
+    *,
+    strict_integration: bool,
+    platform: str,
+    env: Mapping[str, str],
+    detection: Mapping[str, Any] | None = None,
+    golden_project_fixture: Path = DEFAULT_GOLDEN_PROJECT_FIXTURE,
+    missing: List[str] | None = None,
+) -> Dict[str, Any]:
+    detection = detection or detect_asset_processor_batch_environment(env, golden_project_fixture=golden_project_fixture)
+    missing = missing if missing is not None else _missing_live_prerequisites(env, detection, live_requested=True)
     status = "fail" if strict_integration else "skipped"
     errors = [MXN_VALIDATION_TOOL_UNAVAILABLE] if strict_integration else []
     warnings = [] if strict_integration else [MXN_VALIDATION_TOOL_UNAVAILABLE]
+    messages = list(detection["messages"])
+    if missing:
+        messages.insert(0, "Live Asset Processor Batch prerequisites are unavailable: " + ", ".join(missing) + ".")
     return {
         "schema_version": "1.0.0",
         "report_type": "asset_processor_batch_golden_corpus_summary_v1",
@@ -172,8 +267,11 @@ def _unavailable_integration_report(*, strict_integration: bool, platform: str, 
         "mode": "unavailable",
         "status": status,
         "integration_enabled": True,
+        "integration_executed": False,
         "strict_integration": strict_integration,
         "live_asset_processor_batch_execution": False,
+        "live_editor_execution": False,
+        "live_publication": False,
         "o3de_engine_root_present": bool(detection["engine_root"]),
         "o3de_project_path_present": bool(detection["project_path"]),
         "asset_processor_batch_executable": detection["asset_processor_batch_executable"],
@@ -182,22 +280,177 @@ def _unavailable_integration_report(*, strict_integration: bool, platform: str, 
         "stdout_log_ref": "",
         "stderr_log_ref": "",
         "asset_processor_log_ref": "",
+        "golden_project_fixture_ref": _repo_relative(golden_project_fixture),
+        "runner_context": _runner_context(),
+        "command": {
+            "argv": detection["command_preview"],
+            "working_directory": detection["project_path"],
+            "exit_code": None,
+        },
+        "logs": {
+            "stdout_log_ref": "",
+            "stderr_log_ref": "",
+            "asset_processor_log_ref": "",
+        },
+        "safety": _apb_safety_payload(),
         "platform": platform,
         "cases": [],
         "errors": errors,
         "warnings": warnings,
-        "messages": detection["messages"],
+        "messages": messages,
         "evidence_refs": [
             {
                 "id": "local-apb-integration-gate",
                 "kind": "integration_check",
                 "source": "detect_asset_processor_batch_environment",
+            },
+            {
+                "id": "golden-project-fixture",
+                "kind": "o3de_golden_project_fixture",
+                "path": _repo_relative(golden_project_fixture),
             }
         ],
     }
 
 
-def detect_asset_processor_batch_environment(env: Mapping[str, str] | None = None) -> Dict[str, Any]:
+def _invalid_integration_report(
+    *,
+    platform: str,
+    golden_project_fixture: Path,
+    errors: List[str],
+    warnings: List[str],
+    messages: List[str],
+) -> Dict[str, Any]:
+    return {
+        "schema_version": "1.0.0",
+        "report_type": "asset_processor_batch_golden_corpus_summary_v1",
+        "report_id": "asset-processor-batch-invalid-integration",
+        "mode": "invalid",
+        "status": "fail",
+        "integration_enabled": True,
+        "integration_executed": False,
+        "strict_integration": True,
+        "live_asset_processor_batch_execution": False,
+        "live_editor_execution": False,
+        "live_publication": False,
+        "golden_project_fixture_ref": _repo_relative(golden_project_fixture),
+        "platform": platform,
+        "cases": [],
+        "errors": _unique(errors),
+        "warnings": _unique(warnings),
+        "messages": messages,
+        "safety": _apb_safety_payload(),
+        "evidence_refs": [
+            {
+                "id": "golden-project-fixture",
+                "kind": "o3de_golden_project_fixture",
+                "path": _repo_relative(golden_project_fixture),
+            }
+        ],
+    }
+
+
+def _execute_live_apb(
+    *,
+    corpus: Path,
+    detection: Mapping[str, Any],
+    strict_integration: bool,
+    golden_project_fixture: Path,
+    platform: str,
+    env: Mapping[str, str],
+    command_runner: Callable[..., subprocess.CompletedProcess[str]],
+    artifact_root: Path,
+) -> Dict[str, Any]:
+    started_at = _utc_now()
+    start_time = time.monotonic()
+    run_id = "apb-live-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    output_dir = artifact_root / run_id
+    output_dir.mkdir(parents=True, exist_ok=True)
+    stdout_path = output_dir / "stdout.txt"
+    stderr_path = output_dir / "stderr.txt"
+    report_path = output_dir / "asset_processor_batch_live_report.json"
+    argv = list(detection["command_preview"])
+    proc = command_runner(
+        argv,
+        cwd=str(detection["project_path"]),
+        text=True,
+        capture_output=True,
+        env=dict(env),
+    )
+    finished_at = _utc_now()
+    stdout_path.write_text(proc.stdout or "", encoding="utf-8")
+    stderr_path.write_text(proc.stderr or "", encoding="utf-8")
+    duration_seconds = round(time.monotonic() - start_time, 3)
+    status = "pass" if proc.returncode == 0 else "fail"
+    errors = [] if proc.returncode == 0 else ["MXN_VALIDATION_TOOL_UNAVAILABLE"]
+    messages = [] if proc.returncode == 0 else [f"Asset Processor Batch exited with code {proc.returncode}."]
+    report = {
+        "schema_version": "1.0.0",
+        "report_type": "asset_processor_batch_golden_corpus_summary_v1",
+        "report_id": run_id,
+        "mode": "local_asset_processor_batch",
+        "status": status,
+        "integration_enabled": True,
+        "integration_executed": True,
+        "strict_integration": strict_integration,
+        "live_asset_processor_batch_execution": True,
+        "live_editor_execution": False,
+        "live_publication": False,
+        "runner_context": _runner_context(),
+        "golden_project_fixture_ref": _repo_relative(golden_project_fixture),
+        "command": {
+            "argv": _redacted_argv(argv),
+            "working_directory": detection["project_path"],
+            "exit_code": proc.returncode,
+            "started_at": started_at,
+            "finished_at": finished_at,
+            "duration_seconds": duration_seconds,
+        },
+        "command_preview": _redacted_argv(argv),
+        "exit_code": proc.returncode,
+        "stdout_log_ref": _repo_relative(stdout_path),
+        "stderr_log_ref": _repo_relative(stderr_path),
+        "asset_processor_log_ref": "",
+        "apb_report_ref": _repo_relative(report_path),
+        "logs": {
+            "stdout_log_ref": _repo_relative(stdout_path),
+            "stderr_log_ref": _repo_relative(stderr_path),
+            "asset_processor_log_ref": "",
+        },
+        "platform": platform,
+        "source_assets": [],
+        "expected_products": _expected_products_from_corpus(corpus),
+        "produced_products": [],
+        "pending_assets": [],
+        "missing_products": [],
+        "cache_heuristic_used": False,
+        "cases": [],
+        "errors": errors,
+        "warnings": [],
+        "messages": messages,
+        "safety": _apb_safety_payload(),
+        "evidence_refs": [
+            {
+                "id": "golden-project-fixture",
+                "kind": "o3de_golden_project_fixture",
+                "path": _repo_relative(golden_project_fixture),
+            },
+            {
+                "id": "apb-live-report",
+                "kind": "asset_processor_batch_live_report",
+                "path": _repo_relative(report_path),
+            },
+        ],
+    }
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    return report
+
+
+def detect_asset_processor_batch_environment(
+    env: Mapping[str, str] | None = None,
+    *,
+    golden_project_fixture: Path | str | None = None,
+) -> Dict[str, Any]:
     env = env if env is not None else os.environ
     engine_root = str(env.get("O3DE_ENGINE_ROOT", "")).strip()
     project_path = str(env.get("O3DE_PROJECT_PATH", "")).strip()
@@ -206,23 +459,61 @@ def detect_asset_processor_batch_environment(env: Mapping[str, str] | None = Non
         or str(env.get("ASSET_PROCESSOR_BATCH", "")).strip()
         or _find_apb_on_path(env)
     )
+    engine_root_exists = bool(engine_root) and Path(engine_root).exists()
+    project_path_exists = bool(project_path) and Path(project_path).exists()
+    executable_exists = bool(executable) and Path(executable).exists()
+    expected_project_name = _expected_project_name(golden_project_fixture)
+    project_name = _read_project_name(project_path) if project_path_exists else ""
+    project_identity_error = ""
     messages: List[str] = []
-    if not engine_root:
-        messages.append("O3DE_ENGINE_ROOT is not set.")
-    if not project_path:
-        messages.append("O3DE_PROJECT_PATH is not set.")
-    if not executable:
-        messages.append("AssetProcessorBatch executable was not found.")
-    if executable and engine_root and project_path:
-        messages.append("AssetProcessorBatch tooling was detected, but this proof slice does not execute it automatically.")
+    if not engine_root_exists:
+        messages.append("O3DE_ENGINE_ROOT is not set or does not exist.")
+    if not project_path_exists:
+        messages.append("O3DE_PROJECT_PATH is not set or does not exist.")
+    if not executable_exists:
+        messages.append("AssetProcessorBatch executable was not found or does not exist.")
+    if project_path_exists and expected_project_name:
+        if not project_name:
+            project_identity_error = "O3DE_PROJECT_PATH does not contain a readable project.json project_name."
+        elif project_name != expected_project_name:
+            project_identity_error = (
+                f"O3DE_PROJECT_PATH project_name '{project_name}' does not match golden fixture project_name "
+                f"'{expected_project_name}'."
+            )
+        if project_identity_error:
+            messages.append(project_identity_error)
+    if executable_exists and engine_root_exists and project_path_exists:
+        messages.append("AssetProcessorBatch tooling was detected; live execution still requires every explicit APB gate.")
     command_preview = [executable, "--project-path", project_path, "--platform", "pc"] if executable and project_path else []
     return {
         "engine_root": engine_root,
+        "engine_root_exists": engine_root_exists,
         "project_path": project_path,
+        "project_path_exists": project_path_exists,
+        "project_name": project_name,
+        "project_name_expected": expected_project_name,
+        "project_identity_error": project_identity_error,
         "asset_processor_batch_executable": executable,
+        "asset_processor_batch_executable_exists": executable_exists,
         "command_preview": command_preview,
         "messages": messages,
     }
+
+
+def _missing_live_prerequisites(env: Mapping[str, str], detection: Mapping[str, Any], *, live_requested: bool) -> List[str]:
+    missing: List[str] = []
+    if not live_requested:
+        missing.append("--enable-asset-processor-batch")
+    for key in LIVE_GATE_ENV_VARS:
+        if str(env.get(key, "")).strip() != "1":
+            missing.append(key)
+    if not detection.get("engine_root_exists"):
+        missing.append("O3DE_ENGINE_ROOT")
+    if not detection.get("project_path_exists"):
+        missing.append("O3DE_PROJECT_PATH")
+    if not detection.get("asset_processor_batch_executable_exists"):
+        missing.append("ASSET_PROCESSOR_BATCH_EXECUTABLE")
+    return _unique(missing)
 
 
 def _product_records(report: Mapping[str, Any]) -> List[ProductRecord]:
@@ -240,6 +531,16 @@ def _product_records(report: Mapping[str, Any]) -> List[ProductRecord]:
     return products
 
 
+def _expected_products_from_corpus(corpus: Path) -> List[str]:
+    expected: List[str] = []
+    for _, report in load_corpus_reports(corpus):
+        for product_type in report.get("expected_products", []) if isinstance(report.get("expected_products", []), list) else []:
+            product_type = str(product_type).strip()
+            if product_type and product_type not in expected:
+                expected.append(product_type)
+    return expected
+
+
 def _uses_cache_heuristic(product: ProductRecord) -> bool:
     evidence_source = product.evidence_source.strip().lower()
     return evidence_source in {"cache_heuristic", "newest_cache_file", "best_looking_cache_file", "fallback_mesh_selection"} or (
@@ -251,6 +552,67 @@ def asset_processor_batch_gate_enabled(env: Mapping[str, str]) -> bool:
     return str(env.get("MAXINE_ENABLE_ASSET_PROCESSOR_BATCH", "")).strip() == "1" or str(
         env.get("MAXINE_ENABLE_O3DE_INTEGRATION", "")
     ).strip() == "1"
+
+
+def _runner_context() -> Dict[str, Any]:
+    runner_labels = [label.strip() for label in str(os.environ.get("RUNNER_LABELS", "")).split(",") if label.strip()]
+    return {
+        "os": platform_module.platform(),
+        "runner_name": os.environ.get("RUNNER_NAME", ""),
+        "self_hosted_expected": True,
+        "private_runner_labels": runner_labels,
+    }
+
+
+def _apb_safety_payload() -> Dict[str, Any]:
+    return {
+        "live_editor_execution": False,
+        "live_publication": False,
+        "project_mutation_policy": "AssetProcessorBatch-only cache/product processing for the validated golden project; no Editor, publication, or production-level mutation.",
+        "cleanup_policy": "No cache deletion or source-asset deletion; generated command logs stay under artifacts/o3de-integration/apb.",
+    }
+
+
+def _expected_project_name(golden_project_fixture: Path | str | None) -> str:
+    if not golden_project_fixture:
+        return ""
+    path = _resolve_path(golden_project_fixture)
+    if not path.exists():
+        return ""
+    try:
+        payload = load_json(path)
+    except Exception:
+        return ""
+    project = payload.get("project", {})
+    return str(project.get("project_name", "")).strip() if isinstance(project, Mapping) else ""
+
+
+def _read_project_name(project_path: str) -> str:
+    if not project_path:
+        return ""
+    project_json = Path(project_path) / "project.json"
+    if not project_json.exists():
+        return ""
+    try:
+        payload = json.loads(project_json.read_text(encoding="utf-8-sig"))
+    except Exception:
+        return ""
+    return str(payload.get("project_name", "")).strip() if isinstance(payload, Mapping) else ""
+
+
+def _redacted_argv(argv: Sequence[str]) -> List[str]:
+    redacted: List[str] = []
+    for value in argv:
+        text = str(value)
+        if any(marker in text.lower() for marker in ("token=", "password=", "secret=", "key=")):
+            redacted.append("<redacted>")
+        else:
+            redacted.append(text)
+    return redacted
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _find_apb_on_path(env: Mapping[str, str]) -> str:
@@ -290,6 +652,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--corpus", default=str(DEFAULT_CORPUS), help="Golden corpus root.")
     parser.add_argument("--mode", choices=["fixture", "local_asset_processor_batch"], default="fixture")
     parser.add_argument("--platform", default="pc")
+    parser.add_argument("--check-local-readiness", action="store_true", help="Check APB project/tool readiness without executing APB.")
+    parser.add_argument("--golden-project-fixture", default=str(DEFAULT_GOLDEN_PROJECT_FIXTURE), help="Golden project fixture contract path.")
     parser.add_argument("--enable-asset-processor-batch", action="store_true", help="Opt into local APB integration detection.")
     parser.add_argument("--strict-integration", action="store_true", help="Fail if local APB tooling is unavailable.")
     return parser.parse_args()
@@ -302,11 +666,21 @@ def main() -> int:
         mode=args.mode,
         enable_asset_processor_batch=args.enable_asset_processor_batch,
         strict_integration=args.strict_integration,
+        check_local_readiness=args.check_local_readiness,
+        golden_project_fixture=args.golden_project_fixture,
         platform=args.platform,
     )
     print(f"Asset Processor Batch golden corpus: {result['status']}")
     print(f"mode: {result['mode']}")
     print(f"live_asset_processor_batch_execution: {str(result['live_asset_processor_batch_execution']).lower()}")
+    if "live_editor_execution" in result:
+        print(f"live_editor_execution: {str(result['live_editor_execution']).lower()}")
+    if "live_publication" in result:
+        print(f"live_publication: {str(result['live_publication']).lower()}")
+    if result.get("golden_project_fixture_ref"):
+        print(f"golden_project_fixture_ref: {result['golden_project_fixture_ref']}")
+    if result.get("apb_report_ref"):
+        print(f"apb_report_ref: {result['apb_report_ref']}")
     for code in result.get("errors", []):
         print(f"  error: {code}")
     for code in result.get("warnings", []):
