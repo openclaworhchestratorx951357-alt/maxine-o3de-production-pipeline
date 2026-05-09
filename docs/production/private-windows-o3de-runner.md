@@ -20,6 +20,27 @@ The workflow has no `push` or `pull_request` trigger. It requires the confirmati
 I_UNDERSTAND_THIS_REQUIRES_A_PRIVATE_SELF_HOSTED_WINDOWS_RUNNER
 ```
 
+For an operator checklist before any APB live attempt, use:
+
+```powershell
+python tools/ci/private_runner_apb_dry_run_checklist.py
+python tools/ci/private_runner_apb_dry_run_checklist.py --json
+```
+
+The environment template is:
+
+```text
+examples/private-runner/o3de-runner.env.example
+```
+
+That template contains no credentials, keeps Editor smoke disabled, and keeps live commands disabled for dry-run readiness.
+
+A sample skipped/unavailable dry-run report is checked in at:
+
+```text
+examples/private-runner/apb-dry-run-checklist.unavailable.example.json
+```
+
 ## Local Environment
 
 Set these on the private runner before attempting integration mode:

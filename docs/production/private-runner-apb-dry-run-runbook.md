@@ -1,0 +1,112 @@
+# Private Runner APB Dry-Run Runbook
+
+This runbook prepares a trusted private self-hosted Windows runner for the first live APB-only golden corpus run in a later slice.
+
+It does not run live Asset Processor Batch by default. It does not run Editor, Editor smoke, publication, release packaging, runner registration, or credential handling.
+
+## Prerequisites
+
+- A private self-hosted Windows runner already registered by the operator.
+- Runner labels: `self-hosted`, `Windows`, `X64`, `o3de`, `maxine-private`.
+- O3DE installed locally.
+- A controlled local O3DE project path, not a production project.
+- AssetProcessorBatch executable available locally.
+- Python available on the runner.
+- This repository checked out on the runner.
+
+Do not store runner registration tokens or credentials in repo files.
+
+## Environment Template
+
+Start from:
+
+```text
+examples/private-runner/o3de-runner.env.example
+```
+
+Use machine-local paths:
+
+```powershell
+$env:O3DE_ENGINE_ROOT = "C:\path\to\o3de"
+$env:O3DE_PROJECT_PATH = "C:\path\to\MAXINE_GoldenCorpus"
+$env:O3DE_EDITOR_EXECUTABLE = "C:\path\to\Editor.exe"
+$env:ASSET_PROCESSOR_BATCH_EXECUTABLE = "C:\path\to\AssetProcessorBatch.exe"
+$env:MAXINE_ENABLE_O3DE_INTEGRATION = "1"
+$env:MAXINE_ENABLE_ASSET_PROCESSOR_BATCH = "1"
+$env:MAXINE_ENABLE_O3DE_EDITOR_SMOKE = "0"
+$env:MAXINE_ALLOW_LIVE_O3DE_COMMANDS = "0"
+$env:MAXINE_GOLDEN_PROJECT_FIXTURE = "examples/o3de-golden-project/maxine-golden-project.fixture.json"
+$env:MAXINE_GOLDEN_CORPUS = "examples/golden-corpus"
+$env:MAXINE_ARTIFACT_ROOT = "artifacts/o3de-integration"
+$env:MAXINE_RUN_MODE = "readiness"
+```
+
+Keep `MAXINE_ENABLE_O3DE_EDITOR_SMOKE=0` for the APB-only first live run. Keep `MAXINE_ALLOW_LIVE_O3DE_COMMANDS=0` during dry-run readiness.
+
+## Dry-Run Sequence
+
+Run these from the repository root:
+
+```powershell
+python tools/ci/private_runner_apb_dry_run_checklist.py
+python tools/ci/private_runner_apb_dry_run_checklist.py --json
+python tools/ci/o3de_runner_readiness.py --json
+python tools/o3de/golden_project_fixture.py --fixtures examples/o3de-golden-project
+python tools/o3de/golden_project_fixture.py --fixture examples/o3de-golden-project/maxine-golden-project.fixture.json --check-local-readiness
+python tools/ci/run_o3de_integration_suite.py --dry-run
+python tools/ci/run_o3de_integration_suite.py --mode fixture
+python tools/o3de/asset_processor_batch.py --corpus examples/golden-corpus --check-local-readiness
+```
+
+Expected dry-run behavior:
+
+- Missing local tools produce skipped/unavailable reports in non-strict mode.
+- Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` until paths/tools are configured.
+- No live APB report is produced.
+- No Editor report is produced in APB-only dry-run.
+- No publication artifacts are produced.
+
+Example skipped/unavailable report:
+
+```text
+examples/private-runner/apb-dry-run-checklist.unavailable.example.json
+```
+
+## Manual Workflow Sequence
+
+1. Open GitHub Actions.
+2. Select `O3DE Private Windows Integration`.
+3. Use mode `readiness` or `fixture` first.
+4. Enter the confirmation string:
+
+```text
+I_UNDERSTAND_THIS_REQUIRES_A_PRIVATE_SELF_HOSTED_WINDOWS_RUNNER
+```
+
+5. Keep `run_live_o3de_commands` set to `false` during dry-run.
+6. Use `apb_live_non_strict` only after readiness and fixture checks pass.
+7. Use `apb_live_strict` only when the APB-only path is ready to fail closed.
+
+## Failure Modes
+
+- `O3DE_ENGINE_ROOT` is unset or does not exist.
+- `O3DE_PROJECT_PATH` is unset, unsafe, or points at the wrong project.
+- `ASSET_PROCESSOR_BATCH_EXECUTABLE` is unset or missing.
+- The golden project fixture is invalid.
+- Release proof depends on cache heuristics.
+- Workflow confirmation phrase does not match.
+- Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE`.
+
+## Safety Checklist Before First Live APB
+
+- Fixture validation passes.
+- Local readiness passes.
+- Golden project fixture validates.
+- AssetProcessorBatch executable is detected.
+- Project path is controlled and non-production.
+- Artifact root is safe.
+- Editor smoke gates remain off.
+- Live publication remains blocked.
+- Logs/artifacts contain no secrets.
+
+When every dry-run readiness check passes, the next slice can perform the first real APB-only private runner execution.

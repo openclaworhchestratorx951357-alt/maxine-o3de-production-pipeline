@@ -53,6 +53,10 @@ jobs:
         shell: pwsh
         run: python --version
 
+      - name: APB dry-run checklist
+        shell: pwsh
+        run: python tools/ci/private_runner_apb_dry_run_checklist.py
+
       - name: Readiness report
         shell: pwsh
         run: python tools/ci/o3de_runner_readiness.py --golden-project-fixture "${{ inputs.golden_project_fixture }}"
