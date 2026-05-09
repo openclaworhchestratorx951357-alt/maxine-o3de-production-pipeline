@@ -1,6 +1,14 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- Diagnose RemoteControlHost APB Stall and Produce Project-Paired APB Path v1 is in progress:
+  - adds `tools/o3de/diagnose_asset_processor_batch.py` for APB candidate inventory, provenance scoring, and timeout-bounded diagnostics
+  - adds `schemas/maxine.apb-diagnostic-report.schema.json` and a sanitized RemoteControlHost stall example
+  - confirms `%USERPROFILE%\O3DE\Projects\MAXINE_GoldenCorpus` is the controlled project and `C:\src\o3de` remains the registered engine root
+  - confirms the only discovered `AssetProcessorBatch.exe` is from `%USERPROFILE%\O3DE\Projects\_archive\RemoteControlHost-2026-04-20`, whose `project.json` is `RemoteControlHost`, not `MAXINE_GoldenCorpus`
+  - rejects `AssetProcessor.exe` and source/tool directories as APB substitutes
+  - bounded `AssetProcessorBatch.exe --help` diagnostics against the RemoteControlHost binary stalled after 120 seconds and were cleaned up; no full live golden corpus APB retry was run
+  - live Editor execution, release packaging, publication, cache deletion, and source deletion did not occur
 - Private Runner Setup Checklist and Live APB Dry-Run Runbook v1 is in progress:
   - adds a no-secret private runner env template
   - adds a dry-run checklist that does not execute APB, Editor, or publication

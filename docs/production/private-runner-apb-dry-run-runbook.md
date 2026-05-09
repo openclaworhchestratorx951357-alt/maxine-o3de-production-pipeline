@@ -58,6 +58,14 @@ python tools/ci/run_o3de_integration_suite.py --mode fixture
 python tools/o3de/asset_processor_batch.py --corpus examples/golden-corpus --check-local-readiness
 ```
 
+Before any full APB retry, inventory APB candidates and reject mismatched binaries:
+
+```powershell
+python tools/o3de/diagnose_asset_processor_batch.py --inventory --engine-root C:\src\o3de --project $env:USERPROFILE\O3DE\Projects\MAXINE_GoldenCorpus
+```
+
+If a candidate is not clearly paired with `MAXINE_GoldenCorpus`, do not use it for live APB. `AssetProcessor.exe` is never an acceptable substitute for `AssetProcessorBatch.exe`.
+
 Expected dry-run behavior:
 
 - Missing local tools produce skipped/unavailable reports in non-strict mode.
@@ -92,10 +100,12 @@ I_UNDERSTAND_THIS_REQUIRES_A_PRIVATE_SELF_HOSTED_WINDOWS_RUNNER
 - `O3DE_ENGINE_ROOT` is unset or does not exist.
 - `O3DE_PROJECT_PATH` is unset, unsafe, or points at the wrong project.
 - `ASSET_PROCESSOR_BATCH_EXECUTABLE` is unset or missing.
+- `ASSET_PROCESSOR_BATCH_EXECUTABLE` points at `AssetProcessor.exe` or an APB from a different archived project.
 - The golden project fixture is invalid.
 - Release proof depends on cache heuristics.
 - Workflow confirmation phrase does not match.
 - Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE`.
+- Bounded APB diagnostics time out with `MXN_APB_DIAGNOSTIC_STALLED`.
 
 ## Safety Checklist Before First Live APB
 
@@ -103,6 +113,7 @@ I_UNDERSTAND_THIS_REQUIRES_A_PRIVATE_SELF_HOSTED_WINDOWS_RUNNER
 - Local readiness passes.
 - Golden project fixture validates.
 - AssetProcessorBatch executable is detected.
+- AssetProcessorBatch inventory shows a project-paired or engine-paired APB, not an archived RemoteControlHost binary.
 - Project path is controlled and non-production.
 - Artifact root is safe.
 - Editor smoke gates remain off.

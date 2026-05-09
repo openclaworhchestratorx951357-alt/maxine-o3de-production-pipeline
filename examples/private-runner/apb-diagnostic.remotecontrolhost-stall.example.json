@@ -1,0 +1,111 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "maxine_apb_diagnostic_report",
+  "generated_at": "2026-05-09T00:00:00Z",
+  "status": "stalled",
+  "selected_engine_root": "C:/src/o3de",
+  "selected_project_path": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+  "selected_project_name": "MAXINE_GoldenCorpus",
+  "apb_candidates": [
+    {
+      "path": "%USERPROFILE%/O3DE/Projects/_archive/RemoteControlHost-2026-04-20/build/windows/bin/profile/AssetProcessorBatch.exe",
+      "basename": "AssetProcessorBatch.exe",
+      "exists": true,
+      "is_file": true,
+      "is_asset_processor_batch": true,
+      "is_rejected_asset_processor_substitute": false,
+      "size_bytes": 5679104,
+      "last_modified": "2026-04-12T11:43:06Z",
+      "parent_directory": "%USERPROFILE%/O3DE/Projects/_archive/RemoteControlHost-2026-04-20/build/windows/bin/profile",
+      "sibling_dlls_present": true,
+      "sibling_config_files_present": true,
+      "nearby_engine_json": "%USERPROFILE%/O3DE/Projects/_archive/RemoteControlHost-2026-04-20/build/windows/o3de/cmake/engine.json",
+      "nearby_project_json": "%USERPROFILE%/O3DE/Projects/_archive/RemoteControlHost-2026-04-20/project.json",
+      "nearby_project_name": "RemoteControlHost",
+      "under_selected_engine_root": false,
+      "under_selected_project_path": false,
+      "under_build_or_install_output": true,
+      "remotecontrolhost_archive": true,
+      "archived_or_copied": true,
+      "matching_engine_provenance": false,
+      "matching_project_provenance": false,
+      "sha256": "<sanitized>",
+      "provenance_score": -385,
+      "selected_recommendation_rank": 385,
+      "status": "rejected",
+      "reason": "project_name mismatch between candidate provenance and selected MAXINE_GoldenCorpus project"
+    }
+  ],
+  "selected_apb_candidate": null,
+  "rejected_candidates": [
+    {
+      "path": "%USERPROFILE%/O3DE/Projects/_archive/RemoteControlHost-2026-04-20/build/windows/bin/profile/AssetProcessorBatch.exe",
+      "basename": "AssetProcessorBatch.exe",
+      "exists": true,
+      "is_asset_processor_batch": true,
+      "is_rejected_asset_processor_substitute": false,
+      "provenance_score": -385,
+      "status": "rejected",
+      "reason": "project_name mismatch between candidate provenance and selected MAXINE_GoldenCorpus project"
+    }
+  ],
+  "command_matrix": [
+    {
+      "label": "candidate_help",
+      "argv": [
+        "%USERPROFILE%/O3DE/Projects/_archive/RemoteControlHost-2026-04-20/build/windows/bin/profile/AssetProcessorBatch.exe",
+        "--help"
+      ],
+      "cwd": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+      "status": "stalled",
+      "exit_code": null,
+      "duration_seconds": 120,
+      "timeout_seconds": 120,
+      "termination_reason": "timeout",
+      "process_cleanup": {
+        "attempted": true,
+        "method": "taskkill /T /F",
+        "return_code": 0
+      },
+      "stdout_log_ref": "artifacts/o3de-integration/apb/diagnostics/apb-diagnostic-sanitized/candidate_help.stdout.txt",
+      "stderr_log_ref": "artifacts/o3de-integration/apb/diagnostics/apb-diagnostic-sanitized/candidate_help.stderr.txt",
+      "errors": [
+        "MXN_APB_DIAGNOSTIC_STALLED"
+      ],
+      "warnings": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_seconds": 120,
+    "process_tree_cleanup": true,
+    "full_live_apb_retry": false
+  },
+  "process_cleanup": {
+    "required_on_timeout": true,
+    "completed": true
+  },
+  "stall_detected": true,
+  "c1060_detected": false,
+  "live_apb_attempted": false,
+  "live_asset_processor_batch_execution": false,
+  "live_editor_execution": false,
+  "live_publication": false,
+  "product_matrix_result": "not_run",
+  "cache_heuristic_used": false,
+  "errors": [
+    "MXN_APB_DIAGNOSTIC_STALLED"
+  ],
+  "warnings": [
+    "MXN_PROVENANCE_INCOMPLETE"
+  ],
+  "evidence_refs": [
+    {
+      "id": "apb-diagnostic-tool",
+      "kind": "diagnostic_tool",
+      "path": "tools/o3de/diagnose_asset_processor_batch.py"
+    }
+  ],
+  "next_steps": [
+    "Use a project-paired AssetProcessorBatch build before retrying the full live golden corpus run."
+  ]
+}
