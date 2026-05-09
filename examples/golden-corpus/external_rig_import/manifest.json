@@ -1,0 +1,6 @@
+{
+  "manifest_ref": "examples/manifests/external_rig_import.pending_manual.example.json",
+  "case_id": "external_rig_import",
+  "lane": "external_rig_import",
+  "expected_status": "pass"
+}

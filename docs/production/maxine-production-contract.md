@@ -55,3 +55,15 @@ python tools/validation/validate_all.py --enable-o3de-integration
 ```
 
 The default resolver remains deterministic fixture mode. Release lanes still fail if product resolution relies on cache guessing rather than source UUID or trusted product metadata.
+
+Run the Asset Processor Batch golden corpus fixture proof with:
+
+```powershell
+python tools/o3de/asset_processor_batch.py --corpus examples/golden-corpus --mode fixture
+```
+
+Optional local Asset Processor Batch detection is gated:
+
+```powershell
+python tools/o3de/asset_processor_batch.py --corpus examples/golden-corpus --enable-asset-processor-batch
+```

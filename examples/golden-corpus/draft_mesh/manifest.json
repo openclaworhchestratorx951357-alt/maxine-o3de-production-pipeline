@@ -1,0 +1,6 @@
+{
+  "manifest_ref": "examples/manifests/draft_mesh.pass.example.json",
+  "case_id": "draft_mesh",
+  "lane": "draft_mesh",
+  "expected_status": "pass"
+}

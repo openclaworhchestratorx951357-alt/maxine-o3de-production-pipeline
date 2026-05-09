@@ -1,6 +1,12 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- Asset Processor Batch golden corpus proof v1 is in progress as a fixture-backed, integration-gated proof layer:
+  - default validation uses JSON-only golden corpus fixtures under `examples/golden-corpus`
+  - local Asset Processor Batch detection is opt-in through `MAXINE_ENABLE_ASSET_PROCESSOR_BATCH=1` or `--enable-asset-processor-batch`
+  - unavailable APB tooling is reported as skipped by default and fails only in strict integration mode
+  - `live_asset_processor_batch_execution` remains false unless a future gated APB command actually runs
+  - Editor smoke and package/prefab runtime instantiation remain future slices
 - Real O3DE Asset System adapter v1 is in progress as an integration-gated product resolver slice:
   - deterministic fixture resolver remains the default for CI and local validation
   - local O3DE adapter detection is opt-in through `MAXINE_ENABLE_O3DE_INTEGRATION=1` or `--enable-o3de-integration`

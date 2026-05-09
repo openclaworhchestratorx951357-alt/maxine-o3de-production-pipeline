@@ -1,0 +1,52 @@
+{
+  "source_uuid": "",
+  "expected_products": [
+    "actor",
+    "motion",
+    "motionset",
+    "animgraph",
+    "procprefab"
+  ],
+  "produced_products": [
+    {
+      "product_type": "actor",
+      "product_path": "Cache/pc/newest/maxine_release.actor",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": false,
+      "evidence_source": "cache_heuristic"
+    },
+    {
+      "product_type": "motion",
+      "product_path": "Cache/pc/newest/maxine_idle.motion",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": false,
+      "evidence_source": "cache_heuristic"
+    },
+    {
+      "product_type": "motionset",
+      "product_path": "Cache/pc/newest/maxine.motionset",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": false,
+      "evidence_source": "cache_heuristic"
+    },
+    {
+      "product_type": "animgraph",
+      "product_path": "Cache/pc/newest/maxine.animgraph",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": false,
+      "evidence_source": "cache_heuristic"
+    },
+    {
+      "product_type": "procprefab",
+      "product_path": "Cache/pc/newest/maxine_release.procprefab",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": false,
+      "evidence_source": "cache_heuristic"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "manifest_ref": "examples/manifests/release_rigged.pass.example.json",
+  "case_id": "release_rigged_cache_heuristic",
+  "lane": "release_rigged",
+  "expected_status": "fail"
+}

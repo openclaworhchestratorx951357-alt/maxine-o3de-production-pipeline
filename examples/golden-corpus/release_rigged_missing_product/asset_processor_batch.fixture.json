@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "asset_processor_batch_golden_corpus_v1",
+  "report_id": "apb-release-rigged-missing-product-fixture",
+  "case_id": "release_rigged_missing_product",
+  "generated_at": "2026-05-09T00:00:00Z",
+  "mode": "fixture",
+  "status": "fail",
+  "integration_enabled": false,
+  "strict_integration": false,
+  "live_asset_processor_batch_execution": false,
+  "o3de_engine_root_present": false,
+  "o3de_project_path_present": false,
+  "asset_processor_batch_executable": "",
+  "command_preview": [],
+  "exit_code": null,
+  "stdout_log_ref": "",
+  "stderr_log_ref": "",
+  "asset_processor_log_ref": "",
+  "platform": "pc",
+  "lane": "release_rigged",
+  "publish_tier": "package",
+  "source_assets": [
+    {
+      "path": "Assets/Characters/MAXINE/release/maxine_release_source.fbx",
+      "source_uuid": "source-release-rigged-0001",
+      "sha256": "fixture-release-source-sha256"
+    }
+  ],
+  "expected_products": [
+    "actor",
+    "motion",
+    "motionset",
+    "animgraph",
+    "procprefab"
+  ],
+  "produced_products": [
+    {
+      "product_type": "motion",
+      "product_path": "Cache/pc/maxine_idle.motion",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "source-release-rigged-0001",
+      "asset_id": "source-release-rigged-0001:2002",
+      "produced_by_source_uuid": true,
+      "evidence_source": "fixture"
+    },
+    {
+      "product_type": "motionset",
+      "product_path": "Cache/pc/maxine.motionset",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "source-release-rigged-0001",
+      "asset_id": "source-release-rigged-0001:2003",
+      "produced_by_source_uuid": true,
+      "evidence_source": "fixture"
+    },
+    {
+      "product_type": "animgraph",
+      "product_path": "Cache/pc/maxine.animgraph",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "source-release-rigged-0001",
+      "asset_id": "source-release-rigged-0001:2004",
+      "produced_by_source_uuid": true,
+      "evidence_source": "fixture"
+    },
+    {
+      "product_type": "procprefab",
+      "product_path": "Cache/pc/maxine_release.procprefab",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "source-release-rigged-0001",
+      "asset_id": "source-release-rigged-0001:2005",
+      "produced_by_source_uuid": true,
+      "evidence_source": "fixture"
+    }
+  ],
+  "pending_assets": [],
+  "missing_products": [
+    "actor"
+  ],
+  "cache_heuristic_used": false,
+  "errors": [
+    "MXN_ASSET_PRODUCT_MISSING"
+  ],
+  "warnings": [],
+  "evidence_refs": [
+    {
+      "id": "release-missing-products-fixture",
+      "kind": "product_fixture",
+      "path": "examples/golden-corpus/release_rigged_missing_product/products.fixture.json"
+    }
+  ]
+}

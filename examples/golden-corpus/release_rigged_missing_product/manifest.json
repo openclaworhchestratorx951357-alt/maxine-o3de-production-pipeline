@@ -1,0 +1,6 @@
+{
+  "manifest_ref": "examples/manifests/release_rigged.pass.example.json",
+  "case_id": "release_rigged_missing_product",
+  "lane": "release_rigged",
+  "expected_status": "fail"
+}

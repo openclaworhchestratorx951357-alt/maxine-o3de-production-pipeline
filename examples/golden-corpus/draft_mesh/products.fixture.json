@@ -1,0 +1,21 @@
+{
+  "source_uuid": "source-draft-mesh-0001",
+  "expected_products": [
+    "azmodel"
+  ],
+  "produced_products": [
+    {
+      "product_type": "azmodel",
+      "product_path": "Cache/pc/maxine_draft_mesh.azmodel",
+      "relative_product_path": "Cache/pc/maxine_draft_mesh.azmodel",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "source-draft-mesh-0001",
+      "asset_id": "source-draft-mesh-0001:1001",
+      "source_sub_id": "1001",
+      "sha256_available": false,
+      "produced_by_source_uuid": true,
+      "evidence_source": "fixture"
+    }
+  ]
+}

@@ -24,3 +24,16 @@ Evidence bundles and manifests should record the resolver result when product re
 - `evidence_refs`: local evidence records that explain where the resolver data came from
 
 Fixture examples set `integration_executed` and `live_o3de_execution` to false. Optional O3DE integration checks that are skipped must remain marked skipped or unavailable, not pass.
+
+## Asset Processor Batch Proof Evidence
+
+Asset Processor Batch proof evidence may be attached as:
+
+- APB fixture report path, such as `examples/golden-corpus/release_rigged/asset_processor_batch.fixture.json`
+- stdout/stderr refs only when a future gated APB command actually runs
+- `integration_enabled`
+- `live_asset_processor_batch_execution`
+- skipped reason and error code when tooling is unavailable
+- product resolver/product matrix refs used to classify products
+
+Fixture reports must not claim real AP logs or live execution.
