@@ -37,3 +37,17 @@ Asset Processor Batch proof evidence may be attached as:
 - product resolver/product matrix refs used to classify products
 
 Fixture reports must not claim real AP logs or live execution.
+
+## Editor Smoke Evidence
+
+Editor Python package/prefab smoke evidence may be attached as:
+
+- Editor smoke fixture report path, such as `examples/editor-smoke/release_rigged.fixture.report.json`
+- stdout/stderr/editor log refs only when a future gated Editor command actually runs
+- `integration_enabled`
+- `live_editor_execution`
+- skipped reason and error code when tooling is unavailable
+- product resolver and Asset Processor Batch proof refs used to connect instantiation evidence to source/product identity
+- screenshot refs only when fixture-labeled or actually captured
+
+Fixture reports must not claim real Editor logs, screenshots, level mutation, or live Editor execution.

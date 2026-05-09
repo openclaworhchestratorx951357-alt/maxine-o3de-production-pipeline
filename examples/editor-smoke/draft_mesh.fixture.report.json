@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "editor_smoke_fixture_bridge_v1",
+  "report_id": "editor-smoke-draft-mesh-fixture-pass",
+  "generated_at": "2026-05-09T00:00:00Z",
+  "mode": "fixture",
+  "status": "pass",
+  "integration_enabled": false,
+  "strict_integration": false,
+  "live_editor_execution": false,
+  "editor_python_bindings_required": false,
+  "editor_python_bindings_available": false,
+  "o3de_engine_root_present": false,
+  "o3de_project_path_present": false,
+  "editor_executable": "",
+  "command_preview": [],
+  "exit_code": null,
+  "stdout_log_ref": "",
+  "stderr_log_ref": "",
+  "editor_log_ref": "",
+  "asset_processor_log_ref": "",
+  "platform": "pc",
+  "lane": "draft_mesh",
+  "level_strategy": "fixture",
+  "manifest_ref": "examples/manifests/draft_mesh.pass.example.json",
+  "evidence_bundle_ref": "",
+  "package_ref": "",
+  "prefab_ref": "",
+  "procprefab_ref": "",
+  "source_uuid": "11111111-1111-4111-8111-111111111111",
+  "product_resolver_report_ref": "manifest.o3de.actual_products",
+  "asset_processor_batch_report_ref": "examples/golden-corpus/draft_mesh/asset_processor_batch.fixture.json",
+  "source_assets": [
+    {
+      "path": "Assets/Characters/MAX_DraftMesh/source/max_draft_mesh.fbx",
+      "source_uuid": "11111111-1111-4111-8111-111111111111"
+    }
+  ],
+  "expected_products": [
+    "azmodel"
+  ],
+  "produced_products": [
+    {
+      "product_type": "azmodel",
+      "product_path": "Cache/pc/Characters/MAX_DraftMesh/max_draft_mesh.azmodel",
+      "relative_product_path": "Characters/MAX_DraftMesh/max_draft_mesh.azmodel",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "11111111-1111-4111-8111-111111111111",
+      "asset_id": "{11111111-1111-4111-8111-111111111111}:1",
+      "source_sub_id": "1",
+      "sha256": "fixture",
+      "sha256_available": true,
+      "produced_by_source_uuid": true,
+      "evidence_source": "fixture"
+    }
+  ],
+  "pending_assets": [],
+  "missing_products": [],
+  "entity_expectations": [
+    {
+      "name": "MAX_DraftMesh",
+      "required_components": [
+        "Mesh"
+      ]
+    }
+  ],
+  "component_expectations": [
+    "Mesh"
+  ],
+  "instantiated_entities": [
+    {
+      "name": "MAX_DraftMesh",
+      "components": [
+        "Mesh"
+      ],
+      "source": "fixture"
+    }
+  ],
+  "missing_components": [],
+  "screenshots": [],
+  "cache_heuristic_used": false,
+  "errors": [],
+  "warnings": [],
+  "evidence_refs": [
+    {
+      "id": "draft-editor-smoke-fixture",
+      "kind": "editor_smoke_fixture",
+      "path": "examples/editor-smoke/draft_mesh.fixture.report.json"
+    }
+  ]
+}

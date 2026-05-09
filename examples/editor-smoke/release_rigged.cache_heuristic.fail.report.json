@@ -1,0 +1,121 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "editor_smoke_fixture_bridge_v1",
+  "report_id": "editor-smoke-release-rigged-cache-heuristic-fail",
+  "generated_at": "2026-05-09T00:00:00Z",
+  "mode": "invalid",
+  "status": "fail",
+  "integration_enabled": false,
+  "strict_integration": false,
+  "live_editor_execution": false,
+  "editor_python_bindings_required": false,
+  "editor_python_bindings_available": false,
+  "o3de_engine_root_present": false,
+  "o3de_project_path_present": false,
+  "editor_executable": "",
+  "command_preview": [],
+  "exit_code": null,
+  "stdout_log_ref": "",
+  "stderr_log_ref": "",
+  "editor_log_ref": "",
+  "asset_processor_log_ref": "",
+  "platform": "pc",
+  "lane": "release_rigged",
+  "level_strategy": "fixture",
+  "manifest_ref": "examples/manifests/release_rigged.pass.example.json",
+  "evidence_bundle_ref": "examples/production/evidence_bundle.release_rigged.pass.example.json",
+  "package_ref": "Packages/MAX_BIPED_v1/max_release_rigged.package.json",
+  "prefab_ref": "Prefabs/Characters/MAX_BIPED_v1/max_release_rigged.prefab",
+  "procprefab_ref": "Cache/pc/Prefabs/Characters/MAX_BIPED_v1/max_release_rigged.procprefab",
+  "source_uuid": "",
+  "product_resolver_report_ref": "",
+  "asset_processor_batch_report_ref": "examples/golden-corpus/release_rigged_cache_heuristic/asset_processor_batch.fixture.json",
+  "source_assets": [
+    {
+      "path": "Cache/pc/Characters/MAX_BIPED_v1/newest-looking.actor"
+    }
+  ],
+  "expected_products": [
+    "actor",
+    "motion",
+    "motionset",
+    "animgraph",
+    "procprefab"
+  ],
+  "produced_products": [
+    {
+      "product_type": "actor",
+      "product_path": "Cache/pc/Characters/MAX_BIPED_v1/newest-looking.actor",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": false,
+      "evidence_source": "cache_heuristic"
+    },
+    {
+      "product_type": "motion",
+      "product_path": "Cache/pc/Characters/MAX_BIPED_v1/newest-looking.motion",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": false,
+      "evidence_source": "cache_heuristic"
+    },
+    {
+      "product_type": "motionset",
+      "product_path": "Cache/pc/Characters/MAX_BIPED_v1/newest-looking.motionset",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": false,
+      "evidence_source": "cache_heuristic"
+    },
+    {
+      "product_type": "animgraph",
+      "product_path": "Cache/pc/Characters/MAX_BIPED_v1/newest-looking.animgraph",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": false,
+      "evidence_source": "cache_heuristic"
+    },
+    {
+      "product_type": "procprefab",
+      "product_path": "Cache/pc/Prefabs/Characters/MAX_BIPED_v1/newest-looking.procprefab",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": false,
+      "evidence_source": "cache_heuristic"
+    }
+  ],
+  "pending_assets": [],
+  "missing_products": [],
+  "entity_expectations": [
+    {
+      "name": "MAX_BIPED_v1",
+      "required_components": [
+        "Actor",
+        "AnimGraph",
+        "MotionSet",
+        "Transform"
+      ]
+    }
+  ],
+  "component_expectations": [
+    "Actor",
+    "AnimGraph",
+    "MotionSet",
+    "Transform"
+  ],
+  "instantiated_entities": [],
+  "missing_components": [],
+  "screenshots": [],
+  "cache_heuristic_used": true,
+  "errors": [
+    "MXN_ASSET_CACHE_HEURISTIC_FORBIDDEN"
+  ],
+  "warnings": [],
+  "evidence_refs": [
+    {
+      "id": "cache-heuristic-editor-smoke-fixture",
+      "kind": "editor_smoke_fixture",
+      "path": "examples/editor-smoke/release_rigged.cache_heuristic.fail.report.json"
+    }
+  ]
+}

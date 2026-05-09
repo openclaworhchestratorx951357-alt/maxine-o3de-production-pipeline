@@ -16,6 +16,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from tools.o3de.product_resolver import integration_gate_enabled, resolve_manifest_products
 from tools.o3de.asset_processor_batch import asset_processor_batch_gate_enabled
+from tools.o3de.editor_smoke import editor_smoke_gate_enabled
 from tools.validation.schema_utils import load_json
 
 RELEASE_MANIFEST = REPO_ROOT / "examples" / "manifests" / "release_rigged.pass.example.json"
@@ -69,12 +70,30 @@ def _run_asset_processor_batch_integration_check(*, enable_asset_processor_batch
     )
 
 
+def _run_editor_smoke_integration_check(*, enable_editor_smoke: bool, strict_integration: bool) -> int:
+    if not enable_editor_smoke:
+        print("Editor smoke local integration: skipped (not enabled; fixture bridge remains the default)")
+        return 0
+    return _run(
+        "Editor smoke local integration",
+        [
+            sys.executable,
+            "tools/o3de/editor_smoke.py",
+            "--manifest",
+            "examples/manifests/release_rigged.pass.example.json",
+            "--enable-editor-smoke",
+            *(["--strict-integration"] if strict_integration else []),
+        ],
+    )
+
+
 def main() -> int:
     import argparse
 
     parser = argparse.ArgumentParser(description="Run safe local production-readiness validators.")
     parser.add_argument("--enable-o3de-integration", action="store_true", help="Opt into local O3DE adapter detection.")
     parser.add_argument("--enable-asset-processor-batch", action="store_true", help="Opt into local Asset Processor Batch detection.")
+    parser.add_argument("--enable-editor-smoke", action="store_true", help="Opt into local O3DE Editor smoke detection.")
     parser.add_argument("--strict-integration", action="store_true", help="Fail when local O3DE tooling is unavailable.")
     parsed = parser.parse_args()
 
@@ -89,6 +108,17 @@ def main() -> int:
                 "tools/o3de/asset_processor_batch.py",
                 "--corpus",
                 "examples/golden-corpus",
+                "--mode",
+                "fixture",
+            ],
+        ),
+        (
+            "Editor smoke fixture bridge",
+            [
+                sys.executable,
+                "tools/o3de/editor_smoke.py",
+                "--manifest",
+                "examples/manifests/release_rigged.pass.example.json",
                 "--mode",
                 "fixture",
             ],
@@ -117,6 +147,13 @@ def main() -> int:
     codes.append(
         _run_asset_processor_batch_integration_check(
             enable_asset_processor_batch=enable_apb,
+            strict_integration=parsed.strict_integration,
+        )
+    )
+    enable_editor = parsed.enable_editor_smoke or editor_smoke_gate_enabled(os.environ)
+    codes.append(
+        _run_editor_smoke_integration_check(
+            enable_editor_smoke=enable_editor,
             strict_integration=parsed.strict_integration,
         )
     )

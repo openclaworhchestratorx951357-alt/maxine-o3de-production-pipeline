@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "editor_smoke_fixture_bridge_v1",
+  "report_id": "editor-smoke-release-rigged-missing-actor-motion-fail",
+  "generated_at": "2026-05-09T00:00:00Z",
+  "mode": "fixture",
+  "status": "fail",
+  "integration_enabled": false,
+  "strict_integration": false,
+  "live_editor_execution": false,
+  "editor_python_bindings_required": false,
+  "editor_python_bindings_available": false,
+  "o3de_engine_root_present": false,
+  "o3de_project_path_present": false,
+  "editor_executable": "",
+  "command_preview": [],
+  "exit_code": null,
+  "stdout_log_ref": "",
+  "stderr_log_ref": "",
+  "editor_log_ref": "",
+  "asset_processor_log_ref": "",
+  "platform": "pc",
+  "lane": "release_rigged",
+  "level_strategy": "fixture",
+  "manifest_ref": "examples/manifests/release_rigged.pass.example.json",
+  "evidence_bundle_ref": "examples/production/evidence_bundle.release_rigged.pass.example.json",
+  "package_ref": "Packages/MAX_BIPED_v1/max_release_rigged.package.json",
+  "prefab_ref": "Prefabs/Characters/MAX_BIPED_v1/max_release_rigged.prefab",
+  "procprefab_ref": "Cache/pc/Prefabs/Characters/MAX_BIPED_v1/max_release_rigged.procprefab",
+  "source_uuid": "22222222-2222-4222-8222-222222222222",
+  "product_resolver_report_ref": "manifest.o3de.actual_products",
+  "asset_processor_batch_report_ref": "examples/golden-corpus/release_rigged_missing_product/asset_processor_batch.fixture.json",
+  "source_assets": [
+    {
+      "path": "Assets/Characters/MAX_BIPED_v1/source/max_release_rigged.fbx",
+      "source_uuid": "22222222-2222-4222-8222-222222222222"
+    }
+  ],
+  "expected_products": [
+    "actor",
+    "motion",
+    "motionset",
+    "animgraph",
+    "procprefab"
+  ],
+  "produced_products": [
+    {
+      "product_type": "motionset",
+      "product_path": "Cache/pc/Characters/MAX_BIPED_v1/max_release_rigged.motionset",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "22222222-2222-4222-8222-222222222222",
+      "produced_by_source_uuid": true,
+      "evidence_source": "fixture"
+    },
+    {
+      "product_type": "animgraph",
+      "product_path": "Cache/pc/Characters/MAX_BIPED_v1/max_release_rigged.animgraph",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "22222222-2222-4222-8222-222222222222",
+      "produced_by_source_uuid": true,
+      "evidence_source": "fixture"
+    },
+    {
+      "product_type": "procprefab",
+      "product_path": "Cache/pc/Prefabs/Characters/MAX_BIPED_v1/max_release_rigged.procprefab",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "22222222-2222-4222-8222-222222222222",
+      "produced_by_source_uuid": true,
+      "evidence_source": "fixture"
+    }
+  ],
+  "pending_assets": [],
+  "missing_products": [
+    "actor",
+    "motion"
+  ],
+  "entity_expectations": [
+    {
+      "name": "MAX_BIPED_v1",
+      "required_components": [
+        "Actor",
+        "AnimGraph",
+        "MotionSet",
+        "Transform"
+      ]
+    }
+  ],
+  "component_expectations": [
+    "Actor",
+    "AnimGraph",
+    "MotionSet",
+    "Transform"
+  ],
+  "instantiated_entities": [],
+  "missing_components": [
+    "Actor",
+    "MotionSet"
+  ],
+  "screenshots": [],
+  "cache_heuristic_used": false,
+  "errors": [
+    "MXN_ASSET_PRODUCT_MISSING"
+  ],
+  "warnings": [],
+  "evidence_refs": [
+    {
+      "id": "missing-actor-motion-editor-smoke-fixture",
+      "kind": "editor_smoke_fixture",
+      "path": "examples/editor-smoke/release_rigged.missing_actor_motion.fail.report.json"
+    }
+  ]
+}

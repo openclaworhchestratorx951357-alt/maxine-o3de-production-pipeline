@@ -67,3 +67,17 @@ Optional local Asset Processor Batch detection is gated:
 ```powershell
 python tools/o3de/asset_processor_batch.py --corpus examples/golden-corpus --enable-asset-processor-batch
 ```
+
+Run the Editor Python package/prefab smoke fixture bridge with:
+
+```powershell
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --mode fixture
+```
+
+Optional local Editor detection is gated:
+
+```powershell
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --enable-editor-smoke
+```
+
+Fixture Editor smoke reports connect package/prefab/procprefab refs to product resolver evidence, Asset Processor Batch proof, source UUID identity, and expected entity/component structure. They must keep `live_editor_execution=false` unless a future admitted integration job actually runs Editor Python.

@@ -40,3 +40,19 @@ python tools/o3de/asset_processor_batch.py --corpus examples/golden-corpus --ena
 ```
 
 The local APB path requires `O3DE_ENGINE_ROOT`, `O3DE_PROJECT_PATH`, and an AssetProcessorBatch executable. Missing tooling is skipped in non-strict mode and fails in strict mode.
+
+Editor Python package/prefab smoke fixture validation is also included in the default safe suite:
+
+```powershell
+python tools/validation/validate_all.py
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --mode fixture
+```
+
+Optional local Editor detection is separate and explicit:
+
+```powershell
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --enable-editor-smoke
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --enable-editor-smoke --strict-integration
+```
+
+The local Editor path requires `O3DE_ENGINE_ROOT`, `O3DE_PROJECT_PATH`, and an Editor executable. Missing tooling is skipped in non-strict mode and fails in strict mode. Fixture reports keep `live_editor_execution=false`; screenshots and Editor logs are fixture-labeled unless a future gated run actually captures them.
