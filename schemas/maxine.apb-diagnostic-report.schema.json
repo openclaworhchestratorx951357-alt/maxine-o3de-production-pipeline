@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine.apb-diagnostic-report.schema.json",
+  "title": "MAXINE APB Diagnostic Report",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "report_type",
+    "generated_at",
+    "status",
+    "selected_engine_root",
+    "selected_project_path",
+    "selected_project_name",
+    "apb_candidates",
+    "selected_apb_candidate",
+    "rejected_candidates",
+    "command_matrix",
+    "timeout_policy",
+    "process_cleanup",
+    "stall_detected",
+    "c1060_detected",
+    "live_apb_attempted",
+    "live_asset_processor_batch_execution",
+    "live_editor_execution",
+    "live_publication",
+    "product_matrix_result",
+    "cache_heuristic_used",
+    "errors",
+    "warnings",
+    "evidence_refs",
+    "next_steps"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "report_type": {
+      "type": "string",
+      "const": "maxine_apb_diagnostic_report"
+    },
+    "generated_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "stalled",
+        "skipped"
+      ]
+    },
+    "selected_engine_root": {
+      "type": "string"
+    },
+    "selected_project_path": {
+      "type": "string"
+    },
+    "selected_project_name": {
+      "type": "string"
+    },
+    "apb_candidates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/candidate"
+      }
+    },
+    "selected_apb_candidate": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/candidate"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "rejected_candidates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/candidate"
+      }
+    },
+    "command_matrix": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "label",
+          "argv",
+          "status",
+          "timeout_seconds",
+          "termination_reason",
+          "process_cleanup"
+        ],
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "stalled",
+              "skipped"
+            ]
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "termination_reason": {
+            "type": "string"
+          },
+          "process_cleanup": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "timeout_policy": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "process_cleanup": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "stall_detected": {
+      "type": "boolean"
+    },
+    "c1060_detected": {
+      "type": "boolean"
+    },
+    "live_apb_attempted": {
+      "type": "boolean"
+    },
+    "live_asset_processor_batch_execution": {
+      "type": "boolean"
+    },
+    "live_editor_execution": {
+      "type": "boolean"
+    },
+    "live_publication": {
+      "type": "boolean"
+    },
+    "product_matrix_result": {
+      "type": "string"
+    },
+    "cache_heuristic_used": {
+      "type": "boolean"
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "kind"
+        ]
+      }
+    },
+    "next_steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "candidate": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "path",
+        "basename",
+        "exists",
+        "is_asset_processor_batch",
+        "is_rejected_asset_processor_substitute",
+        "provenance_score",
+        "status",
+        "reason"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "basename": {
+          "type": "string"
+        },
+        "exists": {
+          "type": "boolean"
+        },
+        "is_asset_processor_batch": {
+          "type": "boolean"
+        },
+        "is_rejected_asset_processor_substitute": {
+          "type": "boolean"
+        },
+        "provenance_score": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "candidate",
+            "rejected"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -135,6 +135,11 @@
       "code": "MXN_VALIDATION_TOOL_UNAVAILABLE",
       "title": "Validation tool unavailable",
       "severity": "warning"
+    },
+    {
+      "code": "MXN_APB_DIAGNOSTIC_STALLED",
+      "title": "Asset Processor Batch diagnostic stalled",
+      "severity": "error"
     }
   ]
 }

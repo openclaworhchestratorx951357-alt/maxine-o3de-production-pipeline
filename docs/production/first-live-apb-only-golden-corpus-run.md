@@ -100,3 +100,14 @@ Follow-up before retrying live APB:
 - run APB from a build paired with the controlled golden project when available
 - keep fixture mode offline even when live gates exist in the parent environment
 - do not substitute `AssetProcessor.exe` for `AssetProcessorBatch.exe`
+
+## Stall Diagnostic Follow-Up
+
+The follow-up diagnostic slice adds:
+
+```powershell
+python tools/o3de/diagnose_asset_processor_batch.py --inventory
+python tools/o3de/diagnose_asset_processor_batch.py --run-bounded-diagnostics --timeout-seconds 120 --candidate "<path-to-AssetProcessorBatch.exe>" --engine-root C:\src\o3de --project $env:USERPROFILE\O3DE\Projects\MAXINE_GoldenCorpus
+```
+
+Inventory confirmed the RemoteControlHost APB is archived and project-mismatched. A bounded help-like diagnostic against it stalled and was cleaned up after timeout. The next live APB attempt should use a project-paired APB binary, not the archived RemoteControlHost binary.
