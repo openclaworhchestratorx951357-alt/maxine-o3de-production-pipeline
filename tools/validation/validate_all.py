@@ -94,6 +94,7 @@ def main() -> int:
     parser.add_argument("--enable-o3de-integration", action="store_true", help="Opt into local O3DE adapter detection.")
     parser.add_argument("--enable-asset-processor-batch", action="store_true", help="Opt into local Asset Processor Batch detection.")
     parser.add_argument("--enable-editor-smoke", action="store_true", help="Opt into local O3DE Editor smoke detection.")
+    parser.add_argument("--check-o3de-project-readiness", action="store_true", help="Inspect the golden project fixture local readiness contract.")
     parser.add_argument("--strict-integration", action="store_true", help="Fail when local O3DE tooling is unavailable.")
     parsed = parser.parse_args()
 
@@ -121,6 +122,15 @@ def main() -> int:
                 "examples/manifests/release_rigged.pass.example.json",
                 "--mode",
                 "fixture",
+            ],
+        ),
+        (
+            "O3DE golden project fixture",
+            [
+                sys.executable,
+                "tools/o3de/golden_project_fixture.py",
+                "--fixtures",
+                "examples/o3de-golden-project",
             ],
         ),
         (
@@ -157,6 +167,20 @@ def main() -> int:
             strict_integration=parsed.strict_integration,
         )
     )
+    if parsed.check_o3de_project_readiness:
+        codes.append(
+            _run(
+                "O3DE golden project local readiness",
+                [
+                    sys.executable,
+                    "tools/o3de/golden_project_fixture.py",
+                    "--fixture",
+                    "examples/o3de-golden-project/maxine-golden-project.fixture.json",
+                    "--check-local-readiness",
+                    *(["--strict"] if parsed.strict_integration else []),
+                ],
+            )
+        )
     print("Integration checks skipped unless explicitly enabled: O3DE Editor, Asset Processor Batch, Blender, Mixamo/Adobe, and network services.")
     return 0 if all(code == 0 for code in codes) else 1
 

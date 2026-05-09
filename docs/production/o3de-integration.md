@@ -68,3 +68,13 @@ python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --strict
 ```
 
 See `docs/production/private-windows-o3de-runner.md` for the workflow guard phrase, runner labels, and local environment variables. Normal CI remains fixture/offline.
+
+Golden project fixture prep defines the controlled local project contract for future private-runner runs:
+
+```powershell
+python tools/o3de/golden_project_fixture.py --fixtures examples/o3de-golden-project
+python tools/o3de/golden_project_fixture.py --fixture examples/o3de-golden-project/maxine-golden-project.fixture.json --check-local-readiness
+python tools/o3de/golden_project_fixture.py --fixture examples/o3de-golden-project/maxine-golden-project.fixture.json --check-local-readiness --strict
+```
+
+The fixture maps manifests to project-relative source roots, package/prefab roots, `Levels/_maxine_smoke` temp levels, and `Saved/MaxineEvidence` retention paths. It is validated by default, but local readiness is optional and never mutates the project.

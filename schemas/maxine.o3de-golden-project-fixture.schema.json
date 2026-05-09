@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maxine.local/schemas/maxine.o3de-golden-project-fixture.schema.json",
+  "title": "MAXINE O3DE Golden Project Fixture Contract",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "fixture_type",
+    "fixture_id",
+    "fixture_version",
+    "description",
+    "mode",
+    "status",
+    "project",
+    "lanes",
+    "source_layout",
+    "temp_level_policy",
+    "expected_artifact_paths",
+    "product_expectations",
+    "evidence_expectations",
+    "integration_gates",
+    "safety",
+    "errors",
+    "warnings",
+    "evidence_refs"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "fixture_type": {
+      "const": "maxine_o3de_golden_project_fixture"
+    },
+    "fixture_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fixture_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "mode": {
+      "enum": [
+        "fixture",
+        "local_readiness",
+        "unavailable",
+        "invalid"
+      ]
+    },
+    "status": {
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "skipped"
+      ]
+    },
+    "project": {
+      "type": "object",
+      "required": [
+        "project_name",
+        "project_root_policy",
+        "project_path_env_var",
+        "engine_root_env_var",
+        "allowed_project_relative_roots",
+        "forbidden_roots",
+        "path_safety_policy"
+      ],
+      "properties": {
+        "project_name": {
+          "type": "string"
+        },
+        "project_root_policy": {
+          "type": "string"
+        },
+        "project_path_env_var": {
+          "const": "O3DE_PROJECT_PATH"
+        },
+        "engine_root_env_var": {
+          "const": "O3DE_ENGINE_ROOT"
+        },
+        "allowed_project_relative_roots": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "forbidden_roots": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "path_safety_policy": {
+          "type": "string"
+        }
+      }
+    },
+    "lanes": {
+      "type": "object",
+      "required": [
+        "draft_mesh",
+        "release_rigged",
+        "external_rig_import"
+      ]
+    },
+    "source_layout": {
+      "type": "object",
+      "required": [
+        "asset_scan_root",
+        "character_source_root",
+        "package_root",
+        "prefab_root",
+        "motion_root",
+        "material_root",
+        "collider_root",
+        "temporary_root"
+      ]
+    },
+    "temp_level_policy": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "level_root",
+        "naming_prefix",
+        "cleanup_policy",
+        "never_use_production_levels",
+        "allow_existing_level_readonly"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "level_root": {
+          "type": "string"
+        },
+        "naming_prefix": {
+          "type": "string"
+        },
+        "cleanup_policy": {
+          "type": "string"
+        },
+        "never_use_production_levels": {
+          "type": "boolean"
+        },
+        "allow_existing_level_readonly": {
+          "type": "boolean"
+        }
+      }
+    },
+    "expected_artifact_paths": {
+      "type": "object",
+      "required": [
+        "manifests",
+        "product_resolver_reports",
+        "asset_processor_batch_reports",
+        "editor_smoke_reports",
+        "qc_reports",
+        "evidence_bundles",
+        "logs",
+        "screenshots"
+      ]
+    },
+    "product_expectations": {
+      "type": "object"
+    },
+    "evidence_expectations": {
+      "type": "object"
+    },
+    "integration_gates": {
+      "type": "object",
+      "required": [
+        "MAXINE_ENABLE_O3DE_INTEGRATION",
+        "MAXINE_ENABLE_ASSET_PROCESSOR_BATCH",
+        "MAXINE_ENABLE_O3DE_EDITOR_SMOKE"
+      ]
+    },
+    "safety": {
+      "type": "object",
+      "required": [
+        "no_live_publication",
+        "no_external_services",
+        "no_cache_heuristic_release_proof",
+        "no_unscoped_cleanup"
+      ]
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence_refs": {
+      "type": "array"
+    }
+  }
+}

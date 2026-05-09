@@ -14,13 +14,21 @@ from typing import Any, Dict, Iterable, Mapping
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_GOLDEN_PROJECT_FIXTURE = REPO_ROOT / "examples" / "o3de-golden-project" / "maxine-golden-project.fixture.json"
 MXN_VALIDATION_TOOL_UNAVAILABLE = "MXN_VALIDATION_TOOL_UNAVAILABLE"
 EDITOR_TOOL_NAMES = ("Editor.exe", "O3DEEditor.exe", "Editor", "O3DEEditor")
 APB_TOOL_NAMES = ("AssetProcessorBatch.exe", "AssetProcessorBatch")
 
 
-def build_readiness_report(*, env: Mapping[str, str] | None = None, strict: bool = False) -> Dict[str, Any]:
+def build_readiness_report(
+    *,
+    env: Mapping[str, str] | None = None,
+    strict: bool = False,
+    golden_project_fixture: Path | str | None = None,
+) -> Dict[str, Any]:
     env = env if env is not None else os.environ
+    golden_fixture = Path(golden_project_fixture) if golden_project_fixture else DEFAULT_GOLDEN_PROJECT_FIXTURE
+    golden_fixture = golden_fixture if golden_fixture.is_absolute() else REPO_ROOT / golden_fixture
     editor = _tool_report(
         explicit=env.get("O3DE_EDITOR_EXECUTABLE", ""),
         names=EDITOR_TOOL_NAMES,
@@ -82,6 +90,11 @@ def build_readiness_report(*, env: Mapping[str, str] | None = None, strict: bool
         "paths": {
             "engine_root": engine_root,
             "project_path": project_path,
+        },
+        "golden_project_fixture": {
+            "path": _repo_relative(golden_fixture),
+            "present": golden_fixture.exists(),
+            "purpose": "Fixture contract for safe project roots, temp levels, and evidence retention.",
         },
         "tools": {
             "editor": editor,
@@ -164,10 +177,20 @@ def _next_steps(missing: list[str]) -> list[str]:
     ]
 
 
+def _repo_relative(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(REPO_ROOT.resolve())).replace("\\", "/")
+    except ValueError:
+        return str(path)
+
+
 def print_text_report(report: Mapping[str, Any]) -> None:
     print(f"O3DE runner readiness: {report['status']}")
     print(f"strict: {str(report['strict']).lower()}")
     print(f"live_commands_allowed: {str(report['live_commands_allowed']).lower()}")
+    fixture = report.get("golden_project_fixture", {})
+    if fixture:
+        print(f"golden_project_fixture: {fixture.get('path', '')}")
     for code in report.get("errors", []):
         print(f"  error: {code}")
     for code in report.get("warnings", []):
@@ -179,13 +202,14 @@ def print_text_report(report: Mapping[str, Any]) -> None:
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Check private Windows O3DE runner readiness without executing O3DE.")
     parser.add_argument("--strict", action="store_true", help="Fail if local O3DE tooling is unavailable.")
+    parser.add_argument("--golden-project-fixture", default=str(DEFAULT_GOLDEN_PROJECT_FIXTURE), help="Golden project fixture contract path.")
     parser.add_argument("--json", action="store_true", help="Emit JSON only.")
     return parser.parse_args()
 
 
 def main() -> int:
     args = _parse_args()
-    report = build_readiness_report(strict=args.strict)
+    report = build_readiness_report(strict=args.strict, golden_project_fixture=args.golden_project_fixture)
     if args.json:
         print(json.dumps(report, indent=2))
     else:

@@ -1,6 +1,14 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- Golden Corpus O3DE Project Fixture Prep v1 is in progress as fixture/contract preparation for future private-runner O3DE checks:
+  - `schemas/maxine.o3de-golden-project-fixture.schema.json`
+  - `examples/o3de-golden-project/`
+  - `tools/o3de/golden_project_fixture.py`
+  - default validation remains offline, deterministic, and fixture-backed
+  - local project readiness only inspects environment/path availability and does not mutate a project
+  - temp levels are constrained to `Levels/_maxine_smoke` and production levels remain blocked
+  - live O3DE/APB/Editor execution and live publication remain future gated work
 - Private self-hosted Windows O3DE integration runner wiring v1 is in progress as manual-only runner preparation:
   - normal CI remains offline, deterministic, and fixture-backed
   - `.github/workflows/o3de-private-windows-integration.yml` is workflow_dispatch-only and targets private self-hosted Windows labels

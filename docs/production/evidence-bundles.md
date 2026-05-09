@@ -51,3 +51,16 @@ Editor Python package/prefab smoke evidence may be attached as:
 - screenshot refs only when fixture-labeled or actually captured
 
 Fixture reports must not claim real Editor logs, screenshots, level mutation, or live Editor execution.
+
+## Golden Project Fixture Evidence
+
+Golden project fixture evidence may be attached as:
+
+- project fixture path, such as `examples/o3de-golden-project/maxine-golden-project.fixture.json`
+- local readiness report when the private runner inspected env vars/tool paths
+- `live_o3de_execution`, `live_asset_processor_batch_execution`, and `live_editor_execution`
+- temp-level policy refs under `Levels/_maxine_smoke`
+- evidence/artifact retention roots under `Saved/MaxineEvidence`, `Saved/Logs/Maxine`, and `Saved/Screenshots/Maxine`
+- skipped reason and `MXN_VALIDATION_TOOL_UNAVAILABLE` when local project/tooling paths are unavailable
+
+Fixture and skipped readiness reports must not claim project mutation, APB execution, Editor execution, screenshots, or logs that were not actually produced.
