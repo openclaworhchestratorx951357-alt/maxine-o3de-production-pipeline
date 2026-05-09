@@ -9,6 +9,14 @@
   - rejects `AssetProcessor.exe` and source/tool directories as APB substitutes
   - bounded `AssetProcessorBatch.exe --help` diagnostics against the RemoteControlHost binary stalled after 120 seconds and were cleaned up; no full live golden corpus APB retry was run
   - live Editor execution, release packaging, publication, cache deletion, and source deletion did not occur
+- Produce Project-Paired AssetProcessorBatch for MAXINE_GoldenCorpus v1 is in progress:
+  - PR #107 is merged and its APB provenance diagnostics are now the baseline
+  - verified `C:\src\o3de` contains `engine.json` and O3DE scripts, and `%USERPROFILE%\O3DE\Projects\MAXINE_GoldenCorpus\project.json` declares `project_name=MAXINE_GoldenCorpus`
+  - found no existing project/engine-paired `AssetProcessorBatch.exe`; the only APB remains the archived RemoteControlHost binary and is rejected for this project
+  - attempted a bounded low-memory `AssetProcessorBatch` build from `C:\src\o3de\build\windows` with profile config, `--parallel 1`, MSBuild `/m:1`, `CL_MPCount=1`, `UseMultiToolTask=false`, and `CL=/Zm200`
+  - the build made progress without a new C1060 but did not produce `AssetProcessorBatch.exe` inside the bounded build window, so the build process tree was stopped and the full live APB retry was not attempted
+  - sanitized build-blocker evidence is represented by `examples/private-runner/apb-diagnostic.project-paired-apb-build-blocked.example.json`; raw local logs remain gitignored under `artifacts/o3de-integration/setup/`
+  - live APB execution, live Editor execution, release packaging, publication, cache deletion, and source deletion did not occur
 - Private Runner Setup Checklist and Live APB Dry-Run Runbook v1 is in progress:
   - adds a no-secret private runner env template
   - adds a dry-run checklist that does not execute APB, Editor, or publication

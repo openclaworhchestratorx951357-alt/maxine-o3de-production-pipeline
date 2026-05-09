@@ -61,3 +61,28 @@ python tools/o3de/diagnose_asset_processor_batch.py --run-bounded-diagnostics --
 ```
 
 Only after inventory and bounded diagnostics pass should the next slice attempt a single bounded full live APB-only golden corpus run.
+
+## Project-Paired APB Build Attempt
+
+The follow-up project-paired APB slice verified:
+
+- engine root: `C:\src\o3de`
+- controlled project: `%USERPROFILE%\O3DE\Projects\MAXINE_GoldenCorpus`
+- existing APB inventory: no safe project/engine-paired APB
+- rejected APB: archived RemoteControlHost binary
+
+A bounded low-memory build was attempted from the existing O3DE build tree:
+
+```powershell
+cmake --build C:\src\o3de\build\windows --target AssetProcessorBatch --config profile --parallel 1 -- /m:1 /p:CL_MPCount=1 /p:UseMultiToolTask=false
+```
+
+The session also set `CL=/Zm200`. The build made progress through engine dependencies and did not repeat C1060 during the bounded window, but `C:\src\o3de\build\windows\bin\profile\AssetProcessorBatch.exe` was not produced before the build was stopped. Raw logs remain under `artifacts/o3de-integration/setup/` and are not committed.
+
+Sanitized example:
+
+```text
+examples/private-runner/apb-diagnostic.project-paired-apb-build-blocked.example.json
+```
+
+Next action: continue the APB target build in a fully provisioned O3DE build environment, or provide a prebuilt `AssetProcessorBatch.exe` paired with `C:\src\o3de` and `MAXINE_GoldenCorpus`. Do not retry the full live golden corpus APB run until inventory selects the paired APB and bounded diagnostics pass.
