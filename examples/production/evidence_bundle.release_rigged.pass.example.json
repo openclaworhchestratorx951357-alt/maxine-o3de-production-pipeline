@@ -21,6 +21,12 @@
       "kind": "product_matrix",
       "path": "examples/production/product_matrix_v1.json",
       "sha256": "fixture-recorded-in-review"
+    },
+    {
+      "id": "asset-processor-batch-fixture",
+      "kind": "asset_processor_batch_report",
+      "path": "examples/golden-corpus/release_rigged/asset_processor_batch.fixture.json",
+      "sha256": "fixture-recorded-in-review"
     }
   ],
   "no_live_execution_attestation": true,

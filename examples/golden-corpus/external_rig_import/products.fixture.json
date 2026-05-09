@@ -1,0 +1,29 @@
+{
+  "source_uuid": "source-external-rig-import-0001",
+  "expected_products": [
+    "actor",
+    "procprefab"
+  ],
+  "produced_products": [
+    {
+      "product_type": "actor",
+      "product_path": "Cache/pc/maxine_external.actor",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "source-external-rig-import-0001",
+      "asset_id": "source-external-rig-import-0001:3001",
+      "produced_by_source_uuid": true,
+      "evidence_source": "fixture"
+    },
+    {
+      "product_type": "procprefab",
+      "product_path": "Cache/pc/maxine_external.procprefab",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "source-external-rig-import-0001",
+      "asset_id": "source-external-rig-import-0001:3002",
+      "produced_by_source_uuid": true,
+      "evidence_source": "fixture"
+    }
+  ]
+}

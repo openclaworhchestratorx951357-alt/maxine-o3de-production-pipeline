@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "asset_processor_batch_golden_corpus_v1",
+  "report_id": "apb-draft-mesh-pass-fixture",
+  "case_id": "draft_mesh",
+  "generated_at": "2026-05-09T00:00:00Z",
+  "mode": "fixture",
+  "status": "pass",
+  "integration_enabled": false,
+  "strict_integration": false,
+  "live_asset_processor_batch_execution": false,
+  "o3de_engine_root_present": false,
+  "o3de_project_path_present": false,
+  "asset_processor_batch_executable": "",
+  "command_preview": [],
+  "exit_code": null,
+  "stdout_log_ref": "",
+  "stderr_log_ref": "",
+  "asset_processor_log_ref": "",
+  "platform": "pc",
+  "lane": "draft_mesh",
+  "publish_tier": "draft",
+  "source_assets": [
+    {
+      "path": "Assets/Characters/MAXINE/draft_mesh_source.fbx",
+      "source_uuid": "source-draft-mesh-0001",
+      "sha256": "fixture-draft-source-sha256"
+    }
+  ],
+  "expected_products": [
+    "azmodel"
+  ],
+  "produced_products": [
+    {
+      "product_type": "azmodel",
+      "product_path": "Cache/pc/maxine_draft_mesh.azmodel",
+      "relative_product_path": "Cache/pc/maxine_draft_mesh.azmodel",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "source-draft-mesh-0001",
+      "asset_id": "source-draft-mesh-0001:1001",
+      "source_sub_id": "1001",
+      "sha256_available": false,
+      "produced_by_source_uuid": true,
+      "evidence_source": "fixture"
+    }
+  ],
+  "pending_assets": [],
+  "missing_products": [],
+  "cache_heuristic_used": false,
+  "errors": [],
+  "warnings": [],
+  "evidence_refs": [
+    {
+      "id": "draft-products-fixture",
+      "kind": "product_fixture",
+      "path": "examples/golden-corpus/draft_mesh/products.fixture.json"
+    }
+  ]
+}

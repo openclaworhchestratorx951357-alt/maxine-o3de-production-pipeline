@@ -47,6 +47,12 @@ python tools/validation/validate_all.py
 
 This slice detects local tooling and records skipped/unavailable integration status. It does not run Editor, Asset Processor, publish, mutate project settings, or fake product metadata.
 
+The Asset Processor Batch golden corpus proof builds on this adapter contract with JSON fixtures:
+
+```powershell
+python tools/o3de/asset_processor_batch.py --corpus examples/golden-corpus --mode fixture
+```
+
 ## Resolver Evidence
 
 Resolver evidence records:
