@@ -12,6 +12,12 @@ The product matrix defines which O3DE products a lane must resolve before a pack
 
 Product resolution must come from the Asset System adapter contract or deterministic fixtures. Release validators fail if a manifest uses cache newest-file or best-looking-file heuristics.
 
+## APB Release-Rigged Evidence Notes
+
+For live APB evidence, source capability is not enough by itself. A rigged source scene, motion source, motionset, animgraph, and collider scene settings may all be present while the release lane still fails if Asset Processor database evidence does not contain the required products.
+
+The 2026-05-09 controlled `MAXINE_GoldenCorpus` follow-up produced `actor`, `motion`, `motionset`, `animgraph`, `azmodel`, `procprefab`, and `azmaterial` evidence, but still failed because physics-enabled `release_rigged` did not produce `.pxmesh`. That remains `MXN_ASSET_PRODUCT_MISSING`; it must not be converted into pass by cache heuristics or by silently dropping the `pxmesh` expectation.
+
 ## Cache Heuristic Policy
 
 Release lanes fail with `MXN_ASSET_CACHE_HEURISTIC_FORBIDDEN` when product resolution depends only on:

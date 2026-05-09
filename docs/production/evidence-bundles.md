@@ -52,6 +52,14 @@ When APB live execution is explicitly admitted on a private runner, APB evidence
 
 Generated live APB logs are not fixture reports and are not committed by default.
 
+Release-rigged APB evidence can also include a source capability audit:
+
+```powershell
+python tools/o3de/audit_golden_corpus_sources.py --corpus examples/golden-corpus --project $env:O3DE_PROJECT_PATH --json
+```
+
+The audit records whether controlled sources exist for actor, motion, motionset, animgraph, and pxmesh scene settings. It does not replace Asset Processor product evidence. If APB exits `0` but the database lacks `.pxmesh`, `actor`, `motion`, `motionset`, or `animgraph`, the evidence bundle remains failed until the product is produced or an explicit policy waiver is added and validated.
+
 ## Editor Smoke Evidence
 
 Editor Python package/prefab smoke evidence may be attached as:
