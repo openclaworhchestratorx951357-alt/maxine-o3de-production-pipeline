@@ -1,6 +1,19 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- Fix Golden Corpus Release-Rigged Product Evidence v1 is in progress:
+  - PR #110 is merged and the first full APB-only run outcome is now the baseline
+  - added `tools/o3de/audit_golden_corpus_sources.py` to audit controlled `MAXINE_GoldenCorpus` release-rigged source prerequisites without running O3DE
+  - staged controlled local O3DE source fixtures under `%USERPROFILE%\O3DE\Projects\MAXINE_GoldenCorpus\Assets\Characters\MAXINE\release` from local O3DE sample/test assets; no binary source fixtures are committed to this repo
+  - actor evidence is now produced from the local Jack actor fixture
+  - motion evidence is now produced from the local Jack motion fixture
+  - motionset and animgraph evidence are source-provided and present in Asset Processor database evidence
+  - built the narrow `PhysX5.Editor` target, producing `C:\src\o3de\build\windows\bin\profile\PhysX5.Editor.Gem.dll`, and enabled `PhysXCommon`, `LmbrCentral`, and `CommonFeaturesAtom` on the controlled local project
+  - APB still exits `0` without a stall, but the wrapper/suite correctly fail because `.pxmesh` product evidence remains missing
+  - current product evidence: produced `azmodel`, `actor`, `procprefab`, `motion`, `motionset`, `animgraph`, and `azmaterial`; missing `pxmesh`; pending none; `cache_heuristic_used=false`
+  - sanitized missing-products evidence is represented by `examples/private-runner/apb-live-full-golden-corpus.release-rigged.missing-products.example.json`
+  - live Editor execution, release packaging, publication, manual Asset Cache deletion, and production project mutation did not occur
+  - next action is focused PhysX mesh exporter/project settings diagnosis, or an explicit collider waiver policy only if the release fixture is reclassified as not physics-enabled
 - First Full APB-Only Golden Corpus Run with Project-Paired APB v1 is in progress:
   - PR #109 is merged and the project/engine-paired APB at `C:\src\o3de\build\windows\bin\profile\AssetProcessorBatch.exe` is now the baseline
   - validates `C:\src\o3de`, `%USERPROFILE%\O3DE\Projects\MAXINE_GoldenCorpus`, the golden project fixture, APB provenance, build environment diagnostics, APB bounded diagnostics, APB readiness, runner readiness, dry-run, and fixture suite before the full run

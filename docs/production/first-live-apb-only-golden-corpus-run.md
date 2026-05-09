@@ -198,3 +198,52 @@ artifacts/o3de-integration/apb/
 ```
 
 Next action: configure or add the controlled golden corpus source assets/gems/settings needed to produce `actor`, `motion`, `motionset`, `animgraph`, and `pxmesh`, then rerun the bounded APB-only command.
+
+## Release-Rigged Product Evidence Follow-Up
+
+The release-rigged product evidence follow-up staged controlled local source fixtures in:
+
+```text
+%USERPROFILE%\O3DE\Projects\MAXINE_GoldenCorpus\Assets\Characters\MAXINE\release
+```
+
+The staged sources came from the local O3DE source tree only:
+
+- Jack actor scene source and actor scene settings for `actor`
+- Jack animation scene source and motion scene settings for `motion`
+- EMotionFX test `motionset` and `animgraph` source artifacts
+- O3DE AutomatedTesting PhysX collider scene source/settings for the remaining `pxmesh` investigation
+
+The follow-up also built the narrow PhysX editor module target:
+
+```powershell
+cmake --build C:\src\o3de\build\windows --target PhysX5.Editor --config profile --parallel 1 -- /m:1 /nodeReuse:false /p:CL_MPCount=1 /p:UseMultiToolTask=false /v:m
+```
+
+`C:\src\o3de\build\windows\bin\profile\PhysX5.Editor.Gem.dll` was produced with no C1060. The controlled project was updated locally with `PhysXCommon`, `LmbrCentral`, and `CommonFeaturesAtom` through the O3DE CLI.
+
+The APB-only command and APB-only suite were rerun. APB exited `0`, did not stall, and produced:
+
+- `azmodel`
+- `actor`
+- `procprefab`
+- `motion`
+- `motionset`
+- `animgraph`
+- `azmaterial`
+
+The run still fails closed because `pxmesh` remains missing from Asset Processor database product evidence. `cache_heuristic_used=false`; no cache heuristic is accepted as release proof.
+
+Sanitized evidence:
+
+```text
+examples/private-runner/apb-live-full-golden-corpus.release-rigged.missing-products.example.json
+```
+
+The source audit can be run without live O3DE execution:
+
+```powershell
+python tools/o3de/audit_golden_corpus_sources.py --corpus examples/golden-corpus --project %USERPROFILE%\O3DE\Projects\MAXINE_GoldenCorpus --json
+```
+
+Next action: diagnose why the PhysX mesh exporter does not emit `.pxmesh` for the controlled project under APB, or add an explicit collider waiver policy only if the release fixture is intentionally reclassified as not physics-enabled.

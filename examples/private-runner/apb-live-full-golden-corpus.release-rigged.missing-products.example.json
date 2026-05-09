@@ -1,0 +1,208 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "asset_processor_batch_golden_corpus_summary_v1",
+  "report_id": "apb-live-full-golden-corpus-release-rigged-missing-products-example",
+  "generated_at": "2026-05-09T00:00:00Z",
+  "mode": "local_asset_processor_batch",
+  "lane": "release_rigged",
+  "status": "fail",
+  "integration_enabled": true,
+  "integration_executed": true,
+  "strict_integration": true,
+  "live_asset_processor_batch_execution": true,
+  "live_editor_execution": false,
+  "live_publication": false,
+  "golden_project_fixture_ref": "examples/o3de-golden-project/maxine-golden-project.fixture.json",
+  "engine_root_redacted": "C:/src/o3de",
+  "project_path_redacted": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+  "project_name": "MAXINE_GoldenCorpus",
+  "apb_executable_redacted": "C:/src/o3de/build/windows/bin/profile/AssetProcessorBatch.exe",
+  "apb_candidate_provenance": "engine-paired AssetProcessorBatch candidate",
+  "golden_corpus_ref": "examples/golden-corpus",
+  "command": {
+    "argv": [
+      "C:/src/o3de/build/windows/bin/profile/AssetProcessorBatch.exe",
+      "--project-path",
+      "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+      "--platform",
+      "pc"
+    ],
+    "exit_code": 0,
+    "timeout_seconds": 1800,
+    "timed_out": false
+  },
+  "logs": {
+    "stdout_log_ref": "artifacts/o3de-integration/apb/apb-live-20260509T175022Z/stdout.txt",
+    "stderr_log_ref": "artifacts/o3de-integration/apb/apb-live-20260509T175022Z/stderr.txt",
+    "asset_processor_log_ref": ""
+  },
+  "apb_report_ref": "artifacts/o3de-integration/apb/apb-live-20260509T175022Z/asset_processor_batch_live_report.json",
+  "platform": "pc",
+  "source_assets": [
+    {
+      "path": "Assets/Characters/MAXINE/release/maxine_release_source.fbx",
+      "capability": "actor",
+      "source_fixture": "O3DE AutomatedTesting Jack actor fixture",
+      "evidence_source": "controlled_project_source"
+    },
+    {
+      "path": "Assets/Characters/MAXINE/release/maxine_idle.fbx",
+      "capability": "motion",
+      "source_fixture": "O3DE AutomatedTesting Jack motion fixture",
+      "evidence_source": "controlled_project_source"
+    },
+    {
+      "path": "Assets/Characters/MAXINE/release/maxine.motionset",
+      "capability": "motionset",
+      "source_fixture": "O3DE EMotionFX test fixture",
+      "evidence_source": "controlled_project_source"
+    },
+    {
+      "path": "Assets/Characters/MAXINE/release/maxine.animgraph",
+      "capability": "animgraph",
+      "source_fixture": "O3DE EMotionFX test fixture",
+      "evidence_source": "controlled_project_source"
+    },
+    {
+      "path": "Assets/Characters/MAXINE/release/maxine_physx_final_spherebot.fbx",
+      "capability": "pxmesh_source_settings",
+      "source_fixture": "O3DE AutomatedTesting Collider_PxMeshAutoAssigned fixture",
+      "evidence_source": "controlled_project_source"
+    }
+  ],
+  "source_capability_audit": {
+    "release_rigged_source_asset_found": true,
+    "actor_capable_source": "Assets/Characters/MAXINE/release/maxine_release_source.fbx.assetinfo",
+    "motion_capable_source": "Assets/Characters/MAXINE/release/maxine_idle.fbx.assetinfo",
+    "motionset": "source-provided",
+    "animgraph": "source-provided",
+    "pxmesh": "source-settings-present"
+  },
+  "gem_enablement_audit": {
+    "SceneProcessing": true,
+    "EMotionFX": true,
+    "PhysX_or_PhysX5": true,
+    "PhysXCommon": true,
+    "PrefabBuilder": true,
+    "PythonAssetBuilder": false,
+    "Atom_or_EMotionFX_Atom": true
+  },
+  "expected_products": [
+    "azmodel",
+    "actor",
+    "procprefab",
+    "motion",
+    "motionset",
+    "animgraph",
+    "pxmesh",
+    "azmaterial"
+  ],
+  "produced_products": [
+    {
+      "product_type": "azmodel",
+      "product_path": "pc/assets/characters/maxine/release/r0-b_body.fbx.azmodel",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "actor",
+      "product_path": "pc/assets/characters/maxine/release/jack.actor",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "procprefab",
+      "product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "motion",
+      "product_path": "pc/assets/characters/maxine/release/jack_death_fall_back_zup.motion",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "motionset",
+      "product_path": "pc/assets/characters/maxine/release/maxine.motionset",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "animgraph",
+      "product_path": "pc/assets/characters/maxine/release/maxine.animgraph",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "azmaterial",
+      "product_path": "pc/assets/characters/maxine/release/maxine_physx_final_spherebot__dev_clay_17082521850862376549.fbx.azmaterial",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    }
+  ],
+  "source_provided_release_artifacts": [
+    "motionset",
+    "animgraph"
+  ],
+  "pending_assets": [],
+  "missing_products": [
+    "pxmesh"
+  ],
+  "missing_release_artifacts": [],
+  "waivers": [],
+  "product_matrix_result": "fail",
+  "cache_heuristic_used": false,
+  "errors": [
+    "MXN_ASSET_PRODUCT_MISSING"
+  ],
+  "warnings": [
+    "PhysX source settings are present and the PhysX5 editor module was built, but APB did not emit a .pxmesh product."
+  ],
+  "messages": [
+    "Actor, motion, motionset, and animgraph evidence are now present.",
+    "The remaining release-rigged blocker is missing pxmesh product evidence."
+  ],
+  "safety": {
+    "live_editor_execution": false,
+    "live_publication": false,
+    "release_packaging": false,
+    "asset_cache_deleted_by_codex": false,
+    "production_project_mutation": false
+  },
+  "evidence_refs": [
+    {
+      "id": "golden-project-fixture",
+      "kind": "o3de_golden_project_fixture",
+      "path": "examples/o3de-golden-project/maxine-golden-project.fixture.json"
+    },
+    {
+      "id": "source-audit-tool",
+      "kind": "source_capability_audit",
+      "path": "tools/o3de/audit_golden_corpus_sources.py"
+    },
+    {
+      "id": "asset-processor-database",
+      "kind": "asset_processor_database",
+      "path": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus/Cache/assetdb.sqlite"
+    }
+  ],
+  "next_steps": [
+    "Diagnose why the PhysX mesh exporter does not emit .pxmesh under the controlled MAXINE_GoldenCorpus APB run.",
+    "Do not mark release_rigged pass until pxmesh is produced or an explicit collider waiver policy is added and validated."
+  ]
+}
