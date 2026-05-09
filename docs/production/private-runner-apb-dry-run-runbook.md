@@ -66,6 +66,15 @@ python tools/o3de/diagnose_asset_processor_batch.py --inventory --engine-root C:
 
 If a candidate is not clearly paired with `MAXINE_GoldenCorpus`, do not use it for live APB. `AssetProcessor.exe` is never an acceptable substitute for `AssetProcessorBatch.exe`.
 
+If no paired APB exists, build only the APB target from the selected engine build tree:
+
+```powershell
+$env:CL = "/Zm200"
+cmake --build C:\src\o3de\build\windows --target AssetProcessorBatch --config profile --parallel 1 -- /m:1 /p:CL_MPCount=1 /p:UseMultiToolTask=false
+```
+
+Stop and preserve logs if the build repeats C1060 or does not produce APB inside the bounded maintenance window. Do not run the full live golden corpus APB command until inventory selects the project/engine-paired APB and bounded diagnostics pass.
+
 Expected dry-run behavior:
 
 - Missing local tools produce skipped/unavailable reports in non-strict mode.
@@ -106,6 +115,7 @@ I_UNDERSTAND_THIS_REQUIRES_A_PRIVATE_SELF_HOSTED_WINDOWS_RUNNER
 - Workflow confirmation phrase does not match.
 - Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE`.
 - Bounded APB diagnostics time out with `MXN_APB_DIAGNOSTIC_STALLED`.
+- Project-paired APB build does not finish producing `AssetProcessorBatch.exe` inside the bounded window.
 
 ## Safety Checklist Before First Live APB
 

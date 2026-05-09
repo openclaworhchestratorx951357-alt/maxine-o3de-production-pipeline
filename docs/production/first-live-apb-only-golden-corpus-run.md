@@ -111,3 +111,12 @@ python tools/o3de/diagnose_asset_processor_batch.py --run-bounded-diagnostics --
 ```
 
 Inventory confirmed the RemoteControlHost APB is archived and project-mismatched. A bounded help-like diagnostic against it stalled and was cleaned up after timeout. The next live APB attempt should use a project-paired APB binary, not the archived RemoteControlHost binary.
+
+## Project-Paired APB Build Status
+
+The project-paired APB follow-up attempted to produce `C:\src\o3de\build\windows\bin\profile\AssetProcessorBatch.exe` with a single-process profile build. The build progressed without a new C1060 during the bounded window but did not finish producing APB, so it was stopped and no full live golden corpus APB retry was attempted.
+
+Before retrying the full APB-only run, one of these must be true:
+
+- the `AssetProcessorBatch` target finishes in the `C:\src\o3de` build and diagnostic inventory selects it, or
+- a prebuilt APB paired with `C:\src\o3de` and `MAXINE_GoldenCorpus` is provided and bounded diagnostics pass.

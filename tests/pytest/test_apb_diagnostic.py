@@ -11,6 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / "tools" / "o3de" / "diagnose_asset_processor_batch.py"
 SCHEMA = REPO_ROOT / "schemas" / "maxine.apb-diagnostic-report.schema.json"
 EXAMPLE = REPO_ROOT / "examples" / "private-runner" / "apb-diagnostic.remotecontrolhost-stall.example.json"
+BUILD_BLOCKED_EXAMPLE = REPO_ROOT / "examples" / "private-runner" / "apb-diagnostic.project-paired-apb-build-blocked.example.json"
 
 
 def _write_json(path: Path, payload: dict) -> None:
@@ -136,6 +137,17 @@ def test_apb_diagnostic_report_schema_validates_example():
     result = schema_validate(load_json(EXAMPLE), load_json(SCHEMA))
 
     assert result.status == "pass", result.messages
+
+
+def test_apb_diagnostic_report_schema_validates_project_paired_build_blocker_example():
+    payload = load_json(BUILD_BLOCKED_EXAMPLE)
+    result = schema_validate(payload, load_json(SCHEMA))
+
+    assert result.status == "pass", result.messages
+    assert payload["project_paired_apb_found"] is False
+    assert payload["project_paired_apb_built"] is False
+    assert payload["build_attempted"] is True
+    assert payload["live_asset_processor_batch_execution"] is False
 
 
 def test_apb_diagnostic_cli_inventory_json_uses_search_root(tmp_path):
