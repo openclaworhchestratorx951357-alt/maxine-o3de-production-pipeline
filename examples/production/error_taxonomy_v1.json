@@ -140,6 +140,11 @@
       "code": "MXN_APB_DIAGNOSTIC_STALLED",
       "title": "Asset Processor Batch diagnostic stalled",
       "severity": "error"
+    },
+    {
+      "code": "MXN_APB_PROCESS_EXIT_NONZERO",
+      "title": "Asset Processor Batch process exited nonzero",
+      "severity": "error"
     }
   ]
 }

@@ -389,7 +389,71 @@ def test_apb_live_nonzero_exit_fails(tmp_path):
 
     assert result["status"] == "fail"
     assert result["exit_code"] == 2
+    assert "MXN_APB_PROCESS_EXIT_NONZERO" in result["errors"]
+    assert "MXN_VALIDATION_TOOL_UNAVAILABLE" not in result["errors"]
     assert result["live_asset_processor_batch_execution"] is True
+
+
+def test_apb_live_nonzero_exit_keeps_product_evidence_separate_from_process_failure(tmp_path):
+    env = _live_ready_env(tmp_path)
+    project_path = Path(env["O3DE_PROJECT_PATH"])
+    _write_asset_db(
+        project_path,
+        [
+            "pc/assets/characters/maxine/release/test.azmodel",
+            "pc/assets/characters/maxine/release/test.actor",
+            "pc/assets/characters/maxine/release/test.procprefab",
+            "pc/assets/characters/maxine/release/test.motion",
+            "pc/assets/characters/maxine/release/test.motionset",
+            "pc/assets/characters/maxine/release/test.animgraph",
+            "pc/assets/characters/maxine/release/test.pxmesh",
+            "pc/assets/characters/maxine/release/test.azmaterial",
+        ],
+    )
+
+    result = run_asset_processor_batch_corpus(
+        CORPUS,
+        enable_asset_processor_batch=True,
+        strict_integration=True,
+        golden_project_fixture=GOLDEN_PROJECT_FIXTURE,
+        command_runner=_RecordingRunner(returncode=1),
+        env=env,
+    )
+
+    assert result["status"] == "fail"
+    assert result["exit_code"] == 1
+    assert result["missing_products"] == []
+    assert "MXN_APB_PROCESS_EXIT_NONZERO" in result["errors"]
+    assert "MXN_ASSET_PRODUCT_MISSING" not in result["errors"]
+
+
+def test_apb_live_records_failed_assets_from_process_output(tmp_path):
+    class _FailedAssetRunner(_RecordingRunner):
+        def __call__(self, argv, **kwargs):
+            proc = super().__call__(argv, **kwargs)
+            proc.stdout = (
+                "---------------FAILED ASSETS-------------\n"
+                "AssetProcessor: C:/src/o3de/Gems/DiffuseProbeGrid/Assets/Passes/DiffuseProbeGridQueryFullscreenWithAlbedo.pass\n"
+                "AssetProcessor: -----------------------------------------\n"
+                "AssetProcessor: Number of Assets Failed to Process: 1.\n"
+                "-----------------------------------------\n"
+            )
+            return proc
+
+    env = _live_ready_env(tmp_path)
+
+    result = run_asset_processor_batch_corpus(
+        CORPUS,
+        enable_asset_processor_batch=True,
+        strict_integration=True,
+        golden_project_fixture=GOLDEN_PROJECT_FIXTURE,
+        command_runner=_FailedAssetRunner(returncode=1),
+        env=env,
+    )
+
+    assert result["failed_assets"] == [
+        "C:/src/o3de/Gems/DiffuseProbeGrid/Assets/Passes/DiffuseProbeGridQueryFullscreenWithAlbedo.pass"
+    ]
 
 
 def test_apb_live_exit_zero_records_missing_expected_products_from_asset_db(tmp_path):

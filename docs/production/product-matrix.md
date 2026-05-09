@@ -16,7 +16,15 @@ Product resolution must come from the Asset System adapter contract or determini
 
 For live APB evidence, source capability is not enough by itself. A rigged source scene, motion source, motionset, animgraph, and collider scene settings may all be present while the release lane still fails if Asset Processor database evidence does not contain the required products.
 
-The 2026-05-09 controlled `MAXINE_GoldenCorpus` follow-up produced `actor`, `motion`, `motionset`, `animgraph`, `azmodel`, `procprefab`, and `azmaterial` evidence, but still failed because physics-enabled `release_rigged` did not produce `.pxmesh`. That remains `MXN_ASSET_PRODUCT_MISSING`; it must not be converted into pass by cache heuristics or by silently dropping the `pxmesh` expectation.
+The first 2026-05-09 controlled `MAXINE_GoldenCorpus` follow-up produced `actor`, `motion`, `motionset`, `animgraph`, `azmodel`, `procprefab`, and `azmaterial` evidence, but still failed because physics-enabled `release_rigged` did not produce `.pxmesh`. That remained `MXN_ASSET_PRODUCT_MISSING`; it was not converted into pass by cache heuristics or by silently dropping the `pxmesh` expectation.
+
+The pxmesh resolution follow-up produced trusted `.pxmesh` evidence from the Asset Processor database:
+
+```text
+pc/assets/characters/maxine/release/r0-b_body.fbx.pxmesh
+```
+
+That resolves the release-rigged product matrix evidence for `pxmesh`; all required release-rigged product types are now present with `cache_heuristic_used=false`. The full APB-only suite still fails because APB exits nonzero on an unrelated engine/Gem pass asset, which is classified separately as `MXN_APB_PROCESS_EXIT_NONZERO`.
 
 ## Cache Heuristic Policy
 

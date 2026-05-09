@@ -1,0 +1,182 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "asset_processor_batch_golden_corpus_summary_v1",
+  "report_id": "apb-live-full-golden-corpus-release-rigged-pxmesh-produced-apb-nonzero-example",
+  "generated_at": "2026-05-09T00:00:00Z",
+  "mode": "local_asset_processor_batch",
+  "lane": "release_rigged",
+  "status": "fail",
+  "integration_enabled": true,
+  "integration_executed": true,
+  "strict_integration": true,
+  "live_asset_processor_batch_execution": true,
+  "live_editor_execution": false,
+  "live_publication": false,
+  "release_packaging": false,
+  "golden_project_fixture_ref": "examples/o3de-golden-project/maxine-golden-project.fixture.json",
+  "engine_root_redacted": "C:/src/o3de",
+  "project_path_redacted": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+  "project_name": "MAXINE_GoldenCorpus",
+  "apb_executable_redacted": "C:/src/o3de/build/windows/bin/profile/AssetProcessorBatch.exe",
+  "command": {
+    "argv": [
+      "C:/src/o3de/build/windows/bin/profile/AssetProcessorBatch.exe",
+      "--project-path",
+      "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+      "--platform",
+      "pc"
+    ],
+    "exit_code": 1,
+    "timeout_seconds": 1800,
+    "timed_out": false
+  },
+  "logs": {
+    "stdout_log_ref": "artifacts/o3de-integration/apb/apb-live-20260509T215509Z/stdout.txt",
+    "stderr_log_ref": "artifacts/o3de-integration/apb/apb-live-20260509T215509Z/stderr.txt",
+    "asset_processor_log_ref": ""
+  },
+  "apb_report_ref": "artifacts/o3de-integration/apb/apb-live-20260509T215509Z/asset_processor_batch_live_report.json",
+  "platform": "pc",
+  "source_assets": [
+    {
+      "path": "Assets/Characters/MAXINE/release/maxine_release_source.fbx",
+      "capability": "actor"
+    },
+    {
+      "path": "Assets/Characters/MAXINE/release/maxine_idle.fbx",
+      "capability": "motion"
+    },
+    {
+      "path": "Assets/Characters/MAXINE/release/maxine.motionset",
+      "capability": "motionset"
+    },
+    {
+      "path": "Assets/Characters/MAXINE/release/maxine.animgraph",
+      "capability": "animgraph"
+    },
+    {
+      "path": "Assets/Characters/MAXINE/release/maxine_physx_final_spherebot.fbx",
+      "capability": "pxmesh"
+    }
+  ],
+  "expected_products": [
+    "azmodel",
+    "actor",
+    "procprefab",
+    "motion",
+    "motionset",
+    "animgraph",
+    "pxmesh",
+    "azmaterial"
+  ],
+  "produced_products": [
+    {
+      "product_type": "azmodel",
+      "product_path": "pc/assets/characters/maxine/release/jack.fbx.azmodel",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "actor",
+      "product_path": "pc/assets/characters/maxine/release/jack.actor",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "procprefab",
+      "product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "motion",
+      "product_path": "pc/assets/characters/maxine/release/jack_death_fall_back_zup.motion",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "motionset",
+      "product_path": "pc/assets/characters/maxine/release/maxine.motionset",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "animgraph",
+      "product_path": "pc/assets/characters/maxine/release/maxine.animgraph",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "pxmesh",
+      "product_path": "pc/assets/characters/maxine/release/r0-b_body.fbx.pxmesh",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "azmaterial",
+      "product_path": "pc/assets/characters/maxine/release/maxine_physx_final_spherebot__dev_clay_17082521850862376549.fbx.azmaterial",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    }
+  ],
+  "pending_assets": [],
+  "missing_products": [],
+  "failed_assets": [
+    "C:/src/o3de/Gems/DiffuseProbeGrid/Assets/Passes/DiffuseProbeGridQueryFullscreenWithAlbedo.pass"
+  ],
+  "pxmesh_evidence": {
+    "status": "produced",
+    "product_path": "pc/assets/characters/maxine/release/r0-b_body.fbx.pxmesh",
+    "source_path": "Assets/Characters/MAXINE/release/maxine_physx_final_spherebot.fbx",
+    "evidence_source": "asset_processor_database"
+  },
+  "product_matrix_status": "pass",
+  "cache_heuristic_used": false,
+  "errors": [
+    "MXN_APB_PROCESS_EXIT_NONZERO"
+  ],
+  "warnings": [],
+  "messages": [
+    "Pxmesh product evidence is resolved, but APB exits nonzero because an unrelated engine/Gem pass asset fails.",
+    "The APB-only suite remains fail-closed until the non-golden APB process failure is resolved or safely scoped."
+  ],
+  "safety": {
+    "live_editor_execution": false,
+    "live_publication": false,
+    "release_packaging": false,
+    "asset_cache_deleted_by_codex": false,
+    "production_project_mutation": false
+  },
+  "evidence_refs": [
+    {
+      "id": "product-evidence-audit-tool",
+      "kind": "apb_product_evidence_audit",
+      "path": "tools/o3de/audit_apb_product_evidence.py"
+    },
+    {
+      "id": "asset-processor-database",
+      "kind": "asset_processor_database",
+      "path": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus/Cache/assetdb.sqlite"
+    }
+  ],
+  "next_steps": [
+    "Fix or scope the DiffuseProbeGrid pass asset failure so APB exits 0 while retaining the resolved release-rigged product evidence.",
+    "Do not proceed to live Editor smoke until APB process status is clean and non-publishing gates remain enforced."
+  ]
+}
