@@ -163,4 +163,38 @@ Current live binding evidence pins these safe component IDs for the paired `C:/s
 - Tag: `{5272B56C-6CCC-4118-8539-D881F463ACD1}`
 - Actor: `{A863EE1B-8CFD-4EDD-BA0D-1CEC2879AD44}`
 
-The smoke now proves component binding by creating a temp entity, verifying the default Transform, adding a Tag component through `EditorComponentAPIBus.AddComponentsOfType`, building property lists, and reading safe component properties. Actor component binding is partially validated: APB actor product evidence exists, Actor TypeId discovery passes, Actor component add passes, property-list/readback passes, and `Actor asset` appears in the property surface; the asset assignment itself remains `blocked_by_unsafe_operation` until the setter value type is pinned. Prefab/procprefab binding is also partially validated: APB `procprefab` evidence exists and `azlmbr.prefab` exposes prefab buses/load surfaces, but live instantiation remains `blocked_by_unsafe_operation` until a safe call is pinned.
+The smoke now proves component binding by creating a temp entity, verifying the default Transform, adding a Tag component through `EditorComponentAPIBus.AddComponentsOfType`, building property lists, and reading safe component properties. Actor component binding is partially validated: APB actor product evidence exists, Actor TypeId discovery passes, Actor component add passes, property-list/readback passes, and `Actor asset` appears in the property surface; the asset assignment itself remained `blocked_by_unsafe_operation` until the setter value type was pinned in the follow-up proof slice. Prefab/procprefab binding is also partially validated: APB `procprefab` evidence exists and `azlmbr.prefab` exposes prefab buses/load surfaces; live instantiation remained `blocked_by_unsafe_operation` until a safe call was pinned in the follow-up proof slice.
+
+## Actor Assignment and Prefab Instantiation Proof
+
+The actor/prefab proof slice adds two targeted Editor diagnostic modes:
+
+```powershell
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --enable-editor-smoke --strict-integration --diagnostic-mode actor-asset-assignment --timeout-seconds 360 --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de --apb-report artifacts/o3de-integration/apb/<run>/asset_processor_batch_live_report.json
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --enable-editor-smoke --strict-integration --diagnostic-mode prefab-instantiation --timeout-seconds 360 --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de --apb-report artifacts/o3de-integration/apb/<run>/asset_processor_batch_live_report.json
+```
+
+Actor assignment is pinned to this observed safe call sequence:
+
+- require trusted APB `actor` product evidence for `pc/assets/characters/maxine/release/jack.actor`
+- add the Actor component with TypeId `{A863EE1B-8CFD-4EDD-BA0D-1CEC2879AD44}`
+- discover the `Actor asset` property path from the live component property list
+- resolve the approved product through `azlmbr.asset.AssetCatalogRequestBus.GetAssetIdByPath`; the resolving catalog path is `assets/characters/maxine/release/jack.actor`
+- set the property with `azlmbr.editor.EditorComponentAPIBus.SetComponentProperty` and an `azlmbr.asset.AssetId`
+- read back the property and verify it with `EditorComponentAPIBus.CompareComponentProperty`
+
+Prefab instantiation is pinned to this temp-level-only Editor source-prefab sequence:
+
+- require trusted APB `procprefab` product evidence for `pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab`
+- create the smoke entity in an approved temp level under `Levels/_maxine_smoke`
+- call `azlmbr.prefab.PrefabPublicRequestBus.CreatePrefabInMemory` to write a temporary source `.prefab` under the same temp level
+- call `azlmbr.prefab.PrefabPublicRequestBus.InstantiatePrefab` with the temp source `.prefab`, an empty parent entity id, and `azlmbr.math.Vector3`
+- verify a created entity/container id and confirm `GetOwningInstancePrefabPath` points back to the temp source prefab
+
+This is a true Editor prefab instantiation proof for an approved temporary source prefab. Direct `.procprefab` product instantiation is not claimed: current binding evidence shows `.procprefab` product availability, but the selected safe Editor call path expects a source `.prefab` path. Reports keep that distinction explicit.
+
+Full smoke now incorporates Actor assignment and prefab instantiation evidence. A `full` pass is rejected when `actor_asset_assignment.readback.matched_approved_product` is not true, or when prefab instantiation lacks a created entity or verified template-load evidence.
+
+Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
+
+This wiring does not publish, mutate production levels, contact external services, or claim production-ready completion.

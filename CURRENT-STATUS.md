@@ -1,7 +1,17 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Harden Editor Smoke Actor/Prefab/Component Binding Checks v1 is in progress:
+- Prove Actor Asset Assignment and Prefab Instantiation in Temp Level v1 is in progress:
+  - PR #118 was merged into `main`, and `codex/prove-actor-asset-assignment-prefab-instantiation-v1` was created from updated `main`
+  - the Editor smoke contract now includes targeted `actor-asset-assignment` and `prefab-instantiation` diagnostic modes, with semantic validation that rejects live-pass reports unless Actor assignment readback and prefab created-instance/template-load evidence are present
+  - Actor asset assignment is live-proven in the approved temp level: the smoke adds the Actor component `{A863EE1B-8CFD-4EDD-BA0D-1CEC2879AD44}`, discovers the `Actor asset` property path, resolves `pc/assets/characters/maxine/release/jack.actor` through the Asset Catalog as `assets/characters/maxine/release/jack.actor`, sets the property with `EditorComponentAPIBus.SetComponentProperty`, and verifies readback with `EditorComponentAPIBus.CompareComponentProperty`
+  - prefab instantiation is live-proven with a temp source `.prefab` created under `Levels/_maxine_smoke`: the smoke uses `PrefabPublicRequestBus.CreatePrefabInMemory` followed by `PrefabPublicRequestBus.InstantiatePrefab`, verifies a created entity/container id, and confirms `GetOwningInstancePrefabPath` points back to the approved temp-level prefab path
+  - APB product evidence remains a hard prerequisite; the latest live APB baseline and product evidence audit passed with `azmodel`, `actor`, `procprefab`, `motion`, `motionset`, `animgraph`, `pxmesh`, and `azmaterial`, with `cache_heuristic_used=false`
+  - targeted live diagnostics passed for `component-binding`, `actor-binding`, `actor-asset-assignment`, `prefab-binding`, `prefab-instantiation`, and `full`; the include-editor-smoke integration suite also passed after rerunning APB first
+  - direct `.procprefab` product instantiation remains recorded as unsupported by the current Editor prefab binding semantics; this slice proves safe Editor source-prefab create/instantiate behavior in the approved temp level while preserving the `procprefab` product-evidence prerequisite
+  - sanitized full-pass evidence is represented by `examples/editor-smoke/editor-smoke-live.release-rigged.pass.example.json`
+  - live publication remains false, release packaging remains false, Asset Cache deletion remains forbidden, and production levels remain forbidden
+- Harden Editor Smoke Actor/Prefab/Component Binding Checks v1 completed in PR #118:
   - PR #117 was merged into `main`, and `codex/harden-editor-smoke-actor-prefab-component-binding-checks-v1` was created from updated `main`
   - the Editor smoke report contract now carries explicit `component_type_registry`, `binding_call_surface`, `safe_call_results`, `component_binding_checks`, `actor_binding_checks`, `prefab_binding_checks`, `property_path_discovery`, `property_list_summary`, and `no_fake_success` evidence fields
   - added targeted live diagnostic modes for `component-binding`, `actor-binding`, and `prefab-binding`; each mode still uses the gated wrapper, approved temp levels under `Levels/_maxine_smoke`, progress markers, report refs, and closed publication/release-packaging gates
@@ -9,8 +19,8 @@
   - actor binding now requires APB `actor` product evidence before any attempt and reports typed blockers such as `blocked_by_missing_binding` or `blocked_by_unsafe_operation` rather than counting unavailable actor work as pass
   - prefab/procprefab binding now requires APB `procprefab` evidence and reports the discovered prefab binding surface or a typed `unsupported_by_engine_binding` blocker; no prefab instantiation is counted as pass without a pinned safe Editor binding call
   - live component binding passed with pinned live TypeIds for Transform `{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0}` and Tag `{5272B56C-6CCC-4118-8539-D881F463ACD1}`; the smoke safely added a Tag component and read component properties in the approved temp level
-  - live actor binding discovered Actor TypeId `{A863EE1B-8CFD-4EDD-BA0D-1CEC2879AD44}`, added the Actor component, and read safe properties, but remains `blocked_by_unsafe_operation` for actor asset assignment until the setter value semantics are pinned
-  - live prefab/procprefab binding confirmed APB `procprefab` evidence and `azlmbr.prefab` binding surfaces, but remains `blocked_by_unsafe_operation` until a safe instantiation/load call is pinned
+  - live actor binding discovered Actor TypeId `{A863EE1B-8CFD-4EDD-BA0D-1CEC2879AD44}`, added the Actor component, and read safe properties, but remained `blocked_by_unsafe_operation` for actor asset assignment until the setter value semantics were pinned in the follow-up slice
+  - live prefab/procprefab binding confirmed APB `procprefab` evidence and `azlmbr.prefab` binding surfaces, but remained `blocked_by_unsafe_operation` until a safe instantiation/load call was pinned in the follow-up slice
   - full gated Editor smoke and the include-editor-smoke integration suite passed with the typed actor/prefab blockers preserved; sanitized evidence is represented by `examples/editor-smoke/editor-smoke-live.release-rigged.pass.example.json`
   - live publication remains false, release packaging remains false, Asset Cache deletion remains forbidden, and production levels remain forbidden
 - Diagnose Gated Editor Smoke Temp-Level Stall v1 completed in PR #117:
