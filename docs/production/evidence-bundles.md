@@ -60,6 +60,16 @@ python tools/o3de/audit_golden_corpus_sources.py --corpus examples/golden-corpus
 
 The audit records whether controlled sources exist for actor, motion, motionset, animgraph, and pxmesh scene settings. It does not replace Asset Processor product evidence. If APB exits `0` but the database lacks `.pxmesh`, `actor`, `motion`, `motionset`, or `animgraph`, the evidence bundle remains failed until the product is produced or an explicit policy waiver is added and validated.
 
+For product-specific live APB evidence, use the APB product evidence audit:
+
+```powershell
+python tools/o3de/audit_apb_product_evidence.py --project $env:O3DE_PROJECT_PATH --apb-report <asset_processor_batch_live_report.json> --apb-executable $env:ASSET_PROCESSOR_BATCH_EXECUTABLE --json
+```
+
+The audit verifies `.pxmesh` through APB report or Asset Processor database evidence tied to the controlled release source. It may list filename-like or physics-like products for diagnostics, but those diagnostic matches do not satisfy release proof.
+
+As of the pxmesh resolution follow-up, `.pxmesh` is present for the controlled release source and the product matrix evidence is satisfied. The APB-only suite still fails closed because APB exits nonzero on an unrelated engine/Gem pass asset; that is recorded separately as `MXN_APB_PROCESS_EXIT_NONZERO`.
+
 ## Editor Smoke Evidence
 
 Editor Python package/prefab smoke evidence may be attached as:

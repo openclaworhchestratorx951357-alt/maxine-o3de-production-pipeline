@@ -1,6 +1,18 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- Resolve Golden Corpus Pxmesh Product Evidence v1 is in progress:
+  - PR #111 is merged and its release-rigged source fixture/product evidence improvements are now the baseline
+  - added `tools/o3de/audit_apb_product_evidence.py` to inspect APB report and Asset Processor database evidence for trusted `.pxmesh` products without using cache heuristics
+  - reconfigured the `C:\src\o3de\build\windows` tree with `LY_PROJECTS=C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus`; project-specific dependency registry files now include the PhysX editor module for the controlled project
+  - reran APB-only processing with the project/engine-paired APB at `C:\src\o3de\build\windows\bin\profile\AssetProcessorBatch.exe`
+  - pxmesh evidence is now produced and detected from Asset Processor database evidence: `pc/assets/characters/maxine/release/r0-b_body.fbx.pxmesh`, sourced from `Assets/Characters/MAXINE/release/maxine_physx_final_spherebot.fbx`
+  - release-rigged product evidence now includes `azmodel`, `actor`, `procprefab`, `motion`, `motionset`, `animgraph`, `pxmesh`, and `azmaterial`; missing products: none; pending: none; `cache_heuristic_used=false`
+  - the APB wrapper and APB-only suite still fail closed because APB exits `1` on the non-golden engine/Gem asset `C:/src/o3de/Gems/DiffuseProbeGrid/Assets/Passes/DiffuseProbeGridQueryFullscreenWithAlbedo.pass`
+  - APB process failures are now classified as `MXN_APB_PROCESS_EXIT_NONZERO`, separate from missing product evidence or missing tooling
+  - sanitized pxmesh-produced/nonzero-process evidence is represented by `examples/private-runner/apb-live-full-golden-corpus.release-rigged.pxmesh-produced-apb-nonzero.example.json`
+  - live Editor execution, release packaging, publication, manual Asset Cache deletion, and production project mutation did not occur
+  - next action is to fix or safely scope the non-golden DiffuseProbeGrid APB process failure while preserving the resolved release-rigged product evidence
 - Fix Golden Corpus Release-Rigged Product Evidence v1 is in progress:
   - PR #110 is merged and the first full APB-only run outcome is now the baseline
   - added `tools/o3de/audit_golden_corpus_sources.py` to audit controlled `MAXINE_GoldenCorpus` release-rigged source prerequisites without running O3DE

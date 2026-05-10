@@ -30,6 +30,7 @@ from tools.validation.schema_utils import load_json, schema_validate
 MXN_VALIDATION_TOOL_UNAVAILABLE = "MXN_VALIDATION_TOOL_UNAVAILABLE"
 MXN_PATH_UNSAFE = "MXN_PATH_UNSAFE"
 MXN_APB_EXECUTION_STALLED = "MXN_APB_EXECUTION_STALLED"
+MXN_APB_PROCESS_EXIT_NONZERO = "MXN_APB_PROCESS_EXIT_NONZERO"
 SCHEMA_PATH = REPO_ROOT / "schemas" / "maxine.asset-processor-batch-report.schema.json"
 DEFAULT_CORPUS = REPO_ROOT / "examples" / "golden-corpus"
 DEFAULT_ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "o3de-integration" / "apb"
@@ -465,22 +466,22 @@ def _execute_live_apb(
     }
     missing_products = [product_type for product_type in expected_products if product_type not in produced_product_types] if asset_db_ref else []
     status = "stalled" if timed_out else "pass" if proc.returncode == 0 and not missing_products else "fail"
-    errors = (
-        [MXN_APB_EXECUTION_STALLED]
-        if timed_out
-        else ["MXN_ASSET_PRODUCT_MISSING"]
-        if proc.returncode == 0 and missing_products
-        else []
-        if proc.returncode == 0
-        else ["MXN_VALIDATION_TOOL_UNAVAILABLE"]
-    )
-    messages = (
-        [f"Asset Processor Batch exceeded timeout of {timeout_seconds} seconds and was stopped."]
-        if timed_out
-        else ["Asset Processor Batch exited 0, but expected products are missing from the Asset Processor database evidence."]
-        if proc.returncode == 0 and missing_products
-        else [] if proc.returncode == 0 else [f"Asset Processor Batch exited with code {proc.returncode}."]
-    )
+    errors: List[str] = []
+    messages: List[str] = []
+    if timed_out:
+        errors.append(MXN_APB_EXECUTION_STALLED)
+        messages.append(f"Asset Processor Batch exceeded timeout of {timeout_seconds} seconds and was stopped.")
+    else:
+        if proc.returncode != 0:
+            errors.append(MXN_APB_PROCESS_EXIT_NONZERO)
+            messages.append(f"Asset Processor Batch exited with code {proc.returncode}.")
+        if missing_products:
+            errors.append("MXN_ASSET_PRODUCT_MISSING")
+            if proc.returncode == 0:
+                messages.append(
+                    "Asset Processor Batch exited 0, but expected products are missing from the Asset Processor database evidence."
+                )
+    failed_assets = _failed_assets_from_apb_output((proc.stdout or "") + "\n" + (proc.stderr or ""))
     report = {
         "schema_version": "1.0.0",
         "report_type": "asset_processor_batch_golden_corpus_summary_v1",
@@ -526,6 +527,7 @@ def _execute_live_apb(
         "produced_products": produced_products,
         "pending_assets": [],
         "missing_products": missing_products,
+        "failed_assets": failed_assets,
         "cache_heuristic_used": False,
         "cases": [],
         "errors": errors,
@@ -617,6 +619,41 @@ def _blob_to_hex(value: Any) -> str:
     if isinstance(value, bytes):
         return value.hex()
     return str(value or "").strip()
+
+
+def _failed_assets_from_apb_output(output: str) -> List[str]:
+    failed_assets: List[str] = []
+    capture = False
+    for raw_line in output.splitlines():
+        line = raw_line.strip()
+        if "FAILED ASSETS" in line:
+            capture = True
+            continue
+        if not capture:
+            continue
+        cleaned = _strip_apb_log_prefix(line)
+        if not cleaned:
+            continue
+        if set(cleaned) <= {"-"}:
+            if failed_assets:
+                break
+            continue
+        if cleaned.lower().startswith("number of assets") or cleaned.lower().startswith("asset processor batch processing"):
+            break
+        if ":" in cleaned or cleaned.startswith("/") or cleaned.startswith("\\"):
+            failed_assets.append(cleaned.replace("\\", "/"))
+    return _unique(failed_assets)
+
+
+def _strip_apb_log_prefix(line: str) -> str:
+    if "~~" in line:
+        parts = line.split("~~")
+        if parts:
+            line = parts[-1].strip()
+    for prefix in ("AssetProcessor:", "AssetBuilder:", "BuilderManager:"):
+        if line.startswith(prefix):
+            return line[len(prefix) :].strip()
+    return line
 
 
 def _safe_local_ref(path: Path) -> str:

@@ -247,3 +247,60 @@ python tools/o3de/audit_golden_corpus_sources.py --corpus examples/golden-corpus
 ```
 
 Next action: diagnose why the PhysX mesh exporter does not emit `.pxmesh` for the controlled project under APB, or add an explicit collider waiver policy only if the release fixture is intentionally reclassified as not physics-enabled.
+
+## Pxmesh Resolution Follow-Up
+
+The pxmesh resolution follow-up reconfigured the local `C:\src\o3de\build\windows` tree with the controlled project in `LY_PROJECTS`, which generated project-specific APB/AssetBuilder registry files for `MAXINE_GoldenCorpus`. Those registry files include the PhysX editor module.
+
+APB-only processing was rerun with:
+
+```text
+C:\src\o3de\build\windows\bin\profile\AssetProcessorBatch.exe
+```
+
+The controlled release-rigged product evidence now includes:
+
+- `azmodel`
+- `actor`
+- `procprefab`
+- `motion`
+- `motionset`
+- `animgraph`
+- `pxmesh`
+- `azmaterial`
+
+The `.pxmesh` product is recorded as:
+
+```text
+pc/assets/characters/maxine/release/r0-b_body.fbx.pxmesh
+```
+
+It is tied to the controlled source:
+
+```text
+Assets/Characters/MAXINE/release/maxine_physx_final_spherebot.fbx
+```
+
+`missing_products=[]`, `pending_assets=[]`, and `cache_heuristic_used=false`.
+
+The APB-only command and APB-only suite still fail closed because the APB process exits `1` on a non-golden engine/Gem asset:
+
+```text
+C:/src/o3de/Gems/DiffuseProbeGrid/Assets/Passes/DiffuseProbeGridQueryFullscreenWithAlbedo.pass
+```
+
+This is now classified as `MXN_APB_PROCESS_EXIT_NONZERO`, not as missing pxmesh and not as unavailable tooling. Live Editor execution and publication remain blocked.
+
+Sanitized evidence:
+
+```text
+examples/private-runner/apb-live-full-golden-corpus.release-rigged.pxmesh-produced-apb-nonzero.example.json
+```
+
+The focused product evidence audit can be run with:
+
+```powershell
+python tools/o3de/audit_apb_product_evidence.py --project $env:O3DE_PROJECT_PATH --apb-report <asset_processor_batch_live_report.json> --apb-executable $env:ASSET_PROCESSOR_BATCH_EXECUTABLE --json
+```
+
+Next action: fix or safely scope the unrelated DiffuseProbeGrid APB process failure so APB exits `0` while preserving the resolved release-rigged product evidence.

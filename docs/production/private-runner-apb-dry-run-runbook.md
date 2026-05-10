@@ -59,6 +59,7 @@ python tools/ci/run_o3de_integration_suite.py --dry-run
 python tools/ci/run_o3de_integration_suite.py --mode fixture
 python tools/o3de/asset_processor_batch.py --corpus examples/golden-corpus --check-local-readiness
 python tools/o3de/audit_golden_corpus_sources.py --corpus examples/golden-corpus --project $env:O3DE_PROJECT_PATH --json
+python tools/o3de/audit_apb_product_evidence.py --project $env:O3DE_PROJECT_PATH --apb-report <asset_processor_batch_live_report.json> --apb-executable $env:ASSET_PROCESSOR_BATCH_EXECUTABLE --json
 ```
 
 Before any full APB retry, inventory APB candidates and reject mismatched binaries:
@@ -146,6 +147,7 @@ I_UNDERSTAND_THIS_REQUIRES_A_PRIVATE_SELF_HOSTED_WINDOWS_RUNNER
 - A help-like APB diagnostic exits nonzero but does not stall; treat it as a responsiveness probe only, not as full APB success.
 - APB exits `0` but expected product types are missing from Asset Processor database evidence; this is `MXN_ASSET_PRODUCT_MISSING`, not release success.
 - Source settings can be present while product evidence is still missing. For release-rigged APB, `actor`, `motion`, `motionset`, `animgraph`, and physics-enabled `pxmesh` still require actual Asset Processor database evidence or an explicit reviewed waiver policy.
+- APB product evidence can be complete while the APB process exits nonzero because a non-golden asset failed. This is `MXN_APB_PROCESS_EXIT_NONZERO`; do not report the APB-only suite as pass until the process failure is fixed or safely scoped.
 
 ## Safety Checklist Before First Live APB
 
