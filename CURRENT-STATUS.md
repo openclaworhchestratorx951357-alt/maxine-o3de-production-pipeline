@@ -1,16 +1,26 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Run Gated Live Editor Python Smoke v1 is in progress:
-  - PR #115 was merged into `main`, and `codex/run-gated-live-editor-python-smoke-v1` was created from updated `main`
+- Diagnose Gated Editor Smoke Temp-Level Stall v1 is in progress:
+  - PR #116 was merged into `main`, and `codex/diagnose-editor-smoke-temp-level-stall-v1` was created from updated `main`
   - reran the APB clean baseline in this session with `C:\src\o3de\build\windows\bin\profile\AssetProcessorBatch.exe`; APB exited `0`, the APB-only suite exited `0`, product matrix status is `pass`, expected product evidence is complete, and `cache_heuristic_used=false`
   - reran strict Editor readiness with `C:\src\o3de\build\windows\bin\profile\Editor.exe`; provenance remains `engine_profile_bin`, `EditorPythonBindings` remains enabled/available, and the temp-level policy remains constrained to `Levels/_maxine_smoke`
-  - hardened the live Editor smoke wrapper so `--enable-editor-smoke` requires explicit live O3DE and Editor gates, keeps publication and release packaging disabled, requires APB product evidence first, launches Editor with a bounded timeout, records stdout/stderr/log refs, and returns nonzero for `fail`, `stalled`, or `unavailable`
-  - converted `tools/o3de/editor_python/maxine_package_prefab_smoke.py` from a template into the bounded in-Editor script: it imports `azlmbr` only inside Editor context, creates/opens only approved temp smoke levels, attempts a minimal entity smoke only when safe, and records prefab/actor/component checks as unavailable or not-run rather than faking success
-  - the latest gated live Editor command did launch Editor, used the same-session APB baseline `artifacts/o3de-integration/apb/apb-live-20260510T095743Z/asset_processor_batch_live_report.json`, created the approved temp level `Levels/_maxine_smoke/maxine_smoke_20260510T095910Z`, and then exceeded the 180 second smoke timeout during/after level load; the wrapper stopped the process tree and recorded `status=stalled`, `live_editor_execution=true`, `live_publication=false`, `release_packaging=false`, and `production_level_mutation=false`
-  - sanitized stalled evidence is represented by `examples/editor-smoke/editor-smoke-live.release-rigged.stalled.example.json`
-  - entity, prefab, actor, and component smoke checks did not complete because the Editor run stalled before the in-Editor report reached those checks
+  - added live Editor diagnostic modes (`hello`, `product-evidence`, `temp-level`, `entity-minimal`, and `full`) plus wrapper/script progress markers under each run's `progress.jsonl`
+  - diagnosed the PR #116 stall as `idle_wait_stall`: `create_level_no_prompt` returned successfully, the temp level was created under `Levels/_maxine_smoke`, then `azlmbr.legacy.general.idle_wait_frames(5)` did not return while Editor was loading the temp map
+  - changed the in-Editor smoke to skip that blocking idle wait by default and emit `idle_wait_skipped`; `MAXINE_EDITOR_SMOKE_ENABLE_IDLE_WAIT=1` can still opt back into the old wait for targeted debugging
+  - reran live diagnostics in order: `hello` passed, `product-evidence` passed, `temp-level` first reproduced the stall, `temp-level` passed after the idle-wait fix, `entity-minimal` passed with a temporary entity, and full live Editor smoke passed
+  - the include-editor-smoke integration suite also passed after the fix, running APB baseline first and then the gated live Editor wrapper
+  - sanitized full-pass evidence is represented by `examples/editor-smoke/editor-smoke-live.release-rigged.pass.example.json`; the prior stalled evidence remains represented by `examples/editor-smoke/editor-smoke-live.release-rigged.stalled.example.json`
+  - prefab and actor instantiation remain intentionally unavailable until component type IDs and binding surfaces are pinned; entity/component smoke passed
+  - live publication remained false, release packaging remained false, Asset Cache was not deleted, and production levels were not mutated
   - raw stdout/stderr/live reports remain gitignored under `artifacts/o3de-integration/editor-smoke/`; no large logs, generated product assets, Asset Cache files, Editor binaries, secrets, or project source content are committed
+- Run Gated Live Editor Python Smoke v1 completed in PR #116:
+  - PR #115 was merged into `main`, and `codex/run-gated-live-editor-python-smoke-v1` was created from updated `main`
+  - reran the APB clean baseline and strict Editor readiness with the paired APB/Editor executables
+  - hardened the live Editor smoke wrapper and converted `tools/o3de/editor_python/maxine_package_prefab_smoke.py` into a bounded in-Editor script
+  - the first gated live Editor command launched Editor and created the approved temp level `Levels/_maxine_smoke/maxine_smoke_20260510T095910Z`, but stalled before the in-Editor report completed
+  - the stalled outcome was recorded honestly with `status=stalled`, `live_editor_execution=true`, `live_publication=false`, `release_packaging=false`, and `production_level_mutation=false`
+  - sanitized stalled evidence is represented by `examples/editor-smoke/editor-smoke-live.release-rigged.stalled.example.json`
 - Produce Project-Paired O3DE Editor Executable v1 completed in PR #115:
   - PR #114 is merged and the gated Editor smoke readiness tooling is now on `main`
   - created `codex/produce-project-paired-editor-executable-v1` from updated `main`

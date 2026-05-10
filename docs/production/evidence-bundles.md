@@ -121,6 +121,22 @@ Live Editor evidence should also reference the APB baseline report that supplied
 
 `live_editor_execution=true` is allowed only when the Editor process actually ran. Missing Editor executables, build timeouts, failed readiness, nonzero Editor exits, and stalled Editor commands remain blockers, not passes.
 
+The temp-level stall diagnostic adds a progress log reference to live Editor evidence:
+
+- `progress_log_ref`: JSONL progress markers written beside the live report
+- `last_progress_marker`: the final script-side marker used to classify a stall
+- `stall_phase`: wrapper classification such as `runpython_not_invoked`, `azlmbr_import_stall`, `product_evidence_stall`, `temp_level_create_stall`, `idle_wait_stall`, `entity_create_stall`, or `report_write_stall`
+- `diagnostic_mode`: `hello`, `product-evidence`, `temp-level`, `entity-minimal`, or `full`
+- `process_tree_cleanup`: timeout cleanup status when a process tree must be stopped
+
+The PR #116 stall was diagnosed as `idle_wait_stall`. The fixed full live smoke pass is represented by:
+
+```text
+examples/editor-smoke/editor-smoke-live.release-rigged.pass.example.json
+```
+
+That pass evidence records `live_editor_execution=true`, `live_publication=false`, `release_packaging=false`, `production_level_mutation=false`, `cache_heuristic_used=false`, and entity/component smoke pass. Prefab and actor smoke remain explicitly `unavailable` until their Editor binding surfaces are pinned; they are not silently treated as pass.
+
 ## Golden Project Fixture Evidence
 
 Golden project fixture evidence may be attached as:

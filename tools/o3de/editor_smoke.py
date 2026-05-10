@@ -38,6 +38,14 @@ DEFAULT_APB_ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "o3de-integration" / "apb"
 DEFAULT_EDITOR_TIMEOUT_SECONDS = 900
 EDITOR_TOOL_NAMES = ("Editor.exe", "O3DEEditor.exe", "Editor", "O3DEEditor")
 EDITOR_SCRIPT = REPO_ROOT / "tools" / "o3de" / "editor_python" / "maxine_package_prefab_smoke.py"
+DIAGNOSTIC_EDITOR_SCRIPTS = {
+    "hello": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_hello_smoke.py",
+    "product-evidence": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_product_evidence_smoke.py",
+    "temp-level": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_temp_level_smoke.py",
+    "entity-minimal": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_entity_minimal_smoke.py",
+    "full": EDITOR_SCRIPT,
+}
+DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
 LIVE_EDITOR_GATE_ENV_VARS = (
     "MAXINE_ENABLE_O3DE_INTEGRATION",
     "MAXINE_ENABLE_O3DE_EDITOR_SMOKE",
@@ -146,6 +154,9 @@ def run_editor_smoke_corpus(
     command_runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
     artifact_root: Path | str = DEFAULT_ARTIFACT_ROOT,
     golden_project_fixture: Path | str = DEFAULT_GOLDEN_PROJECT_FIXTURE,
+    diagnostic_mode: str = "full",
+    timeout_seconds: int | None = None,
+    progress_log: Path | str | None = None,
 ) -> Dict[str, Any]:
     env = env if env is not None else os.environ
     if enable_editor_smoke or editor_smoke_gate_enabled(env) or mode == "local_editor_python":
@@ -174,6 +185,9 @@ def run_editor_smoke_corpus(
             command_runner=command_runner,
             artifact_root=_resolve_path(artifact_root),
             golden_project_fixture=_resolve_path(golden_project_fixture),
+            diagnostic_mode=_normalize_diagnostic_mode(diagnostic_mode),
+            timeout_seconds=timeout_seconds,
+            progress_log=_resolve_path(progress_log) if progress_log else None,
         )
     return _fixture_corpus_report(_resolve_path(corpus), manifest=manifest, platform=platform)
 
@@ -432,6 +446,9 @@ def _execute_live_editor_smoke(
     command_runner: Callable[..., subprocess.CompletedProcess[str]] | None,
     artifact_root: Path,
     golden_project_fixture: Path,
+    diagnostic_mode: str,
+    timeout_seconds: int | None,
+    progress_log: Path | None,
 ) -> Dict[str, Any]:
     started_at = _utc_now()
     start_time = time.monotonic()
@@ -442,11 +459,12 @@ def _execute_live_editor_smoke(
     stderr_path = output_dir / "stderr.txt"
     report_path = output_dir / "editor_smoke_live_report.json"
     template_path = output_dir / "editor_smoke_report.template.json"
+    progress_path = progress_log or (output_dir / "progress.jsonl")
 
     engine_root = Path(str(readiness["engine_root"]["path"]))
     project_path = Path(str(readiness["project_path"]["path"]))
     editor_executable = Path(str(readiness["editor_executable"]["path"]))
-    timeout_seconds = _editor_timeout_seconds(env)
+    selected_timeout_seconds = timeout_seconds if timeout_seconds is not None else _editor_timeout_seconds(env)
     apb_baseline = _select_apb_baseline_report(env)
     manifest_path = _resolve_path(manifest)
     apb_payload = _load_json_if_present(apb_baseline)
@@ -473,6 +491,7 @@ def _execute_live_editor_smoke(
             missing_prerequisites=["APB_BASELINE_PRODUCT_EVIDENCE"],
         ) | {"messages": messages, "product_evidence_summary": product_summary}
 
+    script_path = _editor_script_for_diagnostic_mode(diagnostic_mode)
     temp_level_name = "maxine_smoke_" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     temp_level_rel = f"Levels/_maxine_smoke/{temp_level_name}"
     level_name_for_editor = f"_maxine_smoke/{temp_level_name}"
@@ -485,8 +504,18 @@ def _execute_live_editor_smoke(
         "--project-path",
         str(project_path),
         "--runpython",
-        str(EDITOR_SCRIPT),
+        str(script_path),
     ]
+    _write_progress_marker(
+        progress_path,
+        phase="wrapper",
+        step="process_start",
+        status="started",
+        started_monotonic=start_time,
+        message="Launching gated Editor smoke.",
+        temp_level_path=temp_level_rel,
+        report_path=report_path,
+    )
     template = _live_report_template(
         run_id=run_id,
         manifest=manifest_path,
@@ -494,16 +523,19 @@ def _execute_live_editor_smoke(
         platform=platform,
         strict_integration=strict_integration,
         argv=argv,
-        timeout_seconds=timeout_seconds,
+        timeout_seconds=selected_timeout_seconds,
         stdout_path=stdout_path,
         stderr_path=stderr_path,
         report_path=report_path,
+        progress_path=progress_path,
         apb_baseline=apb_baseline,
         product_summary=product_summary,
         expected_products=expected_products,
         temp_level_rel=temp_level_rel,
         started_at=started_at,
         golden_project_fixture=golden_project_fixture,
+        diagnostic_mode=diagnostic_mode,
+        script_path=script_path,
     )
     template_path.write_text(json.dumps(template, indent=2) + "\n", encoding="utf-8")
 
@@ -514,6 +546,8 @@ def _execute_live_editor_smoke(
     editor_env["MAXINE_EDITOR_PROCESS_LAUNCHED"] = "1"
     editor_env["MAXINE_EDITOR_SMOKE_REPORT_OUT"] = str(report_path)
     editor_env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"] = str(template_path)
+    editor_env["MAXINE_EDITOR_SMOKE_PROGRESS_LOG"] = str(progress_path)
+    editor_env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] = diagnostic_mode
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_NAME"] = level_name_for_editor
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_PATH"] = str(project_path / temp_level_rel)
     editor_env["MAXINE_EDITOR_SMOKE_ALLOW_TEMP_SANDBOX_LEVEL"] = "1"
@@ -525,29 +559,56 @@ def _execute_live_editor_smoke(
         argv,
         cwd=str(project_path),
         env=editor_env,
-        timeout_seconds=timeout_seconds,
+        timeout_seconds=selected_timeout_seconds,
         command_runner=command_runner,
     )
     finished_at = _utc_now()
     stdout_path.write_text(proc.stdout or "", encoding="utf-8")
     stderr_path.write_text(proc.stderr or "", encoding="utf-8")
     duration_seconds = round(time.monotonic() - start_time, 3)
+    progress_markers = _load_progress_markers(progress_path)
+    last_progress_marker = _last_relevant_progress_marker(progress_markers)
+    stall_phase = _classify_stall_phase(last_progress_marker) if timed_out else ""
+    if timed_out:
+        _write_progress_marker(
+            progress_path,
+            phase="wrapper",
+            step="timeout_reached",
+            status="stalled",
+            started_monotonic=start_time,
+            message=f"Editor smoke exceeded timeout of {selected_timeout_seconds} seconds.",
+            error_code=MXN_EDITOR_SMOKE_STALLED,
+        )
+    _write_progress_marker(
+        progress_path,
+        phase="wrapper",
+        step="final_status",
+        status="stalled" if timed_out else "completed",
+        started_monotonic=start_time,
+        message="Wrapper finalized Editor smoke report.",
+        error_code=MXN_EDITOR_SMOKE_STALLED if timed_out else "",
+    )
 
     report = _load_json_if_present(report_path) or dict(template)
+    runtime_report_found = report_path.exists()
     errors = list(report.get("errors", [])) if isinstance(report.get("errors", []), list) else []
     warnings = list(report.get("warnings", [])) if isinstance(report.get("warnings", []), list) else []
     messages = list(report.get("messages", [])) if isinstance(report.get("messages", []), list) else []
     if timed_out:
         errors.append(MXN_EDITOR_SMOKE_STALLED)
-        messages.append(f"Editor smoke exceeded timeout of {timeout_seconds} seconds and was stopped.")
+        messages.append(f"Editor smoke exceeded timeout of {selected_timeout_seconds} seconds and was stopped.")
     elif proc.returncode != 0:
         errors.append(MXN_EDITOR_PROCESS_EXIT_NONZERO)
         messages.append(f"Editor smoke exited with code {proc.returncode}.")
+    elif not runtime_report_found:
+        errors.append(MXN_RUNTIME_SMOKE_FAIL)
+        messages.append("Editor exited without writing a smoke report.")
 
     report.update(
         {
             "generated_at": finished_at,
             "status": "stalled" if timed_out else "fail" if errors or proc.returncode != 0 else report.get("status", "pass"),
+            "diagnostic_mode": diagnostic_mode,
             "live_editor_execution": True,
             "live_asset_processor_batch_execution": False,
             "live_publication": False,
@@ -557,13 +618,20 @@ def _execute_live_editor_smoke(
             "started_at": started_at,
             "finished_at": finished_at,
             "duration_seconds": duration_seconds,
-            "timeout_seconds": timeout_seconds,
+            "timeout_seconds": selected_timeout_seconds,
             "timed_out": timed_out,
             "timeout_stall": timed_out,
             "process_cleanup": process_cleanup,
+            "process_tree_cleanup": process_cleanup,
             "stdout_log_ref": _repo_relative(stdout_path),
             "stderr_log_ref": _repo_relative(stderr_path),
             "editor_log_ref": _find_editor_log_ref(project_path),
+            "progress_log_ref": _repo_relative(progress_path),
+            "last_progress_marker": last_progress_marker,
+            "stall_phase": stall_phase,
+            "script_path_redacted": _redact_path(str(script_path)),
+            "script_path_mode": "absolute",
+            "editor_command_working_directory": _redact_path(str(project_path)),
             "apb_baseline_ref": _repo_relative(apb_baseline),
             "product_evidence_summary": product_summary,
             "command_preview": _redacted_argv(argv),
@@ -577,6 +645,7 @@ def _execute_live_editor_smoke(
         report.get("evidence_refs", []),
         [
             {"id": "editor-smoke-live-report", "kind": "editor_smoke_report", "path": _repo_relative(report_path)},
+            {"id": "editor-smoke-progress-log", "kind": "editor_smoke_progress_log", "path": _repo_relative(progress_path)},
             {"id": "apb-baseline", "kind": "asset_processor_batch_report", "path": _repo_relative(apb_baseline)},
         ],
     )
@@ -633,12 +702,15 @@ def _live_report_template(
     stdout_path: Path,
     stderr_path: Path,
     report_path: Path,
+    progress_path: Path,
     apb_baseline: Path,
     product_summary: Mapping[str, Any],
     expected_products: List[str],
     temp_level_rel: str,
     started_at: str,
     golden_project_fixture: Path,
+    diagnostic_mode: str,
+    script_path: Path,
 ) -> Dict[str, Any]:
     manifest_payload = _load_json_if_present(manifest) or {}
     lane = str(manifest_payload.get("job", {}).get("lane", "release_rigged")).strip() or "release_rigged"
@@ -653,6 +725,7 @@ def _live_report_template(
         "report_id": run_id,
         "generated_at": started_at,
         "mode": "local_editor_python",
+        "diagnostic_mode": diagnostic_mode,
         "status": "fail",
         "integration_enabled": True,
         "strict_integration": strict_integration,
@@ -680,6 +753,9 @@ def _live_report_template(
         "timed_out": False,
         "stdout_log_ref": _repo_relative(stdout_path),
         "stderr_log_ref": _repo_relative(stderr_path),
+        "progress_log_ref": _repo_relative(progress_path),
+        "last_progress_marker": {},
+        "stall_phase": "",
         "editor_log_ref": "",
         "asset_processor_log_ref": "",
         "platform": platform,
@@ -708,6 +784,9 @@ def _live_report_template(
         "missing_components": [],
         "screenshots": [],
         "cache_heuristic_used": bool(product_summary.get("cache_heuristic_used")),
+        "script_path_redacted": _redact_path(str(script_path)),
+        "script_path_mode": "absolute",
+        "editor_command_working_directory": _redact_path(str(readiness.get("project_path", {}).get("path", ""))),
         "entity_smoke": {"status": "not_run"},
         "prefab_smoke": {"status": "not_run"},
         "actor_smoke": {"status": "not_run"},
@@ -718,8 +797,9 @@ def _live_report_template(
         "runner_context": _runner_context(),
         "evidence_refs": [
             {"id": "golden-project-fixture", "kind": "o3de_golden_project_fixture", "path": _repo_relative(golden_project_fixture)},
-            {"id": "editor-python-smoke-script", "kind": "editor_python_script", "path": _repo_relative(EDITOR_SCRIPT)},
+            {"id": "editor-python-smoke-script", "kind": "editor_python_script", "path": _repo_relative(script_path)},
             {"id": "editor-smoke-report-template", "kind": "editor_smoke_report_template", "path": _repo_relative(report_path)},
+            {"id": "editor-smoke-progress-log", "kind": "editor_smoke_progress_log", "path": _repo_relative(progress_path)},
         ],
         "next_steps": [],
     }
@@ -733,6 +813,104 @@ def _editor_timeout_seconds(env: Mapping[str, str]) -> int:
         return max(1, int(raw))
     except ValueError:
         return DEFAULT_EDITOR_TIMEOUT_SECONDS
+
+
+def _normalize_diagnostic_mode(value: str | None) -> str:
+    mode = str(value or "full").strip().lower()
+    return mode if mode in DIAGNOSTIC_EDITOR_SCRIPTS else "full"
+
+
+def _editor_script_for_diagnostic_mode(mode: str) -> Path:
+    return DIAGNOSTIC_EDITOR_SCRIPTS[_normalize_diagnostic_mode(mode)]
+
+
+def _write_progress_marker(
+    path: Path,
+    *,
+    phase: str,
+    step: str,
+    status: str,
+    started_monotonic: float,
+    message: str = "",
+    pid: int | None = None,
+    temp_level_path: str = "",
+    report_path: Path | None = None,
+    error_code: str = "",
+) -> None:
+    record: Dict[str, Any] = {
+        "timestamp": _utc_now(),
+        "phase": phase,
+        "step": step,
+        "status": status,
+        "message": message,
+        "elapsed_seconds": round(time.monotonic() - started_monotonic, 3),
+    }
+    if pid is not None:
+        record["pid"] = pid
+    if temp_level_path:
+        record["temp_level_path"] = _redact_path(temp_level_path)
+    if report_path is not None:
+        record["report_path"] = _repo_relative(report_path)
+    if error_code:
+        record["error_code"] = error_code
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record, sort_keys=True) + "\n")
+
+
+def _load_progress_markers(path: Path) -> List[Dict[str, Any]]:
+    if not path.exists():
+        return []
+    markers: List[Dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8-sig").splitlines():
+        if not line.strip():
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, dict):
+            markers.append(payload)
+    return markers
+
+
+def _last_relevant_progress_marker(markers: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
+    for marker in reversed(markers):
+        if str(marker.get("phase", "")) == "script":
+            return dict(marker)
+    if markers:
+        return dict(markers[-1])
+    return {}
+
+
+def _classify_stall_phase(marker: Mapping[str, Any]) -> str:
+    step = str(marker.get("step", "")).strip()
+    status = str(marker.get("status", "")).strip()
+    if not step:
+        return "editor_startup_stall"
+    if step in {"process_start", "stdout_opened", "stderr_opened"}:
+        return "runpython_not_invoked"
+    if step == "python_script_import_started":
+        return "script_import_stall"
+    if step == "azlmbr_import_started":
+        return "azlmbr_import_stall"
+    if step == "product_evidence_load_started":
+        return "product_evidence_stall"
+    if step == "create_level_started":
+        return "temp_level_create_stall"
+    if step == "open_level_started":
+        return "temp_level_open_stall"
+    if step == "save_level_started":
+        return "temp_level_save_stall"
+    if step == "idle_wait_started":
+        return "idle_wait_stall"
+    if step == "entity_create_started":
+        return "entity_create_stall"
+    if step == "report_write_started":
+        return "report_write_stall"
+    if status in {"started", "running"}:
+        return "unknown_editor_stall"
+    return "unknown_editor_stall"
 
 
 def _select_apb_baseline_report(env: Mapping[str, str]) -> Path | None:
@@ -841,8 +1019,11 @@ def _redacted_argv(argv: Sequence[str]) -> List[str]:
 
 
 def _redact_path(value: str) -> str:
+    repo = str(REPO_ROOT.resolve()).replace("\\", "/")
     home = str(Path.home()).replace("\\", "/")
     normalized = value.replace("\\", "/")
+    if repo and normalized.lower().startswith(repo.lower()):
+        return "%REPO_ROOT%" + normalized[len(repo):]
     if home and normalized.lower().startswith(home.lower()):
         return "%USERPROFILE%" + normalized[len(home):]
     return normalized
@@ -1147,6 +1328,9 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--project", help="Controlled O3DE project path for local readiness.")
     parser.add_argument("--editor-executable", help="Project/engine-paired Editor executable path.")
     parser.add_argument("--golden-project-fixture", default=str(DEFAULT_GOLDEN_PROJECT_FIXTURE), help="Golden project fixture contract path.")
+    parser.add_argument("--diagnostic-mode", choices=DIAGNOSTIC_MODES, default="full", help="Live Editor diagnostic smoke scope.")
+    parser.add_argument("--timeout-seconds", type=int, help="Bounded live Editor smoke timeout in seconds.")
+    parser.add_argument("--progress-log", help="Optional JSONL progress log path for live Editor smoke diagnostics.")
     parser.add_argument("--strict", action="store_true", help="Fail if local Editor smoke readiness is unavailable.")
     parser.add_argument("--strict-integration", action="store_true", help="Fail if local Editor tooling is unavailable.")
     return parser.parse_args()
@@ -1186,6 +1370,9 @@ def main() -> int:
         platform=args.platform,
         env=env_map,
         golden_project_fixture=args.golden_project_fixture,
+        diagnostic_mode=args.diagnostic_mode,
+        timeout_seconds=args.timeout_seconds,
+        progress_log=args.progress_log,
     )
     print(f"Editor smoke fixture bridge: {result['status']}")
     print(f"mode: {result['mode']}")
