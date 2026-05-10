@@ -83,7 +83,9 @@
         "pass",
         "warn",
         "fail",
-        "skipped"
+        "stalled",
+        "skipped",
+        "unavailable"
       ]
     },
     "integration_enabled": {
@@ -93,6 +95,18 @@
       "type": "boolean"
     },
     "live_editor_execution": {
+      "type": "boolean"
+    },
+    "live_asset_processor_batch_execution": {
+      "type": "boolean"
+    },
+    "live_publication": {
+      "type": "boolean"
+    },
+    "release_packaging": {
+      "type": "boolean"
+    },
+    "production_level_mutation": {
       "type": "boolean"
     },
     "editor_python_bindings_required": {

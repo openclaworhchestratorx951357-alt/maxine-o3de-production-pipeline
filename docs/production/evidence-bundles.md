@@ -104,6 +104,21 @@ The produced-Editor readiness example is:
 examples/editor-smoke/editor-smoke-readiness.release-rigged.editor-produced.example.json
 ```
 
+Live Editor smoke evidence may be committed only when it is sanitized and clearly labels the outcome. The first live attempt is represented by:
+
+```text
+examples/editor-smoke/editor-smoke-live.release-rigged.stalled.example.json
+```
+
+That evidence records `live_editor_execution=true` because the Editor process actually launched, `status=stalled` because the wrapper timeout stopped the process, and closed safety gates:
+
+- `live_publication=false`
+- `release_packaging=false`
+- `production_level_mutation=false`
+- `live_asset_processor_batch_execution=false` for the Editor command itself
+
+Live Editor evidence should also reference the APB baseline report that supplied complete product evidence. It must not duplicate APB report schema concepts beyond a compact product evidence summary and APB baseline ref.
+
 `live_editor_execution=true` is allowed only when the Editor process actually ran. Missing Editor executables, build timeouts, failed readiness, nonzero Editor exits, and stalled Editor commands remain blockers, not passes.
 
 ## Golden Project Fixture Evidence

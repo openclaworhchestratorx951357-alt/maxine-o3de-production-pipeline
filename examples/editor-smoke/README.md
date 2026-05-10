@@ -15,3 +15,9 @@ python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.p
 ```
 
 The fail fixtures prove missing package/prefab evidence, missing actor/motion products, and release cache heuristics cannot satisfy release smoke evidence.
+
+Live Editor smoke examples are sanitized records from gated private-runner attempts. A stalled live report is not a pass:
+
+```text
+examples/editor-smoke/editor-smoke-live.release-rigged.stalled.example.json
+```

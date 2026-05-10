@@ -73,7 +73,7 @@ def run_integration_suite(
     elif selected_mode == "integration":
         if editor_smoke_only:
             commands.extend(
-                _run_editor_smoke_readiness_commands(
+                _run_editor_smoke_live_commands(
                     env_map,
                     strict_integration=strict_integration,
                     golden_project_fixture=golden_fixture,
@@ -114,7 +114,7 @@ def run_integration_suite(
             )
             if not any(command["return_code"] != 0 for command in commands):
                 commands.extend(
-                    _run_editor_smoke_readiness_commands(
+                    _run_editor_smoke_live_commands(
                         env_map,
                         strict_integration=strict_integration,
                         golden_project_fixture=golden_fixture,
@@ -158,7 +158,7 @@ def run_integration_suite(
         "live_commands_allowed": str(env_map.get("MAXINE_ALLOW_LIVE_O3DE_COMMANDS", "")).strip() == "1",
         "live_o3de_execution": False,
         "live_asset_processor_batch_execution": _command_output_has(commands, "live_asset_processor_batch_execution: true"),
-        "live_editor_execution": False,
+        "live_editor_execution": _command_output_has(commands, "live_editor_execution: true"),
         "golden_project_fixture_ref": _repo_relative(golden_fixture),
         "editor_smoke_manifest_ref": _repo_relative(editor_manifest),
         "readiness": readiness,
@@ -314,6 +314,32 @@ def _run_editor_smoke_readiness_commands(
     ]
 
 
+def _run_editor_smoke_live_commands(
+    env: Mapping[str, str],
+    *,
+    strict_integration: bool,
+    golden_project_fixture: Path,
+    editor_smoke_manifest: Path,
+) -> List[Dict[str, Any]]:
+    strict_args = ["--strict-integration"] if strict_integration else []
+    return [
+        _run_command(
+            "editor_smoke live",
+            [
+                sys.executable,
+                "tools/o3de/editor_smoke.py",
+                "--manifest",
+                _repo_relative(editor_smoke_manifest),
+                "--enable-editor-smoke",
+                "--golden-project-fixture",
+                _repo_relative(golden_project_fixture),
+                *strict_args,
+            ],
+            env,
+        )
+    ]
+
+
 def _run_command(label: str, args: List[str], env: Mapping[str, str]) -> Dict[str, Any]:
     proc = subprocess.run(args, cwd=str(REPO_ROOT), text=True, capture_output=True, env=dict(env))
     return {
@@ -361,7 +387,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--mode", choices=["dry_run", "fixture", "integration"], default="dry_run")
     parser.add_argument("--enable-o3de-integration", action="store_true", help="Opt into local O3DE/APB/Editor adapter checks.")
     parser.add_argument("--apb-only", action="store_true", help="Run only the APB integration path; do not run Editor smoke.")
-    parser.add_argument("--include-editor-smoke", action="store_true", help="Run APB baseline followed by gated Editor smoke readiness.")
+    parser.add_argument("--include-editor-smoke", action="store_true", help="Run APB baseline followed by gated live Editor smoke.")
     parser.add_argument("--editor-smoke-only", action="store_true", help="Run only gated Editor smoke readiness.")
     parser.add_argument("--strict-integration", action="store_true", help="Fail when local O3DE tooling is unavailable.")
     parser.add_argument("--allow-live-o3de-commands", action="store_true", help="Set the hard live-command gate for future private runs.")

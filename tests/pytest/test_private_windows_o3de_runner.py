@@ -214,6 +214,44 @@ def test_integration_suite_apb_only_does_not_run_editor_smoke(tmp_path):
     assert not any("editor_smoke" in command["label"] for command in report["commands"])
 
 
+def test_integration_suite_include_editor_smoke_runs_live_smoke_after_apb(monkeypatch):
+    calls = []
+
+    def fake_run_command(label, args, env):
+        calls.append((label, args, dict(env)))
+        stdout = "live_asset_processor_batch_execution: true\n" if "asset_processor_batch" in label else "live_editor_execution: true\n"
+        return {
+            "label": label,
+            "args": args,
+            "return_code": 0,
+            "stdout": stdout,
+            "stderr": "",
+            "reported_skipped": False,
+        }
+
+    monkeypatch.setattr(suite_module, "_run_command", fake_run_command)
+    env = os.environ.copy()
+    env["MAXINE_ALLOW_LIVE_EDITOR_COMMANDS"] = "1"
+    env["MAXINE_ALLOW_LIVE_PUBLICATION"] = "0"
+    env["MAXINE_ENABLE_RELEASE_PACKAGING"] = "0"
+
+    report = suite_module.run_integration_suite(
+        mode="integration",
+        enable_o3de_integration=True,
+        include_editor_smoke=True,
+        strict_integration=True,
+        allow_live_o3de_commands=True,
+        env=env,
+    )
+
+    editor_calls = [(label, args) for label, args, _env in calls if label == "editor_smoke live"]
+    assert editor_calls
+    assert "--enable-editor-smoke" in editor_calls[0][1]
+    assert "--check-local-readiness" not in editor_calls[0][1]
+    assert report["live_asset_processor_batch_execution"] is True
+    assert report["live_editor_execution"] is True
+
+
 def test_workflow_is_manual_only():
     text = WORKFLOW.read_text(encoding="utf-8-sig")
 
