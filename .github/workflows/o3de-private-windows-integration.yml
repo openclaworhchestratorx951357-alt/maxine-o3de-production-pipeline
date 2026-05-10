@@ -13,6 +13,9 @@ on:
           - fixture
           - apb_live_non_strict
           - apb_live_strict
+          - editor_smoke_readiness
+          - editor_smoke_live_non_strict
+          - editor_smoke_live_strict
       confirm_private_runner:
         description: "Type the private runner confirmation phrase"
         required: true
@@ -22,10 +25,25 @@ on:
         required: true
         default: false
         type: boolean
+      run_live_editor_commands:
+        description: "Allow gated live Editor smoke commands on this private runner"
+        required: true
+        default: false
+        type: boolean
       golden_project_fixture:
         description: "Golden project fixture contract path"
         required: true
         default: "examples/o3de-golden-project/maxine-golden-project.fixture.json"
+        type: string
+      editor_smoke_manifest:
+        description: "Editor smoke manifest path"
+        required: true
+        default: "examples/manifests/release_rigged.pass.example.json"
+        type: string
+      editor_smoke_timeout_seconds:
+        description: "Editor smoke timeout seconds"
+        required: true
+        default: "900"
         type: string
 
 permissions:
@@ -61,6 +79,18 @@ jobs:
         shell: pwsh
         run: python tools/ci/o3de_runner_readiness.py --golden-project-fixture "${{ inputs.golden_project_fixture }}"
 
+      - name: Editor smoke readiness report
+        if: ${{ inputs.mode == 'editor_smoke_readiness' }}
+        shell: pwsh
+        env:
+          MAXINE_ENABLE_O3DE_INTEGRATION: "1"
+          MAXINE_ENABLE_O3DE_EDITOR_SMOKE: "1"
+          MAXINE_ALLOW_LIVE_O3DE_COMMANDS: "1"
+          MAXINE_ALLOW_LIVE_EDITOR_COMMANDS: "0"
+          MAXINE_ALLOW_LIVE_PUBLICATION: "0"
+          MAXINE_ENABLE_RELEASE_PACKAGING: "0"
+        run: python tools/o3de/diagnose_editor_smoke_readiness.py --golden-project-fixture "${{ inputs.golden_project_fixture }}"
+
       - name: Fixture suite
         if: ${{ inputs.mode == 'fixture' }}
         shell: pwsh
@@ -91,3 +121,52 @@ jobs:
           MAXINE_ENABLE_ASSET_PROCESSOR_BATCH: "1"
           MAXINE_ALLOW_LIVE_O3DE_COMMANDS: "1"
         run: python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --apb-only --strict-integration --allow-live-o3de-commands --golden-project-fixture "${{ inputs.golden_project_fixture }}"
+
+      - name: Block Editor live mode unless live O3DE and Editor gates are explicit
+        if: ${{ (inputs.mode == 'editor_smoke_live_non_strict' || inputs.mode == 'editor_smoke_live_strict') && (inputs.run_live_o3de_commands == false || inputs.run_live_editor_commands == false) }}
+        shell: pwsh
+        run: |
+          Write-Host "Editor smoke live mode requested without both live gates; running readiness only and failing closed."
+          python tools/o3de/diagnose_editor_smoke_readiness.py --golden-project-fixture "${{ inputs.golden_project_fixture }}"
+          exit 1
+
+      - name: Editor smoke APB strict baseline
+        if: ${{ (inputs.mode == 'editor_smoke_live_non_strict' || inputs.mode == 'editor_smoke_live_strict') && inputs.run_live_o3de_commands == true && inputs.run_live_editor_commands == true }}
+        shell: pwsh
+        env:
+          MAXINE_ENABLE_O3DE_INTEGRATION: "1"
+          MAXINE_ENABLE_ASSET_PROCESSOR_BATCH: "1"
+          MAXINE_ALLOW_LIVE_O3DE_COMMANDS: "1"
+          MAXINE_ENABLE_O3DE_EDITOR_SMOKE: "0"
+          MAXINE_ALLOW_LIVE_EDITOR_COMMANDS: "0"
+          MAXINE_ALLOW_LIVE_PUBLICATION: "0"
+          MAXINE_ENABLE_RELEASE_PACKAGING: "0"
+        run: python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --apb-only --strict-integration --allow-live-o3de-commands --golden-project-fixture "${{ inputs.golden_project_fixture }}"
+
+      - name: Editor smoke live non-strict suite
+        if: ${{ inputs.mode == 'editor_smoke_live_non_strict' && inputs.run_live_o3de_commands == true && inputs.run_live_editor_commands == true }}
+        shell: pwsh
+        env:
+          MAXINE_ENABLE_O3DE_INTEGRATION: "1"
+          MAXINE_ENABLE_ASSET_PROCESSOR_BATCH: "1"
+          MAXINE_ENABLE_O3DE_EDITOR_SMOKE: "1"
+          MAXINE_ALLOW_LIVE_O3DE_COMMANDS: "1"
+          MAXINE_ALLOW_LIVE_EDITOR_COMMANDS: "1"
+          MAXINE_ALLOW_LIVE_PUBLICATION: "0"
+          MAXINE_ENABLE_RELEASE_PACKAGING: "0"
+          MAXINE_EDITOR_SMOKE_TIMEOUT_SECONDS: "${{ inputs.editor_smoke_timeout_seconds }}"
+        run: python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --include-editor-smoke --allow-live-o3de-commands --golden-project-fixture "${{ inputs.golden_project_fixture }}" --editor-smoke-manifest "${{ inputs.editor_smoke_manifest }}"
+
+      - name: Editor smoke live strict suite
+        if: ${{ inputs.mode == 'editor_smoke_live_strict' && inputs.run_live_o3de_commands == true && inputs.run_live_editor_commands == true }}
+        shell: pwsh
+        env:
+          MAXINE_ENABLE_O3DE_INTEGRATION: "1"
+          MAXINE_ENABLE_ASSET_PROCESSOR_BATCH: "1"
+          MAXINE_ENABLE_O3DE_EDITOR_SMOKE: "1"
+          MAXINE_ALLOW_LIVE_O3DE_COMMANDS: "1"
+          MAXINE_ALLOW_LIVE_EDITOR_COMMANDS: "1"
+          MAXINE_ALLOW_LIVE_PUBLICATION: "0"
+          MAXINE_ENABLE_RELEASE_PACKAGING: "0"
+          MAXINE_EDITOR_SMOKE_TIMEOUT_SECONDS: "${{ inputs.editor_smoke_timeout_seconds }}"
+        run: python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --include-editor-smoke --strict-integration --allow-live-o3de-commands --golden-project-fixture "${{ inputs.golden_project_fixture }}" --editor-smoke-manifest "${{ inputs.editor_smoke_manifest }}"

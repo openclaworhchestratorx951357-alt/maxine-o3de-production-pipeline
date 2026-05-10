@@ -240,17 +240,34 @@ def test_workflow_apb_live_mode_manual_only():
 
     assert "apb_live_non_strict" in text
     assert "apb_live_strict" in text
+    assert "editor_smoke_readiness" in text
+    assert "editor_smoke_live_non_strict" in text
+    assert "editor_smoke_live_strict" in text
     assert "workflow_dispatch:" in text
     assert "pull_request:" not in text
     assert "\npush:" not in text
 
 
-def test_workflow_sets_apb_gates_only_for_apb_mode():
+def test_workflow_sets_apb_gates_only_for_apb_mode_and_editor_gates_only_for_editor_mode():
     text = WORKFLOW.read_text(encoding="utf-8-sig")
 
     assert "MAXINE_ENABLE_ASSET_PROCESSOR_BATCH" in text
     assert "--apb-only" in text
-    assert "MAXINE_ENABLE_O3DE_EDITOR_SMOKE" not in text
+    assert "MAXINE_ENABLE_O3DE_EDITOR_SMOKE" in text
+    assert "run_live_editor_commands" in text
+    assert "MAXINE_ALLOW_LIVE_EDITOR_COMMANDS" in text
+    assert "MAXINE_ALLOW_LIVE_PUBLICATION: \"0\"" in text
+    assert "MAXINE_ENABLE_RELEASE_PACKAGING: \"0\"" in text
+
+
+def test_workflow_editor_live_mode_requires_double_gate_and_apb_baseline():
+    text = WORKFLOW.read_text(encoding="utf-8-sig")
+
+    assert "Block Editor live mode unless live O3DE and Editor gates are explicit" in text
+    assert "inputs.run_live_o3de_commands == false || inputs.run_live_editor_commands == false" in text
+    assert "Editor smoke APB strict baseline" in text
+    assert "--include-editor-smoke" in text
+    assert "--editor-smoke-manifest" in text
 
 
 def test_workflow_does_not_publish():

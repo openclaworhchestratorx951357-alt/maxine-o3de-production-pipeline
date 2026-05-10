@@ -340,3 +340,25 @@ docs/production/diffuseprobegrid-apb-process-failure.md
 ```
 
 Next action: prepare gated live Editor smoke on the private runner, still non-publishing and with release packaging disabled.
+
+## Gated Editor Smoke Prep Follow-Up
+
+The clean APB-only baseline from PR #113 remains the prerequisite for Editor smoke. This follow-up added a readiness diagnostic and fail-closed private-runner workflow gates for Editor smoke preparation.
+
+Current local readiness result:
+
+- `EditorPythonBindings` is enabled in `MAXINE_GoldenCorpus`
+- `EditorPythonBindings.Editor.dll` exists in `C:/src/o3de/build/windows/bin/profile`
+- no paired `Editor.exe` or `O3DEEditor.exe` exists in `C:/src/o3de/build/windows/bin/profile`
+- a bounded low-memory `Editor` target build was attempted and exceeded the one-hour command window without producing an Editor executable
+- live Editor smoke was not attempted
+- live publication remained false
+- release packaging remained false
+
+Sanitized unavailable evidence:
+
+```text
+examples/editor-smoke/editor-smoke-live.release-rigged.unavailable.example.json
+```
+
+Next action: finish producing or selecting the project/engine-paired Editor executable, rerun strict Editor smoke readiness, then execute the gated live Editor Python smoke only if APB baseline, temp-level policy, publication gate, and release-packaging gate all remain valid.

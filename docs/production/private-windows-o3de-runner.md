@@ -68,9 +68,12 @@ $env:MAXINE_ENABLE_O3DE_INTEGRATION = "1"
 $env:MAXINE_ENABLE_ASSET_PROCESSOR_BATCH = "1"
 $env:MAXINE_ENABLE_O3DE_EDITOR_SMOKE = "1"
 $env:MAXINE_ALLOW_LIVE_O3DE_COMMANDS = "1"
+$env:MAXINE_ALLOW_LIVE_EDITOR_COMMANDS = "0"
+$env:MAXINE_ALLOW_LIVE_PUBLICATION = "0"
+$env:MAXINE_ENABLE_RELEASE_PACKAGING = "0"
 ```
 
-`MAXINE_ALLOW_LIVE_O3DE_COMMANDS=1` is a hard future-runner signal. Current adapter commands still report unavailable/skipped unless the local tools and future live execution path are admitted.
+`MAXINE_ALLOW_LIVE_O3DE_COMMANDS=1` is a hard runner signal. Live Editor smoke additionally requires `MAXINE_ALLOW_LIVE_EDITOR_COMMANDS=1`; keep it `0` for readiness-only checks. Publication and release packaging gates must stay `0`.
 
 ## Beginner Commands
 
@@ -113,7 +116,20 @@ python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --apb-on
 python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --apb-only --allow-live-o3de-commands --golden-project-fixture examples/o3de-golden-project/maxine-golden-project.fixture.json --strict-integration
 ```
 
-The manual workflow modes `apb_live_non_strict` and `apb_live_strict` set APB gates only. They do not set the Editor smoke gate and do not run Editor smoke.
+Editor smoke readiness:
+
+```powershell
+python tools/o3de/diagnose_editor_smoke_readiness.py --engine-root $env:O3DE_ENGINE_ROOT --project $env:O3DE_PROJECT_PATH --json
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --check-local-readiness --strict
+```
+
+Gated Editor smoke suite prep:
+
+```powershell
+python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --include-editor-smoke --allow-live-o3de-commands --golden-project-fixture examples/o3de-golden-project/maxine-golden-project.fixture.json --editor-smoke-manifest examples/manifests/release_rigged.pass.example.json --strict-integration
+```
+
+The manual workflow modes `apb_live_non_strict` and `apb_live_strict` set APB gates only. The modes `editor_smoke_readiness`, `editor_smoke_live_non_strict`, and `editor_smoke_live_strict` add Editor smoke readiness checks. Live Editor modes require both live gates, run the APB strict baseline first, keep publication and release packaging disabled, and fail closed if the paired Editor executable is unavailable.
 
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 
