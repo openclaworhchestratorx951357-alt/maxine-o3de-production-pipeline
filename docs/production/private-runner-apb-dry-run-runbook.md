@@ -166,3 +166,14 @@ I_UNDERSTAND_THIS_REQUIRES_A_PRIVATE_SELF_HOSTED_WINDOWS_RUNNER
 - Logs/artifacts contain no secrets.
 
 When every APB-only readiness and live APB check passes with APB exit `0`, the next slice can prepare gated live Editor smoke. Keep publication and release packaging disabled.
+
+## Editor Smoke Readiness Handoff
+
+After the APB-only suite is clean, use the Editor readiness checks before any live Editor execution:
+
+```powershell
+python tools/o3de/diagnose_editor_smoke_readiness.py --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --json
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --check-local-readiness --strict
+```
+
+Editor smoke remains blocked unless a paired `Editor.exe` or `O3DEEditor.exe` exists under the selected engine build output, `EditorPythonBindings` is enabled and built, the APB baseline still passes, and publication/release packaging gates are disabled.

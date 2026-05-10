@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "maxine_editor_smoke_readiness",
+  "generated_at": "2026-05-10T00:00:00Z",
+  "status": "unavailable",
+  "mode": "editor_smoke_readiness",
+  "lane": "release_rigged",
+  "project_name": "MAXINE_GoldenCorpus",
+  "engine_root_redacted": "C:/src/o3de",
+  "project_path_redacted": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+  "editor_executable_redacted": "",
+  "live_editor_execution": false,
+  "live_asset_processor_batch_execution": false,
+  "live_publication": false,
+  "release_packaging": false,
+  "editor_python_bindings_enabled": true,
+  "editor_python_bindings_available": true,
+  "temp_level_policy": {
+    "enabled": true,
+    "level_root": "Levels/_maxine_smoke",
+    "never_use_production_levels": true,
+    "allow_existing_level_readonly": false,
+    "cleanup_policy": "dry_run_only_no_deletion_in_this_slice_future_cleanup_requires_recorded_undo_plan"
+  },
+  "apb_baseline_ref": "examples/private-runner/apb-live-full-golden-corpus.release-rigged.apb-clean.pass.example.json",
+  "product_evidence_summary": {
+    "status": "pass",
+    "produced_products": [
+      "azmodel",
+      "actor",
+      "procprefab",
+      "motion",
+      "motionset",
+      "animgraph",
+      "pxmesh",
+      "azmaterial"
+    ],
+    "missing_products": [],
+    "pending_products": [],
+    "cache_heuristic_used": false
+  },
+  "entity_smoke": {
+    "status": "not_run",
+    "reason": "paired Editor executable unavailable"
+  },
+  "prefab_smoke": {
+    "status": "not_run",
+    "reason": "paired Editor executable unavailable"
+  },
+  "actor_smoke": {
+    "status": "not_run",
+    "reason": "paired Editor executable unavailable"
+  },
+  "errors": [],
+  "warnings": [
+    "MXN_VALIDATION_TOOL_UNAVAILABLE"
+  ],
+  "evidence_refs": [
+    {
+      "id": "editor-smoke-readiness-unavailable",
+      "kind": "sanitized_readiness_example",
+      "path": "examples/editor-smoke/editor-smoke-live.release-rigged.unavailable.example.json"
+    }
+  ],
+  "next_steps": [
+    "Produce or set the project/engine-paired Editor executable under the selected C:/src/o3de build output.",
+    "Rerun strict Editor smoke readiness before any live Editor execution.",
+    "Keep publication and release packaging disabled."
+  ]
+}

@@ -21,6 +21,7 @@ from tools.ci.o3de_runner_readiness import MXN_VALIDATION_TOOL_UNAVAILABLE, buil
 
 
 DEFAULT_GOLDEN_PROJECT_FIXTURE = REPO_ROOT / "examples" / "o3de-golden-project" / "maxine-golden-project.fixture.json"
+DEFAULT_EDITOR_SMOKE_MANIFEST = REPO_ROOT / "examples" / "manifests" / "release_rigged.pass.example.json"
 
 
 def run_integration_suite(
@@ -29,16 +30,19 @@ def run_integration_suite(
     dry_run: bool = False,
     enable_o3de_integration: bool = False,
     apb_only: bool = False,
+    include_editor_smoke: bool = False,
+    editor_smoke_only: bool = False,
     strict_integration: bool = False,
     allow_live_o3de_commands: bool = False,
     golden_project_fixture: Path | str = DEFAULT_GOLDEN_PROJECT_FIXTURE,
+    editor_smoke_manifest: Path | str = DEFAULT_EDITOR_SMOKE_MANIFEST,
     env: Mapping[str, str] | None = None,
 ) -> Dict[str, Any]:
     env_map = dict(env if env is not None else os.environ)
     if enable_o3de_integration:
         env_map["MAXINE_ENABLE_O3DE_INTEGRATION"] = "1"
         env_map["MAXINE_ENABLE_ASSET_PROCESSOR_BATCH"] = "1"
-        if not apb_only:
+        if include_editor_smoke or editor_smoke_only or not apb_only:
             env_map["MAXINE_ENABLE_O3DE_EDITOR_SMOKE"] = "1"
     if allow_live_o3de_commands:
         env_map["MAXINE_ALLOW_LIVE_O3DE_COMMANDS"] = "1"
@@ -46,6 +50,8 @@ def run_integration_suite(
     selected_mode = "dry_run" if dry_run else mode
     golden_fixture = Path(golden_project_fixture)
     golden_fixture = golden_fixture if golden_fixture.is_absolute() else REPO_ROOT / golden_fixture
+    editor_manifest = Path(editor_smoke_manifest)
+    editor_manifest = editor_manifest if editor_manifest.is_absolute() else REPO_ROOT / editor_manifest
     readiness = build_readiness_report(
         env=env_map,
         strict=strict_integration if selected_mode == "integration" else False,
@@ -65,7 +71,24 @@ def run_integration_suite(
         if any(command["return_code"] != 0 for command in commands):
             status = "fail"
     elif selected_mode == "integration":
-        if apb_only:
+        if editor_smoke_only:
+            commands.extend(
+                _run_editor_smoke_readiness_commands(
+                    env_map,
+                    strict_integration=strict_integration,
+                    golden_project_fixture=golden_fixture,
+                    editor_smoke_manifest=editor_manifest,
+                )
+            )
+            if any(command["return_code"] != 0 for command in commands):
+                status = "fail"
+                errors.extend(_collect_command_error_codes(commands))
+            elif any(command.get("reported_skipped") for command in commands):
+                status = "skipped"
+                warnings.extend([MXN_VALIDATION_TOOL_UNAVAILABLE])
+            else:
+                status = "pass"
+        elif apb_only:
             commands.extend(
                 _run_apb_only_commands(
                     env_map,
@@ -73,6 +96,31 @@ def run_integration_suite(
                     golden_project_fixture=golden_fixture,
                 )
             )
+            if any(command["return_code"] != 0 for command in commands):
+                status = "fail"
+                errors.extend(_collect_command_error_codes(commands))
+            elif any(command.get("reported_skipped") for command in commands):
+                status = "skipped"
+                warnings.extend([MXN_VALIDATION_TOOL_UNAVAILABLE])
+            else:
+                status = "pass"
+        elif include_editor_smoke:
+            commands.extend(
+                _run_apb_only_commands(
+                    env_map,
+                    strict_integration=strict_integration,
+                    golden_project_fixture=golden_fixture,
+                )
+            )
+            if not any(command["return_code"] != 0 for command in commands):
+                commands.extend(
+                    _run_editor_smoke_readiness_commands(
+                        env_map,
+                        strict_integration=strict_integration,
+                        golden_project_fixture=golden_fixture,
+                        editor_smoke_manifest=editor_manifest,
+                    )
+                )
             if any(command["return_code"] != 0 for command in commands):
                 status = "fail"
                 errors.extend(_collect_command_error_codes(commands))
@@ -105,11 +153,14 @@ def run_integration_suite(
         "status": status,
         "strict_integration": strict_integration,
         "apb_only": apb_only,
+        "include_editor_smoke": include_editor_smoke,
+        "editor_smoke_only": editor_smoke_only,
         "live_commands_allowed": str(env_map.get("MAXINE_ALLOW_LIVE_O3DE_COMMANDS", "")).strip() == "1",
         "live_o3de_execution": False,
         "live_asset_processor_batch_execution": _command_output_has(commands, "live_asset_processor_batch_execution: true"),
         "live_editor_execution": False,
         "golden_project_fixture_ref": _repo_relative(golden_fixture),
+        "editor_smoke_manifest_ref": _repo_relative(editor_manifest),
         "readiness": readiness,
         "commands": commands,
         "errors": _unique(errors),
@@ -152,6 +203,9 @@ def _fixture_env(env: Mapping[str, str]) -> Dict[str, str]:
         "MAXINE_ENABLE_ASSET_PROCESSOR_BATCH",
         "MAXINE_ENABLE_O3DE_EDITOR_SMOKE",
         "MAXINE_ALLOW_LIVE_O3DE_COMMANDS",
+        "MAXINE_ALLOW_LIVE_EDITOR_COMMANDS",
+        "MAXINE_ALLOW_LIVE_PUBLICATION",
+        "MAXINE_ENABLE_RELEASE_PACKAGING",
     ):
         fixture_env.pop(key, None)
     return fixture_env
@@ -234,6 +288,32 @@ def _run_apb_only_commands(
     ]
 
 
+def _run_editor_smoke_readiness_commands(
+    env: Mapping[str, str],
+    *,
+    strict_integration: bool,
+    golden_project_fixture: Path,
+    editor_smoke_manifest: Path,
+) -> List[Dict[str, Any]]:
+    strict_args = ["--strict"] if strict_integration else []
+    return [
+        _run_command(
+            "editor_smoke readiness",
+            [
+                sys.executable,
+                "tools/o3de/editor_smoke.py",
+                "--manifest",
+                _repo_relative(editor_smoke_manifest),
+                "--check-local-readiness",
+                "--golden-project-fixture",
+                _repo_relative(golden_project_fixture),
+                *strict_args,
+            ],
+            env,
+        )
+    ]
+
+
 def _run_command(label: str, args: List[str], env: Mapping[str, str]) -> Dict[str, Any]:
     proc = subprocess.run(args, cwd=str(REPO_ROOT), text=True, capture_output=True, env=dict(env))
     return {
@@ -281,9 +361,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--mode", choices=["dry_run", "fixture", "integration"], default="dry_run")
     parser.add_argument("--enable-o3de-integration", action="store_true", help="Opt into local O3DE/APB/Editor adapter checks.")
     parser.add_argument("--apb-only", action="store_true", help="Run only the APB integration path; do not run Editor smoke.")
+    parser.add_argument("--include-editor-smoke", action="store_true", help="Run APB baseline followed by gated Editor smoke readiness.")
+    parser.add_argument("--editor-smoke-only", action="store_true", help="Run only gated Editor smoke readiness.")
     parser.add_argument("--strict-integration", action="store_true", help="Fail when local O3DE tooling is unavailable.")
     parser.add_argument("--allow-live-o3de-commands", action="store_true", help="Set the hard live-command gate for future private runs.")
     parser.add_argument("--golden-project-fixture", default=str(DEFAULT_GOLDEN_PROJECT_FIXTURE), help="Golden project fixture contract path.")
+    parser.add_argument("--editor-smoke-manifest", default=str(DEFAULT_EDITOR_SMOKE_MANIFEST), help="Editor smoke manifest path.")
     parser.add_argument("--json", action="store_true", help="Emit JSON only.")
     return parser.parse_args()
 
@@ -293,11 +376,14 @@ def print_text_report(report: Mapping[str, Any]) -> None:
     print(f"mode: {report['mode']}")
     print(f"strict_integration: {str(report['strict_integration']).lower()}")
     print(f"apb_only: {str(report.get('apb_only', False)).lower()}")
+    print(f"include_editor_smoke: {str(report.get('include_editor_smoke', False)).lower()}")
+    print(f"editor_smoke_only: {str(report.get('editor_smoke_only', False)).lower()}")
     print(f"live_commands_allowed: {str(report['live_commands_allowed']).lower()}")
     print(f"live_o3de_execution: {str(report['live_o3de_execution']).lower()}")
     print(f"live_asset_processor_batch_execution: {str(report.get('live_asset_processor_batch_execution', False)).lower()}")
     print(f"live_editor_execution: {str(report.get('live_editor_execution', False)).lower()}")
     print(f"golden_project_fixture_ref: {report.get('golden_project_fixture_ref', '')}")
+    print(f"editor_smoke_manifest_ref: {report.get('editor_smoke_manifest_ref', '')}")
     for code in report.get("errors", []):
         print(f"  error: {code}")
     for code in report.get("warnings", []):
@@ -316,9 +402,12 @@ def main() -> int:
         dry_run=args.dry_run,
         enable_o3de_integration=args.enable_o3de_integration,
         apb_only=args.apb_only,
+        include_editor_smoke=args.include_editor_smoke,
+        editor_smoke_only=args.editor_smoke_only,
         strict_integration=args.strict_integration,
         allow_live_o3de_commands=args.allow_live_o3de_commands,
         golden_project_fixture=args.golden_project_fixture,
+        editor_smoke_manifest=args.editor_smoke_manifest,
     )
     if args.json:
         print(json.dumps(report, indent=2))

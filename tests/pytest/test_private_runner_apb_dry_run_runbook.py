@@ -29,6 +29,9 @@ def _unavailable_env(tmp_path: Path) -> dict:
         "MAXINE_ENABLE_ASSET_PROCESSOR_BATCH",
         "MAXINE_ENABLE_O3DE_EDITOR_SMOKE",
         "MAXINE_ALLOW_LIVE_O3DE_COMMANDS",
+        "MAXINE_ALLOW_LIVE_EDITOR_COMMANDS",
+        "MAXINE_ALLOW_LIVE_PUBLICATION",
+        "MAXINE_ENABLE_RELEASE_PACKAGING",
     ]:
         env.pop(key, None)
     return env
@@ -142,6 +145,7 @@ def test_workflow_readiness_uses_dry_run_checklist():
     assert "fixture" in text
     assert "apb_live_non_strict" in text
     assert "apb_live_strict" in text
+    assert "editor_smoke_readiness" in text
 
 
 def test_workflow_stays_manual_private_and_non_publishing():
@@ -155,7 +159,10 @@ def test_workflow_stays_manual_private_and_non_publishing():
     assert "I_UNDERSTAND_THIS_REQUIRES_A_PRIVATE_SELF_HOSTED_WINDOWS_RUNNER" in text
     assert "secrets." not in lower
     assert "publish" not in lower
-    assert "MAXINE_ENABLE_O3DE_EDITOR_SMOKE" not in text
+    assert "MAXINE_ENABLE_O3DE_EDITOR_SMOKE" in text
+    assert "run_live_editor_commands" in text
+    assert "MAXINE_ALLOW_LIVE_PUBLICATION: \"0\"" in text
+    assert "MAXINE_ENABLE_RELEASE_PACKAGING: \"0\"" in text
 
 
 def test_runbook_references_expected_dry_run_commands():
