@@ -6,10 +6,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import platform as platform_module
+import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Sequence, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
@@ -23,12 +26,24 @@ from tools.validation.schema_utils import load_json, schema_validate
 
 MXN_VALIDATION_TOOL_UNAVAILABLE = "MXN_VALIDATION_TOOL_UNAVAILABLE"
 MXN_PATH_UNSAFE = "MXN_PATH_UNSAFE"
+MXN_EDITOR_SMOKE_STALLED = "MXN_EDITOR_SMOKE_STALLED"
+MXN_EDITOR_PROCESS_EXIT_NONZERO = "MXN_EDITOR_PROCESS_EXIT_NONZERO"
+MXN_RUNTIME_SMOKE_FAIL = "MXN_RUNTIME_SMOKE_FAIL"
 SCHEMA_PATH = REPO_ROOT / "schemas" / "maxine.editor-smoke-report.schema.json"
 DEFAULT_CORPUS = REPO_ROOT / "examples" / "editor-smoke"
 DEFAULT_MANIFEST = REPO_ROOT / "examples" / "manifests" / "release_rigged.pass.example.json"
 DEFAULT_GOLDEN_PROJECT_FIXTURE = REPO_ROOT / "examples" / "o3de-golden-project" / "maxine-golden-project.fixture.json"
+DEFAULT_ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "o3de-integration" / "editor-smoke"
+DEFAULT_APB_ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "o3de-integration" / "apb"
+DEFAULT_EDITOR_TIMEOUT_SECONDS = 900
 EDITOR_TOOL_NAMES = ("Editor.exe", "O3DEEditor.exe", "Editor", "O3DEEditor")
 EDITOR_SCRIPT = REPO_ROOT / "tools" / "o3de" / "editor_python" / "maxine_package_prefab_smoke.py"
+LIVE_EDITOR_GATE_ENV_VARS = (
+    "MAXINE_ENABLE_O3DE_INTEGRATION",
+    "MAXINE_ENABLE_O3DE_EDITOR_SMOKE",
+    "MAXINE_ALLOW_LIVE_O3DE_COMMANDS",
+    "MAXINE_ALLOW_LIVE_EDITOR_COMMANDS",
+)
 
 
 def load_fixture_reports(corpus: Path | str) -> List[Tuple[str, Dict[str, Any]]]:
@@ -63,6 +78,21 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
 
     if report.get("live_editor_execution") is True and str(report.get("mode", "")) in {"fixture", "unavailable"}:
         result.add_error("MXN_RUNTIME_SMOKE_FAIL", "Fixture/skipped Editor smoke reports cannot claim live Editor execution.")
+    if str(report.get("mode", "")) == "local_editor_python":
+        if str(report.get("status", "")) == "pass" and report.get("live_editor_execution") is not True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Local Editor Python smoke cannot pass unless live_editor_execution is true.",
+            )
+        if report.get("live_publication") is True:
+            result.add_error(MXN_PATH_UNSAFE, "Editor smoke must not enable live publication.")
+        if report.get("release_packaging") is True:
+            result.add_error(MXN_PATH_UNSAFE, "Editor smoke must not enable release packaging.")
+        if report.get("production_level_mutation") is True:
+            result.add_error(MXN_PATH_UNSAFE, "Editor smoke must not mutate production levels.")
+        temp_path = str(report.get("temp_level_path_redacted", "")).replace("\\", "/")
+        if temp_path and not temp_path.startswith("Levels/_maxine_smoke/"):
+            result.add_error(MXN_PATH_UNSAFE, "Editor smoke temp level path must stay under Levels/_maxine_smoke.")
 
     if lane in {"release_rigged", "external_rig_import"}:
         if not any(str(report.get(field, "")).strip() for field in ("package_ref", "prefab_ref", "procprefab_ref")):
@@ -113,14 +143,37 @@ def run_editor_smoke_corpus(
     strict_integration: bool = False,
     platform: str = "pc",
     env: Mapping[str, str] | None = None,
+    command_runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
+    artifact_root: Path | str = DEFAULT_ARTIFACT_ROOT,
+    golden_project_fixture: Path | str = DEFAULT_GOLDEN_PROJECT_FIXTURE,
 ) -> Dict[str, Any]:
     env = env if env is not None else os.environ
     if enable_editor_smoke or editor_smoke_gate_enabled(env) or mode == "local_editor_python":
-        return _unavailable_integration_report(
+        readiness = build_editor_smoke_readiness_report(
+            env=env,
             manifest=manifest,
+            golden_project_fixture=golden_project_fixture,
+            strict=strict_integration,
+        )
+        missing_prerequisites = _missing_live_editor_prerequisites(env, readiness, live_requested=enable_editor_smoke)
+        if readiness["status"] != "pass" or missing_prerequisites:
+            return _unavailable_integration_report(
+                manifest=manifest,
+                strict_integration=strict_integration,
+                platform=platform,
+                env=env,
+                readiness=readiness,
+                missing_prerequisites=missing_prerequisites,
+            )
+        return _execute_live_editor_smoke(
+            manifest=manifest,
+            readiness=readiness,
             strict_integration=strict_integration,
             platform=platform,
             env=env,
+            command_runner=command_runner,
+            artifact_root=_resolve_path(artifact_root),
+            golden_project_fixture=_resolve_path(golden_project_fixture),
         )
     return _fixture_corpus_report(_resolve_path(corpus), manifest=manifest, platform=platform)
 
@@ -131,6 +184,7 @@ def build_editor_smoke_readiness_report(
     engine_root: Path | str | None = None,
     project: Path | str | None = None,
     editor_executable: Path | str | None = None,
+    manifest: Path | str = DEFAULT_MANIFEST,
     golden_project_fixture: Path | str = DEFAULT_GOLDEN_PROJECT_FIXTURE,
     strict: bool = False,
 ) -> Dict[str, Any]:
@@ -201,6 +255,7 @@ def build_editor_smoke_readiness_report(
         "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
         "status": status,
         "strict": strict,
+        "manifest_ref": _repo_relative(_resolve_path(manifest)),
         "engine_root": engine_report,
         "project_path": project_report,
         "editor_executable": editor_report,
@@ -283,11 +338,19 @@ def _unavailable_integration_report(
     strict_integration: bool,
     platform: str,
     env: Mapping[str, str],
+    readiness: Mapping[str, Any] | None = None,
+    missing_prerequisites: List[str] | None = None,
 ) -> Dict[str, Any]:
     detection = detect_editor_smoke_environment(env)
     status = "fail" if strict_integration else "skipped"
     errors = [MXN_VALIDATION_TOOL_UNAVAILABLE] if strict_integration else []
     warnings = [] if strict_integration else [MXN_VALIDATION_TOOL_UNAVAILABLE]
+    missing = list(missing_prerequisites or [])
+    messages = list(detection["messages"])
+    if missing:
+        messages.append("Live Editor smoke prerequisites are unavailable: " + ", ".join(missing) + ".")
+    if readiness:
+        messages.extend(str(message) for message in readiness.get("messages", []))
     return {
         "schema_version": "1.0.0",
         "report_type": "editor_smoke_fixture_bridge_summary_v1",
@@ -311,10 +374,13 @@ def _unavailable_integration_report(
         "level_strategy": "unavailable",
         "platform": platform,
         "manifest_ref": _repo_relative(_resolve_path(manifest)),
+        "live_publication": False,
+        "release_packaging": False,
+        "production_level_mutation": False,
         "cases": [],
         "errors": errors,
         "warnings": warnings,
-        "messages": detection["messages"],
+        "messages": _unique(messages),
         "evidence_refs": [
             {
                 "id": "local-editor-smoke-integration-gate",
@@ -323,6 +389,511 @@ def _unavailable_integration_report(
             }
         ],
     }
+
+
+def _missing_live_editor_prerequisites(
+    env: Mapping[str, str],
+    readiness: Mapping[str, Any],
+    *,
+    live_requested: bool,
+) -> List[str]:
+    missing: List[str] = []
+    if not live_requested:
+        missing.append("--enable-editor-smoke")
+    for key in LIVE_EDITOR_GATE_ENV_VARS:
+        if str(env.get(key, "")).strip() != "1":
+            missing.append(key)
+    if not readiness.get("engine_root", {}).get("exists"):
+        missing.append("O3DE_ENGINE_ROOT")
+    if not readiness.get("project_path", {}).get("exists"):
+        missing.append("O3DE_PROJECT_PATH")
+    if not readiness.get("editor_executable", {}).get("available"):
+        missing.append("O3DE_EDITOR_EXECUTABLE")
+    if not readiness.get("editor_python_bindings_enabled"):
+        missing.append("EditorPythonBindings_enabled")
+    if not readiness.get("editor_python_bindings_available"):
+        missing.append("EditorPythonBindings_available")
+    if not readiness.get("temp_level_policy", {}).get("valid"):
+        missing.append("temp_level_policy")
+    if readiness.get("live_publication_allowed"):
+        missing.append("MAXINE_ALLOW_LIVE_PUBLICATION_must_be_0")
+    if readiness.get("release_packaging_allowed"):
+        missing.append("MAXINE_ENABLE_RELEASE_PACKAGING_must_be_0")
+    return _unique(missing)
+
+
+def _execute_live_editor_smoke(
+    *,
+    manifest: Path | str,
+    readiness: Mapping[str, Any],
+    strict_integration: bool,
+    platform: str,
+    env: Mapping[str, str],
+    command_runner: Callable[..., subprocess.CompletedProcess[str]] | None,
+    artifact_root: Path,
+    golden_project_fixture: Path,
+) -> Dict[str, Any]:
+    started_at = _utc_now()
+    start_time = time.monotonic()
+    run_id = "editor-smoke-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    output_dir = artifact_root / run_id
+    output_dir.mkdir(parents=True, exist_ok=True)
+    stdout_path = output_dir / "stdout.txt"
+    stderr_path = output_dir / "stderr.txt"
+    report_path = output_dir / "editor_smoke_live_report.json"
+    template_path = output_dir / "editor_smoke_report.template.json"
+
+    engine_root = Path(str(readiness["engine_root"]["path"]))
+    project_path = Path(str(readiness["project_path"]["path"]))
+    editor_executable = Path(str(readiness["editor_executable"]["path"]))
+    timeout_seconds = _editor_timeout_seconds(env)
+    apb_baseline = _select_apb_baseline_report(env)
+    manifest_path = _resolve_path(manifest)
+    apb_payload = _load_json_if_present(apb_baseline)
+    product_summary = _product_evidence_summary(apb_payload)
+    expected_products = _expected_products_from_manifest(manifest_path, product_summary)
+    missing_products = [product for product in expected_products if product not in product_summary["produced_products"]]
+
+    if not apb_baseline or not apb_payload or product_summary["status"] != "pass" or missing_products or product_summary["cache_heuristic_used"]:
+        messages = []
+        if not apb_baseline:
+            messages.append("No APB baseline report was found for the Editor smoke.")
+        if product_summary["status"] != "pass":
+            messages.append("APB baseline report is not pass.")
+        if missing_products:
+            messages.append("APB baseline is missing expected products: " + ", ".join(missing_products) + ".")
+        if product_summary["cache_heuristic_used"]:
+            messages.append("APB baseline used cache heuristic evidence.")
+        return _unavailable_integration_report(
+            manifest=manifest,
+            strict_integration=True,
+            platform=platform,
+            env=env,
+            readiness=readiness,
+            missing_prerequisites=["APB_BASELINE_PRODUCT_EVIDENCE"],
+        ) | {"messages": messages, "product_evidence_summary": product_summary}
+
+    temp_level_name = "maxine_smoke_" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    temp_level_rel = f"Levels/_maxine_smoke/{temp_level_name}"
+    level_name_for_editor = f"_maxine_smoke/{temp_level_name}"
+    argv = [
+        str(editor_executable),
+        "-NullRenderer",
+        "-rhi=Null",
+        "--skipWelcomeScreenDialog",
+        "--autotest_mode",
+        "--project-path",
+        str(project_path),
+        "--runpython",
+        str(EDITOR_SCRIPT),
+    ]
+    template = _live_report_template(
+        run_id=run_id,
+        manifest=manifest_path,
+        readiness=readiness,
+        platform=platform,
+        strict_integration=strict_integration,
+        argv=argv,
+        timeout_seconds=timeout_seconds,
+        stdout_path=stdout_path,
+        stderr_path=stderr_path,
+        report_path=report_path,
+        apb_baseline=apb_baseline,
+        product_summary=product_summary,
+        expected_products=expected_products,
+        temp_level_rel=temp_level_rel,
+        started_at=started_at,
+        golden_project_fixture=golden_project_fixture,
+    )
+    template_path.write_text(json.dumps(template, indent=2) + "\n", encoding="utf-8")
+
+    editor_env = dict(env)
+    editor_env["O3DE_ENGINE_ROOT"] = str(engine_root)
+    editor_env["O3DE_PROJECT_PATH"] = str(project_path)
+    editor_env["O3DE_EDITOR_EXECUTABLE"] = str(editor_executable)
+    editor_env["MAXINE_EDITOR_PROCESS_LAUNCHED"] = "1"
+    editor_env["MAXINE_EDITOR_SMOKE_REPORT_OUT"] = str(report_path)
+    editor_env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"] = str(template_path)
+    editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_NAME"] = level_name_for_editor
+    editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_PATH"] = str(project_path / temp_level_rel)
+    editor_env["MAXINE_EDITOR_SMOKE_ALLOW_TEMP_SANDBOX_LEVEL"] = "1"
+    editor_env["MAXINE_ALLOW_LIVE_PUBLICATION"] = "0"
+    editor_env["MAXINE_ENABLE_RELEASE_PACKAGING"] = "0"
+    editor_env.setdefault("PYTHONIOENCODING", "utf-8")
+
+    proc, timed_out, process_cleanup = _run_live_editor_command(
+        argv,
+        cwd=str(project_path),
+        env=editor_env,
+        timeout_seconds=timeout_seconds,
+        command_runner=command_runner,
+    )
+    finished_at = _utc_now()
+    stdout_path.write_text(proc.stdout or "", encoding="utf-8")
+    stderr_path.write_text(proc.stderr or "", encoding="utf-8")
+    duration_seconds = round(time.monotonic() - start_time, 3)
+
+    report = _load_json_if_present(report_path) or dict(template)
+    errors = list(report.get("errors", [])) if isinstance(report.get("errors", []), list) else []
+    warnings = list(report.get("warnings", [])) if isinstance(report.get("warnings", []), list) else []
+    messages = list(report.get("messages", [])) if isinstance(report.get("messages", []), list) else []
+    if timed_out:
+        errors.append(MXN_EDITOR_SMOKE_STALLED)
+        messages.append(f"Editor smoke exceeded timeout of {timeout_seconds} seconds and was stopped.")
+    elif proc.returncode != 0:
+        errors.append(MXN_EDITOR_PROCESS_EXIT_NONZERO)
+        messages.append(f"Editor smoke exited with code {proc.returncode}.")
+
+    report.update(
+        {
+            "generated_at": finished_at,
+            "status": "stalled" if timed_out else "fail" if errors or proc.returncode != 0 else report.get("status", "pass"),
+            "live_editor_execution": True,
+            "live_asset_processor_batch_execution": False,
+            "live_publication": False,
+            "release_packaging": False,
+            "production_level_mutation": False,
+            "exit_code": proc.returncode,
+            "started_at": started_at,
+            "finished_at": finished_at,
+            "duration_seconds": duration_seconds,
+            "timeout_seconds": timeout_seconds,
+            "timed_out": timed_out,
+            "timeout_stall": timed_out,
+            "process_cleanup": process_cleanup,
+            "stdout_log_ref": _repo_relative(stdout_path),
+            "stderr_log_ref": _repo_relative(stderr_path),
+            "editor_log_ref": _find_editor_log_ref(project_path),
+            "apb_baseline_ref": _repo_relative(apb_baseline),
+            "product_evidence_summary": product_summary,
+            "command_preview": _redacted_argv(argv),
+            "command_argv_redacted": _redacted_argv(argv),
+            "errors": _unique(errors),
+            "warnings": _unique(warnings),
+            "messages": _unique(messages),
+        }
+    )
+    report["evidence_refs"] = _merge_evidence_refs(
+        report.get("evidence_refs", []),
+        [
+            {"id": "editor-smoke-live-report", "kind": "editor_smoke_report", "path": _repo_relative(report_path)},
+            {"id": "apb-baseline", "kind": "asset_processor_batch_report", "path": _repo_relative(apb_baseline)},
+        ],
+    )
+
+    schema_result = schema_validate(report, load_json(SCHEMA_PATH))
+    semantic_result = validate_editor_smoke_report(report, strict=True)
+    if schema_result.status == "fail" or semantic_result.status == "fail":
+        report["status"] = "fail" if report["status"] != "stalled" else "stalled"
+        report["errors"] = _unique(report.get("errors", []) + schema_result.error_codes + semantic_result.error_codes)
+        report["messages"] = _unique(report.get("messages", []) + schema_result.messages + semantic_result.messages)
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    return report
+
+
+def _run_live_editor_command(
+    argv: Sequence[str],
+    *,
+    cwd: str,
+    env: Mapping[str, str],
+    timeout_seconds: int,
+    command_runner: Callable[..., subprocess.CompletedProcess[str]] | None,
+) -> Tuple[subprocess.CompletedProcess[str], bool, Dict[str, Any]]:
+    if command_runner is not None:
+        try:
+            proc = command_runner(argv=list(argv), cwd=cwd, env=dict(env), timeout_seconds=timeout_seconds)
+            return proc, False, {"attempted": False, "method": "", "return_code": None}
+        except subprocess.TimeoutExpired as exc:
+            return (
+                subprocess.CompletedProcess(list(argv), None, stdout=exc.output or "", stderr=exc.stderr or ""),
+                True,
+                {"attempted": True, "method": "command_runner_timeout", "return_code": None},
+            )
+
+    proc = subprocess.Popen(list(argv), cwd=cwd, env=dict(env), text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cleanup = {"attempted": False, "method": "", "return_code": None}
+    try:
+        stdout, stderr = proc.communicate(timeout=timeout_seconds)
+        return subprocess.CompletedProcess(list(argv), proc.returncode, stdout=stdout, stderr=stderr), False, cleanup
+    except subprocess.TimeoutExpired:
+        cleanup = _terminate_process_tree(proc)
+        stdout, stderr = proc.communicate(timeout=10)
+        return subprocess.CompletedProcess(list(argv), None, stdout=stdout, stderr=stderr), True, cleanup
+
+
+def _live_report_template(
+    *,
+    run_id: str,
+    manifest: Path,
+    readiness: Mapping[str, Any],
+    platform: str,
+    strict_integration: bool,
+    argv: Sequence[str],
+    timeout_seconds: int,
+    stdout_path: Path,
+    stderr_path: Path,
+    report_path: Path,
+    apb_baseline: Path,
+    product_summary: Mapping[str, Any],
+    expected_products: List[str],
+    temp_level_rel: str,
+    started_at: str,
+    golden_project_fixture: Path,
+) -> Dict[str, Any]:
+    manifest_payload = _load_json_if_present(manifest) or {}
+    lane = str(manifest_payload.get("job", {}).get("lane", "release_rigged")).strip() or "release_rigged"
+    publication = manifest_payload.get("publication", {})
+    publication_package = publication.get("package", {}) if isinstance(publication, Mapping) else {}
+    source_uuid = _first_source_uuid(product_summary.get("products", []), manifest_payload)
+    source_assets = _source_assets_from_manifest(manifest_payload, source_uuid)
+    procprefab_ref = _first_product_path(product_summary.get("products", []), "procprefab")
+    return {
+        "schema_version": "1.0.0",
+        "report_type": "editor_smoke_fixture_bridge_v1",
+        "report_id": run_id,
+        "generated_at": started_at,
+        "mode": "local_editor_python",
+        "status": "fail",
+        "integration_enabled": True,
+        "strict_integration": strict_integration,
+        "live_editor_execution": True,
+        "live_asset_processor_batch_execution": False,
+        "live_publication": False,
+        "release_packaging": False,
+        "production_level_mutation": False,
+        "editor_python_bindings_required": True,
+        "editor_python_bindings_available": bool(readiness.get("editor_python_bindings_available")),
+        "o3de_engine_root_present": bool(readiness.get("engine_root", {}).get("exists")),
+        "o3de_project_path_present": bool(readiness.get("project_path", {}).get("exists")),
+        "editor_executable": str(readiness.get("editor_executable", {}).get("path", "")),
+        "editor_executable_provenance": str(readiness.get("editor_executable", {}).get("provenance", "")),
+        "engine_root_redacted": _redact_path(str(readiness.get("engine_root", {}).get("path", ""))),
+        "project_path_redacted": _redact_path(str(readiness.get("project_path", {}).get("path", ""))),
+        "editor_executable_redacted": _redact_path(str(readiness.get("editor_executable", {}).get("path", ""))),
+        "command_preview": _redacted_argv(argv),
+        "command_argv_redacted": _redacted_argv(argv),
+        "exit_code": None,
+        "started_at": started_at,
+        "finished_at": "",
+        "duration_seconds": 0,
+        "timeout_seconds": timeout_seconds,
+        "timed_out": False,
+        "stdout_log_ref": _repo_relative(stdout_path),
+        "stderr_log_ref": _repo_relative(stderr_path),
+        "editor_log_ref": "",
+        "asset_processor_log_ref": "",
+        "platform": platform,
+        "lane": lane,
+        "level_strategy": "temp_sandbox_level",
+        "temp_level_policy": readiness.get("temp_level_policy", {}),
+        "temp_level_path_redacted": temp_level_rel,
+        "manifest_ref": _repo_relative(manifest),
+        "evidence_bundle_ref": str(manifest_payload.get("evidence", {}).get("bundle_ref", "")),
+        "package_ref": str(publication_package.get("package_root", "")) if isinstance(publication_package, Mapping) else "",
+        "prefab_ref": str(publication_package.get("prefab_ref", "")) if isinstance(publication_package, Mapping) else "",
+        "procprefab_ref": procprefab_ref,
+        "source_uuid": source_uuid,
+        "product_resolver_report_ref": "apb_baseline.produced_products",
+        "asset_processor_batch_report_ref": _repo_relative(apb_baseline),
+        "apb_baseline_ref": _repo_relative(apb_baseline),
+        "source_assets": source_assets,
+        "expected_products": expected_products,
+        "produced_products": list(product_summary.get("products", [])),
+        "pending_assets": [],
+        "missing_products": list(product_summary.get("missing_products", [])),
+        "product_evidence_summary": dict(product_summary),
+        "entity_expectations": [{"name": "maxine_smoke_entity", "required_components": ["Transform"]}],
+        "component_expectations": ["Transform"],
+        "instantiated_entities": [],
+        "missing_components": [],
+        "screenshots": [],
+        "cache_heuristic_used": bool(product_summary.get("cache_heuristic_used")),
+        "entity_smoke": {"status": "not_run"},
+        "prefab_smoke": {"status": "not_run"},
+        "actor_smoke": {"status": "not_run"},
+        "component_smoke": {"status": "not_run"},
+        "errors": [],
+        "warnings": [],
+        "messages": [],
+        "runner_context": _runner_context(),
+        "evidence_refs": [
+            {"id": "golden-project-fixture", "kind": "o3de_golden_project_fixture", "path": _repo_relative(golden_project_fixture)},
+            {"id": "editor-python-smoke-script", "kind": "editor_python_script", "path": _repo_relative(EDITOR_SCRIPT)},
+            {"id": "editor-smoke-report-template", "kind": "editor_smoke_report_template", "path": _repo_relative(report_path)},
+        ],
+        "next_steps": [],
+    }
+
+
+def _editor_timeout_seconds(env: Mapping[str, str]) -> int:
+    raw = str(env.get("MAXINE_EDITOR_SMOKE_TIMEOUT_SECONDS", "")).strip()
+    if not raw:
+        return DEFAULT_EDITOR_TIMEOUT_SECONDS
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return DEFAULT_EDITOR_TIMEOUT_SECONDS
+
+
+def _select_apb_baseline_report(env: Mapping[str, str]) -> Path | None:
+    explicit = str(env.get("MAXINE_APB_BASELINE_REPORT", "")).strip()
+    if explicit and Path(explicit).exists():
+        return Path(explicit)
+    reports = sorted(
+        DEFAULT_APB_ARTIFACT_ROOT.glob("apb-live-*/asset_processor_batch_live_report.json"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    return reports[0] if reports else None
+
+
+def _load_json_if_present(path: Path | None) -> Dict[str, Any] | None:
+    if not path or not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    except Exception:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _product_evidence_summary(apb_payload: Mapping[str, Any] | None) -> Dict[str, Any]:
+    if not apb_payload:
+        return {
+            "status": "missing",
+            "produced_products": [],
+            "missing_products": [],
+            "pending_products": [],
+            "cache_heuristic_used": False,
+            "products": [],
+        }
+    products = [dict(product) for product in apb_payload.get("produced_products", []) if isinstance(product, Mapping)]
+    produced = _unique(
+        [
+            str(product.get("product_type", "")).strip()
+            for product in products
+            if str(product.get("status", "")).strip() == "ready" and str(product.get("product_type", "")).strip()
+        ]
+    )
+    return {
+        "status": str(apb_payload.get("status", "")).strip() or "unknown",
+        "produced_products": produced,
+        "missing_products": [str(value) for value in apb_payload.get("missing_products", []) if str(value).strip()],
+        "pending_products": [str(value) for value in apb_payload.get("pending_products", []) if str(value).strip()],
+        "cache_heuristic_used": bool(apb_payload.get("cache_heuristic_used", False)),
+        "products": products,
+    }
+
+
+def _expected_products_from_manifest(manifest: Path, product_summary: Mapping[str, Any]) -> List[str]:
+    payload = _load_json_if_present(manifest) or {}
+    o3de = payload.get("o3de", {})
+    expected = (
+        [str(product_type).strip() for product_type in o3de.get("expected_product_types", []) if str(product_type).strip()]
+        if isinstance(o3de, Mapping)
+        else []
+    )
+    if expected:
+        return _unique(expected)
+    return _unique([str(product_type) for product_type in product_summary.get("produced_products", [])])
+
+
+def _source_assets_from_manifest(manifest_payload: Mapping[str, Any], source_uuid: str) -> List[Dict[str, Any]]:
+    inputs = manifest_payload.get("inputs", {})
+    sources = inputs.get("sources", []) if isinstance(inputs, Mapping) else []
+    result: List[Dict[str, Any]] = []
+    for source in sources if isinstance(sources, list) else []:
+        if not isinstance(source, Mapping):
+            continue
+        path = str(source.get("relative_path", "") or source.get("path", "")).strip()
+        if path:
+            result.append({"path": path, "source_uuid": source_uuid})
+    return result
+
+
+def _first_source_uuid(products: Any, manifest_payload: Mapping[str, Any]) -> str:
+    if isinstance(products, list):
+        for product in products:
+            if isinstance(product, Mapping) and str(product.get("source_uuid", "")).strip():
+                return str(product["source_uuid"]).strip()
+    o3de = manifest_payload.get("o3de", {})
+    return str(o3de.get("source_uuid", "")).strip() if isinstance(o3de, Mapping) else ""
+
+
+def _first_product_path(products: Any, product_type: str) -> str:
+    if not isinstance(products, list):
+        return ""
+    for product in products:
+        if isinstance(product, Mapping) and str(product.get("product_type", "")).strip() == product_type:
+            return str(product.get("relative_product_path", "") or product.get("product_path", "")).strip()
+    return ""
+
+
+def _redacted_argv(argv: Sequence[str]) -> List[str]:
+    redacted: List[str] = []
+    for value in argv:
+        text = str(value)
+        if any(marker in text.lower() for marker in ("token=", "password=", "secret=", "key=")):
+            redacted.append("<redacted>")
+        else:
+            redacted.append(_redact_path(text))
+    return redacted
+
+
+def _redact_path(value: str) -> str:
+    home = str(Path.home()).replace("\\", "/")
+    normalized = value.replace("\\", "/")
+    if home and normalized.lower().startswith(home.lower()):
+        return "%USERPROFILE%" + normalized[len(home):]
+    return normalized
+
+
+def _find_editor_log_ref(project_path: Path) -> str:
+    candidates = list(project_path.glob("**/Editor.log"))
+    if not candidates:
+        return ""
+    newest = max(candidates, key=lambda path: path.stat().st_mtime)
+    return _redact_path(str(newest))
+
+
+def _merge_evidence_refs(existing: Any, additions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    refs = [dict(ref) for ref in existing if isinstance(ref, Mapping)] if isinstance(existing, list) else []
+    seen = {str(ref.get("id", "")) for ref in refs}
+    for ref in additions:
+        if str(ref.get("id", "")) not in seen:
+            refs.append(ref)
+            seen.add(str(ref.get("id", "")))
+    return refs
+
+
+def _terminate_process_tree(proc: subprocess.Popen[str]) -> Dict[str, Any]:
+    cleanup = {"attempted": True, "method": "kill", "return_code": None}
+    if platform_module.system().lower() == "windows":
+        taskkill = subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], text=True, capture_output=True)
+        cleanup["method"] = "taskkill /T /F"
+        cleanup["return_code"] = taskkill.returncode
+        if taskkill.returncode == 0:
+            return cleanup
+    try:
+        proc.kill()
+        cleanup["return_code"] = 0
+    except Exception:
+        cleanup["return_code"] = 1
+    return cleanup
+
+
+def _runner_context() -> Dict[str, Any]:
+    runner_labels = [label.strip() for label in str(os.environ.get("RUNNER_LABELS", "")).split(",") if label.strip()]
+    return {
+        "os": platform_module.platform(),
+        "runner_name": os.environ.get("RUNNER_NAME", ""),
+        "self_hosted_expected": True,
+        "private_runner_labels": runner_labels,
+    }
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def detect_editor_smoke_environment(env: Mapping[str, str] | None = None) -> Dict[str, Any]:
@@ -509,6 +1080,10 @@ def _enabled(env: Mapping[str, str], key: str) -> bool:
     return str(env.get(key, "")).strip() == "1"
 
 
+def _exit_code_for_status(report: Mapping[str, Any]) -> int:
+    return 1 if str(report.get("status", "")).strip() in {"fail", "stalled", "unavailable"} else 0
+
+
 def _product_records(report: Mapping[str, Any]) -> List[ProductRecord]:
     source_uuid = str(report.get("source_uuid", "")).strip()
     products: List[ProductRecord] = []
@@ -595,6 +1170,13 @@ def main() -> int:
         print(f"  error: MXN_INPUT_MISSING")
         print(f"  - Manifest not found: {manifest}")
         return 2
+    env_map = dict(os.environ)
+    if args.engine_root:
+        env_map["O3DE_ENGINE_ROOT"] = args.engine_root
+    if args.project:
+        env_map["O3DE_PROJECT_PATH"] = args.project
+    if args.editor_executable:
+        env_map["O3DE_EDITOR_EXECUTABLE"] = args.editor_executable
     result = run_editor_smoke_corpus(
         args.corpus,
         mode=args.mode,
@@ -602,6 +1184,8 @@ def main() -> int:
         enable_editor_smoke=args.enable_editor_smoke,
         strict_integration=args.strict_integration,
         platform=args.platform,
+        env=env_map,
+        golden_project_fixture=args.golden_project_fixture,
     )
     print(f"Editor smoke fixture bridge: {result['status']}")
     print(f"mode: {result['mode']}")
@@ -614,7 +1198,7 @@ def main() -> int:
         print(f"  - {message}")
     for case in result.get("cases", []):
         print(f"  {case['case_id']}: expected {case['expected_status']}, observed {case['observed_status']} -> {case['status']}")
-    return 1 if result["status"] == "fail" else 0
+    return _exit_code_for_status(result)
 
 
 def _print_readiness_report(report: Mapping[str, Any]) -> None:

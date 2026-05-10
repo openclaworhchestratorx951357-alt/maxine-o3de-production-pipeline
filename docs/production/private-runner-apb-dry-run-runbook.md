@@ -197,4 +197,10 @@ python tools/o3de/diagnose_editor_smoke_readiness.py --engine-root C:/src/o3de -
 python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --check-local-readiness --strict --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de
 ```
 
-The next slice should rerun the APB clean baseline in the same session, then execute the live Editor smoke only after setting the explicit live Editor gates and confirming publication and release packaging remain disabled.
+The first live Editor smoke slice did rerun the APB clean baseline and strict Editor readiness in the same session. Editor launched with the paired profile executable and created an approved temp level under `Levels/_maxine_smoke`, but the run exceeded the bounded timeout before the in-Editor report completed and is represented as stalled:
+
+```text
+examples/editor-smoke/editor-smoke-live.release-rigged.stalled.example.json
+```
+
+Future retries should keep this APB baseline prerequisite, use the same explicit live Editor gates, and continue treating stalled Editor automation as a blocker rather than pass.

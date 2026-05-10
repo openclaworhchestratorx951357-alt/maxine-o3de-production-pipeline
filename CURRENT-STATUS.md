@@ -1,7 +1,17 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Produce Project-Paired O3DE Editor Executable v1 is in progress:
+- Run Gated Live Editor Python Smoke v1 is in progress:
+  - PR #115 was merged into `main`, and `codex/run-gated-live-editor-python-smoke-v1` was created from updated `main`
+  - reran the APB clean baseline in this session with `C:\src\o3de\build\windows\bin\profile\AssetProcessorBatch.exe`; APB exited `0`, the APB-only suite exited `0`, product matrix status is `pass`, expected product evidence is complete, and `cache_heuristic_used=false`
+  - reran strict Editor readiness with `C:\src\o3de\build\windows\bin\profile\Editor.exe`; provenance remains `engine_profile_bin`, `EditorPythonBindings` remains enabled/available, and the temp-level policy remains constrained to `Levels/_maxine_smoke`
+  - hardened the live Editor smoke wrapper so `--enable-editor-smoke` requires explicit live O3DE and Editor gates, keeps publication and release packaging disabled, requires APB product evidence first, launches Editor with a bounded timeout, records stdout/stderr/log refs, and returns nonzero for `fail`, `stalled`, or `unavailable`
+  - converted `tools/o3de/editor_python/maxine_package_prefab_smoke.py` from a template into the bounded in-Editor script: it imports `azlmbr` only inside Editor context, creates/opens only approved temp smoke levels, attempts a minimal entity smoke only when safe, and records prefab/actor/component checks as unavailable or not-run rather than faking success
+  - the latest gated live Editor command did launch Editor, used the same-session APB baseline `artifacts/o3de-integration/apb/apb-live-20260510T095743Z/asset_processor_batch_live_report.json`, created the approved temp level `Levels/_maxine_smoke/maxine_smoke_20260510T095910Z`, and then exceeded the 180 second smoke timeout during/after level load; the wrapper stopped the process tree and recorded `status=stalled`, `live_editor_execution=true`, `live_publication=false`, `release_packaging=false`, and `production_level_mutation=false`
+  - sanitized stalled evidence is represented by `examples/editor-smoke/editor-smoke-live.release-rigged.stalled.example.json`
+  - entity, prefab, actor, and component smoke checks did not complete because the Editor run stalled before the in-Editor report reached those checks
+  - raw stdout/stderr/live reports remain gitignored under `artifacts/o3de-integration/editor-smoke/`; no large logs, generated product assets, Asset Cache files, Editor binaries, secrets, or project source content are committed
+- Produce Project-Paired O3DE Editor Executable v1 completed in PR #115:
   - PR #114 is merged and the gated Editor smoke readiness tooling is now on `main`
   - created `codex/produce-project-paired-editor-executable-v1` from updated `main`
   - preserved the clean APB-only release-rigged baseline before building Editor; live APB exited `0`, APB-only suite exited `0`, product matrix status is `pass`, missing products are none, pending products are none, and `cache_heuristic_used=false`

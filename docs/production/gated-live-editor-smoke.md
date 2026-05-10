@@ -68,4 +68,45 @@ Sanitized readiness evidence is:
 examples/editor-smoke/editor-smoke-readiness.release-rigged.editor-produced.example.json
 ```
 
-Live Editor execution was still not attempted in the executable slice. The next slice should rerun the APB clean baseline and strict Editor readiness in the same session, then execute the gated live Editor Python smoke only with `MAXINE_ALLOW_LIVE_EDITOR_COMMANDS=1`, publication disabled, release packaging disabled, and the temp-level policy active.
+Live Editor execution was still not attempted in the executable slice. The live smoke slice reran the APB clean baseline and strict Editor readiness in the same session before opening the live Editor gates.
+
+## First Live Editor Smoke Attempt
+
+The first gated live Editor smoke used the paired Editor executable and the controlled project:
+
+```powershell
+$env:MAXINE_ENABLE_O3DE_INTEGRATION = "1"
+$env:MAXINE_ENABLE_ASSET_PROCESSOR_BATCH = "1"
+$env:MAXINE_ENABLE_O3DE_EDITOR_SMOKE = "1"
+$env:MAXINE_ALLOW_LIVE_O3DE_COMMANDS = "1"
+$env:MAXINE_ALLOW_LIVE_EDITOR_COMMANDS = "1"
+$env:MAXINE_ALLOW_LIVE_PUBLICATION = "0"
+$env:MAXINE_ENABLE_RELEASE_PACKAGING = "0"
+$env:MAXINE_EDITOR_SMOKE_TIMEOUT_SECONDS = "180"
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --enable-editor-smoke --strict-integration --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de
+```
+
+The wrapper launched Editor with the automation profile:
+
+```text
+C:/src/o3de/build/windows/bin/profile/Editor.exe -NullRenderer -rhi=Null --skipWelcomeScreenDialog --autotest_mode --project-path %USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus --runpython tools/o3de/editor_python/maxine_package_prefab_smoke.py
+```
+
+The run is recorded as `stalled`, not pass. Editor launched, `live_editor_execution=true`, the approved temp level path was created under `Levels/_maxine_smoke/maxine_smoke_20260510T095910Z`, and the wrapper stopped the process tree after the 180 second timeout while Editor was still in the level load path. The in-Editor entity/prefab/actor/component checks did not complete. The APB prerequisite for the recorded attempt was `artifacts/o3de-integration/apb/apb-live-20260510T095743Z/asset_processor_batch_live_report.json`.
+
+Sanitized evidence is:
+
+```text
+examples/editor-smoke/editor-smoke-live.release-rigged.stalled.example.json
+```
+
+Safety outcome:
+
+- live publication: false
+- release packaging: false
+- Asset Cache deletion: false
+- production level mutation: false
+- product evidence prerequisite: pass
+- cache heuristic release proof: forbidden
+
+The next Editor smoke slice should diagnose why the in-Editor Python flow does not reach report completion after temp level creation/loading, then rerun the same gated wrapper. Do not promote this stalled result to success.
