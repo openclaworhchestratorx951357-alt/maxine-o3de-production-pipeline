@@ -362,3 +362,36 @@ examples/editor-smoke/editor-smoke-live.release-rigged.unavailable.example.json
 ```
 
 Next action: finish producing or selecting the project/engine-paired Editor executable, rerun strict Editor smoke readiness, then execute the gated live Editor Python smoke only if APB baseline, temp-level policy, publication gate, and release-packaging gate all remain valid.
+
+## Project-Paired Editor Executable Follow-Up
+
+The Editor executable follow-up preserved the clean APB-only baseline, inspected the prior one-hour Editor build log, and found no C1060, linker, missing package, or target discovery failure. The generated Visual Studio project confirms the profile `Editor` target outputs:
+
+```text
+C:/src/o3de/build/windows/bin/profile/Editor.exe
+```
+
+The follow-up then built only the `Editor` target with low-memory settings:
+
+```powershell
+cmake --build C:/src/o3de/build/windows --target Editor --config profile --parallel 1 -- /m:1 /nodeReuse:false /p:CL_MPCount=1 /p:UseMultiToolTask=false /v:m
+```
+
+Result:
+
+- build exit code: `0`
+- output Editor executable: `C:/src/o3de/build/windows/bin/profile/Editor.exe`
+- executable provenance: `engine_profile_bin`
+- `EditorPythonBindings` remains enabled and available
+- strict Editor readiness: `pass`
+- live Editor smoke attempted: false
+- live publication: false
+- release packaging: false
+
+Sanitized readiness evidence:
+
+```text
+examples/editor-smoke/editor-smoke-readiness.release-rigged.editor-produced.example.json
+```
+
+Next action: rerun the APB clean baseline and strict Editor readiness in the same session, then execute the gated live Editor Python smoke with publication and release packaging still disabled.

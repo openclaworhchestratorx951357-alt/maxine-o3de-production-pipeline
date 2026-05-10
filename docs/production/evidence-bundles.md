@@ -90,10 +90,18 @@ Editor Python package/prefab smoke evidence may be attached as:
 
 Fixture reports must not claim real Editor logs, screenshots, level mutation, or live Editor execution.
 
-Readiness-only Editor smoke evidence may be committed when it is sanitized and clearly unavailable/skipped. It can record the paired Editor executable status, `EditorPythonBindings` status, temp-level policy, APB baseline reference, and closed publication/release-packaging gates. The current readiness example is:
+Readiness-only Editor smoke evidence may be committed when it is sanitized and clearly unavailable/skipped or when it records a produced paired Editor executable without launching Editor. It can record the paired Editor executable status, `EditorPythonBindings` status, temp-level policy, APB baseline reference, and closed publication/release-packaging gates.
+
+The unavailable readiness example is:
 
 ```text
 examples/editor-smoke/editor-smoke-live.release-rigged.unavailable.example.json
+```
+
+The produced-Editor readiness example is:
+
+```text
+examples/editor-smoke/editor-smoke-readiness.release-rigged.editor-produced.example.json
 ```
 
 `live_editor_execution=true` is allowed only when the Editor process actually ran. Missing Editor executables, build timeouts, failed readiness, nonzero Editor exits, and stalled Editor commands remain blockers, not passes.

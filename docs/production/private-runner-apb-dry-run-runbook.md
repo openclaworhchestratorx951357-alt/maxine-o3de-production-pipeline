@@ -177,3 +177,24 @@ python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.p
 ```
 
 Editor smoke remains blocked unless a paired `Editor.exe` or `O3DEEditor.exe` exists under the selected engine build output, `EditorPythonBindings` is enabled and built, the APB baseline still passes, and publication/release packaging gates are disabled.
+
+The controlled runner now has a paired profile Editor executable:
+
+```text
+C:/src/o3de/build/windows/bin/profile/Editor.exe
+```
+
+It was produced by building only the `Editor` target with low-memory settings:
+
+```powershell
+cmake --build C:/src/o3de/build/windows --target Editor --config profile --parallel 1 -- /m:1 /nodeReuse:false /p:CL_MPCount=1 /p:UseMultiToolTask=false /v:m
+```
+
+Strict readiness should use the explicit Editor path:
+
+```powershell
+python tools/o3de/diagnose_editor_smoke_readiness.py --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --strict --json
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --check-local-readiness --strict --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de
+```
+
+The next slice should rerun the APB clean baseline in the same session, then execute the live Editor smoke only after setting the explicit live Editor gates and confirming publication and release packaging remain disabled.

@@ -1,0 +1,132 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "maxine_editor_smoke_readiness",
+  "generated_at": "2026-05-10T08:18:37Z",
+  "status": "pass",
+  "mode": "editor_smoke_readiness",
+  "lane": "release_rigged",
+  "project_name": "MAXINE_GoldenCorpus",
+  "engine_root_redacted": "C:/src/o3de",
+  "project_path_redacted": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+  "editor_executable_redacted": "C:/src/o3de/build/windows/bin/profile/Editor.exe",
+  "editor_executable_provenance": {
+    "status": "valid",
+    "provenance": "engine_profile_bin",
+    "name_valid": true,
+    "path_under_selected_engine": true,
+    "size_bytes": 171520,
+    "last_write_time_utc": "2026-05-10T08:17:56Z"
+  },
+  "editor_build_attempted": true,
+  "editor_build_result": "success",
+  "editor_target": "Editor",
+  "editor_output_path_redacted": "C:/src/o3de/build/windows/bin/profile/Editor.exe",
+  "editor_build_duration_seconds": 8096.906,
+  "editor_build_command_redacted": [
+    "cmake",
+    "--build",
+    "C:/src/o3de/build/windows",
+    "--target",
+    "Editor",
+    "--config",
+    "profile",
+    "--parallel",
+    "1",
+    "--",
+    "/m:1",
+    "/nodeReuse:false",
+    "/p:CL_MPCount=1",
+    "/p:UseMultiToolTask=false",
+    "/v:m"
+  ],
+  "live_editor_execution": false,
+  "live_asset_processor_batch_execution": false,
+  "live_publication": false,
+  "release_packaging": false,
+  "editor_python_bindings_enabled": true,
+  "editor_python_bindings_available": true,
+  "temp_level_policy": {
+    "enabled": true,
+    "level_root": "Levels/_maxine_smoke",
+    "never_use_production_levels": true,
+    "allow_existing_level_readonly": false,
+    "cleanup_policy": "dry_run_only_no_deletion_in_this_slice_future_cleanup_requires_recorded_undo_plan"
+  },
+  "apb_clean_baseline": {
+    "status": "pass",
+    "live_asset_processor_batch_execution": true,
+    "apb_report_ref": "artifacts/o3de-integration/apb/apb-live-20260510T060112Z/asset_processor_batch_live_report.json",
+    "apb_only_suite_status": "pass",
+    "product_matrix_status": "pass"
+  },
+  "product_evidence_summary": {
+    "status": "pass",
+    "produced_products": [
+      "azmodel",
+      "actor",
+      "procprefab",
+      "motion",
+      "motionset",
+      "animgraph",
+      "pxmesh",
+      "azmaterial"
+    ],
+    "missing_products": [],
+    "pending_products": [],
+    "cache_heuristic_used": false
+  },
+  "entity_smoke": {
+    "status": "not_run",
+    "reason": "live Editor smoke intentionally deferred after strict readiness passed"
+  },
+  "prefab_smoke": {
+    "status": "not_run",
+    "reason": "live Editor smoke intentionally deferred after strict readiness passed"
+  },
+  "actor_smoke": {
+    "status": "not_run",
+    "reason": "live Editor smoke intentionally deferred after strict readiness passed"
+  },
+  "command_argv_redacted": [
+    "python",
+    "tools/o3de/diagnose_editor_smoke_readiness.py",
+    "--engine-root",
+    "C:/src/o3de",
+    "--project",
+    "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+    "--editor-executable",
+    "C:/src/o3de/build/windows/bin/profile/Editor.exe",
+    "--strict",
+    "--json"
+  ],
+  "exit_code": 0,
+  "timeout_seconds": null,
+  "stdout_log_ref": "",
+  "stderr_log_ref": "",
+  "editor_log_ref": "",
+  "errors": [],
+  "warnings": [],
+  "evidence_refs": [
+    {
+      "id": "editor-build-log",
+      "kind": "uncommitted_setup_log",
+      "path": "artifacts/o3de-integration/setup/editor/build_editor.20260510T060300Z.log"
+    },
+    {
+      "id": "editor-build-summary",
+      "kind": "uncommitted_setup_summary",
+      "path": "artifacts/o3de-integration/setup/editor/build_editor.20260510T060300Z.summary.json"
+    },
+    {
+      "id": "editor-smoke-readiness-produced",
+      "kind": "sanitized_readiness_example",
+      "path": "examples/editor-smoke/editor-smoke-readiness.release-rigged.editor-produced.example.json"
+    }
+  ],
+  "next_steps": [
+    "Run the gated live Editor Python smoke only after APB baseline is rerun in the same session.",
+    "Keep live publication disabled.",
+    "Keep release packaging disabled.",
+    "Use only the temporary smoke level policy under Levels/_maxine_smoke."
+  ]
+}
