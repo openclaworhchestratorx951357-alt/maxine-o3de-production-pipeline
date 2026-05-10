@@ -101,7 +101,7 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
     payload = json.loads(Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).read_text(encoding="utf-8"))
     binding_payload = _binding_contract_payload()
     diagnostic_mode = env.get("MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE", "full")
-    if diagnostic_mode == "actor-binding":
+    if diagnostic_mode in {"actor-binding", "actor-asset-assignment", "full"}:
         binding_payload["actor_binding_checks"] = {
             "status": "pass",
             "product_evidence_status": "pass",
@@ -109,13 +109,35 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
             "component_type_id_status": "pass",
             "component_add_status": "pass",
             "property_path_discovery": {"status": "pass", "properties": ["Actor asset"]},
+            "actor_asset_assignment": {
+                "status": "pass",
+                "property_path": "Actor asset",
+                "setter_call": "EditorComponentAPIBus.SetComponentProperty",
+                "setter_value_shape": "azlmbr.asset.AssetId",
+                "approved_product_ref": "pc/assets/characters/maxine/release/jack.actor",
+                "readback": {
+                    "status": "pass",
+                    "matched_approved_product": True,
+                },
+            },
         }
-    if diagnostic_mode == "prefab-binding":
+    if diagnostic_mode in {"prefab-binding", "prefab-instantiation", "full"}:
         binding_payload["prefab_binding_checks"] = {
             "status": "pass",
             "product_evidence_status": "pass",
             "procprefab_product_ref": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
             "binding_surface_status": "pass",
+            "selected_call": "PrefabPublicRequestBus.InstantiatePrefab",
+            "argument_value_shape": {
+                "prefab_path": "project-relative source .prefab path",
+                "parent_entity_id": "azlmbr.entity.EntityId",
+                "position": "azlmbr.math.Vector3",
+            },
+            "instantiation": {
+                "status": "pass",
+                "created_entity_count": 1,
+                "container_entity": "EntityId(2)",
+            },
         }
     payload.update(
         {
@@ -125,8 +147,8 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
             "editor_python_bindings_available": True,
             "temp_level_path_redacted": "Levels/_maxine_smoke/maxine_smoke_test",
             "entity_smoke": {"status": "pass", "entity_id": "EntityId(1)", "name": "maxine_smoke_entity"},
-            "prefab_smoke": {"status": "pass"} if diagnostic_mode == "prefab-binding" else {"status": "unsupported_by_engine_binding", "reason": "prefab instantiation binding not pinned in unit fixture"},
-            "actor_smoke": {"status": "pass"} if diagnostic_mode == "actor-binding" else {"status": "blocked_by_missing_binding", "reason": "actor component type ID not pinned in unit fixture"},
+            "prefab_smoke": {"status": "pass"} if diagnostic_mode in {"prefab-binding", "prefab-instantiation", "full"} else {"status": "unsupported_by_engine_binding", "reason": "prefab instantiation binding not pinned in unit fixture"},
+            "actor_smoke": {"status": "pass"} if diagnostic_mode in {"actor-binding", "actor-asset-assignment", "full"} else {"status": "blocked_by_missing_binding", "reason": "actor component type ID not pinned in unit fixture"},
             "component_smoke": {"status": "pass", "components": ["Transform"], "binding_evidence": "EditorComponentAPIBus"},
             "instantiated_entities": [{"name": "maxine_smoke_entity", "components": ["Transform"], "source": "editor_python"}],
             "missing_components": [],
@@ -237,14 +259,59 @@ def test_editor_smoke_live_pass_example_schema_and_semantics_validate():
     assert report["production_level_mutation"] is False
     assert report["no_fake_success"] is True
     assert report["component_binding_checks"]["status"] == "pass"
-    assert report["actor_binding_checks"]["status"] != "pass"
-    assert report["prefab_binding_checks"]["status"] != "pass"
+    assert report["actor_binding_checks"]["status"] == "pass"
+    assert report["actor_binding_checks"]["actor_asset_assignment"]["status"] == "pass"
+    assert report["actor_binding_checks"]["actor_asset_assignment"]["readback"]["matched_approved_product"] is True
+    assert report["prefab_binding_checks"]["status"] == "pass"
+    assert report["prefab_binding_checks"]["instantiation"]["status"] in {"pass", "template_load_pass"}
 
 
 def test_editor_smoke_rejects_actor_or_prefab_pass_without_binding_evidence():
     report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
     report["actor_smoke"] = {"status": "pass"}
     report.pop("actor_binding_checks", None)
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+
+
+def test_editor_smoke_rejects_actor_assignment_pass_without_verified_readback():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report["actor_binding_checks"] = {
+        "status": "pass",
+        "actor_asset_assignment": {
+            "status": "pass",
+            "property_path": "Actor asset",
+            "setter_call": "EditorComponentAPIBus.SetComponentProperty",
+            "setter_value_shape": "azlmbr.asset.AssetId",
+            "approved_product_ref": "pc/assets/characters/maxine/release/jack.actor",
+            "readback": {"status": "pass", "matched_approved_product": False},
+        },
+    }
+    report["actor_smoke"] = {"status": "pass"}
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+
+
+def test_editor_smoke_rejects_prefab_instantiation_pass_without_created_or_loaded_evidence():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report["prefab_binding_checks"] = {
+        "status": "pass",
+        "product_evidence_status": "pass",
+        "procprefab_product_ref": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "binding_surface_status": "pass",
+        "selected_call": "PrefabPublicRequestBus.InstantiatePrefab",
+        "instantiation": {
+            "status": "pass",
+            "created_entity_count": 0,
+        },
+    }
+    report["prefab_smoke"] = {"status": "pass"}
 
     result = validate_editor_smoke_report(report, strict=True)
 
@@ -267,6 +334,8 @@ def test_editor_smoke_binding_diagnostic_modes_route_to_target_scripts(tmp_path)
         "component-binding": "editor_component_binding_smoke.py",
         "actor-binding": "editor_actor_binding_smoke.py",
         "prefab-binding": "editor_prefab_binding_smoke.py",
+        "actor-asset-assignment": "editor_actor_asset_assignment_smoke.py",
+        "prefab-instantiation": "editor_prefab_instantiation_smoke.py",
     }
 
     for mode, script_name in expected_scripts.items():

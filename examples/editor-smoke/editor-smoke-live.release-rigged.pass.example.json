@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
   "report_type": "editor_smoke_fixture_bridge_v1",
-  "report_id": "editor-smoke-20260510T141031Z",
-  "generated_at": "2026-05-10T14:10:47Z",
+  "report_id": "editor-smoke-20260510T154547Z",
+  "generated_at": "2026-05-10T15:46:02Z",
   "mode": "local_editor_python",
   "diagnostic_mode": "full",
   "status": "pass",
@@ -45,21 +45,21 @@
     "%REPO_ROOT%/tools/o3de/editor_python/maxine_package_prefab_smoke.py"
   ],
   "exit_code": 0,
-  "started_at": "2026-05-10T14:10:31Z",
-  "finished_at": "2026-05-10T14:10:47Z",
-  "duration_seconds": 15.437,
+  "started_at": "2026-05-10T15:45:47Z",
+  "finished_at": "2026-05-10T15:46:02Z",
+  "duration_seconds": 15.094,
   "timeout_seconds": 900,
   "timed_out": false,
-  "stdout_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T141031Z/stdout.txt",
-  "stderr_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T141031Z/stderr.txt",
-  "progress_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T141031Z/progress.jsonl",
+  "stdout_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T154547Z/stdout.txt",
+  "stderr_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T154547Z/stderr.txt",
+  "progress_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T154547Z/progress.jsonl",
   "last_progress_marker": {
-    "elapsed_seconds": 0.156,
+    "elapsed_seconds": 0.203,
     "message": "Requesting Editor exit without prompt.",
     "phase": "script",
     "status": "started",
     "step": "script_exit_requested",
-    "timestamp": "2026-05-10T14:10:44Z"
+    "timestamp": "2026-05-10T15:46:00Z"
   },
   "stall_phase": "",
   "editor_log_ref": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus/user/log/Editor.log",
@@ -77,7 +77,7 @@
     "never_use_production_levels": true,
     "allow_existing_level_readonly": false
   },
-  "temp_level_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T141032Z",
+  "temp_level_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T154547Z",
   "manifest_ref": "examples/manifests/release_rigged.pass.example.json",
   "evidence_bundle_ref": "examples/production/evidence_bundle.release_rigged.pass.example.json",
   "package_ref": "examples/sandbox/packages/release_rigged",
@@ -85,8 +85,8 @@
   "procprefab_ref": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
   "source_uuid": "7e3be43ca0c7512b9f3efa6c2a4dbdac",
   "product_resolver_report_ref": "apb_baseline.produced_products",
-  "asset_processor_batch_report_ref": "artifacts/o3de-integration/apb/apb-live-20260510T140936Z/asset_processor_batch_live_report.json",
-  "apb_baseline_ref": "artifacts/o3de-integration/apb/apb-live-20260510T140936Z/asset_processor_batch_live_report.json",
+  "asset_processor_batch_report_ref": "artifacts/o3de-integration/apb/apb-live-20260510T154454Z/asset_processor_batch_live_report.json",
+  "apb_baseline_ref": "artifacts/o3de-integration/apb/apb-live-20260510T154454Z/asset_processor_batch_live_report.json",
   "source_assets": [
     {
       "path": "Assets/Characters/MAXINE/release/maxine_release_source.fbx",
@@ -314,7 +314,7 @@
   "instantiated_entities": [
     {
       "name": "maxine_smoke_entity",
-      "entity_id": "[4099786522213775922]",
+      "entity_id": "[17845451883048926210]",
       "components": [
         "Transform"
       ],
@@ -373,7 +373,11 @@
         "GetComponentOfType",
         "BuildComponentPropertyList",
         "GetComponentProperty",
-        "AddComponentsOfType"
+        "AddComponentsOfType",
+        "SetComponentProperty",
+        "CompareComponentProperty",
+        "IsValid",
+        "IsComponentEnabled"
       ],
       "blocked_calls": [
         "FindComponentTypeIdsByEntityType"
@@ -416,7 +420,7 @@
       "call": "EditorComponentAPIBus.GetComponentOfType",
       "status": "pass",
       "args_shape": "2 arguments",
-      "result": "<EntityComponentIdPair via PythonProxyObject at 2415592619872>"
+      "result": "<EntityComponentIdPair via PythonProxyObject at 1885001760608>"
     },
     {
       "call": "EditorComponentAPIBus.BuildComponentPropertyList",
@@ -444,7 +448,7 @@
       "call": "EditorComponentAPIBus.GetComponentProperty",
       "status": "pass",
       "args_shape": "2 arguments",
-      "result": "[312439557414]"
+      "result": "[309738765005]"
     },
     {
       "call": "EditorComponentAPIBus.GetComponentProperty",
@@ -465,14 +469,14 @@
       "status": "pass",
       "args_shape": "2 arguments",
       "result": [
-        "<EntityComponentIdPair via PythonProxyObject at 2415746995504>"
+        "<EntityComponentIdPair via PythonProxyObject at 1884866679152>"
       ]
     },
     {
       "call": "EditorComponentAPIBus.GetComponentOfType",
       "status": "pass",
       "args_shape": "2 arguments",
-      "result": "<EntityComponentIdPair via PythonProxyObject at 2415746995504>"
+      "result": "<EntityComponentIdPair via PythonProxyObject at 1884866679152>"
     },
     {
       "call": "EditorComponentAPIBus.BuildComponentPropertyList",
@@ -503,14 +507,14 @@
       "status": "pass",
       "args_shape": "2 arguments",
       "result": [
-        "<EntityComponentIdPair via PythonProxyObject at 2415746995424>"
+        "<EntityComponentIdPair via PythonProxyObject at 1884866679072>"
       ]
     },
     {
       "call": "EditorComponentAPIBus.GetComponentOfType",
       "status": "pass",
       "args_shape": "2 arguments",
-      "result": "<EntityComponentIdPair via PythonProxyObject at 2415746995424>"
+      "result": "<EntityComponentIdPair via PythonProxyObject at 1884866679072>"
     },
     {
       "call": "EditorComponentAPIBus.BuildComponentPropertyList",
@@ -561,6 +565,58 @@
       "result": 25.0
     },
     {
+      "call": "AssetCatalogRequestBus.GetAssetIdByPath",
+      "status": "unavailable_with_verified_reason",
+      "args_shape": "3 arguments",
+      "asset_path": "pc/assets/characters/maxine/release/jack.actor",
+      "result": "{00000000-0000-0000-0000-000000000000}:0"
+    },
+    {
+      "call": "AssetCatalogRequestBus.GetAssetIdByPath",
+      "status": "pass",
+      "args_shape": "3 arguments",
+      "asset_path": "assets/characters/maxine/release/jack.actor",
+      "result": "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7"
+    },
+    {
+      "call": "EditorComponentAPIBus.GetComponentProperty",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": "{00000000-0000-0000-0000-000000000000}:0"
+    },
+    {
+      "call": "EditorComponentAPIBus.SetComponentProperty",
+      "status": "pass",
+      "args_shape": "3 arguments",
+      "property_path": "Actor asset",
+      "value_shape": "azlmbr.object.PythonProxyObject",
+      "result": "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7"
+    },
+    {
+      "call": "EditorComponentAPIBus.GetComponentProperty",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7"
+    },
+    {
+      "call": "EditorComponentAPIBus.CompareComponentProperty",
+      "status": "pass",
+      "args_shape": "3 arguments",
+      "result": true
+    },
+    {
+      "call": "EditorComponentAPIBus.IsValid",
+      "status": "pass",
+      "args_shape": "1 arguments",
+      "result": true
+    },
+    {
+      "call": "EditorComponentAPIBus.IsComponentEnabled",
+      "status": "pass",
+      "args_shape": "1 arguments",
+      "result": true
+    },
+    {
       "call": "import azlmbr.prefab",
       "status": "pass",
       "result": [
@@ -578,6 +634,24 @@
         "PrefabSystemScriptingBus",
         "SaveTemplateToString"
       ]
+    },
+    {
+      "call": "PrefabPublicRequestBus.CreatePrefabInMemory",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": "[9370487353223403382]"
+    },
+    {
+      "call": "PrefabPublicRequestBus.InstantiatePrefab",
+      "status": "pass",
+      "args_shape": "3 arguments",
+      "result": "[13434269580037555370]"
+    },
+    {
+      "call": "PrefabPublicRequestBus.GetOwningInstancePrefabPath",
+      "status": "pass",
+      "args_shape": "1 arguments",
+      "result": "Levels/_maxine_smoke/maxine_smoke_20260510T154547Z/maxine_smoke_prefab_instantiation.prefab"
     }
   ],
   "component_binding_checks": {
@@ -594,7 +668,7 @@
       "status": "pass",
       "component_name": "Tag",
       "component_refs": [
-        "<EntityComponentIdPair via PythonProxyObject at 2415746995344>"
+        "<EntityComponentIdPair via PythonProxyObject at 1884866678992>"
       ],
       "type_id_status": "pass",
       "property_access": {
@@ -623,12 +697,12 @@
         "Cached World Transform"
       ],
       "property_count": 9,
-      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 2415592619712>"
+      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 1885001760448>"
     },
     "blocked_reason": ""
   },
   "actor_binding_checks": {
-    "status": "blocked_by_unsafe_operation",
+    "status": "pass",
     "product_evidence_status": "pass",
     "actor_product_ref": "pc/assets/characters/maxine/release/jack.actor",
     "component_type_id_status": "pass",
@@ -636,15 +710,80 @@
     "property_list_status": "pass",
     "property_access_status": "pass",
     "property_path_discovery": {
-      "status": "blocked_by_unsafe_operation",
+      "status": "pass",
+      "property_path": "Actor asset",
       "candidate_property_paths": [
         "Out of view|Bounding box configuration|Update item skip factor",
         "Actor asset"
       ],
-      "blocked_reason": "actor_asset_property_path_requires_pinning_before_set"
+      "discovery_source": "EditorActorComponent edit-context DataElement",
+      "blocked_reason": "",
+      "requires_settable_value": false
     },
-    "blocked_reason": "actor_asset_property_assignment_not_pinned_safe",
-    "message": "Actor component binding is verified through add/property discovery, but asset assignment is not counted as pass until a safe property path is pinned."
+    "actor_asset_assignment": {
+      "status": "pass",
+      "property_path": "Actor asset",
+      "property_path_discovery": {
+        "status": "pass",
+        "property_path": "Actor asset",
+        "candidate_property_paths": [
+          "Out of view|Bounding box configuration|Update item skip factor",
+          "Actor asset"
+        ],
+        "discovery_source": "EditorActorComponent edit-context DataElement",
+        "blocked_reason": "",
+        "requires_settable_value": true
+      },
+      "setter_call": "EditorComponentAPIBus.SetComponentProperty",
+      "setter_value_shape": "azlmbr.asset.AssetId",
+      "approved_product_ref": "pc/assets/characters/maxine/release/jack.actor",
+      "asset_resolution": {
+        "status": "pass",
+        "approved_product_ref": "pc/assets/characters/maxine/release/jack.actor",
+        "selected_asset_catalog_path": "assets/characters/maxine/release/jack.actor",
+        "asset_id": "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+        "attempts": [
+          {
+            "path": "pc/assets/characters/maxine/release/jack.actor",
+            "status": "unavailable_with_verified_reason",
+            "asset_id": "{00000000-0000-0000-0000-000000000000}:0"
+          },
+          {
+            "path": "assets/characters/maxine/release/jack.actor",
+            "status": "pass",
+            "asset_id": "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7"
+          }
+        ]
+      },
+      "old_value": "{00000000-0000-0000-0000-000000000000}:0",
+      "set_status": "pass",
+      "set_result": "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+      "readback": {
+        "status": "pass",
+        "matched_approved_product": true,
+        "value": "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+        "compare_status": "pass",
+        "compare_result": true
+      },
+      "component_validity": {
+        "status": "pass",
+        "checks": [
+          {
+            "call": "EditorComponentAPIBus.IsValid",
+            "status": "pass",
+            "value": true
+          },
+          {
+            "call": "EditorComponentAPIBus.IsComponentEnabled",
+            "status": "pass",
+            "value": true
+          }
+        ]
+      },
+      "blocked_reason": ""
+    },
+    "blocked_reason": "",
+    "message": "Actor component binding and approved Actor asset assignment passed."
   },
   "prefab_binding_checks": {
     "product_evidence_status": "pass",
@@ -668,18 +807,40 @@
       ],
       "discovery_source": "azlmbr.prefab module introspection"
     },
-    "status": "blocked_by_unsafe_operation",
-    "blocked_reason": "prefab_instantiation_call_not_pinned_safe",
-    "message": "Prefab/procprefab product evidence is present and prefab module imports, but live instantiation is not counted as pass until a safe Editor prefab call is pinned."
+    "status": "pass",
+    "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
+    "argument_value_shape": {
+      "prefab_path": "absolute temp-level .prefab path under Levels/_maxine_smoke",
+      "entity_ids": "list[azlmbr.entity.EntityId]",
+      "parent_entity_id": "azlmbr.entity.EntityId()",
+      "position": "azlmbr.math.Vector3"
+    },
+    "instantiation": {
+      "status": "pass",
+      "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
+      "prefab_source_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T154547Z/maxine_smoke_prefab_instantiation.prefab",
+      "created_entity_count": 1,
+      "container_entity": "[13434269580037555370]",
+      "created_entity_id": "[13434269580037555370]",
+      "owning_instance_prefab_path": "Levels/_maxine_smoke/maxine_smoke_20260510T154547Z/maxine_smoke_prefab_instantiation.prefab",
+      "owning_instance_prefab_path_status": "pass"
+    },
+    "procprefab_direct_load": {
+      "status": "unsupported_by_engine_binding",
+      "reason": "PrefabPublicRequestBus.InstantiatePrefab is documented for source .prefab paths; APB procprefab remains product evidence, not the selected Editor source-prefab argument."
+    }
   },
   "property_path_discovery": {
     "Actor": {
-      "status": "blocked_by_unsafe_operation",
+      "status": "pass",
+      "property_path": "Actor asset",
       "candidate_property_paths": [
         "Out of view|Bounding box configuration|Update item skip factor",
         "Actor asset"
       ],
-      "blocked_reason": "actor_asset_property_path_requires_pinning_before_set"
+      "discovery_source": "EditorActorComponent edit-context DataElement",
+      "blocked_reason": "",
+      "requires_settable_value": false
     }
   },
   "property_list_summary": {
@@ -697,7 +858,7 @@
         "Cached World Transform"
       ],
       "property_count": 9,
-      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 2415592619712>"
+      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 1885001760448>"
     },
     "Tag": {
       "status": "pass",
@@ -705,7 +866,7 @@
         "Tags"
       ],
       "property_count": 1,
-      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 2415746995584>"
+      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 1884866679232>"
     },
     "Actor": {
       "status": "pass",
@@ -735,22 +896,149 @@
         "Render options|Lighting Channels|Lighting Channels|Lighting Channel 2"
       ],
       "property_count": 23,
-      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 2415746995584>"
+      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 1884866679152>"
     }
   },
   "no_fake_success": true,
   "entity_smoke": {
     "status": "pass",
-    "entity_id": "[4099786522213775922]",
+    "entity_id": "[17845451883048926210]",
     "name": "maxine_smoke_entity"
   },
   "prefab_smoke": {
-    "status": "blocked_by_unsafe_operation",
-    "reason": "prefab_instantiation_call_not_pinned_safe"
+    "status": "pass",
+    "binding_evidence": {
+      "product_evidence_status": "pass",
+      "procprefab_product_ref": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "binding_surface_status": "pass",
+      "binding_surface": {
+        "status": "pass",
+        "candidate_calls": [
+          "LoadTemplate",
+          "PrefabFocusPublicRequestBus",
+          "PrefabGroup",
+          "PrefabGroupEventBus",
+          "PrefabGroupNotificationBus",
+          "PrefabGroupNotificationBusHandler",
+          "PrefabLoaderScriptingBus",
+          "PrefabOverridePublicRequestBus",
+          "PrefabPublicNotificationBus",
+          "PrefabPublicNotificationBusHandler",
+          "PrefabPublicRequestBus",
+          "PrefabSystemScriptingBus"
+        ],
+        "discovery_source": "azlmbr.prefab module introspection"
+      },
+      "status": "pass",
+      "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
+      "argument_value_shape": {
+        "prefab_path": "absolute temp-level .prefab path under Levels/_maxine_smoke",
+        "entity_ids": "list[azlmbr.entity.EntityId]",
+        "parent_entity_id": "azlmbr.entity.EntityId()",
+        "position": "azlmbr.math.Vector3"
+      },
+      "instantiation": {
+        "status": "pass",
+        "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
+        "prefab_source_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T154547Z/maxine_smoke_prefab_instantiation.prefab",
+        "created_entity_count": 1,
+        "container_entity": "[13434269580037555370]",
+        "created_entity_id": "[13434269580037555370]",
+        "owning_instance_prefab_path": "Levels/_maxine_smoke/maxine_smoke_20260510T154547Z/maxine_smoke_prefab_instantiation.prefab",
+        "owning_instance_prefab_path_status": "pass"
+      },
+      "procprefab_direct_load": {
+        "status": "unsupported_by_engine_binding",
+        "reason": "PrefabPublicRequestBus.InstantiatePrefab is documented for source .prefab paths; APB procprefab remains product evidence, not the selected Editor source-prefab argument."
+      }
+    }
   },
   "actor_smoke": {
-    "status": "blocked_by_unsafe_operation",
-    "reason": "actor_asset_property_assignment_not_pinned_safe"
+    "status": "pass",
+    "binding_evidence": {
+      "status": "pass",
+      "product_evidence_status": "pass",
+      "actor_product_ref": "pc/assets/characters/maxine/release/jack.actor",
+      "component_type_id_status": "pass",
+      "component_add_status": "pass",
+      "property_list_status": "pass",
+      "property_access_status": "pass",
+      "property_path_discovery": {
+        "status": "pass",
+        "property_path": "Actor asset",
+        "candidate_property_paths": [
+          "Out of view|Bounding box configuration|Update item skip factor",
+          "Actor asset"
+        ],
+        "discovery_source": "EditorActorComponent edit-context DataElement",
+        "blocked_reason": "",
+        "requires_settable_value": false
+      },
+      "actor_asset_assignment": {
+        "status": "pass",
+        "property_path": "Actor asset",
+        "property_path_discovery": {
+          "status": "pass",
+          "property_path": "Actor asset",
+          "candidate_property_paths": [
+            "Out of view|Bounding box configuration|Update item skip factor",
+            "Actor asset"
+          ],
+          "discovery_source": "EditorActorComponent edit-context DataElement",
+          "blocked_reason": "",
+          "requires_settable_value": true
+        },
+        "setter_call": "EditorComponentAPIBus.SetComponentProperty",
+        "setter_value_shape": "azlmbr.asset.AssetId",
+        "approved_product_ref": "pc/assets/characters/maxine/release/jack.actor",
+        "asset_resolution": {
+          "status": "pass",
+          "approved_product_ref": "pc/assets/characters/maxine/release/jack.actor",
+          "selected_asset_catalog_path": "assets/characters/maxine/release/jack.actor",
+          "asset_id": "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+          "attempts": [
+            {
+              "path": "pc/assets/characters/maxine/release/jack.actor",
+              "status": "unavailable_with_verified_reason",
+              "asset_id": "{00000000-0000-0000-0000-000000000000}:0"
+            },
+            {
+              "path": "assets/characters/maxine/release/jack.actor",
+              "status": "pass",
+              "asset_id": "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7"
+            }
+          ]
+        },
+        "old_value": "{00000000-0000-0000-0000-000000000000}:0",
+        "set_status": "pass",
+        "set_result": "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+        "readback": {
+          "status": "pass",
+          "matched_approved_product": true,
+          "value": "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+          "compare_status": "pass",
+          "compare_result": true
+        },
+        "component_validity": {
+          "status": "pass",
+          "checks": [
+            {
+              "call": "EditorComponentAPIBus.IsValid",
+              "status": "pass",
+              "value": true
+            },
+            {
+              "call": "EditorComponentAPIBus.IsComponentEnabled",
+              "status": "pass",
+              "value": true
+            }
+          ]
+        },
+        "blocked_reason": ""
+      },
+      "blocked_reason": "",
+      "message": "Actor component binding and approved Actor asset assignment passed."
+    }
   },
   "component_smoke": {
     "status": "pass",
@@ -783,22 +1071,22 @@
     {
       "id": "editor-smoke-report-template",
       "kind": "editor_smoke_report_template",
-      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T141031Z/editor_smoke_live_report.json"
+      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T154547Z/editor_smoke_live_report.json"
     },
     {
       "id": "editor-smoke-progress-log",
       "kind": "editor_smoke_progress_log",
-      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T141031Z/progress.jsonl"
+      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T154547Z/progress.jsonl"
     },
     {
       "id": "editor-smoke-live-report",
       "kind": "editor_smoke_report",
-      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T141031Z/editor_smoke_live_report.json"
+      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T154547Z/editor_smoke_live_report.json"
     },
     {
       "id": "apb-baseline",
       "kind": "asset_processor_batch_report",
-      "path": "artifacts/o3de-integration/apb/apb-live-20260510T140936Z/asset_processor_batch_live_report.json"
+      "path": "artifacts/o3de-integration/apb/apb-live-20260510T154454Z/asset_processor_batch_live_report.json"
     }
   ],
   "next_steps": [],
@@ -815,7 +1103,7 @@
         {
           "property_path": "Cached Parent Entity",
           "status": "pass",
-          "value": "[312439557414]"
+          "value": "[309738765005]"
         },
         {
           "property_path": "Values|Uniform Scale",
@@ -856,6 +1144,78 @@
         }
       ]
     }
+  },
+  "actor_asset_assignment": {
+    "status": "pass",
+    "property_path": "Actor asset",
+    "property_path_discovery": {
+      "status": "pass",
+      "property_path": "Actor asset",
+      "candidate_property_paths": [
+        "Out of view|Bounding box configuration|Update item skip factor",
+        "Actor asset"
+      ],
+      "discovery_source": "EditorActorComponent edit-context DataElement",
+      "blocked_reason": "",
+      "requires_settable_value": true
+    },
+    "setter_call": "EditorComponentAPIBus.SetComponentProperty",
+    "setter_value_shape": "azlmbr.asset.AssetId",
+    "approved_product_ref": "pc/assets/characters/maxine/release/jack.actor",
+    "asset_resolution": {
+      "status": "pass",
+      "approved_product_ref": "pc/assets/characters/maxine/release/jack.actor",
+      "selected_asset_catalog_path": "assets/characters/maxine/release/jack.actor",
+      "asset_id": "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+      "attempts": [
+        {
+          "path": "pc/assets/characters/maxine/release/jack.actor",
+          "status": "unavailable_with_verified_reason",
+          "asset_id": "{00000000-0000-0000-0000-000000000000}:0"
+        },
+        {
+          "path": "assets/characters/maxine/release/jack.actor",
+          "status": "pass",
+          "asset_id": "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7"
+        }
+      ]
+    },
+    "old_value": "{00000000-0000-0000-0000-000000000000}:0",
+    "set_status": "pass",
+    "set_result": "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+    "readback": {
+      "status": "pass",
+      "matched_approved_product": true,
+      "value": "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+      "compare_status": "pass",
+      "compare_result": true
+    },
+    "component_validity": {
+      "status": "pass",
+      "checks": [
+        {
+          "call": "EditorComponentAPIBus.IsValid",
+          "status": "pass",
+          "value": true
+        },
+        {
+          "call": "EditorComponentAPIBus.IsComponentEnabled",
+          "status": "pass",
+          "value": true
+        }
+      ]
+    },
+    "blocked_reason": ""
+  },
+  "prefab_instantiation": {
+    "status": "pass",
+    "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
+    "prefab_source_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T154547Z/maxine_smoke_prefab_instantiation.prefab",
+    "created_entity_count": 1,
+    "container_entity": "[13434269580037555370]",
+    "created_entity_id": "[13434269580037555370]",
+    "owning_instance_prefab_path": "Levels/_maxine_smoke/maxine_smoke_20260510T154547Z/maxine_smoke_prefab_instantiation.prefab",
+    "owning_instance_prefab_path_status": "pass"
   },
   "timeout_stall": false,
   "process_cleanup": {

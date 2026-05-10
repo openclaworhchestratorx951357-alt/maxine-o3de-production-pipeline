@@ -29,7 +29,9 @@ DIAGNOSTIC_MODES = {
     "entity-minimal",
     "component-binding",
     "actor-binding",
+    "actor-asset-assignment",
     "prefab-binding",
+    "prefab-instantiation",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -134,7 +136,16 @@ def main() -> int:
     if env.get("MAXINE_ENABLE_RELEASE_PACKAGING") == "1":
         errors.append(MXN_PATH_UNSAFE)
         messages.append("Release packaging gate must remain disabled.")
-    needs_temp_level = diagnostic_mode in {"temp-level", "entity-minimal", "component-binding", "actor-binding", "prefab-binding", "full"}
+    needs_temp_level = diagnostic_mode in {
+        "temp-level",
+        "entity-minimal",
+        "component-binding",
+        "actor-binding",
+        "actor-asset-assignment",
+        "prefab-binding",
+        "prefab-instantiation",
+        "full",
+    }
     if needs_temp_level and not allow_temp_level:
         errors.append(MXN_PATH_UNSAFE)
         messages.append("Editor smoke requires explicit temp sandbox level permission.")
@@ -181,7 +192,15 @@ def main() -> int:
 
     entity_result: Dict[str, Any] = report.get("entity_smoke", {"status": "not_run"})
     entity_id_raw = None
-    if not errors and diagnostic_mode in {"entity-minimal", "component-binding", "actor-binding", "prefab-binding", "full"}:
+    if not errors and diagnostic_mode in {
+        "entity-minimal",
+        "component-binding",
+        "actor-binding",
+        "actor-asset-assignment",
+        "prefab-binding",
+        "prefab-instantiation",
+        "full",
+    }:
         _write_progress_marker(progress_log, "entity_create_started", "started", "Creating minimal temporary smoke entity.")
         entity_result, entity_id_raw = _try_create_smoke_entity_with_raw()
         _write_progress_marker(progress_log, "entity_create_returned", entity_result.get("status", "returned"), "Minimal temporary smoke entity call returned.")
@@ -201,7 +220,14 @@ def main() -> int:
             warnings.append("MXN_EDITOR_ENTITY_SMOKE_UNAVAILABLE")
             report["component_smoke"] = {"status": "unavailable", "reason": entity_result.get("reason", "")}
 
-    if not errors and diagnostic_mode in {"component-binding", "actor-binding", "prefab-binding", "full"}:
+    if not errors and diagnostic_mode in {
+        "component-binding",
+        "actor-binding",
+        "actor-asset-assignment",
+        "prefab-binding",
+        "prefab-instantiation",
+        "full",
+    }:
         binding_report = _run_binding_checks(
             entity_id_raw,
             entity_result,
@@ -441,20 +467,38 @@ def _run_binding_checks(
     else:
         result["component_binding_checks"] = _skipped_check("component-binding")
 
-    if diagnostic_mode in {"actor-binding", "full"}:
+    if diagnostic_mode in {"actor-binding", "actor-asset-assignment", "full"}:
         _write_progress_marker(progress_log, "actor_binding_started", "started", "Running actor component binding feasibility checks.")
-        actor_checks = _run_actor_binding_checks(entity_id, surface, result, safe_call_results, report)
+        actor_checks = _run_actor_binding_checks(
+            entity_id,
+            surface,
+            result,
+            safe_call_results,
+            report,
+            attempt_asset_assignment=diagnostic_mode in {"actor-asset-assignment", "full"},
+            progress_log=progress_log,
+        )
         result["actor_binding_checks"] = actor_checks
         result["actor_smoke"] = _smoke_from_binding_check(actor_checks)
+        if isinstance(actor_checks.get("actor_asset_assignment"), Mapping):
+            result["actor_asset_assignment"] = actor_checks["actor_asset_assignment"]
         _write_progress_marker(progress_log, "actor_binding_returned", str(actor_checks.get("status", "returned")), "Actor binding checks returned.")
     else:
         result["actor_binding_checks"] = _skipped_check("actor-binding")
 
-    if diagnostic_mode in {"prefab-binding", "full"}:
+    if diagnostic_mode in {"prefab-binding", "prefab-instantiation", "full"}:
         _write_progress_marker(progress_log, "prefab_binding_started", "started", "Running prefab/procprefab binding surface checks.")
-        prefab_checks = _run_prefab_binding_checks(report, safe_call_results)
+        prefab_checks = _run_prefab_binding_checks(
+            report,
+            safe_call_results,
+            entity_id=entity_id,
+            attempt_instantiation=diagnostic_mode in {"prefab-instantiation", "full"},
+            progress_log=progress_log,
+        )
         result["prefab_binding_checks"] = prefab_checks
         result["prefab_smoke"] = _smoke_from_binding_check(prefab_checks)
+        if isinstance(prefab_checks.get("instantiation"), Mapping):
+            result["prefab_instantiation"] = prefab_checks["instantiation"]
         _write_progress_marker(progress_log, "prefab_binding_returned", str(prefab_checks.get("status", "returned")), "Prefab binding checks returned.")
     else:
         result["prefab_binding_checks"] = _skipped_check("prefab-binding")
@@ -482,7 +526,9 @@ def _targeted_binding_blocker(report: Mapping[str, Any], diagnostic_mode: str) -
     target_fields = {
         "component-binding": "component_binding_checks",
         "actor-binding": "actor_binding_checks",
+        "actor-asset-assignment": "actor_binding_checks",
         "prefab-binding": "prefab_binding_checks",
+        "prefab-instantiation": "prefab_binding_checks",
     }
     field = target_fields.get(diagnostic_mode)
     if not field:
@@ -614,6 +660,9 @@ def _run_actor_binding_checks(
     binding_report: Dict[str, Any],
     safe_call_results: List[Dict[str, Any]],
     report: Mapping[str, Any],
+    *,
+    attempt_asset_assignment: bool,
+    progress_log: Path | None,
 ) -> Dict[str, Any]:
     actor_product = _product_ref(report, "actor")
     if not actor_product:
@@ -674,21 +723,132 @@ def _run_actor_binding_checks(
             "blocked_reason": "actor_component_add_not_verified",
             "property_path_discovery": binding_report["property_path_discovery"]["Actor"],
         }
+    assignment = _skipped_check("actor-asset-assignment")
+    if attempt_asset_assignment:
+        _write_progress_marker(progress_log, "actor_asset_assignment_started", "started", "Assigning approved Actor asset in temp level.")
+        assignment = _assign_actor_asset(
+            actor_component,
+            properties,
+            surface,
+            safe_call_results,
+            actor_product,
+        )
+        _write_progress_marker(
+            progress_log,
+            "actor_asset_assignment_returned",
+            str(assignment.get("status", "returned")),
+            "Actor asset assignment diagnostic returned.",
+        )
+
+    status = "pass"
+    blocked_reason = ""
+    message = "Actor component binding and property readback passed."
+    if attempt_asset_assignment:
+        if assignment.get("status") == "pass":
+            message = "Actor component binding and approved Actor asset assignment passed."
+        else:
+            status = str(assignment.get("status", "blocked_by_unsafe_operation"))
+            blocked_reason = str(
+                assignment.get("blocked_reason")
+                or assignment.get("unavailable_reason")
+                or assignment.get("message", "")
+            )
+            message = "Actor component binding passed, but Actor asset assignment did not pass."
+
     return {
-        "status": "blocked_by_unsafe_operation",
+        "status": status,
         "product_evidence_status": "pass",
         "actor_product_ref": actor_product,
         "component_type_id_status": "pass",
         "component_add_status": "pass",
-            "property_list_status": properties.get("status", "blocked_by_missing_binding"),
-            "property_access_status": property_access["Actor"].get("status", "blocked_by_missing_binding"),
-            "property_path_discovery": binding_report["property_path_discovery"]["Actor"],
-        "blocked_reason": "actor_asset_property_assignment_not_pinned_safe",
-        "message": "Actor component binding is verified through add/property discovery, but asset assignment is not counted as pass until a safe property path is pinned.",
+        "property_list_status": properties.get("status", "blocked_by_missing_binding"),
+        "property_access_status": property_access["Actor"].get("status", "blocked_by_missing_binding"),
+        "property_path_discovery": binding_report["property_path_discovery"]["Actor"],
+        "actor_asset_assignment": assignment,
+        "blocked_reason": blocked_reason,
+        "message": message,
     }
 
 
-def _run_prefab_binding_checks(report: Mapping[str, Any], safe_call_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+def _assign_actor_asset(
+    actor_component: Mapping[str, Any],
+    properties: Mapping[str, Any],
+    surface: Mapping[str, Any],
+    safe_call_results: List[Dict[str, Any]],
+    actor_product: str,
+) -> Dict[str, Any]:
+    property_discovery = _actor_property_discovery(properties, require_settable=True)
+    property_path = _select_actor_asset_property_path(property_discovery)
+    if not property_path:
+        return {
+            "status": "blocked_by_missing_binding",
+            "property_path_discovery": property_discovery,
+            "blocked_reason": "actor_asset_property_path_not_discovered",
+        }
+
+    asset_resolution = _resolve_asset_id(actor_product, safe_call_results)
+    asset_id = asset_resolution.get("asset_id_raw")
+    if asset_resolution.get("status") != "pass" or asset_id is None:
+        return {
+            "status": "blocked_by_missing_product_evidence",
+            "property_path": property_path,
+            "property_path_discovery": property_discovery,
+            "approved_product_ref": actor_product,
+            "asset_resolution": _public_asset_resolution(asset_resolution),
+            "blocked_reason": asset_resolution.get("blocked_reason", "actor_asset_catalog_id_not_found"),
+        }
+
+    component_ref = actor_component.get("component_ref")
+    if actor_component.get("status") != "pass" or component_ref is None:
+        return {
+            "status": "blocked_by_missing_binding",
+            "property_path": property_path,
+            "approved_product_ref": actor_product,
+            "blocked_reason": actor_component.get("blocked_reason", "actor_component_reference_not_available"),
+        }
+
+    old_status, old_value = _component_bus_call(surface, "GetComponentProperty", (component_ref, property_path), safe_call_results)
+    set_status, set_value = _set_component_property(surface, component_ref, property_path, asset_id, safe_call_results)
+    read_status, read_value = _component_bus_call(surface, "GetComponentProperty", (component_ref, property_path), safe_call_results)
+    compare_status, compare_value = _component_bus_call(surface, "CompareComponentProperty", (component_ref, property_path, asset_id), safe_call_results)
+    component_validity = _component_validity_checks(component_ref, surface, safe_call_results)
+    matched = compare_status == "pass" and bool(_unwrap_outcome(compare_value))
+    if not matched:
+        matched = _asset_ids_match(read_value, asset_id)
+
+    readback = {
+        "status": "pass" if read_status == "pass" and matched else "fail",
+        "matched_approved_product": bool(matched),
+        "value": _safe_serialize(_unwrap_outcome(read_value)),
+        "compare_status": compare_status,
+        "compare_result": bool(_unwrap_outcome(compare_value)) if compare_status == "pass" else False,
+    }
+    status = "pass" if set_status == "pass" and readback["status"] == "pass" else "fail"
+    return {
+        "status": status,
+        "property_path": property_path,
+        "property_path_discovery": property_discovery,
+        "setter_call": "EditorComponentAPIBus.SetComponentProperty",
+        "setter_value_shape": "azlmbr.asset.AssetId",
+        "approved_product_ref": actor_product,
+        "asset_resolution": _public_asset_resolution(asset_resolution),
+        "old_value": _safe_serialize(_unwrap_outcome(old_value)) if old_status == "pass" else "",
+        "set_status": set_status,
+        "set_result": _safe_serialize(_unwrap_outcome(set_value)),
+        "readback": readback,
+        "component_validity": component_validity,
+        "blocked_reason": "" if status == "pass" else "actor_asset_assignment_readback_mismatch",
+    }
+
+
+def _run_prefab_binding_checks(
+    report: Mapping[str, Any],
+    safe_call_results: List[Dict[str, Any]],
+    *,
+    entity_id: Any,
+    attempt_instantiation: bool,
+    progress_log: Path | None,
+) -> Dict[str, Any]:
     procprefab_product = _product_ref(report, "procprefab") or _product_ref(report, "prefab")
     if not procprefab_product:
         return {
@@ -709,11 +869,52 @@ def _run_prefab_binding_checks(report: Mapping[str, Any], safe_call_results: Lis
             "status": "unsupported_by_engine_binding",
             "blocked_reason": surface.get("blocked_reason", "prefab_instantiation_binding_not_available"),
         }
+    if not attempt_instantiation:
+        return {
+            **result,
+            "status": "pass",
+            "selected_call": "azlmbr.prefab surface discovery",
+            "message": "Prefab binding surface discovery passed; instantiation is covered by prefab-instantiation/full modes.",
+        }
+
+    _write_progress_marker(progress_log, "prefab_instantiation_started", "started", "Creating and instantiating a temp-level prefab.")
+    instantiation = _instantiate_temp_prefab(entity_id, safe_call_results)
+    _write_progress_marker(
+        progress_log,
+        "prefab_instantiation_returned",
+        str(instantiation.get("status", "returned")),
+        "Prefab instantiation diagnostic returned.",
+    )
+    if instantiation.get("status") == "pass":
+        return {
+            **result,
+            "status": "pass",
+            "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
+            "argument_value_shape": {
+                "prefab_path": "absolute temp-level .prefab path under Levels/_maxine_smoke",
+                "entity_ids": "list[azlmbr.entity.EntityId]",
+                "parent_entity_id": "azlmbr.entity.EntityId()",
+                "position": "azlmbr.math.Vector3",
+            },
+            "instantiation": instantiation,
+            "procprefab_direct_load": {
+                "status": "unsupported_by_engine_binding",
+                "reason": "PrefabPublicRequestBus.InstantiatePrefab is documented for source .prefab paths; APB procprefab remains product evidence, not the selected Editor source-prefab argument.",
+            },
+        }
     return {
         **result,
-        "status": "blocked_by_unsafe_operation",
-        "blocked_reason": "prefab_instantiation_call_not_pinned_safe",
-        "message": "Prefab/procprefab product evidence is present and prefab module imports, but live instantiation is not counted as pass until a safe Editor prefab call is pinned.",
+        "status": instantiation.get("status", "blocked_by_unsafe_operation"),
+        "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
+        "argument_value_shape": {
+            "prefab_path": "absolute temp-level .prefab path under Levels/_maxine_smoke",
+            "entity_ids": "list[azlmbr.entity.EntityId]",
+            "parent_entity_id": "azlmbr.entity.EntityId()",
+            "position": "azlmbr.math.Vector3",
+        },
+        "instantiation": instantiation,
+        "blocked_reason": instantiation.get("blocked_reason", "prefab_instantiation_failed"),
+        "message": "Prefab surface discovery passed, but temp-level prefab instantiation did not pass.",
     }
 
 
@@ -952,6 +1153,62 @@ def _component_bus_call(
         return "unsupported_by_engine_binding", None
 
 
+def _set_component_property(
+    surface: Mapping[str, Any],
+    component_ref: Any,
+    property_path: str,
+    value: Any,
+    safe_call_results: List[Dict[str, Any]],
+) -> Tuple[str, Any]:
+    bus = surface.get("bus")
+    editor = surface.get("editor")
+    call_name = "EditorComponentAPIBus.SetComponentProperty"
+    try:
+        result = editor.EditorComponentAPIBus(bus.Broadcast, "SetComponentProperty", component_ref, property_path, value)  # type: ignore[union-attr]
+        status = "pass"
+        if result is not None and hasattr(result, "IsSuccess"):
+            status = "pass" if result.IsSuccess() else "fail"
+        safe_call_results.append(
+            {
+                "call": call_name,
+                "status": status,
+                "args_shape": "3 arguments",
+                "property_path": property_path,
+                "value_shape": _value_shape(value),
+                "result": _safe_serialize(_unwrap_outcome(result)),
+            }
+        )
+        return status, result
+    except Exception as exc:
+        safe_call_results.append(
+            {
+                "call": call_name,
+                "status": "unsupported_by_engine_binding",
+                "args_shape": "3 arguments",
+                "property_path": property_path,
+                "value_shape": _value_shape(value),
+                "error": str(exc),
+            }
+        )
+        return "unsupported_by_engine_binding", None
+
+
+def _component_validity_checks(
+    component_ref: Any,
+    surface: Mapping[str, Any],
+    safe_call_results: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    checks: Dict[str, Any] = {"status": "unavailable_with_verified_reason", "checks": []}
+    observed_pass = False
+    for method in ("IsValid", "IsComponentEnabled"):
+        status, value = _component_bus_call(surface, method, (component_ref,), safe_call_results)
+        checks["checks"].append({"call": f"EditorComponentAPIBus.{method}", "status": status, "value": _safe_serialize(_unwrap_outcome(value))})
+        if status == "pass":
+            observed_pass = True
+    checks["status"] = "pass" if observed_pass else "unavailable_with_verified_reason"
+    return checks
+
+
 def _entity_type_candidates(surface: Mapping[str, Any]) -> List[Any]:
     candidates: List[Any] = []
     entity_module = surface.get("entity")
@@ -1011,24 +1268,278 @@ def _probe_prefab_surface(safe_call_results: List[Dict[str, Any]]) -> Dict[str, 
         }
 
 
+def _resolve_asset_id(actor_product: str, safe_call_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    try:
+        import azlmbr.asset as asset  # type: ignore
+        import azlmbr.bus as bus  # type: ignore
+        import azlmbr.math as math  # type: ignore
+    except Exception as exc:
+        return {
+            "status": "unsupported_by_engine_binding",
+            "approved_product_ref": actor_product,
+            "blocked_reason": "asset_catalog_binding_import_failed",
+            "error": str(exc),
+        }
+
+    candidates = _asset_catalog_path_candidates(actor_product)
+    attempts: List[Dict[str, Any]] = []
+    for candidate in candidates:
+        try:
+            asset_id = asset.AssetCatalogRequestBus(bus.Broadcast, "GetAssetIdByPath", candidate, math.Uuid(), False)
+            valid = _asset_id_valid(asset_id)
+            attempts.append({"path": candidate, "status": "pass" if valid else "unavailable_with_verified_reason", "asset_id": _safe_serialize(asset_id)})
+            safe_call_results.append(
+                {
+                    "call": "AssetCatalogRequestBus.GetAssetIdByPath",
+                    "status": "pass" if valid else "unavailable_with_verified_reason",
+                    "args_shape": "3 arguments",
+                    "asset_path": candidate,
+                    "result": _safe_serialize(asset_id),
+                }
+            )
+            if valid:
+                return {
+                    "status": "pass",
+                    "approved_product_ref": actor_product,
+                    "selected_asset_catalog_path": candidate,
+                    "asset_id": _safe_serialize(asset_id),
+                    "asset_id_raw": asset_id,
+                    "attempts": attempts,
+                }
+        except Exception as exc:
+            attempts.append({"path": candidate, "status": "unsupported_by_engine_binding", "error": str(exc)})
+            safe_call_results.append(
+                {
+                    "call": "AssetCatalogRequestBus.GetAssetIdByPath",
+                    "status": "unsupported_by_engine_binding",
+                    "args_shape": "3 arguments",
+                    "asset_path": candidate,
+                    "error": str(exc),
+                }
+            )
+    return {
+        "status": "blocked_by_missing_product_evidence",
+        "approved_product_ref": actor_product,
+        "blocked_reason": "actor_asset_catalog_id_not_found",
+        "attempts": attempts,
+    }
+
+
+def _asset_catalog_path_candidates(product_path: str) -> List[str]:
+    normalized = product_path.replace("\\", "/").strip()
+    candidates = [normalized]
+    if normalized.lower().startswith("pc/"):
+        candidates.append(normalized[3:])
+    if normalized.lower().startswith("cache/"):
+        without_cache = normalized.split("/", 2)
+        if len(without_cache) == 3:
+            candidates.append(without_cache[2])
+    lowered = [candidate.lower() for candidate in candidates]
+    return _unique([*candidates, *lowered])
+
+
+def _asset_id_valid(asset_id: Any) -> bool:
+    for method in ("is_valid", "IsValid"):
+        try:
+            if hasattr(asset_id, method):
+                return bool(getattr(asset_id, method)())
+        except Exception:
+            pass
+    serialized = str(_safe_serialize(asset_id)).strip().lower()
+    return bool(serialized and serialized not in {"0", "none", "{00000000-0000-0000-0000-000000000000}:0"})
+
+
+def _public_asset_resolution(asset_resolution: Mapping[str, Any]) -> Dict[str, Any]:
+    return {
+        key: value
+        for key, value in asset_resolution.items()
+        if key != "asset_id_raw"
+    }
+
+
+def _asset_ids_match(read_value: Any, expected_asset_id: Any) -> bool:
+    read_unwrapped = _unwrap_outcome(read_value)
+    expected = _safe_serialize(expected_asset_id)
+    observed = _safe_serialize(read_unwrapped)
+    if observed == expected:
+        return True
+    return str(observed).strip().lower() == str(expected).strip().lower()
+
+
+def _instantiate_temp_prefab(entity_id: Any, safe_call_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    if entity_id is None:
+        return {"status": "blocked_by_readiness", "blocked_reason": "entity_smoke_not_available"}
+    try:
+        import azlmbr.bus as bus  # type: ignore
+        import azlmbr.entity as entity  # type: ignore
+        import azlmbr.math as math  # type: ignore
+        import azlmbr.prefab as prefab  # type: ignore
+    except Exception as exc:
+        return {
+            "status": "unsupported_by_engine_binding",
+            "blocked_reason": "prefab_instantiation_import_failed",
+            "error": str(exc),
+        }
+
+    temp_level_path = os.environ.get("MAXINE_EDITOR_SMOKE_TEMP_LEVEL_PATH", "")
+    if not temp_level_path or not _temp_level_path_safe(temp_level_path):
+        return {
+            "status": "blocked_by_unsafe_operation",
+            "blocked_reason": "temp_level_path_not_safe_for_prefab_source",
+        }
+    prefab_source_path = Path(temp_level_path) / "maxine_smoke_prefab_instantiation.prefab"
+    if not _temp_level_path_safe(str(prefab_source_path)):
+        return {
+            "status": "blocked_by_unsafe_operation",
+            "blocked_reason": "prefab_source_path_outside_temp_level_root",
+        }
+
+    create_status, create_value = _prefab_bus_call(
+        prefab,
+        bus,
+        "CreatePrefabInMemory",
+        ([entity_id], str(prefab_source_path)),
+        safe_call_results,
+    )
+    if create_status != "pass":
+        return {
+            "status": create_status,
+            "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory",
+            "prefab_source_path_redacted": _redacted_project_temp_path(str(prefab_source_path)),
+            "blocked_reason": "prefab_create_in_memory_failed",
+            "result": _safe_serialize(_unwrap_outcome(create_value)),
+        }
+
+    instantiate_status, instantiate_value = _prefab_bus_call(
+        prefab,
+        bus,
+        "InstantiatePrefab",
+        (str(prefab_source_path), entity.EntityId(), math.Vector3(0.0, 0.0, 0.0)),
+        safe_call_results,
+    )
+    created_entity_id = _unwrap_outcome(instantiate_value)
+    if instantiate_status != "pass" or not _entity_id_valid(created_entity_id):
+        return {
+            "status": instantiate_status if instantiate_status != "pass" else "fail",
+            "selected_call": "PrefabPublicRequestBus.InstantiatePrefab",
+            "prefab_source_path_redacted": _redacted_project_temp_path(str(prefab_source_path)),
+            "blocked_reason": "prefab_instantiate_returned_no_container_entity",
+            "result": _safe_serialize(created_entity_id),
+        }
+
+    owning_status, owning_value = _prefab_bus_call(
+        prefab,
+        bus,
+        "GetOwningInstancePrefabPath",
+        (created_entity_id,),
+        safe_call_results,
+    )
+    return {
+        "status": "pass",
+        "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
+        "prefab_source_path_redacted": _redacted_project_temp_path(str(prefab_source_path)),
+        "created_entity_count": 1,
+        "container_entity": _safe_serialize(created_entity_id),
+        "created_entity_id": _safe_serialize(created_entity_id),
+        "owning_instance_prefab_path": _redacted_project_temp_path(str(_unwrap_outcome(owning_value))) if owning_status == "pass" else "",
+        "owning_instance_prefab_path_status": owning_status,
+    }
+
+
+def _prefab_bus_call(
+    prefab: Any,
+    bus: Any,
+    method: str,
+    args: Tuple[Any, ...],
+    safe_call_results: List[Dict[str, Any]],
+) -> Tuple[str, Any]:
+    call_name = f"PrefabPublicRequestBus.{method}"
+    try:
+        value = prefab.PrefabPublicRequestBus(bus.Broadcast, method, *args)
+        status = "pass" if _outcome_success(value) else "fail"
+        safe_call_results.append(
+            {
+                "call": call_name,
+                "status": status,
+                "args_shape": f"{len(args)} arguments",
+                "result": _safe_serialize(_unwrap_outcome(value)),
+            }
+        )
+        return status, value
+    except Exception as exc:
+        safe_call_results.append(
+            {
+                "call": call_name,
+                "status": "unsupported_by_engine_binding",
+                "args_shape": f"{len(args)} arguments",
+                "error": str(exc),
+            }
+        )
+        return "unsupported_by_engine_binding", None
+
+
+def _entity_id_valid(entity_id: Any) -> bool:
+    for method in ("IsValid", "is_valid"):
+        try:
+            if hasattr(entity_id, method):
+                return bool(getattr(entity_id, method)())
+        except Exception:
+            pass
+    serialized = str(_safe_serialize(entity_id)).strip()
+    return bool(serialized and serialized not in {"0", "EntityId()", "[0]", "None"})
+
+
 def _valid_component_type_id(type_id: Any) -> bool:
     serialized = str(_safe_serialize(type_id)).strip().lower()
     return bool(serialized and serialized not in {"0", "none", "{00000000-0000-0000-0000-000000000000}"})
 
 
-def _actor_property_discovery(properties: Mapping[str, Any]) -> Dict[str, Any]:
+def _actor_property_discovery(properties: Mapping[str, Any], *, require_settable: bool = False) -> Dict[str, Any]:
     values = [str(value) for value in properties.get("properties", [])] if isinstance(properties.get("properties"), list) else []
     asset_like = [value for value in values if "actor" in value.lower() or "asset" in value.lower()]
+    exact = [value for value in asset_like if value.strip().lower() == "actor asset"]
     if asset_like:
         return {
-            "status": "blocked_by_unsafe_operation",
+            "status": "pass" if exact else "blocked_by_unsafe_operation",
+            "property_path": exact[0] if exact else "",
             "candidate_property_paths": asset_like,
-            "blocked_reason": "actor_asset_property_path_requires_pinning_before_set",
+            "discovery_source": "EditorActorComponent edit-context DataElement",
+            "blocked_reason": "" if exact else "actor_asset_property_path_requires_pinning_before_set",
+            "requires_settable_value": require_settable,
         }
     return {
         "status": "blocked_by_missing_binding",
         "blocked_reason": "actor_asset_property_path_not_discovered",
     }
+
+
+def _select_actor_asset_property_path(discovery: Mapping[str, Any]) -> str:
+    explicit = str(discovery.get("property_path", "")).strip()
+    if explicit:
+        return explicit
+    candidates = discovery.get("candidate_property_paths", [])
+    if isinstance(candidates, list):
+        for candidate in candidates:
+            if str(candidate).strip().lower() == "actor asset":
+                return str(candidate).strip()
+    return ""
+
+
+def _value_shape(value: Any) -> str:
+    module = getattr(type(value), "__module__", "")
+    name = getattr(type(value), "__name__", type(value).__name__)
+    if module and module != "builtins":
+        return f"{module}.{name}"
+    return name
+
+
+def _redacted_project_temp_path(value: str) -> str:
+    normalized = value.replace("\\", "/")
+    marker = "/Levels/_maxine_smoke/"
+    index = normalized.lower().find(marker.lower())
+    if index >= 0:
+        return "Levels/_maxine_smoke/" + normalized[index + len(marker):]
+    return normalized
 
 
 def _product_ref(report: Mapping[str, Any], product_type: str) -> str:

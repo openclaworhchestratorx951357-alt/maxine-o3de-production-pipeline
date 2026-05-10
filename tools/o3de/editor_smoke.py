@@ -45,7 +45,9 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     "entity-minimal": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_entity_minimal_smoke.py",
     "component-binding": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_component_binding_smoke.py",
     "actor-binding": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_actor_binding_smoke.py",
+    "actor-asset-assignment": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_actor_asset_assignment_smoke.py",
     "prefab-binding": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_prefab_binding_smoke.py",
+    "prefab-instantiation": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_prefab_instantiation_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -113,7 +115,9 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
         targeted_binding_fields = {
             "component-binding": "component_binding_checks",
             "actor-binding": "actor_binding_checks",
+            "actor-asset-assignment": "actor_binding_checks",
             "prefab-binding": "prefab_binding_checks",
+            "prefab-instantiation": "prefab_binding_checks",
         }
         target_field = targeted_binding_fields.get(diagnostic_mode)
         if str(report.get("status", "")) == "pass" and target_field:
@@ -123,6 +127,40 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
                 result.add_error(
                     MXN_RUNTIME_SMOKE_FAIL,
                     f"{diagnostic_mode} cannot report pass unless {target_field} reports pass.",
+                )
+        if str(report.get("status", "")) == "pass" and diagnostic_mode in {"actor-asset-assignment", "full"}:
+            actor_checks = report.get("actor_binding_checks", {})
+            assignment = actor_checks.get("actor_asset_assignment", {}) if isinstance(actor_checks, Mapping) else {}
+            readback = assignment.get("readback", {}) if isinstance(assignment, Mapping) else {}
+            if (
+                not isinstance(assignment, Mapping)
+                or assignment.get("status") != "pass"
+                or not isinstance(readback, Mapping)
+                or readback.get("status") != "pass"
+                or readback.get("matched_approved_product") is not True
+            ):
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    "Actor asset assignment cannot report pass without verified approved-product readback.",
+                )
+        if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
+            prefab_checks = report.get("prefab_binding_checks", {})
+            instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
+            template_load = prefab_checks.get("template_load", {}) if isinstance(prefab_checks, Mapping) else {}
+            instantiation_pass = (
+                isinstance(instantiation, Mapping)
+                and instantiation.get("status") == "pass"
+                and int(instantiation.get("created_entity_count", 0) or 0) > 0
+            )
+            template_load_pass = (
+                isinstance(template_load, Mapping)
+                and template_load.get("status") == "template_load_pass"
+                and str(template_load.get("template_id", "")).strip()
+            )
+            if not instantiation_pass and not template_load_pass:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    "Prefab instantiation cannot report pass without created-instance or verified template-load evidence.",
                 )
         for smoke_field, check_field in (
             ("actor_smoke", "actor_binding_checks"),
@@ -960,8 +998,12 @@ def _classify_stall_phase(marker: Mapping[str, Any]) -> str:
         return "component_binding_stall"
     if step == "actor_binding_started":
         return "actor_binding_stall"
+    if step == "actor_asset_assignment_started":
+        return "actor_asset_assignment_stall"
     if step == "prefab_binding_started":
         return "prefab_binding_stall"
+    if step == "prefab_instantiation_started":
+        return "prefab_instantiation_stall"
     if step == "report_write_started":
         return "report_write_stall"
     if status in {"started", "running"}:

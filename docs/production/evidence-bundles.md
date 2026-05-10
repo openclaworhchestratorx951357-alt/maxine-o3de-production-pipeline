@@ -150,7 +150,27 @@ Actor/prefab/component binding evidence now has dedicated fields:
 
 Actor or prefab smoke is not evidence of pass unless the matching binding check is also `pass`. When a live operation is not safe or not supported, the evidence must use a typed non-pass status such as `blocked_by_missing_binding`, `blocked_by_unsafe_operation`, or `unsupported_by_engine_binding`.
 
-The current sanitized full-pass Editor smoke example includes live binding evidence for Transform, Tag, and Actor TypeId discovery, Tag component add/property readback, Actor component add/property readback, prefab binding-surface discovery, and typed non-pass actor/prefab blockers. The Actor asset property setter and prefab/procprefab instantiation remain follow-up work; they are not counted as pass in the evidence bundle.
+The current sanitized full-pass Editor smoke example includes live binding evidence for Transform, Tag, and Actor TypeId discovery, Tag component add/property readback, Actor component add/property readback, Actor asset assignment, prefab binding-surface discovery, and safe temp-level prefab instantiation.
+
+Actor assignment evidence must include:
+
+- `actor_asset_assignment.status=pass`
+- `property_path=Actor asset`
+- `setter_call=EditorComponentAPIBus.SetComponentProperty`
+- `setter_value_shape=azlmbr.asset.AssetId`
+- trusted APB actor product evidence for `pc/assets/characters/maxine/release/jack.actor`
+- Asset Catalog resolution to the approved actor product
+- readback with `matched_approved_product=true`
+
+Prefab instantiation evidence must include:
+
+- trusted APB `procprefab` product evidence for `pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab`
+- `prefab_binding_checks.binding_surface_status=pass`
+- selected call evidence for `PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab`
+- a temp source `.prefab` path under `Levels/_maxine_smoke`
+- created entity/container evidence or verified template-load evidence
+
+Direct `.procprefab` product instantiation is not implied by source-prefab instantiation evidence. If a future report attempts direct `.procprefab` loading or instantiation, it must identify the exact binding call and value shape used and must keep unsupported or unsafe outcomes as typed non-pass states.
 
 ## Golden Project Fixture Evidence
 

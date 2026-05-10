@@ -97,7 +97,9 @@
         "entity-minimal",
         "component-binding",
         "actor-binding",
+        "actor-asset-assignment",
         "prefab-binding",
+        "prefab-instantiation",
         "full"
       ]
     },
@@ -335,6 +337,14 @@
       "additionalProperties": true
     },
     "prefab_binding_checks": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "actor_asset_assignment": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "prefab_instantiation": {
       "type": "object",
       "additionalProperties": true
     },
