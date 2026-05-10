@@ -68,7 +68,13 @@ python tools/o3de/audit_apb_product_evidence.py --project $env:O3DE_PROJECT_PATH
 
 The audit verifies `.pxmesh` through APB report or Asset Processor database evidence tied to the controlled release source. It may list filename-like or physics-like products for diagnostics, but those diagnostic matches do not satisfy release proof.
 
-As of the pxmesh resolution follow-up, `.pxmesh` is present for the controlled release source and the product matrix evidence is satisfied. The APB-only suite still fails closed because APB exits nonzero on an unrelated engine/Gem pass asset; that is recorded separately as `MXN_APB_PROCESS_EXIT_NONZERO`.
+As of the pxmesh resolution follow-up, `.pxmesh` is present for the controlled release source and the product matrix evidence is satisfied.
+
+The follow-up DiffuseProbeGrid slice fixed the separate `MXN_APB_PROCESS_EXIT_NONZERO` condition by removing unnecessary `DiffuseProbeGrid` enablement from the controlled project and regenerating project-specific registry metadata. The clean APB-only evidence is represented by:
+
+```text
+examples/private-runner/apb-live-full-golden-corpus.release-rigged.apb-clean.pass.example.json
+```
 
 ## Editor Smoke Evidence
 

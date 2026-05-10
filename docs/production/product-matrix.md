@@ -24,7 +24,9 @@ The pxmesh resolution follow-up produced trusted `.pxmesh` evidence from the Ass
 pc/assets/characters/maxine/release/r0-b_body.fbx.pxmesh
 ```
 
-That resolves the release-rigged product matrix evidence for `pxmesh`; all required release-rigged product types are now present with `cache_heuristic_used=false`. The full APB-only suite still fails because APB exits nonzero on an unrelated engine/Gem pass asset, which is classified separately as `MXN_APB_PROCESS_EXIT_NONZERO`.
+That resolves the release-rigged product matrix evidence for `pxmesh`; all required release-rigged product types are now present with `cache_heuristic_used=false`.
+
+The follow-up DiffuseProbeGrid slice removed the unnecessary direct `DiffuseProbeGrid` Gem enablement from the controlled `MAXINE_GoldenCorpus` project and regenerated project-specific CMake registry metadata. APB now exits `0`, the wrapper/suite pass, and the product matrix remains `pass` without weakening the release-rigged product contract.
 
 ## Cache Heuristic Policy
 
