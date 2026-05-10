@@ -304,3 +304,39 @@ python tools/o3de/audit_apb_product_evidence.py --project $env:O3DE_PROJECT_PATH
 ```
 
 Next action: fix or safely scope the unrelated DiffuseProbeGrid APB process failure so APB exits `0` while preserving the resolved release-rigged product evidence.
+
+## DiffuseProbeGrid Process Failure Follow-Up
+
+The DiffuseProbeGrid follow-up reproduced the nonzero APB process exit and confirmed the failed source was outside the controlled golden corpus:
+
+```text
+C:/src/o3de/Gems/DiffuseProbeGrid/Assets/Passes/DiffuseProbeGridQueryFullscreenWithAlbedo.pass
+```
+
+Root cause classification: project Gem enablement. `DiffuseProbeGrid` was directly enabled in the controlled `MAXINE_GoldenCorpus` project, but the release-rigged character APB evidence does not require diffuse probe grid assets. APB therefore scanned a non-golden engine Gem pass asset and failed during pass asset job creation.
+
+The controlled project was fixed by disabling only `DiffuseProbeGrid` with the O3DE CLI, then regenerating the project-specific CMake registry metadata for `C:\src\o3de\build\windows`. No O3DE engine source asset was patched, no APB process failure was suppressed, and no APB wrapper scoping change was needed.
+
+After the fix:
+
+- APB process exit code: `0`
+- wrapper exit code: `0`
+- APB-only suite exit code: `0`
+- product matrix status: `pass`
+- produced products: `azmodel`, `actor`, `procprefab`, `motion`, `motionset`, `animgraph`, `pxmesh`, `azmaterial`
+- missing products: none
+- pending products: none
+- `cache_heuristic_used=false`
+- `live_asset_processor_batch_execution=true`
+- `live_editor_execution=false`
+- `live_publication=false`
+- `release_packaging=false`
+
+Sanitized evidence:
+
+```text
+examples/private-runner/apb-live-full-golden-corpus.release-rigged.apb-clean.pass.example.json
+docs/production/diffuseprobegrid-apb-process-failure.md
+```
+
+Next action: prepare gated live Editor smoke on the private runner, still non-publishing and with release packaging disabled.

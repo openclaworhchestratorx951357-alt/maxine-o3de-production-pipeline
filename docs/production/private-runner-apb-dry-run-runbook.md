@@ -148,6 +148,7 @@ I_UNDERSTAND_THIS_REQUIRES_A_PRIVATE_SELF_HOSTED_WINDOWS_RUNNER
 - APB exits `0` but expected product types are missing from Asset Processor database evidence; this is `MXN_ASSET_PRODUCT_MISSING`, not release success.
 - Source settings can be present while product evidence is still missing. For release-rigged APB, `actor`, `motion`, `motionset`, `animgraph`, and physics-enabled `pxmesh` still require actual Asset Processor database evidence or an explicit reviewed waiver policy.
 - APB product evidence can be complete while the APB process exits nonzero because a non-golden asset failed. This is `MXN_APB_PROCESS_EXIT_NONZERO`; do not report the APB-only suite as pass until the process failure is fixed or safely scoped.
+- If `MAXINE_GoldenCorpus` directly enables an unrelated engine Gem such as `DiffuseProbeGrid`, APB may scan non-golden Gem assets and fail independently of the golden corpus product evidence. Remove only unnecessary Gems from the controlled project with the O3DE CLI, regenerate project-specific CMake registry metadata, and rerun APB; do not suppress APB exit `1` as success.
 
 ## Safety Checklist Before First Live APB
 
@@ -164,4 +165,4 @@ I_UNDERSTAND_THIS_REQUIRES_A_PRIVATE_SELF_HOSTED_WINDOWS_RUNNER
 - Live publication remains blocked.
 - Logs/artifacts contain no secrets.
 
-When every dry-run readiness check passes, the next slice can perform the first real APB-only private runner execution.
+When every APB-only readiness and live APB check passes with APB exit `0`, the next slice can prepare gated live Editor smoke. Keep publication and release packaging disabled.

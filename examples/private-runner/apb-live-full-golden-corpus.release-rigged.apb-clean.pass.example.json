@@ -1,0 +1,168 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "asset_processor_batch_golden_corpus_summary_v1",
+  "report_id": "apb-live-full-golden-corpus-release-rigged-apb-clean-pass-example",
+  "generated_at": "2026-05-10T02:20:42Z",
+  "mode": "local_asset_processor_batch",
+  "lane": "release_rigged",
+  "status": "pass",
+  "integration_enabled": true,
+  "integration_executed": true,
+  "strict_integration": true,
+  "live_asset_processor_batch_execution": true,
+  "live_editor_execution": false,
+  "live_publication": false,
+  "release_packaging": false,
+  "golden_project_fixture_ref": "examples/o3de-golden-project/maxine-golden-project.fixture.json",
+  "engine_root_redacted": "C:/src/o3de",
+  "project_path_redacted": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+  "project_name": "MAXINE_GoldenCorpus",
+  "apb_executable_redacted": "C:/src/o3de/build/windows/bin/profile/AssetProcessorBatch.exe",
+  "command": {
+    "argv": [
+      "C:/src/o3de/build/windows/bin/profile/AssetProcessorBatch.exe",
+      "--project-path",
+      "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+      "--platform",
+      "pc"
+    ],
+    "exit_code": 0,
+    "timeout_seconds": 1800,
+    "timed_out": false
+  },
+  "logs": {
+    "stdout_log_ref": "artifacts/o3de-integration/apb/apb-live-20260510T022005Z/stdout.txt",
+    "stderr_log_ref": "artifacts/o3de-integration/apb/apb-live-20260510T022005Z/stderr.txt",
+    "asset_processor_log_ref": ""
+  },
+  "apb_report_ref": "artifacts/o3de-integration/apb/apb-live-20260510T022005Z/asset_processor_batch_live_report.json",
+  "platform": "pc",
+  "diffuseprobegrid_result": {
+    "failure_reproduced": true,
+    "failing_asset_path": "C:/src/o3de/Gems/DiffuseProbeGrid/Assets/Passes/DiffuseProbeGridQueryFullscreenWithAlbedo.pass",
+    "root_cause_classification": "project_gem_enablement",
+    "directly_enabled_in_project_before_fix": true,
+    "directly_enabled_in_project_after_fix": false,
+    "project_gem_enablement_changed": true,
+    "cmake_project_registry_reconfigured": true,
+    "apb_scan_scope_changed": false,
+    "apb_wrapper_changed": false
+  },
+  "expected_products": [
+    "azmodel",
+    "actor",
+    "procprefab",
+    "motion",
+    "motionset",
+    "animgraph",
+    "pxmesh",
+    "azmaterial"
+  ],
+  "produced_products": [
+    {
+      "product_type": "azmodel",
+      "product_path": "pc/assets/characters/maxine/release/jack.fbx.azmodel",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "actor",
+      "product_path": "pc/assets/characters/maxine/release/jack.actor",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "procprefab",
+      "product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "motion",
+      "product_path": "pc/assets/characters/maxine/release/jack_death_fall_back_zup.motion",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "motionset",
+      "product_path": "pc/assets/characters/maxine/release/maxine.motionset",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "animgraph",
+      "product_path": "pc/assets/characters/maxine/release/maxine.animgraph",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "pxmesh",
+      "product_path": "pc/assets/characters/maxine/release/r0-b_body.fbx.pxmesh",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "azmaterial",
+      "product_path": "pc/assets/characters/maxine/release/maxine_physx_final_spherebot__dev_clay_17082521850862376549.fbx.azmaterial",
+      "platform": "pc",
+      "status": "ready",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    }
+  ],
+  "pending_assets": [],
+  "missing_products": [],
+  "failed_assets": [],
+  "non_golden_failures": [],
+  "product_matrix_status": "pass",
+  "cache_heuristic_used": false,
+  "errors": [],
+  "warnings": [],
+  "messages": [
+    "DiffuseProbeGrid was directly enabled in the controlled project but is not required for the MAXINE_GoldenCorpus release-rigged APB evidence contract.",
+    "After disabling DiffuseProbeGrid in MAXINE_GoldenCorpus and regenerating project-specific CMake registry metadata, APB exits 0 and the APB-only suite passes.",
+    "Live Editor smoke and publication remain blocked for future gated slices."
+  ],
+  "safety": {
+    "live_editor_execution": false,
+    "live_publication": false,
+    "release_packaging": false,
+    "asset_cache_deleted_by_codex": false,
+    "production_project_mutation": false
+  },
+  "evidence_refs": [
+    {
+      "id": "apb-clean-live-report",
+      "kind": "asset_processor_batch_live_report",
+      "path": "artifacts/o3de-integration/apb/apb-live-20260510T022005Z/asset_processor_batch_live_report.json"
+    },
+    {
+      "id": "product-evidence-audit-tool",
+      "kind": "apb_product_evidence_audit",
+      "path": "tools/o3de/audit_apb_product_evidence.py"
+    },
+    {
+      "id": "controlled-project-gem-backup",
+      "kind": "local_uncommitted_setup_artifact",
+      "path": "artifacts/o3de-integration/setup/diffuseprobegrid/MAXINE_GoldenCorpus.project.before-disable-diffuseprobegrid.20260509T211144.json"
+    }
+  ],
+  "next_steps": [
+    "Next slice can prepare live Editor smoke on the private runner, still gated and non-publishing.",
+    "Keep DiffuseProbeGrid out of the controlled MAXINE_GoldenCorpus project unless a future fixture explicitly needs diffuse probe grid assets."
+  ]
+}

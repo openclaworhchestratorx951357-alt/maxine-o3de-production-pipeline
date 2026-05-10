@@ -1,6 +1,17 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- Fix Non-Golden DiffuseProbeGrid APB Process Failure v1 is in progress:
+  - PR #112 is merged and its complete release-rigged product evidence is now the baseline
+  - reproduced the APB process failure: APB exited `1` with `MXN_APB_PROCESS_EXIT_NONZERO` on `C:/src/o3de/Gems/DiffuseProbeGrid/Assets/Passes/DiffuseProbeGridQueryFullscreenWithAlbedo.pass`
+  - root cause classification: `DiffuseProbeGrid` was directly enabled in the controlled `MAXINE_GoldenCorpus` project even though the release-rigged golden corpus evidence does not require it; the profile APB registry then scanned the non-golden engine Gem asset
+  - disabled `DiffuseProbeGrid` only in the controlled local `MAXINE_GoldenCorpus` project using the O3DE CLI and regenerated project-specific CMake registry metadata for `C:\src\o3de\build\windows`
+  - reran APB-only processing with `C:\src\o3de\build\windows\bin\profile\AssetProcessorBatch.exe`; APB exited `0`, wrapper exited `0`, and APB-only suite exited `0`
+  - product evidence remains complete: `azmodel`, `actor`, `procprefab`, `motion`, `motionset`, `animgraph`, `pxmesh`, and `azmaterial`; missing products: none; pending: none; `cache_heuristic_used=false`
+  - sanitized clean-pass evidence is represented by `examples/private-runner/apb-live-full-golden-corpus.release-rigged.apb-clean.pass.example.json`
+  - raw stdout/stderr/live reports and local project backup remain gitignored under `artifacts/o3de-integration/`
+  - live Editor execution, release packaging, publication, manual Asset Cache deletion, and production project mutation did not occur
+  - next action can prepare gated live Editor smoke on the private runner while keeping publication disabled
 - Resolve Golden Corpus Pxmesh Product Evidence v1 is in progress:
   - PR #111 is merged and its release-rigged source fixture/product evidence improvements are now the baseline
   - added `tools/o3de/audit_apb_product_evidence.py` to inspect APB report and Asset Processor database evidence for trusted `.pxmesh` products without using cache heuristics
