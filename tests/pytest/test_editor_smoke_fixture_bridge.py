@@ -121,7 +121,7 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
                 },
             },
         }
-    if diagnostic_mode in {"prefab-binding", "prefab-instantiation", "full"}:
+    if diagnostic_mode in {"prefab-binding", "prefab-instantiation", "procprefab-product-instantiation", "full"}:
         binding_payload["prefab_binding_checks"] = {
             "status": "pass",
             "product_evidence_status": "pass",
@@ -139,6 +139,14 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
                 "container_entity": "EntityId(2)",
             },
         }
+        if diagnostic_mode in {"procprefab-product-instantiation", "full"}:
+            semantics = _direct_procprefab_semantics_payload()
+            binding_payload["prefab_binding_checks"]["direct_procprefab_product_semantics"] = semantics
+            binding_payload["prefab_binding_checks"]["source_prefab_baseline_result"] = semantics[
+                "source_prefab_baseline_result"
+            ]
+            binding_payload["direct_procprefab_product_semantics"] = semantics
+            binding_payload["source_prefab_baseline_result"] = semantics["source_prefab_baseline_result"]
     payload.update(
         {
             "status": status,
@@ -147,7 +155,7 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
             "editor_python_bindings_available": True,
             "temp_level_path_redacted": "Levels/_maxine_smoke/maxine_smoke_test",
             "entity_smoke": {"status": "pass", "entity_id": "EntityId(1)", "name": "maxine_smoke_entity"},
-            "prefab_smoke": {"status": "pass"} if diagnostic_mode in {"prefab-binding", "prefab-instantiation", "full"} else {"status": "unsupported_by_engine_binding", "reason": "prefab instantiation binding not pinned in unit fixture"},
+            "prefab_smoke": {"status": "pass"} if diagnostic_mode in {"prefab-binding", "prefab-instantiation", "procprefab-product-instantiation", "full"} else {"status": "unsupported_by_engine_binding", "reason": "prefab instantiation binding not pinned in unit fixture"},
             "actor_smoke": {"status": "pass"} if diagnostic_mode in {"actor-binding", "actor-asset-assignment", "full"} else {"status": "blocked_by_missing_binding", "reason": "actor component type ID not pinned in unit fixture"},
             "component_smoke": {"status": "pass", "components": ["Transform"], "binding_evidence": "EditorComponentAPIBus"},
             "instantiated_entities": [{"name": "maxine_smoke_entity", "components": ["Transform"], "source": "editor_python"}],
@@ -230,6 +238,64 @@ def _binding_contract_payload() -> dict:
     }
 
 
+def _direct_procprefab_semantics_payload() -> dict:
+    return {
+        "status": "procprefab_product_not_editor_instantiable_with_current_binding",
+        "procprefab_product_evidence": {
+            "status": "pass",
+            "product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        },
+        "procprefab_product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "procprefab_asset_id_resolution": {
+            "status": "pass",
+            "selected_asset_catalog_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+            "asset_id": "{11111111-1111-4111-8111-111111111111}:3",
+        },
+        "procprefab_asset_id": "{11111111-1111-4111-8111-111111111111}:3",
+        "procprefab_asset_hint": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "procprefab_binding_surface": {
+            "status": "pass",
+            "candidate_calls": ["PrefabPublicRequestBus", "PrefabLoaderScriptingBus"],
+        },
+        "procprefab_selected_call": "PrefabPublicRequestBus.InstantiatePrefab",
+        "procprefab_argument_shape": {
+            "prefab_path": "APB procprefab product path or AssetCatalog-selected product path",
+            "parent_entity_id": "azlmbr.entity.EntityId",
+            "position": "azlmbr.math.Vector3",
+        },
+        "procprefab_direct_product_load_result": {
+            "status": "unsupported_by_engine_binding",
+            "selected_call": "PrefabLoaderScriptingBus.LoadTemplate",
+            "reason": "No verified direct product template-load result in fixture.",
+        },
+        "procprefab_direct_product_instantiation_result": {
+            "status": "procprefab_product_not_editor_instantiable_with_current_binding",
+            "selected_call": "PrefabPublicRequestBus.InstantiatePrefab",
+            "attempted_product_paths": [
+                "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+                "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+            ],
+            "created_entity_count": 0,
+            "reason": "Fixture pins the typed unsupported contract without claiming direct product instantiation.",
+        },
+        "procprefab_created_entity_evidence": {
+            "status": "not_created",
+            "created_entity_count": 0,
+        },
+        "source_prefab_baseline_result": {
+            "status": "pass",
+            "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
+            "created_entity_count": 1,
+            "container_entity": "EntityId(2)",
+        },
+        "direct_product_instantiation_claimed": False,
+        "direct_product_instantiation_supported": False,
+        "direct_product_instantiation_verified": False,
+        "unsupported_reason": "procprefab_product_not_editor_instantiable_with_current_binding",
+        "fake_success": False,
+    }
+
+
 def _fixture(name: str) -> dict:
     return load_json(CORPUS / name)
 
@@ -264,6 +330,14 @@ def test_editor_smoke_live_pass_example_schema_and_semantics_validate():
     assert report["actor_binding_checks"]["actor_asset_assignment"]["readback"]["matched_approved_product"] is True
     assert report["prefab_binding_checks"]["status"] == "pass"
     assert report["prefab_binding_checks"]["instantiation"]["status"] in {"pass", "template_load_pass"}
+    direct_semantics = report["direct_procprefab_product_semantics"]
+    assert direct_semantics["procprefab_product_evidence"]["status"] == "pass"
+    assert direct_semantics["source_prefab_baseline_result"]["status"] == "pass"
+    assert direct_semantics["direct_product_instantiation_claimed"] is True
+    assert direct_semantics["direct_product_instantiation_supported"] is True
+    assert direct_semantics["direct_product_instantiation_verified"] is True
+    assert direct_semantics["procprefab_direct_product_instantiation_result"]["status"] == "pass"
+    assert direct_semantics["procprefab_direct_product_instantiation_result"]["created_entity_count"] > 0
 
 
 def test_editor_smoke_rejects_actor_or_prefab_pass_without_binding_evidence():
@@ -319,6 +393,41 @@ def test_editor_smoke_rejects_prefab_instantiation_pass_without_created_or_loade
     assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
 
 
+def test_editor_smoke_allows_typed_direct_procprefab_unsupported_with_source_prefab_baseline():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report["diagnostic_mode"] = "procprefab-product-instantiation"
+    report["direct_procprefab_product_semantics"] = _direct_procprefab_semantics_payload()
+    report["source_prefab_baseline_result"] = report["direct_procprefab_product_semantics"][
+        "source_prefab_baseline_result"
+    ]
+    report["prefab_binding_checks"]["direct_procprefab_product_semantics"] = report[
+        "direct_procprefab_product_semantics"
+    ]
+    report["prefab_binding_checks"]["source_prefab_baseline_result"] = report["source_prefab_baseline_result"]
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "pass", result.messages
+
+
+def test_editor_smoke_rejects_direct_procprefab_claim_without_verified_product_instance():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report["diagnostic_mode"] = "procprefab-product-instantiation"
+    semantics = _direct_procprefab_semantics_payload()
+    semantics["direct_product_instantiation_claimed"] = True
+    semantics["direct_product_instantiation_verified"] = False
+    semantics["procprefab_direct_product_instantiation_result"]["created_entity_count"] = 0
+    report["direct_procprefab_product_semantics"] = semantics
+    report["source_prefab_baseline_result"] = semantics["source_prefab_baseline_result"]
+    report["prefab_binding_checks"]["direct_procprefab_product_semantics"] = semantics
+    report["prefab_binding_checks"]["source_prefab_baseline_result"] = semantics["source_prefab_baseline_result"]
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+
+
 def test_editor_smoke_live_pass_requires_no_fake_success_marker():
     report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
     report.pop("no_fake_success", None)
@@ -336,6 +445,7 @@ def test_editor_smoke_binding_diagnostic_modes_route_to_target_scripts(tmp_path)
         "prefab-binding": "editor_prefab_binding_smoke.py",
         "actor-asset-assignment": "editor_actor_asset_assignment_smoke.py",
         "prefab-instantiation": "editor_prefab_instantiation_smoke.py",
+        "procprefab-product-instantiation": "editor_procprefab_product_instantiation_smoke.py",
     }
 
     for mode, script_name in expected_scripts.items():

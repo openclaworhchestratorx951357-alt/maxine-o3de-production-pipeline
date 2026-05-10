@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
   "report_type": "editor_smoke_fixture_bridge_v1",
-  "report_id": "editor-smoke-20260510T154547Z",
-  "generated_at": "2026-05-10T15:46:02Z",
+  "report_id": "editor-smoke-20260510T165243Z",
+  "generated_at": "2026-05-10T16:52:58Z",
   "mode": "local_editor_python",
   "diagnostic_mode": "full",
   "status": "pass",
@@ -45,21 +45,21 @@
     "%REPO_ROOT%/tools/o3de/editor_python/maxine_package_prefab_smoke.py"
   ],
   "exit_code": 0,
-  "started_at": "2026-05-10T15:45:47Z",
-  "finished_at": "2026-05-10T15:46:02Z",
-  "duration_seconds": 15.094,
+  "started_at": "2026-05-10T16:52:43Z",
+  "finished_at": "2026-05-10T16:52:58Z",
+  "duration_seconds": 14.547,
   "timeout_seconds": 900,
   "timed_out": false,
-  "stdout_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T154547Z/stdout.txt",
-  "stderr_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T154547Z/stderr.txt",
-  "progress_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T154547Z/progress.jsonl",
+  "stdout_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T165243Z/stdout.txt",
+  "stderr_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T165243Z/stderr.txt",
+  "progress_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T165243Z/progress.jsonl",
   "last_progress_marker": {
-    "elapsed_seconds": 0.203,
+    "elapsed_seconds": 1.453,
     "message": "Requesting Editor exit without prompt.",
     "phase": "script",
     "status": "started",
     "step": "script_exit_requested",
-    "timestamp": "2026-05-10T15:46:00Z"
+    "timestamp": "2026-05-10T16:52:56Z"
   },
   "stall_phase": "",
   "editor_log_ref": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus/user/log/Editor.log",
@@ -77,7 +77,7 @@
     "never_use_production_levels": true,
     "allow_existing_level_readonly": false
   },
-  "temp_level_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T154547Z",
+  "temp_level_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z",
   "manifest_ref": "examples/manifests/release_rigged.pass.example.json",
   "evidence_bundle_ref": "examples/production/evidence_bundle.release_rigged.pass.example.json",
   "package_ref": "examples/sandbox/packages/release_rigged",
@@ -85,8 +85,8 @@
   "procprefab_ref": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
   "source_uuid": "7e3be43ca0c7512b9f3efa6c2a4dbdac",
   "product_resolver_report_ref": "apb_baseline.produced_products",
-  "asset_processor_batch_report_ref": "artifacts/o3de-integration/apb/apb-live-20260510T154454Z/asset_processor_batch_live_report.json",
-  "apb_baseline_ref": "artifacts/o3de-integration/apb/apb-live-20260510T154454Z/asset_processor_batch_live_report.json",
+  "asset_processor_batch_report_ref": "artifacts/o3de-integration/apb/apb-live-20260510T165200Z/asset_processor_batch_live_report.json",
+  "apb_baseline_ref": "artifacts/o3de-integration/apb/apb-live-20260510T165200Z/asset_processor_batch_live_report.json",
   "source_assets": [
     {
       "path": "Assets/Characters/MAXINE/release/maxine_release_source.fbx",
@@ -314,7 +314,7 @@
   "instantiated_entities": [
     {
       "name": "maxine_smoke_entity",
-      "entity_id": "[17845451883048926210]",
+      "entity_id": "[18182734125243990470]",
       "components": [
         "Transform"
       ],
@@ -420,7 +420,7 @@
       "call": "EditorComponentAPIBus.GetComponentOfType",
       "status": "pass",
       "args_shape": "2 arguments",
-      "result": "<EntityComponentIdPair via PythonProxyObject at 1885001760608>"
+      "result": "<EntityComponentIdPair via PythonProxyObject at 2303314968176>"
     },
     {
       "call": "EditorComponentAPIBus.BuildComponentPropertyList",
@@ -448,7 +448,7 @@
       "call": "EditorComponentAPIBus.GetComponentProperty",
       "status": "pass",
       "args_shape": "2 arguments",
-      "result": "[309738765005]"
+      "result": "[313341285727]"
     },
     {
       "call": "EditorComponentAPIBus.GetComponentProperty",
@@ -469,14 +469,14 @@
       "status": "pass",
       "args_shape": "2 arguments",
       "result": [
-        "<EntityComponentIdPair via PythonProxyObject at 1884866679152>"
+        "<EntityComponentIdPair via PythonProxyObject at 2303319691472>"
       ]
     },
     {
       "call": "EditorComponentAPIBus.GetComponentOfType",
       "status": "pass",
       "args_shape": "2 arguments",
-      "result": "<EntityComponentIdPair via PythonProxyObject at 1884866679152>"
+      "result": "<EntityComponentIdPair via PythonProxyObject at 2303319691472>"
     },
     {
       "call": "EditorComponentAPIBus.BuildComponentPropertyList",
@@ -507,14 +507,14 @@
       "status": "pass",
       "args_shape": "2 arguments",
       "result": [
-        "<EntityComponentIdPair via PythonProxyObject at 1884866679072>"
+        "<EntityComponentIdPair via PythonProxyObject at 2303319691552>"
       ]
     },
     {
       "call": "EditorComponentAPIBus.GetComponentOfType",
       "status": "pass",
       "args_shape": "2 arguments",
-      "result": "<EntityComponentIdPair via PythonProxyObject at 1884866679072>"
+      "result": "<EntityComponentIdPair via PythonProxyObject at 2303319691552>"
     },
     {
       "call": "EditorComponentAPIBus.BuildComponentPropertyList",
@@ -639,19 +639,51 @@
       "call": "PrefabPublicRequestBus.CreatePrefabInMemory",
       "status": "pass",
       "args_shape": "2 arguments",
-      "result": "[9370487353223403382]"
+      "result": "[15764762422356836460]"
     },
     {
       "call": "PrefabPublicRequestBus.InstantiatePrefab",
       "status": "pass",
       "args_shape": "3 arguments",
-      "result": "[13434269580037555370]"
+      "result": "[1998115198819181439]"
     },
     {
       "call": "PrefabPublicRequestBus.GetOwningInstancePrefabPath",
       "status": "pass",
       "args_shape": "1 arguments",
-      "result": "Levels/_maxine_smoke/maxine_smoke_20260510T154547Z/maxine_smoke_prefab_instantiation.prefab"
+      "result": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab"
+    },
+    {
+      "call": "AssetCatalogRequestBus.GetAssetIdByPath",
+      "status": "unavailable_with_verified_reason",
+      "args_shape": "3 arguments",
+      "asset_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "result": "{00000000-0000-0000-0000-000000000000}:0"
+    },
+    {
+      "call": "AssetCatalogRequestBus.GetAssetIdByPath",
+      "status": "pass",
+      "args_shape": "3 arguments",
+      "asset_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "result": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305"
+    },
+    {
+      "call": "PrefabPublicRequestBus.InstantiatePrefab",
+      "status": "fail",
+      "args_shape": "3 arguments",
+      "result": "Could not instantiate the prefab provided - internal error (A null instance is returned)."
+    },
+    {
+      "call": "PrefabPublicRequestBus.InstantiatePrefab",
+      "status": "pass",
+      "args_shape": "3 arguments",
+      "result": "[9061764444187779450]"
+    },
+    {
+      "call": "PrefabPublicRequestBus.GetOwningInstancePrefabPath",
+      "status": "pass",
+      "args_shape": "1 arguments",
+      "result": "assets/characters/maxine/release/maxine_idle_fbx.procprefab"
     }
   ],
   "component_binding_checks": {
@@ -668,7 +700,7 @@
       "status": "pass",
       "component_name": "Tag",
       "component_refs": [
-        "<EntityComponentIdPair via PythonProxyObject at 1884866678992>"
+        "<EntityComponentIdPair via PythonProxyObject at 2303319691312>"
       ],
       "type_id_status": "pass",
       "property_access": {
@@ -697,7 +729,7 @@
         "Cached World Transform"
       ],
       "property_count": 9,
-      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 1885001760448>"
+      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 2303314968256>"
     },
     "blocked_reason": ""
   },
@@ -818,16 +850,302 @@
     "instantiation": {
       "status": "pass",
       "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
-      "prefab_source_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T154547Z/maxine_smoke_prefab_instantiation.prefab",
+      "prefab_source_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab",
       "created_entity_count": 1,
-      "container_entity": "[13434269580037555370]",
-      "created_entity_id": "[13434269580037555370]",
-      "owning_instance_prefab_path": "Levels/_maxine_smoke/maxine_smoke_20260510T154547Z/maxine_smoke_prefab_instantiation.prefab",
+      "container_entity": "[1998115198819181439]",
+      "created_entity_id": "[1998115198819181439]",
+      "owning_instance_prefab_path": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab",
       "owning_instance_prefab_path_status": "pass"
     },
-    "procprefab_direct_load": {
-      "status": "unsupported_by_engine_binding",
-      "reason": "PrefabPublicRequestBus.InstantiatePrefab is documented for source .prefab paths; APB procprefab remains product evidence, not the selected Editor source-prefab argument."
+    "source_prefab_baseline_result": {
+      "status": "pass",
+      "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
+      "prefab_source_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab",
+      "created_entity_count": 1,
+      "container_entity": "[1998115198819181439]",
+      "created_entity_id": "[1998115198819181439]",
+      "owning_instance_prefab_path": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab",
+      "owning_instance_prefab_path_status": "pass"
+    },
+    "direct_procprefab_product_semantics": {
+      "status": "pass",
+      "procprefab_product_evidence": {
+        "status": "pass",
+        "product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "evidence_source": "APB product evidence"
+      },
+      "procprefab_product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "procprefab_asset_id_resolution": {
+        "status": "pass",
+        "approved_product_ref": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "selected_asset_catalog_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305",
+        "attempts": [
+          {
+            "path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+            "status": "unavailable_with_verified_reason",
+            "asset_id": "{00000000-0000-0000-0000-000000000000}:0"
+          },
+          {
+            "path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+            "status": "pass",
+            "asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305"
+          }
+        ]
+      },
+      "procprefab_asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305",
+      "procprefab_asset_hint": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "procprefab_catalog_lookup_result": {
+        "status": "pass",
+        "approved_product_ref": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "selected_asset_catalog_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305",
+        "attempts": [
+          {
+            "path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+            "status": "unavailable_with_verified_reason",
+            "asset_id": "{00000000-0000-0000-0000-000000000000}:0"
+          },
+          {
+            "path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+            "status": "pass",
+            "asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305"
+          }
+        ]
+      },
+      "procprefab_binding_surface": {
+        "status": "pass",
+        "candidate_calls": [
+          "LoadTemplate",
+          "PrefabFocusPublicRequestBus",
+          "PrefabGroup",
+          "PrefabGroupEventBus",
+          "PrefabGroupNotificationBus",
+          "PrefabGroupNotificationBusHandler",
+          "PrefabLoaderScriptingBus",
+          "PrefabOverridePublicRequestBus",
+          "PrefabPublicNotificationBus",
+          "PrefabPublicNotificationBusHandler",
+          "PrefabPublicRequestBus",
+          "PrefabSystemScriptingBus"
+        ],
+        "discovery_source": "azlmbr.prefab module introspection",
+        "source_evidence": {
+          "status": "pass",
+          "selected_editor_surface": "PrefabPublicRequestBus.InstantiatePrefab",
+          "source_refs": [
+            "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/UI/Prefab/PrefabSaveLoadHandler.cpp",
+            "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/UI/Prefab/PrefabIntegrationManager.cpp",
+            "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabPublicRequestBus.h"
+          ],
+          "conclusion": "Editor procedural-prefab UI paths pass product .procprefab paths into PrefabPublicInterface::InstantiatePrefab."
+        }
+      },
+      "procprefab_selected_call": "PrefabPublicRequestBus.InstantiatePrefab",
+      "procprefab_argument_shape": {
+        "prefab_path": "APB procprefab product path or AssetCatalog-selected product path",
+        "parent_entity_id": "azlmbr.entity.EntityId",
+        "position": "azlmbr.math.Vector3"
+      },
+      "direct_product_instantiation_claimed": true,
+      "direct_product_instantiation_supported": true,
+      "direct_product_instantiation_verified": true,
+      "fake_success": false,
+      "procprefab_direct_product_load_result": {
+        "status": "skipped_by_mode",
+        "selected_call": "azlmbr.prefab.LoadTemplate",
+        "reason": "Direct InstantiatePrefab probe is the selected bounded product-path check."
+      },
+      "procprefab_direct_product_instantiation_result": {
+        "status": "pass",
+        "selected_call": "PrefabPublicRequestBus.InstantiatePrefab",
+        "selected_product_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "argument_value_shape": {
+          "prefab_path": "direct APB procprefab product path",
+          "parent_entity_id": "azlmbr.entity.EntityId()",
+          "position": "azlmbr.math.Vector3"
+        },
+        "created_entity_count": 1,
+        "container_entity": "[9061764444187779450]",
+        "created_entity_id": "[9061764444187779450]",
+        "owning_instance_prefab_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "owning_instance_prefab_path_status": "pass",
+        "attempts": [
+          {
+            "path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+            "status": "fail",
+            "result": "Could not instantiate the prefab provided - internal error (A null instance is returned)."
+          },
+          {
+            "path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+            "status": "pass",
+            "result": "[9061764444187779450]"
+          }
+        ]
+      },
+      "procprefab_created_entity_evidence": {
+        "status": "pass",
+        "created_entity_count": 1,
+        "container_entity": "[9061764444187779450]",
+        "owning_instance_prefab_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab"
+      },
+      "unsupported_reason": "",
+      "blocked_reason": "",
+      "source_prefab_baseline_result": {
+        "status": "pass",
+        "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
+        "prefab_source_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab",
+        "created_entity_count": 1,
+        "container_entity": "[1998115198819181439]",
+        "created_entity_id": "[1998115198819181439]",
+        "owning_instance_prefab_path": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab",
+        "owning_instance_prefab_path_status": "pass"
+      }
+    }
+  },
+  "source_prefab_baseline_result": {
+    "status": "pass",
+    "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
+    "prefab_source_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab",
+    "created_entity_count": 1,
+    "container_entity": "[1998115198819181439]",
+    "created_entity_id": "[1998115198819181439]",
+    "owning_instance_prefab_path": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab",
+    "owning_instance_prefab_path_status": "pass"
+  },
+  "direct_procprefab_product_semantics": {
+    "status": "pass",
+    "procprefab_product_evidence": {
+      "status": "pass",
+      "product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "evidence_source": "APB product evidence"
+    },
+    "procprefab_product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+    "procprefab_asset_id_resolution": {
+      "status": "pass",
+      "approved_product_ref": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "selected_asset_catalog_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305",
+      "attempts": [
+        {
+          "path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+          "status": "unavailable_with_verified_reason",
+          "asset_id": "{00000000-0000-0000-0000-000000000000}:0"
+        },
+        {
+          "path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+          "status": "pass",
+          "asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305"
+        }
+      ]
+    },
+    "procprefab_asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305",
+    "procprefab_asset_hint": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+    "procprefab_catalog_lookup_result": {
+      "status": "pass",
+      "approved_product_ref": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "selected_asset_catalog_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305",
+      "attempts": [
+        {
+          "path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+          "status": "unavailable_with_verified_reason",
+          "asset_id": "{00000000-0000-0000-0000-000000000000}:0"
+        },
+        {
+          "path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+          "status": "pass",
+          "asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305"
+        }
+      ]
+    },
+    "procprefab_binding_surface": {
+      "status": "pass",
+      "candidate_calls": [
+        "LoadTemplate",
+        "PrefabFocusPublicRequestBus",
+        "PrefabGroup",
+        "PrefabGroupEventBus",
+        "PrefabGroupNotificationBus",
+        "PrefabGroupNotificationBusHandler",
+        "PrefabLoaderScriptingBus",
+        "PrefabOverridePublicRequestBus",
+        "PrefabPublicNotificationBus",
+        "PrefabPublicNotificationBusHandler",
+        "PrefabPublicRequestBus",
+        "PrefabSystemScriptingBus"
+      ],
+      "discovery_source": "azlmbr.prefab module introspection",
+      "source_evidence": {
+        "status": "pass",
+        "selected_editor_surface": "PrefabPublicRequestBus.InstantiatePrefab",
+        "source_refs": [
+          "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/UI/Prefab/PrefabSaveLoadHandler.cpp",
+          "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/UI/Prefab/PrefabIntegrationManager.cpp",
+          "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabPublicRequestBus.h"
+        ],
+        "conclusion": "Editor procedural-prefab UI paths pass product .procprefab paths into PrefabPublicInterface::InstantiatePrefab."
+      }
+    },
+    "procprefab_selected_call": "PrefabPublicRequestBus.InstantiatePrefab",
+    "procprefab_argument_shape": {
+      "prefab_path": "APB procprefab product path or AssetCatalog-selected product path",
+      "parent_entity_id": "azlmbr.entity.EntityId",
+      "position": "azlmbr.math.Vector3"
+    },
+    "direct_product_instantiation_claimed": true,
+    "direct_product_instantiation_supported": true,
+    "direct_product_instantiation_verified": true,
+    "fake_success": false,
+    "procprefab_direct_product_load_result": {
+      "status": "skipped_by_mode",
+      "selected_call": "azlmbr.prefab.LoadTemplate",
+      "reason": "Direct InstantiatePrefab probe is the selected bounded product-path check."
+    },
+    "procprefab_direct_product_instantiation_result": {
+      "status": "pass",
+      "selected_call": "PrefabPublicRequestBus.InstantiatePrefab",
+      "selected_product_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "argument_value_shape": {
+        "prefab_path": "direct APB procprefab product path",
+        "parent_entity_id": "azlmbr.entity.EntityId()",
+        "position": "azlmbr.math.Vector3"
+      },
+      "created_entity_count": 1,
+      "container_entity": "[9061764444187779450]",
+      "created_entity_id": "[9061764444187779450]",
+      "owning_instance_prefab_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "owning_instance_prefab_path_status": "pass",
+      "attempts": [
+        {
+          "path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+          "status": "fail",
+          "result": "Could not instantiate the prefab provided - internal error (A null instance is returned)."
+        },
+        {
+          "path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+          "status": "pass",
+          "result": "[9061764444187779450]"
+        }
+      ]
+    },
+    "procprefab_created_entity_evidence": {
+      "status": "pass",
+      "created_entity_count": 1,
+      "container_entity": "[9061764444187779450]",
+      "owning_instance_prefab_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab"
+    },
+    "unsupported_reason": "",
+    "blocked_reason": "",
+    "source_prefab_baseline_result": {
+      "status": "pass",
+      "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
+      "prefab_source_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab",
+      "created_entity_count": 1,
+      "container_entity": "[1998115198819181439]",
+      "created_entity_id": "[1998115198819181439]",
+      "owning_instance_prefab_path": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab",
+      "owning_instance_prefab_path_status": "pass"
     }
   },
   "property_path_discovery": {
@@ -858,7 +1176,7 @@
         "Cached World Transform"
       ],
       "property_count": 9,
-      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 1885001760448>"
+      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 2303314968256>"
     },
     "Tag": {
       "status": "pass",
@@ -866,7 +1184,7 @@
         "Tags"
       ],
       "property_count": 1,
-      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 1884866679232>"
+      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 2303319691552>"
     },
     "Actor": {
       "status": "pass",
@@ -896,13 +1214,13 @@
         "Render options|Lighting Channels|Lighting Channels|Lighting Channel 2"
       ],
       "property_count": 23,
-      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 1884866679152>"
+      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 2303319691312>"
     }
   },
   "no_fake_success": true,
   "entity_smoke": {
     "status": "pass",
-    "entity_id": "[17845451883048926210]",
+    "entity_id": "[18182734125243990470]",
     "name": "maxine_smoke_entity"
   },
   "prefab_smoke": {
@@ -940,16 +1258,157 @@
       "instantiation": {
         "status": "pass",
         "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
-        "prefab_source_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T154547Z/maxine_smoke_prefab_instantiation.prefab",
+        "prefab_source_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab",
         "created_entity_count": 1,
-        "container_entity": "[13434269580037555370]",
-        "created_entity_id": "[13434269580037555370]",
-        "owning_instance_prefab_path": "Levels/_maxine_smoke/maxine_smoke_20260510T154547Z/maxine_smoke_prefab_instantiation.prefab",
+        "container_entity": "[1998115198819181439]",
+        "created_entity_id": "[1998115198819181439]",
+        "owning_instance_prefab_path": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab",
         "owning_instance_prefab_path_status": "pass"
       },
-      "procprefab_direct_load": {
-        "status": "unsupported_by_engine_binding",
-        "reason": "PrefabPublicRequestBus.InstantiatePrefab is documented for source .prefab paths; APB procprefab remains product evidence, not the selected Editor source-prefab argument."
+      "source_prefab_baseline_result": {
+        "status": "pass",
+        "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
+        "prefab_source_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab",
+        "created_entity_count": 1,
+        "container_entity": "[1998115198819181439]",
+        "created_entity_id": "[1998115198819181439]",
+        "owning_instance_prefab_path": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab",
+        "owning_instance_prefab_path_status": "pass"
+      },
+      "direct_procprefab_product_semantics": {
+        "status": "pass",
+        "procprefab_product_evidence": {
+          "status": "pass",
+          "product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+          "evidence_source": "APB product evidence"
+        },
+        "procprefab_product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "procprefab_asset_id_resolution": {
+          "status": "pass",
+          "approved_product_ref": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+          "selected_asset_catalog_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+          "asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305",
+          "attempts": [
+            {
+              "path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+              "status": "unavailable_with_verified_reason",
+              "asset_id": "{00000000-0000-0000-0000-000000000000}:0"
+            },
+            {
+              "path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+              "status": "pass",
+              "asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305"
+            }
+          ]
+        },
+        "procprefab_asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305",
+        "procprefab_asset_hint": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "procprefab_catalog_lookup_result": {
+          "status": "pass",
+          "approved_product_ref": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+          "selected_asset_catalog_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+          "asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305",
+          "attempts": [
+            {
+              "path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+              "status": "unavailable_with_verified_reason",
+              "asset_id": "{00000000-0000-0000-0000-000000000000}:0"
+            },
+            {
+              "path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+              "status": "pass",
+              "asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305"
+            }
+          ]
+        },
+        "procprefab_binding_surface": {
+          "status": "pass",
+          "candidate_calls": [
+            "LoadTemplate",
+            "PrefabFocusPublicRequestBus",
+            "PrefabGroup",
+            "PrefabGroupEventBus",
+            "PrefabGroupNotificationBus",
+            "PrefabGroupNotificationBusHandler",
+            "PrefabLoaderScriptingBus",
+            "PrefabOverridePublicRequestBus",
+            "PrefabPublicNotificationBus",
+            "PrefabPublicNotificationBusHandler",
+            "PrefabPublicRequestBus",
+            "PrefabSystemScriptingBus"
+          ],
+          "discovery_source": "azlmbr.prefab module introspection",
+          "source_evidence": {
+            "status": "pass",
+            "selected_editor_surface": "PrefabPublicRequestBus.InstantiatePrefab",
+            "source_refs": [
+              "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/UI/Prefab/PrefabSaveLoadHandler.cpp",
+              "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/UI/Prefab/PrefabIntegrationManager.cpp",
+              "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabPublicRequestBus.h"
+            ],
+            "conclusion": "Editor procedural-prefab UI paths pass product .procprefab paths into PrefabPublicInterface::InstantiatePrefab."
+          }
+        },
+        "procprefab_selected_call": "PrefabPublicRequestBus.InstantiatePrefab",
+        "procprefab_argument_shape": {
+          "prefab_path": "APB procprefab product path or AssetCatalog-selected product path",
+          "parent_entity_id": "azlmbr.entity.EntityId",
+          "position": "azlmbr.math.Vector3"
+        },
+        "direct_product_instantiation_claimed": true,
+        "direct_product_instantiation_supported": true,
+        "direct_product_instantiation_verified": true,
+        "fake_success": false,
+        "procprefab_direct_product_load_result": {
+          "status": "skipped_by_mode",
+          "selected_call": "azlmbr.prefab.LoadTemplate",
+          "reason": "Direct InstantiatePrefab probe is the selected bounded product-path check."
+        },
+        "procprefab_direct_product_instantiation_result": {
+          "status": "pass",
+          "selected_call": "PrefabPublicRequestBus.InstantiatePrefab",
+          "selected_product_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+          "argument_value_shape": {
+            "prefab_path": "direct APB procprefab product path",
+            "parent_entity_id": "azlmbr.entity.EntityId()",
+            "position": "azlmbr.math.Vector3"
+          },
+          "created_entity_count": 1,
+          "container_entity": "[9061764444187779450]",
+          "created_entity_id": "[9061764444187779450]",
+          "owning_instance_prefab_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+          "owning_instance_prefab_path_status": "pass",
+          "attempts": [
+            {
+              "path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+              "status": "fail",
+              "result": "Could not instantiate the prefab provided - internal error (A null instance is returned)."
+            },
+            {
+              "path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+              "status": "pass",
+              "result": "[9061764444187779450]"
+            }
+          ]
+        },
+        "procprefab_created_entity_evidence": {
+          "status": "pass",
+          "created_entity_count": 1,
+          "container_entity": "[9061764444187779450]",
+          "owning_instance_prefab_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab"
+        },
+        "unsupported_reason": "",
+        "blocked_reason": "",
+        "source_prefab_baseline_result": {
+          "status": "pass",
+          "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
+          "prefab_source_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab",
+          "created_entity_count": 1,
+          "container_entity": "[1998115198819181439]",
+          "created_entity_id": "[1998115198819181439]",
+          "owning_instance_prefab_path": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab",
+          "owning_instance_prefab_path_status": "pass"
+        }
       }
     }
   },
@@ -1071,22 +1530,22 @@
     {
       "id": "editor-smoke-report-template",
       "kind": "editor_smoke_report_template",
-      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T154547Z/editor_smoke_live_report.json"
+      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T165243Z/editor_smoke_live_report.json"
     },
     {
       "id": "editor-smoke-progress-log",
       "kind": "editor_smoke_progress_log",
-      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T154547Z/progress.jsonl"
+      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T165243Z/progress.jsonl"
     },
     {
       "id": "editor-smoke-live-report",
       "kind": "editor_smoke_report",
-      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T154547Z/editor_smoke_live_report.json"
+      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T165243Z/editor_smoke_live_report.json"
     },
     {
       "id": "apb-baseline",
       "kind": "asset_processor_batch_report",
-      "path": "artifacts/o3de-integration/apb/apb-live-20260510T154454Z/asset_processor_batch_live_report.json"
+      "path": "artifacts/o3de-integration/apb/apb-live-20260510T165200Z/asset_processor_batch_live_report.json"
     }
   ],
   "next_steps": [],
@@ -1103,7 +1562,7 @@
         {
           "property_path": "Cached Parent Entity",
           "status": "pass",
-          "value": "[309738765005]"
+          "value": "[313341285727]"
         },
         {
           "property_path": "Values|Uniform Scale",
@@ -1210,11 +1669,11 @@
   "prefab_instantiation": {
     "status": "pass",
     "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
-    "prefab_source_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T154547Z/maxine_smoke_prefab_instantiation.prefab",
+    "prefab_source_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab",
     "created_entity_count": 1,
-    "container_entity": "[13434269580037555370]",
-    "created_entity_id": "[13434269580037555370]",
-    "owning_instance_prefab_path": "Levels/_maxine_smoke/maxine_smoke_20260510T154547Z/maxine_smoke_prefab_instantiation.prefab",
+    "container_entity": "[1998115198819181439]",
+    "created_entity_id": "[1998115198819181439]",
+    "owning_instance_prefab_path": "Levels/_maxine_smoke/maxine_smoke_20260510T165243Z/maxine_smoke_prefab_instantiation.prefab",
     "owning_instance_prefab_path_status": "pass"
   },
   "timeout_stall": false,
