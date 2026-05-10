@@ -1,19 +1,23 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Prepare Gated Live Editor Smoke on Private Runner v1 is in progress:
-  - PR #113 is merged and the clean APB-only release-rigged baseline is now on `main`
-  - created `codex/prepare-gated-live-editor-smoke-v1` from updated `main`
-  - added `tools/o3de/diagnose_editor_smoke_readiness.py` and `editor_smoke.py --check-local-readiness` to inspect Editor smoke prerequisites without running Editor
-  - preserved the APB-only baseline and product matrix requirements before Editor smoke
-  - verified the controlled project enables `EditorPythonBindings`
-  - verified `C:\src\o3de\build\windows\bin\profile\EditorPythonBindings.Editor.dll` exists
-  - no paired `Editor.exe` or `O3DEEditor.exe` currently exists under `C:\src\o3de\build\windows\bin\profile`
-  - attempted a bounded low-memory `Editor` target build; it exceeded the one-hour command window without producing the Editor executable, the build process tree was stopped, and raw logs remain gitignored under `artifacts/o3de-integration/setup/editor/`
-  - added manual private-runner workflow modes for Editor smoke readiness/live gates; live Editor modes now require both `run_live_o3de_commands=true` and `run_live_editor_commands=true`, run APB strict baseline first, and keep publication/release packaging disabled
-  - sanitized unavailable Editor readiness evidence is represented by `examples/editor-smoke/editor-smoke-live.release-rigged.unavailable.example.json`
+- Produce Project-Paired O3DE Editor Executable v1 is in progress:
+  - PR #114 is merged and the gated Editor smoke readiness tooling is now on `main`
+  - created `codex/produce-project-paired-editor-executable-v1` from updated `main`
+  - preserved the clean APB-only release-rigged baseline before building Editor; live APB exited `0`, APB-only suite exited `0`, product matrix status is `pass`, missing products are none, pending products are none, and `cache_heuristic_used=false`
+  - inspected the prior Editor build log; it had produced `EditorLib.dll` and several Editor/Gem modules and was still compiling when the one-hour bound ended, with no C1060, linker error, missing package, or target-not-found failure observed
+  - confirmed the generated Visual Studio target `Editor` is an application target outputting `C:\src\o3de\build\windows\bin\profile\Editor.exe` for profile config
+  - built only the `Editor` target with low-memory settings: `cmake --build C:\src\o3de\build\windows --target Editor --config profile --parallel 1 -- /m:1 /nodeReuse:false /p:CL_MPCount=1 /p:UseMultiToolTask=false /v:m`
+  - produced `C:\src\o3de\build\windows\bin\profile\Editor.exe`; strict Editor readiness now passes with provenance `engine_profile_bin`
+  - verified the controlled project still enables `EditorPythonBindings` and `C:\src\o3de\build\windows\bin\profile\EditorPythonBindings.Editor.dll` exists
+  - live Editor gates remained closed during readiness, so live Editor smoke was not run in this slice
+  - sanitized produced-Editor readiness evidence is represented by `examples/editor-smoke/editor-smoke-readiness.release-rigged.editor-produced.example.json`
   - live Editor execution, live publication, release packaging, Asset Cache deletion, and production project mutation did not occur
-  - next action is to finish producing or selecting the paired Editor executable, rerun strict Editor readiness, then run the gated live Editor Python smoke only if all gates pass
+- Prepare Gated Live Editor Smoke on Private Runner v1 completed in PR #114:
+  - added `tools/o3de/diagnose_editor_smoke_readiness.py` and `editor_smoke.py --check-local-readiness` to inspect Editor smoke prerequisites without running Editor
+  - added manual private-runner workflow modes for Editor smoke readiness/live gates; live Editor modes require both `run_live_o3de_commands=true` and `run_live_editor_commands=true`, run APB strict baseline first, and keep publication/release packaging disabled
+  - sanitized unavailable Editor readiness evidence is represented by `examples/editor-smoke/editor-smoke-live.release-rigged.unavailable.example.json`
+  - next action is to execute the gated live Editor Python smoke only after APB baseline and strict Editor readiness pass in the same session
 - Fix Non-Golden DiffuseProbeGrid APB Process Failure v1 is in progress:
   - PR #112 is merged and its complete release-rigged product evidence is now the baseline
   - reproduced the APB process failure: APB exited `1` with `MXN_APB_PROCESS_EXIT_NONZERO` on `C:/src/o3de/Gems/DiffuseProbeGrid/Assets/Passes/DiffuseProbeGridQueryFullscreenWithAlbedo.pass`

@@ -41,8 +41,31 @@ $env:MAXINE_ENABLE_RELEASE_PACKAGING = "0"
 
 The manual workflow adds `editor_smoke_readiness`, `editor_smoke_live_non_strict`, and `editor_smoke_live_strict` modes. Live modes require both `run_live_o3de_commands=true` and `run_live_editor_commands=true`, and they run the APB strict baseline before Editor smoke readiness.
 
-## Current Blocker
+## Editor Executable Handoff
 
-`EditorPythonBindings.Editor.dll` exists in the paired profile bin and the controlled project enables `EditorPythonBindings`, but no paired `Editor.exe` or `O3DEEditor.exe` exists under `C:/src/o3de/build/windows/bin/profile`.
+The follow-up Editor executable slice produced the paired profile Editor executable:
 
-A bounded low-memory `Editor` target build was attempted and exceeded the one-hour command window without producing the executable. The build process tree was stopped, raw logs remain gitignored under `artifacts/o3de-integration/setup/editor/`, and live Editor execution was not attempted.
+```text
+C:/src/o3de/build/windows/bin/profile/Editor.exe
+```
+
+Target discovery confirmed the generated Visual Studio target is `Editor`, with profile output under `C:/src/o3de/build/windows/bin/profile`. The successful bounded build command was:
+
+```powershell
+cmake --build C:/src/o3de/build/windows --target Editor --config profile --parallel 1 -- /m:1 /nodeReuse:false /p:CL_MPCount=1 /p:UseMultiToolTask=false /v:m
+```
+
+Strict readiness now passes when the executable is supplied explicitly:
+
+```powershell
+python tools/o3de/diagnose_editor_smoke_readiness.py --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --strict --json
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --check-local-readiness --strict --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de
+```
+
+Sanitized readiness evidence is:
+
+```text
+examples/editor-smoke/editor-smoke-readiness.release-rigged.editor-produced.example.json
+```
+
+Live Editor execution was still not attempted in the executable slice. The next slice should rerun the APB clean baseline and strict Editor readiness in the same session, then execute the gated live Editor Python smoke only with `MAXINE_ALLOW_LIVE_EDITOR_COMMANDS=1`, publication disabled, release packaging disabled, and the temp-level policy active.
