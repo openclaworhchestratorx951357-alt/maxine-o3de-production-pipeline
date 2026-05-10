@@ -88,6 +88,16 @@
         "unavailable"
       ]
     },
+    "diagnostic_mode": {
+      "type": "string",
+      "enum": [
+        "hello",
+        "product-evidence",
+        "temp-level",
+        "entity-minimal",
+        "full"
+      ]
+    },
     "integration_enabled": {
       "type": "boolean"
     },
@@ -140,6 +150,16 @@
       "type": "string"
     },
     "stderr_log_ref": {
+      "type": "string"
+    },
+    "progress_log_ref": {
+      "type": "string"
+    },
+    "last_progress_marker": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "stall_phase": {
       "type": "string"
     },
     "editor_log_ref": {
@@ -270,6 +290,23 @@
     },
     "cache_heuristic_used": {
       "type": "boolean"
+    },
+    "process_tree_cleanup": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "editor_command_working_directory": {
+      "type": "string"
+    },
+    "script_path_redacted": {
+      "type": "string"
+    },
+    "script_path_mode": {
+      "type": "string",
+      "enum": [
+        "relative",
+        "absolute"
+      ]
     },
     "errors": {
       "type": "array",

@@ -110,3 +110,35 @@ Safety outcome:
 - cache heuristic release proof: forbidden
 
 The next Editor smoke slice should diagnose why the in-Editor Python flow does not reach report completion after temp level creation/loading, then rerun the same gated wrapper. Do not promote this stalled result to success.
+
+## Temp-Level Stall Diagnostic
+
+The follow-up diagnostic slice added bounded Editor smoke modes and JSONL progress markers:
+
+```powershell
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --enable-editor-smoke --strict-integration --diagnostic-mode hello --timeout-seconds 180 --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --enable-editor-smoke --strict-integration --diagnostic-mode product-evidence --timeout-seconds 180 --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --enable-editor-smoke --strict-integration --diagnostic-mode temp-level --timeout-seconds 240 --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --enable-editor-smoke --strict-integration --diagnostic-mode entity-minimal --timeout-seconds 240 --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --enable-editor-smoke --strict-integration --diagnostic-mode full --timeout-seconds 300 --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de
+```
+
+Each live run writes `progress.jsonl` beside stdout, stderr, and the Editor smoke report. Wrapper markers cover launch, timeout, process-tree cleanup, report discovery, and final status. Script markers cover import, `azlmbr` import, product evidence loading, temp-level policy validation, level creation/opening, idle wait, entity creation, level save, report write, and exit request.
+
+The stalled PR #116 behavior was narrowed to `idle_wait_stall`: `create_level_no_prompt` returned successfully and wrote the temp level under `Levels/_maxine_smoke`, then `azlmbr.legacy.general.idle_wait_frames(5)` did not return while Editor was loading the temp map. The smoke now skips that wait by default and records `idle_wait_skipped`; set `MAXINE_EDITOR_SMOKE_ENABLE_IDLE_WAIT=1` only for targeted debugging of the old behavior.
+
+After the fix, the diagnostic sequence passed through `hello`, `product-evidence`, `temp-level`, and `entity-minimal`. Full gated Editor smoke also passed with `exit_code=0`, `live_editor_execution=true`, `live_publication=false`, `release_packaging=false`, `production_level_mutation=false`, and complete APB product evidence. Entity/component smoke passed; prefab and actor smoke remain explicitly `unavailable` until their component/binding surfaces are pinned.
+
+Sanitized pass evidence is:
+
+```text
+examples/editor-smoke/editor-smoke-live.release-rigged.pass.example.json
+```
+
+The include-editor-smoke integration suite path now passes after running the APB baseline first:
+
+```powershell
+python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --include-editor-smoke --golden-project-fixture examples/o3de-golden-project/maxine-golden-project.fixture.json --strict-integration
+```
+
+This remains a smoke milestone, not production readiness. Publication, release packaging, Asset Cache deletion, and production-level mutation remain blocked.

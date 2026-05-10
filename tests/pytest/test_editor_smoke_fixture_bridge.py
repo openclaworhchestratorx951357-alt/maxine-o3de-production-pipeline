@@ -134,6 +134,21 @@ def test_editor_smoke_report_schema_validates():
         assert result.status == "pass", result.messages
 
 
+def test_editor_smoke_live_pass_example_schema_and_semantics_validate():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    schema_result = schema_validate(report, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(report, strict=True)
+
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+    assert report["diagnostic_mode"] == "full"
+    assert report["progress_log_ref"].endswith("progress.jsonl")
+    assert report["entity_smoke"]["status"] == "pass"
+    assert report["live_publication"] is False
+    assert report["release_packaging"] is False
+    assert report["production_level_mutation"] is False
+
+
 def test_editor_smoke_fixture_corpus_passes():
     result = run_editor_smoke_corpus(CORPUS, mode="fixture")
 
@@ -288,6 +303,81 @@ def test_editor_smoke_live_runs_bounded_editor_and_consumes_smoke_report(tmp_pat
     assert result["stderr_log_ref"]
 
 
+def test_editor_smoke_diagnostic_hello_uses_hello_script_and_progress_log(tmp_path):
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        assert "editor_hello_smoke.py" in argv[-1].replace("\\", "/")
+        assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == "hello"
+        assert env["MAXINE_EDITOR_SMOKE_PROGRESS_LOG"].endswith("progress.jsonl")
+        return _write_in_editor_report(env)
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=_live_env(tmp_path),
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="hello",
+    )
+
+    assert result["status"] == "pass"
+    assert result["diagnostic_mode"] == "hello"
+    assert result["progress_log_ref"].endswith("progress.jsonl")
+
+
+def test_editor_smoke_timeout_classifies_last_script_progress_marker(tmp_path):
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        progress_path = Path(env["MAXINE_EDITOR_SMOKE_PROGRESS_LOG"])
+        progress_path.parent.mkdir(parents=True, exist_ok=True)
+        progress_path.write_text(
+            json.dumps(
+                {
+                    "timestamp": "2026-05-10T00:00:00Z",
+                    "phase": "script",
+                    "step": "create_level_started",
+                    "status": "started",
+                    "elapsed_seconds": 1.0,
+                    "temp_level_path": "Levels/_maxine_smoke/maxine_smoke_test",
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        raise subprocess.TimeoutExpired(cmd=argv, timeout=timeout_seconds)
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=_live_env(tmp_path),
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="temp-level",
+    )
+
+    assert result["status"] == "stalled"
+    assert result["stall_phase"] == "temp_level_create_stall"
+    assert result["last_progress_marker"]["step"] == "create_level_started"
+
+
+def test_editor_smoke_success_requires_runtime_report(tmp_path):
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        return subprocess.CompletedProcess(args=argv, returncode=0, stdout="", stderr="")
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=_live_env(tmp_path),
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="hello",
+    )
+
+    assert result["status"] == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result["errors"]
+
+
 def test_editor_smoke_cli_fixture_passes():
     result = subprocess.run(
         [sys.executable, str(SCRIPT), "--manifest", "examples/manifests/release_rigged.pass.example.json", "--mode", "fixture"],
@@ -404,6 +494,7 @@ def test_editor_python_create_temp_level_uses_o3de_no_prompt_template(tmp_path):
     )
 
     assert calls[0] == ("Prefabs/Default_Level.prefab", "_maxine_smoke/maxine_smoke_test", 1024, 1, 4096, False)
+    assert ("idle", 5) not in calls
 
 
 def test_editor_smoke_stalled_status_exits_nonzero():

@@ -1,0 +1,402 @@
+{
+  "schema_version": "1.0.0",
+  "report_type": "editor_smoke_fixture_bridge_v1",
+  "report_id": "editor-smoke-20260510T123403Z",
+  "generated_at": "2026-05-10T12:34:17Z",
+  "mode": "local_editor_python",
+  "diagnostic_mode": "full",
+  "status": "pass",
+  "integration_enabled": true,
+  "strict_integration": true,
+  "live_editor_execution": true,
+  "live_asset_processor_batch_execution": false,
+  "live_publication": false,
+  "release_packaging": false,
+  "production_level_mutation": false,
+  "editor_python_bindings_required": true,
+  "editor_python_bindings_available": true,
+  "o3de_engine_root_present": true,
+  "o3de_project_path_present": true,
+  "editor_executable": "C:\\src\\o3de\\build\\windows\\bin\\profile\\Editor.exe",
+  "editor_executable_provenance": "engine_profile_bin",
+  "engine_root_redacted": "C:/src/o3de",
+  "project_path_redacted": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+  "editor_executable_redacted": "C:/src/o3de/build/windows/bin/profile/Editor.exe",
+  "command_preview": [
+    "C:/src/o3de/build/windows/bin/profile/Editor.exe",
+    "-NullRenderer",
+    "-rhi=Null",
+    "--skipWelcomeScreenDialog",
+    "--autotest_mode",
+    "--project-path",
+    "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+    "--runpython",
+    "%REPO_ROOT%/tools/o3de/editor_python/maxine_package_prefab_smoke.py"
+  ],
+  "command_argv_redacted": [
+    "C:/src/o3de/build/windows/bin/profile/Editor.exe",
+    "-NullRenderer",
+    "-rhi=Null",
+    "--skipWelcomeScreenDialog",
+    "--autotest_mode",
+    "--project-path",
+    "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+    "--runpython",
+    "%REPO_ROOT%/tools/o3de/editor_python/maxine_package_prefab_smoke.py"
+  ],
+  "exit_code": 0,
+  "started_at": "2026-05-10T12:34:03Z",
+  "finished_at": "2026-05-10T12:34:17Z",
+  "duration_seconds": 14.125,
+  "timeout_seconds": 900,
+  "timed_out": false,
+  "stdout_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T123403Z/stdout.txt",
+  "stderr_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T123403Z/stderr.txt",
+  "progress_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T123403Z/progress.jsonl",
+  "last_progress_marker": {
+    "elapsed_seconds": 0.125,
+    "message": "Requesting Editor exit without prompt.",
+    "phase": "script",
+    "status": "started",
+    "step": "script_exit_requested",
+    "timestamp": "2026-05-10T12:34:15Z"
+  },
+  "stall_phase": "",
+  "editor_log_ref": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus/user/log/Editor.log",
+  "asset_processor_log_ref": "",
+  "platform": "pc",
+  "lane": "release_rigged",
+  "level_strategy": "temp_sandbox_level",
+  "temp_level_policy": {
+    "fixture_ref": "examples/o3de-golden-project/maxine-golden-project.fixture.json",
+    "present": true,
+    "valid": true,
+    "level_root": "Levels/_maxine_smoke",
+    "naming_prefix": "maxine_smoke_",
+    "cleanup_policy": "dry_run_only_no_deletion_in_this_slice_future_cleanup_requires_recorded_undo_plan",
+    "never_use_production_levels": true,
+    "allow_existing_level_readonly": false
+  },
+  "temp_level_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T123403Z",
+  "manifest_ref": "examples/manifests/release_rigged.pass.example.json",
+  "evidence_bundle_ref": "examples/production/evidence_bundle.release_rigged.pass.example.json",
+  "package_ref": "examples/sandbox/packages/release_rigged",
+  "prefab_ref": "Cache/pc/maxine_release.procprefab",
+  "procprefab_ref": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+  "source_uuid": "7e3be43ca0c7512b9f3efa6c2a4dbdac",
+  "product_resolver_report_ref": "apb_baseline.produced_products",
+  "asset_processor_batch_report_ref": "artifacts/o3de-integration/apb/apb-live-20260510T123310Z/asset_processor_batch_live_report.json",
+  "apb_baseline_ref": "artifacts/o3de-integration/apb/apb-live-20260510T123310Z/asset_processor_batch_live_report.json",
+  "source_assets": [
+    {
+      "path": "Assets/Characters/MAXINE/release/maxine_release_source.fbx",
+      "source_uuid": "7e3be43ca0c7512b9f3efa6c2a4dbdac"
+    }
+  ],
+  "expected_products": [
+    "actor",
+    "motion",
+    "motionset",
+    "animgraph",
+    "procprefab",
+    "pxmesh",
+    "azmaterial"
+  ],
+  "produced_products": [
+    {
+      "product_type": "azmodel",
+      "product_path": "pc/assets/characters/maxine/release/jack.fbx.azmodel",
+      "relative_product_path": "pc/assets/characters/maxine/release/jack.fbx.azmodel",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "7e3be43ca0c7512b9f3efa6c2a4dbdac",
+      "source_sub_id": "276490712",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "actor",
+      "product_path": "pc/assets/characters/maxine/release/jack.actor",
+      "relative_product_path": "pc/assets/characters/maxine/release/jack.actor",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "7e3be43ca0c7512b9f3efa6c2a4dbdac",
+      "source_sub_id": "-1857087049",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "procprefab",
+      "product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "relative_product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "794d15883c4157958a9aeebd6a663a60",
+      "source_sub_id": "292115205",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "motion",
+      "product_path": "pc/assets/characters/maxine/release/jack_death_fall_back_zup.motion",
+      "relative_product_path": "pc/assets/characters/maxine/release/jack_death_fall_back_zup.motion",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "794d15883c4157958a9aeebd6a663a60",
+      "source_sub_id": "14535648",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "motionset",
+      "product_path": "pc/assets/characters/maxine/release/maxine.motionset",
+      "relative_product_path": "pc/assets/characters/maxine/release/maxine.motionset",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "4ec40a0259875266ac14a96b8d42a711",
+      "source_sub_id": "0",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "animgraph",
+      "product_path": "pc/assets/characters/maxine/release/maxine.animgraph",
+      "relative_product_path": "pc/assets/characters/maxine/release/maxine.animgraph",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "93a2689fb38158eb8f37bbb2a21a4d67",
+      "source_sub_id": "0",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "pxmesh",
+      "product_path": "pc/assets/characters/maxine/release/r0-b_body.fbx.pxmesh",
+      "relative_product_path": "pc/assets/characters/maxine/release/r0-b_body.fbx.pxmesh",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "634bcaf8a44b56b0bc6f4468bdd8be67",
+      "source_sub_id": "1469432968",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    },
+    {
+      "product_type": "azmaterial",
+      "product_path": "pc/assets/characters/maxine/release/maxine_physx_final_spherebot__dev_clay_17082521850862376549.fbx.azmaterial",
+      "relative_product_path": "pc/assets/characters/maxine/release/maxine_physx_final_spherebot__dev_clay_17082521850862376549.fbx.azmaterial",
+      "platform": "pc",
+      "status": "ready",
+      "source_uuid": "634bcaf8a44b56b0bc6f4468bdd8be67",
+      "source_sub_id": "-998238619",
+      "produced_by_source_uuid": true,
+      "evidence_source": "asset_processor_database"
+    }
+  ],
+  "pending_assets": [],
+  "missing_products": [],
+  "product_evidence_summary": {
+    "status": "pass",
+    "produced_products": [
+      "azmodel",
+      "actor",
+      "procprefab",
+      "motion",
+      "motionset",
+      "animgraph",
+      "pxmesh",
+      "azmaterial"
+    ],
+    "missing_products": [],
+    "pending_products": [],
+    "cache_heuristic_used": false,
+    "products": [
+      {
+        "product_type": "azmodel",
+        "product_path": "pc/assets/characters/maxine/release/jack.fbx.azmodel",
+        "relative_product_path": "pc/assets/characters/maxine/release/jack.fbx.azmodel",
+        "platform": "pc",
+        "status": "ready",
+        "source_uuid": "7e3be43ca0c7512b9f3efa6c2a4dbdac",
+        "source_sub_id": "276490712",
+        "produced_by_source_uuid": true,
+        "evidence_source": "asset_processor_database"
+      },
+      {
+        "product_type": "actor",
+        "product_path": "pc/assets/characters/maxine/release/jack.actor",
+        "relative_product_path": "pc/assets/characters/maxine/release/jack.actor",
+        "platform": "pc",
+        "status": "ready",
+        "source_uuid": "7e3be43ca0c7512b9f3efa6c2a4dbdac",
+        "source_sub_id": "-1857087049",
+        "produced_by_source_uuid": true,
+        "evidence_source": "asset_processor_database"
+      },
+      {
+        "product_type": "procprefab",
+        "product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "relative_product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "platform": "pc",
+        "status": "ready",
+        "source_uuid": "794d15883c4157958a9aeebd6a663a60",
+        "source_sub_id": "292115205",
+        "produced_by_source_uuid": true,
+        "evidence_source": "asset_processor_database"
+      },
+      {
+        "product_type": "motion",
+        "product_path": "pc/assets/characters/maxine/release/jack_death_fall_back_zup.motion",
+        "relative_product_path": "pc/assets/characters/maxine/release/jack_death_fall_back_zup.motion",
+        "platform": "pc",
+        "status": "ready",
+        "source_uuid": "794d15883c4157958a9aeebd6a663a60",
+        "source_sub_id": "14535648",
+        "produced_by_source_uuid": true,
+        "evidence_source": "asset_processor_database"
+      },
+      {
+        "product_type": "motionset",
+        "product_path": "pc/assets/characters/maxine/release/maxine.motionset",
+        "relative_product_path": "pc/assets/characters/maxine/release/maxine.motionset",
+        "platform": "pc",
+        "status": "ready",
+        "source_uuid": "4ec40a0259875266ac14a96b8d42a711",
+        "source_sub_id": "0",
+        "produced_by_source_uuid": true,
+        "evidence_source": "asset_processor_database"
+      },
+      {
+        "product_type": "animgraph",
+        "product_path": "pc/assets/characters/maxine/release/maxine.animgraph",
+        "relative_product_path": "pc/assets/characters/maxine/release/maxine.animgraph",
+        "platform": "pc",
+        "status": "ready",
+        "source_uuid": "93a2689fb38158eb8f37bbb2a21a4d67",
+        "source_sub_id": "0",
+        "produced_by_source_uuid": true,
+        "evidence_source": "asset_processor_database"
+      },
+      {
+        "product_type": "pxmesh",
+        "product_path": "pc/assets/characters/maxine/release/r0-b_body.fbx.pxmesh",
+        "relative_product_path": "pc/assets/characters/maxine/release/r0-b_body.fbx.pxmesh",
+        "platform": "pc",
+        "status": "ready",
+        "source_uuid": "634bcaf8a44b56b0bc6f4468bdd8be67",
+        "source_sub_id": "1469432968",
+        "produced_by_source_uuid": true,
+        "evidence_source": "asset_processor_database"
+      },
+      {
+        "product_type": "azmaterial",
+        "product_path": "pc/assets/characters/maxine/release/maxine_physx_final_spherebot__dev_clay_17082521850862376549.fbx.azmaterial",
+        "relative_product_path": "pc/assets/characters/maxine/release/maxine_physx_final_spherebot__dev_clay_17082521850862376549.fbx.azmaterial",
+        "platform": "pc",
+        "status": "ready",
+        "source_uuid": "634bcaf8a44b56b0bc6f4468bdd8be67",
+        "source_sub_id": "-998238619",
+        "produced_by_source_uuid": true,
+        "evidence_source": "asset_processor_database"
+      }
+    ]
+  },
+  "entity_expectations": [
+    {
+      "name": "maxine_smoke_entity",
+      "required_components": [
+        "Transform"
+      ]
+    }
+  ],
+  "component_expectations": [
+    "Transform"
+  ],
+  "instantiated_entities": [
+    {
+      "name": "maxine_smoke_entity",
+      "entity_id": "[3239491416092924812]",
+      "components": [
+        "Transform"
+      ],
+      "source": "editor_python"
+    }
+  ],
+  "missing_components": [],
+  "screenshots": [],
+  "cache_heuristic_used": false,
+  "script_path_redacted": "%REPO_ROOT%/tools/o3de/editor_python/maxine_package_prefab_smoke.py",
+  "script_path_mode": "absolute",
+  "editor_command_working_directory": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+  "entity_smoke": {
+    "status": "pass",
+    "entity_id": "[3239491416092924812]",
+    "name": "maxine_smoke_entity"
+  },
+  "prefab_smoke": {
+    "status": "unavailable",
+    "reason": "Prefab instantiation is not attempted until component APIs are pinned."
+  },
+  "actor_smoke": {
+    "status": "unavailable",
+    "reason": "Actor component binding is not attempted until component type IDs are pinned."
+  },
+  "component_smoke": {
+    "status": "pass",
+    "components": [
+      "Transform"
+    ]
+  },
+  "errors": [],
+  "warnings": [],
+  "messages": [],
+  "runner_context": {
+    "os": "Windows-10-10.0.26200-SP0",
+    "runner_name": "",
+    "self_hosted_expected": true,
+    "private_runner_labels": []
+  },
+  "evidence_refs": [
+    {
+      "id": "golden-project-fixture",
+      "kind": "o3de_golden_project_fixture",
+      "path": "examples/o3de-golden-project/maxine-golden-project.fixture.json"
+    },
+    {
+      "id": "editor-python-smoke-script",
+      "kind": "editor_python_script",
+      "path": "tools/o3de/editor_python/maxine_package_prefab_smoke.py"
+    },
+    {
+      "id": "editor-smoke-report-template",
+      "kind": "editor_smoke_report_template",
+      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T123403Z/editor_smoke_live_report.json"
+    },
+    {
+      "id": "editor-smoke-progress-log",
+      "kind": "editor_smoke_progress_log",
+      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T123403Z/progress.jsonl"
+    },
+    {
+      "id": "editor-smoke-live-report",
+      "kind": "editor_smoke_report",
+      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T123403Z/editor_smoke_live_report.json"
+    },
+    {
+      "id": "apb-baseline",
+      "kind": "asset_processor_batch_report",
+      "path": "artifacts/o3de-integration/apb/apb-live-20260510T123310Z/asset_processor_batch_live_report.json"
+    }
+  ],
+  "next_steps": [],
+  "timeout_stall": false,
+  "process_cleanup": {
+    "attempted": false,
+    "method": "",
+    "return_code": null
+  },
+  "process_tree_cleanup": {
+    "attempted": false,
+    "method": "",
+    "return_code": null
+  }
+}
