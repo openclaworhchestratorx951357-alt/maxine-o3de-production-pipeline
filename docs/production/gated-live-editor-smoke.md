@@ -127,7 +127,7 @@ Each live run writes `progress.jsonl` beside stdout, stderr, and the Editor smok
 
 The stalled PR #116 behavior was narrowed to `idle_wait_stall`: `create_level_no_prompt` returned successfully and wrote the temp level under `Levels/_maxine_smoke`, then `azlmbr.legacy.general.idle_wait_frames(5)` did not return while Editor was loading the temp map. The smoke now skips that wait by default and records `idle_wait_skipped`; set `MAXINE_EDITOR_SMOKE_ENABLE_IDLE_WAIT=1` only for targeted debugging of the old behavior.
 
-After the fix, the diagnostic sequence passed through `hello`, `product-evidence`, `temp-level`, and `entity-minimal`. Full gated Editor smoke also passed with `exit_code=0`, `live_editor_execution=true`, `live_publication=false`, `release_packaging=false`, `production_level_mutation=false`, and complete APB product evidence. Entity/component smoke passed; prefab and actor smoke remain explicitly `unavailable` until their component/binding surfaces are pinned.
+After the fix, the diagnostic sequence passed through `hello`, `product-evidence`, `temp-level`, and `entity-minimal`. Full gated Editor smoke also passed with `exit_code=0`, `live_editor_execution=true`, `live_publication=false`, `release_packaging=false`, `production_level_mutation=false`, and complete APB product evidence. Entity/component smoke passed; prefab and actor smoke remained non-pass until their component/binding surfaces were pinned.
 
 Sanitized pass evidence is:
 
@@ -142,3 +142,25 @@ python tools/ci/run_o3de_integration_suite.py --enable-o3de-integration --includ
 ```
 
 This remains a smoke milestone, not production readiness. Publication, release packaging, Asset Cache deletion, and production-level mutation remain blocked.
+
+## Binding Diagnostics
+
+The actor/prefab/component hardening slice adds targeted Editor diagnostic modes:
+
+```powershell
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --enable-editor-smoke --strict-integration --diagnostic-mode component-binding --timeout-seconds 300 --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de --apb-report artifacts/o3de-integration/apb/<run>/asset_processor_batch_live_report.json
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --enable-editor-smoke --strict-integration --diagnostic-mode actor-binding --timeout-seconds 300 --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de --apb-report artifacts/o3de-integration/apb/<run>/asset_processor_batch_live_report.json
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --enable-editor-smoke --strict-integration --diagnostic-mode prefab-binding --timeout-seconds 300 --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de --apb-report artifacts/o3de-integration/apb/<run>/asset_processor_batch_live_report.json
+```
+
+These modes extend the report with `component_type_registry`, `binding_call_surface`, `safe_call_results`, `component_binding_checks`, `actor_binding_checks`, `prefab_binding_checks`, `property_path_discovery`, `property_list_summary`, and `no_fake_success`. Component checks use safe `EditorComponentAPIBus` discovery/probing inside the approved temp level. Actor checks require trusted APB `actor` product evidence before attempting component binding, and prefab checks require trusted `procprefab` product evidence before inspecting prefab surfaces.
+
+Typed non-pass statuses are intentional and reviewable: `skipped_by_mode`, `unavailable_with_verified_reason`, `blocked_by_readiness`, `blocked_by_missing_product_evidence`, `blocked_by_missing_binding`, `blocked_by_unsafe_operation`, and `unsupported_by_engine_binding`. A report cannot count actor or prefab smoke as `pass` unless the matching binding check is also `pass`. Generic unavailable-by-design actor/prefab placeholders are no longer valid live-pass evidence.
+
+Current live binding evidence pins these safe component IDs for the paired `C:/src/o3de` + `MAXINE_GoldenCorpus` rig:
+
+- Transform: `{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0}`
+- Tag: `{5272B56C-6CCC-4118-8539-D881F463ACD1}`
+- Actor: `{A863EE1B-8CFD-4EDD-BA0D-1CEC2879AD44}`
+
+The smoke now proves component binding by creating a temp entity, verifying the default Transform, adding a Tag component through `EditorComponentAPIBus.AddComponentsOfType`, building property lists, and reading safe component properties. Actor component binding is partially validated: APB actor product evidence exists, Actor TypeId discovery passes, Actor component add passes, property-list/readback passes, and `Actor asset` appears in the property surface; the asset assignment itself remains `blocked_by_unsafe_operation` until the setter value type is pinned. Prefab/procprefab binding is also partially validated: APB `procprefab` evidence exists and `azlmbr.prefab` exposes prefab buses/load surfaces, but live instantiation remains `blocked_by_unsafe_operation` until a safe call is pinned.

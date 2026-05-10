@@ -126,7 +126,7 @@ The temp-level stall diagnostic adds a progress log reference to live Editor evi
 - `progress_log_ref`: JSONL progress markers written beside the live report
 - `last_progress_marker`: the final script-side marker used to classify a stall
 - `stall_phase`: wrapper classification such as `runpython_not_invoked`, `azlmbr_import_stall`, `product_evidence_stall`, `temp_level_create_stall`, `idle_wait_stall`, `entity_create_stall`, or `report_write_stall`
-- `diagnostic_mode`: `hello`, `product-evidence`, `temp-level`, `entity-minimal`, or `full`
+- `diagnostic_mode`: `hello`, `product-evidence`, `temp-level`, `entity-minimal`, `component-binding`, `actor-binding`, `prefab-binding`, or `full`
 - `process_tree_cleanup`: timeout cleanup status when a process tree must be stopped
 
 The PR #116 stall was diagnosed as `idle_wait_stall`. The fixed full live smoke pass is represented by:
@@ -135,7 +135,22 @@ The PR #116 stall was diagnosed as `idle_wait_stall`. The fixed full live smoke 
 examples/editor-smoke/editor-smoke-live.release-rigged.pass.example.json
 ```
 
-That pass evidence records `live_editor_execution=true`, `live_publication=false`, `release_packaging=false`, `production_level_mutation=false`, `cache_heuristic_used=false`, and entity/component smoke pass. Prefab and actor smoke remain explicitly `unavailable` until their Editor binding surfaces are pinned; they are not silently treated as pass.
+That pass evidence records `live_editor_execution=true`, `live_publication=false`, `release_packaging=false`, `production_level_mutation=false`, `cache_heuristic_used=false`, and entity/component smoke pass.
+
+Actor/prefab/component binding evidence now has dedicated fields:
+
+- `component_type_registry`: safe discovered or pinned component type information, with the discovery source and unattended-temp-level safety.
+- `binding_call_surface`: Editor binding modules/buses and the validated call surface.
+- `safe_call_results`: per-call status for safe Editor Python binding probes.
+- `component_binding_checks`: entity naming, default Transform evidence, component add/probe, and property-list results.
+- `actor_binding_checks`: APB actor product prerequisite, Actor component type discovery, add/property results, and typed blockers.
+- `prefab_binding_checks`: APB procprefab prerequisite and prefab/procprefab binding or instantiation surface discovery.
+- `property_path_discovery` and `property_list_summary`: property-list/property-path evidence without assuming undocumented paths.
+- `no_fake_success`: live-pass reports must explicitly preserve the no-fake-success posture.
+
+Actor or prefab smoke is not evidence of pass unless the matching binding check is also `pass`. When a live operation is not safe or not supported, the evidence must use a typed non-pass status such as `blocked_by_missing_binding`, `blocked_by_unsafe_operation`, or `unsupported_by_engine_binding`.
+
+The current sanitized full-pass Editor smoke example includes live binding evidence for Transform, Tag, and Actor TypeId discovery, Tag component add/property readback, Actor component add/property readback, prefab binding-surface discovery, and typed non-pass actor/prefab blockers. The Actor asset property setter and prefab/procprefab instantiation remain follow-up work; they are not counted as pass in the evidence bundle.
 
 ## Golden Project Fixture Evidence
 

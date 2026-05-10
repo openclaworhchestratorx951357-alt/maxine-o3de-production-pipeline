@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
   "report_type": "editor_smoke_fixture_bridge_v1",
-  "report_id": "editor-smoke-20260510T123403Z",
-  "generated_at": "2026-05-10T12:34:17Z",
+  "report_id": "editor-smoke-20260510T141031Z",
+  "generated_at": "2026-05-10T14:10:47Z",
   "mode": "local_editor_python",
   "diagnostic_mode": "full",
   "status": "pass",
@@ -45,21 +45,21 @@
     "%REPO_ROOT%/tools/o3de/editor_python/maxine_package_prefab_smoke.py"
   ],
   "exit_code": 0,
-  "started_at": "2026-05-10T12:34:03Z",
-  "finished_at": "2026-05-10T12:34:17Z",
-  "duration_seconds": 14.125,
+  "started_at": "2026-05-10T14:10:31Z",
+  "finished_at": "2026-05-10T14:10:47Z",
+  "duration_seconds": 15.437,
   "timeout_seconds": 900,
   "timed_out": false,
-  "stdout_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T123403Z/stdout.txt",
-  "stderr_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T123403Z/stderr.txt",
-  "progress_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T123403Z/progress.jsonl",
+  "stdout_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T141031Z/stdout.txt",
+  "stderr_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T141031Z/stderr.txt",
+  "progress_log_ref": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T141031Z/progress.jsonl",
   "last_progress_marker": {
-    "elapsed_seconds": 0.125,
+    "elapsed_seconds": 0.156,
     "message": "Requesting Editor exit without prompt.",
     "phase": "script",
     "status": "started",
     "step": "script_exit_requested",
-    "timestamp": "2026-05-10T12:34:15Z"
+    "timestamp": "2026-05-10T14:10:44Z"
   },
   "stall_phase": "",
   "editor_log_ref": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus/user/log/Editor.log",
@@ -77,7 +77,7 @@
     "never_use_production_levels": true,
     "allow_existing_level_readonly": false
   },
-  "temp_level_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T123403Z",
+  "temp_level_path_redacted": "Levels/_maxine_smoke/maxine_smoke_20260510T141032Z",
   "manifest_ref": "examples/manifests/release_rigged.pass.example.json",
   "evidence_bundle_ref": "examples/production/evidence_bundle.release_rigged.pass.example.json",
   "package_ref": "examples/sandbox/packages/release_rigged",
@@ -85,8 +85,8 @@
   "procprefab_ref": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
   "source_uuid": "7e3be43ca0c7512b9f3efa6c2a4dbdac",
   "product_resolver_report_ref": "apb_baseline.produced_products",
-  "asset_processor_batch_report_ref": "artifacts/o3de-integration/apb/apb-live-20260510T123310Z/asset_processor_batch_live_report.json",
-  "apb_baseline_ref": "artifacts/o3de-integration/apb/apb-live-20260510T123310Z/asset_processor_batch_live_report.json",
+  "asset_processor_batch_report_ref": "artifacts/o3de-integration/apb/apb-live-20260510T140936Z/asset_processor_batch_live_report.json",
+  "apb_baseline_ref": "artifacts/o3de-integration/apb/apb-live-20260510T140936Z/asset_processor_batch_live_report.json",
   "source_assets": [
     {
       "path": "Assets/Characters/MAXINE/release/maxine_release_source.fbx",
@@ -314,7 +314,7 @@
   "instantiated_entities": [
     {
       "name": "maxine_smoke_entity",
-      "entity_id": "[3239491416092924812]",
+      "entity_id": "[4099786522213775922]",
       "components": [
         "Transform"
       ],
@@ -327,24 +327,438 @@
   "script_path_redacted": "%REPO_ROOT%/tools/o3de/editor_python/maxine_package_prefab_smoke.py",
   "script_path_mode": "absolute",
   "editor_command_working_directory": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus",
+  "component_type_registry": {
+    "Transform": {
+      "status": "pass",
+      "component_names": [
+        "Transform",
+        "Transform Component"
+      ],
+      "type_ids": [
+        "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0}"
+      ],
+      "discovery_source": "EditorComponentAPIBus.FindComponentTypeIdsByEntityType",
+      "safe_for_unattended_temp_level_smoke": true
+    },
+    "Tag": {
+      "status": "pass",
+      "component_names": [
+        "Tag"
+      ],
+      "type_ids": [
+        "{5272B56C-6CCC-4118-8539-D881F463ACD1}"
+      ],
+      "discovery_source": "EditorComponentAPIBus.FindComponentTypeIdsByEntityType",
+      "safe_for_unattended_temp_level_smoke": true
+    },
+    "Actor": {
+      "status": "pass",
+      "component_names": [
+        "Actor",
+        "Actor Component",
+        "EMotion FX Actor"
+      ],
+      "type_ids": [
+        "{A863EE1B-8CFD-4EDD-BA0D-1CEC2879AD44}"
+      ],
+      "discovery_source": "EditorComponentAPIBus.FindComponentTypeIdsByEntityType",
+      "safe_for_unattended_temp_level_smoke": true
+    }
+  },
+  "binding_call_surface": {
+    "EditorComponentAPIBus": {
+      "status": "pass",
+      "validated_calls": [
+        "FindComponentTypeIdsByEntityType",
+        "GetComponentOfType",
+        "BuildComponentPropertyList",
+        "GetComponentProperty",
+        "AddComponentsOfType"
+      ],
+      "blocked_calls": [
+        "FindComponentTypeIdsByEntityType"
+      ],
+      "safe_for_unattended_temp_level_smoke": true
+    }
+  },
+  "safe_call_results": [
+    {
+      "call": "EditorComponentAPIBus.FindComponentTypeIdsByEntityType",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": [
+        "{00000000-0000-0000-0000-000000000000}",
+        "{00000000-0000-0000-0000-000000000000}"
+      ]
+    },
+    {
+      "call": "EditorComponentAPIBus.FindComponentTypeIdsByEntityType",
+      "status": "unavailable_with_verified_reason",
+      "args_shape": "2 arguments",
+      "result": null
+    },
+    {
+      "call": "EditorComponentAPIBus.FindComponentTypeIdsByEntityType",
+      "status": "unavailable_with_verified_reason",
+      "args_shape": "2 arguments",
+      "result": null
+    },
+    {
+      "call": "EditorComponentAPIBus.FindComponentTypeIdsByEntityType",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": [
+        "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0}",
+        "{00000000-0000-0000-0000-000000000000}"
+      ]
+    },
+    {
+      "call": "EditorComponentAPIBus.GetComponentOfType",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": "<EntityComponentIdPair via PythonProxyObject at 2415592619872>"
+    },
+    {
+      "call": "EditorComponentAPIBus.BuildComponentPropertyList",
+      "status": "pass",
+      "args_shape": "1 arguments",
+      "result": [
+        "Parent activation",
+        "Cached Parent Entity",
+        "Values|Uniform Scale",
+        "Values|Translate",
+        "Values",
+        "Values|Rotate",
+        "Static",
+        "Parent entity",
+        "Cached World Transform"
+      ]
+    },
+    {
+      "call": "EditorComponentAPIBus.GetComponentProperty",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": 0
+    },
+    {
+      "call": "EditorComponentAPIBus.GetComponentProperty",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": "[312439557414]"
+    },
+    {
+      "call": "EditorComponentAPIBus.GetComponentProperty",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": 1.0
+    },
+    {
+      "call": "EditorComponentAPIBus.FindComponentTypeIdsByEntityType",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": [
+        "{5272B56C-6CCC-4118-8539-D881F463ACD1}"
+      ]
+    },
+    {
+      "call": "EditorComponentAPIBus.AddComponentsOfType",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": [
+        "<EntityComponentIdPair via PythonProxyObject at 2415746995504>"
+      ]
+    },
+    {
+      "call": "EditorComponentAPIBus.GetComponentOfType",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": "<EntityComponentIdPair via PythonProxyObject at 2415746995504>"
+    },
+    {
+      "call": "EditorComponentAPIBus.BuildComponentPropertyList",
+      "status": "pass",
+      "args_shape": "1 arguments",
+      "result": [
+        "Tags"
+      ]
+    },
+    {
+      "call": "EditorComponentAPIBus.GetComponentProperty",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": []
+    },
+    {
+      "call": "EditorComponentAPIBus.FindComponentTypeIdsByEntityType",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": [
+        "{A863EE1B-8CFD-4EDD-BA0D-1CEC2879AD44}",
+        "{00000000-0000-0000-0000-000000000000}",
+        "{00000000-0000-0000-0000-000000000000}"
+      ]
+    },
+    {
+      "call": "EditorComponentAPIBus.AddComponentsOfType",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": [
+        "<EntityComponentIdPair via PythonProxyObject at 2415746995424>"
+      ]
+    },
+    {
+      "call": "EditorComponentAPIBus.GetComponentOfType",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": "<EntityComponentIdPair via PythonProxyObject at 2415746995424>"
+    },
+    {
+      "call": "EditorComponentAPIBus.BuildComponentPropertyList",
+      "status": "pass",
+      "args_shape": "1 arguments",
+      "result": [
+        "Render options|Lighting Channels|Lighting Channels|Lighting Channel 3",
+        "Render options|Enable Raytracing",
+        "Out of view|Bounding box configuration|Expand by",
+        "Out of view|Bounding box configuration|Automatically update bounds?",
+        "Render options|Exclude from reflection cubemaps",
+        "Render options|Lighting Channels|Lighting Channels|Lighting Channel 4",
+        "Render options|Draw skeleton",
+        "Render options|Skinning method",
+        "Out of view|Force update joints",
+        "Out of view|Bounding box configuration|Update item skip factor",
+        "Render options|Lighting Channels",
+        "Render options|Lighting Channels|Lighting Channels|Lighting Channel 1",
+        "Attach To|Attachment type",
+        "Attach To|Target entity",
+        "Render options|Draw character",
+        "Render options|Draw bounds",
+        "Out of view|Bounding box configuration|Update frequency",
+        "Render options|Lighting Channels|Lighting Channels|Lighting Channel 0",
+        "Actor asset",
+        "Out of view|Bounding box configuration",
+        "Out of view|Bounding box configuration|Bounds type",
+        "Render options|Lighting Channels|Lighting Channels",
+        "Render options|Lighting Channels|Lighting Channels|Lighting Channel 2"
+      ]
+    },
+    {
+      "call": "EditorComponentAPIBus.GetComponentProperty",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": true
+    },
+    {
+      "call": "EditorComponentAPIBus.GetComponentProperty",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": true
+    },
+    {
+      "call": "EditorComponentAPIBus.GetComponentProperty",
+      "status": "pass",
+      "args_shape": "2 arguments",
+      "result": 25.0
+    },
+    {
+      "call": "import azlmbr.prefab",
+      "status": "pass",
+      "result": [
+        "LoadTemplate",
+        "PrefabFocusPublicRequestBus",
+        "PrefabGroup",
+        "PrefabGroupEventBus",
+        "PrefabGroupNotificationBus",
+        "PrefabGroupNotificationBusHandler",
+        "PrefabLoaderScriptingBus",
+        "PrefabOverridePublicRequestBus",
+        "PrefabPublicNotificationBus",
+        "PrefabPublicNotificationBusHandler",
+        "PrefabPublicRequestBus",
+        "PrefabSystemScriptingBus",
+        "SaveTemplateToString"
+      ]
+    }
+  ],
+  "component_binding_checks": {
+    "status": "pass",
+    "entity_name_verified": true,
+    "default_transform_verified": true,
+    "transform_type_id_status": "pass",
+    "transform_component_status": "pass",
+    "verified_components": [
+      "Transform",
+      "Tag"
+    ],
+    "added_component": {
+      "status": "pass",
+      "component_name": "Tag",
+      "component_refs": [
+        "<EntityComponentIdPair via PythonProxyObject at 2415746995344>"
+      ],
+      "type_id_status": "pass",
+      "property_access": {
+        "status": "pass",
+        "read_count": 1,
+        "reads": [
+          {
+            "property_path": "Tags",
+            "status": "pass",
+            "value": []
+          }
+        ]
+      }
+    },
+    "property_list_summary": {
+      "status": "pass",
+      "properties": [
+        "Parent activation",
+        "Cached Parent Entity",
+        "Values|Uniform Scale",
+        "Values|Translate",
+        "Values",
+        "Values|Rotate",
+        "Static",
+        "Parent entity",
+        "Cached World Transform"
+      ],
+      "property_count": 9,
+      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 2415592619712>"
+    },
+    "blocked_reason": ""
+  },
+  "actor_binding_checks": {
+    "status": "blocked_by_unsafe_operation",
+    "product_evidence_status": "pass",
+    "actor_product_ref": "pc/assets/characters/maxine/release/jack.actor",
+    "component_type_id_status": "pass",
+    "component_add_status": "pass",
+    "property_list_status": "pass",
+    "property_access_status": "pass",
+    "property_path_discovery": {
+      "status": "blocked_by_unsafe_operation",
+      "candidate_property_paths": [
+        "Out of view|Bounding box configuration|Update item skip factor",
+        "Actor asset"
+      ],
+      "blocked_reason": "actor_asset_property_path_requires_pinning_before_set"
+    },
+    "blocked_reason": "actor_asset_property_assignment_not_pinned_safe",
+    "message": "Actor component binding is verified through add/property discovery, but asset assignment is not counted as pass until a safe property path is pinned."
+  },
+  "prefab_binding_checks": {
+    "product_evidence_status": "pass",
+    "procprefab_product_ref": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+    "binding_surface_status": "pass",
+    "binding_surface": {
+      "status": "pass",
+      "candidate_calls": [
+        "LoadTemplate",
+        "PrefabFocusPublicRequestBus",
+        "PrefabGroup",
+        "PrefabGroupEventBus",
+        "PrefabGroupNotificationBus",
+        "PrefabGroupNotificationBusHandler",
+        "PrefabLoaderScriptingBus",
+        "PrefabOverridePublicRequestBus",
+        "PrefabPublicNotificationBus",
+        "PrefabPublicNotificationBusHandler",
+        "PrefabPublicRequestBus",
+        "PrefabSystemScriptingBus"
+      ],
+      "discovery_source": "azlmbr.prefab module introspection"
+    },
+    "status": "blocked_by_unsafe_operation",
+    "blocked_reason": "prefab_instantiation_call_not_pinned_safe",
+    "message": "Prefab/procprefab product evidence is present and prefab module imports, but live instantiation is not counted as pass until a safe Editor prefab call is pinned."
+  },
+  "property_path_discovery": {
+    "Actor": {
+      "status": "blocked_by_unsafe_operation",
+      "candidate_property_paths": [
+        "Out of view|Bounding box configuration|Update item skip factor",
+        "Actor asset"
+      ],
+      "blocked_reason": "actor_asset_property_path_requires_pinning_before_set"
+    }
+  },
+  "property_list_summary": {
+    "Transform": {
+      "status": "pass",
+      "properties": [
+        "Parent activation",
+        "Cached Parent Entity",
+        "Values|Uniform Scale",
+        "Values|Translate",
+        "Values",
+        "Values|Rotate",
+        "Static",
+        "Parent entity",
+        "Cached World Transform"
+      ],
+      "property_count": 9,
+      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 2415592619712>"
+    },
+    "Tag": {
+      "status": "pass",
+      "properties": [
+        "Tags"
+      ],
+      "property_count": 1,
+      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 2415746995584>"
+    },
+    "Actor": {
+      "status": "pass",
+      "properties": [
+        "Render options|Lighting Channels|Lighting Channels|Lighting Channel 3",
+        "Render options|Enable Raytracing",
+        "Out of view|Bounding box configuration|Expand by",
+        "Out of view|Bounding box configuration|Automatically update bounds?",
+        "Render options|Exclude from reflection cubemaps",
+        "Render options|Lighting Channels|Lighting Channels|Lighting Channel 4",
+        "Render options|Draw skeleton",
+        "Render options|Skinning method",
+        "Out of view|Force update joints",
+        "Out of view|Bounding box configuration|Update item skip factor",
+        "Render options|Lighting Channels",
+        "Render options|Lighting Channels|Lighting Channels|Lighting Channel 1",
+        "Attach To|Attachment type",
+        "Attach To|Target entity",
+        "Render options|Draw character",
+        "Render options|Draw bounds",
+        "Out of view|Bounding box configuration|Update frequency",
+        "Render options|Lighting Channels|Lighting Channels|Lighting Channel 0",
+        "Actor asset",
+        "Out of view|Bounding box configuration",
+        "Out of view|Bounding box configuration|Bounds type",
+        "Render options|Lighting Channels|Lighting Channels",
+        "Render options|Lighting Channels|Lighting Channels|Lighting Channel 2"
+      ],
+      "property_count": 23,
+      "component_ref": "<EntityComponentIdPair via PythonProxyObject at 2415746995584>"
+    }
+  },
+  "no_fake_success": true,
   "entity_smoke": {
     "status": "pass",
-    "entity_id": "[3239491416092924812]",
+    "entity_id": "[4099786522213775922]",
     "name": "maxine_smoke_entity"
   },
   "prefab_smoke": {
-    "status": "unavailable",
-    "reason": "Prefab instantiation is not attempted until component APIs are pinned."
+    "status": "blocked_by_unsafe_operation",
+    "reason": "prefab_instantiation_call_not_pinned_safe"
   },
   "actor_smoke": {
-    "status": "unavailable",
-    "reason": "Actor component binding is not attempted until component type IDs are pinned."
+    "status": "blocked_by_unsafe_operation",
+    "reason": "actor_asset_property_assignment_not_pinned_safe"
   },
   "component_smoke": {
     "status": "pass",
     "components": [
-      "Transform"
-    ]
+      "Transform",
+      "Tag"
+    ],
+    "binding_evidence": "EditorComponentAPIBus"
   },
   "errors": [],
   "warnings": [],
@@ -369,25 +783,80 @@
     {
       "id": "editor-smoke-report-template",
       "kind": "editor_smoke_report_template",
-      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T123403Z/editor_smoke_live_report.json"
+      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T141031Z/editor_smoke_live_report.json"
     },
     {
       "id": "editor-smoke-progress-log",
       "kind": "editor_smoke_progress_log",
-      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T123403Z/progress.jsonl"
+      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T141031Z/progress.jsonl"
     },
     {
       "id": "editor-smoke-live-report",
       "kind": "editor_smoke_report",
-      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T123403Z/editor_smoke_live_report.json"
+      "path": "artifacts/o3de-integration/editor-smoke/editor-smoke-20260510T141031Z/editor_smoke_live_report.json"
     },
     {
       "id": "apb-baseline",
       "kind": "asset_processor_batch_report",
-      "path": "artifacts/o3de-integration/apb/apb-live-20260510T123310Z/asset_processor_batch_live_report.json"
+      "path": "artifacts/o3de-integration/apb/apb-live-20260510T140936Z/asset_processor_batch_live_report.json"
     }
   ],
   "next_steps": [],
+  "property_access_summary": {
+    "Transform": {
+      "status": "pass",
+      "read_count": 3,
+      "reads": [
+        {
+          "property_path": "Parent activation",
+          "status": "pass",
+          "value": 0
+        },
+        {
+          "property_path": "Cached Parent Entity",
+          "status": "pass",
+          "value": "[312439557414]"
+        },
+        {
+          "property_path": "Values|Uniform Scale",
+          "status": "pass",
+          "value": 1.0
+        }
+      ]
+    },
+    "Tag": {
+      "status": "pass",
+      "read_count": 1,
+      "reads": [
+        {
+          "property_path": "Tags",
+          "status": "pass",
+          "value": []
+        }
+      ]
+    },
+    "Actor": {
+      "status": "pass",
+      "read_count": 3,
+      "reads": [
+        {
+          "property_path": "Render options|Lighting Channels|Lighting Channels|Lighting Channel 3",
+          "status": "pass",
+          "value": true
+        },
+        {
+          "property_path": "Render options|Enable Raytracing",
+          "status": "pass",
+          "value": true
+        },
+        {
+          "property_path": "Out of view|Bounding box configuration|Expand by",
+          "status": "pass",
+          "value": 25.0
+        }
+      ]
+    }
+  },
   "timeout_stall": false,
   "process_cleanup": {
     "attempted": false,
