@@ -95,6 +95,9 @@
         "product-evidence",
         "temp-level",
         "entity-minimal",
+        "component-binding",
+        "actor-binding",
+        "prefab-binding",
         "full"
       ]
     },
@@ -307,6 +310,48 @@
         "relative",
         "absolute"
       ]
+    },
+    "component_type_registry": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "binding_call_surface": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "safe_call_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "component_binding_checks": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "actor_binding_checks": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "prefab_binding_checks": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "property_path_discovery": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "property_list_summary": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "property_access_summary": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "no_fake_success": {
+      "type": "boolean"
     },
     "errors": {
       "type": "array",

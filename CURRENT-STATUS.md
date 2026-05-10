@@ -1,7 +1,19 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Diagnose Gated Editor Smoke Temp-Level Stall v1 is in progress:
+- Harden Editor Smoke Actor/Prefab/Component Binding Checks v1 is in progress:
+  - PR #117 was merged into `main`, and `codex/harden-editor-smoke-actor-prefab-component-binding-checks-v1` was created from updated `main`
+  - the Editor smoke report contract now carries explicit `component_type_registry`, `binding_call_surface`, `safe_call_results`, `component_binding_checks`, `actor_binding_checks`, `prefab_binding_checks`, `property_path_discovery`, `property_list_summary`, and `no_fake_success` evidence fields
+  - added targeted live diagnostic modes for `component-binding`, `actor-binding`, and `prefab-binding`; each mode still uses the gated wrapper, approved temp levels under `Levels/_maxine_smoke`, progress markers, report refs, and closed publication/release-packaging gates
+  - component binding now prefers live `EditorComponentAPIBus` discovery and records safe calls such as component type discovery, component lookup/add, and property-list probing; fixture mode validates the same schema without pretending to be live proof
+  - actor binding now requires APB `actor` product evidence before any attempt and reports typed blockers such as `blocked_by_missing_binding` or `blocked_by_unsafe_operation` rather than counting unavailable actor work as pass
+  - prefab/procprefab binding now requires APB `procprefab` evidence and reports the discovered prefab binding surface or a typed `unsupported_by_engine_binding` blocker; no prefab instantiation is counted as pass without a pinned safe Editor binding call
+  - live component binding passed with pinned live TypeIds for Transform `{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0}` and Tag `{5272B56C-6CCC-4118-8539-D881F463ACD1}`; the smoke safely added a Tag component and read component properties in the approved temp level
+  - live actor binding discovered Actor TypeId `{A863EE1B-8CFD-4EDD-BA0D-1CEC2879AD44}`, added the Actor component, and read safe properties, but remains `blocked_by_unsafe_operation` for actor asset assignment until the setter value semantics are pinned
+  - live prefab/procprefab binding confirmed APB `procprefab` evidence and `azlmbr.prefab` binding surfaces, but remains `blocked_by_unsafe_operation` until a safe instantiation/load call is pinned
+  - full gated Editor smoke and the include-editor-smoke integration suite passed with the typed actor/prefab blockers preserved; sanitized evidence is represented by `examples/editor-smoke/editor-smoke-live.release-rigged.pass.example.json`
+  - live publication remains false, release packaging remains false, Asset Cache deletion remains forbidden, and production levels remain forbidden
+- Diagnose Gated Editor Smoke Temp-Level Stall v1 completed in PR #117:
   - PR #116 was merged into `main`, and `codex/diagnose-editor-smoke-temp-level-stall-v1` was created from updated `main`
   - reran the APB clean baseline in this session with `C:\src\o3de\build\windows\bin\profile\AssetProcessorBatch.exe`; APB exited `0`, the APB-only suite exited `0`, product matrix status is `pass`, expected product evidence is complete, and `cache_heuristic_used=false`
   - reran strict Editor readiness with `C:\src\o3de\build\windows\bin\profile\Editor.exe`; provenance remains `engine_profile_bin`, `EditorPythonBindings` remains enabled/available, and the temp-level policy remains constrained to `Levels/_maxine_smoke`

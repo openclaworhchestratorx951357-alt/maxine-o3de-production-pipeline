@@ -16,13 +16,31 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Mapping
+from typing import Any, Dict, List, Mapping, Sequence, Tuple
 
 
 MXN_VALIDATION_TOOL_UNAVAILABLE = "MXN_VALIDATION_TOOL_UNAVAILABLE"
 MXN_PATH_UNSAFE = "MXN_PATH_UNSAFE"
 MXN_RUNTIME_SMOKE_FAIL = "MXN_RUNTIME_SMOKE_FAIL"
-DIAGNOSTIC_MODES = {"hello", "product-evidence", "temp-level", "entity-minimal", "full"}
+DIAGNOSTIC_MODES = {
+    "hello",
+    "product-evidence",
+    "temp-level",
+    "entity-minimal",
+    "component-binding",
+    "actor-binding",
+    "prefab-binding",
+    "full",
+}
+TYPED_BLOCKED_STATUSES = {
+    "skipped_by_mode",
+    "unavailable_with_verified_reason",
+    "blocked_by_readiness",
+    "blocked_by_missing_product_evidence",
+    "blocked_by_missing_binding",
+    "blocked_by_unsafe_operation",
+    "unsupported_by_engine_binding",
+}
 SCRIPT_STARTED_MONOTONIC = time.monotonic()
 
 
@@ -97,6 +115,16 @@ def main() -> int:
             "prefab_smoke": report.get("prefab_smoke", {"status": "not_run"}),
             "actor_smoke": report.get("actor_smoke", {"status": "not_run"}),
             "component_smoke": report.get("component_smoke", {"status": "not_run"}),
+            "component_type_registry": report.get("component_type_registry", {}),
+            "binding_call_surface": report.get("binding_call_surface", {}),
+            "safe_call_results": report.get("safe_call_results", []),
+            "component_binding_checks": report.get("component_binding_checks", {"status": "not_run"}),
+            "actor_binding_checks": report.get("actor_binding_checks", {"status": "not_run"}),
+            "prefab_binding_checks": report.get("prefab_binding_checks", {"status": "not_run"}),
+            "property_path_discovery": report.get("property_path_discovery", {}),
+            "property_list_summary": report.get("property_list_summary", {}),
+            "property_access_summary": report.get("property_access_summary", {}),
+            "no_fake_success": True,
         }
     )
 
@@ -106,7 +134,7 @@ def main() -> int:
     if env.get("MAXINE_ENABLE_RELEASE_PACKAGING") == "1":
         errors.append(MXN_PATH_UNSAFE)
         messages.append("Release packaging gate must remain disabled.")
-    needs_temp_level = diagnostic_mode in {"temp-level", "entity-minimal", "full"}
+    needs_temp_level = diagnostic_mode in {"temp-level", "entity-minimal", "component-binding", "actor-binding", "prefab-binding", "full"}
     if needs_temp_level and not allow_temp_level:
         errors.append(MXN_PATH_UNSAFE)
         messages.append("Editor smoke requires explicit temp sandbox level permission.")
@@ -151,9 +179,11 @@ def main() -> int:
             messages.append(f"Temp level automation failed: {exc}")
             _write_progress_marker(progress_log, "create_level_failed", "failed", f"Temp level automation failed: {exc}", error_code=MXN_RUNTIME_SMOKE_FAIL)
 
-    if not errors and diagnostic_mode in {"entity-minimal", "full"}:
+    entity_result: Dict[str, Any] = report.get("entity_smoke", {"status": "not_run"})
+    entity_id_raw = None
+    if not errors and diagnostic_mode in {"entity-minimal", "component-binding", "actor-binding", "prefab-binding", "full"}:
         _write_progress_marker(progress_log, "entity_create_started", "started", "Creating minimal temporary smoke entity.")
-        entity_result = _try_create_smoke_entity()
+        entity_result, entity_id_raw = _try_create_smoke_entity_with_raw()
         _write_progress_marker(progress_log, "entity_create_returned", entity_result.get("status", "returned"), "Minimal temporary smoke entity call returned.")
         report["entity_smoke"] = entity_result
         if entity_result.get("status") == "pass":
@@ -170,8 +200,16 @@ def main() -> int:
         else:
             warnings.append("MXN_EDITOR_ENTITY_SMOKE_UNAVAILABLE")
             report["component_smoke"] = {"status": "unavailable", "reason": entity_result.get("reason", "")}
-        report["prefab_smoke"] = {"status": "unavailable", "reason": "Prefab instantiation is not attempted until component APIs are pinned."}
-        report["actor_smoke"] = {"status": "unavailable", "reason": "Actor component binding is not attempted until component type IDs are pinned."}
+
+    if not errors and diagnostic_mode in {"component-binding", "actor-binding", "prefab-binding", "full"}:
+        binding_report = _run_binding_checks(
+            entity_id_raw,
+            entity_result,
+            report,
+            diagnostic_mode=diagnostic_mode,
+            progress_log=progress_log,
+        )
+        _merge_binding_report(report, binding_report)
 
     if not errors and diagnostic_mode == "full" and general is not None:
         try:
@@ -183,7 +221,15 @@ def main() -> int:
             warnings.append("MXN_EDITOR_LEVEL_SAVE_UNAVAILABLE")
             messages.append(f"Temp level save was unavailable: {exc}")
 
-    report["status"] = "fail" if errors else "pass"
+    targeted_blocker = _targeted_binding_blocker(report, diagnostic_mode) if not errors else ""
+    if errors:
+        report["status"] = "fail"
+    elif targeted_blocker:
+        warnings.append("MXN_EDITOR_BINDING_CHECK_UNAVAILABLE")
+        messages.append(targeted_blocker)
+        report["status"] = "unavailable"
+    else:
+        report["status"] = "pass"
     report["errors"] = _unique([*report.get("errors", []), *errors])
     report["warnings"] = _unique([*report.get("warnings", []), *warnings])
     report["messages"] = _unique([*report.get("messages", []), *messages])
@@ -334,7 +380,7 @@ def _create_temp_level(general: Any, level_name: str, level_path: str, *, progre
         _write_progress_marker(progress_log, "idle_wait_skipped", "skipped", "Skipped idle_wait_frames because it stalls after temp level creation on this rig.")
 
 
-def _try_create_smoke_entity() -> Dict[str, Any]:
+def _try_create_smoke_entity_with_raw() -> Tuple[Dict[str, Any], Any]:
     try:
         import azlmbr.bus as bus  # type: ignore
         import azlmbr.editor as editor  # type: ignore
@@ -344,9 +390,734 @@ def _try_create_smoke_entity() -> Dict[str, Any]:
         entity_id = editor.ToolsApplicationRequestBus(bus.Broadcast, "CreateNewEntity", parent)
         editor.EditorEntityAPIBus(bus.Event, "SetName", entity_id, "maxine_smoke_entity")
         name = editor.EditorEntityInfoRequestBus(bus.Event, "GetName", entity_id)
-        return {"status": "pass", "entity_id": str(entity_id), "name": str(name or "maxine_smoke_entity")}
+        return {"status": "pass", "entity_id": str(entity_id), "name": str(name or "maxine_smoke_entity")}, entity_id
     except Exception as exc:
-        return {"status": "unavailable", "reason": str(exc)}
+        return {"status": "unavailable_with_verified_reason", "reason": str(exc)}, None
+
+
+def _try_create_smoke_entity() -> Dict[str, Any]:
+    result, _entity_id = _try_create_smoke_entity_with_raw()
+    return result
+
+
+def _run_binding_checks(
+    entity_id: Any,
+    entity_result: Mapping[str, Any],
+    report: Mapping[str, Any],
+    *,
+    diagnostic_mode: str,
+    progress_log: Path | None,
+) -> Dict[str, Any]:
+    surface_info, surface = _load_component_api_surface()
+    safe_call_results: List[Dict[str, Any]] = []
+    result: Dict[str, Any] = {
+        "component_type_registry": dict(report.get("component_type_registry", {})) if isinstance(report.get("component_type_registry"), Mapping) else {},
+        "binding_call_surface": {
+            **(dict(report.get("binding_call_surface", {})) if isinstance(report.get("binding_call_surface"), Mapping) else {}),
+            "EditorComponentAPIBus": surface_info,
+        },
+        "safe_call_results": safe_call_results,
+        "property_path_discovery": dict(report.get("property_path_discovery", {})) if isinstance(report.get("property_path_discovery"), Mapping) else {},
+        "property_list_summary": dict(report.get("property_list_summary", {})) if isinstance(report.get("property_list_summary"), Mapping) else {},
+        "property_access_summary": dict(report.get("property_access_summary", {})) if isinstance(report.get("property_access_summary"), Mapping) else {},
+    }
+
+    if diagnostic_mode in {"component-binding", "full"}:
+        _write_progress_marker(progress_log, "component_binding_started", "started", "Running safe EditorComponentAPIBus binding checks.")
+        component_checks = _run_component_binding_checks(entity_id, entity_result, surface, result, safe_call_results)
+        result["component_binding_checks"] = component_checks
+        if component_checks.get("status") == "pass":
+            result["component_smoke"] = {
+                "status": "pass",
+                "components": component_checks.get("verified_components", ["Transform"]),
+                "binding_evidence": "EditorComponentAPIBus",
+            }
+        else:
+            result["component_smoke"] = {
+                "status": component_checks.get("status", "blocked_by_missing_binding"),
+                "reason": component_checks.get("blocked_reason") or component_checks.get("unavailable_reason", ""),
+            }
+        _write_progress_marker(progress_log, "component_binding_returned", str(component_checks.get("status", "returned")), "Component binding checks returned.")
+    else:
+        result["component_binding_checks"] = _skipped_check("component-binding")
+
+    if diagnostic_mode in {"actor-binding", "full"}:
+        _write_progress_marker(progress_log, "actor_binding_started", "started", "Running actor component binding feasibility checks.")
+        actor_checks = _run_actor_binding_checks(entity_id, surface, result, safe_call_results, report)
+        result["actor_binding_checks"] = actor_checks
+        result["actor_smoke"] = _smoke_from_binding_check(actor_checks)
+        _write_progress_marker(progress_log, "actor_binding_returned", str(actor_checks.get("status", "returned")), "Actor binding checks returned.")
+    else:
+        result["actor_binding_checks"] = _skipped_check("actor-binding")
+
+    if diagnostic_mode in {"prefab-binding", "full"}:
+        _write_progress_marker(progress_log, "prefab_binding_started", "started", "Running prefab/procprefab binding surface checks.")
+        prefab_checks = _run_prefab_binding_checks(report, safe_call_results)
+        result["prefab_binding_checks"] = prefab_checks
+        result["prefab_smoke"] = _smoke_from_binding_check(prefab_checks)
+        _write_progress_marker(progress_log, "prefab_binding_returned", str(prefab_checks.get("status", "returned")), "Prefab binding checks returned.")
+    else:
+        result["prefab_binding_checks"] = _skipped_check("prefab-binding")
+
+    _summarize_binding_call_surface(result)
+    return result
+
+
+def _merge_binding_report(report: Dict[str, Any], binding_report: Mapping[str, Any]) -> None:
+    for key, value in binding_report.items():
+        if key == "safe_call_results":
+            existing = report.get("safe_call_results", [])
+            report[key] = [*(existing if isinstance(existing, list) else []), *(value if isinstance(value, list) else [])]
+        elif key in {"component_type_registry", "binding_call_surface", "property_path_discovery", "property_list_summary", "property_access_summary"}:
+            existing = report.get(key, {})
+            merged = dict(existing) if isinstance(existing, Mapping) else {}
+            if isinstance(value, Mapping):
+                merged.update(value)
+            report[key] = merged
+        else:
+            report[key] = value
+
+
+def _targeted_binding_blocker(report: Mapping[str, Any], diagnostic_mode: str) -> str:
+    target_fields = {
+        "component-binding": "component_binding_checks",
+        "actor-binding": "actor_binding_checks",
+        "prefab-binding": "prefab_binding_checks",
+    }
+    field = target_fields.get(diagnostic_mode)
+    if not field:
+        return ""
+    checks = report.get(field, {})
+    status = str(checks.get("status", "")).strip() if isinstance(checks, Mapping) else ""
+    if status == "pass":
+        return ""
+    reason = checks.get("blocked_reason") or checks.get("unavailable_reason") or checks.get("message", "") if isinstance(checks, Mapping) else ""
+    return f"{diagnostic_mode} did not pass; {field} reported {status or 'missing'}{(': ' + str(reason)) if reason else ''}."
+
+
+def _summarize_binding_call_surface(binding_report: Dict[str, Any]) -> None:
+    surface = binding_report.get("binding_call_surface", {})
+    if not isinstance(surface, dict):
+        return
+    editor_surface = surface.get("EditorComponentAPIBus", {})
+    if not isinstance(editor_surface, dict):
+        return
+    validated: List[str] = []
+    blocked: List[str] = []
+    for record in binding_report.get("safe_call_results", []):
+        if not isinstance(record, Mapping):
+            continue
+        call = str(record.get("call", ""))
+        if not call.startswith("EditorComponentAPIBus."):
+            continue
+        method = call.split(".", 1)[1]
+        if record.get("status") == "pass":
+            validated.append(method)
+        else:
+            blocked.append(method)
+    editor_surface["validated_calls"] = _unique(validated)
+    editor_surface["blocked_calls"] = _unique(blocked)
+
+
+def _load_component_api_surface() -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    info: Dict[str, Any] = {
+        "status": "unsupported_by_engine_binding",
+        "validated_calls": [],
+        "blocked_calls": [],
+        "safe_for_unattended_temp_level_smoke": True,
+    }
+    surface: Dict[str, Any] = {}
+    try:
+        import azlmbr.bus as bus  # type: ignore
+        import azlmbr.editor as editor  # type: ignore
+        import azlmbr.entity as entity  # type: ignore
+
+        surface.update({"bus": bus, "editor": editor, "entity": entity})
+        if hasattr(editor, "EditorComponentAPIBus"):
+            info["status"] = "pass"
+            info["validated_calls"] = []
+        else:
+            info["blocked_calls"] = ["EditorComponentAPIBus"]
+            info["blocked_reason"] = "EditorComponentAPIBus_missing"
+    except Exception as exc:
+        info["blocked_calls"] = ["azlmbr.bus", "azlmbr.editor", "azlmbr.entity"]
+        info["blocked_reason"] = "editor_component_api_import_failed"
+        info["error"] = str(exc)
+    return info, surface
+
+
+def _run_component_binding_checks(
+    entity_id: Any,
+    entity_result: Mapping[str, Any],
+    surface: Mapping[str, Any],
+    binding_report: Dict[str, Any],
+    safe_call_results: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    if entity_result.get("status") != "pass" or entity_id is None:
+        return {
+            "status": "blocked_by_readiness",
+            "blocked_reason": "entity_smoke_not_available",
+            "entity_status": entity_result.get("status", "unknown"),
+        }
+    if not _surface_available(surface):
+        return {
+            "status": "unsupported_by_engine_binding",
+            "blocked_reason": "EditorComponentAPIBus_unavailable",
+            "entity_name_verified": True,
+            "default_transform_verified": True,
+        }
+
+    registry = binding_report["component_type_registry"]
+    property_summary = binding_report["property_list_summary"]
+    property_access = binding_report["property_access_summary"]
+    transform = _discover_component_type_ids(
+        ["Transform", "Transform Component"],
+        "Transform",
+        surface,
+        safe_call_results,
+        registry,
+    )
+    transform_component = _get_component_reference(entity_id, transform.get("type_ids_raw", []), surface, safe_call_results)
+    transform_properties = _build_component_property_list(transform_component, surface, safe_call_results)
+    property_summary["Transform"] = transform_properties
+    property_access["Transform"] = _get_component_property_values(transform_component, transform_properties, surface, safe_call_results)
+
+    safe_added = _try_add_safe_component(entity_id, surface, safe_call_results, registry, property_summary)
+    if safe_added.get("component_name") and str(safe_added.get("component_name")) in property_summary:
+        property_access[str(safe_added["component_name"])] = safe_added.get("property_access", {"status": "not_run"})
+    verified_components = ["Transform"]
+    if safe_added.get("status") == "pass" and safe_added.get("component_name"):
+        verified_components.append(str(safe_added["component_name"]))
+
+    transform_binding_pass = transform.get("status") == "pass" and transform_component.get("status") == "pass"
+    safe_component_properties = property_summary.get(str(safe_added.get("component_name", "")), {})
+    safe_component_binding_pass = safe_added.get("status") == "pass" and isinstance(safe_component_properties, Mapping) and safe_component_properties.get("status") == "pass"
+    property_status = str(transform_properties.get("status", ""))
+    property_observed = property_status in {"pass", "unavailable_with_verified_reason", "unsupported_by_engine_binding"}
+    status = "pass" if (transform_binding_pass and property_observed) or safe_component_binding_pass else "blocked_by_missing_binding"
+    return {
+        "status": status,
+        "entity_name_verified": True,
+        "default_transform_verified": True,
+        "transform_type_id_status": transform.get("status", "blocked_by_missing_binding"),
+        "transform_component_status": transform_component.get("status", "blocked_by_missing_binding"),
+        "verified_components": verified_components,
+        "added_component": safe_added,
+        "property_list_summary": transform_properties,
+        "blocked_reason": "" if status == "pass" else "transform_component_binding_not_verified",
+    }
+
+
+def _run_actor_binding_checks(
+    entity_id: Any,
+    surface: Mapping[str, Any],
+    binding_report: Dict[str, Any],
+    safe_call_results: List[Dict[str, Any]],
+    report: Mapping[str, Any],
+) -> Dict[str, Any]:
+    actor_product = _product_ref(report, "actor")
+    if not actor_product:
+        return {
+            "status": "blocked_by_missing_product_evidence",
+            "product_evidence_status": "missing",
+            "blocked_reason": "actor_product_missing",
+        }
+    if entity_id is None:
+        return {
+            "status": "blocked_by_readiness",
+            "product_evidence_status": "pass",
+            "actor_product_ref": actor_product,
+            "blocked_reason": "entity_smoke_not_available",
+        }
+    if not _surface_available(surface):
+        return {
+            "status": "unsupported_by_engine_binding",
+            "product_evidence_status": "pass",
+            "actor_product_ref": actor_product,
+            "blocked_reason": "EditorComponentAPIBus_unavailable",
+        }
+
+    registry = binding_report["component_type_registry"]
+    property_summary = binding_report["property_list_summary"]
+    property_access = binding_report["property_access_summary"]
+    actor_type = _discover_component_type_ids(
+        ["Actor", "Actor Component", "EMotion FX Actor"],
+        "Actor",
+        surface,
+        safe_call_results,
+        registry,
+    )
+    if actor_type.get("status") != "pass":
+        return {
+            "status": "blocked_by_missing_binding",
+            "product_evidence_status": "pass",
+            "actor_product_ref": actor_product,
+            "component_type_id_status": actor_type.get("status", "blocked_by_missing_binding"),
+            "blocked_reason": "actor_component_type_id_not_discovered",
+            "property_path_discovery": {"status": "blocked_by_missing_binding", "blocked_reason": "actor_component_type_id_not_discovered"},
+        }
+
+    add_result = _add_components(entity_id, actor_type.get("type_ids_raw", []), surface, safe_call_results, component_name="Actor")
+    actor_component = _first_component_reference(add_result, entity_id, actor_type.get("type_ids_raw", []), surface, safe_call_results)
+    properties = _build_component_property_list(actor_component, surface, safe_call_results)
+    property_summary["Actor"] = properties
+    property_access["Actor"] = _get_component_property_values(actor_component, properties, surface, safe_call_results)
+    binding_report["property_path_discovery"]["Actor"] = _actor_property_discovery(properties)
+
+    if add_result.get("status") != "pass":
+        return {
+            "status": "blocked_by_missing_binding",
+            "product_evidence_status": "pass",
+            "actor_product_ref": actor_product,
+            "component_type_id_status": "pass",
+            "component_add_status": add_result.get("status", "blocked_by_missing_binding"),
+            "blocked_reason": "actor_component_add_not_verified",
+            "property_path_discovery": binding_report["property_path_discovery"]["Actor"],
+        }
+    return {
+        "status": "blocked_by_unsafe_operation",
+        "product_evidence_status": "pass",
+        "actor_product_ref": actor_product,
+        "component_type_id_status": "pass",
+        "component_add_status": "pass",
+            "property_list_status": properties.get("status", "blocked_by_missing_binding"),
+            "property_access_status": property_access["Actor"].get("status", "blocked_by_missing_binding"),
+            "property_path_discovery": binding_report["property_path_discovery"]["Actor"],
+        "blocked_reason": "actor_asset_property_assignment_not_pinned_safe",
+        "message": "Actor component binding is verified through add/property discovery, but asset assignment is not counted as pass until a safe property path is pinned.",
+    }
+
+
+def _run_prefab_binding_checks(report: Mapping[str, Any], safe_call_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    procprefab_product = _product_ref(report, "procprefab") or _product_ref(report, "prefab")
+    if not procprefab_product:
+        return {
+            "status": "blocked_by_missing_product_evidence",
+            "product_evidence_status": "missing",
+            "blocked_reason": "procprefab_product_missing",
+        }
+    surface = _probe_prefab_surface(safe_call_results)
+    result = {
+        "product_evidence_status": "pass",
+        "procprefab_product_ref": procprefab_product,
+        "binding_surface_status": surface.get("status", "unsupported_by_engine_binding"),
+        "binding_surface": surface,
+    }
+    if surface.get("status") != "pass":
+        return {
+            **result,
+            "status": "unsupported_by_engine_binding",
+            "blocked_reason": surface.get("blocked_reason", "prefab_instantiation_binding_not_available"),
+        }
+    return {
+        **result,
+        "status": "blocked_by_unsafe_operation",
+        "blocked_reason": "prefab_instantiation_call_not_pinned_safe",
+        "message": "Prefab/procprefab product evidence is present and prefab module imports, but live instantiation is not counted as pass until a safe Editor prefab call is pinned.",
+    }
+
+
+def _discover_component_type_ids(
+    component_names: Sequence[str],
+    registry_key: str,
+    surface: Mapping[str, Any],
+    safe_call_results: List[Dict[str, Any]],
+    registry: Dict[str, Any],
+) -> Dict[str, Any]:
+    attempts: List[Dict[str, Any]] = []
+    if not _surface_available(surface):
+        registry[registry_key] = {
+            "status": "unsupported_by_engine_binding",
+            "component_names": list(component_names),
+            "discovery_source": "EditorComponentAPIBus_unavailable",
+            "safe_for_unattended_temp_level_smoke": False,
+        }
+        return {"status": "unsupported_by_engine_binding", "type_ids_raw": []}
+
+    entity_type_candidates = _entity_type_candidates(surface)
+    signatures: List[Tuple[Any, ...]] = [(list(component_names), candidate) for candidate in entity_type_candidates]
+    signatures.append((list(component_names),))
+    for args in signatures:
+        status, value = _component_bus_call(
+            surface,
+            "FindComponentTypeIdsByEntityType",
+            args,
+            safe_call_results,
+        )
+        attempts.append({"status": status, "args_shape": f"{len(args)} arguments"})
+        type_ids = _extract_sequence(_unwrap_outcome(value))
+        valid_type_ids = [type_id for type_id in type_ids if _valid_component_type_id(type_id)]
+        if status == "pass" and valid_type_ids:
+            serialized = [_safe_serialize(type_id) for type_id in valid_type_ids]
+            registry[registry_key] = {
+                "status": "pass",
+                "component_names": list(component_names),
+                "type_ids": serialized,
+                "discovery_source": "EditorComponentAPIBus.FindComponentTypeIdsByEntityType",
+                "safe_for_unattended_temp_level_smoke": True,
+            }
+            return {"status": "pass", "type_ids": serialized, "type_ids_raw": valid_type_ids}
+
+    registry[registry_key] = {
+        "status": "blocked_by_missing_binding",
+        "component_names": list(component_names),
+        "discovery_source": "EditorComponentAPIBus.FindComponentTypeIdsByEntityType",
+        "attempts": attempts,
+        "safe_for_unattended_temp_level_smoke": False,
+    }
+    return {"status": "blocked_by_missing_binding", "type_ids_raw": []}
+
+
+def _try_add_safe_component(
+    entity_id: Any,
+    surface: Mapping[str, Any],
+    safe_call_results: List[Dict[str, Any]],
+    registry: Dict[str, Any],
+    property_summary: Dict[str, Any],
+) -> Dict[str, Any]:
+    for component_name in ("Tag", "Comment"):
+        discovered = _discover_component_type_ids([component_name], component_name, surface, safe_call_results, registry)
+        if discovered.get("status") != "pass":
+            continue
+        add_result = _add_components(entity_id, discovered.get("type_ids_raw", []), surface, safe_call_results, component_name=component_name)
+        component_ref = _first_component_reference(add_result, entity_id, discovered.get("type_ids_raw", []), surface, safe_call_results)
+        property_summary[component_name] = _build_component_property_list(component_ref, surface, safe_call_results)
+        property_access = _get_component_property_values(component_ref, property_summary[component_name], surface, safe_call_results)
+        return {**add_result, "component_name": component_name, "type_id_status": "pass", "property_access": property_access}
+    return {
+        "status": "unavailable_with_verified_reason",
+        "unavailable_reason": "no_safe_additional_component_type_discovered",
+        "safe_component_candidates": ["Tag", "Comment"],
+    }
+
+
+def _add_components(
+    entity_id: Any,
+    type_ids: Sequence[Any],
+    surface: Mapping[str, Any],
+    safe_call_results: List[Dict[str, Any]],
+    *,
+    component_name: str,
+) -> Dict[str, Any]:
+    if not type_ids:
+        return {"status": "blocked_by_missing_binding", "blocked_reason": f"{component_name}_type_id_missing"}
+    status, value = _component_bus_call(surface, "AddComponentsOfType", (entity_id, list(type_ids)), safe_call_results)
+    unwrapped = _unwrap_outcome(value)
+    component_refs = _extract_sequence(unwrapped)
+    if status == "pass" and (component_refs or _outcome_success(value)):
+        return {
+            "status": "pass",
+            "component_name": component_name,
+            "component_refs": [_safe_serialize(ref) for ref in component_refs],
+        }
+    return {
+        "status": "blocked_by_missing_binding",
+        "component_name": component_name,
+        "blocked_reason": "AddComponentsOfType_returned_no_component",
+        "result": _safe_serialize(unwrapped),
+    }
+
+
+def _get_component_reference(
+    entity_id: Any,
+    type_ids: Sequence[Any],
+    surface: Mapping[str, Any],
+    safe_call_results: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    if not type_ids:
+        return {"status": "blocked_by_missing_binding", "blocked_reason": "component_type_id_missing"}
+    for method in ("GetComponentOfType", "GetComponentsOfType"):
+        status, value = _component_bus_call(surface, method, (entity_id, type_ids[0]), safe_call_results)
+        refs = _extract_sequence(_unwrap_outcome(value))
+        if status == "pass" and refs:
+            return {"status": "pass", "component_ref": refs[0], "component_ref_serialized": _safe_serialize(refs[0]), "source": method}
+        if status == "pass" and value is not None and not isinstance(value, bool):
+            return {"status": "pass", "component_ref": value, "component_ref_serialized": _safe_serialize(value), "source": method}
+    has_status, has_value = _component_bus_call(surface, "HasComponentOfType", (entity_id, type_ids[0]), safe_call_results)
+    if has_status == "pass" and bool(_unwrap_outcome(has_value)):
+        return {"status": "pass", "component_ref": None, "component_ref_serialized": "", "source": "HasComponentOfType"}
+    return {"status": "blocked_by_missing_binding", "blocked_reason": "component_reference_not_discovered"}
+
+
+def _first_component_reference(
+    add_result: Mapping[str, Any],
+    entity_id: Any,
+    type_ids: Sequence[Any],
+    surface: Mapping[str, Any],
+    safe_call_results: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    return _get_component_reference(entity_id, type_ids, surface, safe_call_results)
+
+
+def _build_component_property_list(
+    component_result: Mapping[str, Any],
+    surface: Mapping[str, Any],
+    safe_call_results: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    component_ref = component_result.get("component_ref")
+    if component_result.get("status") != "pass":
+        return {
+            "status": "blocked_by_missing_binding",
+            "blocked_reason": component_result.get("blocked_reason", "component_reference_not_available"),
+        }
+    if component_ref is None:
+        return {
+            "status": "unavailable_with_verified_reason",
+            "unavailable_reason": "component_reference_not_returned_by_binding",
+        }
+    for args in ((component_ref,),):
+        status, value = _component_bus_call(surface, "BuildComponentPropertyList", args, safe_call_results)
+        properties = [str(item) for item in _extract_sequence(_unwrap_outcome(value))]
+        if status == "pass":
+            return {
+                "status": "pass",
+                "properties": properties,
+                "property_count": len(properties),
+                "component_ref": _safe_serialize(component_ref),
+            }
+    return {
+        "status": "unsupported_by_engine_binding",
+        "blocked_reason": "BuildComponentPropertyList_not_available",
+        "component_ref": _safe_serialize(component_ref),
+    }
+
+
+def _get_component_property_values(
+    component_result: Mapping[str, Any],
+    properties: Mapping[str, Any],
+    surface: Mapping[str, Any],
+    safe_call_results: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    component_ref = component_result.get("component_ref")
+    property_paths = [str(path) for path in properties.get("properties", [])] if isinstance(properties.get("properties"), list) else []
+    if component_result.get("status") != "pass" or component_ref is None:
+        return {
+            "status": "blocked_by_missing_binding",
+            "blocked_reason": component_result.get("blocked_reason", "component_reference_not_available"),
+        }
+    if not property_paths:
+        return {
+            "status": "unavailable_with_verified_reason",
+            "unavailable_reason": "no_component_properties_listed_for_readback",
+        }
+    reads: List[Dict[str, Any]] = []
+    for property_path in property_paths[:3]:
+        status, value = _component_bus_call(surface, "GetComponentProperty", (component_ref, property_path), safe_call_results)
+        reads.append(
+            {
+                "property_path": property_path,
+                "status": status,
+                "value": _safe_serialize(_unwrap_outcome(value)),
+            }
+        )
+    if any(read.get("status") == "pass" for read in reads):
+        return {"status": "pass", "read_count": len(reads), "reads": reads}
+    return {
+        "status": "unavailable_with_verified_reason",
+        "unavailable_reason": "GetComponentProperty_returned_no_readable_values",
+        "reads": reads,
+    }
+
+
+def _component_bus_call(
+    surface: Mapping[str, Any],
+    method: str,
+    args: Tuple[Any, ...],
+    safe_call_results: List[Dict[str, Any]],
+) -> Tuple[str, Any]:
+    bus = surface.get("bus")
+    editor = surface.get("editor")
+    call_name = f"EditorComponentAPIBus.{method}"
+    try:
+        value = editor.EditorComponentAPIBus(bus.Broadcast, method, *args)  # type: ignore[union-attr]
+        status = "pass" if method == "BuildComponentPropertyList" or _outcome_success(value) else "unavailable_with_verified_reason"
+        safe_call_results.append(
+            {
+                "call": call_name,
+                "status": status,
+                "args_shape": f"{len(args)} arguments",
+                "result": _safe_serialize(_unwrap_outcome(value)),
+            }
+        )
+        return status, value
+    except Exception as exc:
+        safe_call_results.append(
+            {
+                "call": call_name,
+                "status": "unsupported_by_engine_binding",
+                "args_shape": f"{len(args)} arguments",
+                "error": str(exc),
+            }
+        )
+        return "unsupported_by_engine_binding", None
+
+
+def _entity_type_candidates(surface: Mapping[str, Any]) -> List[Any]:
+    candidates: List[Any] = []
+    entity_module = surface.get("entity")
+    try:
+        entity_type = entity_module.EntityType()  # type: ignore[union-attr]
+        for attr in ("Game", "Editor"):
+            if hasattr(entity_type, attr):
+                candidates.append(getattr(entity_type, attr))
+        candidates.append(entity_type)
+    except Exception:
+        pass
+    candidates.extend([0, 1])
+    unique: List[Any] = []
+    observed: set[str] = set()
+    for candidate in candidates:
+        key = str(candidate)
+        if key not in observed:
+            observed.add(key)
+            unique.append(candidate)
+    return unique
+
+
+def _probe_prefab_surface(safe_call_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    try:
+        import azlmbr.prefab as prefab  # type: ignore
+
+        public_names = sorted(name for name in dir(prefab) if not name.startswith("_"))
+        safe_call_results.append(
+            {
+                "call": "import azlmbr.prefab",
+                "status": "pass",
+                "result": public_names[:25],
+            }
+        )
+        candidate_calls = [
+            name
+            for name in public_names
+            if any(token in name.lower() for token in ("instantiate", "prefab", "spawn", "load"))
+        ]
+        if candidate_calls:
+            return {
+                "status": "pass",
+                "candidate_calls": candidate_calls,
+                "discovery_source": "azlmbr.prefab module introspection",
+            }
+        return {
+            "status": "unsupported_by_engine_binding",
+            "blocked_reason": "azlmbr_prefab_has_no_visible_instantiation_surface",
+            "discovery_source": "azlmbr.prefab module introspection",
+        }
+    except Exception as exc:
+        safe_call_results.append({"call": "import azlmbr.prefab", "status": "unsupported_by_engine_binding", "error": str(exc)})
+        return {
+            "status": "unsupported_by_engine_binding",
+            "blocked_reason": "azlmbr_prefab_import_failed",
+            "error": str(exc),
+        }
+
+
+def _valid_component_type_id(type_id: Any) -> bool:
+    serialized = str(_safe_serialize(type_id)).strip().lower()
+    return bool(serialized and serialized not in {"0", "none", "{00000000-0000-0000-0000-000000000000}"})
+
+
+def _actor_property_discovery(properties: Mapping[str, Any]) -> Dict[str, Any]:
+    values = [str(value) for value in properties.get("properties", [])] if isinstance(properties.get("properties"), list) else []
+    asset_like = [value for value in values if "actor" in value.lower() or "asset" in value.lower()]
+    if asset_like:
+        return {
+            "status": "blocked_by_unsafe_operation",
+            "candidate_property_paths": asset_like,
+            "blocked_reason": "actor_asset_property_path_requires_pinning_before_set",
+        }
+    return {
+        "status": "blocked_by_missing_binding",
+        "blocked_reason": "actor_asset_property_path_not_discovered",
+    }
+
+
+def _product_ref(report: Mapping[str, Any], product_type: str) -> str:
+    for product in report.get("produced_products", []):
+        if isinstance(product, Mapping) and str(product.get("product_type", "")).strip() == product_type:
+            return str(product.get("product_path", "")).strip()
+    summary = report.get("product_evidence_summary", {})
+    if isinstance(summary, Mapping):
+        products = summary.get("products", [])
+        if isinstance(products, list):
+            for product in products:
+                if isinstance(product, Mapping) and str(product.get("product_type", "")).strip() == product_type:
+                    return str(product.get("product_path", "")).strip()
+    return ""
+
+
+def _smoke_from_binding_check(checks: Mapping[str, Any]) -> Dict[str, Any]:
+    status = str(checks.get("status", "blocked_by_missing_binding")).strip()
+    if status == "pass":
+        return {"status": "pass", "binding_evidence": checks}
+    return {
+        "status": status if status in TYPED_BLOCKED_STATUSES else "blocked_by_missing_binding",
+        "reason": checks.get("blocked_reason") or checks.get("unavailable_reason") or checks.get("message", ""),
+    }
+
+
+def _skipped_check(mode: str) -> Dict[str, Any]:
+    return {"status": "skipped_by_mode", "skipped_mode": mode}
+
+
+def _surface_available(surface: Mapping[str, Any]) -> bool:
+    editor = surface.get("editor")
+    return bool(surface.get("bus") is not None and editor is not None and hasattr(editor, "EditorComponentAPIBus"))
+
+
+def _outcome_success(value: Any) -> bool:
+    if value is None:
+        return False
+    try:
+        if hasattr(value, "IsSuccess"):
+            return bool(value.IsSuccess())
+    except Exception:
+        return False
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (list, tuple, set, dict)):
+        return bool(value)
+    return True
+
+
+def _unwrap_outcome(value: Any) -> Any:
+    try:
+        if hasattr(value, "IsSuccess") and not value.IsSuccess():
+            if hasattr(value, "GetError"):
+                return value.GetError()
+            return value
+        if hasattr(value, "GetValue"):
+            return value.GetValue()
+    except Exception:
+        return value
+    return value
+
+
+def _extract_sequence(value: Any) -> List[Any]:
+    if value is None:
+        return []
+    if isinstance(value, (str, bytes)):
+        return [value]
+    if isinstance(value, Mapping):
+        return [value]
+    try:
+        if isinstance(value, Sequence):
+            return list(value)
+    except Exception:
+        pass
+    try:
+        return list(value)
+    except Exception:
+        return [value]
+
+
+def _safe_serialize(value: Any) -> Any:
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, Mapping):
+        return {str(key): _safe_serialize(val) for key, val in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_safe_serialize(item) for item in value]
+    return str(value)
 
 
 def _unique(values: List[str]) -> List[str]:

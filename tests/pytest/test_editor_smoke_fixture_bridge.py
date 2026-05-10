@@ -99,6 +99,24 @@ def _live_env(tmp_path: Path, *, allow_editor: bool = True) -> dict:
 def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exit_code: int = 0) -> subprocess.CompletedProcess[str]:
     report_out = Path(env["MAXINE_EDITOR_SMOKE_REPORT_OUT"])
     payload = json.loads(Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).read_text(encoding="utf-8"))
+    binding_payload = _binding_contract_payload()
+    diagnostic_mode = env.get("MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE", "full")
+    if diagnostic_mode == "actor-binding":
+        binding_payload["actor_binding_checks"] = {
+            "status": "pass",
+            "product_evidence_status": "pass",
+            "actor_product_ref": "pc/assets/characters/maxine/release/jack.actor",
+            "component_type_id_status": "pass",
+            "component_add_status": "pass",
+            "property_path_discovery": {"status": "pass", "properties": ["Actor asset"]},
+        }
+    if diagnostic_mode == "prefab-binding":
+        binding_payload["prefab_binding_checks"] = {
+            "status": "pass",
+            "product_evidence_status": "pass",
+            "procprefab_product_ref": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+            "binding_surface_status": "pass",
+        }
     payload.update(
         {
             "status": status,
@@ -107,17 +125,87 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
             "editor_python_bindings_available": True,
             "temp_level_path_redacted": "Levels/_maxine_smoke/maxine_smoke_test",
             "entity_smoke": {"status": "pass", "entity_id": "EntityId(1)", "name": "maxine_smoke_entity"},
-            "prefab_smoke": {"status": "unavailable", "reason": "not attempted by unit test"},
-            "actor_smoke": {"status": "unavailable", "reason": "not attempted by unit test"},
-            "component_smoke": {"status": "unavailable", "reason": "not attempted by unit test"},
+            "prefab_smoke": {"status": "pass"} if diagnostic_mode == "prefab-binding" else {"status": "unsupported_by_engine_binding", "reason": "prefab instantiation binding not pinned in unit fixture"},
+            "actor_smoke": {"status": "pass"} if diagnostic_mode == "actor-binding" else {"status": "blocked_by_missing_binding", "reason": "actor component type ID not pinned in unit fixture"},
+            "component_smoke": {"status": "pass", "components": ["Transform"], "binding_evidence": "EditorComponentAPIBus"},
             "instantiated_entities": [{"name": "maxine_smoke_entity", "components": ["Transform"], "source": "editor_python"}],
             "missing_components": [],
             "errors": [] if status == "pass" else ["MXN_RUNTIME_SMOKE_FAIL"],
             "warnings": [],
+            **binding_payload,
         }
     )
     report_out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     return subprocess.CompletedProcess(args=["Editor.exe"], returncode=exit_code, stdout="editor stdout", stderr="")
+
+
+def _binding_contract_payload() -> dict:
+    return {
+        "component_type_registry": {
+            "Transform": {
+                "status": "pass",
+                "discovery_source": "default_entity_component",
+                "safe_for_unattended_temp_level_smoke": True,
+            },
+            "Tag": {
+                "status": "unavailable_with_verified_reason",
+                "unavailable_reason": "unsupported_by_engine_binding",
+                "safe_for_unattended_temp_level_smoke": False,
+            },
+            "Actor": {
+                "status": "unavailable_with_verified_reason",
+                "unavailable_reason": "blocked_by_missing_binding",
+                "safe_for_unattended_temp_level_smoke": False,
+            },
+        },
+        "binding_call_surface": {
+            "EditorComponentAPIBus": {
+                "status": "pass",
+                "validated_calls": ["FindComponentTypeIdsByEntityType", "BuildComponentPropertyList"],
+                "blocked_calls": [],
+            }
+        },
+        "safe_call_results": [
+            {"call": "EditorComponentAPIBus.FindComponentTypeIdsByEntityType", "status": "pass"},
+            {"call": "EditorComponentAPIBus.BuildComponentPropertyList", "status": "pass"},
+        ],
+        "component_binding_checks": {
+            "status": "pass",
+            "entity_name_verified": True,
+            "default_transform_verified": True,
+            "added_component": {
+                "status": "unavailable_with_verified_reason",
+                "unavailable_reason": "unsupported_by_engine_binding",
+            },
+            "property_list_summary": {
+                "status": "pass",
+                "properties": ["Transform"],
+            },
+        },
+        "actor_binding_checks": {
+            "status": "blocked_by_missing_binding",
+            "product_evidence_status": "pass",
+            "actor_product_ref": "pc/assets/characters/maxine/release/jack.actor",
+            "component_type_id_status": "blocked_by_missing_binding",
+            "property_path_discovery": {
+                "status": "blocked_by_missing_binding",
+                "blocked_reason": "actor_component_type_id_not_discovered",
+            },
+        },
+        "prefab_binding_checks": {
+            "status": "unsupported_by_engine_binding",
+            "product_evidence_status": "pass",
+            "procprefab_product_ref": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+            "binding_surface_status": "unsupported_by_engine_binding",
+        },
+        "property_access_summary": {
+            "Transform": {
+                "status": "pass",
+                "reads": [{"property_path": "Values|Translate", "status": "pass"}],
+            }
+        },
+        "no_fake_success": True,
+    }
 
 
 def _fixture(name: str) -> dict:
@@ -147,6 +235,81 @@ def test_editor_smoke_live_pass_example_schema_and_semantics_validate():
     assert report["live_publication"] is False
     assert report["release_packaging"] is False
     assert report["production_level_mutation"] is False
+    assert report["no_fake_success"] is True
+    assert report["component_binding_checks"]["status"] == "pass"
+    assert report["actor_binding_checks"]["status"] != "pass"
+    assert report["prefab_binding_checks"]["status"] != "pass"
+
+
+def test_editor_smoke_rejects_actor_or_prefab_pass_without_binding_evidence():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report["actor_smoke"] = {"status": "pass"}
+    report.pop("actor_binding_checks", None)
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+
+
+def test_editor_smoke_live_pass_requires_no_fake_success_marker():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report.pop("no_fake_success", None)
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+
+
+def test_editor_smoke_binding_diagnostic_modes_route_to_target_scripts(tmp_path):
+    expected_scripts = {
+        "component-binding": "editor_component_binding_smoke.py",
+        "actor-binding": "editor_actor_binding_smoke.py",
+        "prefab-binding": "editor_prefab_binding_smoke.py",
+    }
+
+    for mode, script_name in expected_scripts.items():
+        def fake_editor_runner(*, argv, cwd, env, timeout_seconds, _mode=mode, _script_name=script_name):
+            assert _script_name in argv[-1].replace("\\", "/")
+            assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == _mode
+            return _write_in_editor_report(env)
+
+        result = run_editor_smoke_corpus(
+            CORPUS,
+            enable_editor_smoke=True,
+            strict_integration=True,
+            env=_live_env(tmp_path / mode),
+            command_runner=fake_editor_runner,
+            artifact_root=tmp_path / mode / "editor-smoke-artifacts",
+            diagnostic_mode=mode,
+        )
+
+        assert result["status"] == "pass"
+        assert result["diagnostic_mode"] == mode
+
+
+def test_editor_smoke_cli_accepts_explicit_apb_report(tmp_path):
+    apb_report = tmp_path / "apb.json"
+    apb_report.write_text(json.dumps({"status": "pass"}), encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "--manifest",
+            "examples/manifests/release_rigged.pass.example.json",
+            "--mode",
+            "fixture",
+            "--apb-report",
+            str(apb_report),
+        ],
+        cwd=str(REPO_ROOT),
+        text=True,
+        capture_output=True,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_editor_smoke_fixture_corpus_passes():

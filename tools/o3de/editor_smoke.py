@@ -43,6 +43,9 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     "product-evidence": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_product_evidence_smoke.py",
     "temp-level": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_temp_level_smoke.py",
     "entity-minimal": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_entity_minimal_smoke.py",
+    "component-binding": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_component_binding_smoke.py",
+    "actor-binding": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_actor_binding_smoke.py",
+    "prefab-binding": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_prefab_binding_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -92,6 +95,11 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
                 MXN_RUNTIME_SMOKE_FAIL,
                 "Local Editor Python smoke cannot pass unless live_editor_execution is true.",
             )
+        if str(report.get("status", "")) == "pass" and report.get("no_fake_success") is not True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Local Editor Python smoke pass must explicitly preserve no_fake_success=true.",
+            )
         if report.get("live_publication") is True:
             result.add_error(MXN_PATH_UNSAFE, "Editor smoke must not enable live publication.")
         if report.get("release_packaging") is True:
@@ -101,6 +109,39 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
         temp_path = str(report.get("temp_level_path_redacted", "")).replace("\\", "/")
         if temp_path and not temp_path.startswith("Levels/_maxine_smoke/"):
             result.add_error(MXN_PATH_UNSAFE, "Editor smoke temp level path must stay under Levels/_maxine_smoke.")
+        diagnostic_mode = str(report.get("diagnostic_mode", "")).strip()
+        targeted_binding_fields = {
+            "component-binding": "component_binding_checks",
+            "actor-binding": "actor_binding_checks",
+            "prefab-binding": "prefab_binding_checks",
+        }
+        target_field = targeted_binding_fields.get(diagnostic_mode)
+        if str(report.get("status", "")) == "pass" and target_field:
+            target_checks = report.get(target_field, {})
+            target_status = str(target_checks.get("status", "")).strip() if isinstance(target_checks, Mapping) else ""
+            if target_status != "pass":
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"{diagnostic_mode} cannot report pass unless {target_field} reports pass.",
+                )
+        for smoke_field, check_field in (
+            ("actor_smoke", "actor_binding_checks"),
+            ("prefab_smoke", "prefab_binding_checks"),
+        ):
+            smoke = report.get(smoke_field, {})
+            checks = report.get(check_field, {})
+            smoke_status = str(smoke.get("status", "")).strip() if isinstance(smoke, Mapping) else ""
+            check_status = str(checks.get("status", "")).strip() if isinstance(checks, Mapping) else ""
+            if smoke_status == "pass" and check_status != "pass":
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"{smoke_field} cannot report pass without matching {check_field} pass evidence.",
+                )
+            if smoke_status == "unavailable" and "not attempted until" in str(smoke.get("reason", "")).lower():
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"{smoke_field} must report a typed binding status instead of generic unavailable-by-design.",
+                )
 
     if lane in {"release_rigged", "external_rig_import"}:
         if not any(str(report.get(field, "")).strip() for field in ("package_ref", "prefab_ref", "procprefab_ref")):
@@ -787,6 +828,15 @@ def _live_report_template(
         "script_path_redacted": _redact_path(str(script_path)),
         "script_path_mode": "absolute",
         "editor_command_working_directory": _redact_path(str(readiness.get("project_path", {}).get("path", ""))),
+        "component_type_registry": {},
+        "binding_call_surface": {},
+        "safe_call_results": [],
+        "component_binding_checks": {"status": "not_run"},
+        "actor_binding_checks": {"status": "not_run"},
+        "prefab_binding_checks": {"status": "not_run"},
+        "property_path_discovery": {},
+        "property_list_summary": {},
+        "no_fake_success": True,
         "entity_smoke": {"status": "not_run"},
         "prefab_smoke": {"status": "not_run"},
         "actor_smoke": {"status": "not_run"},
@@ -906,6 +956,12 @@ def _classify_stall_phase(marker: Mapping[str, Any]) -> str:
         return "idle_wait_stall"
     if step == "entity_create_started":
         return "entity_create_stall"
+    if step == "component_binding_started":
+        return "component_binding_stall"
+    if step == "actor_binding_started":
+        return "actor_binding_stall"
+    if step == "prefab_binding_started":
+        return "prefab_binding_stall"
     if step == "report_write_started":
         return "report_write_stall"
     if status in {"started", "running"}:
@@ -1331,6 +1387,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--diagnostic-mode", choices=DIAGNOSTIC_MODES, default="full", help="Live Editor diagnostic smoke scope.")
     parser.add_argument("--timeout-seconds", type=int, help="Bounded live Editor smoke timeout in seconds.")
     parser.add_argument("--progress-log", help="Optional JSONL progress log path for live Editor smoke diagnostics.")
+    parser.add_argument("--apb-report", help="Explicit APB baseline report path for live Editor smoke product evidence.")
     parser.add_argument("--strict", action="store_true", help="Fail if local Editor smoke readiness is unavailable.")
     parser.add_argument("--strict-integration", action="store_true", help="Fail if local Editor tooling is unavailable.")
     return parser.parse_args()
@@ -1361,6 +1418,8 @@ def main() -> int:
         env_map["O3DE_PROJECT_PATH"] = args.project
     if args.editor_executable:
         env_map["O3DE_EDITOR_EXECUTABLE"] = args.editor_executable
+    if args.apb_report:
+        env_map["MAXINE_APB_BASELINE_REPORT"] = args.apb_report
     result = run_editor_smoke_corpus(
         args.corpus,
         mode=args.mode,
