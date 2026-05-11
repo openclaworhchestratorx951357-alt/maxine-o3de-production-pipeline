@@ -14275,6 +14275,13 @@
     "runtime_command_variant_safety_profile": {},
     "runtime_command_variant_selected": false,
     "runtime_command_variant_rejected_reason": "",
+    "runtime_command_variants": [],
+    "runtime_command_variant_matrix": [],
+    "runtime_safer_variant_selected": "",
+    "runtime_safer_variant_selection_reason": "",
+    "runtime_safer_variant_verified": false,
+    "runtime_quit_variant_diagnostic_status": "not_run",
+    "runtime_quit_variant_diagnostic_reason": "",
     "runtime_log_error_summary": {
       "status": "runtime_execution_not_attempted"
     },

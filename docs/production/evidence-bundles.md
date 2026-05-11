@@ -197,6 +197,8 @@ Runtime command-pinning evidence is intentionally narrow. It proves the command 
 
 Runtime exit diagnostic evidence is a sixth layer. When a gated bounded command launches, the harness records `runtime_exit_code_decimal`, `runtime_exit_code_hex`, `runtime_exit_code_signed`, `runtime_exit_classification`, stdout/stderr/log summaries, AssetManager shutdown assert summaries, timeout/kill state, and missing actor/mesh/material/animation/load-error scans. The first live attempt of the pinned envelope exited `3221225477` (`0xC0000005`) and is classified as crash-like, with AssetManager shutdown asserts observed in stderr. That evidence remains a failed runtime execution and must not be counted as runtime execution proof or runtime character proof.
 
+Runtime quit-variant evidence is a seventh layer. The harness records `runtime_command_variant_matrix` entries for the preserved baseline, source-validated attemptable variants, and rejected variants with typed reasons. Each attempted variant carries command arguments, source-validation notes, timeout, stdout/stderr/log refs, exit code decimal/hex/classification, AssetManager/shader serializer/Asset Processor negotiation summaries, and missing actor/mesh/material/animation/load-error scans. A variant pass requires expected exit code `0` and no disqualifying scanned signals; expected exit codes must not be widened to hide `0xC0000005`.
+
 ## Golden Project Fixture Evidence
 
 Golden project fixture evidence may be attached as:

@@ -152,6 +152,16 @@ On the current paired runner, the first gated live execution of this pinned enve
 
 Do not broaden expected exit codes to accept `3221225477`. Safer runtime variants may be tried only through the harness, with the same gates, timeout, stdout/stderr/log capture, no production level, no publication, no release packaging, and an explicit `runtime_command_variant_*` result.
 
+The safer quit-variant diagnostic entry point is:
+
+```powershell
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-quit-variants --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+The diagnostic preserves the original pinned command, records rejected help/version/no-console/delayed/fallback variants unless source validates a bounded exit strategy, and attempts only source-validated no-level variants. `-NullRenderer`-only and `-rhi=null`-only are currently the first attemptable HeadlessServerLauncher variants because local source validates both as console-mode triggers. A clean quit variant can verify bounded runtime command execution, but not runtime character proof.
+
 When using the produced paired Editor on the controlled runner, pass it explicitly:
 
 ```powershell
