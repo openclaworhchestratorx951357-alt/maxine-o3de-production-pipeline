@@ -34,6 +34,7 @@ DIAGNOSTIC_MODES = {
     "prefab-instantiation",
     "procprefab-product-instantiation",
     "procprefab-content-assertions",
+    "procprefab-character-component-assertions",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -145,6 +146,7 @@ def main() -> int:
             "source_prefab_baseline_result": report.get("source_prefab_baseline_result", {"status": "not_run"}),
             "direct_procprefab_product_semantics": report.get("direct_procprefab_product_semantics", {"status": "not_run"}),
             "direct_procprefab_content_assertions": report.get("direct_procprefab_content_assertions", {"status": "not_run"}),
+            "procprefab_character_assertions": report.get("procprefab_character_assertions", {"status": "not_run"}),
             "property_path_discovery": report.get("property_path_discovery", {}),
             "property_list_summary": report.get("property_list_summary", {}),
             "property_access_summary": report.get("property_access_summary", {}),
@@ -168,6 +170,7 @@ def main() -> int:
         "prefab-instantiation",
         "procprefab-product-instantiation",
         "procprefab-content-assertions",
+        "procprefab-character-component-assertions",
         "full",
     }
     if needs_temp_level and not allow_temp_level:
@@ -225,6 +228,7 @@ def main() -> int:
         "prefab-instantiation",
         "procprefab-product-instantiation",
         "procprefab-content-assertions",
+        "procprefab-character-component-assertions",
         "full",
     }:
         _write_progress_marker(progress_log, "entity_create_started", "started", "Creating minimal temporary smoke entity.")
@@ -254,6 +258,7 @@ def main() -> int:
         "prefab-instantiation",
         "procprefab-product-instantiation",
         "procprefab-content-assertions",
+        "procprefab-character-component-assertions",
         "full",
     }:
         binding_report = _run_binding_checks(
@@ -514,14 +519,32 @@ def _run_binding_checks(
     else:
         result["actor_binding_checks"] = _skipped_check("actor-binding")
 
-    if diagnostic_mode in {"prefab-binding", "prefab-instantiation", "procprefab-product-instantiation", "procprefab-content-assertions", "full"}:
+    if diagnostic_mode in {
+        "prefab-binding",
+        "prefab-instantiation",
+        "procprefab-product-instantiation",
+        "procprefab-content-assertions",
+        "procprefab-character-component-assertions",
+        "full",
+    }:
         _write_progress_marker(progress_log, "prefab_binding_started", "started", "Running prefab/procprefab binding surface checks.")
         prefab_checks = _run_prefab_binding_checks(
             report,
             safe_call_results,
             entity_id=entity_id,
-            attempt_instantiation=diagnostic_mode in {"prefab-instantiation", "procprefab-product-instantiation", "procprefab-content-assertions", "full"},
-            attempt_direct_product=diagnostic_mode in {"procprefab-product-instantiation", "procprefab-content-assertions", "full"},
+            attempt_instantiation=diagnostic_mode in {
+                "prefab-instantiation",
+                "procprefab-product-instantiation",
+                "procprefab-content-assertions",
+                "procprefab-character-component-assertions",
+                "full",
+            },
+            attempt_direct_product=diagnostic_mode in {
+                "procprefab-product-instantiation",
+                "procprefab-content-assertions",
+                "procprefab-character-component-assertions",
+                "full",
+            },
             progress_log=progress_log,
         )
         result["prefab_binding_checks"] = prefab_checks
@@ -535,6 +558,9 @@ def _run_binding_checks(
             content_assertions = prefab_checks["direct_procprefab_product_semantics"].get("direct_procprefab_content_assertions")
             if isinstance(content_assertions, Mapping):
                 result["direct_procprefab_content_assertions"] = content_assertions
+            character_assertions = prefab_checks["direct_procprefab_product_semantics"].get("procprefab_character_assertions")
+            if isinstance(character_assertions, Mapping):
+                result["procprefab_character_assertions"] = character_assertions
         _write_progress_marker(progress_log, "prefab_binding_returned", str(prefab_checks.get("status", "returned")), "Prefab binding checks returned.")
     else:
         result["prefab_binding_checks"] = _skipped_check("prefab-binding")
@@ -567,6 +593,7 @@ def _targeted_binding_blocker(report: Mapping[str, Any], diagnostic_mode: str) -
         "prefab-instantiation": "prefab_binding_checks",
         "procprefab-product-instantiation": "prefab_binding_checks",
         "procprefab-content-assertions": "prefab_binding_checks",
+        "procprefab-character-component-assertions": "prefab_binding_checks",
     }
     field = target_fields.get(diagnostic_mode)
     if not field:
@@ -964,6 +991,10 @@ def _run_prefab_binding_checks(
             "instantiation": instantiation,
             "source_prefab_baseline_result": source_prefab_baseline_result,
             "direct_procprefab_product_semantics": direct_semantics,
+            "procprefab_character_assertions": direct_semantics.get(
+                "procprefab_character_assertions",
+                {"status": "not_run"},
+            ),
         }
     return {
         **result,
@@ -982,6 +1013,10 @@ def _run_prefab_binding_checks(
         "instantiation": instantiation,
         "source_prefab_baseline_result": source_prefab_baseline_result,
         "direct_procprefab_product_semantics": direct_semantics,
+        "procprefab_character_assertions": direct_semantics.get(
+            "procprefab_character_assertions",
+            {"status": "not_run"},
+        ),
         "blocked_reason": (
             direct_semantics.get("blocked_reason")
             or direct_semantics.get("unsupported_reason")
@@ -1533,6 +1568,7 @@ def _direct_procprefab_semantics_allows_pass(semantics: Mapping[str, Any]) -> bo
             and instantiation.get("status") == "pass"
             and created_count > 0
             and _direct_procprefab_content_assertions_allow_pass(semantics)
+            and _procprefab_character_assertions_allow_pass(semantics)
         )
     status = str(semantics.get("status", "")).strip()
     instantiation = semantics.get("procprefab_direct_product_instantiation_result", {})
@@ -1564,6 +1600,38 @@ def _direct_procprefab_content_assertions_allow_pass(semantics: Mapping[str, Any
         and content["missing_asset_log_signals"].get("status") == "pass"
         and isinstance(content.get("editor_log_error_scan"), Mapping)
         and content["editor_log_error_scan"].get("status") == "pass"
+        and not (required_failures if isinstance(required_failures, list) else [required_failures])
+        and not (assertion_failures if isinstance(assertion_failures, list) else [assertion_failures])
+    )
+
+
+def _procprefab_character_assertions_allow_pass(semantics: Mapping[str, Any]) -> bool:
+    character = semantics.get("procprefab_character_assertions")
+    if not isinstance(character, Mapping):
+        return False
+    required_failures = character.get("required_character_assertions_failed", [])
+    assertion_failures = character.get("character_assertion_failures", [])
+    return (
+        character.get("status") in {"pass", "informational_only", "unavailable_with_verified_reason"}
+        and character.get("character_assertion_status") in {
+            "pass",
+            "informational_only",
+            "unavailable_with_verified_reason",
+        }
+        and character.get("required_character_assertions_status") == "pass"
+        and character.get("character_component_inventory_status")
+        in {"pass", "informational_only", "unavailable_with_verified_reason"}
+        and isinstance(character.get("editor_log_character_error_scan"), Mapping)
+        and character["editor_log_character_error_scan"].get("status") == "pass"
+        and isinstance(character.get("editor_log_missing_actor_signal"), Mapping)
+        and character["editor_log_missing_actor_signal"].get("status") == "pass"
+        and isinstance(character.get("editor_log_missing_mesh_signal"), Mapping)
+        and character["editor_log_missing_mesh_signal"].get("status") == "pass"
+        and isinstance(character.get("editor_log_missing_material_signal"), Mapping)
+        and character["editor_log_missing_material_signal"].get("status") == "pass"
+        and isinstance(character.get("editor_log_missing_animation_signal"), Mapping)
+        and character["editor_log_missing_animation_signal"].get("status") == "pass"
+        and "Transform" not in (character.get("required_character_assertions_passed", []) or [])
         and not (required_failures if isinstance(required_failures, list) else [required_failures])
         and not (assertion_failures if isinstance(assertion_failures, list) else [assertion_failures])
     )
@@ -1658,7 +1726,15 @@ def _probe_direct_procprefab_product_semantics(
         }
 
     candidates = _procprefab_product_path_candidates(procprefab_product, asset_resolution)
-    instantiation = _probe_direct_procprefab_instantiate(prefab, bus, entity, math, candidates, safe_call_results)
+    instantiation = _probe_direct_procprefab_instantiate(
+        prefab,
+        bus,
+        entity,
+        math,
+        candidates,
+        safe_call_results,
+        report=report,
+    )
     load_result = {
         "status": "skipped_by_mode",
         "selected_call": "azlmbr.prefab.LoadTemplate",
@@ -1672,6 +1748,7 @@ def _probe_direct_procprefab_product_semantics(
 
     if instantiation.get("status") == "pass":
         content_assertions = instantiation.get("direct_procprefab_content_assertions", {})
+        character_assertions = instantiation.get("procprefab_character_assertions", {})
         return {
             **base,
             "status": "pass",
@@ -1688,6 +1765,7 @@ def _probe_direct_procprefab_product_semantics(
             "direct_product_instantiation_verified": True,
             "direct_procprefab_content_assertions": content_assertions,
             "direct_product_assertions": content_assertions,
+            "procprefab_character_assertions": character_assertions,
             "unsupported_reason": "",
             "blocked_reason": "",
         }
@@ -1843,6 +1921,8 @@ def _probe_direct_procprefab_instantiate(
     math: Any,
     candidates: Sequence[str],
     safe_call_results: List[Dict[str, Any]],
+    *,
+    report: Mapping[str, Any],
 ) -> Dict[str, Any]:
     attempts: List[Dict[str, Any]] = []
     for candidate in candidates:
@@ -1875,6 +1955,13 @@ def _probe_direct_procprefab_instantiate(
                 owning_path=owning_path,
                 safe_call_results=safe_call_results,
             )
+            character_assertions = _build_procprefab_character_assertions(
+                created_entity_id,
+                expected_product_path=candidate,
+                safe_call_results=safe_call_results,
+                content_assertions=content_assertions,
+                product_refs=_character_product_refs(report),
+            )
             return {
                 "status": "pass",
                 "selected_call": "PrefabPublicRequestBus.InstantiatePrefab",
@@ -1891,6 +1978,7 @@ def _probe_direct_procprefab_instantiate(
                 "owning_instance_prefab_path_status": owning_status,
                 "direct_procprefab_content_assertions": content_assertions,
                 "direct_product_assertions": content_assertions,
+                "procprefab_character_assertions": character_assertions,
                 "attempts": attempts,
             }
     return {
@@ -2237,6 +2325,414 @@ def _direct_procprefab_component_inventory(
         "missing_required_components": [] if transform_detected else ["Transform"],
         "optional_components_detected": _unique(optional_components_detected),
     }
+
+
+CHARACTER_COMPONENT_CANDIDATES: Dict[str, Sequence[str]] = {
+    "Actor": ("Actor", "Actor Component", "EditorActorComponent", "EMotion FX Actor", "EMotionFX Actor"),
+    "Mesh": ("Mesh", "Mesh Component", "EditorMeshComponent", "AZ::Render::EditorMeshComponent"),
+    "Skinned Mesh": ("Skinned Mesh", "Skinned Mesh Component", "SkinnedMesh"),
+    "Material": ("Material", "Material Component", "EditorMaterialComponent", "Editor Material Component"),
+    "Animation": ("Anim Graph", "AnimGraph", "Motion", "Motion Set", "Animation"),
+    "PhysX": ("PhysX Collider", "PhysX Shape Collider", "Collider", "Mesh Collider", "PhysX Mesh Collider"),
+}
+
+
+def _build_procprefab_character_assertions(
+    root_entity_id: Any,
+    *,
+    expected_product_path: str,
+    safe_call_results: List[Dict[str, Any]],
+    content_assertions: Mapping[str, Any],
+    product_refs: Mapping[str, str],
+) -> Dict[str, Any]:
+    progress_log = _progress_log_path(os.environ.get("MAXINE_EDITOR_SMOKE_PROGRESS_LOG", ""))
+    _write_progress_marker(
+        progress_log,
+        "procprefab_character_assertions_started",
+        "started",
+        "Inspecting direct procprefab character-specific components, asset references, and log signals.",
+    )
+    required_passed: List[str] = []
+    required_failed: List[str] = []
+    informational: List[str] = []
+    unavailable_reasons: List[Dict[str, Any]] = []
+    unsupported_assertions: List[Dict[str, Any]] = []
+    warnings: List[str] = []
+
+    children_status, children_value = _editor_entity_info_call("GetChildren", root_entity_id, safe_call_results)
+    child_entities = _extract_sequence(_unwrap_outcome(children_value)) if children_status == "pass" else []
+    entities = [root_entity_id, *list(child_entities)[:16]]
+    entity_ids = [_safe_serialize(entity_id) for entity_id in entities]
+    child_entity_ids = [_safe_serialize(entity_id) for entity_id in child_entities[:16]]
+    container_name_status, container_name_value = _editor_entity_info_call("GetName", root_entity_id, safe_call_results)
+    entity_name_summary = {
+        "status": "pass" if container_name_status == "pass" else "unavailable_with_verified_reason",
+        "container": str(_unwrap_outcome(container_name_value)) if container_name_status == "pass" else "",
+        "children": _child_name_summary(child_entities, safe_call_results),
+    }
+
+    surface_info, surface = _load_component_api_surface()
+    registry: Dict[str, Any] = {}
+    component_presence: Dict[str, Any] = {}
+    component_type_ids: Dict[str, Any] = {}
+    component_display_names: Dict[str, Any] = {}
+    character_component_optional: List[str] = []
+    character_component_unavailable: List[str] = []
+    character_component_blocked: List[str] = []
+    character_component_unsupported: List[str] = []
+    matched_product_evidence: List[Dict[str, Any]] = []
+    present_character_components: List[str] = []
+    component_inventory_by_entity: List[Dict[str, Any]] = []
+
+    if _surface_available(surface):
+        for component_name, display_names in CHARACTER_COMPONENT_CANDIDATES.items():
+            discovery = _discover_component_type_ids(display_names, component_name, surface, safe_call_results, registry)
+            component_display_names[component_name] = list(display_names)
+            component_type_ids[component_name] = discovery.get("type_ids", [])
+            raw_type_ids = discovery.get("type_ids_raw", []) if isinstance(discovery.get("type_ids_raw", []), list) else []
+            if discovery.get("status") != "pass" or not raw_type_ids:
+                reason = "component_type_id_not_discovered"
+                status = str(discovery.get("status", "blocked_by_missing_binding"))
+                component_presence[component_name] = {
+                    "status": status,
+                    "present": False,
+                    "required": False,
+                    "reason": reason,
+                }
+                character_component_unavailable.append(component_name)
+                if status == "blocked_by_missing_binding":
+                    character_component_blocked.append(component_name)
+                elif status == "unsupported_by_engine_binding":
+                    character_component_unsupported.append(component_name)
+                unavailable_reasons.append(
+                    {
+                        "assertion": f"{component_name}_component_presence",
+                        "status": status,
+                        "reason": reason,
+                    }
+                )
+                continue
+
+            type_id = raw_type_ids[0]
+            entity_checks: List[Dict[str, Any]] = []
+            present_entities: List[Dict[str, Any]] = []
+            property_readbacks: List[Dict[str, Any]] = []
+            for entity_id in entities:
+                status, value = _component_bus_call(surface, "HasComponentOfType", (entity_id, type_id), safe_call_results)
+                present = bool(_unwrap_outcome(value)) if status == "pass" else False
+                check = {
+                    "entity_id": _safe_serialize(entity_id),
+                    "status": status,
+                    "present": present,
+                    "type_id": _safe_serialize(type_id),
+                }
+                entity_checks.append(check)
+                if not present:
+                    continue
+                present_entities.append({"entity_id": _safe_serialize(entity_id), "type_id": _safe_serialize(type_id)})
+                component_ref = _get_component_reference(entity_id, [type_id], surface, safe_call_results)
+                properties = _build_component_property_list(component_ref, surface, safe_call_results)
+                readback = _get_component_property_values(component_ref, properties, surface, safe_call_results)
+                property_readbacks.append(
+                    {
+                        "entity_id": _safe_serialize(entity_id),
+                        "component_ref": component_ref.get("component_ref_serialized", ""),
+                        "property_list": properties,
+                        "property_readback": readback,
+                    }
+                )
+                matched_product_evidence.extend(
+                    _match_character_property_readbacks_to_products(component_name, readback, product_refs)
+                )
+
+            component_status = "component_present_property_readback_unavailable"
+            if present_entities and any(
+                item.get("property_readback", {}).get("status") == "pass" for item in property_readbacks
+            ):
+                component_status = "component_present_property_readback_pass"
+            elif not present_entities:
+                component_status = "component_not_present"
+
+            if present_entities:
+                present_character_components.append(component_name)
+                character_component_optional.append(component_name)
+                informational.append(f"{component_name}_component_present")
+            else:
+                character_component_unavailable.append(component_name)
+                unavailable_reasons.append(
+                    {
+                        "assertion": f"{component_name}_component_presence",
+                        "status": "component_not_present",
+                        "reason": "direct_procprefab_character_component_not_present_on_created_editor_entities",
+                    }
+                )
+
+            component_presence[component_name] = {
+                "status": component_status,
+                "present": bool(present_entities),
+                "required": False,
+                "type_ids": [_safe_serialize(type_id_value) for type_id_value in raw_type_ids],
+                "entity_checks": entity_checks,
+                "present_entities": present_entities,
+                "property_readbacks": property_readbacks,
+            }
+            component_inventory_by_entity.append(
+                {
+                    "component": component_name,
+                    "status": component_status,
+                    "present_entities": present_entities,
+                    "entity_checks": entity_checks,
+                }
+            )
+    else:
+        unavailable_reasons.append(
+            {
+                "assertion": "character_component_inventory",
+                "status": "unsupported_by_engine_binding",
+                "reason": surface_info.get("blocked_reason", "EditorComponentAPIBus_unavailable"),
+            }
+        )
+
+    matched_product_evidence = _unique_dicts(matched_product_evidence)
+    character_scan = _scan_editor_log_for_procprefab_character_signals(expected_product_path)
+    if character_scan.get("status") == "pass":
+        required_passed.append("no_missing_character_load_error_signals")
+    else:
+        required_failed.append("no_missing_character_load_error_signals")
+
+    character_components_exposed = bool(present_character_components or matched_product_evidence)
+    inventory_collected = bool(component_presence)
+    inventory_status = "pass" if inventory_collected else "unavailable_with_verified_reason"
+    if character_components_exposed:
+        character_status = "pass"
+        informational.append("character_specific_component_or_asset_reference_detected")
+    else:
+        character_status = "unavailable_with_verified_reason"
+        informational.append("character_components_not_exposed")
+        unavailable_reasons.append(
+            {
+                "assertion": "character_specific_component_or_asset_reference",
+                "status": "unavailable_with_verified_reason",
+                "reason": "direct_procprefab_character_components_not_exposed_in_editor_product_instance",
+            }
+        )
+
+    if required_failed:
+        character_status = "fail"
+
+    result = {
+        "status": character_status,
+        "character_assertion_status": character_status,
+        "required_character_assertions_status": "pass" if not required_failed else "fail",
+        "character_component_inventory": {
+            "status": inventory_status,
+            "component_type_registry": {key: _safe_serialize(value) for key, value in registry.items()},
+            "component_presence": component_presence,
+            "component_inventory_by_entity": component_inventory_by_entity,
+            "source": "EditorComponentAPIBus.FindComponentTypeIdsByEntityType + HasComponentOfType",
+        },
+        "character_component_inventory_status": inventory_status,
+        "character_component_type_registry": {key: _safe_serialize(value) for key, value in registry.items()},
+        "character_component_type_ids": component_type_ids,
+        "character_component_display_names": component_display_names,
+        "character_component_presence": component_presence,
+        "character_component_required": [],
+        "character_component_optional": _unique(character_component_optional),
+        "character_component_unavailable": _unique(character_component_unavailable),
+        "character_component_blocked": _unique(character_component_blocked),
+        "character_component_unsupported": _unique(character_component_unsupported),
+        "character_entity_ids": entity_ids,
+        "character_child_entity_ids": child_entity_ids,
+        "character_entity_name_summary": entity_name_summary,
+        "actor_component_presence": component_presence.get("Actor", {"status": "component_not_present", "present": False}),
+        "actor_component_type_id": component_type_ids.get("Actor", []),
+        "actor_asset_reference_readback": _component_asset_reference_readback(component_presence.get("Actor", {})),
+        "mesh_component_presence": component_presence.get("Mesh", {"status": "component_not_present", "present": False}),
+        "mesh_component_type_id": component_type_ids.get("Mesh", []),
+        "mesh_asset_reference_readback": _component_asset_reference_readback(component_presence.get("Mesh", {})),
+        "skinned_mesh_component_presence": component_presence.get("Skinned Mesh", {"status": "component_not_present", "present": False}),
+        "material_component_presence": component_presence.get("Material", {"status": "component_not_present", "present": False}),
+        "material_asset_reference_readback": _component_asset_reference_readback(component_presence.get("Material", {})),
+        "animation_component_presence": component_presence.get("Animation", {"status": "component_not_present", "present": False}),
+        "motion_reference_readback": _component_asset_reference_readback(component_presence.get("Animation", {}), product_type="motion"),
+        "motion_set_reference_readback": _component_asset_reference_readback(component_presence.get("Animation", {}), product_type="motionset"),
+        "anim_graph_reference_readback": _component_asset_reference_readback(component_presence.get("Animation", {}), product_type="animgraph"),
+        "pxmesh_or_collision_reference_readback": _component_asset_reference_readback(component_presence.get("PhysX", {}), product_type="pxmesh"),
+        "character_asset_reference_summary": {
+            "status": "pass" if matched_product_evidence else "unavailable_with_verified_reason",
+            "matched_product_evidence": matched_product_evidence,
+            "reason": "" if matched_product_evidence else "direct_procprefab_character_asset_references_not_exposed_in_editor_component_properties",
+        },
+        "matched_product_evidence": matched_product_evidence,
+        "missing_character_expected_components": [],
+        "character_assertion_failures": [f"assertion_failed_{failure}" for failure in required_failed],
+        "character_assertion_warnings": warnings,
+        "character_assertion_informational": _unique(informational),
+        "character_unavailable_reasons": unavailable_reasons,
+        "unsupported_assertions": unsupported_assertions,
+        "editor_log_character_error_scan": character_scan,
+        "editor_log_missing_actor_signal": character_scan.get("missing_actor", {"status": "pass", "matches": []}),
+        "editor_log_missing_mesh_signal": character_scan.get("missing_mesh", {"status": "pass", "matches": []}),
+        "editor_log_missing_material_signal": character_scan.get("missing_material", {"status": "pass", "matches": []}),
+        "editor_log_missing_animation_signal": character_scan.get("missing_animation", {"status": "pass", "matches": []}),
+        "direct_product_instantiation_result": {
+            "status": "pass",
+            "selected_product_path": expected_product_path,
+            "created_entity_count": content_assertions.get("created_entity_count", 0),
+        },
+        "direct_product_content_assertion_result": {
+            "status": content_assertions.get("status", "unavailable_with_verified_reason"),
+            "required_assertions_status": content_assertions.get("required_assertions_status", ""),
+        },
+        "required_character_assertions_passed": _unique(required_passed),
+        "required_character_assertions_failed": _unique(required_failed),
+    }
+    _write_progress_marker(
+        progress_log,
+        "procprefab_character_assertions_returned",
+        character_status,
+        "Direct procprefab character-specific assertions returned.",
+    )
+    return result
+
+
+def _character_product_refs(report: Mapping[str, Any]) -> Dict[str, str]:
+    return {
+        product_type: product_ref
+        for product_type in ("actor", "azmodel", "pxmesh", "azmaterial", "motion", "motionset", "animgraph")
+        for product_ref in [_product_ref(report, product_type)]
+        if product_ref
+    }
+
+
+def _match_character_property_readbacks_to_products(
+    component_name: str,
+    readback: Mapping[str, Any],
+    product_refs: Mapping[str, str],
+) -> List[Dict[str, Any]]:
+    serialized = _safe_serialize(readback)
+    haystack = json.dumps(serialized, sort_keys=True).replace("\\", "/").lower()
+    matches: List[Dict[str, Any]] = []
+    for product_type, product_ref in product_refs.items():
+        normalized = product_ref.replace("\\", "/").lower()
+        normalized_no_platform = normalized[3:] if normalized.startswith("pc/") else normalized
+        basename = Path(normalized_no_platform).name
+        if normalized in haystack or normalized_no_platform in haystack or (basename and basename in haystack):
+            matches.append(
+                {
+                    "component": component_name,
+                    "product_type": product_type,
+                    "product_path": product_ref,
+                    "status": "pass",
+                }
+            )
+    return matches
+
+
+def _component_asset_reference_readback(component_presence: Any, *, product_type: str = "") -> Dict[str, Any]:
+    if not isinstance(component_presence, Mapping) or not component_presence.get("present"):
+        return {
+            "status": "unavailable_with_verified_reason",
+            "product_type": product_type,
+            "reason": "component_not_present",
+        }
+    readbacks = component_presence.get("property_readbacks", [])
+    if not isinstance(readbacks, list) or not readbacks:
+        return {
+            "status": "unavailable_with_verified_reason",
+            "product_type": product_type,
+            "reason": "component_property_readback_unavailable",
+        }
+    return {"status": "pass", "product_type": product_type, "readbacks": readbacks[:3]}
+
+
+def _unique_dicts(values: Sequence[Mapping[str, Any]]) -> List[Dict[str, Any]]:
+    seen: set[str] = set()
+    unique_values: List[Dict[str, Any]] = []
+    for value in values:
+        serialized = json.dumps(_safe_serialize(value), sort_keys=True)
+        if serialized in seen:
+            continue
+        seen.add(serialized)
+        unique_values.append(dict(value))
+    return unique_values
+
+
+def _scan_editor_log_for_procprefab_character_signals(expected_product_path: str) -> Dict[str, Any]:
+    project_path_raw = os.environ.get("O3DE_PROJECT_PATH", "")
+    project_path = Path(project_path_raw) if project_path_raw else None
+    candidates: List[Path] = []
+    if project_path is not None:
+        candidates.extend([project_path / "user" / "log" / "Editor.log", *project_path.glob("**/Editor.log")])
+    existing = [candidate for candidate in candidates if candidate.exists()]
+    patterns = {
+        "missing_actor": ["missing actor", "actor not found", "failed to load actor", "could not load actor"],
+        "missing_mesh": [
+            "missing mesh",
+            "mesh not found",
+            "missing model",
+            "model not found",
+            "failed to load mesh",
+            "could not load mesh",
+            "failed to load model",
+        ],
+        "missing_material": [
+            "missing material",
+            "material not found",
+            "failed to load material",
+            "could not load material",
+        ],
+        "missing_animation": [
+            "missing animation",
+            "missing motion",
+            "motion not found",
+            "motion set not found",
+            "anim graph not found",
+            "animgraph not found",
+            "failed to load animation",
+        ],
+        "load_error": ["failed to load", "could not load", "load error", "failed loading"],
+    }
+    if not existing:
+        base = {
+            "status": "unavailable_with_verified_reason",
+            "reason": "editor_log_not_found",
+            "matches": [],
+            "patterns": patterns,
+            "scanned_bytes": 0,
+            "log_ref": "",
+        }
+        for key in ("missing_actor", "missing_mesh", "missing_material", "missing_animation"):
+            base[key] = {"status": "unavailable_with_verified_reason", "matches": []}
+        return base
+
+    log_path = max(existing, key=lambda path: path.stat().st_mtime)
+    text = _read_text_tail(log_path, max_bytes=512_000)
+    expected = expected_product_path.replace("\\", "/").lower()
+    pc_prefixed_expected = f"pc/{expected}"
+    grouped_matches: Dict[str, List[Dict[str, str]]] = {key: [] for key in patterns}
+    for line in text.splitlines():
+        lowered = line.lower().replace("\\", "/")
+        if pc_prefixed_expected in lowered:
+            continue
+        if expected not in lowered:
+            continue
+        for key, terms in patterns.items():
+            if any(term in lowered for term in terms):
+                grouped_matches[key].append({"line": line.strip()[:500]})
+
+    all_matches = [match for matches in grouped_matches.values() for match in matches]
+    result: Dict[str, Any] = {
+        "status": "fail" if all_matches else "pass",
+        "matches": all_matches[:20],
+        "patterns": patterns,
+        "scanned_bytes": len(text.encode("utf-8", errors="ignore")),
+        "log_ref": _redacted_project_temp_path(str(log_path)),
+    }
+    for key in ("missing_actor", "missing_mesh", "missing_material", "missing_animation"):
+        matches = grouped_matches.get(key, [])
+        result[key] = {"status": "fail" if matches else "pass", "matches": matches[:20]}
+    return result
 
 
 def _scan_editor_log_for_direct_procprefab_signals(expected_product_path: str) -> Dict[str, Any]:

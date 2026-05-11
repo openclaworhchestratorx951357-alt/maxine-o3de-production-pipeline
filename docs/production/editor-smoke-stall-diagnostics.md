@@ -31,3 +31,5 @@ The first fixed full pass is represented by:
 ```text
 examples/editor-smoke/editor-smoke-live.release-rigged.pass.example.json
 ```
+
+Later binding/content hardening slices add more targeted live modes after APB product evidence is complete. Use `component-binding`, `actor-asset-assignment`, `prefab-instantiation`, `procprefab-product-instantiation`, `procprefab-content-assertions`, and `procprefab-character-component-assertions` to isolate stalls in the component, Actor assignment, source-prefab, direct product, structural content, and character-specific assertion phases. The character-specific mode records `procprefab_character_assertions` and may report typed unavailable evidence when the current Editor binding surface does not expose Actor/Mesh/Material/Animation/PhysX components on direct `.procprefab` product instances; that state is not a pass for character component presence.

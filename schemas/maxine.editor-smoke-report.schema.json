@@ -102,6 +102,7 @@
         "prefab-instantiation",
         "procprefab-product-instantiation",
         "procprefab-content-assertions",
+        "procprefab-character-component-assertions",
         "full"
       ]
     },
@@ -359,6 +360,10 @@
       "additionalProperties": true
     },
     "direct_procprefab_content_assertions": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "procprefab_character_assertions": {
       "type": "object",
       "additionalProperties": true
     },

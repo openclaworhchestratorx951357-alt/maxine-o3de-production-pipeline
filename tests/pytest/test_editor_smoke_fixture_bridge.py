@@ -126,6 +126,7 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
         "prefab-instantiation",
         "procprefab-product-instantiation",
         "procprefab-content-assertions",
+        "procprefab-character-component-assertions",
         "full",
     }:
         binding_payload["prefab_binding_checks"] = {
@@ -145,15 +146,25 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
                 "container_entity": "EntityId(2)",
             },
         }
-        if diagnostic_mode in {"procprefab-product-instantiation", "procprefab-content-assertions", "full"}:
+        if diagnostic_mode in {
+            "procprefab-product-instantiation",
+            "procprefab-content-assertions",
+            "procprefab-character-component-assertions",
+            "full",
+        }:
             semantics = _direct_procprefab_semantics_payload()
             semantics.update(_direct_procprefab_verified_product_payload())
+            semantics["procprefab_character_assertions"] = _procprefab_character_assertions_payload()
             binding_payload["prefab_binding_checks"]["direct_procprefab_product_semantics"] = semantics
             binding_payload["prefab_binding_checks"]["source_prefab_baseline_result"] = semantics[
                 "source_prefab_baseline_result"
             ]
+            binding_payload["prefab_binding_checks"]["procprefab_character_assertions"] = semantics[
+                "procprefab_character_assertions"
+            ]
             binding_payload["direct_procprefab_product_semantics"] = semantics
             binding_payload["source_prefab_baseline_result"] = semantics["source_prefab_baseline_result"]
+            binding_payload["procprefab_character_assertions"] = semantics["procprefab_character_assertions"]
     payload.update(
         {
             "status": status,
@@ -162,7 +173,7 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
             "editor_python_bindings_available": True,
             "temp_level_path_redacted": "Levels/_maxine_smoke/maxine_smoke_test",
             "entity_smoke": {"status": "pass", "entity_id": "EntityId(1)", "name": "maxine_smoke_entity"},
-            "prefab_smoke": {"status": "pass"} if diagnostic_mode in {"prefab-binding", "prefab-instantiation", "procprefab-product-instantiation", "procprefab-content-assertions", "full"} else {"status": "unsupported_by_engine_binding", "reason": "prefab instantiation binding not pinned in unit fixture"},
+            "prefab_smoke": {"status": "pass"} if diagnostic_mode in {"prefab-binding", "prefab-instantiation", "procprefab-product-instantiation", "procprefab-content-assertions", "procprefab-character-component-assertions", "full"} else {"status": "unsupported_by_engine_binding", "reason": "prefab instantiation binding not pinned in unit fixture"},
             "actor_smoke": {"status": "pass"} if diagnostic_mode in {"actor-binding", "actor-asset-assignment", "full"} else {"status": "blocked_by_missing_binding", "reason": "actor component type ID not pinned in unit fixture"},
             "component_smoke": {"status": "pass", "components": ["Transform"], "binding_evidence": "EditorComponentAPIBus"},
             "instantiated_entities": [{"name": "maxine_smoke_entity", "components": ["Transform"], "source": "editor_python"}],
@@ -362,8 +373,61 @@ def _direct_procprefab_content_assertions_payload() -> dict:
     }
 
 
+def _procprefab_character_assertions_payload() -> dict:
+    return {
+        "status": "unavailable_with_verified_reason",
+        "character_assertion_status": "unavailable_with_verified_reason",
+        "required_character_assertions_status": "pass",
+        "character_component_inventory_status": "unavailable_with_verified_reason",
+        "character_component_inventory": {
+            "status": "unavailable_with_verified_reason",
+            "reason": "direct_procprefab_character_components_not_exposed_in_editor_product_instance",
+            "component_presence": {
+                "Actor": {"status": "component_not_present", "required": False},
+                "Mesh": {"status": "component_not_present", "required": False},
+                "Skinned Mesh": {"status": "component_not_present", "required": False},
+                "Material": {"status": "component_not_present", "required": False},
+                "Animation": {"status": "component_not_present", "required": False},
+                "PhysX": {"status": "component_not_present", "required": False},
+            },
+        },
+        "character_component_presence": {
+            "Actor": {"status": "component_not_present", "required": False},
+            "Mesh": {"status": "component_not_present", "required": False},
+            "Skinned Mesh": {"status": "component_not_present", "required": False},
+            "Material": {"status": "component_not_present", "required": False},
+            "Animation": {"status": "component_not_present", "required": False},
+            "PhysX": {"status": "component_not_present", "required": False},
+        },
+        "character_asset_reference_summary": {
+            "status": "unavailable_with_verified_reason",
+            "matched_product_evidence": [],
+            "reason": "direct_procprefab_character_components_not_exposed_in_editor_product_instance",
+        },
+        "matched_product_evidence": [],
+        "editor_log_character_error_scan": {"status": "pass", "matches": []},
+        "editor_log_missing_actor_signal": {"status": "pass", "matches": []},
+        "editor_log_missing_mesh_signal": {"status": "pass", "matches": []},
+        "editor_log_missing_material_signal": {"status": "pass", "matches": []},
+        "editor_log_missing_animation_signal": {"status": "pass", "matches": []},
+        "required_character_assertions_passed": ["no_missing_character_load_error_signals"],
+        "required_character_assertions_failed": [],
+        "character_assertion_failures": [],
+        "character_assertion_warnings": [],
+        "character_assertion_informational": ["character_components_not_exposed"],
+        "character_unavailable_reasons": [
+            {
+                "assertion": "character_component_presence",
+                "reason": "direct_procprefab_character_components_not_exposed_in_editor_product_instance",
+            }
+        ],
+        "unsupported_assertions": [],
+    }
+
+
 def _direct_procprefab_verified_product_payload() -> dict:
     content_assertions = _direct_procprefab_content_assertions_payload()
+    character_assertions = _procprefab_character_assertions_payload()
     return {
         "status": "pass",
         "procprefab_direct_product_instantiation_result": {
@@ -384,6 +448,7 @@ def _direct_procprefab_verified_product_payload() -> dict:
         },
         "direct_procprefab_content_assertions": content_assertions,
         "direct_product_assertions": content_assertions,
+        "procprefab_character_assertions": character_assertions,
         "direct_product_instantiation_claimed": True,
         "direct_product_instantiation_supported": True,
         "direct_product_instantiation_verified": True,
@@ -444,6 +509,16 @@ def test_editor_smoke_live_pass_example_schema_and_semantics_validate():
     assert content_assertions["missing_asset_log_signals"]["status"] == "pass"
     assert content_assertions["editor_log_error_scan"]["status"] == "pass"
     assert content_assertions["required_assertions_failed"] == []
+    character_assertions = direct_semantics["procprefab_character_assertions"]
+    assert character_assertions["required_character_assertions_status"] == "pass"
+    assert character_assertions["character_component_inventory_status"] in {
+        "pass",
+        "informational_only",
+        "unavailable_with_verified_reason",
+    }
+    assert character_assertions["editor_log_character_error_scan"]["status"] == "pass"
+    assert character_assertions["required_character_assertions_failed"] == []
+    assert "Transform" not in character_assertions.get("required_character_assertions_passed", [])
 
 
 def test_editor_smoke_rejects_actor_or_prefab_pass_without_binding_evidence():
@@ -572,6 +647,65 @@ def test_editor_smoke_rejects_direct_procprefab_required_content_assertion_failu
     assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
 
 
+def test_editor_smoke_rejects_verified_direct_procprefab_without_character_assertions():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report["diagnostic_mode"] = "procprefab-character-component-assertions"
+    semantics = dict(report["direct_procprefab_product_semantics"])
+    semantics.pop("procprefab_character_assertions", None)
+    report["direct_procprefab_product_semantics"] = semantics
+    report["prefab_binding_checks"]["direct_procprefab_product_semantics"] = semantics
+    report.pop("procprefab_character_assertions", None)
+    report["prefab_binding_checks"].pop("procprefab_character_assertions", None)
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+
+
+def test_editor_smoke_rejects_required_character_assertion_failure():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report["diagnostic_mode"] = "procprefab-character-component-assertions"
+    semantics = dict(report["direct_procprefab_product_semantics"])
+    character_assertions = _procprefab_character_assertions_payload()
+    character_assertions["status"] = "fail"
+    character_assertions["character_assertion_status"] = "fail"
+    character_assertions["required_character_assertions_status"] = "fail"
+    character_assertions["required_character_assertions_failed"] = ["no_missing_character_load_error_signals"]
+    character_assertions["character_assertion_failures"] = ["assertion_failed_editor_log_missing_actor"]
+    character_assertions["editor_log_missing_actor_signal"] = {"status": "fail", "matches": [{"line": "missing actor"}]}
+    semantics["procprefab_character_assertions"] = character_assertions
+    report["direct_procprefab_product_semantics"] = semantics
+    report["prefab_binding_checks"]["direct_procprefab_product_semantics"] = semantics
+    report["prefab_binding_checks"]["procprefab_character_assertions"] = character_assertions
+    report["procprefab_character_assertions"] = character_assertions
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+
+
+def test_character_log_scan_fails_selected_product_missing_actor_signal(tmp_path, monkeypatch):
+    project = tmp_path / "MAXINE_GoldenCorpus"
+    log_dir = project / "user" / "log"
+    log_dir.mkdir(parents=True)
+    (log_dir / "Editor.log").write_text(
+        "<20:07:26> [Error] (Character) - Missing actor for "
+        "'assets/characters/maxine/release/maxine_idle_fbx.procprefab'.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("O3DE_PROJECT_PATH", str(project))
+
+    result = editor_python_smoke._scan_editor_log_for_procprefab_character_signals(
+        "assets/characters/maxine/release/maxine_idle_fbx.procprefab"
+    )
+
+    assert result["status"] == "fail"
+    assert result["missing_actor"]["status"] == "fail"
+    assert result["log_ref"] == "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus/user/log/Editor.log"
+
+
 def test_direct_procprefab_log_scan_ignores_recorded_pc_path_probe_failure(tmp_path, monkeypatch):
     project = tmp_path / "MAXINE_GoldenCorpus"
     log_dir = project / "user" / "log"
@@ -634,6 +768,7 @@ def test_editor_smoke_binding_diagnostic_modes_route_to_target_scripts(tmp_path)
         "prefab-instantiation": "editor_prefab_instantiation_smoke.py",
         "procprefab-product-instantiation": "editor_procprefab_product_instantiation_smoke.py",
         "procprefab-content-assertions": "editor_procprefab_content_assertions_smoke.py",
+        "procprefab-character-component-assertions": "editor_procprefab_character_component_assertions_smoke.py",
     }
 
     for mode, script_name in expected_scripts.items():
