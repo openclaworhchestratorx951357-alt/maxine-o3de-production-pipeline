@@ -874,6 +874,12 @@ def test_editor_smoke_full_report_records_runtime_harness_without_character_over
     assert runtime_harness["runtime_exit_strategy_verified"] is False
     assert runtime_harness["runtime_exit_fixture_status"] == "not_run"
     assert runtime_harness["runtime_exit_fixture_available"] is False
+    assert runtime_harness["runtime_exit_fixture_source_status"] == "not_run"
+    assert runtime_harness["runtime_exit_fixture_source_owned_by_repo"] is False
+    assert runtime_harness["runtime_exit_fixture_rebuild_gate_status"] == "not_run"
+    assert runtime_harness["runtime_exit_fixture_rebuild_attempted"] is False
+    assert runtime_harness["runtime_exit_fixture_project_mutation_attempted"] is False
+    assert runtime_harness["runtime_exit_fixture_is_shipping_behavior"] is False
     assert runtime_harness["runtime_exit_fixture_execution_verified"] is False
     assert runtime_harness["runtime_exit_fixture_is_runtime_character_proof"] is False
     assert runtime_harness["runtime_exit_fixture_character_proof_claimed"] is False

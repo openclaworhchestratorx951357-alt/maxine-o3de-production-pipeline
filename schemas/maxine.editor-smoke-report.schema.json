@@ -416,6 +416,96 @@
         "type": "string"
       }
     },
+    "runtime_exit_fixture_source_status": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_source_path": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_source_owned_by_repo": {
+      "type": "boolean"
+    },
+    "runtime_exit_fixture_gem_name": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_gem_type": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_gem_json_path": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_cmake_path": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_component_name": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_component_services": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "runtime_exit_fixture_exit_api": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_settings_registry_keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "runtime_exit_fixture_registration_status": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_enablement_status": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_requires_project_mutation": {
+      "type": "boolean"
+    },
+    "runtime_exit_fixture_project_mutation_status": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_project_mutation_attempted": {
+      "type": "boolean"
+    },
+    "runtime_exit_fixture_project_mutation_reversible": {
+      "type": "boolean"
+    },
+    "runtime_exit_fixture_project_mutation_gate_env": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "runtime_exit_fixture_rebuild_gate_status": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_rebuild_command": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "runtime_exit_fixture_rebuild_target": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_rebuild_attempted": {
+      "type": "boolean"
+    },
+    "runtime_exit_fixture_rebuild_result": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_rebuild_artifact_refs": {
+      "type": "array"
+    },
+    "runtime_exit_fixture_enabled_by_default": {
+      "type": "boolean"
+    },
+    "runtime_exit_fixture_is_shipping_behavior": {
+      "type": "boolean"
+    },
     "runtime_command_variant_matrix": {
       "type": "array",
       "items": {

@@ -90,7 +90,14 @@ Runtime exit-fixture execution, if it is ever implemented, adds one more non-sec
 $env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
 ```
 
-That gate must remain unset unless the report has a source-validated, non-shipping, project-scoped fixture command. The current repository records a typed blocker instead of launching: `blocked_by_fixture_requires_project_code_rebuild`.
+That gate must remain unset unless the report has a source-validated, non-shipping, project-scoped fixture command. Project registration/enablement and rebuilds each require their own additional gates:
+
+```powershell
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD="1"
+```
+
+The repository now owns source for `o3de/gems/MaxineRuntimeExitFixture`, but it is disabled by default and is not runtime execution proof. Without the mutation/rebuild gates, the runner records source and rebuild-gate readiness only; it must not register the Gem, rebuild runtime targets, or launch a fixture command.
 
 ## Beginner Commands
 
@@ -186,7 +193,16 @@ The harness-side exit-fixture diagnostic entry point is:
 python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-exit-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
 ```
 
-This diagnostic stops probing unsupported launcher flags. It records the fixture source-discovery result, the required fixture gate, and whether the fixture is available. Current source discovery finds a plausible after-initialization pattern (`AZ::TickBus::OnTick` calling `AzFramework::ApplicationRequests::ExitMainLoop`) but blocks the implementation because it would require changing the external live project Gem and rebuilding project code outside this repository. It keeps runtime execution unattempted and runtime character proof unclaimed.
+This diagnostic stops probing unsupported launcher flags. It records the #129 fixture-discovery result and keeps runtime execution unattempted and runtime character proof unclaimed.
+
+The repo-owned fixture source and rebuild-gate checks are:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --check-runtime-exit-fixture-source --strict --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON>
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --check-runtime-exit-fixture-rebuild-gate --strict --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON>
+```
+
+The source check validates `o3de/gems/MaxineRuntimeExitFixture`, Gem metadata, CMake/source shape, disabled-by-default behavior, `AZ::TickBus::OnTick`, `AzFramework::ApplicationRequests::ExitMainLoop`, and Settings Registry keys. The rebuild-gate check records registration, enablement, and build command candidates but does not mutate the live project or rebuild unless the explicit gates above are set.
 
 When using the produced paired Editor on the controlled runner, pass it explicitly:
 
