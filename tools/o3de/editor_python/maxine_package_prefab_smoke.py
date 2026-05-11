@@ -35,6 +35,7 @@ DIAGNOSTIC_MODES = {
     "procprefab-product-instantiation",
     "procprefab-content-assertions",
     "procprefab-character-component-assertions",
+    "runtime-spawnable-proof-surface",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -49,6 +50,20 @@ TYPED_BLOCKED_STATUSES = {
     "blocked_by_unsupported_product_asset_type",
     "blocked_by_editor_binding_limitation",
     "unsupported_by_engine_binding",
+    "unsupported_by_current_project_build",
+    "blocked_by_missing_runtime_executable",
+    "blocked_by_missing_runtime_readiness",
+    "blocked_by_unpinned_runtime_surface",
+    "blocked_by_unsafe_runtime_execution",
+    "blocked_by_release_packaging_required",
+    "blocked_by_publication_required",
+    "runtime_execution_not_attempted",
+    "runtime_surface_discovery_pass",
+    "product_dependency_proof_pass",
+    "product_dependency_proof_unavailable",
+    "runtime_spawnable_character_proof_unavailable",
+    "runtime_spawnable_character_components_not_exposed",
+    "runtime_spawnable_proof_requires_dedicated_runtime_harness",
     "procprefab_product_not_editor_instantiable_with_current_binding",
     "procprefab_product_requires_runtime_spawnable_path",
     "source_prefab_instantiation_pass_direct_product_unsupported",
@@ -63,6 +78,7 @@ DIRECT_PROCPREFAB_TYPED_NONVERIFIED_STATUSES = {
     "blocked_by_missing_binding",
     "unsupported_by_engine_binding",
 }
+RUNTIME_CHARACTER_PRODUCT_TYPES = ("actor", "azmodel", "pxmesh", "azmaterial", "motion", "motionset", "animgraph")
 SCRIPT_STARTED_MONOTONIC = time.monotonic()
 
 
@@ -147,6 +163,7 @@ def main() -> int:
             "direct_procprefab_product_semantics": report.get("direct_procprefab_product_semantics", {"status": "not_run"}),
             "direct_procprefab_content_assertions": report.get("direct_procprefab_content_assertions", {"status": "not_run"}),
             "procprefab_character_assertions": report.get("procprefab_character_assertions", {"status": "not_run"}),
+            "runtime_spawnable_proof": report.get("runtime_spawnable_proof", {"status": "not_run"}),
             "property_path_discovery": report.get("property_path_discovery", {}),
             "property_list_summary": report.get("property_list_summary", {}),
             "property_access_summary": report.get("property_access_summary", {}),
@@ -171,6 +188,7 @@ def main() -> int:
         "procprefab-product-instantiation",
         "procprefab-content-assertions",
         "procprefab-character-component-assertions",
+        "runtime-spawnable-proof-surface",
         "full",
     }
     if needs_temp_level and not allow_temp_level:
@@ -229,6 +247,7 @@ def main() -> int:
         "procprefab-product-instantiation",
         "procprefab-content-assertions",
         "procprefab-character-component-assertions",
+        "runtime-spawnable-proof-surface",
         "full",
     }:
         _write_progress_marker(progress_log, "entity_create_started", "started", "Creating minimal temporary smoke entity.")
@@ -259,6 +278,7 @@ def main() -> int:
         "procprefab-product-instantiation",
         "procprefab-content-assertions",
         "procprefab-character-component-assertions",
+        "runtime-spawnable-proof-surface",
         "full",
     }:
         binding_report = _run_binding_checks(
@@ -525,6 +545,7 @@ def _run_binding_checks(
         "procprefab-product-instantiation",
         "procprefab-content-assertions",
         "procprefab-character-component-assertions",
+        "runtime-spawnable-proof-surface",
         "full",
     }:
         _write_progress_marker(progress_log, "prefab_binding_started", "started", "Running prefab/procprefab binding surface checks.")
@@ -537,12 +558,14 @@ def _run_binding_checks(
                 "procprefab-product-instantiation",
                 "procprefab-content-assertions",
                 "procprefab-character-component-assertions",
+                "runtime-spawnable-proof-surface",
                 "full",
             },
             attempt_direct_product=diagnostic_mode in {
                 "procprefab-product-instantiation",
                 "procprefab-content-assertions",
                 "procprefab-character-component-assertions",
+                "runtime-spawnable-proof-surface",
                 "full",
             },
             progress_log=progress_log,
@@ -561,6 +584,9 @@ def _run_binding_checks(
             character_assertions = prefab_checks["direct_procprefab_product_semantics"].get("procprefab_character_assertions")
             if isinstance(character_assertions, Mapping):
                 result["procprefab_character_assertions"] = character_assertions
+            runtime_proof = prefab_checks["direct_procprefab_product_semantics"].get("runtime_spawnable_proof")
+            if isinstance(runtime_proof, Mapping):
+                result["runtime_spawnable_proof"] = runtime_proof
         _write_progress_marker(progress_log, "prefab_binding_returned", str(prefab_checks.get("status", "returned")), "Prefab binding checks returned.")
     else:
         result["prefab_binding_checks"] = _skipped_check("prefab-binding")
@@ -594,6 +620,7 @@ def _targeted_binding_blocker(report: Mapping[str, Any], diagnostic_mode: str) -
         "procprefab-product-instantiation": "prefab_binding_checks",
         "procprefab-content-assertions": "prefab_binding_checks",
         "procprefab-character-component-assertions": "prefab_binding_checks",
+        "runtime-spawnable-proof-surface": "prefab_binding_checks",
     }
     field = target_fields.get(diagnostic_mode)
     if not field:
@@ -966,6 +993,13 @@ def _run_prefab_binding_checks(
             entity_id=entity_id,
         )
         direct_semantics["source_prefab_baseline_result"] = source_prefab_baseline_result
+        runtime_proof = _build_runtime_spawnable_proof_surface(
+            report,
+            direct_semantics,
+            safe_call_results,
+            progress_log=progress_log,
+        )
+        direct_semantics["runtime_spawnable_proof"] = runtime_proof
         _write_progress_marker(
             progress_log,
             "procprefab_product_instantiation_returned",
@@ -974,6 +1008,7 @@ def _run_prefab_binding_checks(
         )
     else:
         direct_semantics = _skipped_check("procprefab-product-instantiation")
+        runtime_proof = _skipped_check("runtime-spawnable-proof-surface")
 
     if instantiation.get("status") == "pass" and (
         not attempt_direct_product or _direct_procprefab_semantics_allows_pass(direct_semantics)
@@ -991,6 +1026,7 @@ def _run_prefab_binding_checks(
             "instantiation": instantiation,
             "source_prefab_baseline_result": source_prefab_baseline_result,
             "direct_procprefab_product_semantics": direct_semantics,
+            "runtime_spawnable_proof": runtime_proof,
             "procprefab_character_assertions": direct_semantics.get(
                 "procprefab_character_assertions",
                 {"status": "not_run"},
@@ -1013,6 +1049,7 @@ def _run_prefab_binding_checks(
         "instantiation": instantiation,
         "source_prefab_baseline_result": source_prefab_baseline_result,
         "direct_procprefab_product_semantics": direct_semantics,
+        "runtime_spawnable_proof": runtime_proof,
         "procprefab_character_assertions": direct_semantics.get(
             "procprefab_character_assertions",
             {"status": "not_run"},
@@ -1635,6 +1672,484 @@ def _procprefab_character_assertions_allow_pass(semantics: Mapping[str, Any]) ->
         and not (required_failures if isinstance(required_failures, list) else [required_failures])
         and not (assertion_failures if isinstance(assertion_failures, list) else [assertion_failures])
     )
+
+
+def _build_runtime_spawnable_proof_surface(
+    report: Mapping[str, Any],
+    direct_semantics: Mapping[str, Any],
+    safe_call_results: List[Dict[str, Any]],
+    *,
+    progress_log: Path | None,
+) -> Dict[str, Any]:
+    _write_progress_marker(
+        progress_log,
+        "runtime_spawnable_proof_started",
+        "started",
+        "Inspecting runtime/spawnable/product dependency proof surfaces without launching runtime.",
+    )
+    procprefab_product = _product_ref(report, "procprefab") or str(direct_semantics.get("procprefab_product_path", ""))
+    product_refs = _character_product_refs(report)
+    product_evidence_complete = _report_product_evidence_complete(report)
+    surface_discovery = _discover_runtime_spawnable_surface()
+    dependency_proof = _query_direct_procprefab_product_dependencies(procprefab_product, product_refs)
+    launcher_candidates = _discover_runtime_launcher_candidates()
+    character_log_scan = _scan_editor_log_for_procprefab_character_signals(
+        str(direct_semantics.get("procprefab_asset_hint") or procprefab_product)
+    )
+
+    required_passed: List[str] = []
+    required_failed: List[str] = []
+    informational: List[str] = ["product_dependency_proof_is_not_runtime_execution_proof"]
+    unavailable_reasons: List[Dict[str, Any]] = []
+    unsupported_reasons: List[Dict[str, Any]] = []
+
+    if product_evidence_complete:
+        required_passed.append("apb_product_evidence_complete")
+    else:
+        required_failed.append("apb_product_evidence_complete")
+
+    if surface_discovery.get("status") == "runtime_surface_discovery_pass":
+        informational.append("runtime_spawnable_source_surface_discovered")
+    else:
+        unavailable_reasons.append(
+            {
+                "assertion": "runtime_spawnable_surface_discovery",
+                "status": surface_discovery.get("status", "unavailable_with_verified_reason"),
+                "reason": surface_discovery.get("reason", "runtime_spawnable_surface_not_discovered"),
+            }
+        )
+
+    if dependency_proof.get("status") == "product_dependency_proof_pass":
+        required_passed.append("product_dependency_graph_matches_apb_evidence")
+    else:
+        required_passed.append("product_dependency_graph_checked")
+        unavailable_reasons.append(
+            {
+                "assertion": "product_dependency_character_references",
+                "status": dependency_proof.get("status", "product_dependency_proof_unavailable"),
+                "reason": dependency_proof.get("reason", "product_dependency_character_references_unavailable"),
+            }
+        )
+
+    if character_log_scan.get("status") == "pass":
+        required_passed.append("no_runtime_or_editor_character_load_error_signals")
+    else:
+        required_failed.append("no_runtime_or_editor_character_load_error_signals")
+
+    runtime_blocked_reason = "runtime_spawnable_proof_requires_dedicated_runtime_harness"
+    runtime_execution_result = {
+        "status": "runtime_execution_not_attempted",
+        "reason": runtime_blocked_reason,
+        "safety_posture": "Runtime launcher candidates are recorded, but no runtime is launched without a pinned bounded harness.",
+    }
+    unavailable_reasons.append(
+        {
+            "assertion": "runtime_spawnable_execution",
+            "status": "runtime_execution_not_attempted",
+            "reason": runtime_blocked_reason,
+        }
+    )
+    required_passed.append("runtime_execution_not_attempted_with_typed_reason")
+
+    matched_refs = dependency_proof.get("matched_product_evidence", [])
+    status = "runtime_spawnable_character_proof_unavailable"
+    if matched_refs:
+        status = "product_dependency_proof_pass"
+        informational.append("character_product_references_matched_by_product_dependency_graph")
+    if required_failed:
+        status = "fail"
+
+    result = {
+        "status": status,
+        "runtime_spawnable_proof_status": status,
+        "runtime_spawnable_surface_discovery": surface_discovery,
+        "runtime_spawnable_surface_available": surface_discovery.get("status") == "runtime_surface_discovery_pass",
+        "runtime_spawnable_surface_type": surface_discovery.get(
+            "surface_type", "asset_catalog_product_dependencies_and_spawnable_source_surface"
+        ),
+        "runtime_spawnable_selected_call": "",
+        "runtime_spawnable_argument_shape": {},
+        "runtime_spawnable_execution_attempted": False,
+        "runtime_spawnable_execution_result": runtime_execution_result,
+        "runtime_spawnable_execution_supported": False,
+        "runtime_spawnable_execution_verified": False,
+        "runtime_spawnable_launcher_path": launcher_candidates[0]["path"] if launcher_candidates else "",
+        "runtime_spawnable_launcher_provenance": "candidate_only_not_executed" if launcher_candidates else "",
+        "runtime_spawnable_timeout_seconds": 0,
+        "runtime_spawnable_exit_code": None,
+        "runtime_spawnable_stdout_ref": "",
+        "runtime_spawnable_stderr_ref": "",
+        "runtime_spawnable_log_refs": [],
+        "runtime_spawnable_product_path": procprefab_product,
+        "runtime_spawnable_asset_id": str(direct_semantics.get("procprefab_asset_id", "")),
+        "runtime_spawnable_dependency_graph": {
+            "status": dependency_proof.get("status", "product_dependency_proof_unavailable"),
+            "dependencies": dependency_proof.get("dependencies", []),
+            "dependency_count": dependency_proof.get("product_dependency_count", 0),
+            "missing_dependency_count": dependency_proof.get("missing_dependency_count", 0),
+        },
+        "runtime_spawnable_product_dependencies": dependency_proof.get("dependencies", []),
+        "runtime_spawnable_character_product_references": matched_refs if isinstance(matched_refs, list) else [],
+        "runtime_spawnable_actor_reference": _runtime_product_reference("actor", matched_refs),
+        "runtime_spawnable_azmodel_reference": _runtime_product_reference("azmodel", matched_refs),
+        "runtime_spawnable_pxmesh_reference": _runtime_product_reference("pxmesh", matched_refs),
+        "runtime_spawnable_azmaterial_reference": _runtime_product_reference("azmaterial", matched_refs),
+        "runtime_spawnable_motion_reference": _runtime_product_reference("motion", matched_refs),
+        "runtime_spawnable_motionset_reference": _runtime_product_reference("motionset", matched_refs),
+        "runtime_spawnable_animgraph_reference": _runtime_product_reference("animgraph", matched_refs),
+        "runtime_spawnable_created_entity_count": 0,
+        "runtime_spawnable_component_inventory": {
+            "status": "runtime_execution_not_attempted",
+            "reason": runtime_blocked_reason,
+        },
+        "runtime_spawnable_missing_asset_signals": {
+            "status": character_log_scan.get("status", "unavailable_with_verified_reason"),
+            "matches": character_log_scan.get("matches", []),
+            "source": "selected product Editor log scan; runtime was not executed",
+        },
+        "runtime_spawnable_missing_character_signals": {
+            "status": character_log_scan.get("status", "unavailable_with_verified_reason"),
+            "missing_actor": character_log_scan.get("missing_actor", {}),
+            "missing_mesh": character_log_scan.get("missing_mesh", {}),
+            "missing_material": character_log_scan.get("missing_material", {}),
+            "missing_animation": character_log_scan.get("missing_animation", {}),
+            "source": "selected product Editor log scan; runtime was not executed",
+        },
+        "runtime_spawnable_blocked_reason": runtime_blocked_reason,
+        "runtime_spawnable_unsupported_reason": "",
+        "product_dependency_proof": dependency_proof,
+        "product_dependency_proof_status": dependency_proof.get("status", "product_dependency_proof_unavailable"),
+        "product_dependency_matches_apb_evidence": bool(matched_refs),
+        "editor_component_inventory_character_assertion_result": {
+            "status": direct_semantics.get("procprefab_character_assertions", {}).get(
+                "status", "unavailable_with_verified_reason"
+            )
+            if isinstance(direct_semantics.get("procprefab_character_assertions"), Mapping)
+            else "unavailable_with_verified_reason",
+            "reason": "direct_procprefab_character_components_not_exposed_in_editor_product_instance",
+        },
+        "direct_product_instantiation_result": {
+            "status": direct_semantics.get("procprefab_direct_product_instantiation_result", {}).get("status", "")
+            if isinstance(direct_semantics.get("procprefab_direct_product_instantiation_result"), Mapping)
+            else "",
+            "direct_product_instantiation_verified": direct_semantics.get("direct_product_instantiation_verified") is True,
+        },
+        "direct_product_content_assertion_result": {
+            "status": direct_semantics.get("direct_procprefab_content_assertions", {}).get("status", "")
+            if isinstance(direct_semantics.get("direct_procprefab_content_assertions"), Mapping)
+            else "",
+        },
+        "source_prefab_baseline_result": {
+            "status": direct_semantics.get("source_prefab_baseline_result", {}).get("status", "")
+            if isinstance(direct_semantics.get("source_prefab_baseline_result"), Mapping)
+            else "",
+        },
+        "actor_assignment_result": {"status": "pass" if _actor_assignment_passed(report) else "not_evaluated"},
+        "required_runtime_spawnable_assertions_passed": _unique(required_passed),
+        "required_runtime_spawnable_assertions_failed": _unique(required_failed),
+        "runtime_spawnable_assertion_failures": [f"assertion_failed_{failure}" for failure in required_failed],
+        "runtime_spawnable_assertion_informational": _unique(informational),
+        "runtime_spawnable_unavailable_reasons": unavailable_reasons,
+        "runtime_spawnable_unsupported_reasons": unsupported_reasons,
+        "runtime_launcher_candidates": launcher_candidates,
+        "fake_success": False,
+        "cache_heuristic_used": bool(report.get("cache_heuristic_used")),
+        "live_publication": False,
+        "release_packaging": False,
+        "production_level_mutation": False,
+    }
+    safe_call_results.append(
+        {
+            "call": "runtime_spawnable_proof_surface.product_dependency_and_source_discovery",
+            "status": "pass" if not required_failed else "fail",
+            "args_shape": "APB report + Asset Processor database + local engine source",
+            "result": {
+                "runtime_execution_attempted": False,
+                "product_dependency_proof_status": result["product_dependency_proof_status"],
+                "runtime_spawnable_proof_status": result["runtime_spawnable_proof_status"],
+            },
+        }
+    )
+    _write_progress_marker(
+        progress_log,
+        "runtime_spawnable_proof_returned",
+        result["runtime_spawnable_proof_status"],
+        "Runtime/spawnable proof surface inspection returned.",
+    )
+    return result
+
+
+def _report_product_evidence_complete(report: Mapping[str, Any]) -> bool:
+    expected = [str(value).strip() for value in report.get("expected_products", []) if str(value).strip()]
+    summary = report.get("product_evidence_summary", {})
+    produced = []
+    if isinstance(summary, Mapping):
+        produced = [str(value).strip() for value in summary.get("produced_products", []) if str(value).strip()]
+    missing = [product for product in expected if product not in produced]
+    return bool(expected) and not missing and isinstance(summary, Mapping) and summary.get("status") == "pass" and not summary.get("cache_heuristic_used")
+
+
+def _actor_assignment_passed(report: Mapping[str, Any]) -> bool:
+    actor_checks = report.get("actor_binding_checks", {})
+    assignment = actor_checks.get("actor_asset_assignment", {}) if isinstance(actor_checks, Mapping) else {}
+    readback = assignment.get("readback", {}) if isinstance(assignment, Mapping) else {}
+    return (
+        isinstance(assignment, Mapping)
+        and assignment.get("status") == "pass"
+        and isinstance(readback, Mapping)
+        and readback.get("matched_approved_product") is True
+    )
+
+
+def _discover_runtime_spawnable_surface() -> Dict[str, Any]:
+    engine_root_raw = os.environ.get("O3DE_ENGINE_ROOT", "")
+    engine_root = Path(engine_root_raw) if engine_root_raw else None
+    refs = [
+        ("AzFramework::Spawnable", "Code/Framework/AzFramework/AzFramework/Spawnable/Spawnable.h"),
+        (
+            "AzFramework::SpawnableEntitiesInterface",
+            "Code/Framework/AzFramework/AzFramework/Spawnable/SpawnableEntitiesInterface.h",
+        ),
+        (
+            "AzFramework::Scripts::SpawnableScriptMediator",
+            "Code/Framework/AzFramework/AzFramework/Spawnable/Script/SpawnableScriptMediator.h",
+        ),
+        (
+            "AssetCatalogRequestBus product dependencies",
+            "Code/Framework/AzCore/AzCore/Asset/AssetManagerBus.h",
+        ),
+        (
+            "AssetCatalog product dependency implementation",
+            "Code/Framework/AzFramework/AzFramework/Asset/AssetCatalog.cpp",
+        ),
+    ]
+    source_refs: List[Dict[str, Any]] = []
+    found = False
+    for surface, rel_path in refs:
+        present = bool(engine_root and (engine_root / rel_path).exists())
+        found = found or present
+        source_refs.append(
+            {
+                "surface": surface,
+                "source_ref": (str(engine_root / rel_path).replace("\\", "/") if engine_root else rel_path),
+                "present": present,
+            }
+        )
+    if found:
+        return {
+            "status": "runtime_surface_discovery_pass",
+            "surface_type": "asset_catalog_product_dependencies_and_spawnable_source_surface",
+            "candidate_surfaces": [item["surface"] for item in source_refs],
+            "source_refs": source_refs,
+            "selected_for_this_slice": "Asset Processor database ProductDependencies readonly query",
+            "runtime_execution_surface": "not selected; bounded runtime harness not pinned",
+        }
+    return {
+        "status": "unavailable_with_verified_reason",
+        "surface_type": "asset_catalog_product_dependencies_and_spawnable_source_surface",
+        "candidate_surfaces": [item["surface"] for item in source_refs],
+        "source_refs": source_refs,
+        "reason": "local_engine_source_not_available_for_spawnable_surface_discovery",
+    }
+
+
+def _discover_runtime_launcher_candidates() -> List[Dict[str, Any]]:
+    engine_root_raw = os.environ.get("O3DE_ENGINE_ROOT", "")
+    project_path_raw = os.environ.get("O3DE_PROJECT_PATH", "")
+    engine_root = Path(engine_root_raw) if engine_root_raw else None
+    project_name = Path(project_path_raw).name if project_path_raw else "MAXINE_GoldenCorpus"
+    if engine_root is None:
+        return []
+    bin_dir = engine_root / "build" / "windows" / "bin" / "profile"
+    names = [
+        f"{project_name}.GameLauncher.exe",
+        f"{project_name}.HeadlessServerLauncher.exe",
+        f"{project_name}.ServerLauncher.exe",
+        "GameLauncher.exe",
+    ]
+    candidates: List[Dict[str, Any]] = []
+    for name in names:
+        candidate = bin_dir / name
+        if candidate.exists():
+            candidates.append(
+                {
+                    "path": str(candidate).replace("\\", "/"),
+                    "provenance": "engine_profile_bin_candidate_not_executed",
+                    "execution_attempted": False,
+                }
+            )
+    return candidates
+
+
+def _query_direct_procprefab_product_dependencies(product_path: str, product_refs: Mapping[str, str]) -> Dict[str, Any]:
+    project_path_raw = os.environ.get("O3DE_PROJECT_PATH", "")
+    project_path = Path(project_path_raw) if project_path_raw else None
+    db_path = project_path / "Cache" / "assetdb.sqlite" if project_path else None
+    if db_path is None or not db_path.exists():
+        return {
+            "status": "product_dependency_proof_unavailable",
+            "selected_call": "Asset Processor database ProductDependencies readonly query",
+            "product_path": product_path,
+            "dependencies": [],
+            "product_dependency_count": 0,
+            "missing_dependency_count": 0,
+            "matched_product_evidence": [],
+            "reason": "asset_processor_database_not_found",
+        }
+
+    try:
+        import sqlite3
+    except Exception as exc:
+        return {
+            "status": "product_dependency_proof_unavailable",
+            "selected_call": "Asset Processor database ProductDependencies readonly query",
+            "product_path": product_path,
+            "dependencies": [],
+            "product_dependency_count": 0,
+            "missing_dependency_count": 0,
+            "matched_product_evidence": [],
+            "reason": "sqlite3_unavailable",
+            "error": str(exc),
+        }
+
+    product_candidates = _unique([product_path, product_path[3:] if product_path.lower().startswith("pc/") else f"pc/{product_path}"])
+    try:
+        connection = sqlite3.connect(str(db_path))
+        try:
+            connection.execute("PRAGMA query_only = ON")
+            product_row = None
+            for candidate in product_candidates:
+                row = connection.execute(
+                    "SELECT ProductID, ProductName, SubID, AssetType FROM Products WHERE lower(ProductName) = lower(?) LIMIT 1",
+                    (candidate,),
+                ).fetchone()
+                if row:
+                    product_row = row
+                    break
+            if not product_row:
+                return {
+                    "status": "product_dependency_proof_unavailable",
+                    "selected_call": "Asset Processor database ProductDependencies readonly query",
+                    "product_path": product_path,
+                    "database_ref": _redacted_project_temp_path(str(db_path)),
+                    "dependencies": [],
+                    "product_dependency_count": 0,
+                    "missing_dependency_count": 0,
+                    "matched_product_evidence": [],
+                    "reason": "direct_procprefab_product_not_found_in_asset_processor_database",
+                }
+            product_id, product_name, sub_id, asset_type = product_row
+            dependency_rows = connection.execute(
+                "SELECT DependencySourceGuid, DependencySubID, Platform, DependencyFlags, UnresolvedPath, "
+                "UnresolvedDependencyType, FromAssetId FROM ProductDependencies WHERE ProductPK = ?",
+                (product_id,),
+            ).fetchall()
+            missing_count = connection.execute(
+                "SELECT COUNT(*) FROM MissingProductDependencies WHERE ProductPK = ?",
+                (product_id,),
+            ).fetchone()[0]
+        finally:
+            connection.close()
+    except Exception as exc:
+        return {
+            "status": "product_dependency_proof_unavailable",
+            "selected_call": "Asset Processor database ProductDependencies readonly query",
+            "product_path": product_path,
+            "database_ref": _redacted_project_temp_path(str(db_path)),
+            "dependencies": [],
+            "product_dependency_count": 0,
+            "missing_dependency_count": 0,
+            "matched_product_evidence": [],
+            "reason": "asset_processor_database_query_failed",
+            "error": str(exc),
+        }
+
+    dependencies: List[Dict[str, Any]] = []
+    for row in dependency_rows:
+        dependencies.append(
+            {
+                "dependency_source_guid": _serialize_db_value(row[0]),
+                "dependency_sub_id": _serialize_db_value(row[1]),
+                "platform": _serialize_db_value(row[2]),
+                "dependency_flags": _serialize_db_value(row[3]),
+                "unresolved_path": _serialize_db_value(row[4]),
+                "unresolved_dependency_type": _serialize_db_value(row[5]),
+                "from_asset_id": _serialize_db_value(row[6]),
+            }
+        )
+    matched = _match_dependency_records_to_product_refs(dependencies, product_refs)
+    if matched:
+        status = "product_dependency_proof_pass"
+        reason = ""
+    else:
+        status = "product_dependency_proof_unavailable"
+        reason = "direct_procprefab_product_dependency_graph_empty_for_character_products"
+        if dependencies:
+            reason = "direct_procprefab_product_dependencies_do_not_reference_character_products"
+    return {
+        "status": status,
+        "selected_call": "Asset Processor database ProductDependencies readonly query",
+        "product_path": product_path,
+        "database_ref": _redacted_project_temp_path(str(db_path)),
+        "product_row": {
+            "product_id": _serialize_db_value(product_id),
+            "product_name": _serialize_db_value(product_name),
+            "sub_id": _serialize_db_value(sub_id),
+            "asset_type": _serialize_db_value(asset_type),
+        },
+        "dependencies": dependencies,
+        "product_dependency_count": len(dependencies),
+        "missing_dependency_count": int(missing_count or 0),
+        "matched_product_evidence": matched,
+        "matches_apb_evidence": bool(matched),
+        "reason": reason,
+    }
+
+
+def _serialize_db_value(value: Any) -> str:
+    if isinstance(value, bytes):
+        return value.hex()
+    return str(value) if value is not None else ""
+
+
+def _match_dependency_records_to_product_refs(
+    dependencies: Sequence[Mapping[str, Any]],
+    product_refs: Mapping[str, str],
+) -> List[Dict[str, Any]]:
+    matches: List[Dict[str, Any]] = []
+    for dependency in dependencies:
+        haystack = json.dumps(_safe_serialize(dependency), sort_keys=True).replace("\\", "/").lower()
+        for product_type, product_ref in product_refs.items():
+            normalized = product_ref.replace("\\", "/").lower()
+            normalized_no_platform = normalized[3:] if normalized.startswith("pc/") else normalized
+            basename = Path(normalized_no_platform).name
+            if normalized in haystack or normalized_no_platform in haystack or (basename and basename in haystack):
+                matches.append(
+                    {
+                        "status": "pass",
+                        "product_type": product_type,
+                        "product_path": product_ref,
+                        "dependency": dict(dependency),
+                    }
+                )
+    return _unique_dicts(matches)
+
+
+def _runtime_product_reference(product_type: str, matched_refs: Any) -> Dict[str, Any]:
+    if isinstance(matched_refs, list):
+        for match in matched_refs:
+            if isinstance(match, Mapping) and match.get("product_type") == product_type:
+                return {
+                    "status": "pass",
+                    "product_type": product_type,
+                    "product_path": str(match.get("product_path", "")),
+                    "source": "Asset Processor ProductDependencies",
+                }
+    return {
+        "status": "unavailable_with_verified_reason",
+        "product_type": product_type,
+        "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies",
+    }
 
 
 def _probe_direct_procprefab_product_semantics(

@@ -63,6 +63,11 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_procprefab_character_component_assertions_smoke.py",
+    "runtime-spawnable-proof-surface": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_runtime_spawnable_proof_surface_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -146,6 +151,7 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             "procprefab-product-instantiation": "prefab_binding_checks",
             "procprefab-content-assertions": "prefab_binding_checks",
             "procprefab-character-component-assertions": "prefab_binding_checks",
+            "runtime-spawnable-proof-surface": "prefab_binding_checks",
         }
         target_field = targeted_binding_fields.get(diagnostic_mode)
         if str(report.get("status", "")) == "pass" and target_field:
@@ -194,9 +200,12 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             "procprefab-product-instantiation",
             "procprefab-content-assertions",
             "procprefab-character-component-assertions",
+            "runtime-spawnable-proof-surface",
             "full",
         }:
             _validate_direct_procprefab_product_semantics(report, result)
+            if diagnostic_mode in {"runtime-spawnable-proof-surface", "full"}:
+                _validate_runtime_spawnable_proof_surface(report, result)
         for smoke_field, check_field in (
             ("actor_smoke", "actor_binding_checks"),
             ("prefab_smoke", "prefab_binding_checks"),
@@ -403,6 +412,133 @@ def _validate_procprefab_character_assertions(
             result.add_error(
                 MXN_RUNTIME_SMOKE_FAIL,
                 f"Character-specific procprefab assertions require {label} scan status=pass.",
+            )
+
+
+def _validate_runtime_spawnable_proof_surface(report: Mapping[str, Any], result: ValidationResult) -> None:
+    prefab_checks = report.get("prefab_binding_checks", {})
+    semantics = report.get("direct_procprefab_product_semantics")
+    if not isinstance(semantics, Mapping) and isinstance(prefab_checks, Mapping):
+        semantics = prefab_checks.get("direct_procprefab_product_semantics")
+
+    proof = report.get("runtime_spawnable_proof")
+    if not isinstance(proof, Mapping) and isinstance(semantics, Mapping):
+        proof = semantics.get("runtime_spawnable_proof")
+    if not isinstance(proof, Mapping) and isinstance(prefab_checks, Mapping):
+        proof = prefab_checks.get("runtime_spawnable_proof")
+    if not isinstance(proof, Mapping):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Runtime/spawnable proof surface diagnostics require runtime_spawnable_proof evidence.",
+        )
+        return
+
+    if proof.get("fake_success") is True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime/spawnable proof surface cannot set fake_success=true.")
+    if proof.get("cache_heuristic_used") is True:
+        result.add_error(
+            "MXN_ASSET_CACHE_HEURISTIC_FORBIDDEN",
+            "Runtime/spawnable proof surface cannot use cache heuristic release proof.",
+        )
+    if proof.get("live_publication") is True or proof.get("release_packaging") is True:
+        result.add_error(MXN_PATH_UNSAFE, "Runtime/spawnable proof surface must not publish or package.")
+    if proof.get("production_level_mutation") is True:
+        result.add_error(MXN_PATH_UNSAFE, "Runtime/spawnable proof surface must not mutate production levels.")
+
+    status = str(proof.get("status") or proof.get("runtime_spawnable_proof_status") or "").strip()
+    allowed_statuses = {
+        "pass",
+        "unavailable_with_verified_reason",
+        "informational_only",
+        "blocked_by_missing_runtime_executable",
+        "blocked_by_missing_runtime_readiness",
+        "blocked_by_unpinned_runtime_surface",
+        "blocked_by_unsafe_runtime_execution",
+        "blocked_by_release_packaging_required",
+        "blocked_by_publication_required",
+        "unsupported_by_current_project_build",
+        "runtime_spawnable_character_proof_unavailable",
+        "runtime_spawnable_proof_requires_dedicated_runtime_harness",
+        "product_dependency_proof_pass",
+        "product_dependency_proof_unavailable",
+    }
+    if status not in allowed_statuses:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Runtime/spawnable proof surface requires a precise typed status.",
+        )
+
+    surface = proof.get("runtime_spawnable_surface_discovery", {})
+    surface_status = str(surface.get("status", "")).strip() if isinstance(surface, Mapping) else ""
+    if surface_status not in {"runtime_surface_discovery_pass", "unavailable_with_verified_reason", "unsupported_by_current_project_build"}:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Runtime/spawnable proof surface requires explicit surface discovery status.",
+        )
+
+    dependency = proof.get("product_dependency_proof", {})
+    dependency_status = str(dependency.get("status", "")).strip() if isinstance(dependency, Mapping) else ""
+    if dependency_status != str(proof.get("product_dependency_proof_status", dependency_status)).strip():
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Runtime/spawnable product dependency proof status must be recorded consistently.",
+        )
+    if dependency_status not in {"product_dependency_proof_pass", "product_dependency_proof_unavailable", "informational_only"}:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Runtime/spawnable proof surface requires typed product dependency proof status.",
+        )
+
+    attempted = proof.get("runtime_spawnable_execution_attempted") is True
+    verified = proof.get("runtime_spawnable_execution_verified") is True
+    execution_result = proof.get("runtime_spawnable_execution_result", {})
+    execution_status = str(execution_result.get("status", "")).strip() if isinstance(execution_result, Mapping) else ""
+    if verified and not attempted:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Runtime/spawnable execution cannot be verified unless runtime execution was actually attempted.",
+        )
+    if verified and execution_status != "pass":
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Runtime/spawnable execution verified=true requires runtime execution result status=pass.",
+        )
+    if attempted and not verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Attempted runtime/spawnable execution cannot pass unless it is verified.",
+        )
+    if not attempted and execution_status != "runtime_execution_not_attempted":
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Unattempted runtime/spawnable execution must be recorded as runtime_execution_not_attempted.",
+        )
+    if not attempted and not str(proof.get("runtime_spawnable_blocked_reason", "")).strip():
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Unattempted runtime/spawnable execution requires a typed blocked reason.",
+        )
+
+    required_failures = proof.get("required_runtime_spawnable_assertions_failed", [])
+    assertion_failures = proof.get("runtime_spawnable_assertion_failures", [])
+    if (isinstance(required_failures, list) and required_failures) or (
+        isinstance(assertion_failures, list) and assertion_failures
+    ):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Runtime/spawnable proof surface cannot pass with failed required runtime assertions.",
+        )
+
+    for field, label in (
+        ("runtime_spawnable_missing_asset_signals", "runtime missing asset"),
+        ("runtime_spawnable_missing_character_signals", "runtime missing character"),
+    ):
+        scan = proof.get(field, {})
+        scan_status = str(scan.get("status", "")).strip() if isinstance(scan, Mapping) else ""
+        if scan_status not in {"pass", "unavailable_with_verified_reason", "runtime_execution_not_attempted"}:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                f"Runtime/spawnable proof surface requires {label} signal scan to be pass or explicitly unavailable.",
             )
 
 
@@ -1153,6 +1289,7 @@ def _live_report_template(
         "direct_procprefab_product_semantics": {"status": "not_run"},
         "direct_procprefab_content_assertions": {"status": "not_run"},
         "procprefab_character_assertions": {"status": "not_run"},
+        "runtime_spawnable_proof": {"status": "not_run"},
         "property_path_discovery": {},
         "property_list_summary": {},
         "no_fake_success": True,
@@ -1291,6 +1428,8 @@ def _classify_stall_phase(marker: Mapping[str, Any]) -> str:
         return "procprefab_content_assertions_stall"
     if step == "procprefab_character_assertions_started":
         return "procprefab_character_assertions_stall"
+    if step == "runtime_spawnable_proof_started":
+        return "runtime_spawnable_proof_stall"
     if step == "report_write_started":
         return "report_write_stall"
     if status in {"started", "running"}:

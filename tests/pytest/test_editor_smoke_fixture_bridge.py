@@ -127,6 +127,7 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
         "procprefab-product-instantiation",
         "procprefab-content-assertions",
         "procprefab-character-component-assertions",
+        "runtime-spawnable-proof-surface",
         "full",
     }:
         binding_payload["prefab_binding_checks"] = {
@@ -150,11 +151,14 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
             "procprefab-product-instantiation",
             "procprefab-content-assertions",
             "procprefab-character-component-assertions",
+            "runtime-spawnable-proof-surface",
             "full",
         }:
             semantics = _direct_procprefab_semantics_payload()
             semantics.update(_direct_procprefab_verified_product_payload())
             semantics["procprefab_character_assertions"] = _procprefab_character_assertions_payload()
+            runtime_proof = _runtime_spawnable_proof_payload()
+            semantics["runtime_spawnable_proof"] = runtime_proof
             binding_payload["prefab_binding_checks"]["direct_procprefab_product_semantics"] = semantics
             binding_payload["prefab_binding_checks"]["source_prefab_baseline_result"] = semantics[
                 "source_prefab_baseline_result"
@@ -162,9 +166,11 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
             binding_payload["prefab_binding_checks"]["procprefab_character_assertions"] = semantics[
                 "procprefab_character_assertions"
             ]
+            binding_payload["prefab_binding_checks"]["runtime_spawnable_proof"] = runtime_proof
             binding_payload["direct_procprefab_product_semantics"] = semantics
             binding_payload["source_prefab_baseline_result"] = semantics["source_prefab_baseline_result"]
             binding_payload["procprefab_character_assertions"] = semantics["procprefab_character_assertions"]
+            binding_payload["runtime_spawnable_proof"] = runtime_proof
     payload.update(
         {
             "status": status,
@@ -173,7 +179,7 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
             "editor_python_bindings_available": True,
             "temp_level_path_redacted": "Levels/_maxine_smoke/maxine_smoke_test",
             "entity_smoke": {"status": "pass", "entity_id": "EntityId(1)", "name": "maxine_smoke_entity"},
-            "prefab_smoke": {"status": "pass"} if diagnostic_mode in {"prefab-binding", "prefab-instantiation", "procprefab-product-instantiation", "procprefab-content-assertions", "procprefab-character-component-assertions", "full"} else {"status": "unsupported_by_engine_binding", "reason": "prefab instantiation binding not pinned in unit fixture"},
+            "prefab_smoke": {"status": "pass"} if diagnostic_mode in {"prefab-binding", "prefab-instantiation", "procprefab-product-instantiation", "procprefab-content-assertions", "procprefab-character-component-assertions", "runtime-spawnable-proof-surface", "full"} else {"status": "unsupported_by_engine_binding", "reason": "prefab instantiation binding not pinned in unit fixture"},
             "actor_smoke": {"status": "pass"} if diagnostic_mode in {"actor-binding", "actor-asset-assignment", "full"} else {"status": "blocked_by_missing_binding", "reason": "actor component type ID not pinned in unit fixture"},
             "component_smoke": {"status": "pass", "components": ["Transform"], "binding_evidence": "EditorComponentAPIBus"},
             "instantiated_entities": [{"name": "maxine_smoke_entity", "components": ["Transform"], "source": "editor_python"}],
@@ -425,6 +431,107 @@ def _procprefab_character_assertions_payload() -> dict:
     }
 
 
+def _runtime_spawnable_proof_payload() -> dict:
+    return {
+        "status": "unavailable_with_verified_reason",
+        "runtime_spawnable_proof_status": "unavailable_with_verified_reason",
+        "runtime_spawnable_surface_discovery": {
+            "status": "runtime_surface_discovery_pass",
+            "surface_type": "asset_catalog_product_dependencies_and_spawnable_source_surface",
+            "candidate_surfaces": [
+                "AssetCatalogRequestBus.GetAllProductDependencies",
+                "AssetCatalogRequestBus.GetDirectProductDependencies",
+                "AzFramework::Spawnable",
+                "AzFramework::Scripts::SpawnableScriptMediator",
+            ],
+        },
+        "runtime_spawnable_surface_available": True,
+        "runtime_spawnable_surface_type": "asset_catalog_product_dependencies_and_spawnable_source_surface",
+        "runtime_spawnable_selected_call": "",
+        "runtime_spawnable_argument_shape": {},
+        "runtime_spawnable_execution_attempted": False,
+        "runtime_spawnable_execution_result": {
+            "status": "runtime_execution_not_attempted",
+            "reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness",
+        },
+        "runtime_spawnable_execution_supported": False,
+        "runtime_spawnable_execution_verified": False,
+        "runtime_spawnable_product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "runtime_spawnable_asset_id": "{11111111-1111-4111-8111-111111111111}:3",
+        "product_dependency_proof": {
+            "status": "product_dependency_proof_unavailable",
+            "product_dependency_count": 0,
+            "missing_dependency_count": 0,
+            "matches_apb_evidence": False,
+            "reason": "direct_procprefab_product_dependency_graph_empty_for_character_products",
+        },
+        "product_dependency_proof_status": "product_dependency_proof_unavailable",
+        "product_dependency_matches_apb_evidence": False,
+        "runtime_spawnable_dependency_graph": {
+            "status": "product_dependency_proof_unavailable",
+            "dependencies": [],
+        },
+        "runtime_spawnable_product_dependencies": [],
+        "runtime_spawnable_character_product_references": [],
+        "runtime_spawnable_actor_reference": {"status": "unavailable_with_verified_reason", "product_type": "actor"},
+        "runtime_spawnable_azmodel_reference": {"status": "unavailable_with_verified_reason", "product_type": "azmodel"},
+        "runtime_spawnable_pxmesh_reference": {"status": "unavailable_with_verified_reason", "product_type": "pxmesh"},
+        "runtime_spawnable_azmaterial_reference": {
+            "status": "unavailable_with_verified_reason",
+            "product_type": "azmaterial",
+        },
+        "runtime_spawnable_motion_reference": {"status": "unavailable_with_verified_reason", "product_type": "motion"},
+        "runtime_spawnable_motionset_reference": {
+            "status": "unavailable_with_verified_reason",
+            "product_type": "motionset",
+        },
+        "runtime_spawnable_animgraph_reference": {
+            "status": "unavailable_with_verified_reason",
+            "product_type": "animgraph",
+        },
+        "runtime_spawnable_missing_asset_signals": {"status": "pass", "matches": []},
+        "runtime_spawnable_missing_character_signals": {"status": "pass", "matches": []},
+        "runtime_spawnable_blocked_reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness",
+        "runtime_spawnable_unsupported_reason": "",
+        "product_dependency_proof_result": {
+            "status": "product_dependency_proof_unavailable",
+            "reason": "direct_procprefab_product_dependency_graph_empty_for_character_products",
+        },
+        "editor_component_inventory_character_assertion_result": {
+            "status": "unavailable_with_verified_reason",
+            "reason": "direct_procprefab_character_components_not_exposed_in_editor_product_instance",
+        },
+        "direct_product_instantiation_result": {"status": "pass"},
+        "direct_product_content_assertion_result": {"status": "pass"},
+        "source_prefab_baseline_result": {"status": "pass"},
+        "actor_assignment_result": {"status": "pass"},
+        "required_runtime_spawnable_assertions_passed": [
+            "apb_product_evidence_complete",
+            "runtime_execution_not_attempted_with_typed_reason",
+            "product_dependency_graph_checked",
+        ],
+        "required_runtime_spawnable_assertions_failed": [],
+        "runtime_spawnable_assertion_failures": [],
+        "runtime_spawnable_assertion_informational": [
+            "product_dependency_proof_is_not_runtime_execution_proof",
+            "spawnable_source_surface_discovered",
+        ],
+        "runtime_spawnable_unavailable_reasons": [
+            {
+                "assertion": "runtime_spawnable_execution",
+                "status": "runtime_execution_not_attempted",
+                "reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness",
+            }
+        ],
+        "runtime_spawnable_unsupported_reasons": [],
+        "fake_success": False,
+        "cache_heuristic_used": False,
+        "live_publication": False,
+        "release_packaging": False,
+        "production_level_mutation": False,
+    }
+
+
 def _direct_procprefab_verified_product_payload() -> dict:
     content_assertions = _direct_procprefab_content_assertions_payload()
     character_assertions = _procprefab_character_assertions_payload()
@@ -519,6 +626,21 @@ def test_editor_smoke_live_pass_example_schema_and_semantics_validate():
     assert character_assertions["editor_log_character_error_scan"]["status"] == "pass"
     assert character_assertions["required_character_assertions_failed"] == []
     assert "Transform" not in character_assertions.get("required_character_assertions_passed", [])
+    runtime_proof = report["runtime_spawnable_proof"]
+    assert runtime_proof["runtime_spawnable_surface_discovery"]["status"] == "runtime_surface_discovery_pass"
+    assert runtime_proof["runtime_spawnable_execution_attempted"] is False
+    assert runtime_proof["runtime_spawnable_execution_verified"] is False
+    assert runtime_proof["runtime_spawnable_execution_result"]["status"] == "runtime_execution_not_attempted"
+    assert runtime_proof["product_dependency_proof_status"] in {
+        "product_dependency_proof_pass",
+        "product_dependency_proof_unavailable",
+    }
+    assert runtime_proof["product_dependency_proof"]["status"] == runtime_proof["product_dependency_proof_status"]
+    assert runtime_proof["runtime_spawnable_character_product_references"] == []
+    assert runtime_proof["required_runtime_spawnable_assertions_failed"] == []
+    assert "product_dependency_proof_is_not_runtime_execution_proof" in runtime_proof[
+        "runtime_spawnable_assertion_informational"
+    ]
 
 
 def test_editor_smoke_rejects_actor_or_prefab_pass_without_binding_evidence():
@@ -686,6 +808,47 @@ def test_editor_smoke_rejects_required_character_assertion_failure():
     assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
 
 
+def test_editor_smoke_rejects_runtime_spawnable_verified_without_attempted_runtime_execution():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report["diagnostic_mode"] = "runtime-spawnable-proof-surface"
+    runtime_proof = _runtime_spawnable_proof_payload()
+    runtime_proof["runtime_spawnable_execution_verified"] = True
+    runtime_proof["runtime_spawnable_execution_attempted"] = False
+    runtime_proof["runtime_spawnable_execution_result"] = {"status": "pass"}
+    report["runtime_spawnable_proof"] = runtime_proof
+    report["direct_procprefab_product_semantics"]["runtime_spawnable_proof"] = runtime_proof
+    report["prefab_binding_checks"]["runtime_spawnable_proof"] = runtime_proof
+    report["prefab_binding_checks"]["direct_procprefab_product_semantics"] = report[
+        "direct_procprefab_product_semantics"
+    ]
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+
+
+def test_editor_smoke_rejects_product_dependency_proof_counted_as_runtime_execution():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report["diagnostic_mode"] = "runtime-spawnable-proof-surface"
+    runtime_proof = _runtime_spawnable_proof_payload()
+    runtime_proof["product_dependency_proof"]["status"] = "product_dependency_proof_pass"
+    runtime_proof["product_dependency_proof_status"] = "product_dependency_proof_pass"
+    runtime_proof["runtime_spawnable_execution_attempted"] = False
+    runtime_proof["runtime_spawnable_execution_verified"] = True
+    report["runtime_spawnable_proof"] = runtime_proof
+    report["direct_procprefab_product_semantics"]["runtime_spawnable_proof"] = runtime_proof
+    report["prefab_binding_checks"]["runtime_spawnable_proof"] = runtime_proof
+    report["prefab_binding_checks"]["direct_procprefab_product_semantics"] = report[
+        "direct_procprefab_product_semantics"
+    ]
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+
+
 def test_character_log_scan_fails_selected_product_missing_actor_signal(tmp_path, monkeypatch):
     project = tmp_path / "MAXINE_GoldenCorpus"
     log_dir = project / "user" / "log"
@@ -769,6 +932,7 @@ def test_editor_smoke_binding_diagnostic_modes_route_to_target_scripts(tmp_path)
         "procprefab-product-instantiation": "editor_procprefab_product_instantiation_smoke.py",
         "procprefab-content-assertions": "editor_procprefab_content_assertions_smoke.py",
         "procprefab-character-component-assertions": "editor_procprefab_character_component_assertions_smoke.py",
+        "runtime-spawnable-proof-surface": "editor_runtime_spawnable_proof_surface_smoke.py",
     }
 
     for mode, script_name in expected_scripts.items():

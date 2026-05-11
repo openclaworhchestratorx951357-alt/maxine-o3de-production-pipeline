@@ -1,7 +1,17 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Pin Character-Specific ProcPrefab Component Assertions v1 is in progress:
+- Pin Runtime/Spawnable Character Proof Surface v1 is implemented on `codex/pin-runtime-spawnable-character-proof-surface-v1`:
+  - PR #122 was merged into `main`, and `codex/pin-runtime-spawnable-character-proof-surface-v1` was created from updated `main`
+  - direct `.procprefab` product instantiation remains preserved: APB evidence for `pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab`, Asset Catalog path `assets/characters/maxine/release/maxine_idle_fbx.procprefab`, AssetId `{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305`, and `PrefabPublicRequestBus.InstantiatePrefab` with product path string, empty parent entity id, and `azlmbr.math.Vector3`
+  - direct `.procprefab` structural content assertions remain preserved: valid created container/entity evidence, owning prefab path match, positive created entity count, Transform inventory on direct procprefab-created content, and clean selected-path missing-asset/load-error scans
+  - Editor-side character-specific assertions remain honest: Actor, Mesh, Material, Animation, and PhysX component/asset-reference evidence is not exposed through validated Editor component inventory for the direct product instance, so the result remains `direct_procprefab_character_components_not_exposed_in_editor_product_instance`
+  - added targeted `runtime-spawnable-proof-surface` diagnostics; the mode preserves the prior Editor gates, then records `runtime_spawnable_proof` with local O3DE source-discovered spawnable/ProductDependency surfaces and a read-only Asset Processor database ProductDependencies query
+  - current product dependency proof is typed unavailable for richer character evidence: the direct `.procprefab` product dependency graph exposes no actor, azmodel, pxmesh, azmaterial, motion, motionset, or animgraph references, and no missing product dependencies are recorded
+  - runtime launcher candidates may be recorded as candidates only; no runtime executable is launched in this slice, `runtime_spawnable_execution_attempted=false`, `runtime_spawnable_execution_verified=false`, and the blocker is `runtime_spawnable_proof_requires_dedicated_runtime_harness`
+  - live APB baseline, APB-only suite, product-evidence audit, targeted Editor diagnostics, full Editor smoke, and include-editor-smoke integration suite passed; the latest full live report is under `artifacts/o3de-integration/editor-smoke/editor-smoke-20260511T043307Z/`
+  - Actor asset assignment remains proven, temp source-prefab instantiation remains proven, direct product content assertions remain proven, live publication remains false, release packaging remains false, production levels remain forbidden, and no production-ready release claim is made
+- Pin Character-Specific ProcPrefab Component Assertions v1 completed in PR #122:
   - PR #121 was merged into `main`, and `codex/pin-character-specific-procprefab-component-assertions-v1` was created from updated `main`
   - the direct `.procprefab` product instantiation proof remains preserved: APB evidence for `pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab`, Asset Catalog path `assets/characters/maxine/release/maxine_idle_fbx.procprefab`, AssetId `{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305`, and `PrefabPublicRequestBus.InstantiatePrefab` with product path string, empty parent entity id, and `azlmbr.math.Vector3`
   - the PR #121 structural content assertions remain preserved: valid created container/entity evidence, owning prefab path match, positive created entity count, Transform inventory on direct procprefab-created content, and clean selected-path missing-asset/load-error scans
