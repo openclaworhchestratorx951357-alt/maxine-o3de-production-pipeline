@@ -159,6 +159,7 @@ def run_integration_suite(
         "live_o3de_execution": False,
         "live_asset_processor_batch_execution": _command_output_has(commands, "live_asset_processor_batch_execution: true"),
         "live_editor_execution": _command_output_has(commands, "live_editor_execution: true"),
+        "live_runtime_execution": _command_output_has(commands, "live_runtime_execution: true"),
         "golden_project_fixture_ref": _repo_relative(golden_fixture),
         "editor_smoke_manifest_ref": _repo_relative(editor_manifest),
         "readiness": readiness,
@@ -193,6 +194,18 @@ def _run_fixture_commands(env: Mapping[str, str]) -> List[Dict[str, Any]]:
             ],
             env,
         ),
+        _run_command(
+            "runtime_harness fixture",
+            [
+                sys.executable,
+                "tools/o3de/runtime_harness.py",
+                "--manifest",
+                "examples/manifests/release_rigged.pass.example.json",
+                "--mode",
+                "fixture",
+            ],
+            env,
+        ),
     ]
 
 
@@ -204,6 +217,8 @@ def _fixture_env(env: Mapping[str, str]) -> Dict[str, str]:
         "MAXINE_ENABLE_O3DE_EDITOR_SMOKE",
         "MAXINE_ALLOW_LIVE_O3DE_COMMANDS",
         "MAXINE_ALLOW_LIVE_EDITOR_COMMANDS",
+        "MAXINE_ENABLE_O3DE_RUNTIME_HARNESS",
+        "MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS",
         "MAXINE_ALLOW_LIVE_PUBLICATION",
         "MAXINE_ENABLE_RELEASE_PACKAGING",
     ):
@@ -408,6 +423,7 @@ def print_text_report(report: Mapping[str, Any]) -> None:
     print(f"live_o3de_execution: {str(report['live_o3de_execution']).lower()}")
     print(f"live_asset_processor_batch_execution: {str(report.get('live_asset_processor_batch_execution', False)).lower()}")
     print(f"live_editor_execution: {str(report.get('live_editor_execution', False)).lower()}")
+    print(f"live_runtime_execution: {str(report.get('live_runtime_execution', False)).lower()}")
     print(f"golden_project_fixture_ref: {report.get('golden_project_fixture_ref', '')}")
     print(f"editor_smoke_manifest_ref: {report.get('editor_smoke_manifest_ref', '')}")
     for code in report.get("errors", []):
