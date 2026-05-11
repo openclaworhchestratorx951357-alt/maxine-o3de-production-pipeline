@@ -84,6 +84,14 @@ $env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
 
 Keep those unset for fixture/readiness checks. Setting them only permits the harness to consider a bounded runtime command; it does not by itself prove runtime execution or runtime character content.
 
+Runtime exit-fixture execution, if it is ever implemented, adds one more non-secret gate:
+
+```powershell
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+```
+
+That gate must remain unset unless the report has a source-validated, non-shipping, project-scoped fixture command. The current repository records a typed blocker instead of launching: `blocked_by_fixture_requires_project_code_rebuild`.
+
 ## Beginner Commands
 
 Default offline validation:
@@ -171,6 +179,14 @@ python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigge
 ```
 
 This diagnostic focuses on the exit mechanism instead of more renderer-flag permutations. It records source refs for console-command-file timing, `quit`, Settings Registry runtime console commands, and launcher lifecycle callbacks before deciding whether a candidate can run. On the current source inspection, immediate console-file quit and Settings Registry runtime-console quit are source-validated but rejected because they still execute before the launcher main loop; delayed/tick-queued quit, help/version/no-op, command-line-plus-quit, ServerLauncher fallback, and temp/sandbox level exit remain rejected until source validates a bounded no-production-level exit path. A blocked diagnostic is honest evidence and must not be converted into runtime execution proof.
+
+The harness-side exit-fixture diagnostic entry point is:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-exit-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+This diagnostic stops probing unsupported launcher flags. It records the fixture source-discovery result, the required fixture gate, and whether the fixture is available. Current source discovery finds a plausible after-initialization pattern (`AZ::TickBus::OnTick` calling `AzFramework::ApplicationRequests::ExitMainLoop`) but blocks the implementation because it would require changing the external live project Gem and rebuilding project code outside this repository. It keeps runtime execution unattempted and runtime character proof unclaimed.
 
 When using the produced paired Editor on the controlled runner, pass it explicitly:
 
