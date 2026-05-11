@@ -53,6 +53,11 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_procprefab_product_instantiation_smoke.py",
+    "procprefab-content-assertions": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_procprefab_content_assertions_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -134,6 +139,7 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             "prefab-binding": "prefab_binding_checks",
             "prefab-instantiation": "prefab_binding_checks",
             "procprefab-product-instantiation": "prefab_binding_checks",
+            "procprefab-content-assertions": "prefab_binding_checks",
         }
         target_field = targeted_binding_fields.get(diagnostic_mode)
         if str(report.get("status", "")) == "pass" and target_field:
@@ -178,7 +184,7 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
                     MXN_RUNTIME_SMOKE_FAIL,
                     "Prefab instantiation cannot report pass without created-instance or verified template-load evidence.",
                 )
-        if str(report.get("status", "")) == "pass" and diagnostic_mode in {"procprefab-product-instantiation", "full"}:
+        if str(report.get("status", "")) == "pass" and diagnostic_mode in {"procprefab-product-instantiation", "procprefab-content-assertions", "full"}:
             _validate_direct_procprefab_product_semantics(report, result)
         for smoke_field, check_field in (
             ("actor_smoke", "actor_binding_checks"),
@@ -300,6 +306,7 @@ def _validate_direct_procprefab_product_semantics(report: Mapping[str, Any], res
                 MXN_RUNTIME_SMOKE_FAIL,
                 "Verified direct procprefab instantiation requires selected-call and created-entity evidence.",
             )
+        _validate_direct_procprefab_content_assertions(report, semantics, prefab_checks, result)
     else:
         direct_status = ""
         if isinstance(direct_instantiation, Mapping):
@@ -315,6 +322,98 @@ def _validate_direct_procprefab_product_semantics(report: Mapping[str, Any], res
             result.add_error(
                 MXN_RUNTIME_SMOKE_FAIL,
                 "Unverified direct procprefab product behavior must report a precise typed unsupported or blocked reason.",
+            )
+
+
+def _validate_direct_procprefab_content_assertions(
+    report: Mapping[str, Any],
+    semantics: Mapping[str, Any],
+    prefab_checks: Any,
+    result: ValidationResult,
+) -> None:
+    content = semantics.get("direct_procprefab_content_assertions")
+    if not isinstance(content, Mapping):
+        content = semantics.get("direct_product_assertions")
+    if not isinstance(content, Mapping):
+        content = report.get("direct_procprefab_content_assertions")
+    if not isinstance(content, Mapping) and isinstance(prefab_checks, Mapping):
+        content = prefab_checks.get("direct_procprefab_content_assertions")
+    if not isinstance(content, Mapping):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Verified direct procprefab instantiation cannot pass without direct_procprefab_content_assertions evidence.",
+        )
+        return
+
+    content_status = str(content.get("status", "")).strip()
+    required_status = str(
+        content.get("required_assertions_status") or content.get("direct_product_assertion_status") or ""
+    ).strip()
+    required_failures = content.get("required_assertions_failed", [])
+    assertion_failures = content.get("assertion_failures", [])
+    if (
+        content_status != "pass"
+        or required_status != "pass"
+        or (isinstance(required_failures, list) and required_failures)
+        or (isinstance(assertion_failures, list) and assertion_failures)
+    ):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Direct procprefab content assertions cannot pass with failed required assertions.",
+        )
+
+    container_valid = content.get("created_container_valid") is True
+    container_evidence = content.get("container_entity_valid", {})
+    if isinstance(container_evidence, Mapping):
+        container_valid = container_valid or container_evidence.get("status") == "pass"
+    if not container_valid:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Direct procprefab content assertions require valid created container/entity evidence.",
+        )
+
+    if content.get("owning_prefab_path_matches_expected") is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Direct procprefab content assertions require owning prefab path to match the selected product path.",
+        )
+
+    created_count = 0
+    try:
+        created_count = int(content.get("created_entity_count", 0) or 0)
+    except (TypeError, ValueError):
+        created_count = 0
+    if str(content.get("created_entity_count_status", "")).strip() != "pass" or created_count <= 0:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Direct procprefab content assertions require positive created entity count evidence.",
+        )
+
+    component_status = str(content.get("component_inventory_status", "")).strip()
+    inventory = content.get("component_inventory", {})
+    if not component_status and isinstance(inventory, Mapping):
+        component_status = str(inventory.get("status", "")).strip()
+    if component_status not in {"pass", "informational_only", "unavailable_with_verified_reason"}:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Direct procprefab content assertions require component inventory evidence with a typed status.",
+        )
+    if component_status == "fail":
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Direct procprefab content assertions cannot pass with failed component inventory evidence.",
+        )
+
+    for field, label in (
+        ("missing_asset_log_signals", "missing asset"),
+        ("editor_log_error_scan", "Editor log error"),
+    ):
+        scan = content.get(field, {})
+        scan_status = str(scan.get("status", "")).strip() if isinstance(scan, Mapping) else ""
+        if scan_status != "pass":
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                f"Direct procprefab content assertions require {label} scan status=pass.",
             )
 
 
@@ -971,6 +1070,7 @@ def _live_report_template(
         "prefab_binding_checks": {"status": "not_run"},
         "source_prefab_baseline_result": {"status": "not_run"},
         "direct_procprefab_product_semantics": {"status": "not_run"},
+        "direct_procprefab_content_assertions": {"status": "not_run"},
         "property_path_discovery": {},
         "property_list_summary": {},
         "no_fake_success": True,
@@ -1105,6 +1205,8 @@ def _classify_stall_phase(marker: Mapping[str, Any]) -> str:
         return "prefab_instantiation_stall"
     if step == "procprefab_product_instantiation_started":
         return "procprefab_product_instantiation_stall"
+    if step == "procprefab_content_assertions_started":
+        return "procprefab_content_assertions_stall"
     if step == "report_write_started":
         return "report_write_stall"
     if status in {"started", "running"}:

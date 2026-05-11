@@ -126,7 +126,7 @@ The temp-level stall diagnostic adds a progress log reference to live Editor evi
 - `progress_log_ref`: JSONL progress markers written beside the live report
 - `last_progress_marker`: the final script-side marker used to classify a stall
 - `stall_phase`: wrapper classification such as `runpython_not_invoked`, `azlmbr_import_stall`, `product_evidence_stall`, `temp_level_create_stall`, `idle_wait_stall`, `entity_create_stall`, or `report_write_stall`
-- `diagnostic_mode`: `hello`, `product-evidence`, `temp-level`, `entity-minimal`, `component-binding`, `actor-binding`, `prefab-binding`, `prefab-instantiation`, `procprefab-product-instantiation`, or `full`
+- `diagnostic_mode`: `hello`, `product-evidence`, `temp-level`, `entity-minimal`, `component-binding`, `actor-binding`, `prefab-binding`, `prefab-instantiation`, `procprefab-product-instantiation`, `procprefab-content-assertions`, or `full`
 - `process_tree_cleanup`: timeout cleanup status when a process tree must be stopped
 
 The PR #116 stall was diagnosed as `idle_wait_stall`. The fixed full live smoke pass is represented by:
@@ -175,12 +175,15 @@ Direct `.procprefab` product instantiation is not implied by source-prefab insta
 Direct `.procprefab` product semantics evidence uses dedicated fields so source-prefab proof cannot be mistaken for direct product proof:
 
 - `direct_procprefab_product_semantics`: APB product evidence, Asset Catalog lookup, discovered `azlmbr.prefab` surface, selected call, argument shape, direct load result, direct instantiation result, and created entity/template/instance evidence if any.
+- `direct_procprefab_content_assertions`: post-instantiation evidence for the direct product path, including container/entity validity, owning path match, created entity count, entity-name/child-structure summaries, component inventory, missing-asset/load-error scans, required assertion pass/fail lists, and typed unavailable informational assertions.
 - `source_prefab_baseline_result`: the already proven temp source-prefab create/instantiate result that remains the stable Editor smoke baseline.
 - `direct_product_instantiation_claimed`: true only when direct `.procprefab` product behavior is actually claimed.
 - `direct_product_instantiation_supported`: true only when the current binding surface supports the selected direct product path.
 - `direct_product_instantiation_verified`: true only when direct product load/instantiation produced verified live evidence.
 
 The current live full-pass evidence verifies direct `.procprefab` product instantiation through `PrefabPublicRequestBus.InstantiatePrefab` using the AssetCatalog-selected product path. A future full Editor smoke pass may still include a typed direct-product unsupported result on another rig, but only when `direct_product_instantiation_verified=false`, a precise unsupported or blocked reason is present, and the source-prefab baseline remains `pass`. It must never count direct product instantiation as pass from APB product existence alone or from temp source-prefab instantiation alone.
+
+Direct product instantiation is now distinct from direct product content assertion quality. A full pass cannot hide failed required content assertions such as an invalid container/entity, missing owning-path match, missing created entity count, or relevant missing-asset/load-error signal. Component inventory, child traversal, and detailed asset-reference readback may be informational or typed unavailable when the current Editor Python surface does not expose a stable call, but those states must be explicit and cannot be reported as required assertion passes.
 
 ## Golden Project Fixture Evidence
 
