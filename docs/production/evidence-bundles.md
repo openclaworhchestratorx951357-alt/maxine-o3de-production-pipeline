@@ -195,6 +195,8 @@ Runtime harness evidence is now a fifth layer. It records launcher candidates, s
 
 Runtime command-pinning evidence is intentionally narrow. It proves the command envelope for the selected HeadlessServerLauncher using `--project-path`, `-NullRenderer`, `-rhi=null`, `--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0`, and a generated `--console-command-file` whose contents are `quit`. That command does not use a production level, does not request release packaging, does not publish, and does not claim runtime character evidence.
 
+Runtime exit diagnostic evidence is a sixth layer. When a gated bounded command launches, the harness records `runtime_exit_code_decimal`, `runtime_exit_code_hex`, `runtime_exit_code_signed`, `runtime_exit_classification`, stdout/stderr/log summaries, AssetManager shutdown assert summaries, timeout/kill state, and missing actor/mesh/material/animation/load-error scans. The first live attempt of the pinned envelope exited `3221225477` (`0xC0000005`) and is classified as crash-like, with AssetManager shutdown asserts observed in stderr. That evidence remains a failed runtime execution and must not be counted as runtime execution proof or runtime character proof.
+
 ## Golden Project Fixture Evidence
 
 Golden project fixture evidence may be attached as:

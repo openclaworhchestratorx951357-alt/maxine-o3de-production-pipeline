@@ -14241,6 +14241,55 @@
     "runtime_execution_verified": false,
     "runtime_execution_status": "runtime_execution_not_attempted",
     "runtime_exit_code": null,
+    "runtime_exit_classification": "runtime_execution_not_attempted",
+    "runtime_exit_code_decimal": null,
+    "runtime_exit_code_hex": "",
+    "runtime_exit_code_signed": null,
+    "runtime_exit_code_name": "",
+    "runtime_exit_is_windows_ntstatus_like": false,
+    "runtime_exit_is_crash_like": false,
+    "runtime_crash_classification": "",
+    "runtime_crash_evidence": [],
+    "runtime_assertion_summary": {
+      "status": "runtime_execution_not_attempted",
+      "assert_count": 0
+    },
+    "runtime_asset_manager_asserts": {
+      "status": "runtime_execution_not_attempted",
+      "count": 0,
+      "sample_lines": []
+    },
+    "runtime_shutdown_asserts": {
+      "status": "runtime_execution_not_attempted",
+      "count": 0,
+      "sample_lines": []
+    },
+    "runtime_stack_or_crash_ref": "",
+    "runtime_command_variant": "pinned_headless_console_quit_envelope",
+    "runtime_command_variant_result": {
+      "status": "runtime_command_variant_not_attempted",
+      "attempted": false,
+      "reason": "No safer command variant has been source-validated for fixture/readiness mode."
+    },
+    "runtime_command_variant_reason": "",
+    "runtime_command_variant_safety_profile": {},
+    "runtime_command_variant_selected": false,
+    "runtime_command_variant_rejected_reason": "",
+    "runtime_log_error_summary": {
+      "status": "runtime_execution_not_attempted"
+    },
+    "runtime_stdout_error_summary": {
+      "status": "runtime_execution_not_attempted"
+    },
+    "runtime_stderr_error_summary": {
+      "status": "runtime_execution_not_attempted"
+    },
+    "runtime_exit_diagnostic_status": "runtime_execution_not_attempted",
+    "runtime_exit_diagnostic_reason": "",
+    "runtime_root_cause_classification": "runtime_execution_not_attempted",
+    "runtime_root_cause_hypothesis": "",
+    "runtime_root_cause_confidence": "",
+    "runtime_next_diagnostic_recommendation": "",
     "runtime_timed_out": false,
     "runtime_timeout_stall": false,
     "runtime_kill_attempted": false,

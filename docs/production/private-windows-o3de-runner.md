@@ -148,7 +148,9 @@ C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.HeadlessServerLauncher
 
 The generated command file contains only `quit`. Command pinning verifies the bounded, non-publishing envelope and does not claim runtime execution or runtime character proof.
 
-On the current paired runner, the first gated live execution of this pinned envelope captured stdout/stderr plus `user/log/Server.log`, exited before timeout with code `3221225477`, and recorded no missing actor, mesh, material, animation, asset, or load-error signals. That result is a runtime execution failure, not runtime character proof; keep `runtime_execution_verified=false` and `runtime_character_proof_claimed=false` until a bounded live command exits cleanly and captures character-specific evidence.
+On the current paired runner, the first gated live execution of this pinned envelope captured stdout/stderr plus `user/log/Server.log`, exited before timeout with code `3221225477`, and recorded no missing actor, mesh, material, animation, asset, or load-error signals. The harness renders the code as `0xC0000005` and `-1073741819`, classifies it as `runtime_execution_failed_access_violation_like_exit`, and summarizes observed AssetManager shutdown asserts, Asset Processor negotiation failure, and shader serializer errors. That result is a runtime execution failure, not runtime character proof; keep `runtime_execution_verified=false` and `runtime_character_proof_claimed=false` until a bounded live command exits cleanly and captures character-specific evidence.
+
+Do not broaden expected exit codes to accept `3221225477`. Safer runtime variants may be tried only through the harness, with the same gates, timeout, stdout/stderr/log capture, no production level, no publication, no release packaging, and an explicit `runtime_command_variant_*` result.
 
 When using the produced paired Editor on the controlled runner, pass it explicitly:
 

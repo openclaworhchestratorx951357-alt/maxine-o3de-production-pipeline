@@ -380,6 +380,10 @@
       "type": "object",
       "additionalProperties": true
     },
+    "runtime_exit_diagnostics": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "property_path_discovery": {
       "type": "object",
       "additionalProperties": true

@@ -291,10 +291,125 @@ def test_runtime_harness_live_mode_records_timeout_and_kill_semantics(tmp_path: 
     assert "runtime_bounded_command" in report["required_runtime_harness_assertions_failed"]
 
 
+def test_runtime_harness_live_mode_classifies_nonzero_crash_like_exit(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    log_dir = project / "user" / "log"
+    log_dir.mkdir(parents=True)
+    (log_dir / "Server.log").write_text(
+        "\n".join(
+            [
+                "O3DE could not initialize correctly for the following reason(s):",
+                "Element 'NULL' found in AZStd::intrusive_ptr<PipelineLayoutDescriptor> is not registered with the serializer!",
+                "File materials/types/standardpbr_mainpipeline_forwardpass_standardlighting.azshader",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    def _runner(**kwargs: object) -> subprocess.CompletedProcess[str]:
+        argv = list(kwargs["argv"])  # type: ignore[index]
+        return subprocess.CompletedProcess(
+            argv,
+            3221225477,
+            stdout=(
+                "AssetProcessorConnection::ConnectThread: Network connection attempt failure\n"
+                "GAME: Negotiation with asset processor failed\n"
+                "[Error] (Serialize) - Element 'NULL' found in PipelineLayoutDescriptor\n"
+            ),
+            stderr=(
+                "Assert: C:/src/o3de/Code/Framework/AzCore/AzCore/Asset/AssetCommon.cpp:244 "
+                "(void AZ::Data::AssetData::Release(void)): Attempting to release asset after AssetManager has been destroyed!\n"
+                "Assert: C:/src/o3de/Code/Framework/AzCore/AzCore/Asset/AssetCommon.cpp:276 "
+                "(void AZ::Data::AssetData::ReleaseWeak(void)): Attempting to release asset after AssetManager has been destroyed!\n"
+            ),
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_harness=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_runner,
+        artifact_root=tmp_path / "runtime-artifacts",
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_execution_attempted"] is True
+    assert report["runtime_execution_completed"] is True
+    assert report["runtime_execution_verified"] is False
+    assert report["runtime_exit_code"] == 3221225477
+    assert report["runtime_exit_code_decimal"] == 3221225477
+    assert report["runtime_exit_code_hex"] == "0xC0000005"
+    assert report["runtime_exit_code_signed"] == -1073741819
+    assert report["runtime_exit_code_name"] == "STATUS_ACCESS_VIOLATION"
+    assert report["runtime_exit_is_windows_ntstatus_like"] is True
+    assert report["runtime_exit_is_crash_like"] is True
+    assert report["runtime_exit_classification"] == "runtime_execution_failed_access_violation_like_exit"
+    assert report["runtime_crash_classification"] == "runtime_execution_failed_access_violation_like_exit"
+    assert report["runtime_exit_diagnostic_status"] == "runtime_exit_code_classified"
+    assert report["runtime_asset_manager_asserts"]["status"] == "runtime_execution_failed_asset_manager_shutdown_assert"
+    assert report["runtime_asset_manager_asserts"]["count"] == 2
+    assert report["runtime_assertion_summary"]["assert_count"] == 2
+    assert report["runtime_stdout_error_summary"]["asset_processor_negotiation_failure_count"] == 2
+    assert report["runtime_log_error_summary"]["shader_serializer_error_count"] == 1
+    assert report["runtime_command_variant_result"]["status"] == "runtime_command_variant_not_attempted"
+    assert report["runtime_root_cause_confidence"] == "low"
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_live_mode_records_missing_runtime_log_diagnostic(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+
+    def _runner(**kwargs: object) -> subprocess.CompletedProcess[str]:
+        argv = list(kwargs["argv"])  # type: ignore[index]
+        return subprocess.CompletedProcess(argv, 3221225477, stdout="", stderr="")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_harness=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_runner,
+        artifact_root=tmp_path / "runtime-artifacts",
+    )
+
+    assert report["runtime_log_refs"] == []
+    assert report["runtime_log_error_summary"]["status"] == "blocked_by_missing_runtime_log"
+    assert report["runtime_exit_diagnostic_status"] == "runtime_exit_code_classified"
+    assert report["runtime_execution_verified"] is False
+
+
 def test_runtime_harness_validation_rejects_command_pin_verified_without_pinned() -> None:
     report = runtime_harness.fixture_runtime_harness_report()
     report["runtime_command_pin_verified"] = True
     report["runtime_command_pinned"] = False
+
+    validation = runtime_harness.validate_runtime_harness_report(report, strict=True)
+
+    assert validation.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in validation.error_codes
+
+
+def test_runtime_harness_validation_rejects_crash_like_exit_as_verified_execution() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_execution_attempted": True,
+            "runtime_execution_completed": True,
+            "runtime_execution_verified": True,
+            "runtime_execution_status": "runtime_execution_pass",
+            "runtime_exit_code_decimal": 3221225477,
+            "runtime_exit_code_hex": "0xC0000005",
+            "runtime_exit_is_crash_like": True,
+        }
+    )
 
     validation = runtime_harness.validate_runtime_harness_report(report, strict=True)
 
