@@ -510,6 +510,260 @@ def test_runtime_harness_quit_variant_diagnostic_classifies_failed_variants(tmp_
     assert "runtime_quit_variant_clean_exit" in report["required_runtime_harness_assertions_failed"]
 
 
+def test_runtime_harness_exit_strategy_diagnostic_records_source_matrix_without_unsafe_launch(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+
+    def _runner(**_kwargs: object) -> subprocess.CompletedProcess[str]:
+        raise AssertionError("no exit strategy candidate should launch when every candidate is rejected")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_exit_strategies=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_runner,
+        artifact_root=tmp_path / "runtime-artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_exit_strategy_status"] == "blocked_by_missing_source_validated_runtime_exit_strategy"
+    assert report["runtime_exit_strategy_verified"] is False
+    assert report["runtime_exit_strategy_selected"] == ""
+    assert report["runtime_execution_attempted"] is False
+    assert report["runtime_execution_verified"] is False
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_quit_variant_matrix_result"]["status"] == "preserved_from_pr127"
+    candidates = report["runtime_exit_strategy_candidates"]
+    assert candidates == report["runtime_exit_strategy_candidate_matrix"]
+    candidate_by_id = {item["runtime_exit_strategy_candidate_id"]: item for item in candidates}
+    assert candidate_by_id["console_command_file_immediate_quit"][
+        "runtime_exit_strategy_candidate_status"
+    ] == "runtime_exit_strategy_candidate_rejected_unsafe"
+    assert candidate_by_id["settings_registry_runtime_console_quit_setregpatch"][
+        "runtime_exit_strategy_candidate_status"
+    ] == "runtime_exit_strategy_candidate_rejected_unsafe"
+    assert candidate_by_id["post_app_start_callback_exit"][
+        "runtime_exit_strategy_candidate_status"
+    ] == "runtime_exit_strategy_candidate_rejected_no_exit_strategy"
+    assert candidate_by_id["tick_queued_delayed_quit"][
+        "runtime_exit_strategy_candidate_status"
+    ] == "runtime_exit_strategy_candidate_rejected_missing_source_validation"
+    assert report["runtime_exit_strategy_blocked_reason"] == "headless_launcher_no_level_exit_strategy_unavailable"
+
+
+def test_runtime_harness_exit_strategy_diagnostic_can_verify_clean_source_validated_candidate(
+    tmp_path: Path, monkeypatch
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    log_dir = project / "user" / "log"
+    log_dir.mkdir(parents=True)
+    (log_dir / "Server.log").write_text("clean exit strategy log\n", encoding="utf-8")
+
+    def _fake_candidates(command: dict, *, artifact_dir: Path, timeout_seconds: int) -> list[dict]:
+        command_file = artifact_dir / "maxine_runtime_exit_strategy_clean.cfg"
+        command_file.write_text("quit\n", encoding="utf-8")
+        return [
+            {
+                "runtime_exit_strategy_candidate_id": "test_after_init_quit",
+                "runtime_exit_strategy_candidate_name": "Test after-init quit",
+                "runtime_exit_strategy_candidate_status": "runtime_exit_strategy_candidate_source_validated",
+                "runtime_exit_strategy_candidate_kind": "test_after_init_quit",
+                "runtime_exit_strategy_candidate_command": command["argv"][0],
+                "runtime_exit_strategy_candidate_arguments": [
+                    *command["argv"][1:-1],
+                    f"--console-command-file={command_file}",
+                ],
+                "runtime_exit_strategy_candidate_argument_shape": {
+                    "exit_strategy": "test source-validated after-init quit"
+                },
+                "runtime_exit_strategy_candidate_safety_profile": {
+                    "local": True,
+                    "bounded_by_timeout": True,
+                    "non_publishing": True,
+                    "non_packaging": True,
+                    "mutates_production": False,
+                    "uses_production_level": False,
+                    "uses_no_level": True,
+                },
+                "runtime_exit_strategy_candidate_source_validation": {
+                    "status": "runtime_exit_strategy_candidate_source_validated"
+                },
+                "runtime_exit_strategy_candidate_source_refs": ["test_source:1"],
+                "runtime_exit_strategy_candidate_selected": False,
+                "runtime_exit_strategy_candidate_attempted": False,
+                "runtime_exit_strategy_candidate_rejected_reason": "",
+                "runtime_exit_strategy_candidate_exit_code_decimal": None,
+                "runtime_exit_strategy_candidate_exit_code_hex": "",
+                "runtime_exit_strategy_candidate_exit_classification": "runtime_execution_not_attempted",
+                "runtime_exit_strategy_candidate_expected_exit_codes": [0],
+                "runtime_exit_strategy_candidate_expected_exit_matched": False,
+                "runtime_exit_strategy_candidate_timeout_seconds": timeout_seconds,
+                "runtime_exit_strategy_candidate_timed_out": False,
+                "runtime_exit_strategy_candidate_kill_attempted": False,
+                "runtime_exit_strategy_candidate_kill_result": {"status": "not_run"},
+                "runtime_exit_strategy_candidate_stdout_ref": "",
+                "runtime_exit_strategy_candidate_stderr_ref": "",
+                "runtime_exit_strategy_candidate_log_refs": [],
+                "runtime_exit_strategy_candidate_log_scan": {"status": "runtime_execution_not_attempted", "matches": []},
+                "runtime_exit_strategy_candidate_asset_manager_asserts": {
+                    "status": "runtime_execution_not_attempted",
+                    "count": 0,
+                    "sample_lines": [],
+                },
+                "runtime_exit_strategy_candidate_shader_serializer_errors": {
+                    "status": "runtime_execution_not_attempted",
+                    "count": 0,
+                    "sample_lines": [],
+                },
+                "runtime_exit_strategy_candidate_asset_processor_negotiation_errors": {
+                    "status": "runtime_execution_not_attempted",
+                    "count": 0,
+                    "sample_lines": [],
+                },
+                "runtime_exit_strategy_candidate_runtime_execution_verified": False,
+                "runtime_exit_strategy_candidate_runtime_character_proof_claimed": False,
+                "runtime_exit_strategy_candidate_runtime_character_proof_verified": False,
+            }
+        ]
+
+    monkeypatch.setattr(runtime_harness, "_runtime_exit_strategy_candidate_matrix", _fake_candidates)
+
+    def _runner(**kwargs: object) -> subprocess.CompletedProcess[str]:
+        argv = list(kwargs["argv"])  # type: ignore[index]
+        return subprocess.CompletedProcess(argv, 0, stdout="clean after-init quit\n", stderr="")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_exit_strategies=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_runner,
+        artifact_root=tmp_path / "runtime-artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_exit_strategy_status"] == "runtime_exit_strategy_verified_clean_exit"
+    assert report["runtime_exit_strategy_selected"] == "test_after_init_quit"
+    assert report["runtime_exit_strategy_verified"] is True
+    assert report["runtime_execution_attempted"] is True
+    assert report["runtime_execution_completed"] is True
+    assert report["runtime_execution_verified"] is True
+    assert report["runtime_character_proof_claimed"] is False
+    candidate = report["runtime_exit_strategy_candidate_matrix"][0]
+    assert candidate["runtime_exit_strategy_candidate_status"] == "runtime_exit_strategy_candidate_attempted_pass"
+    assert candidate["runtime_exit_strategy_candidate_runtime_execution_verified"] is True
+    assert candidate["runtime_exit_strategy_candidate_runtime_character_proof_claimed"] is False
+    assert candidate["runtime_exit_strategy_candidate_exit_code_decimal"] == 0
+    assert candidate["runtime_exit_strategy_candidate_exit_code_hex"] == "0x00000000"
+    assert "runtime_exit_strategy_clean_exit" in report["required_runtime_harness_assertions_passed"]
+
+
+def test_runtime_harness_exit_strategy_diagnostic_classifies_nonzero_candidate(tmp_path: Path, monkeypatch) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    log_dir = project / "user" / "log"
+    log_dir.mkdir(parents=True)
+    (log_dir / "Server.log").write_text(
+        "Element 'NULL' found in PipelineLayoutDescriptor is not registered with the serializer!\n",
+        encoding="utf-8",
+    )
+
+    def _fake_candidates(command: dict, *, artifact_dir: Path, timeout_seconds: int) -> list[dict]:
+        command_file = artifact_dir / "maxine_runtime_exit_strategy_fail.cfg"
+        command_file.write_text("quit\n", encoding="utf-8")
+        candidate = runtime_harness._runtime_exit_strategy_candidate_payload(
+            candidate_id="test_failing_exit",
+            name="Test failing exit",
+            status="runtime_exit_strategy_candidate_source_validated",
+            kind="test_exit",
+            argv=[command["argv"][0], *command["argv"][1:-1], f"--console-command-file={command_file}"],
+            source_validation={"status": "runtime_exit_strategy_candidate_source_validated"},
+            source_refs=["test_source:2"],
+            safety_profile={"local": True, "bounded_by_timeout": True, "non_publishing": True},
+            reason="test candidate",
+            rejected_reason="",
+            timeout_seconds=timeout_seconds,
+        )
+        return [candidate]
+
+    monkeypatch.setattr(runtime_harness, "_runtime_exit_strategy_candidate_matrix", _fake_candidates)
+
+    def _runner(**kwargs: object) -> subprocess.CompletedProcess[str]:
+        argv = list(kwargs["argv"])  # type: ignore[index]
+        return subprocess.CompletedProcess(
+            argv,
+            3221225477,
+            stdout="GAME: Negotiation with asset processor failed\n[Error] (Serialize) - Element 'NULL' found\n",
+            stderr="Assert: AssetManager has been destroyed\n",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_exit_strategies=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_runner,
+        artifact_root=tmp_path / "runtime-artifacts",
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_exit_strategy_status"] == "runtime_exit_strategy_candidate_attempted_failed_access_violation_like_exit"
+    assert report["runtime_exit_strategy_verified"] is False
+    assert report["runtime_execution_attempted"] is True
+    assert report["runtime_execution_verified"] is False
+    assert report["runtime_exit_code_decimal"] == 3221225477
+    assert report["runtime_exit_code_hex"] == "0xC0000005"
+    candidate = report["runtime_exit_strategy_candidate_matrix"][0]
+    assert candidate["runtime_exit_strategy_candidate_status"] == (
+        "runtime_exit_strategy_candidate_attempted_failed_access_violation_like_exit"
+    )
+    assert candidate["runtime_exit_strategy_candidate_runtime_execution_verified"] is False
+    assert candidate["runtime_exit_strategy_candidate_expected_exit_codes"] == [0]
+    assert candidate["runtime_exit_strategy_candidate_asset_manager_asserts"]["count"] == 1
+    assert candidate["runtime_exit_strategy_candidate_shader_serializer_errors"]["count"] >= 1
+    assert candidate["runtime_exit_strategy_candidate_asset_processor_negotiation_errors"]["count"] >= 1
+    assert "runtime_exit_strategy_clean_exit" in report["required_runtime_harness_assertions_failed"]
+
+
+def test_runtime_harness_validation_rejects_exit_strategy_verified_without_clean_candidate() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_exit_strategy_selected": "test_failing_exit",
+            "runtime_exit_strategy_verified": True,
+            "runtime_execution_attempted": True,
+            "runtime_execution_completed": True,
+            "runtime_execution_verified": False,
+            "runtime_exit_strategy_candidate_matrix": [
+                {
+                    "runtime_exit_strategy_candidate_id": "test_failing_exit",
+                    "runtime_exit_strategy_candidate_status": (
+                        "runtime_exit_strategy_candidate_attempted_failed_access_violation_like_exit"
+                    ),
+                    "runtime_exit_strategy_candidate_attempted": True,
+                    "runtime_exit_strategy_candidate_expected_exit_codes": [0],
+                    "runtime_exit_strategy_candidate_exit_code_decimal": 3221225477,
+                    "runtime_exit_strategy_candidate_exit_code_hex": "0xC0000005",
+                    "runtime_exit_strategy_candidate_runtime_execution_verified": False,
+                }
+            ],
+        }
+    )
+
+    validation = runtime_harness.validate_runtime_harness_report(report, strict=True)
+
+    assert validation.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in validation.error_codes
+
+
 def test_runtime_harness_validation_rejects_safer_variant_verified_without_clean_execution() -> None:
     report = runtime_harness.fixture_runtime_harness_report()
     report.update(

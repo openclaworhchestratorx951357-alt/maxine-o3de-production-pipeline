@@ -96,6 +96,7 @@ def run_runtime_harness(
     check_local_readiness: bool = False,
     pin_runtime_command: bool = False,
     diagnose_runtime_quit_variants: bool = False,
+    diagnose_runtime_exit_strategies: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -113,6 +114,7 @@ def run_runtime_harness(
         and not check_local_readiness
         and not pin_runtime_command
         and not diagnose_runtime_quit_variants
+        and not diagnose_runtime_exit_strategies
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -132,9 +134,14 @@ def run_runtime_harness(
             "runtime_harness_mode": "readiness"
             if check_local_readiness
             else "command_pinning"
-            if pin_runtime_command and not enable_runtime_harness and not diagnose_runtime_quit_variants
+            if pin_runtime_command
+            and not enable_runtime_harness
+            and not diagnose_runtime_quit_variants
+            and not diagnose_runtime_exit_strategies
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
+            else "runtime_exit_strategy_diagnostic"
+            if diagnose_runtime_exit_strategies
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -204,7 +211,7 @@ def run_runtime_harness(
         )
         return _finalize_report(report)
 
-    if pin_runtime_command and not enable_runtime_harness and not diagnose_runtime_quit_variants:
+    if pin_runtime_command and not enable_runtime_harness and not diagnose_runtime_quit_variants and not diagnose_runtime_exit_strategies:
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
             report.update(_unpinned_runtime_command_payload(command))
@@ -261,6 +268,16 @@ def run_runtime_harness(
 
     if diagnose_runtime_quit_variants:
         return _run_runtime_quit_variant_diagnostics(
+            report,
+            command=command,
+            env=env_map,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+            command_runner=command_runner,
+        )
+
+    if diagnose_runtime_exit_strategies:
+        return _run_runtime_exit_strategy_diagnostics(
             report,
             command=command,
             env=env_map,
@@ -336,6 +353,11 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_safer_variant_verified=true requires verified runtime execution.")
         if not str(report.get("runtime_safer_variant_selected", "")).strip():
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_safer_variant_verified=true requires a selected safer variant.")
+    if report.get("runtime_exit_strategy_verified") is True:
+        if report.get("runtime_execution_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_exit_strategy_verified=true requires verified runtime execution.")
+        if not str(report.get("runtime_exit_strategy_selected", "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_exit_strategy_verified=true requires a selected exit strategy.")
 
     variants = report.get("runtime_command_variant_matrix", [])
     if isinstance(variants, list):
@@ -366,6 +388,37 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
                 "runtime_command_variant_runtime_character_proof_verified"
             ) is not True:
                 result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"{variant_id} cannot claim runtime character proof without character evidence.")
+    candidates = report.get("runtime_exit_strategy_candidate_matrix", [])
+    if isinstance(candidates, list):
+        for candidate in candidates:
+            if not isinstance(candidate, Mapping):
+                continue
+            candidate_id = str(candidate.get("runtime_exit_strategy_candidate_id", "")).strip() or "unknown_exit_strategy_candidate"
+            expected_exit_codes = candidate.get("runtime_exit_strategy_candidate_expected_exit_codes", [])
+            if isinstance(expected_exit_codes, list) and 3221225477 in [
+                int(code) for code in expected_exit_codes if str(code).strip().lstrip("-").isdigit()
+            ]:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"{candidate_id} cannot broaden expected exits to include 3221225477.")
+            candidate_verified = candidate.get("runtime_exit_strategy_candidate_runtime_execution_verified") is True
+            candidate_status = str(candidate.get("runtime_exit_strategy_candidate_status", "")).strip()
+            candidate_attempted = candidate.get("runtime_exit_strategy_candidate_attempted") is True
+            candidate_exit = candidate.get("runtime_exit_strategy_candidate_exit_code_decimal")
+            try:
+                candidate_exit_nonzero = candidate_exit is not None and int(candidate_exit) != 0
+            except (TypeError, ValueError):
+                candidate_exit_nonzero = False
+            if candidate_verified and not candidate_attempted:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"{candidate_id} cannot verify execution without being attempted.")
+            if candidate_verified and candidate_status != "runtime_exit_strategy_candidate_attempted_pass":
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"{candidate_id} cannot verify execution with status {candidate_status}.")
+            if candidate_verified and candidate_exit_nonzero:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"{candidate_id} cannot verify execution with a nonzero exit code.")
+            if candidate_verified and candidate.get("runtime_exit_strategy_candidate_timed_out") is True:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"{candidate_id} cannot verify execution after timeout.")
+            if candidate.get("runtime_exit_strategy_candidate_runtime_character_proof_claimed") is True and candidate.get(
+                "runtime_exit_strategy_candidate_runtime_character_proof_verified"
+            ) is not True:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"{candidate_id} cannot claim runtime character proof without character evidence.")
     if report.get("runtime_timed_out") is True:
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime harness command timed out.")
     if execution_status in {"runtime_execution_failed", "runtime_execution_timed_out", "runtime_execution_killed_after_timeout"}:
@@ -407,6 +460,10 @@ def print_text_report(report: Mapping[str, Any]) -> None:
         print(f"runtime_quit_variant_diagnostic_status: {report.get('runtime_quit_variant_diagnostic_status', '')}")
         print(f"runtime_safer_variant_selected: {report.get('runtime_safer_variant_selected', '')}")
         print(f"runtime_safer_variant_verified: {str(report.get('runtime_safer_variant_verified', False)).lower()}")
+    if report.get("runtime_exit_strategy_status") not in {None, "", "not_run"}:
+        print(f"runtime_exit_strategy_status: {report.get('runtime_exit_strategy_status', '')}")
+        print(f"runtime_exit_strategy_selected: {report.get('runtime_exit_strategy_selected', '')}")
+        print(f"runtime_exit_strategy_verified: {str(report.get('runtime_exit_strategy_verified', False)).lower()}")
     print(f"runtime_character_proof_claimed: {str(report.get('runtime_character_proof_claimed', False)).lower()}")
     print(f"runtime_character_proof_verified: {str(report.get('runtime_character_proof_verified', False)).lower()}")
     print(f"live_runtime_execution: {str(report.get('live_runtime_execution', False)).lower()}")
@@ -507,6 +564,20 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_safer_variant_verified": False,
         "runtime_quit_variant_diagnostic_status": "not_run",
         "runtime_quit_variant_diagnostic_reason": "",
+        "runtime_exit_strategy": {},
+        "runtime_exit_strategy_status": "not_run",
+        "runtime_exit_strategy_source_discovery_status": "not_run",
+        "runtime_exit_strategy_candidates": [],
+        "runtime_exit_strategy_candidate_matrix": [],
+        "runtime_exit_strategy_selected": "",
+        "runtime_exit_strategy_selected_reason": "",
+        "runtime_exit_strategy_verified": False,
+        "runtime_exit_strategy_blocked_reason": "",
+        "runtime_exit_strategy_unavailable_reason": "",
+        "runtime_exit_strategy_unsupported_reason": "",
+        "runtime_exit_strategy_next_recommendation": "",
+        "runtime_original_command_result": {},
+        "runtime_quit_variant_matrix_result": {},
         "runtime_log_error_summary": {"status": "runtime_execution_not_attempted"},
         "runtime_stdout_error_summary": {"status": "runtime_execution_not_attempted"},
         "runtime_stderr_error_summary": {"status": "runtime_execution_not_attempted"},
@@ -937,6 +1008,719 @@ def _run_bounded_runtime_command(
     report.update(diagnostics)
     report.update(_runtime_signal_fields(scan))
     return _finalize_report(report)
+
+
+def _run_runtime_exit_strategy_diagnostics(
+    report: Dict[str, Any],
+    *,
+    command: Mapping[str, Any],
+    env: Mapping[str, str],
+    timeout_seconds: int,
+    artifact_dir: Path,
+    command_runner: Callable[..., subprocess.CompletedProcess[str]] | None,
+) -> Dict[str, Any]:
+    report.update(_runtime_command_pin_payload(command, timeout_seconds=timeout_seconds, execution_requested=False))
+    candidates = _runtime_exit_strategy_candidate_matrix(command, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
+    attempted: List[Dict[str, Any]] = []
+    for candidate in candidates:
+        candidate_status = str(candidate.get("runtime_exit_strategy_candidate_status", "")).strip()
+        if candidate_status not in {
+            "runtime_exit_strategy_candidate_source_validated",
+            "runtime_exit_strategy_candidate_attemptable",
+        }:
+            continue
+        attempted_candidate = _attempt_runtime_exit_strategy_candidate(
+            candidate,
+            report=report,
+            env=env,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+            command_runner=command_runner,
+        )
+        attempted.append(attempted_candidate)
+        candidates = [
+            attempted_candidate
+            if item.get("runtime_exit_strategy_candidate_id") == attempted_candidate.get("runtime_exit_strategy_candidate_id")
+            else item
+            for item in candidates
+        ]
+        if attempted_candidate.get("runtime_exit_strategy_candidate_status") == "runtime_exit_strategy_candidate_attempted_pass":
+            for index, candidate_item in enumerate(candidates):
+                if (
+                    candidate_item.get("runtime_exit_strategy_candidate_status")
+                    in {"runtime_exit_strategy_candidate_source_validated", "runtime_exit_strategy_candidate_attemptable"}
+                    and candidate_item.get("runtime_exit_strategy_candidate_id")
+                    != attempted_candidate.get("runtime_exit_strategy_candidate_id")
+                ):
+                    candidates[index] = {
+                        **candidate_item,
+                        "runtime_exit_strategy_candidate_status": "runtime_exit_strategy_candidate_not_attempted",
+                        "runtime_exit_strategy_candidate_attempted": False,
+                        "runtime_exit_strategy_candidate_rejected_reason": "stopped_after_clean_exit_strategy",
+                    }
+            return _finalize_report(
+                {
+                    **report,
+                    **_top_level_exit_strategy_success_payload(attempted_candidate, candidates),
+                }
+            )
+
+    if attempted:
+        return _finalize_report({**report, **_top_level_exit_strategy_failure_payload(attempted[-1], candidates)})
+
+    return _finalize_report({**report, **_top_level_exit_strategy_blocked_payload(candidates)})
+
+
+def _runtime_exit_strategy_candidate_matrix(
+    command: Mapping[str, Any],
+    *,
+    artifact_dir: Path,
+    timeout_seconds: int,
+) -> List[Dict[str, Any]]:
+    argv = [str(item) for item in command.get("argv", [])]
+    executable = argv[0] if argv else ""
+    original_args = argv[1:]
+    setregpatch_path = artifact_dir / "maxine_runtime_exit_strategy_runtime_console_quit.setregpatch"
+    setregpatch_argv = [
+        executable,
+        *[arg for arg in original_args if not str(arg).startswith("--console-command-file=")],
+        f"--console-command-file={setregpatch_path}",
+    ]
+    common_safety = {
+        "local": True,
+        "bounded_by_timeout": True,
+        "evidence_captured": True,
+        "stdout_stderr_capture_required": True,
+        "log_capture_best_effort": True,
+        "non_publishing": True,
+        "non_packaging": True,
+        "mutates_production": False,
+        "uses_production_level": False,
+        "uses_temp_level": False,
+        "uses_no_level": True,
+        "loads_character_content": False,
+        "runtime_character_proof": False,
+        "safe_to_kill_after_timeout": True,
+    }
+    return [
+        _runtime_exit_strategy_candidate_payload(
+            candidate_id="console_command_file_immediate_quit",
+            name="Immediate console-command-file quit",
+            status="runtime_exit_strategy_candidate_rejected_unsafe",
+            kind="pre_mainloop_console_command_file_quit",
+            argv=argv,
+            source_validation={
+                "status": "runtime_exit_strategy_candidate_source_validated",
+                "summary": (
+                    "Launcher.cpp executes --console-command-file after autoexec.cfg and before RunMainLoop; "
+                    "SystemInit.cpp registers quit as GetISystem()->Quit()."
+                ),
+            },
+            source_refs=[
+                "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:66",
+                "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:601",
+                "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:607",
+                "C:/src/o3de/Code/Legacy/CrySystem/SystemInit.cpp:1196",
+                "C:/src/o3de/Code/Legacy/CrySystem/System.cpp:414",
+            ],
+            safety_profile={**common_safety, "rejected_same_pre_mainloop_quit_timing": True},
+            reason="Source-validated but rejected because it is the already-failing immediate pre-main-loop quit timing.",
+            rejected_reason="candidate_rejected_same_pre_mainloop_quit_timing",
+            timeout_seconds=timeout_seconds,
+        ),
+        _runtime_exit_strategy_candidate_payload(
+            candidate_id="settings_registry_runtime_console_quit_setregpatch",
+            name="Settings Registry runtime console quit file",
+            status="runtime_exit_strategy_candidate_rejected_unsafe",
+            kind="pre_mainloop_settings_registry_runtime_console_quit",
+            argv=setregpatch_argv,
+            source_validation={
+                "status": "runtime_exit_strategy_candidate_source_validated",
+                "summary": (
+                    "Console.cpp routes .setregpatch config files into /Amazon/AzCore/Runtime/ConsoleCommands and "
+                    "the settings-registry notifier performs the console command, but Launcher.cpp would still call it "
+                    "through --console-command-file before RunMainLoop."
+                ),
+            },
+            source_refs=[
+                "C:/src/o3de/Code/Framework/AzCore/AzCore/Console/IConsole.h:36",
+                "C:/src/o3de/Code/Framework/AzCore/AzCore/Console/Console.cpp:145",
+                "C:/src/o3de/Code/Framework/AzCore/AzCore/Console/Console.cpp:535",
+                "C:/src/o3de/Code/Framework/AzCore/AzCore/Console/Console.cpp:632",
+                "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:607",
+            ],
+            safety_profile={**common_safety, "rejected_same_pre_mainloop_quit_timing": True},
+            reason="Source-validated but rejected because it does not provide delayed or after-initialization exit timing.",
+            rejected_reason="candidate_rejected_same_pre_mainloop_quit_timing",
+            timeout_seconds=timeout_seconds,
+        ),
+        _runtime_exit_strategy_candidate_payload(
+            candidate_id="post_app_start_callback_exit",
+            name="Launcher post-app-start callback exit",
+            status="runtime_exit_strategy_candidate_rejected_no_exit_strategy",
+            kind="internal_launcher_callback_not_cli_pinnable",
+            argv=[executable],
+            source_validation={
+                "status": "runtime_exit_strategy_candidate_source_validated",
+                "summary": "Launcher.cpp calls PlatformMainInfo::m_onPostAppStart after GameApplication::Start, but the callback is platform/internal and not exposed as a command-line exit strategy.",
+            },
+            source_refs=[
+                "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:523",
+                "C:/src/o3de/Code/LauncherUnified/Launcher.h:47",
+                "C:/src/o3de/Code/LauncherUnified/Platform/Android/Launcher_Android.cpp:359",
+            ],
+            safety_profile={**common_safety, "externally_pinnable": False},
+            reason="Source-validated internal lifecycle hook, rejected because the launcher CLI cannot pin it for this harness.",
+            rejected_reason="candidate_rejected_no_external_cli_binding",
+            timeout_seconds=timeout_seconds,
+        ),
+        _runtime_exit_strategy_candidate_payload(
+            candidate_id="tick_queued_delayed_quit",
+            name="Tick-queued delayed quit",
+            status="runtime_exit_strategy_candidate_rejected_missing_source_validation",
+            kind="delayed_or_after_init_quit",
+            argv=[],
+            source_validation={
+                "status": "runtime_exit_strategy_candidate_rejected_missing_source_validation",
+                "summary": "No source-supported command-line mechanism was found that queues quit for a later system/application tick.",
+            },
+            source_refs=[
+                "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:97",
+                "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:107",
+                "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:117",
+            ],
+            safety_profile={**common_safety, "source_validated": False},
+            reason="No source-validated delayed quit command-line surface was found.",
+            rejected_reason="candidate_rejected_missing_source_validation",
+            timeout_seconds=timeout_seconds,
+        ),
+        _runtime_exit_strategy_candidate_payload(
+            candidate_id="help_version_noop_exit",
+            name="Help/version/no-op launcher exit",
+            status="runtime_exit_strategy_candidate_rejected_missing_source_validation",
+            kind="help_version_noop",
+            argv=[executable],
+            source_validation={
+                "status": "runtime_exit_strategy_candidate_rejected_missing_source_validation",
+                "summary": "No HeadlessServerLauncher help/version/no-op exit surface was found in the launcher source.",
+            },
+            source_refs=["C:/src/o3de/Code/LauncherUnified/Launcher.cpp"],
+            safety_profile={**common_safety, "source_validated": False},
+            reason="No source-validated help/version/no-op exit surface was found.",
+            rejected_reason="candidate_rejected_missing_source_validation",
+            timeout_seconds=timeout_seconds,
+        ),
+        _runtime_exit_strategy_candidate_payload(
+            candidate_id="command_line_plus_quit",
+            name="Command-line plus quit",
+            status="runtime_exit_strategy_candidate_rejected_missing_source_validation",
+            kind="legacy_command_line_quit",
+            argv=[executable],
+            source_validation={
+                "status": "runtime_exit_strategy_candidate_rejected_missing_source_validation",
+                "summary": "No safe, pinned HeadlessServerLauncher command-line +quit form was validated for after-initialization exit timing.",
+            },
+            source_refs=[
+                "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:609",
+                "C:/src/o3de/Code/Legacy/CrySystem/SystemInit.cpp:1113",
+            ],
+            safety_profile={**common_safety, "source_validated": False},
+            reason="Command-line quit dispatch was not source-validated as a delayed, bounded exit path.",
+            rejected_reason="candidate_rejected_missing_source_validation",
+            timeout_seconds=timeout_seconds,
+        ),
+        _runtime_exit_strategy_candidate_payload(
+            candidate_id="serverlauncher_no_level_exit",
+            name="ServerLauncher no-level exit",
+            status="runtime_exit_strategy_candidate_rejected_missing_source_validation",
+            kind="fallback_launcher_no_level_exit",
+            argv=[],
+            source_validation={
+                "status": "runtime_exit_strategy_candidate_rejected_missing_source_validation",
+                "summary": "No evidence currently shows ServerLauncher has different no-level shutdown behavior or a separate pinned exit surface.",
+            },
+            source_refs=["C:/src/o3de/Code/LauncherUnified/Launcher.cpp"],
+            safety_profile={**common_safety, "fallback_launcher_validated": False},
+            reason="Fallback launcher was not source-validated as a safer exit strategy.",
+            rejected_reason="candidate_rejected_missing_source_validation",
+            timeout_seconds=timeout_seconds,
+        ),
+        _runtime_exit_strategy_candidate_payload(
+            candidate_id="temp_sandbox_level_exit",
+            name="Temp/sandbox level startup exit",
+            status="runtime_exit_strategy_candidate_rejected_missing_source_validation",
+            kind="temp_level_runtime_exit",
+            argv=[],
+            source_validation={
+                "status": "runtime_exit_strategy_candidate_rejected_missing_source_validation",
+                "summary": "No source-validated temp/sandbox runtime level startup and exit command was found for this no-production-level slice.",
+            },
+            source_refs=[],
+            safety_profile={**common_safety, "uses_temp_level": True, "source_validated": False},
+            reason="Temp/sandbox level exit is deferred until a source-supported no-production-level command exists.",
+            rejected_reason="candidate_rejected_missing_source_validation",
+            timeout_seconds=timeout_seconds,
+        ),
+    ]
+
+
+def _runtime_exit_strategy_candidate_payload(
+    *,
+    candidate_id: str,
+    name: str,
+    status: str,
+    kind: str,
+    argv: Sequence[str],
+    source_validation: Mapping[str, Any],
+    source_refs: Sequence[str],
+    safety_profile: Mapping[str, Any],
+    reason: str,
+    rejected_reason: str,
+    timeout_seconds: int,
+) -> Dict[str, Any]:
+    argv_list = [str(item) for item in argv]
+    return {
+        "runtime_exit_strategy_candidate_id": candidate_id,
+        "runtime_exit_strategy_candidate_name": name,
+        "runtime_exit_strategy_candidate_status": status,
+        "runtime_exit_strategy_candidate_kind": kind,
+        "runtime_exit_strategy_candidate_command": argv_list[0] if argv_list else "",
+        "runtime_exit_strategy_candidate_arguments": argv_list[1:],
+        "runtime_exit_strategy_candidate_argument_shape": _exit_strategy_argument_shape(argv_list),
+        "runtime_exit_strategy_candidate_safety_profile": dict(safety_profile),
+        "runtime_exit_strategy_candidate_source_validation": dict(source_validation),
+        "runtime_exit_strategy_candidate_source_refs": list(source_refs),
+        "runtime_exit_strategy_candidate_selected": False,
+        "runtime_exit_strategy_candidate_attempted": False,
+        "runtime_exit_strategy_candidate_reason": reason,
+        "runtime_exit_strategy_candidate_rejected_reason": rejected_reason,
+        "runtime_exit_strategy_candidate_exit_code_decimal": None,
+        "runtime_exit_strategy_candidate_exit_code_hex": "",
+        "runtime_exit_strategy_candidate_exit_classification": "runtime_execution_not_attempted",
+        "runtime_exit_strategy_candidate_expected_exit_codes": [0],
+        "runtime_exit_strategy_candidate_expected_exit_matched": False,
+        "runtime_exit_strategy_candidate_timeout_seconds": int(timeout_seconds),
+        "runtime_exit_strategy_candidate_timed_out": False,
+        "runtime_exit_strategy_candidate_kill_attempted": False,
+        "runtime_exit_strategy_candidate_kill_result": {"status": "not_run"},
+        "runtime_exit_strategy_candidate_stdout_ref": "",
+        "runtime_exit_strategy_candidate_stderr_ref": "",
+        "runtime_exit_strategy_candidate_log_refs": [],
+        "runtime_exit_strategy_candidate_log_scan": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_exit_strategy_candidate_missing_actor_signal": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_exit_strategy_candidate_missing_mesh_signal": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_exit_strategy_candidate_missing_material_signal": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_exit_strategy_candidate_missing_animation_signal": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_exit_strategy_candidate_missing_asset_signal": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_exit_strategy_candidate_load_error_signal": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_exit_strategy_candidate_asset_manager_asserts": {
+            "status": "runtime_execution_not_attempted",
+            "count": 0,
+            "sample_lines": [],
+        },
+        "runtime_exit_strategy_candidate_shader_serializer_errors": {
+            "status": "runtime_execution_not_attempted",
+            "count": 0,
+            "sample_lines": [],
+        },
+        "runtime_exit_strategy_candidate_asset_processor_negotiation_errors": {
+            "status": "runtime_execution_not_attempted",
+            "count": 0,
+            "sample_lines": [],
+        },
+        "runtime_exit_strategy_candidate_runtime_execution_verified": False,
+        "runtime_exit_strategy_candidate_runtime_character_proof_claimed": False,
+        "runtime_exit_strategy_candidate_runtime_character_proof_verified": False,
+    }
+
+
+def _exit_strategy_argument_shape(argv: Sequence[str]) -> Dict[str, Any]:
+    return {
+        "argv0": "runtime executable path" if argv else "",
+        "project_path": "explicit --project-path=<MAXINE_GoldenCorpus project path>"
+        if any(str(arg).startswith("--project-path=") for arg in argv)
+        else "",
+        "rendering": [arg for arg in argv if str(arg) in {"-NullRenderer", "-rhi=null"}],
+        "asset_processor_connect": "--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0"
+        if any("wait_for_connect=0" in str(arg) for arg in argv)
+        else "",
+        "exit_strategy": "--console-command-file=<artifact cfg/setregpatch>"
+        if any(str(arg).startswith("--console-command-file=") for arg in argv)
+        else "",
+    }
+
+
+def _attempt_runtime_exit_strategy_candidate(
+    candidate: Mapping[str, Any],
+    *,
+    report: Mapping[str, Any],
+    env: Mapping[str, str],
+    timeout_seconds: int,
+    artifact_dir: Path,
+    command_runner: Callable[..., subprocess.CompletedProcess[str]] | None,
+) -> Dict[str, Any]:
+    candidate_id = str(candidate.get("runtime_exit_strategy_candidate_id", "runtime_exit_strategy_candidate")).strip()
+    argv = [
+        str(candidate.get("runtime_exit_strategy_candidate_command", "")),
+        *[str(arg) for arg in candidate.get("runtime_exit_strategy_candidate_arguments", [])],
+    ]
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    safe_id = "".join(ch if ch.isalnum() or ch in {"_", "-"} else "_" for ch in candidate_id)
+    stdout_path = artifact_dir / f"runtime_exit_strategy_{safe_id}_stdout.txt"
+    stderr_path = artifact_dir / f"runtime_exit_strategy_{safe_id}_stderr.txt"
+    timed_out = False
+    try:
+        if command_runner is not None:
+            proc = command_runner(argv=argv, cwd=str(REPO_ROOT), env=dict(env), timeout_seconds=timeout_seconds)
+        else:
+            proc = subprocess.run(argv, cwd=str(REPO_ROOT), env=dict(env), text=True, capture_output=True, timeout=timeout_seconds)
+    except subprocess.TimeoutExpired as exc:
+        timed_out = True
+        proc = subprocess.CompletedProcess(argv, None, stdout=exc.output or "", stderr=exc.stderr or "")
+
+    stdout_text = str(proc.stdout or "")
+    stderr_text = str(proc.stderr or "")
+    stdout_path.write_text(stdout_text, encoding="utf-8")
+    stderr_path.write_text(stderr_text, encoding="utf-8")
+    project_path = _runtime_project_path(report)
+    log_refs = _runtime_log_refs(project_path)
+    log_text = _read_runtime_logs(log_refs)
+    combined_text = stdout_text + "\n" + stderr_text + "\n" + log_text
+    scan = _scan_runtime_output(combined_text)
+    diagnostics = _runtime_exit_diagnostics(
+        exit_code=proc.returncode,
+        timed_out=timed_out,
+        stdout=stdout_text,
+        stderr=stderr_text,
+        log_text=log_text,
+        log_refs=log_refs,
+    )
+    expected_exit_codes = [int(code) for code in candidate.get("runtime_exit_strategy_candidate_expected_exit_codes", [0])]
+    expected_exit_matched = proc.returncode in set(expected_exit_codes)
+    candidate_status, failure_reason, pass_reason = _exit_strategy_attempt_status(
+        exit_code=proc.returncode,
+        expected_exit_matched=expected_exit_matched,
+        timed_out=timed_out,
+        scan=scan,
+        diagnostics=diagnostics,
+        combined_text=combined_text,
+    )
+    updated = dict(candidate)
+    updated.update(
+        {
+            "runtime_exit_strategy_candidate_status": candidate_status,
+            "runtime_exit_strategy_candidate_selected": candidate_status == "runtime_exit_strategy_candidate_attempted_pass",
+            "runtime_exit_strategy_candidate_attempted": True,
+            "runtime_exit_strategy_candidate_reason": pass_reason or failure_reason,
+            "runtime_exit_strategy_candidate_failure_reason": failure_reason,
+            "runtime_exit_strategy_candidate_pass_reason": pass_reason,
+            "runtime_exit_strategy_candidate_exit_code_decimal": proc.returncode,
+            "runtime_exit_strategy_candidate_exit_code_hex": _exit_code_hex(proc.returncode),
+            "runtime_exit_strategy_candidate_exit_classification": diagnostics.get("runtime_exit_classification", ""),
+            "runtime_exit_strategy_candidate_expected_exit_codes": expected_exit_codes,
+            "runtime_exit_strategy_candidate_expected_exit_matched": expected_exit_matched,
+            "runtime_exit_strategy_candidate_timeout_seconds": int(timeout_seconds),
+            "runtime_exit_strategy_candidate_timed_out": timed_out,
+            "runtime_exit_strategy_candidate_kill_attempted": timed_out,
+            "runtime_exit_strategy_candidate_kill_result": {
+                "status": "runtime_execution_killed_after_timeout" if timed_out else "not_run"
+            },
+            "runtime_exit_strategy_candidate_stdout_ref": _repo_relative(stdout_path),
+            "runtime_exit_strategy_candidate_stderr_ref": _repo_relative(stderr_path),
+            "runtime_exit_strategy_candidate_log_refs": log_refs,
+            "runtime_exit_strategy_candidate_log_scan": scan,
+            "runtime_exit_strategy_candidate_asset_manager_asserts": diagnostics.get("runtime_asset_manager_asserts", {}),
+            "runtime_exit_strategy_candidate_shader_serializer_errors": _variant_error_counter(
+                diagnostics,
+                "shader_serializer_error_count",
+                ("runtime_stdout_error_summary", "runtime_stderr_error_summary", "runtime_log_error_summary"),
+            ),
+            "runtime_exit_strategy_candidate_asset_processor_negotiation_errors": _variant_error_counter(
+                diagnostics,
+                "asset_processor_negotiation_failure_count",
+                ("runtime_stdout_error_summary", "runtime_stderr_error_summary", "runtime_log_error_summary"),
+            ),
+            "runtime_exit_strategy_candidate_runtime_execution_verified": candidate_status
+            == "runtime_exit_strategy_candidate_attempted_pass",
+            "runtime_exit_strategy_candidate_runtime_character_proof_claimed": False,
+            "runtime_exit_strategy_candidate_runtime_character_proof_verified": False,
+        }
+    )
+    updated.update(_exit_strategy_candidate_signal_fields(scan))
+    return updated
+
+
+def _exit_strategy_attempt_status(
+    *,
+    exit_code: int | None,
+    expected_exit_matched: bool,
+    timed_out: bool,
+    scan: Mapping[str, Any],
+    diagnostics: Mapping[str, Any],
+    combined_text: str,
+) -> tuple[str, str, str]:
+    if timed_out:
+        return (
+            "runtime_exit_strategy_candidate_attempted_failed_timeout",
+            "runtime exit strategy candidate exceeded bounded timeout",
+            "",
+        )
+    if not expected_exit_matched:
+        if diagnostics.get("runtime_exit_is_crash_like") is True:
+            return (
+                "runtime_exit_strategy_candidate_attempted_failed_access_violation_like_exit",
+                f"runtime exit strategy candidate exited with crash-like code {exit_code}",
+                "",
+            )
+        return (
+            "runtime_exit_strategy_candidate_attempted_failed_nonzero_exit",
+            f"runtime exit strategy candidate exited with unexpected code {exit_code}",
+            "",
+        )
+    if scan.get("status") != "pass":
+        return (
+            "runtime_exit_strategy_candidate_attempted_failed_missing_runtime_asset",
+            "runtime exit strategy candidate emitted missing/load-error signals",
+            "",
+        )
+    if diagnostics.get("runtime_asset_manager_asserts", {}).get("count", 0):
+        return (
+            "runtime_exit_strategy_candidate_attempted_failed_asset_manager_shutdown_assert",
+            "runtime exit strategy candidate emitted AssetManager shutdown asserts",
+            "",
+        )
+    if _variant_error_counter(
+        diagnostics,
+        "shader_serializer_error_count",
+        ("runtime_stdout_error_summary", "runtime_stderr_error_summary", "runtime_log_error_summary"),
+    ).get("count", 0):
+        return (
+            "runtime_exit_strategy_candidate_attempted_failed_shader_serializer_errors",
+            "runtime exit strategy candidate emitted shader serializer errors",
+            "",
+        )
+    if _variant_error_counter(
+        diagnostics,
+        "asset_processor_negotiation_failure_count",
+        ("runtime_stdout_error_summary", "runtime_stderr_error_summary", "runtime_log_error_summary"),
+    ).get("count", 0):
+        return (
+            "runtime_exit_strategy_candidate_attempted_failed_asset_processor_negotiation",
+            "runtime exit strategy candidate emitted Asset Processor negotiation errors",
+            "",
+        )
+    return (
+        "runtime_exit_strategy_candidate_attempted_pass",
+        "",
+        "runtime exit strategy candidate exited with expected code and no disqualifying scanned signals",
+    )
+
+
+def _top_level_exit_strategy_success_payload(
+    selected_candidate: Mapping[str, Any], candidates: Sequence[Mapping[str, Any]]
+) -> Dict[str, Any]:
+    scan = selected_candidate.get("runtime_exit_strategy_candidate_log_scan", {"status": "pass", "matches": []})
+    candidate_id = str(selected_candidate.get("runtime_exit_strategy_candidate_id", "")).strip()
+    diagnostics = {
+        "runtime_exit_code": selected_candidate.get("runtime_exit_strategy_candidate_exit_code_decimal"),
+        "runtime_exit_code_decimal": selected_candidate.get("runtime_exit_strategy_candidate_exit_code_decimal"),
+        "runtime_exit_code_hex": selected_candidate.get("runtime_exit_strategy_candidate_exit_code_hex", ""),
+        "runtime_exit_classification": selected_candidate.get("runtime_exit_strategy_candidate_exit_classification", ""),
+    }
+    return {
+        "status": "pass",
+        "runtime_harness_status": "runtime_execution_pass",
+        "runtime_exit_strategy_status": "runtime_exit_strategy_verified_clean_exit",
+        "runtime_exit_strategy_source_discovery_status": "runtime_exit_strategy_source_discovery_pass",
+        "runtime_exit_strategy_candidates": list(candidates),
+        "runtime_exit_strategy_candidate_matrix": list(candidates),
+        "runtime_exit_strategy_selected": candidate_id,
+        "runtime_exit_strategy_selected_reason": selected_candidate.get("runtime_exit_strategy_candidate_pass_reason", ""),
+        "runtime_exit_strategy_verified": True,
+        "runtime_exit_strategy": dict(selected_candidate),
+        "runtime_original_command_result": _runtime_original_command_result(),
+        "runtime_quit_variant_matrix_result": _runtime_quit_variant_matrix_result(),
+        "runtime_execution_attempted": True,
+        "runtime_execution_completed": True,
+        "runtime_execution_verified": True,
+        "runtime_execution_status": "runtime_execution_pass",
+        "live_runtime_execution": True,
+        "runtime_timed_out": bool(selected_candidate.get("runtime_exit_strategy_candidate_timed_out", False)),
+        "runtime_timeout_stall": bool(selected_candidate.get("runtime_exit_strategy_candidate_timed_out", False)),
+        "runtime_kill_attempted": bool(selected_candidate.get("runtime_exit_strategy_candidate_kill_attempted", False)),
+        "runtime_kill_result": selected_candidate.get("runtime_exit_strategy_candidate_kill_result", {"status": "not_run"}),
+        "runtime_stdout_ref": selected_candidate.get("runtime_exit_strategy_candidate_stdout_ref", ""),
+        "runtime_stderr_ref": selected_candidate.get("runtime_exit_strategy_candidate_stderr_ref", ""),
+        "runtime_log_refs": selected_candidate.get("runtime_exit_strategy_candidate_log_refs", []),
+        "runtime_log_scan": scan,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+        "runtime_harness_proof_claimed": True,
+        "runtime_harness_proof_verified": True,
+        "runtime_harness_proof_is_character_proof": False,
+        "required_runtime_harness_assertions_passed": [
+            "runtime_exit_strategy_candidate_matrix_recorded",
+            "runtime_exit_strategy_clean_exit",
+            "runtime_character_proof_not_claimed",
+        ],
+        "required_runtime_harness_assertions_failed": [],
+        "runtime_harness_assertion_informational": [
+            "source_validated_exit_strategy_is_not_runtime_character_proof",
+        ],
+        **diagnostics,
+        **_runtime_signal_fields(scan),
+    }
+
+
+def _top_level_exit_strategy_failure_payload(last_candidate: Mapping[str, Any], candidates: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
+    scan = last_candidate.get("runtime_exit_strategy_candidate_log_scan", {"status": "pass", "matches": []})
+    diagnostics = _runtime_exit_diagnostics(
+        exit_code=last_candidate.get("runtime_exit_strategy_candidate_exit_code_decimal"),
+        timed_out=bool(last_candidate.get("runtime_exit_strategy_candidate_timed_out", False)),
+        stdout="",
+        stderr="",
+        log_text="",
+        log_refs=last_candidate.get("runtime_exit_strategy_candidate_log_refs", []),
+    )
+    return {
+        "status": "fail",
+        "runtime_harness_status": "runtime_execution_failed",
+        "runtime_exit_strategy_status": last_candidate.get(
+            "runtime_exit_strategy_candidate_status", "runtime_exit_strategy_candidate_attempted_failed_unknown"
+        ),
+        "runtime_exit_strategy_source_discovery_status": "runtime_exit_strategy_source_discovery_pass",
+        "runtime_exit_strategy_candidates": list(candidates),
+        "runtime_exit_strategy_candidate_matrix": list(candidates),
+        "runtime_exit_strategy_selected": "",
+        "runtime_exit_strategy_selected_reason": "",
+        "runtime_exit_strategy_verified": False,
+        "runtime_exit_strategy": dict(last_candidate),
+        "runtime_exit_strategy_blocked_reason": "headless_launcher_no_level_quit_shutdown_failure",
+        "runtime_exit_strategy_next_recommendation": (
+            "Investigate launcher shutdown order, AssetManager lifetime, shader serializer registration, and Asset Processor negotiation."
+        ),
+        "runtime_original_command_result": _runtime_original_command_result(),
+        "runtime_quit_variant_matrix_result": _runtime_quit_variant_matrix_result(),
+        "runtime_execution_attempted": True,
+        "runtime_execution_completed": True,
+        "runtime_execution_verified": False,
+        "runtime_execution_status": "runtime_execution_failed",
+        "live_runtime_execution": True,
+        "runtime_exit_code": last_candidate.get("runtime_exit_strategy_candidate_exit_code_decimal"),
+        "runtime_exit_code_decimal": last_candidate.get("runtime_exit_strategy_candidate_exit_code_decimal"),
+        "runtime_exit_code_hex": last_candidate.get("runtime_exit_strategy_candidate_exit_code_hex", ""),
+        "runtime_exit_classification": last_candidate.get("runtime_exit_strategy_candidate_exit_classification", ""),
+        "runtime_timed_out": bool(last_candidate.get("runtime_exit_strategy_candidate_timed_out", False)),
+        "runtime_timeout_stall": bool(last_candidate.get("runtime_exit_strategy_candidate_timed_out", False)),
+        "runtime_kill_attempted": bool(last_candidate.get("runtime_exit_strategy_candidate_kill_attempted", False)),
+        "runtime_kill_result": last_candidate.get("runtime_exit_strategy_candidate_kill_result", {"status": "not_run"}),
+        "runtime_stdout_ref": last_candidate.get("runtime_exit_strategy_candidate_stdout_ref", ""),
+        "runtime_stderr_ref": last_candidate.get("runtime_exit_strategy_candidate_stderr_ref", ""),
+        "runtime_log_refs": last_candidate.get("runtime_exit_strategy_candidate_log_refs", []),
+        "runtime_log_scan": scan,
+        "runtime_asset_manager_asserts": last_candidate.get("runtime_exit_strategy_candidate_asset_manager_asserts", {}),
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+        "runtime_harness_proof_claimed": False,
+        "runtime_harness_proof_verified": False,
+        "runtime_harness_proof_is_character_proof": False,
+        "required_runtime_harness_assertions_passed": ["runtime_exit_strategy_candidate_matrix_recorded"],
+        "required_runtime_harness_assertions_failed": ["runtime_exit_strategy_clean_exit"],
+        "runtime_harness_assertion_informational": [
+            "failed_exit_strategy_is_not_runtime_character_proof",
+        ],
+        **diagnostics,
+        **_runtime_signal_fields(scan),
+    }
+
+
+def _top_level_exit_strategy_blocked_payload(candidates: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
+    return {
+        "status": "pass",
+        "runtime_harness_status": "headless_launcher_no_level_exit_strategy_unavailable",
+        "runtime_exit_strategy_status": "blocked_by_missing_source_validated_runtime_exit_strategy",
+        "runtime_exit_strategy_source_discovery_status": "runtime_exit_strategy_source_discovery_pass",
+        "runtime_exit_strategy_candidates": list(candidates),
+        "runtime_exit_strategy_candidate_matrix": list(candidates),
+        "runtime_exit_strategy_selected": "",
+        "runtime_exit_strategy_selected_reason": "",
+        "runtime_exit_strategy_verified": False,
+        "runtime_exit_strategy_blocked_reason": "headless_launcher_no_level_exit_strategy_unavailable",
+        "runtime_exit_strategy_unavailable_reason": "blocked_by_missing_source_validated_runtime_exit_strategy",
+        "runtime_exit_strategy_next_recommendation": (
+            "Add or discover a CLI-pinnable after-initialization/tick-queued exit surface before running more no-level runtime commands."
+        ),
+        "runtime_original_command_result": _runtime_original_command_result(),
+        "runtime_quit_variant_matrix_result": _runtime_quit_variant_matrix_result(),
+        "runtime_execution_attempted": False,
+        "runtime_execution_completed": False,
+        "runtime_execution_verified": False,
+        "runtime_execution_status": "runtime_execution_not_attempted",
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+        "runtime_harness_proof_claimed": True,
+        "runtime_harness_proof_verified": True,
+        "runtime_harness_proof_is_character_proof": False,
+        "required_runtime_harness_assertions_passed": [
+            "runtime_exit_strategy_candidate_matrix_recorded",
+            "runtime_exit_strategy_blocker_recorded",
+            "runtime_execution_not_attempted_without_source_validated_safe_exit_strategy",
+            "runtime_character_proof_not_claimed",
+        ],
+        "required_runtime_harness_assertions_failed": [],
+        "runtime_harness_assertion_informational": [
+            "source_validation_is_not_runtime_execution_proof",
+            "runtime_exit_strategy_blocker_is_not_runtime_character_proof",
+        ],
+    }
+
+
+def _runtime_original_command_result() -> Dict[str, Any]:
+    return {
+        "status": "preserved_from_pr126",
+        "command_kind": "headless_console_quit_envelope",
+        "exit_code_decimal": 3221225477,
+        "exit_code_hex": "0xC0000005",
+        "exit_code_signed": -1073741819,
+        "exit_code_name": "STATUS_ACCESS_VIOLATION",
+        "classification": "runtime_execution_failed_access_violation_like_exit",
+        "crash_like": True,
+        "runtime_execution_verified": False,
+        "runtime_character_proof_claimed": False,
+    }
+
+
+def _runtime_quit_variant_matrix_result() -> Dict[str, Any]:
+    return {
+        "status": "preserved_from_pr127",
+        "variants": [
+            {
+                "id": "baseline_pinned_console_quit",
+                "status": "runtime_command_variant_not_attempted_in_pr127",
+                "exit_code_decimal": 3221225477,
+                "exit_code_hex": "0xC0000005",
+            },
+            {
+                "id": "nullrenderer_only_console_quit",
+                "status": "runtime_command_variant_failed_access_violation_like_exit",
+                "exit_code_decimal": 3221225477,
+                "exit_code_hex": "0xC0000005",
+            },
+            {
+                "id": "rhi_null_only_console_quit",
+                "status": "runtime_command_variant_failed_access_violation_like_exit",
+                "exit_code_decimal": 3221225477,
+                "exit_code_hex": "0xC0000005",
+            },
+        ],
+        "variants_passed": [],
+        "selected_safer_variant": "",
+    }
+
+
+def _exit_strategy_candidate_signal_fields(scan: Mapping[str, Any]) -> Dict[str, Any]:
+    fields = _runtime_signal_fields(scan)
+    return {f"runtime_exit_strategy_candidate_{key.removeprefix('runtime_')}": value for key, value in fields.items()}
 
 
 def _run_runtime_quit_variant_diagnostics(
@@ -2039,6 +2823,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--check-local-readiness", action="store_true")
     parser.add_argument("--pin-runtime-command", action="store_true")
     parser.add_argument("--diagnose-runtime-quit-variants", action="store_true")
+    parser.add_argument("--diagnose-runtime-exit-strategies", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -2059,6 +2844,7 @@ def main() -> int:
         check_local_readiness=args.check_local_readiness,
         pin_runtime_command=args.pin_runtime_command,
         diagnose_runtime_quit_variants=args.diagnose_runtime_quit_variants,
+        diagnose_runtime_exit_strategies=args.diagnose_runtime_exit_strategies,
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
         strict_integration=args.strict_integration,

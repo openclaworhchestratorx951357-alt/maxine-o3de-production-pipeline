@@ -388,6 +388,24 @@
       "type": "object",
       "additionalProperties": true
     },
+    "runtime_exit_strategy": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_exit_strategy_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "runtime_exit_strategy_candidate_matrix": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
     "runtime_command_variant_matrix": {
       "type": "array",
       "items": {
