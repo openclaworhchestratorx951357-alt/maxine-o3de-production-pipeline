@@ -386,6 +386,159 @@ def test_runtime_harness_live_mode_records_missing_runtime_log_diagnostic(tmp_pa
     assert report["runtime_execution_verified"] is False
 
 
+def test_runtime_harness_quit_variant_diagnostic_records_matrix_and_stops_after_clean_variant(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    log_dir = project / "user" / "log"
+    log_dir.mkdir(parents=True)
+    (log_dir / "Server.log").write_text("variant clean exit log\n", encoding="utf-8")
+    launched: list[list[str]] = []
+
+    def _runner(**kwargs: object) -> subprocess.CompletedProcess[str]:
+        argv = list(kwargs["argv"])  # type: ignore[index]
+        launched.append([str(arg) for arg in argv])
+        assert "-NullRenderer" in argv
+        assert "-rhi=null" not in argv
+        command_file_arg = next(arg for arg in argv if str(arg).startswith("--console-command-file="))
+        command_file = Path(str(command_file_arg).split("=", 1)[1])
+        assert command_file.read_text(encoding="utf-8").strip() == "quit"
+        return subprocess.CompletedProcess(argv, 0, stdout="Console only mode enabled.\nquit requested\n", stderr="")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_quit_variants=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_runner,
+        artifact_root=tmp_path / "runtime-artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert len(launched) == 1
+    assert report["runtime_command_pinning_status"] == "runtime_command_pinning_pass"
+    assert report["runtime_command_pinned"] is True
+    assert report["runtime_command_pin_verified"] is True
+    assert report["runtime_quit_variant_diagnostic_status"] == "runtime_command_variant_selected_clean_exit"
+    assert report["runtime_safer_variant_selected"] == "nullrenderer_only_console_quit"
+    assert report["runtime_safer_variant_verified"] is True
+    assert report["runtime_execution_attempted"] is True
+    assert report["runtime_execution_completed"] is True
+    assert report["runtime_execution_verified"] is True
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+    matrix = report["runtime_command_variant_matrix"]
+    assert matrix == report["runtime_command_variants"]
+    null_variant = next(item for item in matrix if item["runtime_command_variant_id"] == "nullrenderer_only_console_quit")
+    rhi_variant = next(item for item in matrix if item["runtime_command_variant_id"] == "rhi_null_only_console_quit")
+    help_variant = next(item for item in matrix if item["runtime_command_variant_id"] == "help_or_version_surface")
+    assert null_variant["runtime_command_variant_status"] == "runtime_command_variant_pass"
+    assert null_variant["runtime_command_variant_runtime_execution_verified"] is True
+    assert null_variant["runtime_command_variant_runtime_character_proof_claimed"] is False
+    assert null_variant["runtime_command_variant_exit_code_decimal"] == 0
+    assert null_variant["runtime_command_variant_exit_code_hex"] == "0x00000000"
+    assert null_variant["runtime_command_variant_expected_exit_codes"] == [0]
+    assert null_variant["runtime_command_variant_stdout_ref"].endswith("runtime_variant_nullrenderer_only_console_quit_stdout.txt")
+    assert rhi_variant["runtime_command_variant_status"] == "runtime_command_variant_not_attempted"
+    assert rhi_variant["runtime_command_variant_reason"] == "stopped_after_clean_variant"
+    assert help_variant["runtime_command_variant_status"] == "runtime_command_variant_rejected_missing_source_validation"
+    assert "runtime_quit_variant_clean_exit" in report["required_runtime_harness_assertions_passed"]
+
+
+def test_runtime_harness_quit_variant_diagnostic_classifies_failed_variants(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    log_dir = project / "user" / "log"
+    log_dir.mkdir(parents=True)
+    (log_dir / "Server.log").write_text(
+        "Element 'NULL' found in PipelineLayoutDescriptor is not registered with the serializer!\n",
+        encoding="utf-8",
+    )
+    launched: list[list[str]] = []
+
+    def _runner(**kwargs: object) -> subprocess.CompletedProcess[str]:
+        argv = list(kwargs["argv"])  # type: ignore[index]
+        launched.append([str(arg) for arg in argv])
+        return subprocess.CompletedProcess(
+            argv,
+            3221225477,
+            stdout="GAME: Negotiation with asset processor failed\n[Error] (Serialize) - Element 'NULL' found\n",
+            stderr="Assert: AssetManager has been destroyed\n",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_quit_variants=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_runner,
+        artifact_root=tmp_path / "runtime-artifacts",
+    )
+
+    assert report["status"] == "fail"
+    assert len(launched) == 2
+    assert report["runtime_execution_attempted"] is True
+    assert report["runtime_execution_completed"] is True
+    assert report["runtime_execution_verified"] is False
+    assert report["runtime_exit_code_decimal"] == 3221225477
+    assert report["runtime_exit_code_hex"] == "0xC0000005"
+    assert report["runtime_exit_classification"] == "runtime_execution_failed_access_violation_like_exit"
+    assert report["runtime_quit_variant_diagnostic_status"] == "runtime_command_variant_failed_access_violation_like_exit"
+    assert report["runtime_safer_variant_verified"] is False
+    assert report["runtime_safer_variant_selected"] == ""
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+    attempted = [
+        item for item in report["runtime_command_variant_matrix"] if item["runtime_command_variant_attempted"] is True
+    ]
+    assert [item["runtime_command_variant_id"] for item in attempted] == [
+        "nullrenderer_only_console_quit",
+        "rhi_null_only_console_quit",
+    ]
+    for variant in attempted:
+        assert variant["runtime_command_variant_status"] == "runtime_command_variant_failed_access_violation_like_exit"
+        assert variant["runtime_command_variant_exit_code_decimal"] == 3221225477
+        assert variant["runtime_command_variant_exit_code_hex"] == "0xC0000005"
+        assert variant["runtime_command_variant_runtime_execution_verified"] is False
+        assert variant["runtime_command_variant_expected_exit_codes"] == [0]
+        assert variant["runtime_command_variant_asset_manager_asserts"]["count"] == 1
+        assert variant["runtime_command_variant_shader_serializer_errors"]["count"] >= 1
+        assert variant["runtime_command_variant_asset_processor_negotiation_errors"]["count"] >= 1
+    assert "runtime_quit_variant_clean_exit" in report["required_runtime_harness_assertions_failed"]
+
+
+def test_runtime_harness_validation_rejects_safer_variant_verified_without_clean_execution() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_safer_variant_selected": "nullrenderer_only_console_quit",
+            "runtime_safer_variant_verified": True,
+            "runtime_execution_attempted": True,
+            "runtime_execution_completed": True,
+            "runtime_execution_verified": False,
+            "runtime_command_variant_matrix": [
+                {
+                    "runtime_command_variant_id": "nullrenderer_only_console_quit",
+                    "runtime_command_variant_status": "runtime_command_variant_failed_access_violation_like_exit",
+                    "runtime_command_variant_attempted": True,
+                    "runtime_command_variant_expected_exit_codes": [0],
+                    "runtime_command_variant_exit_code_decimal": 3221225477,
+                    "runtime_command_variant_exit_code_hex": "0xC0000005",
+                    "runtime_command_variant_runtime_execution_verified": False,
+                }
+            ],
+        }
+    )
+
+    validation = runtime_harness.validate_runtime_harness_report(report, strict=True)
+
+    assert validation.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in validation.error_codes
+
+
 def test_runtime_harness_validation_rejects_command_pin_verified_without_pinned() -> None:
     report = runtime_harness.fixture_runtime_harness_report()
     report["runtime_command_pin_verified"] = True

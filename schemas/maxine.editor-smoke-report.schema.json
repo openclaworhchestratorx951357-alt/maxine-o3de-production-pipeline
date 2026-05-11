@@ -384,6 +384,17 @@
       "type": "object",
       "additionalProperties": true
     },
+    "runtime_quit_variants": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_command_variant_matrix": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
     "property_path_discovery": {
       "type": "object",
       "additionalProperties": true

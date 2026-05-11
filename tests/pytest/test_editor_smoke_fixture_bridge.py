@@ -866,6 +866,9 @@ def test_editor_smoke_full_report_records_runtime_harness_without_character_over
     assert runtime_harness["runtime_exit_diagnostic_status"] == "runtime_execution_not_attempted"
     assert runtime_harness["runtime_exit_is_crash_like"] is False
     assert runtime_harness["runtime_command_variant_result"]["status"] == "runtime_command_variant_not_attempted"
+    assert runtime_harness["runtime_command_variant_matrix"] == []
+    assert runtime_harness["runtime_safer_variant_verified"] is False
+    assert runtime_harness["runtime_quit_variant_diagnostic_status"] == "not_run"
     assert runtime_harness["runtime_harness_proof_is_character_proof"] is False
     assert runtime_harness["runtime_character_proof_claimed"] is False
 

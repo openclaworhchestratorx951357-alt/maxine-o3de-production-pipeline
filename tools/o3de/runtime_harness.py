@@ -95,6 +95,7 @@ def run_runtime_harness(
     mode: str = "fixture",
     check_local_readiness: bool = False,
     pin_runtime_command: bool = False,
+    diagnose_runtime_quit_variants: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -107,7 +108,13 @@ def run_runtime_harness(
     artifact_root: Path | str = DEFAULT_ARTIFACT_ROOT,
 ) -> Dict[str, Any]:
     env_map = dict(env if env is not None else os.environ)
-    if mode == "fixture" and not check_local_readiness and not pin_runtime_command and not enable_runtime_harness:
+    if (
+        mode == "fixture"
+        and not check_local_readiness
+        and not pin_runtime_command
+        and not diagnose_runtime_quit_variants
+        and not enable_runtime_harness
+    ):
         return fixture_runtime_harness_report()
 
     manifest_path = _resolve_path(manifest)
@@ -125,7 +132,9 @@ def run_runtime_harness(
             "runtime_harness_mode": "readiness"
             if check_local_readiness
             else "command_pinning"
-            if pin_runtime_command and not enable_runtime_harness
+            if pin_runtime_command and not enable_runtime_harness and not diagnose_runtime_quit_variants
+            else "runtime_quit_variant_diagnostic"
+            if diagnose_runtime_quit_variants
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -195,7 +204,7 @@ def run_runtime_harness(
         )
         return _finalize_report(report)
 
-    if pin_runtime_command and not enable_runtime_harness:
+    if pin_runtime_command and not enable_runtime_harness and not diagnose_runtime_quit_variants:
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
             report.update(_unpinned_runtime_command_payload(command))
@@ -249,6 +258,16 @@ def run_runtime_harness(
     if not command["selected"]:
         report.update(_unpinned_runtime_command_payload(command))
         return _finalize_report(report)
+
+    if diagnose_runtime_quit_variants:
+        return _run_runtime_quit_variant_diagnostics(
+            report,
+            command=command,
+            env=env_map,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+            command_runner=command_runner,
+        )
 
     return _run_bounded_runtime_command(
         report,
@@ -312,6 +331,41 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime harness readiness cannot be counted as runtime character proof.")
     if report.get("runtime_character_proof_claimed") is True and not report.get("runtime_character_proof_verified"):
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime character proof cannot be claimed without verified character evidence.")
+    if report.get("runtime_safer_variant_verified") is True:
+        if report.get("runtime_execution_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_safer_variant_verified=true requires verified runtime execution.")
+        if not str(report.get("runtime_safer_variant_selected", "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_safer_variant_verified=true requires a selected safer variant.")
+
+    variants = report.get("runtime_command_variant_matrix", [])
+    if isinstance(variants, list):
+        for variant in variants:
+            if not isinstance(variant, Mapping):
+                continue
+            variant_id = str(variant.get("runtime_command_variant_id", "")).strip() or "unknown_variant"
+            expected_exit_codes = variant.get("runtime_command_variant_expected_exit_codes", [])
+            if isinstance(expected_exit_codes, list) and 3221225477 in [int(code) for code in expected_exit_codes if str(code).strip().lstrip("-").isdigit()]:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"{variant_id} cannot broaden expected exits to include 3221225477.")
+            variant_verified = variant.get("runtime_command_variant_runtime_execution_verified") is True
+            variant_status = str(variant.get("runtime_command_variant_status", "")).strip()
+            variant_attempted = variant.get("runtime_command_variant_attempted") is True
+            variant_exit = variant.get("runtime_command_variant_exit_code_decimal")
+            try:
+                variant_exit_nonzero = variant_exit is not None and int(variant_exit) != 0
+            except (TypeError, ValueError):
+                variant_exit_nonzero = False
+            if variant_verified and not variant_attempted:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"{variant_id} cannot verify execution without being attempted.")
+            if variant_verified and variant_status != "runtime_command_variant_pass":
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"{variant_id} cannot verify execution with status {variant_status}.")
+            if variant_verified and variant_exit_nonzero:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"{variant_id} cannot verify execution with a nonzero exit code.")
+            if variant_verified and variant.get("runtime_command_variant_timed_out") is True:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"{variant_id} cannot verify execution after timeout.")
+            if variant.get("runtime_command_variant_runtime_character_proof_claimed") is True and variant.get(
+                "runtime_command_variant_runtime_character_proof_verified"
+            ) is not True:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"{variant_id} cannot claim runtime character proof without character evidence.")
     if report.get("runtime_timed_out") is True:
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime harness command timed out.")
     if execution_status in {"runtime_execution_failed", "runtime_execution_timed_out", "runtime_execution_killed_after_timeout"}:
@@ -349,6 +403,10 @@ def print_text_report(report: Mapping[str, Any]) -> None:
         print(f"runtime_exit_code_decimal: {report.get('runtime_exit_code_decimal')}")
         print(f"runtime_exit_code_hex: {report.get('runtime_exit_code_hex', '')}")
         print(f"runtime_exit_classification: {report.get('runtime_exit_classification', '')}")
+    if report.get("runtime_quit_variant_diagnostic_status") not in {None, "", "not_run"}:
+        print(f"runtime_quit_variant_diagnostic_status: {report.get('runtime_quit_variant_diagnostic_status', '')}")
+        print(f"runtime_safer_variant_selected: {report.get('runtime_safer_variant_selected', '')}")
+        print(f"runtime_safer_variant_verified: {str(report.get('runtime_safer_variant_verified', False)).lower()}")
     print(f"runtime_character_proof_claimed: {str(report.get('runtime_character_proof_claimed', False)).lower()}")
     print(f"runtime_character_proof_verified: {str(report.get('runtime_character_proof_verified', False)).lower()}")
     print(f"live_runtime_execution: {str(report.get('live_runtime_execution', False)).lower()}")
@@ -442,6 +500,13 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_command_variant_safety_profile": {},
         "runtime_command_variant_selected": False,
         "runtime_command_variant_rejected_reason": "",
+        "runtime_command_variants": [],
+        "runtime_command_variant_matrix": [],
+        "runtime_safer_variant_selected": "",
+        "runtime_safer_variant_selection_reason": "",
+        "runtime_safer_variant_verified": False,
+        "runtime_quit_variant_diagnostic_status": "not_run",
+        "runtime_quit_variant_diagnostic_reason": "",
         "runtime_log_error_summary": {"status": "runtime_execution_not_attempted"},
         "runtime_stdout_error_summary": {"status": "runtime_execution_not_attempted"},
         "runtime_stderr_error_summary": {"status": "runtime_execution_not_attempted"},
@@ -872,6 +937,661 @@ def _run_bounded_runtime_command(
     report.update(diagnostics)
     report.update(_runtime_signal_fields(scan))
     return _finalize_report(report)
+
+
+def _run_runtime_quit_variant_diagnostics(
+    report: Dict[str, Any],
+    *,
+    command: Mapping[str, Any],
+    env: Mapping[str, str],
+    timeout_seconds: int,
+    artifact_dir: Path,
+    command_runner: Callable[..., subprocess.CompletedProcess[str]] | None,
+) -> Dict[str, Any]:
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    report.update(_runtime_command_pin_payload(command, timeout_seconds=timeout_seconds, execution_requested=True))
+    variants = _runtime_quit_variant_matrix(command, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
+    selected_variant: Dict[str, Any] | None = None
+    last_attempted_variant: Dict[str, Any] | None = None
+    attempted_any = False
+
+    for index, variant in enumerate(variants):
+        if variant.get("runtime_command_variant_status") != "runtime_command_variant_attemptable":
+            continue
+        attempted = _attempt_runtime_command_variant(
+            variant,
+            report=report,
+            env=env,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+            command_runner=command_runner,
+        )
+        variants[index] = attempted
+        attempted_any = True
+        last_attempted_variant = attempted
+        if attempted.get("runtime_command_variant_status") == "runtime_command_variant_pass":
+            selected_variant = attempted
+            break
+
+    if selected_variant is not None:
+        for index, variant in enumerate(variants):
+            if variant.get("runtime_command_variant_status") == "runtime_command_variant_attemptable":
+                pending = dict(variant)
+                pending.update(
+                    {
+                        "runtime_command_variant_status": "runtime_command_variant_not_attempted",
+                        "runtime_command_variant_attempted": False,
+                        "runtime_command_variant_reason": "stopped_after_clean_variant",
+                    }
+                )
+                variants[index] = pending
+        report.update(_top_level_variant_success_payload(selected_variant, variants))
+    elif attempted_any and last_attempted_variant is not None:
+        report.update(_top_level_variant_failure_payload(last_attempted_variant, variants))
+    else:
+        report.update(
+            {
+                "status": "pass",
+                "runtime_harness_status": "runtime_command_variant_selected_none",
+                "runtime_quit_variant_diagnostic_status": "runtime_command_variant_selected_none",
+                "runtime_quit_variant_diagnostic_reason": "No source-validated runtime quit variant was attemptable.",
+                "runtime_command_variants": variants,
+                "runtime_command_variant_matrix": variants,
+                "runtime_execution_status": "runtime_execution_not_attempted",
+                "runtime_execution_attempted": False,
+                "runtime_execution_completed": False,
+                "runtime_execution_verified": False,
+                "runtime_harness_proof_claimed": True,
+                "runtime_harness_proof_verified": True,
+                "runtime_harness_proof_is_character_proof": False,
+                "runtime_character_proof_claimed": False,
+                "runtime_character_proof_verified": False,
+                "required_runtime_harness_assertions_passed": [
+                    "runtime_command_pinning_pass",
+                    "runtime_quit_variants_recorded_with_typed_blockers",
+                    "runtime_character_proof_not_claimed",
+                ],
+                "runtime_harness_assertion_informational": [
+                    "runtime_quit_variant_diagnostic_did_not_launch_runtime",
+                    "runtime_quit_variant_is_not_runtime_character_proof",
+                ],
+            }
+        )
+    return _finalize_report(report)
+
+
+def _runtime_quit_variant_matrix(
+    command: Mapping[str, Any],
+    *,
+    artifact_dir: Path,
+    timeout_seconds: int,
+) -> List[Dict[str, Any]]:
+    base_argv = list(command.get("argv", []))
+    executable = str(base_argv[0]).strip() if base_argv else ""
+    project_arg = next((str(arg) for arg in base_argv if str(arg).startswith("--project-path=")), "")
+    wait_for_connect_arg = "--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0"
+    variants: List[Dict[str, Any]] = [
+        _runtime_variant_payload(
+            variant_id="baseline_pinned_console_quit",
+            name="Original pinned console quit envelope",
+            status="runtime_command_variant_not_attempted",
+            reason="Preserved from PR #125/#126 as the classified failing baseline; this diagnostic does not rerun it before safer variants.",
+            argv=base_argv,
+            timeout_seconds=timeout_seconds,
+            safety_profile=dict(command.get("safety_profile", {})),
+            source_validation={
+                "status": "pass",
+                "reason": "Original command pinning source evidence remains preserved.",
+                "refs": command.get("source_evidence_refs", []),
+            },
+        ),
+        _runtime_variant_payload(
+            variant_id="nullrenderer_only_console_quit",
+            name="-NullRenderer only console quit envelope",
+            status="runtime_command_variant_attemptable",
+            reason="Source-validated safer renderer variant removes the redundant -rhi=null argument while preserving console-mode and quit semantics.",
+            argv=_variant_argv(
+                executable=executable,
+                project_arg=project_arg,
+                renderer_args=["-NullRenderer"],
+                wait_for_connect_arg=wait_for_connect_arg,
+                command_file=artifact_dir / "maxine_runtime_command_quit_nullrenderer_only.cfg",
+            ),
+            timeout_seconds=timeout_seconds,
+            safety_profile=_variant_safety_profile("nullrenderer_only_console_quit", artifact_dir),
+            source_validation={
+                "status": "pass",
+                "reason": "GameApplication.cpp treats -NullRenderer as console mode; Launcher.cpp executes console-command-file; SystemInit.cpp registers quit.",
+                "refs": [
+                    "C:/src/o3de/Code/Framework/AzGameFramework/AzGameFramework/Application/GameApplication.cpp:126",
+                    "C:/src/o3de/Code/Framework/AzGameFramework/AzGameFramework/Application/GameApplication.cpp:135",
+                    "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:66",
+                    "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:607",
+                    "C:/src/o3de/Code/Legacy/CrySystem/SystemInit.cpp:1196",
+                    "C:/src/o3de/Code/Legacy/CrySystem/SystemInit.cpp:1205",
+                ],
+            },
+        ),
+        _runtime_variant_payload(
+            variant_id="rhi_null_only_console_quit",
+            name="-rhi=null only console quit envelope",
+            status="runtime_command_variant_attemptable",
+            reason="Source-validated safer renderer variant removes -NullRenderer while preserving rhi=null console-mode and quit semantics.",
+            argv=_variant_argv(
+                executable=executable,
+                project_arg=project_arg,
+                renderer_args=["-rhi=null"],
+                wait_for_connect_arg=wait_for_connect_arg,
+                command_file=artifact_dir / "maxine_runtime_command_quit_rhi_null_only.cfg",
+            ),
+            timeout_seconds=timeout_seconds,
+            safety_profile=_variant_safety_profile("rhi_null_only_console_quit", artifact_dir),
+            source_validation={
+                "status": "pass",
+                "reason": "GameApplication.cpp treats rhi=null as console mode; Launcher.cpp executes console-command-file; SystemInit.cpp registers quit.",
+                "refs": [
+                    "C:/src/o3de/Code/Framework/AzGameFramework/AzGameFramework/Application/GameApplication.cpp:126",
+                    "C:/src/o3de/Code/Framework/AzGameFramework/AzGameFramework/Application/GameApplication.cpp:139",
+                    "C:/src/o3de/Code/Framework/AzGameFramework/AzGameFramework/Application/GameApplication.cpp:142",
+                    "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:66",
+                    "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:607",
+                    "C:/src/o3de/Code/Legacy/CrySystem/SystemInit.cpp:1196",
+                    "C:/src/o3de/Code/Legacy/CrySystem/SystemInit.cpp:1205",
+                ],
+            },
+        ),
+        _runtime_variant_payload(
+            variant_id="help_or_version_surface",
+            name="Help/version/no-op launcher surface",
+            status="runtime_command_variant_rejected_missing_source_validation",
+            reason="Inspected Launcher.cpp did not expose a HeadlessServerLauncher help/version path that exits before normal startup.",
+            argv=[executable, "--help"] if executable else [],
+            timeout_seconds=timeout_seconds,
+            safety_profile=_rejected_variant_safety_profile(),
+            rejected_reason="variant_rejected_missing_source_validation",
+            source_validation={
+                "status": "runtime_command_variant_rejected_missing_source_validation",
+                "reason": "No source-validated help/version startup exit surface was found for this launcher path.",
+                "refs": ["C:/src/o3de/Code/LauncherUnified/Launcher.cpp:83", "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:614"],
+            },
+        ),
+        _runtime_variant_payload(
+            variant_id="no_console_command_file",
+            name="No console-command-file startup",
+            status="runtime_command_variant_rejected_no_exit_strategy",
+            reason="Launcher.cpp enters the main loop after command-line processing; without console-command-file there is no source-validated bounded exit.",
+            argv=[executable, project_arg, "-NullRenderer", wait_for_connect_arg] if executable and project_arg else [],
+            timeout_seconds=timeout_seconds,
+            safety_profile=_rejected_variant_safety_profile(),
+            rejected_reason="variant_rejected_no_exit_strategy",
+            source_validation={
+                "status": "runtime_command_variant_rejected_no_exit_strategy",
+                "reason": "RunMainLoop continues until exit is requested; no safe no-console-file exit strategy was validated.",
+                "refs": ["C:/src/o3de/Code/LauncherUnified/Launcher.cpp:97", "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:614"],
+            },
+        ),
+        _runtime_variant_payload(
+            variant_id="delayed_quit_sequence",
+            name="Delayed quit sequence",
+            status="runtime_command_variant_rejected_missing_source_validation",
+            reason="No delayed or scheduled quit console command was validated from the inspected source surfaces.",
+            argv=[],
+            timeout_seconds=timeout_seconds,
+            safety_profile=_rejected_variant_safety_profile(),
+            rejected_reason="variant_rejected_missing_source_validation",
+            source_validation={
+                "status": "runtime_command_variant_rejected_missing_source_validation",
+                "reason": "Only direct quit was source-validated; no delay command was accepted for this slice.",
+                "refs": ["C:/src/o3de/Code/Legacy/CrySystem/SystemInit.cpp:1196"],
+            },
+        ),
+        _runtime_variant_payload(
+            variant_id="serverlauncher_fallback",
+            name="Project ServerLauncher fallback",
+            status="runtime_command_variant_rejected_missing_source_validation",
+            reason="HeadlessServerLauncher limitations are not yet proven; fallback launcher would change executable shape without enough source/log evidence.",
+            argv=[],
+            timeout_seconds=timeout_seconds,
+            safety_profile=_rejected_variant_safety_profile(),
+            rejected_reason="variant_rejected_missing_source_validation",
+            source_validation={
+                "status": "runtime_command_variant_rejected_missing_source_validation",
+                "reason": "Fallback launcher is recorded for future investigation, but not attemptable in this focused quit-variant slice.",
+                "refs": ["C:/src/o3de/Code/LauncherUnified/Launcher.cpp:415", "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:441"],
+            },
+        ),
+    ]
+    return variants
+
+
+def _variant_argv(
+    *,
+    executable: str,
+    project_arg: str,
+    renderer_args: Sequence[str],
+    wait_for_connect_arg: str,
+    command_file: Path,
+) -> List[str]:
+    command_file.parent.mkdir(parents=True, exist_ok=True)
+    command_file.write_text("quit\n", encoding="utf-8")
+    return [
+        executable,
+        project_arg,
+        *renderer_args,
+        wait_for_connect_arg,
+        f"--console-command-file={command_file}",
+    ]
+
+
+def _runtime_variant_payload(
+    *,
+    variant_id: str,
+    name: str,
+    status: str,
+    reason: str,
+    argv: Sequence[str],
+    timeout_seconds: int,
+    safety_profile: Mapping[str, Any],
+    source_validation: Mapping[str, Any],
+    rejected_reason: str = "",
+) -> Dict[str, Any]:
+    argv_list = [str(arg) for arg in argv if str(arg).strip()]
+    return {
+        "runtime_command_variant_id": variant_id,
+        "runtime_command_variant_name": name,
+        "runtime_command_variant_status": status,
+        "runtime_command_variant_kind": "headless_console_quit_envelope_variant",
+        "runtime_command_variant_command": argv_list[0] if argv_list else "",
+        "runtime_command_variant_arguments": argv_list[1:],
+        "runtime_command_variant_argument_shape": _variant_argument_shape(argv_list),
+        "runtime_command_variant_safety_profile": dict(safety_profile),
+        "runtime_command_variant_source_validation": dict(source_validation),
+        "runtime_command_variant_selected": False,
+        "runtime_command_variant_attempted": False,
+        "runtime_command_variant_reason": reason,
+        "runtime_command_variant_exit_code_decimal": None,
+        "runtime_command_variant_exit_code_hex": "",
+        "runtime_command_variant_exit_classification": "runtime_execution_not_attempted",
+        "runtime_command_variant_timeout_seconds": int(timeout_seconds),
+        "runtime_command_variant_timed_out": False,
+        "runtime_command_variant_kill_attempted": False,
+        "runtime_command_variant_kill_result": {"status": "not_run"},
+        "runtime_command_variant_stdout_ref": "",
+        "runtime_command_variant_stderr_ref": "",
+        "runtime_command_variant_log_refs": [],
+        "runtime_command_variant_log_scan": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_command_variant_missing_actor_signal": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_command_variant_missing_mesh_signal": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_command_variant_missing_material_signal": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_command_variant_missing_animation_signal": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_command_variant_missing_asset_signal": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_command_variant_load_error_signal": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_command_variant_asset_manager_asserts": {"status": "runtime_execution_not_attempted", "count": 0, "sample_lines": []},
+        "runtime_command_variant_shader_serializer_errors": {"status": "runtime_execution_not_attempted", "count": 0, "sample_lines": []},
+        "runtime_command_variant_asset_processor_negotiation_errors": {
+            "status": "runtime_execution_not_attempted",
+            "count": 0,
+            "sample_lines": [],
+        },
+        "runtime_command_variant_rejected_reason": rejected_reason,
+        "runtime_command_variant_failure_reason": "",
+        "runtime_command_variant_pass_reason": "",
+        "runtime_command_variant_expected_exit_codes": [0],
+        "runtime_command_variant_expected_exit_matched": False,
+        "runtime_command_variant_runtime_execution_verified": False,
+        "runtime_command_variant_runtime_character_proof_claimed": False,
+        "runtime_command_variant_runtime_character_proof_verified": False,
+    }
+
+
+def _variant_argument_shape(argv: Sequence[str]) -> Dict[str, Any]:
+    return {
+        "argv0": "runtime executable path" if argv else "",
+        "project_path": "explicit --project-path=<MAXINE_GoldenCorpus project path>"
+        if any(str(arg).startswith("--project-path=") for arg in argv)
+        else "",
+        "rendering": [arg for arg in argv if str(arg) in {"-NullRenderer", "-rhi=null"}],
+        "asset_processor_connect": "--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0"
+        if "--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0" in argv
+        else "",
+        "exit_strategy": "--console-command-file=<artifact cfg containing quit>"
+        if any(str(arg).startswith("--console-command-file=") for arg in argv)
+        else "",
+    }
+
+
+def _variant_safety_profile(variant_id: str, artifact_dir: Path) -> Dict[str, Any]:
+    return {
+        "local": True,
+        "bounded_by_timeout": True,
+        "evidence_captured": True,
+        "stdout_stderr_capture_required": True,
+        "log_capture_best_effort": True,
+        "non_publishing": True,
+        "non_packaging": True,
+        "mutates_production": False,
+        "uses_production_level": False,
+        "uses_temp_level": False,
+        "uses_no_level": True,
+        "loads_character_content": False,
+        "runtime_character_proof": False,
+        "headless_launcher": True,
+        "safe_to_kill_after_timeout": True,
+        "command_file_ref": _repo_relative(artifact_dir / f"maxine_runtime_command_quit_{variant_id.replace('_console_quit', '')}.cfg"),
+    }
+
+
+def _rejected_variant_safety_profile() -> Dict[str, Any]:
+    return {
+        "local": True,
+        "bounded_by_timeout": True,
+        "evidence_captured": False,
+        "non_publishing": True,
+        "non_packaging": True,
+        "mutates_production": False,
+        "uses_production_level": False,
+        "uses_no_level": True,
+        "runtime_character_proof": False,
+    }
+
+
+def _attempt_runtime_command_variant(
+    variant: Mapping[str, Any],
+    *,
+    report: Mapping[str, Any],
+    env: Mapping[str, str],
+    timeout_seconds: int,
+    artifact_dir: Path,
+    command_runner: Callable[..., subprocess.CompletedProcess[str]] | None,
+) -> Dict[str, Any]:
+    variant_id = str(variant.get("runtime_command_variant_id", "runtime_variant")).strip()
+    argv = [str(variant.get("runtime_command_variant_command", "")), *[str(arg) for arg in variant.get("runtime_command_variant_arguments", [])]]
+    stdout_path = artifact_dir / f"runtime_variant_{variant_id}_stdout.txt"
+    stderr_path = artifact_dir / f"runtime_variant_{variant_id}_stderr.txt"
+    timed_out = False
+    try:
+        if command_runner is not None:
+            proc = command_runner(argv=argv, cwd=str(REPO_ROOT), env=dict(env), timeout_seconds=timeout_seconds)
+        else:
+            proc = subprocess.run(argv, cwd=str(REPO_ROOT), env=dict(env), text=True, capture_output=True, timeout=timeout_seconds)
+    except subprocess.TimeoutExpired as exc:
+        timed_out = True
+        proc = subprocess.CompletedProcess(argv, None, stdout=exc.output or "", stderr=exc.stderr or "")
+
+    stdout_text = str(proc.stdout or "")
+    stderr_text = str(proc.stderr or "")
+    stdout_path.write_text(stdout_text, encoding="utf-8")
+    stderr_path.write_text(stderr_text, encoding="utf-8")
+    project_path = _runtime_project_path(report)
+    log_refs = _runtime_log_refs(project_path)
+    log_text = _read_runtime_logs(log_refs)
+    scan = _scan_runtime_output(stdout_text + "\n" + stderr_text + "\n" + log_text)
+    diagnostics = _runtime_exit_diagnostics(
+        exit_code=proc.returncode,
+        timed_out=timed_out,
+        stdout=stdout_text,
+        stderr=stderr_text,
+        log_text=log_text,
+        log_refs=log_refs,
+    )
+    expected_exit_codes = [0]
+    expected_exit_matched = proc.returncode in expected_exit_codes and not timed_out
+    variant_status, failure_reason, pass_reason = _variant_attempt_status(
+        exit_code=proc.returncode,
+        timed_out=timed_out,
+        scan=scan,
+        diagnostics=diagnostics,
+        expected_exit_matched=expected_exit_matched,
+    )
+    variant_payload = dict(variant)
+    variant_payload.update(
+        {
+            "runtime_command_variant_status": variant_status,
+            "runtime_command_variant_selected": variant_status == "runtime_command_variant_pass",
+            "runtime_command_variant_attempted": True,
+            "runtime_command_variant_reason": pass_reason or failure_reason,
+            "runtime_command_variant_exit_code_decimal": proc.returncode,
+            "runtime_command_variant_exit_code_hex": _exit_code_hex(proc.returncode),
+            "runtime_command_variant_exit_classification": diagnostics.get("runtime_exit_classification", ""),
+            "runtime_command_variant_timeout_seconds": int(timeout_seconds),
+            "runtime_command_variant_timed_out": timed_out,
+            "runtime_command_variant_kill_attempted": timed_out,
+            "runtime_command_variant_kill_result": {
+                "status": "runtime_execution_killed_after_timeout" if timed_out else "not_run"
+            },
+            "runtime_command_variant_stdout_ref": _repo_relative(stdout_path),
+            "runtime_command_variant_stderr_ref": _repo_relative(stderr_path),
+            "runtime_command_variant_log_refs": log_refs,
+            "runtime_command_variant_log_scan": scan,
+            "runtime_command_variant_asset_manager_asserts": diagnostics.get("runtime_asset_manager_asserts", {}),
+            "runtime_command_variant_shader_serializer_errors": _variant_error_counter(
+                diagnostics,
+                "shader_serializer_error_count",
+                ("runtime_stdout_error_summary", "runtime_stderr_error_summary", "runtime_log_error_summary"),
+            ),
+            "runtime_command_variant_asset_processor_negotiation_errors": _variant_error_counter(
+                diagnostics,
+                "asset_processor_negotiation_failure_count",
+                ("runtime_stdout_error_summary", "runtime_stderr_error_summary", "runtime_log_error_summary"),
+            ),
+            "runtime_command_variant_failure_reason": failure_reason,
+            "runtime_command_variant_pass_reason": pass_reason,
+            "runtime_command_variant_expected_exit_codes": expected_exit_codes,
+            "runtime_command_variant_expected_exit_matched": expected_exit_matched,
+            "runtime_command_variant_runtime_execution_verified": variant_status == "runtime_command_variant_pass",
+            "runtime_command_variant_runtime_character_proof_claimed": False,
+            "runtime_command_variant_runtime_character_proof_verified": False,
+            "_runtime_diagnostics": diagnostics,
+        }
+    )
+    variant_payload.update(_runtime_variant_signal_fields(scan))
+    return variant_payload
+
+
+def _variant_attempt_status(
+    *,
+    exit_code: int | None,
+    timed_out: bool,
+    scan: Mapping[str, Any],
+    diagnostics: Mapping[str, Any],
+    expected_exit_matched: bool,
+) -> tuple[str, str, str]:
+    if timed_out:
+        return "runtime_command_variant_failed_timeout", "runtime command variant exceeded bounded timeout", ""
+    if not expected_exit_matched:
+        if diagnostics.get("runtime_exit_classification") == "runtime_execution_failed_access_violation_like_exit":
+            return (
+                "runtime_command_variant_failed_access_violation_like_exit",
+                "runtime command variant exited with access-violation-like nonzero status",
+                "",
+            )
+        return "runtime_command_variant_failed_nonzero_exit", f"runtime command variant exited with unexpected code {exit_code}", ""
+    if scan.get("status") != "pass":
+        return "runtime_command_variant_failed_missing_runtime_asset", "runtime command variant emitted missing/load-error signals", ""
+    asset_manager_count = int(diagnostics.get("runtime_asset_manager_asserts", {}).get("count", 0) or 0)
+    if asset_manager_count:
+        return "runtime_command_variant_failed_asset_manager_shutdown_assert", "runtime command variant emitted AssetManager shutdown asserts", ""
+    shader_count = _variant_error_counter(
+        diagnostics,
+        "shader_serializer_error_count",
+        ("runtime_stdout_error_summary", "runtime_stderr_error_summary", "runtime_log_error_summary"),
+    )["count"]
+    if shader_count:
+        return "runtime_command_variant_failed_shader_serializer_errors", "runtime command variant emitted shader serializer errors", ""
+    asset_processor_count = _variant_error_counter(
+        diagnostics,
+        "asset_processor_negotiation_failure_count",
+        ("runtime_stdout_error_summary", "runtime_stderr_error_summary", "runtime_log_error_summary"),
+    )["count"]
+    if asset_processor_count:
+        return "runtime_command_variant_failed_asset_processor_negotiation", "runtime command variant emitted Asset Processor negotiation errors", ""
+    return "runtime_command_variant_pass", "", "runtime command variant exited with expected code and no disqualifying scanned signals"
+
+
+def _variant_error_counter(
+    diagnostics: Mapping[str, Any],
+    count_key: str,
+    summary_keys: Sequence[str],
+) -> Dict[str, Any]:
+    count = 0
+    sample_lines: List[str] = []
+    for key in summary_keys:
+        summary = diagnostics.get(key, {})
+        if not isinstance(summary, Mapping):
+            continue
+        count += int(summary.get(count_key, 0) or 0)
+        lines = summary.get("sample_lines", [])
+        if isinstance(lines, list):
+            for line in lines:
+                if isinstance(line, str) and line not in sample_lines:
+                    sample_lines.append(line)
+                if len(sample_lines) >= 5:
+                    break
+    return {"status": "fail" if count else "pass", "count": count, "sample_lines": sample_lines[:5]}
+
+
+def _runtime_variant_signal_fields(scan: Mapping[str, Any]) -> Dict[str, Any]:
+    fields = _runtime_signal_fields(scan)
+    return {f"runtime_command_variant_{key.removeprefix('runtime_')}": value for key, value in fields.items()}
+
+
+def _top_level_variant_success_payload(selected_variant: Mapping[str, Any], variants: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
+    diagnostics = dict(selected_variant.get("_runtime_diagnostics", {}))
+    diagnostics.pop("runtime_command_variant_result", None)
+    diagnostics.pop("runtime_command_variant", None)
+    diagnostics.pop("runtime_command_variant_reason", None)
+    diagnostics.pop("runtime_command_variant_safety_profile", None)
+    diagnostics.pop("runtime_command_variant_selected", None)
+    diagnostics.pop("runtime_command_variant_rejected_reason", None)
+    scan = selected_variant.get("runtime_command_variant_log_scan", {"status": "pass", "matches": []})
+    variant_id = str(selected_variant.get("runtime_command_variant_id", "")).strip()
+    payload: Dict[str, Any] = {
+        "status": "pass",
+        "runtime_harness_status": "runtime_execution_pass",
+        "runtime_quit_variant_diagnostic_status": "runtime_command_variant_selected_clean_exit",
+        "runtime_quit_variant_diagnostic_reason": "A source-validated safer quit variant exited cleanly with expected semantics.",
+        "runtime_safer_variant_selected": variant_id,
+        "runtime_safer_variant_selection_reason": selected_variant.get("runtime_command_variant_pass_reason", ""),
+        "runtime_safer_variant_verified": True,
+        "runtime_command_variants": _strip_private_variant_keys(variants),
+        "runtime_command_variant_matrix": _strip_private_variant_keys(variants),
+        "runtime_command_variant": variant_id,
+        "runtime_command_variant_result": dict(_strip_private_variant_keys([selected_variant])[0]),
+        "runtime_command_variant_reason": selected_variant.get("runtime_command_variant_pass_reason", ""),
+        "runtime_command_variant_safety_profile": selected_variant.get("runtime_command_variant_safety_profile", {}),
+        "runtime_command_variant_selected": True,
+        "runtime_command_variant_rejected_reason": "",
+        "runtime_execution_attempted": True,
+        "runtime_execution_completed": True,
+        "runtime_execution_verified": True,
+        "runtime_execution_status": "runtime_execution_pass",
+        "runtime_exit_code": selected_variant.get("runtime_command_variant_exit_code_decimal"),
+        "runtime_timed_out": False,
+        "runtime_timeout_stall": False,
+        "runtime_kill_attempted": False,
+        "runtime_kill_result": {"status": "not_run"},
+        "runtime_stdout_ref": selected_variant.get("runtime_command_variant_stdout_ref", ""),
+        "runtime_stderr_ref": selected_variant.get("runtime_command_variant_stderr_ref", ""),
+        "runtime_command_stdout_ref": selected_variant.get("runtime_command_variant_stdout_ref", ""),
+        "runtime_command_stderr_ref": selected_variant.get("runtime_command_variant_stderr_ref", ""),
+        "runtime_log_refs": selected_variant.get("runtime_command_variant_log_refs", []),
+        "runtime_command_log_refs": selected_variant.get("runtime_command_variant_log_refs", []),
+        "runtime_log_scan": scan,
+        "runtime_command_log_scan": scan,
+        "live_runtime_execution": True,
+        "runtime_harness_proof_claimed": True,
+        "runtime_harness_proof_verified": True,
+        "runtime_harness_proof_is_character_proof": False,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+        "required_runtime_harness_assertions_passed": [
+            "runtime_command_pinning_pass",
+            "runtime_quit_variant_matrix_recorded",
+            "runtime_quit_variant_clean_exit",
+            "runtime_character_proof_not_claimed",
+        ],
+        "required_runtime_harness_assertions_failed": [],
+        "runtime_harness_assertion_informational": [
+            "runtime_quit_variant_execution_is_not_runtime_character_proof",
+            "original_pinned_command_failure_remains_preserved",
+        ],
+    }
+    payload.update(diagnostics)
+    payload.update(_runtime_signal_fields(scan if isinstance(scan, Mapping) else {"status": "pass", "matches": []}))
+    return payload
+
+
+def _top_level_variant_failure_payload(last_variant: Mapping[str, Any], variants: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
+    diagnostics = dict(last_variant.get("_runtime_diagnostics", {}))
+    diagnostics.pop("runtime_command_variant_result", None)
+    diagnostics.pop("runtime_command_variant", None)
+    diagnostics.pop("runtime_command_variant_reason", None)
+    diagnostics.pop("runtime_command_variant_safety_profile", None)
+    diagnostics.pop("runtime_command_variant_selected", None)
+    diagnostics.pop("runtime_command_variant_rejected_reason", None)
+    scan = last_variant.get("runtime_command_variant_log_scan", {"status": "pass", "matches": []})
+    variant_id = str(last_variant.get("runtime_command_variant_id", "")).strip()
+    payload: Dict[str, Any] = {
+        "status": "fail",
+        "runtime_harness_status": "runtime_execution_failed",
+        "runtime_quit_variant_diagnostic_status": last_variant.get("runtime_command_variant_status", "runtime_command_variant_failed_unknown"),
+        "runtime_quit_variant_diagnostic_reason": "No source-validated safer quit variant exited cleanly.",
+        "runtime_safer_variant_selected": "",
+        "runtime_safer_variant_selection_reason": "",
+        "runtime_safer_variant_verified": False,
+        "runtime_command_variants": _strip_private_variant_keys(variants),
+        "runtime_command_variant_matrix": _strip_private_variant_keys(variants),
+        "runtime_command_variant": variant_id,
+        "runtime_command_variant_result": dict(_strip_private_variant_keys([last_variant])[0]),
+        "runtime_command_variant_reason": last_variant.get("runtime_command_variant_failure_reason", ""),
+        "runtime_command_variant_safety_profile": last_variant.get("runtime_command_variant_safety_profile", {}),
+        "runtime_command_variant_selected": False,
+        "runtime_command_variant_rejected_reason": "",
+        "runtime_execution_attempted": True,
+        "runtime_execution_completed": True,
+        "runtime_execution_verified": False,
+        "runtime_execution_status": "runtime_execution_failed",
+        "runtime_exit_code": last_variant.get("runtime_command_variant_exit_code_decimal"),
+        "runtime_timed_out": bool(last_variant.get("runtime_command_variant_timed_out", False)),
+        "runtime_timeout_stall": bool(last_variant.get("runtime_command_variant_timed_out", False)),
+        "runtime_kill_attempted": bool(last_variant.get("runtime_command_variant_kill_attempted", False)),
+        "runtime_kill_result": last_variant.get("runtime_command_variant_kill_result", {"status": "not_run"}),
+        "runtime_stdout_ref": last_variant.get("runtime_command_variant_stdout_ref", ""),
+        "runtime_stderr_ref": last_variant.get("runtime_command_variant_stderr_ref", ""),
+        "runtime_command_stdout_ref": last_variant.get("runtime_command_variant_stdout_ref", ""),
+        "runtime_command_stderr_ref": last_variant.get("runtime_command_variant_stderr_ref", ""),
+        "runtime_log_refs": last_variant.get("runtime_command_variant_log_refs", []),
+        "runtime_command_log_refs": last_variant.get("runtime_command_variant_log_refs", []),
+        "runtime_log_scan": scan,
+        "runtime_command_log_scan": scan,
+        "live_runtime_execution": True,
+        "runtime_harness_proof_claimed": False,
+        "runtime_harness_proof_verified": False,
+        "runtime_harness_proof_is_character_proof": False,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+        "required_runtime_harness_assertions_passed": [
+            "runtime_command_pinning_pass",
+            "runtime_quit_variant_matrix_recorded",
+            "runtime_character_proof_not_claimed",
+        ],
+        "required_runtime_harness_assertions_failed": ["runtime_quit_variant_clean_exit"],
+        "runtime_harness_assertion_informational": [
+            "runtime_quit_variant_execution_is_not_runtime_character_proof",
+            "original_pinned_command_failure_remains_preserved",
+        ],
+    }
+    payload.update(diagnostics)
+    payload.update(_runtime_signal_fields(scan if isinstance(scan, Mapping) else {"status": "pass", "matches": []}))
+    return payload
+
+
+def _strip_private_variant_keys(variants: Sequence[Mapping[str, Any]]) -> List[Dict[str, Any]]:
+    sanitized: List[Dict[str, Any]] = []
+    for variant in variants:
+        item = {key: value for key, value in variant.items() if not key.startswith("_")}
+        sanitized.append(item)
+    return sanitized
 
 
 def _product_evidence_from_apb(apb_report: Path | None) -> Dict[str, Any]:
@@ -1318,6 +2038,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--mode", choices=["fixture"], default="fixture")
     parser.add_argument("--check-local-readiness", action="store_true")
     parser.add_argument("--pin-runtime-command", action="store_true")
+    parser.add_argument("--diagnose-runtime-quit-variants", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -1337,6 +2058,7 @@ def main() -> int:
         mode=args.mode,
         check_local_readiness=args.check_local_readiness,
         pin_runtime_command=args.pin_runtime_command,
+        diagnose_runtime_quit_variants=args.diagnose_runtime_quit_variants,
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
         strict_integration=args.strict_integration,
