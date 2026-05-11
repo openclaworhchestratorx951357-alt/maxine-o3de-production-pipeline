@@ -213,6 +213,18 @@ It keeps the source-prefab baseline separate. `PrefabPublicRequestBus.CreatePref
 
 The current authoritative source inspection shows O3DE Editor UI paths for procedural-prefab selection pass `.procprefab` product paths into `PrefabPublicInterface::InstantiatePrefab`. Live evidence now pins the matching Python-exposed path: `PrefabPublicRequestBus.InstantiatePrefab` with the AssetCatalog-selected product path `assets/characters/maxine/release/maxine_idle_fbx.procprefab`, an empty parent entity id, and `azlmbr.math.Vector3`. The APB-style `pc/...` path is recorded as a failed attempt, while the AssetCatalog-selected path instantiates and returns verified created-entity evidence. Load-only and in-memory spawnable probes are opt-in debugging aids and are not required for the full smoke pass.
 
+## Direct ProcPrefab Content Assertions
+
+The content-assertion slice adds a stricter targeted mode for the already-proven direct product path:
+
+```powershell
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --enable-editor-smoke --strict-integration --diagnostic-mode procprefab-content-assertions --timeout-seconds 420 --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de --apb-report artifacts/o3de-integration/apb/<run>/asset_processor_batch_live_report.json
+```
+
+This mode still requires the APB `procprefab` product evidence and still uses `PrefabPublicRequestBus.InstantiatePrefab` with the AssetCatalog-selected product path. It then records `direct_procprefab_content_assertions` separately from the source-prefab baseline. Required assertions cover a valid created container/entity, owning prefab path matching the direct product path, positive created entity count, and no relevant missing-asset/load-error signals in bounded Editor log scanning. Additional entity-name, child-structure, and component-inventory evidence is recorded as pass, informational, or unavailable with a typed reason depending on the exposed Editor Python surface.
+
+Full smoke may pass only when direct product instantiation remains verified and no required content assertion fails. Source-prefab creation remains the stable Editor smoke baseline, but it is not counted as direct product content proof.
+
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 
 This wiring does not publish, mutate production levels, contact external services, or claim production-ready completion.

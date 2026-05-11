@@ -101,6 +101,7 @@
         "prefab-binding",
         "prefab-instantiation",
         "procprefab-product-instantiation",
+        "procprefab-content-assertions",
         "full"
       ]
     },
@@ -354,6 +355,10 @@
       "additionalProperties": true
     },
     "direct_procprefab_product_semantics": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "direct_procprefab_content_assertions": {
       "type": "object",
       "additionalProperties": true
     },

@@ -1,7 +1,14 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Pin Direct ProcPrefab Product Load/Instantiation Semantics v1 is in progress:
+- Harden Direct ProcPrefab Content Assertions v1 is in progress:
+  - PR #120 was merged into `main`, and `codex/harden-direct-procprefab-content-assertions-v1` was created from updated `main`
+  - the direct `.procprefab` product instantiation proof from PR #120 is preserved, but the smoke contract now requires `direct_procprefab_content_assertions` before a verified direct product pass can stand
+  - added targeted `procprefab-content-assertions` diagnostics for the approved temp level; the mode uses the already-pinned `PrefabPublicRequestBus.InstantiatePrefab` direct product path and records post-instantiation assertions separately from the source-prefab baseline
+  - required direct product content assertions cover valid created container/entity evidence, owning prefab path matching `assets/characters/maxine/release/maxine_idle_fbx.procprefab`, positive created entity count, and no relevant missing-asset/load-error signals in bounded Editor log scanning
+  - informational or typed unavailable evidence is recorded for child/instance structure and component inventory when the current Editor Python surface cannot expose a stable call; failed required assertions are not converted to pass
+  - Actor asset assignment remains proven, temp source-prefab instantiation remains proven, live publication remains false, release packaging remains false, production levels remain forbidden, and no production-ready release claim is made
+- Pin Direct ProcPrefab Product Load/Instantiation Semantics v1 completed in PR #120:
   - PR #119 was merged into `main`, and `codex/pin-direct-procprefab-product-instantiation-semantics-v1` was created from updated `main`
   - the Editor smoke contract now includes targeted `procprefab-product-instantiation` diagnostics plus semantic validation that separates direct `.procprefab` product proof from the already-proven temp source-prefab baseline
   - direct `.procprefab` product instantiation is live-proven in the approved temp level: the smoke confirms APB product evidence for `pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab`, resolves the Asset Catalog path `assets/characters/maxine/release/maxine_idle_fbx.procprefab` to `{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305`, and calls `PrefabPublicRequestBus.InstantiatePrefab` with that AssetCatalog-selected product path, an empty parent entity id, and `azlmbr.math.Vector3`
