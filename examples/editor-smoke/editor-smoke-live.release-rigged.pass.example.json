@@ -14139,8 +14139,8 @@
     "production_level_mutation": false
   },
   "runtime_harness": {
-    "runtime_harness_status": "blocked_by_unpinned_runtime_command",
-    "runtime_harness_mode": "live_bounded_command",
+    "runtime_harness_status": "runtime_command_pinning_pass",
+    "runtime_harness_mode": "command_pinning",
     "runtime_harness_readiness": {
       "status": "runtime_harness_readiness_pass",
       "selected_runtime_executable": "MAXINE_GoldenCorpus.HeadlessServerLauncher.exe",
@@ -14203,15 +14203,26 @@
       "status": "pass",
       "expected_profile_bin": "C:/src/o3de/build/windows/bin/profile"
     },
-    "runtime_command_selected": "",
-    "runtime_command_arguments": [],
+    "runtime_command_selected": "C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.HeadlessServerLauncher.exe",
+    "runtime_command_arguments": [
+      "--project-path=C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus",
+      "-NullRenderer",
+      "-rhi=null",
+      "--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0",
+      "--console-command-file=artifacts/o3de-integration/runtime-harness/maxine_runtime_command_quit.cfg"
+    ],
     "runtime_command_safety_flags": [
       "timeout_required",
       "stdout_stderr_capture_required",
-      "runtime_logs_required",
+      "runtime_logs_best_effort",
       "live_publication_false",
       "release_packaging_false",
-      "production_level_mutation_false"
+      "production_level_mutation_false",
+      "project_path_explicit",
+      "null_renderer_requested",
+      "no_level_or_map_argument",
+      "console_command_file_contains_quit",
+      "wait_for_connect_nonfatal"
     ],
     "runtime_command_timeout_seconds": 120,
     "runtime_command_allows_publication": false,
@@ -14267,7 +14278,7 @@
       "status": "runtime_execution_not_attempted",
       "matches": []
     },
-    "runtime_harness_blocked_reason": "blocked_by_unpinned_runtime_command",
+    "runtime_harness_blocked_reason": "",
     "runtime_harness_unavailable_reason": "",
     "runtime_harness_unsupported_reason": "",
     "runtime_harness_candidate_summary": {
@@ -14284,15 +14295,15 @@
     "required_runtime_harness_assertions_passed": [
       "apb_product_evidence_complete",
       "runtime_readiness_pass",
-      "runtime_execution_not_attempted_with_typed_blocker",
+      "runtime_command_pinning_pass",
+      "runtime_execution_not_attempted_in_command_pinning_mode",
       "runtime_character_proof_not_claimed"
     ],
     "required_runtime_harness_assertions_failed": [],
     "runtime_harness_assertion_failures": [],
     "runtime_harness_assertion_informational": [
-      "runtime_executable_candidate_ready",
-      "runtime_command_not_pinned_yet",
-      "runtime_harness_readiness_is_not_runtime_character_proof"
+      "command_pinning_mode_does_not_launch_runtime",
+      "runtime_command_pinning_is_not_runtime_character_proof"
     ],
     "runtime_harness_unavailable_reasons": [],
     "runtime_harness_unsupported_reasons": [],
@@ -14323,6 +14334,78 @@
     "release_packaging": false,
     "production_level_mutation": false,
     "fake_success": false,
-    "cache_heuristic_used": false
+    "cache_heuristic_used": false,
+    "runtime_command_pinning": {
+      "status": "runtime_command_pinning_pass",
+      "selected_reason": "source_validated_headless_launcher_console_command_file_quit_envelope",
+      "source_evidence_refs": [
+        "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:68",
+        "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:606",
+        "C:/src/o3de/Code/Legacy/CrySystem/SystemInit.cpp:1199",
+        "C:/src/o3de/Code/Framework/AzGameFramework/AzGameFramework/Application/GameApplication.cpp:129",
+        "C:/src/o3de/Code/Framework/AzCore/AzCore/Settings/SettingsRegistryMergeUtils.cpp:76"
+      ],
+      "execution_requested": false
+    },
+    "runtime_command_pinning_status": "runtime_command_pinning_pass",
+    "runtime_command_discovery_status": "runtime_command_pinning_pass",
+    "runtime_command_selected_reason": "source_validated_headless_launcher_console_command_file_quit_envelope",
+    "runtime_command_argument_shape": {
+      "argv0": "runtime executable path",
+      "project_path": "--project-path=<MAXINE_GoldenCorpus project path>",
+      "rendering": [
+        "-NullRenderer",
+        "-rhi=null"
+      ],
+      "asset_processor_connect": "--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0",
+      "exit_strategy": "--console-command-file=<artifact cfg containing quit>"
+    },
+    "runtime_command_kind": "headless_console_quit_envelope",
+    "runtime_command_safety_profile": {
+      "local": true,
+      "bounded_by_timeout": true,
+      "evidence_captured": true,
+      "stdout_stderr_capture_required": true,
+      "log_capture_best_effort": true,
+      "non_publishing": true,
+      "non_packaging": true,
+      "mutates_production": false,
+      "uses_production_level": false,
+      "uses_temp_level": false,
+      "uses_no_level": true,
+      "loads_character_content": false,
+      "runtime_character_proof": false,
+      "headless_launcher": true,
+      "null_renderer_requested": true,
+      "safe_to_kill_after_timeout": true,
+      "command_file_ref": "artifacts/o3de-integration/runtime-harness/maxine_runtime_command_quit.cfg"
+    },
+    "runtime_command_expected_exit_codes": [
+      0
+    ],
+    "runtime_command_kill_policy": "subprocess_timeout_kill_and_report",
+    "runtime_command_requires_gate_env": [
+      "MAXINE_ENABLE_O3DE_RUNTIME_HARNESS",
+      "MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS"
+    ],
+    "runtime_command_is_non_publishing": true,
+    "runtime_command_is_non_packaging": true,
+    "runtime_command_mutates_production": false,
+    "runtime_command_uses_production_level": false,
+    "runtime_command_uses_temp_level": false,
+    "runtime_command_uses_no_level": true,
+    "runtime_command_exits_on_own": true,
+    "runtime_command_pinned": true,
+    "runtime_command_pin_verified": true,
+    "runtime_command_blocked_reason": "",
+    "runtime_command_unavailable_reason": "",
+    "runtime_command_unsupported_reason": "",
+    "runtime_command_stdout_ref": "",
+    "runtime_command_stderr_ref": "",
+    "runtime_command_log_refs": [],
+    "runtime_command_log_scan": {
+      "status": "runtime_execution_not_attempted",
+      "matches": []
+    }
   }
 }

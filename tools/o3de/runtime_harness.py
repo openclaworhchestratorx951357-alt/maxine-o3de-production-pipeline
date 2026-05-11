@@ -89,6 +89,7 @@ def run_runtime_harness(
     manifest: Path | str = DEFAULT_MANIFEST,
     mode: str = "fixture",
     check_local_readiness: bool = False,
+    pin_runtime_command: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -101,7 +102,7 @@ def run_runtime_harness(
     artifact_root: Path | str = DEFAULT_ARTIFACT_ROOT,
 ) -> Dict[str, Any]:
     env_map = dict(env if env is not None else os.environ)
-    if mode == "fixture" and not check_local_readiness and not enable_runtime_harness:
+    if mode == "fixture" and not check_local_readiness and not pin_runtime_command and not enable_runtime_harness:
         return fixture_runtime_harness_report()
 
     manifest_path = _resolve_path(manifest)
@@ -116,7 +117,11 @@ def run_runtime_harness(
             "manifest_ref": _repo_relative(manifest_path),
             "strict": bool(strict),
             "strict_integration": bool(strict_integration),
-            "runtime_harness_mode": "readiness" if check_local_readiness else "live_bounded_command",
+            "runtime_harness_mode": "readiness"
+            if check_local_readiness
+            else "command_pinning"
+            if pin_runtime_command and not enable_runtime_harness
+            else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
             "runtime_command_gate_env": _runtime_gate_status(env_map),
@@ -185,6 +190,40 @@ def run_runtime_harness(
         )
         return _finalize_report(report)
 
+    if pin_runtime_command and not enable_runtime_harness:
+        command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
+        if not command["selected"]:
+            report.update(_unpinned_runtime_command_payload(command))
+            return _finalize_report(report)
+        report.update(_runtime_command_pin_payload(command, timeout_seconds=timeout_seconds, execution_requested=False))
+        report.update(
+            {
+                "status": "pass",
+                "runtime_harness_status": "runtime_command_pinning_pass",
+                "runtime_execution_status": "runtime_execution_not_attempted",
+                "runtime_execution_attempted": False,
+                "runtime_execution_completed": False,
+                "runtime_execution_verified": False,
+                "runtime_harness_proof_claimed": True,
+                "runtime_harness_proof_verified": True,
+                "runtime_harness_proof_is_character_proof": False,
+                "runtime_character_proof_claimed": False,
+                "runtime_character_proof_verified": False,
+                "required_runtime_harness_assertions_passed": [
+                    "apb_product_evidence_complete",
+                    "runtime_readiness_pass",
+                    "runtime_command_pinning_pass",
+                    "runtime_execution_not_attempted_in_command_pinning_mode",
+                    "runtime_character_proof_not_claimed",
+                ],
+                "runtime_harness_assertion_informational": [
+                    "command_pinning_mode_does_not_launch_runtime",
+                    "runtime_command_pinning_is_not_runtime_character_proof",
+                ],
+            }
+        )
+        return _finalize_report(report)
+
     gate_status = _runtime_gate_status(env_map)
     if gate_status["status"] != "pass":
         report.update(
@@ -201,38 +240,9 @@ def run_runtime_harness(
         )
         return _finalize_report(report)
 
-    command = _select_runtime_command(report)
+    command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
     if not command["selected"]:
-        report.update(
-            {
-                "status": "pass",
-                "runtime_harness_status": command["blocked_reason"],
-                "runtime_command_selected": "",
-                "runtime_command_arguments": [],
-                "runtime_command_safety_flags": command["safety_flags"],
-                "runtime_harness_blocked_reason": command["blocked_reason"],
-                "runtime_execution_status": "runtime_execution_not_attempted",
-                "runtime_execution_attempted": False,
-                "runtime_execution_completed": False,
-                "runtime_execution_verified": False,
-                "runtime_harness_proof_claimed": True,
-                "runtime_harness_proof_verified": True,
-                "runtime_harness_proof_is_character_proof": False,
-                "runtime_character_proof_claimed": False,
-                "runtime_character_proof_verified": False,
-                "required_runtime_harness_assertions_passed": [
-                    "apb_product_evidence_complete",
-                    "runtime_readiness_pass",
-                    "runtime_execution_not_attempted_with_typed_blocker",
-                    "runtime_character_proof_not_claimed",
-                ],
-                "runtime_harness_assertion_informational": [
-                    "runtime_executable_candidate_ready",
-                    "runtime_command_not_pinned_yet",
-                    "runtime_harness_readiness_is_not_runtime_character_proof",
-                ],
-            }
-        )
+        report.update(_unpinned_runtime_command_payload(command))
         return _finalize_report(report)
 
     return _run_bounded_runtime_command(
@@ -270,6 +280,20 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime execution verified=true requires runtime_execution_status=runtime_execution_pass.")
     if report.get("live_runtime_execution") is True and not attempted:
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "live_runtime_execution=true requires runtime_execution_attempted=true.")
+    if attempted and report.get("runtime_command_pin_verified") is not True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime execution requires a verified pinned runtime command.")
+    if report.get("runtime_command_pin_verified") is True and report.get("runtime_command_pinned") is not True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_command_pin_verified=true requires runtime_command_pinned=true.")
+    if report.get("runtime_command_pinned") is True:
+        if report.get("runtime_command_allows_publication") is True:
+            result.add_error(MXN_PATH_UNSAFE, "Pinned runtime command must not allow publication.")
+        if report.get("runtime_command_allows_release_packaging") is True:
+            result.add_error(MXN_PATH_UNSAFE, "Pinned runtime command must not allow release packaging.")
+        if report.get("runtime_command_allows_production_mutation") is True:
+            result.add_error(MXN_PATH_UNSAFE, "Pinned runtime command must not allow production mutation.")
+        safety_profile = report.get("runtime_command_safety_profile", {})
+        if isinstance(safety_profile, Mapping) and safety_profile.get("uses_production_level") is True:
+            result.add_error(MXN_PATH_UNSAFE, "Pinned runtime command must not use production levels.")
     if report.get("runtime_harness_proof_is_character_proof") is True and not report.get("runtime_character_proof_verified"):
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime harness readiness cannot be counted as runtime character proof.")
     if report.get("runtime_character_proof_claimed") is True and not report.get("runtime_character_proof_verified"):
@@ -300,7 +324,10 @@ def print_text_report(report: Mapping[str, Any]) -> None:
     print(f"runtime_executable_selected: {report.get('runtime_executable_selected', '')}")
     print(f"runtime_executable_path: {report.get('runtime_executable_path', '')}")
     print(f"runtime_executable_provenance: {report.get('runtime_executable_provenance', '')}")
+    print(f"runtime_command_pinning_status: {report.get('runtime_command_pinning_status', '')}")
     print(f"runtime_command_selected: {report.get('runtime_command_selected', '')}")
+    print(f"runtime_command_pinned: {str(report.get('runtime_command_pinned', False)).lower()}")
+    print(f"runtime_command_pin_verified: {str(report.get('runtime_command_pin_verified', False)).lower()}")
     print(f"runtime_execution_attempted: {str(report.get('runtime_execution_attempted', False)).lower()}")
     print(f"runtime_execution_completed: {str(report.get('runtime_execution_completed', False)).lower()}")
     print(f"runtime_execution_verified: {str(report.get('runtime_execution_verified', False)).lower()}")
@@ -335,13 +362,39 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_executable_provenance": "",
         "runtime_executable_project_pairing": {"status": "not_run"},
         "runtime_executable_engine_pairing": {"status": "not_run"},
+        "runtime_command_pinning": {"status": "not_run"},
+        "runtime_command_pinning_status": "not_run",
+        "runtime_command_discovery_status": "not_run",
         "runtime_command_selected": "",
+        "runtime_command_selected_reason": "",
         "runtime_command_arguments": [],
+        "runtime_command_argument_shape": {},
+        "runtime_command_kind": "",
+        "runtime_command_safety_profile": {},
         "runtime_command_safety_flags": [],
         "runtime_command_timeout_seconds": 0,
+        "runtime_command_expected_exit_codes": [],
+        "runtime_command_kill_policy": "",
+        "runtime_command_requires_gate_env": list(RUNTIME_GATE_ENV_VARS),
         "runtime_command_allows_publication": False,
         "runtime_command_allows_release_packaging": False,
         "runtime_command_allows_production_mutation": False,
+        "runtime_command_is_non_publishing": False,
+        "runtime_command_is_non_packaging": False,
+        "runtime_command_mutates_production": False,
+        "runtime_command_uses_production_level": False,
+        "runtime_command_uses_temp_level": False,
+        "runtime_command_uses_no_level": False,
+        "runtime_command_exits_on_own": False,
+        "runtime_command_pinned": False,
+        "runtime_command_pin_verified": False,
+        "runtime_command_blocked_reason": "",
+        "runtime_command_unavailable_reason": "",
+        "runtime_command_unsupported_reason": "",
+        "runtime_command_stdout_ref": "",
+        "runtime_command_stderr_ref": "",
+        "runtime_command_log_refs": [],
+        "runtime_command_log_scan": {"status": "runtime_execution_not_attempted", "matches": []},
         "runtime_command_gate_env": {"status": "not_run", "required": list(RUNTIME_GATE_ENV_VARS), "missing": []},
         "runtime_execution_attempted": False,
         "runtime_execution_completed": False,
@@ -509,22 +562,177 @@ def _select_candidate(candidates: Sequence[Mapping[str, Any]]) -> Dict[str, Any]
     return {}
 
 
-def _select_runtime_command(report: Mapping[str, Any]) -> Dict[str, Any]:
-    # Runtime launcher argument semantics remain intentionally unpinned in this
-    # slice.  The harness proves readiness and refuses to launch until a later
-    # slice validates a concrete non-publishing command line.
+def _select_runtime_command(
+    report: Mapping[str, Any],
+    *,
+    artifact_dir: Path,
+    timeout_seconds: int,
+) -> Dict[str, Any]:
+    executable = str(report.get("runtime_executable_path", "")).strip()
+    readiness = report.get("runtime_harness_readiness", {})
+    project_path = str(readiness.get("project_path", "")).strip() if isinstance(readiness, Mapping) else ""
+    if not executable or not project_path:
+        return {
+            "selected": False,
+            "blocked_reason": "blocked_by_missing_runtime_readiness",
+            "safety_flags": _runtime_command_safety_flags(),
+        }
+
+    command_file = artifact_dir / "maxine_runtime_command_quit.cfg"
+    command_file.parent.mkdir(parents=True, exist_ok=True)
+    command_file.write_text("quit\n", encoding="utf-8")
+    argv = [
+        executable,
+        f"--project-path={project_path}",
+        "-NullRenderer",
+        "-rhi=null",
+        "--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0",
+        f"--console-command-file={command_file}",
+    ]
     return {
-        "selected": False,
-        "blocked_reason": "blocked_by_unpinned_runtime_command",
-        "safety_flags": [
-            "timeout_required",
-            "stdout_stderr_capture_required",
-            "runtime_logs_required",
-            "live_publication_false",
-            "release_packaging_false",
-            "production_level_mutation_false",
+        "selected": True,
+        "argv": argv,
+        "kind": "headless_console_quit_envelope",
+        "selected_reason": "source_validated_headless_launcher_console_command_file_quit_envelope",
+        "expected_exit_codes": [0],
+        "timeout_seconds": int(timeout_seconds),
+        "kill_policy": "subprocess_timeout_kill_and_report",
+        "safety_flags": _runtime_command_safety_flags()
+        + [
+            "project_path_explicit",
+            "null_renderer_requested",
+            "no_level_or_map_argument",
+            "console_command_file_contains_quit",
+            "wait_for_connect_nonfatal",
+        ],
+        "argument_shape": {
+            "argv0": "runtime executable path",
+            "project_path": "--project-path=<MAXINE_GoldenCorpus project path>",
+            "rendering": ["-NullRenderer", "-rhi=null"],
+            "asset_processor_connect": "--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0",
+            "exit_strategy": "--console-command-file=<artifact cfg containing quit>",
+        },
+        "safety_profile": {
+            "local": True,
+            "bounded_by_timeout": True,
+            "evidence_captured": True,
+            "stdout_stderr_capture_required": True,
+            "log_capture_best_effort": True,
+            "non_publishing": True,
+            "non_packaging": True,
+            "mutates_production": False,
+            "uses_production_level": False,
+            "uses_temp_level": False,
+            "uses_no_level": True,
+            "loads_character_content": False,
+            "runtime_character_proof": False,
+            "headless_launcher": True,
+            "null_renderer_requested": True,
+            "safe_to_kill_after_timeout": True,
+            "command_file_ref": _repo_relative(command_file),
+        },
+        "source_evidence_refs": [
+            "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:68",
+            "C:/src/o3de/Code/LauncherUnified/Launcher.cpp:606",
+            "C:/src/o3de/Code/Legacy/CrySystem/SystemInit.cpp:1199",
+            "C:/src/o3de/Code/Framework/AzGameFramework/AzGameFramework/Application/GameApplication.cpp:129",
+            "C:/src/o3de/Code/Framework/AzCore/AzCore/Settings/SettingsRegistryMergeUtils.cpp:76",
         ],
     }
+
+
+def _runtime_command_safety_flags() -> List[str]:
+    return [
+        "timeout_required",
+        "stdout_stderr_capture_required",
+        "runtime_logs_best_effort",
+        "live_publication_false",
+        "release_packaging_false",
+        "production_level_mutation_false",
+    ]
+
+
+def _unpinned_runtime_command_payload(command: Mapping[str, Any]) -> Dict[str, Any]:
+    blocked_reason = str(command.get("blocked_reason", "blocked_by_unpinned_runtime_command")).strip()
+    return {
+        "status": "pass",
+        "runtime_harness_status": blocked_reason,
+        "runtime_command_pinning_status": blocked_reason,
+        "runtime_command_discovery_status": blocked_reason,
+        "runtime_command_selected": "",
+        "runtime_command_arguments": [],
+        "runtime_command_safety_flags": command.get("safety_flags", _runtime_command_safety_flags()),
+        "runtime_harness_blocked_reason": blocked_reason,
+        "runtime_command_blocked_reason": blocked_reason,
+        "runtime_execution_status": "runtime_execution_not_attempted",
+        "runtime_execution_attempted": False,
+        "runtime_execution_completed": False,
+        "runtime_execution_verified": False,
+        "runtime_command_pinned": False,
+        "runtime_command_pin_verified": False,
+        "runtime_harness_proof_claimed": True,
+        "runtime_harness_proof_verified": True,
+        "runtime_harness_proof_is_character_proof": False,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+        "required_runtime_harness_assertions_passed": [
+            "apb_product_evidence_complete",
+            "runtime_readiness_pass",
+            "runtime_execution_not_attempted_with_typed_blocker",
+            "runtime_character_proof_not_claimed",
+        ],
+        "runtime_harness_assertion_informational": [
+            "runtime_executable_candidate_ready",
+            "runtime_command_not_pinned",
+            "runtime_harness_readiness_is_not_runtime_character_proof",
+        ],
+    }
+
+
+def _runtime_command_pin_payload(
+    command: Mapping[str, Any],
+    *,
+    timeout_seconds: int,
+    execution_requested: bool,
+) -> Dict[str, Any]:
+    argv = list(command.get("argv", []))
+    safety_profile = dict(command.get("safety_profile", {}))
+    payload = {
+        "runtime_command_pinning": {
+            "status": "runtime_command_pinning_pass",
+            "selected_reason": command.get("selected_reason", ""),
+            "source_evidence_refs": command.get("source_evidence_refs", []),
+            "execution_requested": bool(execution_requested),
+        },
+        "runtime_command_pinning_status": "runtime_command_pinning_pass",
+        "runtime_command_discovery_status": "runtime_command_pinning_pass",
+        "runtime_command_selected": argv[0] if argv else "",
+        "runtime_command_selected_reason": command.get("selected_reason", ""),
+        "runtime_command_arguments": argv[1:],
+        "runtime_command_argument_shape": command.get("argument_shape", {}),
+        "runtime_command_kind": command.get("kind", ""),
+        "runtime_command_safety_profile": safety_profile,
+        "runtime_command_safety_flags": command.get("safety_flags", _runtime_command_safety_flags()),
+        "runtime_command_expected_exit_codes": command.get("expected_exit_codes", [0]),
+        "runtime_command_timeout_seconds": int(timeout_seconds),
+        "runtime_command_kill_policy": command.get("kill_policy", "subprocess_timeout_kill_and_report"),
+        "runtime_command_allows_publication": False,
+        "runtime_command_allows_release_packaging": False,
+        "runtime_command_allows_production_mutation": False,
+        "runtime_command_is_non_publishing": True,
+        "runtime_command_is_non_packaging": True,
+        "runtime_command_mutates_production": False,
+        "runtime_command_uses_production_level": False,
+        "runtime_command_uses_temp_level": False,
+        "runtime_command_uses_no_level": True,
+        "runtime_command_exits_on_own": True,
+        "runtime_command_pinned": True,
+        "runtime_command_pin_verified": True,
+        "runtime_command_blocked_reason": "",
+        "runtime_command_unavailable_reason": "",
+        "runtime_command_unsupported_reason": "",
+    }
+    return payload
 
 
 def _run_bounded_runtime_command(
@@ -540,14 +748,15 @@ def _run_bounded_runtime_command(
     artifact_dir.mkdir(parents=True, exist_ok=True)
     stdout_path = artifact_dir / "runtime_stdout.txt"
     stderr_path = artifact_dir / "runtime_stderr.txt"
+    report.update(_runtime_command_pin_payload(command, timeout_seconds=timeout_seconds, execution_requested=True))
     report.update(
         {
-            "runtime_command_selected": argv[0] if argv else "",
-            "runtime_command_arguments": argv[1:],
             "runtime_execution_attempted": True,
             "live_runtime_execution": True,
             "runtime_stdout_ref": _repo_relative(stdout_path),
             "runtime_stderr_ref": _repo_relative(stderr_path),
+            "runtime_command_stdout_ref": _repo_relative(stdout_path),
+            "runtime_command_stderr_ref": _repo_relative(stderr_path),
         }
     )
     timed_out = False
@@ -562,9 +771,13 @@ def _run_bounded_runtime_command(
 
     stdout_path.write_text(str(proc.stdout or ""), encoding="utf-8")
     stderr_path.write_text(str(proc.stderr or ""), encoding="utf-8")
-    scan = _scan_runtime_output(str(proc.stdout or "") + "\n" + str(proc.stderr or ""))
+    project_path = _runtime_project_path(report)
+    log_refs = _runtime_log_refs(project_path)
+    log_text = _read_runtime_logs(log_refs)
+    scan = _scan_runtime_output(str(proc.stdout or "") + "\n" + str(proc.stderr or "") + "\n" + log_text)
     exit_code = proc.returncode
-    passed = exit_code == 0 and not timed_out and scan["status"] == "pass"
+    expected_exit_codes = set(int(code) for code in command.get("expected_exit_codes", [0]))
+    passed = exit_code in expected_exit_codes and not timed_out and scan["status"] == "pass"
     report.update(
         {
             "status": "pass" if passed else "fail",
@@ -577,13 +790,22 @@ def _run_bounded_runtime_command(
             "runtime_timeout_stall": timed_out,
             "runtime_kill_attempted": timed_out,
             "runtime_kill_result": {"status": "runtime_execution_killed_after_timeout" if timed_out else "not_run"},
+            "runtime_log_refs": log_refs,
+            "runtime_command_log_refs": log_refs,
             "runtime_log_scan": scan,
+            "runtime_command_log_scan": scan,
             "runtime_harness_proof_claimed": passed,
             "runtime_harness_proof_verified": passed,
             "runtime_harness_proof_is_character_proof": False,
             "runtime_character_proof_claimed": False,
             "runtime_character_proof_verified": False,
-            "required_runtime_harness_assertions_passed": ["runtime_bounded_command_executed"] if passed else [],
+            "required_runtime_harness_assertions_passed": [
+                "runtime_command_pinning_pass",
+                "runtime_bounded_command_executed",
+                "runtime_character_proof_not_claimed",
+            ]
+            if passed
+            else [],
             "required_runtime_harness_assertions_failed": [] if passed else ["runtime_bounded_command"],
         }
     )
@@ -664,6 +886,39 @@ def _runtime_signal_fields(scan: Mapping[str, Any]) -> Dict[str, Any]:
     return fields
 
 
+def _runtime_project_path(report: Mapping[str, Any]) -> Path | None:
+    readiness = report.get("runtime_harness_readiness", {})
+    if not isinstance(readiness, Mapping):
+        return None
+    raw = str(readiness.get("project_path", "")).strip()
+    return Path(raw) if raw else None
+
+
+def _runtime_log_refs(project: Path | None) -> List[str]:
+    if project is None:
+        return []
+    log_dir = project / "user" / "log"
+    if not log_dir.exists():
+        return []
+    names = {"Server.log", "Game.log", "Launcher.log"}
+    candidates = [path for path in log_dir.iterdir() if path.is_file() and path.name in names]
+    candidates.sort(key=lambda path: path.stat().st_mtime, reverse=True)
+    return [str(path).replace("\\", "/") for path in candidates[:5]]
+
+
+def _read_runtime_logs(refs: Sequence[str], *, max_chars_per_log: int = 200_000) -> str:
+    chunks: List[str] = []
+    for ref in refs:
+        path = Path(ref)
+        if not path.exists() or not path.is_file():
+            continue
+        try:
+            chunks.append(path.read_text(encoding="utf-8", errors="replace")[:max_chars_per_log])
+        except Exception:
+            continue
+    return "\n".join(chunks)
+
+
 def _finalize_report(report: Dict[str, Any]) -> Dict[str, Any]:
     validation = validate_runtime_harness_report(report, strict=True)
     if validation.status == "fail":
@@ -729,6 +984,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--manifest", default=str(DEFAULT_MANIFEST))
     parser.add_argument("--mode", choices=["fixture"], default="fixture")
     parser.add_argument("--check-local-readiness", action="store_true")
+    parser.add_argument("--pin-runtime-command", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -747,6 +1003,7 @@ def main() -> int:
         manifest=args.manifest,
         mode=args.mode,
         check_local_readiness=args.check_local_readiness,
+        pin_runtime_command=args.pin_runtime_command,
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
         strict_integration=args.strict_integration,

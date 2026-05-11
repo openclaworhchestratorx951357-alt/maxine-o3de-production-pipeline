@@ -857,7 +857,10 @@ def test_editor_smoke_full_report_records_runtime_harness_without_character_over
 
     assert result.status == "pass", result.messages
     assert runtime_harness["runtime_harness_readiness_status"] == "runtime_harness_readiness_pass"
-    assert runtime_harness["runtime_harness_status"] == "blocked_by_unpinned_runtime_command"
+    assert runtime_harness["runtime_harness_status"] == "runtime_command_pinning_pass"
+    assert runtime_harness["runtime_command_pinning_status"] == "runtime_command_pinning_pass"
+    assert runtime_harness["runtime_command_pinned"] is True
+    assert runtime_harness["runtime_command_pin_verified"] is True
     assert runtime_harness["runtime_execution_attempted"] is False
     assert runtime_harness["runtime_execution_verified"] is False
     assert runtime_harness["runtime_harness_proof_is_character_proof"] is False

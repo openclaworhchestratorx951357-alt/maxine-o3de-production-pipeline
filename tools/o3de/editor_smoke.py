@@ -1329,7 +1329,7 @@ def _runtime_harness_payload_for_editor_template(
     try:
         report = runtime_harness_tool.run_runtime_harness(
             manifest=manifest,
-            check_local_readiness=True,
+            pin_runtime_command=True,
             strict=False,
             engine_root=Path(str(readiness.get("engine_root", {}).get("path", ""))),
             project=Path(str(readiness.get("project_path", {}).get("path", ""))),

@@ -376,6 +376,10 @@
       "type": "object",
       "additionalProperties": true
     },
+    "runtime_command_pinning": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "property_path_discovery": {
       "type": "object",
       "additionalProperties": true
