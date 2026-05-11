@@ -103,6 +103,7 @@
         "procprefab-product-instantiation",
         "procprefab-content-assertions",
         "procprefab-character-component-assertions",
+        "runtime-spawnable-proof-surface",
         "full"
       ]
     },
@@ -364,6 +365,10 @@
       "additionalProperties": true
     },
     "procprefab_character_assertions": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_spawnable_proof": {
       "type": "object",
       "additionalProperties": true
     },

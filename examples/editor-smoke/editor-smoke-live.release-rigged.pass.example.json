@@ -4031,6 +4031,210 @@
         "created_entity_id": "[4500903667111381899]",
         "owning_instance_prefab_path": "Levels/_maxine_smoke/maxine_smoke_20260511T021449Z/maxine_smoke_prefab_instantiation.prefab",
         "owning_instance_prefab_path_status": "pass"
+      },
+      "runtime_spawnable_proof": {
+        "status": "runtime_spawnable_character_proof_unavailable",
+        "runtime_spawnable_proof_status": "runtime_spawnable_character_proof_unavailable",
+        "runtime_spawnable_surface_discovery": {
+          "status": "runtime_surface_discovery_pass",
+          "surface_type": "asset_catalog_product_dependencies_and_spawnable_source_surface",
+          "candidate_surfaces": [
+            "AzFramework::Spawnable",
+            "AzFramework::SpawnableEntitiesInterface",
+            "AzFramework::Scripts::SpawnableScriptMediator",
+            "AssetCatalogRequestBus product dependencies",
+            "AssetCatalog product dependency implementation"
+          ],
+          "source_refs": [
+            {
+              "surface": "AzFramework::Spawnable",
+              "source_ref": "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Spawnable/Spawnable.h",
+              "present": true
+            },
+            {
+              "surface": "AzFramework::SpawnableEntitiesInterface",
+              "source_ref": "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Spawnable/SpawnableEntitiesInterface.h",
+              "present": true
+            },
+            {
+              "surface": "AzFramework::Scripts::SpawnableScriptMediator",
+              "source_ref": "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Spawnable/Script/SpawnableScriptMediator.h",
+              "present": true
+            },
+            {
+              "surface": "AssetCatalogRequestBus product dependencies",
+              "source_ref": "C:/src/o3de/Code/Framework/AzCore/AzCore/Asset/AssetManagerBus.h",
+              "present": true
+            },
+            {
+              "surface": "AssetCatalog product dependency implementation",
+              "source_ref": "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Asset/AssetCatalog.cpp",
+              "present": true
+            }
+          ],
+          "selected_for_this_slice": "Asset Processor database ProductDependencies readonly query",
+          "runtime_execution_surface": "not selected; bounded runtime harness not pinned"
+        },
+        "runtime_spawnable_surface_available": true,
+        "runtime_spawnable_surface_type": "asset_catalog_product_dependencies_and_spawnable_source_surface",
+        "runtime_spawnable_selected_call": "",
+        "runtime_spawnable_argument_shape": {},
+        "runtime_spawnable_execution_attempted": false,
+        "runtime_spawnable_execution_result": {
+          "status": "runtime_execution_not_attempted",
+          "reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness",
+          "safety_posture": "Runtime launcher candidates are recorded, but no runtime is launched without a pinned bounded harness."
+        },
+        "runtime_spawnable_execution_supported": false,
+        "runtime_spawnable_execution_verified": false,
+        "runtime_spawnable_launcher_path": "C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.HeadlessServerLauncher.exe",
+        "runtime_spawnable_launcher_provenance": "candidate_only_not_executed",
+        "runtime_spawnable_timeout_seconds": 0,
+        "runtime_spawnable_exit_code": null,
+        "runtime_spawnable_stdout_ref": "",
+        "runtime_spawnable_stderr_ref": "",
+        "runtime_spawnable_log_refs": [],
+        "runtime_spawnable_product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "runtime_spawnable_asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305",
+        "runtime_spawnable_dependency_graph": {
+          "status": "product_dependency_proof_unavailable",
+          "dependencies": [],
+          "dependency_count": 0,
+          "missing_dependency_count": 0
+        },
+        "runtime_spawnable_product_dependencies": [],
+        "runtime_spawnable_character_product_references": [],
+        "runtime_spawnable_actor_reference": {
+          "status": "unavailable_with_verified_reason",
+          "product_type": "actor",
+          "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+        },
+        "runtime_spawnable_azmodel_reference": {
+          "status": "unavailable_with_verified_reason",
+          "product_type": "azmodel",
+          "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+        },
+        "runtime_spawnable_pxmesh_reference": {
+          "status": "unavailable_with_verified_reason",
+          "product_type": "pxmesh",
+          "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+        },
+        "runtime_spawnable_azmaterial_reference": {
+          "status": "unavailable_with_verified_reason",
+          "product_type": "azmaterial",
+          "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+        },
+        "runtime_spawnable_motion_reference": {
+          "status": "unavailable_with_verified_reason",
+          "product_type": "motion",
+          "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+        },
+        "runtime_spawnable_motionset_reference": {
+          "status": "unavailable_with_verified_reason",
+          "product_type": "motionset",
+          "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+        },
+        "runtime_spawnable_animgraph_reference": {
+          "status": "unavailable_with_verified_reason",
+          "product_type": "animgraph",
+          "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+        },
+        "runtime_spawnable_created_entity_count": 0,
+        "runtime_spawnable_component_inventory": {
+          "status": "runtime_execution_not_attempted",
+          "reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness"
+        },
+        "runtime_spawnable_missing_asset_signals": {
+          "status": "pass",
+          "matches": [],
+          "source": "selected product Editor log scan; runtime was not executed"
+        },
+        "runtime_spawnable_missing_character_signals": {
+          "status": "pass",
+          "matches": [],
+          "source": "selected product Editor log scan; runtime was not executed"
+        },
+        "runtime_spawnable_blocked_reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness",
+        "runtime_spawnable_unsupported_reason": "",
+        "product_dependency_proof": {
+          "status": "product_dependency_proof_unavailable",
+          "selected_call": "Asset Processor database ProductDependencies readonly query",
+          "product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+          "database_ref": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus/Cache/assetdb.sqlite",
+          "product_row": {
+            "product_id": "8777",
+            "product_name": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+            "sub_id": "292115205",
+            "asset_type": "9B7C8459471E4EADA3637990CC4065A9"
+          },
+          "dependencies": [],
+          "product_dependency_count": 0,
+          "missing_dependency_count": 0,
+          "matched_product_evidence": [],
+          "matches_apb_evidence": false,
+          "reason": "direct_procprefab_product_dependency_graph_empty_for_character_products"
+        },
+        "product_dependency_proof_status": "product_dependency_proof_unavailable",
+        "product_dependency_matches_apb_evidence": false,
+        "editor_component_inventory_character_assertion_result": {
+          "status": "unavailable_with_verified_reason",
+          "reason": "direct_procprefab_character_components_not_exposed_in_editor_product_instance"
+        },
+        "direct_product_instantiation_result": {
+          "status": "pass",
+          "direct_product_instantiation_verified": true
+        },
+        "direct_product_content_assertion_result": {
+          "status": "pass"
+        },
+        "source_prefab_baseline_result": {
+          "status": "pass"
+        },
+        "actor_assignment_result": {
+          "status": "pass"
+        },
+        "required_runtime_spawnable_assertions_passed": [
+          "apb_product_evidence_complete",
+          "product_dependency_graph_checked",
+          "no_runtime_or_editor_character_load_error_signals",
+          "runtime_execution_not_attempted_with_typed_reason"
+        ],
+        "required_runtime_spawnable_assertions_failed": [],
+        "runtime_spawnable_assertion_failures": [],
+        "runtime_spawnable_assertion_informational": [
+          "product_dependency_proof_is_not_runtime_execution_proof",
+          "runtime_spawnable_source_surface_discovered"
+        ],
+        "runtime_spawnable_unavailable_reasons": [
+          {
+            "assertion": "product_dependency_character_references",
+            "status": "product_dependency_proof_unavailable",
+            "reason": "direct_procprefab_product_dependency_graph_empty_for_character_products"
+          },
+          {
+            "assertion": "runtime_spawnable_execution",
+            "status": "runtime_execution_not_attempted",
+            "reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness"
+          }
+        ],
+        "runtime_spawnable_unsupported_reasons": [],
+        "runtime_launcher_candidates": [
+          {
+            "path": "C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.HeadlessServerLauncher.exe",
+            "provenance": "engine_profile_bin_candidate_not_executed",
+            "execution_attempted": false
+          },
+          {
+            "path": "C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.ServerLauncher.exe",
+            "provenance": "engine_profile_bin_candidate_not_executed",
+            "execution_attempted": false
+          }
+        ],
+        "fake_success": false,
+        "cache_heuristic_used": false,
+        "live_publication": false,
+        "release_packaging": false,
+        "production_level_mutation": false
       }
     },
     "procprefab_character_assertions": {
@@ -4986,6 +5190,210 @@
         "no_missing_character_load_error_signals"
       ],
       "required_character_assertions_failed": []
+    },
+    "runtime_spawnable_proof": {
+      "status": "runtime_spawnable_character_proof_unavailable",
+      "runtime_spawnable_proof_status": "runtime_spawnable_character_proof_unavailable",
+      "runtime_spawnable_surface_discovery": {
+        "status": "runtime_surface_discovery_pass",
+        "surface_type": "asset_catalog_product_dependencies_and_spawnable_source_surface",
+        "candidate_surfaces": [
+          "AzFramework::Spawnable",
+          "AzFramework::SpawnableEntitiesInterface",
+          "AzFramework::Scripts::SpawnableScriptMediator",
+          "AssetCatalogRequestBus product dependencies",
+          "AssetCatalog product dependency implementation"
+        ],
+        "source_refs": [
+          {
+            "surface": "AzFramework::Spawnable",
+            "source_ref": "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Spawnable/Spawnable.h",
+            "present": true
+          },
+          {
+            "surface": "AzFramework::SpawnableEntitiesInterface",
+            "source_ref": "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Spawnable/SpawnableEntitiesInterface.h",
+            "present": true
+          },
+          {
+            "surface": "AzFramework::Scripts::SpawnableScriptMediator",
+            "source_ref": "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Spawnable/Script/SpawnableScriptMediator.h",
+            "present": true
+          },
+          {
+            "surface": "AssetCatalogRequestBus product dependencies",
+            "source_ref": "C:/src/o3de/Code/Framework/AzCore/AzCore/Asset/AssetManagerBus.h",
+            "present": true
+          },
+          {
+            "surface": "AssetCatalog product dependency implementation",
+            "source_ref": "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Asset/AssetCatalog.cpp",
+            "present": true
+          }
+        ],
+        "selected_for_this_slice": "Asset Processor database ProductDependencies readonly query",
+        "runtime_execution_surface": "not selected; bounded runtime harness not pinned"
+      },
+      "runtime_spawnable_surface_available": true,
+      "runtime_spawnable_surface_type": "asset_catalog_product_dependencies_and_spawnable_source_surface",
+      "runtime_spawnable_selected_call": "",
+      "runtime_spawnable_argument_shape": {},
+      "runtime_spawnable_execution_attempted": false,
+      "runtime_spawnable_execution_result": {
+        "status": "runtime_execution_not_attempted",
+        "reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness",
+        "safety_posture": "Runtime launcher candidates are recorded, but no runtime is launched without a pinned bounded harness."
+      },
+      "runtime_spawnable_execution_supported": false,
+      "runtime_spawnable_execution_verified": false,
+      "runtime_spawnable_launcher_path": "C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.HeadlessServerLauncher.exe",
+      "runtime_spawnable_launcher_provenance": "candidate_only_not_executed",
+      "runtime_spawnable_timeout_seconds": 0,
+      "runtime_spawnable_exit_code": null,
+      "runtime_spawnable_stdout_ref": "",
+      "runtime_spawnable_stderr_ref": "",
+      "runtime_spawnable_log_refs": [],
+      "runtime_spawnable_product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "runtime_spawnable_asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305",
+      "runtime_spawnable_dependency_graph": {
+        "status": "product_dependency_proof_unavailable",
+        "dependencies": [],
+        "dependency_count": 0,
+        "missing_dependency_count": 0
+      },
+      "runtime_spawnable_product_dependencies": [],
+      "runtime_spawnable_character_product_references": [],
+      "runtime_spawnable_actor_reference": {
+        "status": "unavailable_with_verified_reason",
+        "product_type": "actor",
+        "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+      },
+      "runtime_spawnable_azmodel_reference": {
+        "status": "unavailable_with_verified_reason",
+        "product_type": "azmodel",
+        "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+      },
+      "runtime_spawnable_pxmesh_reference": {
+        "status": "unavailable_with_verified_reason",
+        "product_type": "pxmesh",
+        "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+      },
+      "runtime_spawnable_azmaterial_reference": {
+        "status": "unavailable_with_verified_reason",
+        "product_type": "azmaterial",
+        "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+      },
+      "runtime_spawnable_motion_reference": {
+        "status": "unavailable_with_verified_reason",
+        "product_type": "motion",
+        "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+      },
+      "runtime_spawnable_motionset_reference": {
+        "status": "unavailable_with_verified_reason",
+        "product_type": "motionset",
+        "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+      },
+      "runtime_spawnable_animgraph_reference": {
+        "status": "unavailable_with_verified_reason",
+        "product_type": "animgraph",
+        "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+      },
+      "runtime_spawnable_created_entity_count": 0,
+      "runtime_spawnable_component_inventory": {
+        "status": "runtime_execution_not_attempted",
+        "reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness"
+      },
+      "runtime_spawnable_missing_asset_signals": {
+        "status": "pass",
+        "matches": [],
+        "source": "selected product Editor log scan; runtime was not executed"
+      },
+      "runtime_spawnable_missing_character_signals": {
+        "status": "pass",
+        "matches": [],
+        "source": "selected product Editor log scan; runtime was not executed"
+      },
+      "runtime_spawnable_blocked_reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness",
+      "runtime_spawnable_unsupported_reason": "",
+      "product_dependency_proof": {
+        "status": "product_dependency_proof_unavailable",
+        "selected_call": "Asset Processor database ProductDependencies readonly query",
+        "product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "database_ref": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus/Cache/assetdb.sqlite",
+        "product_row": {
+          "product_id": "8777",
+          "product_name": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+          "sub_id": "292115205",
+          "asset_type": "9B7C8459471E4EADA3637990CC4065A9"
+        },
+        "dependencies": [],
+        "product_dependency_count": 0,
+        "missing_dependency_count": 0,
+        "matched_product_evidence": [],
+        "matches_apb_evidence": false,
+        "reason": "direct_procprefab_product_dependency_graph_empty_for_character_products"
+      },
+      "product_dependency_proof_status": "product_dependency_proof_unavailable",
+      "product_dependency_matches_apb_evidence": false,
+      "editor_component_inventory_character_assertion_result": {
+        "status": "unavailable_with_verified_reason",
+        "reason": "direct_procprefab_character_components_not_exposed_in_editor_product_instance"
+      },
+      "direct_product_instantiation_result": {
+        "status": "pass",
+        "direct_product_instantiation_verified": true
+      },
+      "direct_product_content_assertion_result": {
+        "status": "pass"
+      },
+      "source_prefab_baseline_result": {
+        "status": "pass"
+      },
+      "actor_assignment_result": {
+        "status": "pass"
+      },
+      "required_runtime_spawnable_assertions_passed": [
+        "apb_product_evidence_complete",
+        "product_dependency_graph_checked",
+        "no_runtime_or_editor_character_load_error_signals",
+        "runtime_execution_not_attempted_with_typed_reason"
+      ],
+      "required_runtime_spawnable_assertions_failed": [],
+      "runtime_spawnable_assertion_failures": [],
+      "runtime_spawnable_assertion_informational": [
+        "product_dependency_proof_is_not_runtime_execution_proof",
+        "runtime_spawnable_source_surface_discovered"
+      ],
+      "runtime_spawnable_unavailable_reasons": [
+        {
+          "assertion": "product_dependency_character_references",
+          "status": "product_dependency_proof_unavailable",
+          "reason": "direct_procprefab_product_dependency_graph_empty_for_character_products"
+        },
+        {
+          "assertion": "runtime_spawnable_execution",
+          "status": "runtime_execution_not_attempted",
+          "reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness"
+        }
+      ],
+      "runtime_spawnable_unsupported_reasons": [],
+      "runtime_launcher_candidates": [
+        {
+          "path": "C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.HeadlessServerLauncher.exe",
+          "provenance": "engine_profile_bin_candidate_not_executed",
+          "execution_attempted": false
+        },
+        {
+          "path": "C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.ServerLauncher.exe",
+          "provenance": "engine_profile_bin_candidate_not_executed",
+          "execution_attempted": false
+        }
+      ],
+      "fake_success": false,
+      "cache_heuristic_used": false,
+      "live_publication": false,
+      "release_packaging": false,
+      "production_level_mutation": false
     }
   },
   "source_prefab_baseline_result": {
@@ -7895,6 +8303,210 @@
       "created_entity_id": "[4500903667111381899]",
       "owning_instance_prefab_path": "Levels/_maxine_smoke/maxine_smoke_20260511T021449Z/maxine_smoke_prefab_instantiation.prefab",
       "owning_instance_prefab_path_status": "pass"
+    },
+    "runtime_spawnable_proof": {
+      "status": "runtime_spawnable_character_proof_unavailable",
+      "runtime_spawnable_proof_status": "runtime_spawnable_character_proof_unavailable",
+      "runtime_spawnable_surface_discovery": {
+        "status": "runtime_surface_discovery_pass",
+        "surface_type": "asset_catalog_product_dependencies_and_spawnable_source_surface",
+        "candidate_surfaces": [
+          "AzFramework::Spawnable",
+          "AzFramework::SpawnableEntitiesInterface",
+          "AzFramework::Scripts::SpawnableScriptMediator",
+          "AssetCatalogRequestBus product dependencies",
+          "AssetCatalog product dependency implementation"
+        ],
+        "source_refs": [
+          {
+            "surface": "AzFramework::Spawnable",
+            "source_ref": "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Spawnable/Spawnable.h",
+            "present": true
+          },
+          {
+            "surface": "AzFramework::SpawnableEntitiesInterface",
+            "source_ref": "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Spawnable/SpawnableEntitiesInterface.h",
+            "present": true
+          },
+          {
+            "surface": "AzFramework::Scripts::SpawnableScriptMediator",
+            "source_ref": "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Spawnable/Script/SpawnableScriptMediator.h",
+            "present": true
+          },
+          {
+            "surface": "AssetCatalogRequestBus product dependencies",
+            "source_ref": "C:/src/o3de/Code/Framework/AzCore/AzCore/Asset/AssetManagerBus.h",
+            "present": true
+          },
+          {
+            "surface": "AssetCatalog product dependency implementation",
+            "source_ref": "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Asset/AssetCatalog.cpp",
+            "present": true
+          }
+        ],
+        "selected_for_this_slice": "Asset Processor database ProductDependencies readonly query",
+        "runtime_execution_surface": "not selected; bounded runtime harness not pinned"
+      },
+      "runtime_spawnable_surface_available": true,
+      "runtime_spawnable_surface_type": "asset_catalog_product_dependencies_and_spawnable_source_surface",
+      "runtime_spawnable_selected_call": "",
+      "runtime_spawnable_argument_shape": {},
+      "runtime_spawnable_execution_attempted": false,
+      "runtime_spawnable_execution_result": {
+        "status": "runtime_execution_not_attempted",
+        "reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness",
+        "safety_posture": "Runtime launcher candidates are recorded, but no runtime is launched without a pinned bounded harness."
+      },
+      "runtime_spawnable_execution_supported": false,
+      "runtime_spawnable_execution_verified": false,
+      "runtime_spawnable_launcher_path": "C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.HeadlessServerLauncher.exe",
+      "runtime_spawnable_launcher_provenance": "candidate_only_not_executed",
+      "runtime_spawnable_timeout_seconds": 0,
+      "runtime_spawnable_exit_code": null,
+      "runtime_spawnable_stdout_ref": "",
+      "runtime_spawnable_stderr_ref": "",
+      "runtime_spawnable_log_refs": [],
+      "runtime_spawnable_product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "runtime_spawnable_asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305",
+      "runtime_spawnable_dependency_graph": {
+        "status": "product_dependency_proof_unavailable",
+        "dependencies": [],
+        "dependency_count": 0,
+        "missing_dependency_count": 0
+      },
+      "runtime_spawnable_product_dependencies": [],
+      "runtime_spawnable_character_product_references": [],
+      "runtime_spawnable_actor_reference": {
+        "status": "unavailable_with_verified_reason",
+        "product_type": "actor",
+        "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+      },
+      "runtime_spawnable_azmodel_reference": {
+        "status": "unavailable_with_verified_reason",
+        "product_type": "azmodel",
+        "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+      },
+      "runtime_spawnable_pxmesh_reference": {
+        "status": "unavailable_with_verified_reason",
+        "product_type": "pxmesh",
+        "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+      },
+      "runtime_spawnable_azmaterial_reference": {
+        "status": "unavailable_with_verified_reason",
+        "product_type": "azmaterial",
+        "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+      },
+      "runtime_spawnable_motion_reference": {
+        "status": "unavailable_with_verified_reason",
+        "product_type": "motion",
+        "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+      },
+      "runtime_spawnable_motionset_reference": {
+        "status": "unavailable_with_verified_reason",
+        "product_type": "motionset",
+        "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+      },
+      "runtime_spawnable_animgraph_reference": {
+        "status": "unavailable_with_verified_reason",
+        "product_type": "animgraph",
+        "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+      },
+      "runtime_spawnable_created_entity_count": 0,
+      "runtime_spawnable_component_inventory": {
+        "status": "runtime_execution_not_attempted",
+        "reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness"
+      },
+      "runtime_spawnable_missing_asset_signals": {
+        "status": "pass",
+        "matches": [],
+        "source": "selected product Editor log scan; runtime was not executed"
+      },
+      "runtime_spawnable_missing_character_signals": {
+        "status": "pass",
+        "matches": [],
+        "source": "selected product Editor log scan; runtime was not executed"
+      },
+      "runtime_spawnable_blocked_reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness",
+      "runtime_spawnable_unsupported_reason": "",
+      "product_dependency_proof": {
+        "status": "product_dependency_proof_unavailable",
+        "selected_call": "Asset Processor database ProductDependencies readonly query",
+        "product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "database_ref": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus/Cache/assetdb.sqlite",
+        "product_row": {
+          "product_id": "8777",
+          "product_name": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+          "sub_id": "292115205",
+          "asset_type": "9B7C8459471E4EADA3637990CC4065A9"
+        },
+        "dependencies": [],
+        "product_dependency_count": 0,
+        "missing_dependency_count": 0,
+        "matched_product_evidence": [],
+        "matches_apb_evidence": false,
+        "reason": "direct_procprefab_product_dependency_graph_empty_for_character_products"
+      },
+      "product_dependency_proof_status": "product_dependency_proof_unavailable",
+      "product_dependency_matches_apb_evidence": false,
+      "editor_component_inventory_character_assertion_result": {
+        "status": "unavailable_with_verified_reason",
+        "reason": "direct_procprefab_character_components_not_exposed_in_editor_product_instance"
+      },
+      "direct_product_instantiation_result": {
+        "status": "pass",
+        "direct_product_instantiation_verified": true
+      },
+      "direct_product_content_assertion_result": {
+        "status": "pass"
+      },
+      "source_prefab_baseline_result": {
+        "status": "pass"
+      },
+      "actor_assignment_result": {
+        "status": "pass"
+      },
+      "required_runtime_spawnable_assertions_passed": [
+        "apb_product_evidence_complete",
+        "product_dependency_graph_checked",
+        "no_runtime_or_editor_character_load_error_signals",
+        "runtime_execution_not_attempted_with_typed_reason"
+      ],
+      "required_runtime_spawnable_assertions_failed": [],
+      "runtime_spawnable_assertion_failures": [],
+      "runtime_spawnable_assertion_informational": [
+        "product_dependency_proof_is_not_runtime_execution_proof",
+        "runtime_spawnable_source_surface_discovered"
+      ],
+      "runtime_spawnable_unavailable_reasons": [
+        {
+          "assertion": "product_dependency_character_references",
+          "status": "product_dependency_proof_unavailable",
+          "reason": "direct_procprefab_product_dependency_graph_empty_for_character_products"
+        },
+        {
+          "assertion": "runtime_spawnable_execution",
+          "status": "runtime_execution_not_attempted",
+          "reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness"
+        }
+      ],
+      "runtime_spawnable_unsupported_reasons": [],
+      "runtime_launcher_candidates": [
+        {
+          "path": "C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.HeadlessServerLauncher.exe",
+          "provenance": "engine_profile_bin_candidate_not_executed",
+          "execution_attempted": false
+        },
+        {
+          "path": "C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.ServerLauncher.exe",
+          "provenance": "engine_profile_bin_candidate_not_executed",
+          "execution_attempted": false
+        }
+      ],
+      "fake_success": false,
+      "cache_heuristic_used": false,
+      "live_publication": false,
+      "release_packaging": false,
+      "production_level_mutation": false
     }
   },
   "direct_procprefab_content_assertions": {
@@ -13321,5 +13933,209 @@
     "attempted": false,
     "method": "",
     "return_code": null
+  },
+  "runtime_spawnable_proof": {
+    "status": "runtime_spawnable_character_proof_unavailable",
+    "runtime_spawnable_proof_status": "runtime_spawnable_character_proof_unavailable",
+    "runtime_spawnable_surface_discovery": {
+      "status": "runtime_surface_discovery_pass",
+      "surface_type": "asset_catalog_product_dependencies_and_spawnable_source_surface",
+      "candidate_surfaces": [
+        "AzFramework::Spawnable",
+        "AzFramework::SpawnableEntitiesInterface",
+        "AzFramework::Scripts::SpawnableScriptMediator",
+        "AssetCatalogRequestBus product dependencies",
+        "AssetCatalog product dependency implementation"
+      ],
+      "source_refs": [
+        {
+          "surface": "AzFramework::Spawnable",
+          "source_ref": "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Spawnable/Spawnable.h",
+          "present": true
+        },
+        {
+          "surface": "AzFramework::SpawnableEntitiesInterface",
+          "source_ref": "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Spawnable/SpawnableEntitiesInterface.h",
+          "present": true
+        },
+        {
+          "surface": "AzFramework::Scripts::SpawnableScriptMediator",
+          "source_ref": "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Spawnable/Script/SpawnableScriptMediator.h",
+          "present": true
+        },
+        {
+          "surface": "AssetCatalogRequestBus product dependencies",
+          "source_ref": "C:/src/o3de/Code/Framework/AzCore/AzCore/Asset/AssetManagerBus.h",
+          "present": true
+        },
+        {
+          "surface": "AssetCatalog product dependency implementation",
+          "source_ref": "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Asset/AssetCatalog.cpp",
+          "present": true
+        }
+      ],
+      "selected_for_this_slice": "Asset Processor database ProductDependencies readonly query",
+      "runtime_execution_surface": "not selected; bounded runtime harness not pinned"
+    },
+    "runtime_spawnable_surface_available": true,
+    "runtime_spawnable_surface_type": "asset_catalog_product_dependencies_and_spawnable_source_surface",
+    "runtime_spawnable_selected_call": "",
+    "runtime_spawnable_argument_shape": {},
+    "runtime_spawnable_execution_attempted": false,
+    "runtime_spawnable_execution_result": {
+      "status": "runtime_execution_not_attempted",
+      "reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness",
+      "safety_posture": "Runtime launcher candidates are recorded, but no runtime is launched without a pinned bounded harness."
+    },
+    "runtime_spawnable_execution_supported": false,
+    "runtime_spawnable_execution_verified": false,
+    "runtime_spawnable_launcher_path": "C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.HeadlessServerLauncher.exe",
+    "runtime_spawnable_launcher_provenance": "candidate_only_not_executed",
+    "runtime_spawnable_timeout_seconds": 0,
+    "runtime_spawnable_exit_code": null,
+    "runtime_spawnable_stdout_ref": "",
+    "runtime_spawnable_stderr_ref": "",
+    "runtime_spawnable_log_refs": [],
+    "runtime_spawnable_product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+    "runtime_spawnable_asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305",
+    "runtime_spawnable_dependency_graph": {
+      "status": "product_dependency_proof_unavailable",
+      "dependencies": [],
+      "dependency_count": 0,
+      "missing_dependency_count": 0
+    },
+    "runtime_spawnable_product_dependencies": [],
+    "runtime_spawnable_character_product_references": [],
+    "runtime_spawnable_actor_reference": {
+      "status": "unavailable_with_verified_reason",
+      "product_type": "actor",
+      "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+    },
+    "runtime_spawnable_azmodel_reference": {
+      "status": "unavailable_with_verified_reason",
+      "product_type": "azmodel",
+      "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+    },
+    "runtime_spawnable_pxmesh_reference": {
+      "status": "unavailable_with_verified_reason",
+      "product_type": "pxmesh",
+      "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+    },
+    "runtime_spawnable_azmaterial_reference": {
+      "status": "unavailable_with_verified_reason",
+      "product_type": "azmaterial",
+      "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+    },
+    "runtime_spawnable_motion_reference": {
+      "status": "unavailable_with_verified_reason",
+      "product_type": "motion",
+      "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+    },
+    "runtime_spawnable_motionset_reference": {
+      "status": "unavailable_with_verified_reason",
+      "product_type": "motionset",
+      "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+    },
+    "runtime_spawnable_animgraph_reference": {
+      "status": "unavailable_with_verified_reason",
+      "product_type": "animgraph",
+      "reason": "character_product_reference_not_exposed_by_direct_procprefab_product_dependencies"
+    },
+    "runtime_spawnable_created_entity_count": 0,
+    "runtime_spawnable_component_inventory": {
+      "status": "runtime_execution_not_attempted",
+      "reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness"
+    },
+    "runtime_spawnable_missing_asset_signals": {
+      "status": "pass",
+      "matches": [],
+      "source": "selected product Editor log scan; runtime was not executed"
+    },
+    "runtime_spawnable_missing_character_signals": {
+      "status": "pass",
+      "matches": [],
+      "source": "selected product Editor log scan; runtime was not executed"
+    },
+    "runtime_spawnable_blocked_reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness",
+    "runtime_spawnable_unsupported_reason": "",
+    "product_dependency_proof": {
+      "status": "product_dependency_proof_unavailable",
+      "selected_call": "Asset Processor database ProductDependencies readonly query",
+      "product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "database_ref": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus/Cache/assetdb.sqlite",
+      "product_row": {
+        "product_id": "8777",
+        "product_name": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+        "sub_id": "292115205",
+        "asset_type": "9B7C8459471E4EADA3637990CC4065A9"
+      },
+      "dependencies": [],
+      "product_dependency_count": 0,
+      "missing_dependency_count": 0,
+      "matched_product_evidence": [],
+      "matches_apb_evidence": false,
+      "reason": "direct_procprefab_product_dependency_graph_empty_for_character_products"
+    },
+    "product_dependency_proof_status": "product_dependency_proof_unavailable",
+    "product_dependency_matches_apb_evidence": false,
+    "editor_component_inventory_character_assertion_result": {
+      "status": "unavailable_with_verified_reason",
+      "reason": "direct_procprefab_character_components_not_exposed_in_editor_product_instance"
+    },
+    "direct_product_instantiation_result": {
+      "status": "pass",
+      "direct_product_instantiation_verified": true
+    },
+    "direct_product_content_assertion_result": {
+      "status": "pass"
+    },
+    "source_prefab_baseline_result": {
+      "status": "pass"
+    },
+    "actor_assignment_result": {
+      "status": "pass"
+    },
+    "required_runtime_spawnable_assertions_passed": [
+      "apb_product_evidence_complete",
+      "product_dependency_graph_checked",
+      "no_runtime_or_editor_character_load_error_signals",
+      "runtime_execution_not_attempted_with_typed_reason"
+    ],
+    "required_runtime_spawnable_assertions_failed": [],
+    "runtime_spawnable_assertion_failures": [],
+    "runtime_spawnable_assertion_informational": [
+      "product_dependency_proof_is_not_runtime_execution_proof",
+      "runtime_spawnable_source_surface_discovered"
+    ],
+    "runtime_spawnable_unavailable_reasons": [
+      {
+        "assertion": "product_dependency_character_references",
+        "status": "product_dependency_proof_unavailable",
+        "reason": "direct_procprefab_product_dependency_graph_empty_for_character_products"
+      },
+      {
+        "assertion": "runtime_spawnable_execution",
+        "status": "runtime_execution_not_attempted",
+        "reason": "runtime_spawnable_proof_requires_dedicated_runtime_harness"
+      }
+    ],
+    "runtime_spawnable_unsupported_reasons": [],
+    "runtime_launcher_candidates": [
+      {
+        "path": "C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.HeadlessServerLauncher.exe",
+        "provenance": "engine_profile_bin_candidate_not_executed",
+        "execution_attempted": false
+      },
+      {
+        "path": "C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.ServerLauncher.exe",
+        "provenance": "engine_profile_bin_candidate_not_executed",
+        "execution_attempted": false
+      }
+    ],
+    "fake_success": false,
+    "cache_heuristic_used": false,
+    "live_publication": false,
+    "release_packaging": false,
+    "production_level_mutation": false
   }
 }

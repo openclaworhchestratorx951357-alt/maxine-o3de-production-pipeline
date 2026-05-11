@@ -239,6 +239,25 @@ The current paired runner discovers candidate TypeIds for Actor, Mesh, Material,
 
 Required character assertions currently require the selected direct product path to have no missing actor, mesh, material, animation, or load-error signals in bounded Editor log scanning. Those required checks must pass for full smoke. Optional or unavailable character component surfaces remain explicit typed evidence and do not become required passes until live evidence proves they are stable and expected for this product.
 
+## Runtime/Spawnable Proof Surface
+
+The runtime/spawnable proof-surface slice adds a targeted diagnostic mode after the Editor component inventory result bottoms out:
+
+```powershell
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --enable-editor-smoke --strict-integration --diagnostic-mode runtime-spawnable-proof-surface --timeout-seconds 540 --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de --apb-report artifacts/o3de-integration/apb/<run>/asset_processor_batch_live_report.json
+```
+
+This mode preserves direct `.procprefab` product instantiation, direct content assertions, and the Editor-side character-specific typed unavailable result. It then records `runtime_spawnable_proof` as a separate layer so product dependency proof cannot be mistaken for runtime execution proof.
+
+The current pinned surface is non-publishing and non-runtime-launching:
+
+- local O3DE source discovery confirms spawnable and product-dependency surfaces such as `AzFramework::Spawnable`, `SpawnableEntitiesInterface`, `SpawnableScriptMediator`, and Asset Catalog product-dependency APIs.
+- the selected proof call is a read-only Asset Processor database `ProductDependencies` query for `pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab`.
+- the direct `.procprefab` product dependency graph is empty for actor, azmodel, pxmesh, azmaterial, motion, motionset, and animgraph character products, so product dependency proof is recorded as `product_dependency_proof_unavailable` with `direct_procprefab_product_dependency_graph_empty_for_character_products`.
+- local runtime launcher candidates may be recorded as candidates only; `runtime_spawnable_execution_attempted=false` and `runtime_spawnable_execution_verified=false` until a bounded dedicated runtime harness is pinned.
+
+Full smoke may still pass when all prior Editor/APB gates pass and runtime/spawnable proof is explicitly typed unavailable or blocked with a precise reason. Full smoke must not imply runtime character proof unless `runtime_spawnable_execution_verified=true` is backed by an actual bounded runtime execution pass.
+
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 
 This wiring does not publish, mutate production levels, contact external services, or claim production-ready completion.
