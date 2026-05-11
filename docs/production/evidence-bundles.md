@@ -191,6 +191,8 @@ Character-specific direct product evidence is a separate layer above generic con
 
 Runtime/spawnable proof is distinct from both Editor component inventory and product dependency proof. The current paired runner records source-discovered spawnable surfaces and a read-only Asset Processor database query for the direct `.procprefab` product, but that product dependency graph exposes no actor, azmodel, pxmesh, azmaterial, motion, motionset, or animgraph references. The evidence must therefore keep `runtime_spawnable_execution_attempted=false`, `runtime_spawnable_execution_verified=false`, and `product_dependency_proof_status=product_dependency_proof_unavailable` unless a future bounded runtime harness actually runs and passes. Product dependency proof must never be counted as runtime execution proof.
 
+Runtime harness evidence is now a fifth layer. It records launcher candidates, selected executable provenance, project/engine pairing, live runtime gate state, timeout policy, stdout/stderr/log refs when a process is actually launched, and typed blockers such as `blocked_by_missing_runtime_gate`, `blocked_by_missing_runtime_executable`, or `blocked_by_unpinned_runtime_command`. Harness readiness may be committed as sanitized evidence, but it must not be counted as runtime execution proof or runtime character proof. The committed live Editor example carries `runtime_harness.runtime_harness_status=blocked_by_unpinned_runtime_command`, `runtime_execution_attempted=false`, `runtime_execution_verified=false`, and `runtime_character_proof_claimed=false`.
+
 ## Golden Project Fixture Evidence
 
 Golden project fixture evidence may be attached as:

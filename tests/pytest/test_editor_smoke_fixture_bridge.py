@@ -849,6 +849,35 @@ def test_editor_smoke_rejects_product_dependency_proof_counted_as_runtime_execut
     assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
 
 
+def test_editor_smoke_full_report_records_runtime_harness_without_character_overclaim():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    runtime_harness = report["runtime_harness"]
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "pass", result.messages
+    assert runtime_harness["runtime_harness_readiness_status"] == "runtime_harness_readiness_pass"
+    assert runtime_harness["runtime_harness_status"] == "blocked_by_unpinned_runtime_command"
+    assert runtime_harness["runtime_execution_attempted"] is False
+    assert runtime_harness["runtime_execution_verified"] is False
+    assert runtime_harness["runtime_harness_proof_is_character_proof"] is False
+    assert runtime_harness["runtime_character_proof_claimed"] is False
+
+
+def test_editor_smoke_rejects_runtime_harness_verified_without_attempted_runtime_execution():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    runtime_harness = dict(report["runtime_harness"])
+    runtime_harness["runtime_execution_verified"] = True
+    runtime_harness["runtime_execution_attempted"] = False
+    runtime_harness["runtime_execution_status"] = "runtime_execution_pass"
+    report["runtime_harness"] = runtime_harness
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+
+
 def test_character_log_scan_fails_selected_product_missing_actor_signal(tmp_path, monkeypatch):
     project = tmp_path / "MAXINE_GoldenCorpus"
     log_dir = project / "user" / "log"

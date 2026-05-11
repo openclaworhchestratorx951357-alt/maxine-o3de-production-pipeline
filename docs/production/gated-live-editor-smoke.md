@@ -258,6 +258,19 @@ The current pinned surface is non-publishing and non-runtime-launching:
 
 Full smoke may still pass when all prior Editor/APB gates pass and runtime/spawnable proof is explicitly typed unavailable or blocked with a precise reason. Full smoke must not imply runtime character proof unless `runtime_spawnable_execution_verified=true` is backed by an actual bounded runtime execution pass.
 
+## Bounded Runtime Harness Contract
+
+The dedicated runtime harness slice adds `tools/o3de/runtime_harness.py` as a standalone, non-publishing contract around runtime launcher discovery and readiness. The harness is intentionally separate from Editor component inventory proof, product dependency proof, runtime execution proof, and runtime character proof.
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --mode fixture
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --check-local-readiness --strict --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report artifacts/o3de-integration/apb/<run>/asset_processor_batch_live_report.json
+```
+
+Fixture mode validates the report contract without launching runtime. Readiness mode requires trusted APB product evidence for all release-rigged products, `cache_heuristic_used=false`, a project path paired to `MAXINE_GoldenCorpus`, an engine profile-bin launcher candidate, and closed publication/release-packaging/production-mutation gates.
+
+Live bounded runtime mode is separately gated by `MAXINE_ENABLE_O3DE_RUNTIME_HARNESS=1` and `MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS=1`. Even with those gates set, this slice records `blocked_by_unpinned_runtime_command` until a later slice validates a concrete HeadlessServerLauncher/GameLauncher command line with safe arguments. Harness readiness is not runtime execution proof, and it is not runtime character proof. Runtime character proof remains unclaimed unless a bounded runtime process actually runs, completes, captures stdout/stderr/log refs, passes missing actor/mesh/material/animation/load-error scans, and records character-specific evidence.
+
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 
 This wiring does not publish, mutate production levels, contact external services, or claim production-ready completion.

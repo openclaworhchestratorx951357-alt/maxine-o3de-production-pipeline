@@ -20,6 +20,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from tools.o3de.product_matrix_resolver import validate_expected_products
 from tools.o3de.product_resolver import ProductRecord
+from tools.o3de import runtime_harness as runtime_harness_tool
 from tools.validation.results import ValidationResult
 from tools.validation.schema_utils import load_json, schema_validate
 
@@ -206,6 +207,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_direct_procprefab_product_semantics(report, result)
             if diagnostic_mode in {"runtime-spawnable-proof-surface", "full"}:
                 _validate_runtime_spawnable_proof_surface(report, result)
+            if diagnostic_mode == "full" and isinstance(report.get("runtime_harness"), Mapping):
+                result.merge(runtime_harness_tool.validate_runtime_harness_report(report["runtime_harness"], strict=strict))
         for smoke_field, check_field in (
             ("actor_smoke", "actor_binding_checks"),
             ("prefab_smoke", "prefab_binding_checks"),
@@ -1211,6 +1214,11 @@ def _live_report_template(
     source_uuid = _first_source_uuid(product_summary.get("products", []), manifest_payload)
     source_assets = _source_assets_from_manifest(manifest_payload, source_uuid)
     procprefab_ref = _first_product_path(product_summary.get("products", []), "procprefab")
+    runtime_harness_payload = _runtime_harness_payload_for_editor_template(
+        manifest=manifest,
+        readiness=readiness,
+        apb_baseline=apb_baseline,
+    )
     return {
         "schema_version": "1.0.0",
         "report_type": "editor_smoke_fixture_bridge_v1",
@@ -1290,6 +1298,7 @@ def _live_report_template(
         "direct_procprefab_content_assertions": {"status": "not_run"},
         "procprefab_character_assertions": {"status": "not_run"},
         "runtime_spawnable_proof": {"status": "not_run"},
+        "runtime_harness": runtime_harness_payload,
         "property_path_discovery": {},
         "property_list_summary": {},
         "no_fake_success": True,
@@ -1309,6 +1318,43 @@ def _live_report_template(
         ],
         "next_steps": [],
     }
+
+
+def _runtime_harness_payload_for_editor_template(
+    *,
+    manifest: Path,
+    readiness: Mapping[str, Any],
+    apb_baseline: Path,
+) -> Dict[str, Any]:
+    try:
+        report = runtime_harness_tool.run_runtime_harness(
+            manifest=manifest,
+            check_local_readiness=True,
+            strict=False,
+            engine_root=Path(str(readiness.get("engine_root", {}).get("path", ""))),
+            project=Path(str(readiness.get("project_path", {}).get("path", ""))),
+            apb_report=apb_baseline,
+        )
+        payload = report.get("runtime_harness", report)
+        return dict(payload) if isinstance(payload, Mapping) else {"runtime_harness_status": "unavailable_with_verified_reason"}
+    except Exception as exc:
+        return {
+            "runtime_harness_status": "unavailable_with_verified_reason",
+            "runtime_harness_readiness_status": "unavailable_with_verified_reason",
+            "runtime_harness_unavailable_reason": "runtime_harness_readiness_exception",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "runtime_harness_proof_is_character_proof": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "live_publication": False,
+            "release_packaging": False,
+            "production_level_mutation": False,
+            "fake_success": False,
+            "cache_heuristic_used": False,
+            "messages": [str(exc)],
+        }
 
 
 def _editor_timeout_seconds(env: Mapping[str, str]) -> int:

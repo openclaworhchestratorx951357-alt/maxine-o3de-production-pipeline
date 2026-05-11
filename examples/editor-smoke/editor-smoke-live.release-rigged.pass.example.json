@@ -14137,5 +14137,192 @@
     "live_publication": false,
     "release_packaging": false,
     "production_level_mutation": false
+  },
+  "runtime_harness": {
+    "runtime_harness_status": "blocked_by_unpinned_runtime_command",
+    "runtime_harness_mode": "live_bounded_command",
+    "runtime_harness_readiness": {
+      "status": "runtime_harness_readiness_pass",
+      "selected_runtime_executable": "MAXINE_GoldenCorpus.HeadlessServerLauncher.exe",
+      "product_evidence_status": "pass"
+    },
+    "runtime_harness_readiness_status": "runtime_harness_readiness_pass",
+    "runtime_executable_candidates": [
+      {
+        "name": "MAXINE_GoldenCorpus.HeadlessServerLauncher.exe",
+        "path": "C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.HeadlessServerLauncher.exe",
+        "exists": true,
+        "runtime_executable_provenance": "engine_profile_bin",
+        "runtime_executable_project_pairing": {
+          "status": "pass",
+          "expected_project": "MAXINE_GoldenCorpus"
+        },
+        "runtime_executable_engine_pairing": {
+          "status": "pass",
+          "expected_profile_bin": "C:/src/o3de/build/windows/bin/profile"
+        }
+      },
+      {
+        "name": "MAXINE_GoldenCorpus.GameLauncher.exe",
+        "path": "C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.GameLauncher.exe",
+        "exists": false,
+        "runtime_executable_provenance": "missing",
+        "runtime_executable_project_pairing": {
+          "status": "missing",
+          "expected_project": "MAXINE_GoldenCorpus"
+        },
+        "runtime_executable_engine_pairing": {
+          "status": "missing",
+          "expected_profile_bin": "C:/src/o3de/build/windows/bin/profile"
+        }
+      },
+      {
+        "name": "MAXINE_GoldenCorpus.ServerLauncher.exe",
+        "path": "C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.ServerLauncher.exe",
+        "exists": true,
+        "runtime_executable_provenance": "engine_profile_bin",
+        "runtime_executable_project_pairing": {
+          "status": "pass",
+          "expected_project": "MAXINE_GoldenCorpus"
+        },
+        "runtime_executable_engine_pairing": {
+          "status": "pass",
+          "expected_profile_bin": "C:/src/o3de/build/windows/bin/profile"
+        }
+      }
+    ],
+    "runtime_executable_selected": "MAXINE_GoldenCorpus.HeadlessServerLauncher.exe",
+    "runtime_executable_path": "C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.HeadlessServerLauncher.exe",
+    "runtime_executable_exists": true,
+    "runtime_executable_provenance": "engine_profile_bin",
+    "runtime_executable_project_pairing": {
+      "status": "pass",
+      "expected_project": "MAXINE_GoldenCorpus"
+    },
+    "runtime_executable_engine_pairing": {
+      "status": "pass",
+      "expected_profile_bin": "C:/src/o3de/build/windows/bin/profile"
+    },
+    "runtime_command_selected": "",
+    "runtime_command_arguments": [],
+    "runtime_command_safety_flags": [
+      "timeout_required",
+      "stdout_stderr_capture_required",
+      "runtime_logs_required",
+      "live_publication_false",
+      "release_packaging_false",
+      "production_level_mutation_false"
+    ],
+    "runtime_command_timeout_seconds": 120,
+    "runtime_command_allows_publication": false,
+    "runtime_command_allows_release_packaging": false,
+    "runtime_command_allows_production_mutation": false,
+    "runtime_command_gate_env": {
+      "status": "pass",
+      "required": [
+        "MAXINE_ENABLE_O3DE_RUNTIME_HARNESS",
+        "MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS"
+      ],
+      "missing": []
+    },
+    "runtime_execution_attempted": false,
+    "runtime_execution_completed": false,
+    "runtime_execution_verified": false,
+    "runtime_execution_status": "runtime_execution_not_attempted",
+    "runtime_exit_code": null,
+    "runtime_timed_out": false,
+    "runtime_timeout_stall": false,
+    "runtime_kill_attempted": false,
+    "runtime_kill_result": {
+      "status": "not_run"
+    },
+    "runtime_stdout_ref": "",
+    "runtime_stderr_ref": "",
+    "runtime_log_refs": [],
+    "runtime_log_scan": {
+      "status": "runtime_execution_not_attempted",
+      "matches": []
+    },
+    "runtime_missing_actor_signal": {
+      "status": "runtime_execution_not_attempted",
+      "matches": []
+    },
+    "runtime_missing_mesh_signal": {
+      "status": "runtime_execution_not_attempted",
+      "matches": []
+    },
+    "runtime_missing_material_signal": {
+      "status": "runtime_execution_not_attempted",
+      "matches": []
+    },
+    "runtime_missing_animation_signal": {
+      "status": "runtime_execution_not_attempted",
+      "matches": []
+    },
+    "runtime_missing_asset_signal": {
+      "status": "runtime_execution_not_attempted",
+      "matches": []
+    },
+    "runtime_load_error_signal": {
+      "status": "runtime_execution_not_attempted",
+      "matches": []
+    },
+    "runtime_harness_blocked_reason": "blocked_by_unpinned_runtime_command",
+    "runtime_harness_unavailable_reason": "",
+    "runtime_harness_unsupported_reason": "",
+    "runtime_harness_candidate_summary": {
+      "candidate_count": 5,
+      "existing_candidate_count": 2,
+      "project_paired_candidate_count": 2,
+      "selected": "MAXINE_GoldenCorpus.HeadlessServerLauncher.exe"
+    },
+    "runtime_harness_proof_is_character_proof": false,
+    "runtime_harness_proof_claimed": true,
+    "runtime_harness_proof_verified": true,
+    "runtime_character_proof_claimed": false,
+    "runtime_character_proof_verified": false,
+    "required_runtime_harness_assertions_passed": [
+      "apb_product_evidence_complete",
+      "runtime_readiness_pass",
+      "runtime_execution_not_attempted_with_typed_blocker",
+      "runtime_character_proof_not_claimed"
+    ],
+    "required_runtime_harness_assertions_failed": [],
+    "runtime_harness_assertion_failures": [],
+    "runtime_harness_assertion_informational": [
+      "runtime_executable_candidate_ready",
+      "runtime_command_not_pinned_yet",
+      "runtime_harness_readiness_is_not_runtime_character_proof"
+    ],
+    "runtime_harness_unavailable_reasons": [],
+    "runtime_harness_unsupported_reasons": [],
+    "runtime_spawnable_proof_surface_result": {
+      "status": "runtime_spawnable_proof_requires_dedicated_runtime_harness"
+    },
+    "product_dependency_proof_result": {
+      "status": "product_dependency_proof_unavailable"
+    },
+    "editor_component_inventory_character_assertion_result": {
+      "status": "unavailable_with_verified_reason",
+      "reason": "direct_procprefab_character_components_not_exposed_in_editor_product_instance"
+    },
+    "direct_product_instantiation_result": {
+      "status": "preserved_from_editor_smoke"
+    },
+    "direct_product_content_assertion_result": {
+      "status": "preserved_from_editor_smoke"
+    },
+    "source_prefab_baseline_result": {
+      "status": "preserved_from_editor_smoke"
+    },
+    "actor_assignment_result": {
+      "status": "preserved_from_editor_smoke"
+    },
+    "live_runtime_execution": false,
+    "live_publication": false,
+    "release_packaging": false,
+    "production_level_mutation": false,
+    "fake_success": false,
+    "cache_heuristic_used": false
   }
 }

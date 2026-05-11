@@ -164,6 +164,7 @@ def main() -> int:
             "direct_procprefab_content_assertions": report.get("direct_procprefab_content_assertions", {"status": "not_run"}),
             "procprefab_character_assertions": report.get("procprefab_character_assertions", {"status": "not_run"}),
             "runtime_spawnable_proof": report.get("runtime_spawnable_proof", {"status": "not_run"}),
+            "runtime_harness": report.get("runtime_harness", {"runtime_harness_status": "not_run"}),
             "property_path_discovery": report.get("property_path_discovery", {}),
             "property_list_summary": report.get("property_list_summary", {}),
             "property_access_summary": report.get("property_access_summary", {}),
