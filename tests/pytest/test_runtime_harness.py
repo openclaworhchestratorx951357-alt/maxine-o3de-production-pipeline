@@ -764,6 +764,110 @@ def test_runtime_harness_validation_rejects_exit_strategy_verified_without_clean
     assert "MXN_RUNTIME_SMOKE_FAIL" in validation.error_codes
 
 
+def test_runtime_harness_exit_fixture_diagnostic_records_project_rebuild_blocker_without_launch(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+
+    def _runner(**_kwargs: object) -> subprocess.CompletedProcess[str]:
+        raise AssertionError("blocked runtime exit fixture diagnostic must not launch a process")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_exit_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+        command_runner=_runner,
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_exit_fixture_status"] == "blocked_by_fixture_requires_project_code_rebuild"
+    assert report["runtime_exit_fixture_available"] is False
+    assert report["runtime_exit_fixture_requires_rebuild"] is True
+    assert report["runtime_exit_fixture_rebuild_status"] == "not_attempted"
+    assert report["runtime_exit_fixture_enabled_for_project"] is False
+    assert report["runtime_exit_fixture_execution_attempted"] is False
+    assert report["runtime_exit_fixture_execution_completed"] is False
+    assert report["runtime_exit_fixture_execution_verified"] is False
+    assert report["runtime_execution_attempted"] is False
+    assert report["runtime_execution_verified"] is False
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_exit_fixture_gate_env"] == [
+        "MAXINE_ENABLE_O3DE_RUNTIME_HARNESS=1",
+        "MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS=1",
+        "MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE=1",
+    ]
+    assert report["runtime_exit_fixture_is_runtime_character_proof"] is False
+    assert report["runtime_exit_fixture_character_proof_claimed"] is False
+    assert report["runtime_exit_fixture_character_proof_verified"] is False
+    assert report["runtime_exit_strategy_result"]["status"] == "preserved_from_pr128"
+    assert report["runtime_quit_variant_matrix_result"]["status"] == "preserved_from_pr127"
+    assert report["runtime_command_pinning_result"]["status"] == "preserved_from_pr125"
+
+
+def test_runtime_harness_validation_rejects_exit_fixture_verified_without_clean_execution() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_exit_fixture_status": "runtime_exit_fixture_verified_clean_exit",
+            "runtime_exit_fixture_available": True,
+            "runtime_exit_fixture_execution_attempted": False,
+            "runtime_exit_fixture_execution_completed": False,
+            "runtime_exit_fixture_execution_verified": True,
+            "runtime_exit_fixture_exit_code_decimal": 3221225477,
+            "runtime_exit_fixture_exit_code_hex": "0xC0000005",
+            "runtime_exit_fixture_exit_classification": "runtime_execution_failed_access_violation_like_exit",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+        }
+    )
+
+    validation = runtime_harness.validate_runtime_harness_report(report, strict=True)
+
+    assert validation.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in validation.error_codes
+
+
+def test_runtime_harness_validation_rejects_exit_fixture_character_proof_claim() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_exit_fixture_is_runtime_character_proof": False,
+            "runtime_exit_fixture_character_proof_claimed": True,
+            "runtime_exit_fixture_character_proof_verified": False,
+            "runtime_character_proof_claimed": True,
+            "runtime_character_proof_verified": False,
+        }
+    )
+
+    validation = runtime_harness.validate_runtime_harness_report(report, strict=True)
+
+    assert validation.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in validation.error_codes
+
+
+def test_runtime_harness_validation_rejects_exit_fixture_shipping_behavior() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_exit_fixture_status": "runtime_exit_fixture_available",
+            "runtime_exit_fixture_available": True,
+            "runtime_exit_fixture_shipping_status": "shipping_behavior",
+        }
+    )
+
+    validation = runtime_harness.validate_runtime_harness_report(report, strict=True)
+
+    assert validation.status == "fail"
+    assert "MXN_PATH_UNSAFE" in validation.error_codes
+
+
 def test_runtime_harness_validation_rejects_safer_variant_verified_without_clean_execution() -> None:
     report = runtime_harness.fixture_runtime_harness_report()
     report.update(

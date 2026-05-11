@@ -406,6 +406,16 @@
         "additionalProperties": true
       }
     },
+    "runtime_exit_fixture": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_exit_fixture_source_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "runtime_command_variant_matrix": {
       "type": "array",
       "items": {

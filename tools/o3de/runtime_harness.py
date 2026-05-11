@@ -97,6 +97,7 @@ def run_runtime_harness(
     pin_runtime_command: bool = False,
     diagnose_runtime_quit_variants: bool = False,
     diagnose_runtime_exit_strategies: bool = False,
+    diagnose_runtime_exit_fixture: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -115,6 +116,7 @@ def run_runtime_harness(
         and not pin_runtime_command
         and not diagnose_runtime_quit_variants
         and not diagnose_runtime_exit_strategies
+        and not diagnose_runtime_exit_fixture
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -138,10 +140,13 @@ def run_runtime_harness(
             and not enable_runtime_harness
             and not diagnose_runtime_quit_variants
             and not diagnose_runtime_exit_strategies
+            and not diagnose_runtime_exit_fixture
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
             if diagnose_runtime_exit_strategies
+            else "runtime_exit_fixture_diagnostic"
+            if diagnose_runtime_exit_fixture
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -211,7 +216,13 @@ def run_runtime_harness(
         )
         return _finalize_report(report)
 
-    if pin_runtime_command and not enable_runtime_harness and not diagnose_runtime_quit_variants and not diagnose_runtime_exit_strategies:
+    if (
+        pin_runtime_command
+        and not enable_runtime_harness
+        and not diagnose_runtime_quit_variants
+        and not diagnose_runtime_exit_strategies
+        and not diagnose_runtime_exit_fixture
+    ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
             report.update(_unpinned_runtime_command_payload(command))
@@ -286,6 +297,13 @@ def run_runtime_harness(
             command_runner=command_runner,
         )
 
+    if diagnose_runtime_exit_fixture:
+        return _run_runtime_exit_fixture_diagnostics(
+            report,
+            command=command,
+            timeout_seconds=timeout_seconds,
+        )
+
     return _run_bounded_runtime_command(
         report,
         command=command,
@@ -358,6 +376,38 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_exit_strategy_verified=true requires verified runtime execution.")
         if not str(report.get("runtime_exit_strategy_selected", "")).strip():
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_exit_strategy_verified=true requires a selected exit strategy.")
+    if report.get("runtime_exit_fixture_execution_verified") is True:
+        if report.get("runtime_exit_fixture_execution_attempted") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_exit_fixture_execution_verified=true requires fixture execution attempt.")
+        if report.get("runtime_exit_fixture_execution_completed") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_exit_fixture_execution_verified=true requires fixture execution completion.")
+        if report.get("runtime_execution_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_exit_fixture_execution_verified=true requires verified runtime execution.")
+        if str(report.get("runtime_exit_fixture_status", "")).strip() != "runtime_exit_fixture_verified_clean_exit":
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_exit_fixture_execution_verified=true requires clean fixture status.")
+        fixture_exit = report.get("runtime_exit_fixture_exit_code_decimal")
+        try:
+            fixture_exit_nonzero = fixture_exit is not None and int(fixture_exit) != 0
+        except (TypeError, ValueError):
+            fixture_exit_nonzero = False
+        if fixture_exit_nonzero:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime exit fixture cannot verify execution with a nonzero exit code.")
+        if report.get("runtime_exit_fixture_timed_out") is True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime exit fixture cannot verify execution after timeout.")
+    if report.get("runtime_exit_fixture_character_proof_claimed") is True and report.get(
+        "runtime_exit_fixture_character_proof_verified"
+    ) is not True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime exit fixture cannot claim character proof without character evidence.")
+    if report.get("runtime_exit_fixture_is_runtime_character_proof") is True and report.get(
+        "runtime_exit_fixture_character_proof_verified"
+    ) is not True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime exit fixture command-envelope proof is not runtime character proof.")
+    if str(report.get("runtime_exit_fixture_shipping_status", "")).strip() in {
+        "shipping_behavior",
+        "shipping",
+        "production_behavior",
+    }:
+        result.add_error(MXN_PATH_UNSAFE, "Runtime exit fixture must not be shipping or production behavior.")
 
     variants = report.get("runtime_command_variant_matrix", [])
     if isinstance(variants, list):
@@ -464,6 +514,10 @@ def print_text_report(report: Mapping[str, Any]) -> None:
         print(f"runtime_exit_strategy_status: {report.get('runtime_exit_strategy_status', '')}")
         print(f"runtime_exit_strategy_selected: {report.get('runtime_exit_strategy_selected', '')}")
         print(f"runtime_exit_strategy_verified: {str(report.get('runtime_exit_strategy_verified', False)).lower()}")
+    if report.get("runtime_exit_fixture_status") not in {None, "", "not_run"}:
+        print(f"runtime_exit_fixture_status: {report.get('runtime_exit_fixture_status', '')}")
+        print(f"runtime_exit_fixture_available: {str(report.get('runtime_exit_fixture_available', False)).lower()}")
+        print(f"runtime_exit_fixture_execution_verified: {str(report.get('runtime_exit_fixture_execution_verified', False)).lower()}")
     print(f"runtime_character_proof_claimed: {str(report.get('runtime_character_proof_claimed', False)).lower()}")
     print(f"runtime_character_proof_verified: {str(report.get('runtime_character_proof_verified', False)).lower()}")
     print(f"live_runtime_execution: {str(report.get('live_runtime_execution', False)).lower()}")
@@ -577,7 +631,59 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_exit_strategy_unsupported_reason": "",
         "runtime_exit_strategy_next_recommendation": "",
         "runtime_original_command_result": {},
+        "runtime_command_pinning_result": {},
         "runtime_quit_variant_matrix_result": {},
+        "runtime_exit_strategy_result": {},
+        "runtime_exit_fixture": {},
+        "runtime_exit_fixture_status": "not_run",
+        "runtime_exit_fixture_available": False,
+        "runtime_exit_fixture_kind": "",
+        "runtime_exit_fixture_scope": "",
+        "runtime_exit_fixture_shipping_status": "",
+        "runtime_exit_fixture_source_discovery_status": "not_run",
+        "runtime_exit_fixture_source_validation": {},
+        "runtime_exit_fixture_source_refs": [],
+        "runtime_exit_fixture_component_or_hook": "",
+        "runtime_exit_fixture_lifecycle_point": "",
+        "runtime_exit_fixture_gate": "",
+        "runtime_exit_fixture_gate_env": [],
+        "runtime_exit_fixture_settings_registry_key": "",
+        "runtime_exit_fixture_command_line_arg": "",
+        "runtime_exit_fixture_wait_ticks": "",
+        "runtime_exit_fixture_command": "",
+        "runtime_exit_fixture_arguments": [],
+        "runtime_exit_fixture_argument_shape": {},
+        "runtime_exit_fixture_safety_profile": {},
+        "runtime_exit_fixture_requires_rebuild": False,
+        "runtime_exit_fixture_rebuild_status": "",
+        "runtime_exit_fixture_enabled_for_project": False,
+        "runtime_exit_fixture_mutates_production": False,
+        "runtime_exit_fixture_uses_production_level": False,
+        "runtime_exit_fixture_uses_temp_level": False,
+        "runtime_exit_fixture_uses_no_level": False,
+        "runtime_exit_fixture_execution_attempted": False,
+        "runtime_exit_fixture_execution_completed": False,
+        "runtime_exit_fixture_execution_verified": False,
+        "runtime_exit_fixture_exit_code_decimal": None,
+        "runtime_exit_fixture_exit_code_hex": "",
+        "runtime_exit_fixture_exit_classification": "runtime_execution_not_attempted",
+        "runtime_exit_fixture_timeout_seconds": 0,
+        "runtime_exit_fixture_timed_out": False,
+        "runtime_exit_fixture_kill_attempted": False,
+        "runtime_exit_fixture_kill_result": {"status": "not_run"},
+        "runtime_exit_fixture_stdout_ref": "",
+        "runtime_exit_fixture_stderr_ref": "",
+        "runtime_exit_fixture_log_refs": [],
+        "runtime_exit_fixture_log_scan": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_exit_fixture_asserts": {"status": "runtime_execution_not_attempted", "count": 0, "sample_lines": []},
+        "runtime_exit_fixture_missing_asset_signals": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_exit_fixture_disqualifying_signals": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_exit_fixture_blocked_reason": "",
+        "runtime_exit_fixture_unavailable_reason": "",
+        "runtime_exit_fixture_unsupported_reason": "",
+        "runtime_exit_fixture_is_runtime_character_proof": False,
+        "runtime_exit_fixture_character_proof_claimed": False,
+        "runtime_exit_fixture_character_proof_verified": False,
         "runtime_log_error_summary": {"status": "runtime_execution_not_attempted"},
         "runtime_stdout_error_summary": {"status": "runtime_execution_not_attempted"},
         "runtime_stderr_error_summary": {"status": "runtime_execution_not_attempted"},
@@ -1069,6 +1175,17 @@ def _run_runtime_exit_strategy_diagnostics(
         return _finalize_report({**report, **_top_level_exit_strategy_failure_payload(attempted[-1], candidates)})
 
     return _finalize_report({**report, **_top_level_exit_strategy_blocked_payload(candidates)})
+
+
+def _run_runtime_exit_fixture_diagnostics(
+    report: Dict[str, Any],
+    *,
+    command: Mapping[str, Any],
+    timeout_seconds: int,
+) -> Dict[str, Any]:
+    report.update(_runtime_command_pin_payload(command, timeout_seconds=timeout_seconds, execution_requested=False))
+    report.update(_top_level_exit_fixture_blocked_payload(timeout_seconds=timeout_seconds))
+    return _finalize_report(report)
 
 
 def _runtime_exit_strategy_candidate_matrix(
@@ -1675,6 +1792,148 @@ def _top_level_exit_strategy_blocked_payload(candidates: Sequence[Mapping[str, A
     }
 
 
+def _runtime_exit_fixture_source_validation() -> Dict[str, Any]:
+    return {
+        "status": "runtime_exit_fixture_source_discovery_pass",
+        "summary": (
+            "O3DE source exposes an after-main-loop lifecycle route through AZ::TickBus and "
+            "AzFramework::ApplicationRequests::ExitMainLoop, and the live MAXINE project has a "
+            "system component Activate hook. This repository does not contain that project Gem "
+            "source, so enabling the hook would require external project code mutation and a code rebuild."
+        ),
+        "safe_lifecycle_surface": "AZ::Component::Activate plus AZ::TickBus::OnTick can request AzFramework::ApplicationRequests::ExitMainLoop after initialization.",
+        "repo_scope_result": "blocked_by_fixture_requires_project_code_rebuild",
+    }
+
+
+def _runtime_exit_fixture_source_refs() -> List[str]:
+    return [
+        "C:/src/o3de/Code/Framework/AzFramework/AzFramework/API/ApplicationAPI.h:85-89",
+        "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Application/Application.h:134-135",
+        "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Application/Application.cpp:572-575",
+        "C:/src/o3de/Code/Framework/AzCore/AzCore/Component/TickBus.h:55-56",
+        "C:/src/o3de/Code/Framework/AzCore/AzCore/Component/TickBus.h:119",
+        "C:/src/o3de/Code/Framework/AzCore/AzCore/Component/TickBus.h:149",
+        "C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus/Gem/Source/MAXINE_GoldenCorpusSystemComponent.cpp:61-63",
+    ]
+
+
+def _top_level_exit_fixture_blocked_payload(*, timeout_seconds: int) -> Dict[str, Any]:
+    source_validation = _runtime_exit_fixture_source_validation()
+    source_refs = _runtime_exit_fixture_source_refs()
+    safety_profile = {
+        "local": True,
+        "bounded_by_timeout": True,
+        "non_publishing": True,
+        "non_packaging": True,
+        "production_level_mutation": False,
+        "uses_production_level": False,
+        "uses_no_level": True,
+        "shipping_behavior": False,
+        "runtime_process_launched": False,
+    }
+    fixture = {
+        "runtime_exit_fixture_status": "blocked_by_fixture_requires_project_code_rebuild",
+        "runtime_exit_fixture_available": False,
+        "runtime_exit_fixture_kind": "project_system_component_tickbus_exit_candidate",
+        "runtime_exit_fixture_scope": "external_project_gem_required_not_repo_scoped",
+        "runtime_exit_fixture_shipping_status": "non_shipping_required_not_implemented",
+        "runtime_exit_fixture_source_discovery_status": "runtime_exit_fixture_source_discovery_pass",
+        "runtime_exit_fixture_source_validation": source_validation,
+        "runtime_exit_fixture_source_refs": source_refs,
+        "runtime_exit_fixture_component_or_hook": "MAXINE_GoldenCorpusSystemComponent",
+        "runtime_exit_fixture_lifecycle_point": "AZ::Component::Activate plus AZ::TickBus::OnTick candidate",
+        "runtime_exit_fixture_gate": "MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE",
+        "runtime_exit_fixture_gate_env": [
+            "MAXINE_ENABLE_O3DE_RUNTIME_HARNESS=1",
+            "MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS=1",
+            "MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE=1",
+        ],
+        "runtime_exit_fixture_settings_registry_key": "/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks",
+        "runtime_exit_fixture_command_line_arg": "",
+        "runtime_exit_fixture_wait_ticks": "not_implemented",
+        "runtime_exit_fixture_command": "",
+        "runtime_exit_fixture_arguments": [],
+        "runtime_exit_fixture_argument_shape": {
+            "fixture_strategy": "project-scoped TickBus exit-after-initialization component",
+            "blocked_reason": "repo does not own the live project Gem source or rebuild output",
+        },
+        "runtime_exit_fixture_safety_profile": safety_profile,
+        "runtime_exit_fixture_requires_rebuild": True,
+        "runtime_exit_fixture_rebuild_status": "not_attempted",
+        "runtime_exit_fixture_enabled_for_project": False,
+        "runtime_exit_fixture_mutates_production": False,
+        "runtime_exit_fixture_uses_production_level": False,
+        "runtime_exit_fixture_uses_temp_level": False,
+        "runtime_exit_fixture_uses_no_level": True,
+        "runtime_exit_fixture_execution_attempted": False,
+        "runtime_exit_fixture_execution_completed": False,
+        "runtime_exit_fixture_execution_verified": False,
+        "runtime_exit_fixture_exit_code_decimal": None,
+        "runtime_exit_fixture_exit_code_hex": "",
+        "runtime_exit_fixture_exit_classification": "runtime_execution_not_attempted",
+        "runtime_exit_fixture_timeout_seconds": int(timeout_seconds),
+        "runtime_exit_fixture_timed_out": False,
+        "runtime_exit_fixture_kill_attempted": False,
+        "runtime_exit_fixture_kill_result": {"status": "not_run"},
+        "runtime_exit_fixture_stdout_ref": "",
+        "runtime_exit_fixture_stderr_ref": "",
+        "runtime_exit_fixture_log_refs": [],
+        "runtime_exit_fixture_log_scan": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_exit_fixture_asserts": {"status": "runtime_execution_not_attempted", "count": 0, "sample_lines": []},
+        "runtime_exit_fixture_missing_asset_signals": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_exit_fixture_disqualifying_signals": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_exit_fixture_blocked_reason": "blocked_by_fixture_requires_project_code_rebuild",
+        "runtime_exit_fixture_unavailable_reason": "blocked_by_missing_runtime_exit_fixture_surface",
+        "runtime_exit_fixture_unsupported_reason": "",
+        "runtime_exit_fixture_is_runtime_character_proof": False,
+        "runtime_exit_fixture_character_proof_claimed": False,
+        "runtime_exit_fixture_character_proof_verified": False,
+    }
+    return {
+        "status": "pass",
+        "runtime_harness_status": "blocked_by_fixture_requires_project_code_rebuild",
+        "runtime_exit_fixture": fixture,
+        **fixture,
+        "runtime_command_pinning_result": _runtime_command_pinning_result(),
+        "runtime_original_command_result": _runtime_original_command_result(),
+        "runtime_quit_variant_matrix_result": _runtime_quit_variant_matrix_result(),
+        "runtime_exit_strategy_result": _runtime_exit_strategy_result(),
+        "runtime_execution_attempted": False,
+        "runtime_execution_completed": False,
+        "runtime_execution_verified": False,
+        "runtime_execution_status": "runtime_execution_not_attempted",
+        "live_runtime_execution": False,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+        "runtime_harness_proof_claimed": True,
+        "runtime_harness_proof_verified": True,
+        "runtime_harness_proof_is_character_proof": False,
+        "required_runtime_harness_assertions_passed": [
+            "runtime_command_pinning_pass",
+            "runtime_exit_strategy_candidate_matrix_preserved",
+            "runtime_exit_fixture_source_discovery_pass",
+            "runtime_exit_fixture_blocker_recorded",
+            "runtime_execution_not_attempted_without_safe_fixture",
+            "runtime_character_proof_not_claimed",
+        ],
+        "required_runtime_harness_assertions_failed": [],
+        "runtime_harness_assertion_informational": [
+            "runtime_exit_fixture_source_validation_is_not_runtime_execution_proof",
+            "runtime_exit_fixture_requires_project_code_rebuild",
+            "runtime_exit_fixture_is_not_runtime_character_proof",
+            "runtime_exit_fixture_diagnostic_did_not_launch_runtime",
+        ],
+        "runtime_harness_unavailable_reasons": [
+            {
+                "assertion": "runtime_exit_fixture",
+                "status": "blocked_by_fixture_requires_project_code_rebuild",
+                "reason": "blocked_by_missing_runtime_exit_fixture_surface",
+            }
+        ],
+    }
+
+
 def _runtime_original_command_result() -> Dict[str, Any]:
     return {
         "status": "preserved_from_pr126",
@@ -1687,6 +1946,17 @@ def _runtime_original_command_result() -> Dict[str, Any]:
         "crash_like": True,
         "runtime_execution_verified": False,
         "runtime_character_proof_claimed": False,
+    }
+
+
+def _runtime_command_pinning_result() -> Dict[str, Any]:
+    return {
+        "status": "preserved_from_pr125",
+        "runtime_command_pinned": True,
+        "runtime_command_pin_verified": True,
+        "command_kind": "headless_console_quit_envelope",
+        "expected_exit_codes": [0],
+        "timeout_seconds": 120,
     }
 
 
@@ -1715,6 +1985,16 @@ def _runtime_quit_variant_matrix_result() -> Dict[str, Any]:
         ],
         "variants_passed": [],
         "selected_safer_variant": "",
+    }
+
+
+def _runtime_exit_strategy_result() -> Dict[str, Any]:
+    return {
+        "status": "preserved_from_pr128",
+        "runtime_exit_strategy_status": "blocked_by_missing_source_validated_runtime_exit_strategy",
+        "runtime_exit_strategy_verified": False,
+        "selected_runtime_exit_strategy": "",
+        "blocked_reason": "headless_launcher_no_level_exit_strategy_unavailable",
     }
 
 
@@ -2824,6 +3104,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--pin-runtime-command", action="store_true")
     parser.add_argument("--diagnose-runtime-quit-variants", action="store_true")
     parser.add_argument("--diagnose-runtime-exit-strategies", action="store_true")
+    parser.add_argument("--diagnose-runtime-exit-fixture", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -2845,6 +3126,7 @@ def main() -> int:
         pin_runtime_command=args.pin_runtime_command,
         diagnose_runtime_quit_variants=args.diagnose_runtime_quit_variants,
         diagnose_runtime_exit_strategies=args.diagnose_runtime_exit_strategies,
+        diagnose_runtime_exit_fixture=args.diagnose_runtime_exit_fixture,
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
         strict_integration=args.strict_integration,

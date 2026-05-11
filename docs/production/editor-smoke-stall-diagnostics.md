@@ -38,4 +38,6 @@ Runtime harness diagnostics are separate from Editor stall diagnostics. A gated 
 
 Runtime quit-variant diagnostics are also separate from Editor stalls. Variant reports may show clean exit, nonzero exit, timeout/kill, AssetManager shutdown asserts, shader serializer errors, or Asset Processor negotiation failures, but those signals belong to `runtime_command_variant_matrix` and `runtime_quit_variant_diagnostic_status`; they do not change Editor smoke progress markers or temp-level policy.
 
+Runtime exit-strategy and exit-fixture diagnostics remain separate as well. Exit-strategy reports explain why externally pinnable launcher exits are accepted or rejected; exit-fixture reports explain whether a harness-side, non-shipping after-initialization exit hook exists. The current fixture status `blocked_by_fixture_requires_project_code_rebuild` is a typed runtime-harness blocker, not an Editor stall and not runtime character evidence.
+
 Runtime exit-strategy diagnostics add a further non-Editor layer. They source-classify candidate exit mechanisms in `runtime_exit_strategy_candidate_matrix` and may stop with `blocked_by_missing_source_validated_runtime_exit_strategy` without launching runtime when no bounded no-production-level exit path is validated. That blocker is not an Editor stall and does not weaken the existing temp-level-only smoke contract.
