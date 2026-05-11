@@ -20,3 +20,5 @@ The component also requires Settings Registry keys before it connects to `AZ::Ti
 - `/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks=<positive integer>`
 
 Source readiness is not runtime execution proof. Rebuild readiness is not runtime execution proof. A future clean fixture exit can prove only bounded runtime command-envelope execution, not runtime character proof.
+
+The Gem is intended to be registered as an external subdirectory for private harness runs only. The root `CMakeLists.txt` delegates to `Code/CMakeLists.txt` so O3DE CMake can discover the Gem after project-scoped external-subdirectory registration. Registration, enablement, and rebuild require the runtime harness project-mutation and rebuild gates; build outputs and runtime binaries must not be committed.

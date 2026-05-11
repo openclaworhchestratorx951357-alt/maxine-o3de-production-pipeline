@@ -41,6 +41,7 @@ PROJECT_NAME = "MAXINE_GoldenCorpus"
 RUNTIME_EXIT_FIXTURE_GEM_NAME = "MaxineRuntimeExitFixture"
 RUNTIME_EXIT_FIXTURE_SOURCE_PATH = REPO_ROOT / "o3de" / "gems" / RUNTIME_EXIT_FIXTURE_GEM_NAME
 RUNTIME_EXIT_FIXTURE_GEM_JSON = RUNTIME_EXIT_FIXTURE_SOURCE_PATH / "gem.json"
+RUNTIME_EXIT_FIXTURE_ROOT_CMAKE = RUNTIME_EXIT_FIXTURE_SOURCE_PATH / "CMakeLists.txt"
 RUNTIME_EXIT_FIXTURE_CMAKE = RUNTIME_EXIT_FIXTURE_SOURCE_PATH / "Code" / "CMakeLists.txt"
 RUNTIME_EXIT_FIXTURE_COMPONENT_HEADER = (
     RUNTIME_EXIT_FIXTURE_SOURCE_PATH
@@ -132,6 +133,10 @@ def run_runtime_harness(
     diagnose_runtime_exit_fixture: bool = False,
     check_runtime_exit_fixture_source: bool = False,
     check_runtime_exit_fixture_rebuild_gate: bool = False,
+    register_runtime_exit_fixture: bool = False,
+    enable_runtime_exit_fixture: bool = False,
+    rebuild_runtime_exit_fixture: bool = False,
+    enable_runtime_exit_fixture_command: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -153,6 +158,10 @@ def run_runtime_harness(
         and not diagnose_runtime_exit_fixture
         and not check_runtime_exit_fixture_source
         and not check_runtime_exit_fixture_rebuild_gate
+        and not register_runtime_exit_fixture
+        and not enable_runtime_exit_fixture
+        and not rebuild_runtime_exit_fixture
+        and not enable_runtime_exit_fixture_command
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -179,6 +188,10 @@ def run_runtime_harness(
             and not diagnose_runtime_exit_fixture
             and not check_runtime_exit_fixture_source
             and not check_runtime_exit_fixture_rebuild_gate
+            and not register_runtime_exit_fixture
+            and not enable_runtime_exit_fixture
+            and not rebuild_runtime_exit_fixture
+            and not enable_runtime_exit_fixture_command
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -189,6 +202,14 @@ def run_runtime_harness(
             if check_runtime_exit_fixture_source
             else "runtime_exit_fixture_rebuild_gate"
             if check_runtime_exit_fixture_rebuild_gate
+            else "runtime_exit_fixture_registration"
+            if register_runtime_exit_fixture
+            else "runtime_exit_fixture_enablement"
+            if enable_runtime_exit_fixture
+            else "runtime_exit_fixture_rebuild"
+            if rebuild_runtime_exit_fixture
+            else "runtime_exit_fixture_command"
+            if enable_runtime_exit_fixture_command
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -266,6 +287,10 @@ def run_runtime_harness(
         and not diagnose_runtime_exit_fixture
         and not check_runtime_exit_fixture_source
         and not check_runtime_exit_fixture_rebuild_gate
+        and not register_runtime_exit_fixture
+        and not enable_runtime_exit_fixture
+        and not rebuild_runtime_exit_fixture
+        and not enable_runtime_exit_fixture_command
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -311,6 +336,39 @@ def run_runtime_harness(
             timeout_seconds=timeout_seconds,
         )
 
+    if register_runtime_exit_fixture:
+        return _run_runtime_exit_fixture_registration(
+            report,
+            engine_root=selected_engine,
+            project=selected_project,
+            env=env_map,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+            command_runner=command_runner,
+        )
+
+    if enable_runtime_exit_fixture:
+        return _run_runtime_exit_fixture_enablement(
+            report,
+            engine_root=selected_engine,
+            project=selected_project,
+            env=env_map,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+            command_runner=command_runner,
+        )
+
+    if rebuild_runtime_exit_fixture:
+        return _run_runtime_exit_fixture_rebuild(
+            report,
+            engine_root=selected_engine,
+            project=selected_project,
+            env=env_map,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+            command_runner=command_runner,
+        )
+
     gate_status = _runtime_gate_status(env_map)
     if gate_status["status"] != "pass":
         report.update(
@@ -326,6 +384,15 @@ def run_runtime_harness(
             }
         )
         return _finalize_report(report)
+
+    if enable_runtime_exit_fixture_command:
+        return _run_runtime_exit_fixture_command(
+            report,
+            env=env_map,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+            command_runner=command_runner,
+        )
 
     command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
     if not command["selected"]:
@@ -599,6 +666,15 @@ def print_text_report(report: Mapping[str, Any]) -> None:
     if report.get("runtime_exit_fixture_rebuild_gate_status") not in {None, "", "not_run"}:
         print(f"runtime_exit_fixture_rebuild_gate_status: {report.get('runtime_exit_fixture_rebuild_gate_status', '')}")
         print(f"runtime_exit_fixture_rebuild_attempted: {str(report.get('runtime_exit_fixture_rebuild_attempted', False)).lower()}")
+    if report.get("runtime_exit_fixture_registration_status") not in {None, "", "not_run"}:
+        print(f"runtime_exit_fixture_registration_status: {report.get('runtime_exit_fixture_registration_status', '')}")
+        print(f"runtime_exit_fixture_registration_attempted: {str(report.get('runtime_exit_fixture_registration_attempted', False)).lower()}")
+    if report.get("runtime_exit_fixture_enablement_status") not in {None, "", "not_run"}:
+        print(f"runtime_exit_fixture_enablement_status: {report.get('runtime_exit_fixture_enablement_status', '')}")
+        print(f"runtime_exit_fixture_enablement_attempted: {str(report.get('runtime_exit_fixture_enablement_attempted', False)).lower()}")
+    if report.get("runtime_exit_fixture_rebuild_status") not in {None, "", "not_run", "not_attempted"}:
+        print(f"runtime_exit_fixture_rebuild_status: {report.get('runtime_exit_fixture_rebuild_status', '')}")
+        print(f"runtime_exit_fixture_rebuild_exit_code: {report.get('runtime_exit_fixture_rebuild_exit_code', '')}")
     print(f"runtime_character_proof_claimed: {str(report.get('runtime_character_proof_claimed', False)).lower()}")
     print(f"runtime_character_proof_verified: {str(report.get('runtime_character_proof_verified', False)).lower()}")
     print(f"live_runtime_execution: {str(report.get('live_runtime_execution', False)).lower()}")
@@ -752,15 +828,39 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_exit_fixture_rebuild_target": "",
         "runtime_exit_fixture_rebuild_attempted": False,
         "runtime_exit_fixture_rebuild_result": "",
+        "runtime_exit_fixture_rebuild_exit_code": None,
+        "runtime_exit_fixture_rebuild_stdout_ref": "",
+        "runtime_exit_fixture_rebuild_stderr_ref": "",
         "runtime_exit_fixture_rebuild_artifact_refs": [],
         "runtime_exit_fixture_rebuild_status": "",
         "runtime_exit_fixture_enabled_for_project": False,
         "runtime_exit_fixture_registration_status": "not_run",
+        "runtime_exit_fixture_registration_attempted": False,
+        "runtime_exit_fixture_registration_command": [],
+        "runtime_exit_fixture_registration_result": "",
+        "runtime_exit_fixture_registration_stdout_ref": "",
+        "runtime_exit_fixture_registration_stderr_ref": "",
+        "runtime_exit_fixture_registration_changes": [],
+        "runtime_exit_fixture_registration_reversible": False,
+        "runtime_exit_fixture_registration_rollback": "",
         "runtime_exit_fixture_enablement_status": "not_run",
+        "runtime_exit_fixture_enablement_attempted": False,
+        "runtime_exit_fixture_enablement_command": [],
+        "runtime_exit_fixture_enablement_result": "",
+        "runtime_exit_fixture_enablement_stdout_ref": "",
+        "runtime_exit_fixture_enablement_stderr_ref": "",
+        "runtime_exit_fixture_enablement_changes": [],
+        "runtime_exit_fixture_enablement_reversible": False,
+        "runtime_exit_fixture_enablement_rollback": "",
         "runtime_exit_fixture_requires_project_mutation": False,
         "runtime_exit_fixture_project_mutation_status": "not_run",
         "runtime_exit_fixture_project_mutation_attempted": False,
+        "runtime_exit_fixture_project_mutation_files": [],
+        "runtime_exit_fixture_project_mutation_before_refs": [],
+        "runtime_exit_fixture_project_mutation_after_refs": [],
+        "runtime_exit_fixture_project_mutation_diff_summary": [],
         "runtime_exit_fixture_project_mutation_reversible": False,
+        "runtime_exit_fixture_project_mutation_rollback": "",
         "runtime_exit_fixture_project_mutation_gate_env": [],
         "runtime_exit_fixture_enabled_by_default": False,
         "runtime_exit_fixture_is_shipping_behavior": False,
@@ -785,6 +885,14 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_exit_fixture_asserts": {"status": "runtime_execution_not_attempted", "count": 0, "sample_lines": []},
         "runtime_exit_fixture_missing_asset_signals": {"status": "runtime_execution_not_attempted", "matches": []},
         "runtime_exit_fixture_disqualifying_signals": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_exit_fixture_marker_observed": False,
+        "runtime_exit_fixture_runtime_command": [],
+        "runtime_exit_fixture_runtime_command_status": "not_run",
+        "runtime_exit_fixture_runtime_command_arguments": [],
+        "runtime_exit_fixture_runtime_command_uses_console_command_file_quit": False,
+        "runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit": False,
+        "runtime_exit_fixture_level_load_observed": False,
+        "runtime_exit_fixture_unexpected_level_load": False,
         "runtime_exit_fixture_blocked_reason": "",
         "runtime_exit_fixture_unavailable_reason": "",
         "runtime_exit_fixture_unsupported_reason": "",
@@ -1320,6 +1428,605 @@ def _run_runtime_exit_fixture_rebuild_gate_check(
     )
     report.update(source_payload)
     report.update(rebuild_payload)
+    return _finalize_report(report)
+
+
+def _run_runtime_exit_fixture_registration(
+    report: Dict[str, Any],
+    *,
+    engine_root: Path | None,
+    project: Path | None,
+    env: Mapping[str, str],
+    timeout_seconds: int,
+    artifact_dir: Path,
+    command_runner: Callable[..., subprocess.CompletedProcess[str]] | None,
+) -> Dict[str, Any]:
+    source_payload = _runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds)
+    report.update(source_payload)
+    report["runtime_harness_mode"] = "runtime_exit_fixture_registration"
+    if source_payload.get("status") != "pass":
+        return _finalize_report(report)
+
+    command = _runtime_exit_fixture_register_command(engine_root=engine_root, project=project)
+    report.update(_runtime_exit_fixture_registration_common_payload(project=project, command=command))
+    if _runtime_exit_fixture_registered_for_project(project):
+        report.update(
+            {
+                "status": "pass",
+                "runtime_harness_status": "runtime_exit_fixture_registration_already_registered",
+                "runtime_exit_fixture_registration_status": "runtime_exit_fixture_registration_already_registered",
+                "runtime_exit_fixture_registration_result": "already_registered",
+                "runtime_exit_fixture_registration_reversible": True,
+                "runtime_exit_fixture_project_mutation_status": "project_mutation_not_required",
+                "runtime_exit_fixture_project_mutation_attempted": False,
+                "runtime_exit_fixture_project_mutation_reversible": True,
+                "runtime_exit_fixture_project_mutation_rollback": _runtime_exit_fixture_registration_rollback(project),
+                "runtime_execution_status": "runtime_execution_not_attempted",
+                "runtime_execution_attempted": False,
+                "runtime_execution_completed": False,
+                "runtime_execution_verified": False,
+                "live_runtime_execution": False,
+            }
+        )
+        return _finalize_report(report)
+
+    if not _gate_enabled(env, "MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION"):
+        report.update(
+            {
+                "status": "fail",
+                "runtime_harness_status": "blocked_by_fixture_registration_missing_gate",
+                "runtime_exit_fixture_registration_status": "blocked_by_fixture_registration_missing_gate",
+                "runtime_exit_fixture_registration_result": "blocked_by_fixture_registration_missing_gate",
+                "runtime_exit_fixture_registration_attempted": False,
+                "runtime_exit_fixture_project_mutation_status": "blocked_by_fixture_registration_missing_gate",
+                "runtime_exit_fixture_project_mutation_attempted": False,
+                "runtime_exit_fixture_blocked_reason": "blocked_by_fixture_registration_missing_gate",
+                "runtime_harness_blocked_reason": "blocked_by_fixture_registration_missing_gate",
+                "required_runtime_harness_assertions_failed": ["runtime_exit_fixture_registration_gate"],
+                "runtime_execution_status": "runtime_execution_not_attempted",
+                "runtime_execution_attempted": False,
+                "runtime_execution_completed": False,
+                "runtime_execution_verified": False,
+                "live_runtime_execution": False,
+            }
+        )
+        return _finalize_report(report)
+
+    before = _runtime_exit_fixture_project_state(project)
+    proc, timed_out, stdout_ref, stderr_ref = _run_command_capture(
+        command,
+        env=env,
+        timeout_seconds=timeout_seconds,
+        artifact_dir=artifact_dir,
+        stem="runtime_exit_fixture_registration",
+        command_runner=command_runner,
+    )
+    after = _runtime_exit_fixture_project_state(project)
+    diff_summary = _runtime_exit_fixture_project_diff(before, after)
+    registered = _runtime_exit_fixture_registered_for_project(project)
+    passed = proc.returncode == 0 and not timed_out and registered
+    report.update(
+        {
+            "status": "pass" if passed else "fail",
+            "runtime_harness_status": "runtime_exit_fixture_registration_pass"
+            if passed
+            else "blocked_by_fixture_registration_failed",
+            "runtime_exit_fixture_registration_status": "runtime_exit_fixture_registration_pass"
+            if passed
+            else "runtime_exit_fixture_registration_failed",
+            "runtime_exit_fixture_registration_attempted": True,
+            "runtime_exit_fixture_registration_result": "pass" if passed else "fail",
+            "runtime_exit_fixture_registration_stdout_ref": stdout_ref,
+            "runtime_exit_fixture_registration_stderr_ref": stderr_ref,
+            "runtime_exit_fixture_registration_changes": diff_summary,
+            "runtime_exit_fixture_registration_reversible": True,
+            "runtime_exit_fixture_registration_rollback": _runtime_exit_fixture_registration_rollback(project),
+            "runtime_exit_fixture_project_mutation_status": "runtime_exit_fixture_project_mutation_gate_pass",
+            "runtime_exit_fixture_project_mutation_attempted": True,
+            "runtime_exit_fixture_project_mutation_files": _runtime_exit_fixture_project_files(project),
+            "runtime_exit_fixture_project_mutation_before_refs": before.get("refs", []),
+            "runtime_exit_fixture_project_mutation_after_refs": after.get("refs", []),
+            "runtime_exit_fixture_project_mutation_diff_summary": diff_summary,
+            "runtime_exit_fixture_project_mutation_reversible": True,
+            "runtime_exit_fixture_project_mutation_rollback": _runtime_exit_fixture_registration_rollback(project),
+            "runtime_exit_fixture_enabled_for_project": _runtime_exit_fixture_enabled_for_project(project),
+            "runtime_execution_status": "runtime_execution_not_attempted",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "live_runtime_execution": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_exit_fixture_source_ready",
+                "runtime_exit_fixture_registration_gate_present",
+                "runtime_exit_fixture_registration_command_completed",
+                "runtime_exit_fixture_project_mutation_reversible",
+                "runtime_execution_not_attempted_in_registration_mode",
+                "runtime_character_proof_not_claimed",
+            ]
+            if passed
+            else [],
+            "required_runtime_harness_assertions_failed": [] if passed else ["runtime_exit_fixture_registration"],
+        }
+    )
+    return _finalize_report(report)
+
+
+def _run_runtime_exit_fixture_enablement(
+    report: Dict[str, Any],
+    *,
+    engine_root: Path | None,
+    project: Path | None,
+    env: Mapping[str, str],
+    timeout_seconds: int,
+    artifact_dir: Path,
+    command_runner: Callable[..., subprocess.CompletedProcess[str]] | None,
+) -> Dict[str, Any]:
+    source_payload = _runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds)
+    report.update(source_payload)
+    report["runtime_harness_mode"] = "runtime_exit_fixture_enablement"
+    if source_payload.get("status") != "pass":
+        return _finalize_report(report)
+
+    command = _runtime_exit_fixture_enable_command(engine_root=engine_root, project=project)
+    report.update(_runtime_exit_fixture_enablement_common_payload(project=project, command=command))
+    if _runtime_exit_fixture_enabled_for_project(project):
+        report.update(
+            {
+                "status": "pass",
+                "runtime_harness_status": "runtime_exit_fixture_already_enabled_for_project",
+                "runtime_exit_fixture_enablement_status": "runtime_exit_fixture_already_enabled_for_project",
+                "runtime_exit_fixture_enablement_result": "already_enabled",
+                "runtime_exit_fixture_enablement_reversible": True,
+                "runtime_exit_fixture_project_mutation_status": "project_mutation_not_required",
+                "runtime_exit_fixture_project_mutation_attempted": False,
+                "runtime_exit_fixture_project_mutation_reversible": True,
+                "runtime_exit_fixture_project_mutation_rollback": _runtime_exit_fixture_enablement_rollback(project),
+                "runtime_exit_fixture_enabled_for_project": True,
+                "runtime_execution_status": "runtime_execution_not_attempted",
+                "runtime_execution_attempted": False,
+                "runtime_execution_completed": False,
+                "runtime_execution_verified": False,
+                "live_runtime_execution": False,
+            }
+        )
+        return _finalize_report(report)
+
+    if not _gate_enabled(env, "MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION"):
+        report.update(
+            {
+                "status": "fail",
+                "runtime_harness_status": "blocked_by_fixture_enablement_missing_gate",
+                "runtime_exit_fixture_enablement_status": "blocked_by_fixture_enablement_missing_gate",
+                "runtime_exit_fixture_enablement_result": "blocked_by_fixture_enablement_missing_gate",
+                "runtime_exit_fixture_enablement_attempted": False,
+                "runtime_exit_fixture_project_mutation_status": "blocked_by_fixture_enablement_missing_gate",
+                "runtime_exit_fixture_project_mutation_attempted": False,
+                "runtime_exit_fixture_blocked_reason": "blocked_by_fixture_enablement_missing_gate",
+                "runtime_harness_blocked_reason": "blocked_by_fixture_enablement_missing_gate",
+                "required_runtime_harness_assertions_failed": ["runtime_exit_fixture_enablement_gate"],
+                "runtime_execution_status": "runtime_execution_not_attempted",
+                "runtime_execution_attempted": False,
+                "runtime_execution_completed": False,
+                "runtime_execution_verified": False,
+                "live_runtime_execution": False,
+            }
+        )
+        return _finalize_report(report)
+
+    before = _runtime_exit_fixture_project_state(project)
+    proc, timed_out, stdout_ref, stderr_ref = _run_command_capture(
+        command,
+        env=env,
+        timeout_seconds=timeout_seconds,
+        artifact_dir=artifact_dir,
+        stem="runtime_exit_fixture_enablement",
+        command_runner=command_runner,
+    )
+    after = _runtime_exit_fixture_project_state(project)
+    diff_summary = _runtime_exit_fixture_project_diff(before, after)
+    enabled = _runtime_exit_fixture_enabled_for_project(project)
+    passed = proc.returncode == 0 and not timed_out and enabled
+    report.update(
+        {
+            "status": "pass" if passed else "fail",
+            "runtime_harness_status": "runtime_exit_fixture_enablement_pass"
+            if passed
+            else "blocked_by_fixture_enablement_failed",
+            "runtime_exit_fixture_enablement_status": "runtime_exit_fixture_enablement_pass"
+            if passed
+            else "runtime_exit_fixture_enablement_failed",
+            "runtime_exit_fixture_enablement_attempted": True,
+            "runtime_exit_fixture_enablement_result": "pass" if passed else "fail",
+            "runtime_exit_fixture_enablement_stdout_ref": stdout_ref,
+            "runtime_exit_fixture_enablement_stderr_ref": stderr_ref,
+            "runtime_exit_fixture_enablement_changes": diff_summary,
+            "runtime_exit_fixture_enablement_reversible": True,
+            "runtime_exit_fixture_enablement_rollback": _runtime_exit_fixture_enablement_rollback(project),
+            "runtime_exit_fixture_project_mutation_status": "runtime_exit_fixture_project_mutation_gate_pass",
+            "runtime_exit_fixture_project_mutation_attempted": True,
+            "runtime_exit_fixture_project_mutation_files": _runtime_exit_fixture_project_files(project),
+            "runtime_exit_fixture_project_mutation_before_refs": before.get("refs", []),
+            "runtime_exit_fixture_project_mutation_after_refs": after.get("refs", []),
+            "runtime_exit_fixture_project_mutation_diff_summary": diff_summary,
+            "runtime_exit_fixture_project_mutation_reversible": True,
+            "runtime_exit_fixture_project_mutation_rollback": _runtime_exit_fixture_enablement_rollback(project),
+            "runtime_exit_fixture_enabled_for_project": enabled,
+            "runtime_execution_status": "runtime_execution_not_attempted",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "live_runtime_execution": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_exit_fixture_source_ready",
+                "runtime_exit_fixture_enablement_gate_present",
+                "runtime_exit_fixture_enablement_command_completed",
+                "runtime_exit_fixture_project_mutation_reversible",
+                "runtime_execution_not_attempted_in_enablement_mode",
+                "runtime_character_proof_not_claimed",
+            ]
+            if passed
+            else [],
+            "required_runtime_harness_assertions_failed": [] if passed else ["runtime_exit_fixture_enablement"],
+        }
+    )
+    return _finalize_report(report)
+
+
+def _run_runtime_exit_fixture_rebuild(
+    report: Dict[str, Any],
+    *,
+    engine_root: Path | None,
+    project: Path | None,
+    env: Mapping[str, str],
+    timeout_seconds: int,
+    artifact_dir: Path,
+    command_runner: Callable[..., subprocess.CompletedProcess[str]] | None,
+) -> Dict[str, Any]:
+    source_payload = _runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds)
+    report.update(source_payload)
+    report["runtime_harness_mode"] = "runtime_exit_fixture_rebuild"
+    if source_payload.get("status") != "pass":
+        return _finalize_report(report)
+
+    rebuild_command = _runtime_exit_fixture_rebuild_command(engine_root=engine_root, project=project)
+    report.update(
+        {
+            "runtime_exit_fixture_rebuild_command": rebuild_command,
+            "runtime_exit_fixture_rebuild_target": _runtime_exit_fixture_rebuild_target(project),
+            "runtime_exit_fixture_requires_rebuild": True,
+            "runtime_exit_fixture_rebuild_gate_status": "runtime_exit_fixture_rebuild_gate_pass"
+            if _gate_enabled(env, "MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD")
+            else "blocked_by_fixture_rebuild_missing_gate",
+            "runtime_exit_fixture_enabled_for_project": _runtime_exit_fixture_enabled_for_project(project),
+        }
+    )
+    if not _runtime_exit_fixture_enabled_for_project(project):
+        report.update(
+            {
+                "status": "fail",
+                "runtime_harness_status": "blocked_by_fixture_not_enabled_for_project",
+                "runtime_exit_fixture_rebuild_status": "blocked_by_fixture_not_enabled_for_project",
+                "runtime_exit_fixture_rebuild_result": "blocked_by_fixture_not_enabled_for_project",
+                "runtime_exit_fixture_blocked_reason": "blocked_by_fixture_not_enabled_for_project",
+                "runtime_harness_blocked_reason": "blocked_by_fixture_not_enabled_for_project",
+                "runtime_execution_status": "runtime_execution_not_attempted",
+                "runtime_execution_attempted": False,
+                "runtime_execution_completed": False,
+                "runtime_execution_verified": False,
+                "live_runtime_execution": False,
+                "required_runtime_harness_assertions_failed": ["runtime_exit_fixture_enablement"],
+            }
+        )
+        return _finalize_report(report)
+
+    if not _gate_enabled(env, "MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD"):
+        report.update(
+            {
+                "status": "fail",
+                "runtime_harness_status": "blocked_by_fixture_rebuild_missing_gate",
+                "runtime_exit_fixture_rebuild_status": "blocked_by_fixture_rebuild_missing_gate",
+                "runtime_exit_fixture_rebuild_result": "blocked_by_fixture_rebuild_missing_gate",
+                "runtime_exit_fixture_rebuild_attempted": False,
+                "runtime_exit_fixture_blocked_reason": "blocked_by_fixture_rebuild_missing_gate",
+                "runtime_harness_blocked_reason": "blocked_by_fixture_rebuild_missing_gate",
+                "runtime_execution_status": "runtime_execution_not_attempted",
+                "runtime_execution_attempted": False,
+                "runtime_execution_completed": False,
+                "runtime_execution_verified": False,
+                "live_runtime_execution": False,
+                "required_runtime_harness_assertions_failed": ["runtime_exit_fixture_rebuild_gate"],
+            }
+        )
+        return _finalize_report(report)
+
+    proc, timed_out, stdout_ref, stderr_ref = _run_command_capture(
+        rebuild_command,
+        env=env,
+        timeout_seconds=timeout_seconds,
+        artifact_dir=artifact_dir,
+        stem="runtime_exit_fixture_rebuild",
+        command_runner=command_runner,
+    )
+    passed = proc.returncode == 0 and not timed_out
+    report.update(
+        {
+            "status": "pass" if passed else "fail",
+            "runtime_harness_status": "runtime_exit_fixture_rebuild_pass" if passed else "blocked_by_fixture_rebuild_failed",
+            "runtime_exit_fixture_rebuild_status": "runtime_exit_fixture_rebuild_pass"
+            if passed
+            else "runtime_exit_fixture_rebuild_failed",
+            "runtime_exit_fixture_rebuild_attempted": True,
+            "runtime_exit_fixture_rebuild_result": "runtime_exit_fixture_rebuild_pass"
+            if passed
+            else "runtime_exit_fixture_rebuild_failed",
+            "runtime_exit_fixture_rebuild_exit_code": proc.returncode,
+            "runtime_exit_fixture_rebuild_stdout_ref": stdout_ref,
+            "runtime_exit_fixture_rebuild_stderr_ref": stderr_ref,
+            "runtime_exit_fixture_rebuild_artifact_refs": [str(report.get("runtime_executable_path", ""))]
+            if report.get("runtime_executable_path")
+            else [],
+            "runtime_execution_status": "runtime_execution_not_attempted",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "live_runtime_execution": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_exit_fixture_source_ready",
+                "runtime_exit_fixture_enabled_for_project",
+                "runtime_exit_fixture_rebuild_gate_present",
+                "runtime_exit_fixture_rebuild_pass",
+                "runtime_execution_not_attempted_in_rebuild_mode",
+                "runtime_character_proof_not_claimed",
+            ]
+            if passed
+            else [],
+            "required_runtime_harness_assertions_failed": [] if passed else ["runtime_exit_fixture_rebuild"],
+        }
+    )
+    return _finalize_report(report)
+
+
+def _run_runtime_exit_fixture_command(
+    report: Dict[str, Any],
+    *,
+    env: Mapping[str, str],
+    timeout_seconds: int,
+    artifact_dir: Path,
+    command_runner: Callable[..., subprocess.CompletedProcess[str]] | None,
+) -> Dict[str, Any]:
+    report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
+    report["runtime_harness_mode"] = "runtime_exit_fixture_command"
+    fixture_gate = _runtime_exit_fixture_gate_status(env)
+    report["runtime_exit_fixture_runtime_command_status"] = fixture_gate["status"]
+    if fixture_gate["status"] != "pass":
+        report.update(
+            {
+                "status": "fail",
+                "runtime_harness_status": "blocked_by_fixture_runtime_gate_missing",
+                "runtime_exit_fixture_status": "blocked_by_fixture_runtime_gate_missing",
+                "runtime_exit_fixture_blocked_reason": "blocked_by_fixture_runtime_gate_missing",
+                "runtime_harness_blocked_reason": "blocked_by_fixture_runtime_gate_missing",
+                "runtime_execution_status": "runtime_execution_not_attempted",
+                "runtime_execution_attempted": False,
+                "runtime_execution_completed": False,
+                "runtime_execution_verified": False,
+                "runtime_exit_fixture_execution_attempted": False,
+                "runtime_exit_fixture_execution_completed": False,
+                "runtime_exit_fixture_execution_verified": False,
+                "live_runtime_execution": False,
+                "required_runtime_harness_assertions_failed": ["runtime_exit_fixture_runtime_gate"],
+            }
+        )
+        return _finalize_report(report)
+
+    project = _runtime_project_path(report)
+    if not _runtime_exit_fixture_enabled_for_project(project):
+        report.update(
+            {
+                "status": "fail",
+                "runtime_harness_status": "blocked_by_fixture_not_enabled_for_project",
+                "runtime_exit_fixture_status": "blocked_by_fixture_not_enabled_for_project",
+                "runtime_exit_fixture_blocked_reason": "blocked_by_fixture_not_enabled_for_project",
+                "runtime_harness_blocked_reason": "blocked_by_fixture_not_enabled_for_project",
+                "runtime_exit_fixture_enabled_for_project": False,
+                "runtime_execution_status": "runtime_execution_not_attempted",
+                "runtime_execution_attempted": False,
+                "runtime_execution_completed": False,
+                "runtime_execution_verified": False,
+                "runtime_exit_fixture_execution_attempted": False,
+                "runtime_exit_fixture_execution_completed": False,
+                "runtime_exit_fixture_execution_verified": False,
+                "live_runtime_execution": False,
+                "required_runtime_harness_assertions_failed": ["runtime_exit_fixture_enablement"],
+            }
+        )
+        return _finalize_report(report)
+
+    command = _select_runtime_exit_fixture_command(report, timeout_seconds=timeout_seconds)
+    if not command.get("selected"):
+        report.update(_unpinned_runtime_command_payload(command))
+        report["runtime_exit_fixture_status"] = command.get("blocked_reason", "blocked_by_missing_runtime_readiness")
+        return _finalize_report(report)
+
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    stdout_path = artifact_dir / "runtime_exit_fixture_stdout.txt"
+    stderr_path = artifact_dir / "runtime_exit_fixture_stderr.txt"
+    report.update(_runtime_command_pin_payload(command, timeout_seconds=timeout_seconds, execution_requested=True))
+    report.update(
+        {
+            "runtime_exit_fixture_available": True,
+            "runtime_exit_fixture_enabled_for_project": True,
+            "runtime_exit_fixture_runtime_command": list(command.get("argv", [])),
+            "runtime_exit_fixture_runtime_command_arguments": list(command.get("argv", []))[1:],
+            "runtime_exit_fixture_runtime_command_status": "runtime_exit_fixture_runtime_command_pinned",
+            "runtime_exit_fixture_runtime_command_uses_console_command_file_quit": False,
+            "runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit": True,
+            "runtime_exit_fixture_command": str(command.get("argv", [""])[0]),
+            "runtime_exit_fixture_arguments": list(command.get("argv", []))[1:],
+            "runtime_exit_fixture_argument_shape": command.get("argument_shape", {}),
+            "runtime_exit_fixture_safety_profile": command.get("safety_profile", {}),
+            "runtime_exit_fixture_execution_attempted": True,
+            "runtime_execution_attempted": True,
+            "live_runtime_execution": True,
+            "runtime_stdout_ref": _repo_relative(stdout_path),
+            "runtime_stderr_ref": _repo_relative(stderr_path),
+            "runtime_command_stdout_ref": _repo_relative(stdout_path),
+            "runtime_command_stderr_ref": _repo_relative(stderr_path),
+            "runtime_exit_fixture_stdout_ref": _repo_relative(stdout_path),
+            "runtime_exit_fixture_stderr_ref": _repo_relative(stderr_path),
+        }
+    )
+    timed_out = False
+    try:
+        if command_runner is not None:
+            proc = command_runner(
+                argv=list(command.get("argv", [])),
+                cwd=str(REPO_ROOT),
+                env=dict(env),
+                timeout_seconds=timeout_seconds,
+            )
+        else:
+            proc = subprocess.run(
+                list(command.get("argv", [])),
+                cwd=str(REPO_ROOT),
+                env=dict(env),
+                text=True,
+                capture_output=True,
+                timeout=timeout_seconds,
+            )
+    except subprocess.TimeoutExpired as exc:
+        timed_out = True
+        proc = subprocess.CompletedProcess(
+            list(command.get("argv", [])),
+            None,
+            stdout=exc.output or "",
+            stderr=exc.stderr or "",
+        )
+
+    stdout_text = str(proc.stdout or "")
+    stderr_text = str(proc.stderr or "")
+    stdout_path.write_text(stdout_text, encoding="utf-8")
+    stderr_path.write_text(stderr_text, encoding="utf-8")
+    log_refs = _runtime_log_refs(project)
+    log_text = _read_runtime_logs(log_refs)
+    combined_text = "\n".join([stdout_text, stderr_text, log_text])
+    scan = _scan_runtime_output(combined_text)
+    diagnostics = _runtime_exit_diagnostics(
+        exit_code=proc.returncode,
+        timed_out=timed_out,
+        stdout=stdout_text,
+        stderr=stderr_text,
+        log_text=log_text,
+        log_refs=log_refs,
+    )
+    level_load_observed = _runtime_fixture_level_load_observed(combined_text)
+    disqualifying = _runtime_exit_fixture_disqualifying_signals(
+        scan=scan,
+        diagnostics=diagnostics,
+        combined_text=combined_text,
+    )
+    marker_observed = "MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT" in combined_text
+    expected_exit_codes = set(int(code) for code in command.get("expected_exit_codes", [0]))
+    passed = (
+        proc.returncode in expected_exit_codes
+        and not timed_out
+        and scan.get("status") == "pass"
+        and not disqualifying
+        and marker_observed
+    )
+    if passed:
+        fixture_status = "runtime_exit_fixture_verified_clean_exit"
+    elif timed_out:
+        fixture_status = "runtime_exit_fixture_execution_failed_timeout"
+    elif diagnostics.get("runtime_exit_is_crash_like") is True:
+        fixture_status = "runtime_exit_fixture_execution_failed_access_violation_like_exit"
+    elif proc.returncode not in expected_exit_codes:
+        fixture_status = "runtime_exit_fixture_execution_failed_nonzero_exit"
+    else:
+        fixture_status = "runtime_exit_fixture_execution_failed_disqualifying_log_signal"
+
+    report.update(diagnostics)
+    report.update(_runtime_signal_fields(scan))
+    report.update(
+        {
+            "status": "pass" if passed else "fail",
+            "runtime_harness_status": "runtime_execution_pass" if passed else "blocked_by_fixture_runtime_execution_failed",
+            "runtime_exit_fixture_status": fixture_status,
+            "runtime_exit_fixture_execution_completed": True,
+            "runtime_exit_fixture_execution_verified": passed,
+            "runtime_exit_fixture_exit_code_decimal": proc.returncode,
+            "runtime_exit_fixture_exit_code_hex": _exit_code_hex(proc.returncode),
+            "runtime_exit_fixture_exit_classification": diagnostics.get("runtime_exit_classification", ""),
+            "runtime_exit_fixture_blocked_reason": "" if passed else "blocked_by_fixture_runtime_execution_failed",
+            "runtime_exit_fixture_unavailable_reason": "",
+            "runtime_exit_fixture_unsupported_reason": "",
+            "runtime_exit_fixture_timeout_seconds": int(timeout_seconds),
+            "runtime_exit_fixture_timed_out": timed_out,
+            "runtime_exit_fixture_kill_attempted": timed_out,
+            "runtime_exit_fixture_kill_result": {"status": "runtime_execution_killed_after_timeout" if timed_out else "not_run"},
+            "runtime_exit_fixture_log_refs": log_refs,
+            "runtime_exit_fixture_log_scan": scan,
+            "runtime_exit_fixture_asserts": {
+                "status": diagnostics.get("runtime_assertion_summary", {}).get("status", "pass"),
+                "count": diagnostics.get("runtime_assertion_summary", {}).get("assert_count", 0),
+                "sample_lines": diagnostics.get("runtime_assertion_summary", {}).get("sample_lines", []),
+            },
+            "runtime_exit_fixture_missing_asset_signals": {
+                "status": "fail" if scan.get("matches") else "pass",
+                "matches": scan.get("matches", []),
+            },
+            "runtime_exit_fixture_disqualifying_signals": {
+                "status": "fail" if disqualifying else "pass",
+                "matches": disqualifying,
+            },
+            "runtime_exit_fixture_marker_observed": marker_observed,
+            "runtime_exit_fixture_level_load_observed": level_load_observed,
+            "runtime_exit_fixture_unexpected_level_load": level_load_observed,
+            "runtime_exit_fixture_uses_no_level": not level_load_observed,
+            "runtime_exit_fixture_uses_production_level": level_load_observed,
+            "runtime_execution_completed": True,
+            "runtime_execution_verified": passed,
+            "runtime_execution_status": "runtime_execution_pass"
+            if passed
+            else "runtime_execution_timed_out"
+            if timed_out
+            else "runtime_execution_failed",
+            "runtime_exit_code": proc.returncode,
+            "runtime_timed_out": timed_out,
+            "runtime_timeout_stall": timed_out,
+            "runtime_kill_attempted": timed_out,
+            "runtime_kill_result": {"status": "runtime_execution_killed_after_timeout" if timed_out else "not_run"},
+            "runtime_log_refs": log_refs,
+            "runtime_command_log_refs": log_refs,
+            "runtime_log_scan": scan,
+            "runtime_command_log_scan": scan,
+            "runtime_command_uses_no_level": not level_load_observed,
+            "runtime_command_uses_production_level": level_load_observed,
+            "runtime_harness_proof_claimed": passed,
+            "runtime_harness_proof_verified": passed,
+            "runtime_harness_proof_is_character_proof": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "runtime_exit_fixture_is_runtime_character_proof": False,
+            "runtime_exit_fixture_character_proof_claimed": False,
+            "runtime_exit_fixture_character_proof_verified": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_exit_fixture_source_ready",
+                "runtime_exit_fixture_enabled_for_project",
+                "runtime_fixture_settings_registry_command_pinned",
+                "runtime_fixture_bounded_command_executed",
+                "runtime_exit_fixture_marker_observed",
+                "runtime_exit_fixture_clean_exit",
+                "runtime_character_proof_not_claimed",
+            ]
+            if passed
+            else [],
+            "required_runtime_harness_assertions_failed": [] if passed else ["runtime_exit_fixture_execution"],
+            "runtime_harness_assertion_informational": [
+                "runtime_exit_fixture_command_envelope_is_not_runtime_character_proof",
+            ],
+        }
+    )
     return _finalize_report(report)
 
 
@@ -1927,6 +2634,293 @@ def _top_level_exit_strategy_blocked_payload(candidates: Sequence[Mapping[str, A
     }
 
 
+def _gate_enabled(env: Mapping[str, str], name: str) -> bool:
+    return str(env.get(name, "")).strip() == "1"
+
+
+def _runtime_exit_fixture_gate_status(env: Mapping[str, str]) -> Dict[str, Any]:
+    required = ("MAXINE_ENABLE_O3DE_RUNTIME_HARNESS", "MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS", "MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE")
+    missing = [name for name in required if not _gate_enabled(env, name)]
+    return {"status": "pass" if not missing else "blocked_by_fixture_runtime_gate_missing", "required": list(required), "missing": missing}
+
+
+def _run_command_capture(
+    argv: Sequence[str],
+    *,
+    env: Mapping[str, str],
+    timeout_seconds: int,
+    artifact_dir: Path,
+    stem: str,
+    command_runner: Callable[..., subprocess.CompletedProcess[str]] | None,
+) -> tuple[subprocess.CompletedProcess[str], bool, str, str]:
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    stdout_path = artifact_dir / f"{stem}_stdout.txt"
+    stderr_path = artifact_dir / f"{stem}_stderr.txt"
+    timed_out = False
+    try:
+        if command_runner is not None:
+            proc = command_runner(argv=list(argv), cwd=str(REPO_ROOT), env=dict(env), timeout_seconds=timeout_seconds)
+        else:
+            proc = subprocess.run(
+                list(argv),
+                cwd=str(REPO_ROOT),
+                env=dict(env),
+                text=True,
+                capture_output=True,
+                timeout=timeout_seconds,
+            )
+    except subprocess.TimeoutExpired as exc:
+        timed_out = True
+        proc = subprocess.CompletedProcess(list(argv), None, stdout=exc.output or "", stderr=exc.stderr or "")
+
+    stdout_path.write_text(str(proc.stdout or ""), encoding="utf-8")
+    stderr_path.write_text(str(proc.stderr or ""), encoding="utf-8")
+    return proc, timed_out, _repo_relative(stdout_path), _repo_relative(stderr_path)
+
+
+def _runtime_exit_fixture_registration_common_payload(*, project: Path | None, command: Sequence[str]) -> Dict[str, Any]:
+    return {
+        "runtime_exit_fixture_registration_status": "runtime_exit_fixture_registration_ready",
+        "runtime_exit_fixture_registration_attempted": False,
+        "runtime_exit_fixture_registration_command": list(command),
+        "runtime_exit_fixture_registration_result": "not_attempted",
+        "runtime_exit_fixture_registration_reversible": True,
+        "runtime_exit_fixture_registration_rollback": _runtime_exit_fixture_registration_rollback(project),
+        "runtime_exit_fixture_requires_project_mutation": not _runtime_exit_fixture_registered_for_project(project),
+        "runtime_exit_fixture_project_mutation_status": "runtime_exit_fixture_project_mutation_not_attempted",
+        "runtime_exit_fixture_project_mutation_attempted": False,
+        "runtime_exit_fixture_project_mutation_files": _runtime_exit_fixture_project_files(project),
+        "runtime_exit_fixture_project_mutation_reversible": True,
+        "runtime_exit_fixture_project_mutation_rollback": _runtime_exit_fixture_registration_rollback(project),
+        "runtime_exit_fixture_project_mutation_gate_env": list(RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV),
+    }
+
+
+def _runtime_exit_fixture_enablement_common_payload(*, project: Path | None, command: Sequence[str]) -> Dict[str, Any]:
+    return {
+        "runtime_exit_fixture_enablement_status": "runtime_exit_fixture_enablement_ready",
+        "runtime_exit_fixture_enablement_attempted": False,
+        "runtime_exit_fixture_enablement_command": list(command),
+        "runtime_exit_fixture_enablement_result": "not_attempted",
+        "runtime_exit_fixture_enablement_reversible": True,
+        "runtime_exit_fixture_enablement_rollback": _runtime_exit_fixture_enablement_rollback(project),
+        "runtime_exit_fixture_requires_project_mutation": not _runtime_exit_fixture_enabled_for_project(project),
+        "runtime_exit_fixture_project_mutation_status": "runtime_exit_fixture_project_mutation_not_attempted",
+        "runtime_exit_fixture_project_mutation_attempted": False,
+        "runtime_exit_fixture_project_mutation_files": _runtime_exit_fixture_project_files(project),
+        "runtime_exit_fixture_project_mutation_reversible": True,
+        "runtime_exit_fixture_project_mutation_rollback": _runtime_exit_fixture_enablement_rollback(project),
+        "runtime_exit_fixture_project_mutation_gate_env": list(RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV),
+    }
+
+
+def _runtime_exit_fixture_project_files(project: Path | None) -> List[str]:
+    if project is None:
+        return []
+    refs = [str((project / "project.json")).replace("\\", "/")]
+    user_project = project / "user" / "project.json"
+    if user_project.exists():
+        refs.append(str(user_project).replace("\\", "/"))
+    return refs
+
+
+def _runtime_exit_fixture_project_state(project: Path | None) -> Dict[str, Any]:
+    refs = _runtime_exit_fixture_project_files(project)
+    payload: Dict[str, Any] = {}
+    if project is not None and (project / "project.json").is_file():
+        try:
+            payload = json.loads((project / "project.json").read_text(encoding="utf-8-sig"))
+        except Exception:
+            payload = {}
+    return {
+        "refs": refs,
+        "external_subdirectories": list(payload.get("external_subdirectories", []))
+        if isinstance(payload.get("external_subdirectories", []), list)
+        else [],
+        "gem_names": list(payload.get("gem_names", [])) if isinstance(payload.get("gem_names", []), list) else [],
+        "gems": list(payload.get("gems", [])) if isinstance(payload.get("gems", []), list) else [],
+    }
+
+
+def _runtime_exit_fixture_project_diff(before: Mapping[str, Any], after: Mapping[str, Any]) -> List[str]:
+    summary: List[str] = []
+    for key in ("external_subdirectories", "gem_names", "gems"):
+        before_values = {str(item) for item in before.get(key, []) if str(item).strip()}
+        after_values = {str(item) for item in after.get(key, []) if str(item).strip()}
+        added = sorted(after_values - before_values)
+        removed = sorted(before_values - after_values)
+        for value in added:
+            summary.append(f"{key}:+{_fixture_value_summary(value)}")
+        for value in removed:
+            summary.append(f"{key}:-{_fixture_value_summary(value)}")
+    return summary or ["no_project_metadata_delta_detected"]
+
+
+def _fixture_value_summary(value: str) -> str:
+    candidate = Path(value)
+    try:
+        return _repo_relative(candidate) if candidate.is_absolute() else value.replace("\\", "/")
+    except Exception:
+        return value.replace("\\", "/")
+
+
+def _runtime_exit_fixture_registered_for_project(project: Path | None) -> bool:
+    if project is None:
+        return False
+    state = _runtime_exit_fixture_project_state(project)
+    for raw in state.get("external_subdirectories", []):
+        raw_text = str(raw).strip()
+        if not raw_text:
+            continue
+        candidate = Path(raw_text)
+        if not candidate.is_absolute():
+            candidate = project / candidate
+        try:
+            if candidate.resolve() == RUNTIME_EXIT_FIXTURE_SOURCE_PATH.resolve():
+                return True
+        except Exception:
+            if raw_text.replace("\\", "/").endswith("o3de/gems/MaxineRuntimeExitFixture"):
+                return True
+    return False
+
+
+def _runtime_exit_fixture_registration_rollback(project: Path | None) -> str:
+    project_path = str(project or "<project-path>")
+    return (
+        "Remove the MaxineRuntimeExitFixture path from project.json external_subdirectories "
+        f"for {project_path}, or use the O3DE CLI to unregister that external subdirectory for the project."
+    )
+
+
+def _runtime_exit_fixture_enablement_rollback(project: Path | None) -> str:
+    project_path = str(project or "<project-path>")
+    return f"Run o3de disable-gem --gem-name {RUNTIME_EXIT_FIXTURE_GEM_NAME} --project-path {project_path}, then rebuild the scoped launcher target if needed."
+
+
+def _select_runtime_exit_fixture_command(report: Mapping[str, Any], *, timeout_seconds: int) -> Dict[str, Any]:
+    executable = str(report.get("runtime_executable_path", "")).strip()
+    readiness = report.get("runtime_harness_readiness", {})
+    project_path = str(readiness.get("project_path", "")).strip() if isinstance(readiness, Mapping) else ""
+    if not executable or not project_path:
+        return {
+            "selected": False,
+            "blocked_reason": "blocked_by_missing_runtime_readiness",
+            "safety_flags": _runtime_command_safety_flags(),
+        }
+    argv = [
+        executable,
+        f"--project-path={project_path}",
+        "-NullRenderer",
+        "-rhi=null",
+        "--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0",
+        "--regset=/Amazon/MAXINE/RuntimeHarness/EnableExitFixture=true",
+        "--regset=/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks=5",
+    ]
+    return {
+        "selected": True,
+        "argv": argv,
+        "kind": "headless_settings_registry_runtime_exit_fixture_envelope",
+        "selected_reason": "repo_owned_fixture_tickbus_exit_main_loop_settings_registry_envelope",
+        "expected_exit_codes": [0],
+        "timeout_seconds": int(timeout_seconds),
+        "kill_policy": "subprocess_timeout_kill_and_report",
+        "safety_flags": _runtime_command_safety_flags()
+        + [
+            "project_path_explicit",
+            "null_renderer_requested",
+            "no_level_or_map_argument",
+            "settings_registry_fixture_exit_enabled",
+            "console_command_file_not_used",
+            "wait_for_connect_nonfatal",
+        ],
+        "argument_shape": {
+            "argv0": "runtime executable path",
+            "project_path": "--project-path=<MAXINE_GoldenCorpus project path>",
+            "rendering": ["-NullRenderer", "-rhi=null"],
+            "asset_processor_connect": "--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0",
+            "exit_strategy": [
+                "--regset=/Amazon/MAXINE/RuntimeHarness/EnableExitFixture=true",
+                "--regset=/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks=5",
+            ],
+        },
+        "safety_profile": {
+            "local": True,
+            "bounded_by_timeout": True,
+            "evidence_captured": True,
+            "stdout_stderr_capture_required": True,
+            "log_capture_best_effort": True,
+            "non_publishing": True,
+            "non_packaging": True,
+            "mutates_production": False,
+            "uses_production_level": False,
+            "uses_temp_level": False,
+            "uses_no_level": True,
+            "loads_character_content": False,
+            "runtime_character_proof": False,
+            "headless_launcher": True,
+            "null_renderer_requested": True,
+            "safe_to_kill_after_timeout": True,
+            "uses_console_command_file_quit": False,
+            "uses_settings_registry_fixture_exit": True,
+        },
+        "source_evidence_refs": [
+            _repo_relative(RUNTIME_EXIT_FIXTURE_COMPONENT_SOURCE),
+            _repo_relative(RUNTIME_EXIT_FIXTURE_COMPONENT_HEADER),
+            "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Application/Application.h",
+            "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Application/ApplicationAPI.h",
+            "C:/src/o3de/Code/Framework/AzCore/AzCore/Component/TickBus.h",
+        ],
+    }
+
+
+def _runtime_exit_fixture_disqualifying_signals(
+    *,
+    scan: Mapping[str, Any],
+    diagnostics: Mapping[str, Any],
+    combined_text: str = "",
+) -> List[Dict[str, Any]]:
+    matches: List[Dict[str, Any]] = []
+    for item in scan.get("matches", []):
+        if isinstance(item, Mapping):
+            matches.append(dict(item))
+    if _runtime_fixture_level_load_observed(combined_text):
+        matches.append(
+            {
+                "signal": "unexpected_level_load",
+                "status": "runtime_exit_fixture_unexpected_level_load",
+                "detail": "Runtime loaded a level/spawnable during the fixture command instead of remaining no-level.",
+            }
+        )
+    for field, signal in (
+        ("runtime_stdout_error_summary", "stdout_error"),
+        ("runtime_stderr_error_summary", "stderr_error"),
+        ("runtime_log_error_summary", "runtime_log_error"),
+        ("runtime_assertion_summary", "runtime_assertion"),
+        ("runtime_asset_manager_asserts", "asset_manager_shutdown_assert"),
+    ):
+        payload = diagnostics.get(field, {})
+        if not isinstance(payload, Mapping):
+            continue
+        if payload.get("status") in {"pass", "blocked_by_missing_runtime_log", "runtime_execution_not_attempted"}:
+            continue
+        count = (
+            payload.get("asset_processor_negotiation_failure_count", 0)
+            or payload.get("shader_serializer_error_count", 0)
+            or payload.get("asset_manager_shutdown_assert_count", 0)
+            or payload.get("assert_count", 0)
+            or payload.get("count", 0)
+            or payload.get("fatal_or_exception_count", 0)
+        )
+        if int(count or 0) > 0:
+            matches.append({"signal": signal, "status": str(payload.get("status", "")), "count": str(count)})
+    return matches
+
+
+def _runtime_fixture_level_load_observed(text: str) -> bool:
+    lower = text.lower().replace("\\", "/")
+    return "level levels/" in lower or "root spawnable 'levels/" in lower or ".spawnable loaded" in lower
+
+
 def _runtime_exit_fixture_source_probe() -> Dict[str, Any]:
     checks: List[Dict[str, Any]] = []
     errors: List[str] = []
@@ -1941,6 +2935,7 @@ def _runtime_exit_fixture_source_probe() -> Dict[str, Any]:
     _record("fixture_source_path_exists", source_path.is_dir(), _repo_relative(source_path))
     _record("fixture_source_owned_by_repo", source_owned_by_repo, _repo_relative(source_path))
     _record("fixture_gem_json_exists", RUNTIME_EXIT_FIXTURE_GEM_JSON.is_file(), _repo_relative(RUNTIME_EXIT_FIXTURE_GEM_JSON))
+    _record("fixture_root_cmake_exists", RUNTIME_EXIT_FIXTURE_ROOT_CMAKE.is_file(), _repo_relative(RUNTIME_EXIT_FIXTURE_ROOT_CMAKE))
     _record("fixture_cmake_exists", RUNTIME_EXIT_FIXTURE_CMAKE.is_file(), _repo_relative(RUNTIME_EXIT_FIXTURE_CMAKE))
     _record(
         "fixture_component_header_exists",
@@ -1975,11 +2970,13 @@ def _runtime_exit_fixture_source_probe() -> Dict[str, Any]:
     _record("fixture_metadata_non_shipping", "non-shipping" in metadata_text or "nonshipping" in metadata_text, "gem metadata")
     _record("fixture_metadata_harness_only", "harness" in metadata_text and "runtime" in metadata_text, "gem metadata")
 
+    root_cmake_text = _read_text_if_present(RUNTIME_EXIT_FIXTURE_ROOT_CMAKE)
     cmake_text = _read_text_if_present(RUNTIME_EXIT_FIXTURE_CMAKE)
     source_text = _read_text_if_present(RUNTIME_EXIT_FIXTURE_COMPONENT_SOURCE)
     header_text = _read_text_if_present(RUNTIME_EXIT_FIXTURE_COMPONENT_HEADER)
     module_text = _read_text_if_present(RUNTIME_EXIT_FIXTURE_MODULE_SOURCE)
-    combined_source = "\n".join([cmake_text, source_text, header_text, module_text])
+    combined_source = "\n".join([root_cmake_text, cmake_text, source_text, header_text, module_text])
+    _record("fixture_root_cmake_adds_code_subdirectory", "add_subdirectory(Code)" in root_cmake_text, "add_subdirectory(Code)")
     _record("fixture_uses_tick_bus", "AZ::TickBus" in combined_source, "AZ::TickBus")
     _record("fixture_uses_exit_main_loop", "ExitMainLoop" in combined_source, "AzFramework::ApplicationRequests::ExitMainLoop")
     _record(
@@ -2105,7 +3102,7 @@ def _runtime_exit_fixture_rebuild_gate_payload(
 ) -> Dict[str, Any]:
     fixture = _runtime_exit_fixture_static_payload(timeout_seconds=timeout_seconds)
     project_enabled = _runtime_exit_fixture_enabled_for_project(project)
-    register_command = _runtime_exit_fixture_register_command(engine_root)
+    register_command = _runtime_exit_fixture_register_command(engine_root=engine_root, project=project)
     enable_command = _runtime_exit_fixture_enable_command(engine_root=engine_root, project=project)
     rebuild_command = _runtime_exit_fixture_rebuild_command(engine_root=engine_root, project=project)
     fixture.update(
@@ -2226,7 +3223,7 @@ def _runtime_exit_fixture_static_payload(*, timeout_seconds: int) -> Dict[str, A
         "runtime_exit_fixture_gem_name": RUNTIME_EXIT_FIXTURE_GEM_NAME,
         "runtime_exit_fixture_gem_type": "Code",
         "runtime_exit_fixture_gem_json_path": _repo_relative(RUNTIME_EXIT_FIXTURE_GEM_JSON),
-        "runtime_exit_fixture_cmake_path": _repo_relative(RUNTIME_EXIT_FIXTURE_CMAKE),
+        "runtime_exit_fixture_cmake_path": _repo_relative(RUNTIME_EXIT_FIXTURE_ROOT_CMAKE),
         "runtime_exit_fixture_component_name": "MaxineRuntimeExitFixtureSystemComponent",
         "runtime_exit_fixture_component_services": ["MaxineRuntimeExitFixtureService"],
         "runtime_exit_fixture_component_or_hook": "MaxineRuntimeExitFixtureSystemComponent",
@@ -2252,6 +3249,27 @@ def _runtime_exit_fixture_static_payload(*, timeout_seconds: int) -> Dict[str, A
         "runtime_exit_fixture_requires_rebuild": True,
         "runtime_exit_fixture_rebuild_status": "not_attempted",
         "runtime_exit_fixture_enabled_for_project": False,
+        "runtime_exit_fixture_registration_attempted": False,
+        "runtime_exit_fixture_registration_command": [],
+        "runtime_exit_fixture_registration_result": "",
+        "runtime_exit_fixture_registration_stdout_ref": "",
+        "runtime_exit_fixture_registration_stderr_ref": "",
+        "runtime_exit_fixture_registration_changes": [],
+        "runtime_exit_fixture_registration_reversible": False,
+        "runtime_exit_fixture_registration_rollback": "",
+        "runtime_exit_fixture_enablement_attempted": False,
+        "runtime_exit_fixture_enablement_command": [],
+        "runtime_exit_fixture_enablement_result": "",
+        "runtime_exit_fixture_enablement_stdout_ref": "",
+        "runtime_exit_fixture_enablement_stderr_ref": "",
+        "runtime_exit_fixture_enablement_changes": [],
+        "runtime_exit_fixture_enablement_reversible": False,
+        "runtime_exit_fixture_enablement_rollback": "",
+        "runtime_exit_fixture_project_mutation_files": [],
+        "runtime_exit_fixture_project_mutation_before_refs": [],
+        "runtime_exit_fixture_project_mutation_after_refs": [],
+        "runtime_exit_fixture_project_mutation_diff_summary": [],
+        "runtime_exit_fixture_project_mutation_rollback": "",
         "runtime_exit_fixture_enabled_by_default": False,
         "runtime_exit_fixture_is_shipping_behavior": False,
         "runtime_exit_fixture_mutates_production": False,
@@ -2275,6 +3293,14 @@ def _runtime_exit_fixture_static_payload(*, timeout_seconds: int) -> Dict[str, A
         "runtime_exit_fixture_asserts": {"status": "runtime_execution_not_attempted", "count": 0, "sample_lines": []},
         "runtime_exit_fixture_missing_asset_signals": {"status": "runtime_execution_not_attempted", "matches": []},
         "runtime_exit_fixture_disqualifying_signals": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_exit_fixture_marker_observed": False,
+        "runtime_exit_fixture_runtime_command": [],
+        "runtime_exit_fixture_runtime_command_status": "not_run",
+        "runtime_exit_fixture_runtime_command_arguments": [],
+        "runtime_exit_fixture_runtime_command_uses_console_command_file_quit": False,
+        "runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit": False,
+        "runtime_exit_fixture_level_load_observed": False,
+        "runtime_exit_fixture_unexpected_level_load": False,
         "runtime_exit_fixture_unsupported_reason": "",
         "runtime_exit_fixture_is_runtime_character_proof": False,
         "runtime_exit_fixture_character_proof_claimed": False,
@@ -2285,6 +3311,7 @@ def _runtime_exit_fixture_static_payload(*, timeout_seconds: int) -> Dict[str, A
 def _runtime_exit_fixture_repo_source_refs() -> List[str]:
     return [
         _repo_relative(RUNTIME_EXIT_FIXTURE_GEM_JSON),
+        _repo_relative(RUNTIME_EXIT_FIXTURE_ROOT_CMAKE),
         _repo_relative(RUNTIME_EXIT_FIXTURE_CMAKE),
         _repo_relative(RUNTIME_EXIT_FIXTURE_COMPONENT_HEADER),
         _repo_relative(RUNTIME_EXIT_FIXTURE_COMPONENT_SOURCE),
@@ -2311,14 +3338,28 @@ def _runtime_exit_fixture_enabled_for_project(project: Path | None) -> bool:
     return False
 
 
-def _runtime_exit_fixture_register_command(engine_root: Path | None) -> List[str]:
+def _runtime_exit_fixture_register_command(*, engine_root: Path | None, project: Path | None) -> List[str]:
     o3de_cli = _o3de_cli_path(engine_root)
-    return [o3de_cli, "register", "--gem-path", str(RUNTIME_EXIT_FIXTURE_SOURCE_PATH)]
+    return [
+        o3de_cli,
+        "register",
+        "--external-subdirectory",
+        str(RUNTIME_EXIT_FIXTURE_SOURCE_PATH),
+        "--external-subdirectory-project-path",
+        str(project or ""),
+    ]
 
 
 def _runtime_exit_fixture_enable_command(*, engine_root: Path | None, project: Path | None) -> List[str]:
     o3de_cli = _o3de_cli_path(engine_root)
-    return [o3de_cli, "enable-gem", "--gem-name", RUNTIME_EXIT_FIXTURE_GEM_NAME, "--project-path", str(project or "")]
+    return [
+        o3de_cli,
+        "enable-gem",
+        "--gem-path",
+        str(RUNTIME_EXIT_FIXTURE_SOURCE_PATH),
+        "--project-path",
+        str(project or ""),
+    ]
 
 
 def _runtime_exit_fixture_rebuild_command(*, engine_root: Path | None, project: Path | None) -> List[str]:
@@ -3667,6 +4708,10 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--diagnose-runtime-exit-fixture", action="store_true")
     parser.add_argument("--check-runtime-exit-fixture-source", action="store_true")
     parser.add_argument("--check-runtime-exit-fixture-rebuild-gate", action="store_true")
+    parser.add_argument("--register-runtime-exit-fixture", action="store_true")
+    parser.add_argument("--enable-runtime-exit-fixture", action="store_true")
+    parser.add_argument("--rebuild-runtime-exit-fixture", action="store_true")
+    parser.add_argument("--enable-runtime-exit-fixture-command", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -3691,6 +4736,10 @@ def main() -> int:
         diagnose_runtime_exit_fixture=args.diagnose_runtime_exit_fixture,
         check_runtime_exit_fixture_source=args.check_runtime_exit_fixture_source,
         check_runtime_exit_fixture_rebuild_gate=args.check_runtime_exit_fixture_rebuild_gate,
+        register_runtime_exit_fixture=args.register_runtime_exit_fixture,
+        enable_runtime_exit_fixture=args.enable_runtime_exit_fixture,
+        rebuild_runtime_exit_fixture=args.rebuild_runtime_exit_fixture,
+        enable_runtime_exit_fixture_command=args.enable_runtime_exit_fixture_command,
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
         strict_integration=args.strict_integration,

@@ -458,7 +458,61 @@
     "runtime_exit_fixture_registration_status": {
       "type": "string"
     },
+    "runtime_exit_fixture_registration_attempted": {
+      "type": "boolean"
+    },
+    "runtime_exit_fixture_registration_command": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "runtime_exit_fixture_registration_result": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_registration_stdout_ref": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_registration_stderr_ref": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_registration_changes": {
+      "type": "array"
+    },
+    "runtime_exit_fixture_registration_reversible": {
+      "type": "boolean"
+    },
+    "runtime_exit_fixture_registration_rollback": {
+      "type": "string"
+    },
     "runtime_exit_fixture_enablement_status": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_enablement_attempted": {
+      "type": "boolean"
+    },
+    "runtime_exit_fixture_enablement_command": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "runtime_exit_fixture_enablement_result": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_enablement_stdout_ref": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_enablement_stderr_ref": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_enablement_changes": {
+      "type": "array"
+    },
+    "runtime_exit_fixture_enablement_reversible": {
+      "type": "boolean"
+    },
+    "runtime_exit_fixture_enablement_rollback": {
       "type": "string"
     },
     "runtime_exit_fixture_requires_project_mutation": {
@@ -470,8 +524,23 @@
     "runtime_exit_fixture_project_mutation_attempted": {
       "type": "boolean"
     },
+    "runtime_exit_fixture_project_mutation_files": {
+      "type": "array"
+    },
+    "runtime_exit_fixture_project_mutation_before_refs": {
+      "type": "array"
+    },
+    "runtime_exit_fixture_project_mutation_after_refs": {
+      "type": "array"
+    },
+    "runtime_exit_fixture_project_mutation_diff_summary": {
+      "type": "array"
+    },
     "runtime_exit_fixture_project_mutation_reversible": {
       "type": "boolean"
+    },
+    "runtime_exit_fixture_project_mutation_rollback": {
+      "type": "string"
     },
     "runtime_exit_fixture_project_mutation_gate_env": {
       "type": "array",
@@ -497,8 +566,47 @@
     "runtime_exit_fixture_rebuild_result": {
       "type": "string"
     },
+    "runtime_exit_fixture_rebuild_exit_code": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "runtime_exit_fixture_rebuild_stdout_ref": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_rebuild_stderr_ref": {
+      "type": "string"
+    },
     "runtime_exit_fixture_rebuild_artifact_refs": {
       "type": "array"
+    },
+    "runtime_exit_fixture_rebuild_status": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_runtime_command": {
+      "type": "array"
+    },
+    "runtime_exit_fixture_runtime_command_status": {
+      "type": "string"
+    },
+    "runtime_exit_fixture_runtime_command_arguments": {
+      "type": "array"
+    },
+    "runtime_exit_fixture_runtime_command_uses_console_command_file_quit": {
+      "type": "boolean"
+    },
+    "runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit": {
+      "type": "boolean"
+    },
+    "runtime_exit_fixture_marker_observed": {
+      "type": "boolean"
+    },
+    "runtime_exit_fixture_level_load_observed": {
+      "type": "boolean"
+    },
+    "runtime_exit_fixture_unexpected_level_load": {
+      "type": "boolean"
     },
     "runtime_exit_fixture_enabled_by_default": {
       "type": "boolean"
