@@ -128,11 +128,32 @@ def test_runtime_harness_live_mode_requires_runtime_gates(tmp_path: Path) -> Non
     assert "MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS" in report["runtime_command_gate_env"]["missing"]
 
 
-def test_runtime_harness_live_mode_records_unpinned_command_without_launch(tmp_path: Path) -> None:
+def test_runtime_harness_command_pinning_reports_missing_executable_blocker(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, launcher=False)
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        pin_runtime_command=True,
+        strict=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_harness_status"] == "blocked_by_missing_runtime_executable"
+    assert report["runtime_command_pinned"] is False
+    assert report["runtime_execution_attempted"] is False
+
+
+def test_runtime_harness_live_mode_pins_command_before_launch(tmp_path: Path) -> None:
     env, engine, project, apb = _runtime_env(tmp_path, gates=True)
 
-    def _runner(**_kwargs: object) -> subprocess.CompletedProcess[str]:
-        raise AssertionError("runtime process must not launch while command is unpinned")
+    def _runner(**kwargs: object) -> subprocess.CompletedProcess[str]:
+        argv = list(kwargs["argv"])  # type: ignore[index]
+        assert any(str(arg).startswith("--console-command-file=") for arg in argv)
+        return subprocess.CompletedProcess(argv, 0, stdout="runtime startup\n", stderr="")
 
     report = runtime_harness.run_runtime_harness(
         manifest=runtime_harness.DEFAULT_MANIFEST,
@@ -146,11 +167,139 @@ def test_runtime_harness_live_mode_records_unpinned_command_without_launch(tmp_p
     )
 
     assert report["status"] == "pass"
-    assert report["runtime_harness_status"] == "blocked_by_unpinned_runtime_command"
+    assert report["runtime_harness_status"] == "runtime_execution_pass"
+    assert report["runtime_command_pinning_status"] == "runtime_command_pinning_pass"
+    assert report["runtime_command_pinned"] is True
+    assert report["runtime_execution_attempted"] is True
+    assert report["runtime_execution_verified"] is True
+    assert report["runtime_harness_proof_is_character_proof"] is False
+
+
+def test_runtime_harness_command_pinning_mode_pins_console_quit_envelope_without_launch(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=False)
+
+    def _runner(**_kwargs: object) -> subprocess.CompletedProcess[str]:
+        raise AssertionError("command-pinning mode must not launch the runtime process")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        pin_runtime_command=True,
+        strict=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_runner,
+        artifact_root=tmp_path / "runtime-artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_status"] == "runtime_command_pinning_pass"
+    assert report["runtime_command_pinning_status"] == "runtime_command_pinning_pass"
+    assert report["runtime_command_pinned"] is True
+    assert report["runtime_command_pin_verified"] is True
     assert report["runtime_execution_attempted"] is False
     assert report["runtime_execution_verified"] is False
-    assert report["runtime_harness_proof_claimed"] is True
-    assert report["runtime_harness_proof_is_character_proof"] is False
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_command_kind"] == "headless_console_quit_envelope"
+    assert report["runtime_command_selected"].endswith("MAXINE_GoldenCorpus.HeadlessServerLauncher.exe")
+    assert f"--project-path={project}" in report["runtime_command_arguments"]
+    assert "-NullRenderer" in report["runtime_command_arguments"]
+    assert "-rhi=null" in report["runtime_command_arguments"]
+    assert "--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0" in report["runtime_command_arguments"]
+    assert any(arg.startswith("--console-command-file=") for arg in report["runtime_command_arguments"])
+    assert report["runtime_command_safety_profile"]["uses_production_level"] is False
+    assert report["runtime_command_safety_profile"]["uses_temp_level"] is False
+    assert report["runtime_command_safety_profile"]["uses_no_level"] is True
+
+
+def test_runtime_harness_live_mode_executes_pinned_command_with_gates(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    log_dir = project / "user" / "log"
+    log_dir.mkdir(parents=True)
+    (log_dir / "Server.log").write_text("runtime command envelope log\n", encoding="utf-8")
+    captured: dict[str, object] = {}
+
+    def _runner(**kwargs: object) -> subprocess.CompletedProcess[str]:
+        captured.update(kwargs)
+        argv = list(kwargs["argv"])  # type: ignore[index]
+        command_file_arg = next(arg for arg in argv if str(arg).startswith("--console-command-file="))
+        command_file = Path(str(command_file_arg).split("=", 1)[1])
+        assert command_file.exists()
+        assert command_file.read_text(encoding="utf-8").strip() == "quit"
+        return subprocess.CompletedProcess(argv, 0, stdout="runtime startup\nquit requested\n", stderr="")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_harness=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_runner,
+        artifact_root=tmp_path / "runtime-artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_status"] == "runtime_execution_pass"
+    assert report["runtime_command_pinning_status"] == "runtime_command_pinning_pass"
+    assert report["runtime_command_pinned"] is True
+    assert report["runtime_command_pin_verified"] is True
+    assert report["runtime_execution_attempted"] is True
+    assert report["runtime_execution_completed"] is True
+    assert report["runtime_execution_verified"] is True
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+    assert report["runtime_stdout_ref"].endswith("runtime_stdout.txt")
+    assert report["runtime_stderr_ref"].endswith("runtime_stderr.txt")
+    assert any(str(ref).endswith("Server.log") for ref in report["runtime_log_refs"])
+    assert report["runtime_command_log_refs"] == report["runtime_log_refs"]
+    assert report["runtime_log_scan"]["status"] == "pass"
+    assert "runtime_bounded_command_executed" in report["required_runtime_harness_assertions_passed"]
+    assert captured["timeout_seconds"] == 120
+
+
+def test_runtime_harness_live_mode_records_timeout_and_kill_semantics(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+
+    def _runner(**kwargs: object) -> subprocess.CompletedProcess[str]:
+        raise subprocess.TimeoutExpired(cmd=kwargs["argv"], timeout=kwargs["timeout_seconds"], output="partial startup")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_harness=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_runner,
+        artifact_root=tmp_path / "runtime-artifacts",
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_command_pin_verified"] is True
+    assert report["runtime_execution_attempted"] is True
+    assert report["runtime_execution_completed"] is True
+    assert report["runtime_execution_verified"] is False
+    assert report["runtime_execution_status"] == "runtime_execution_timed_out"
+    assert report["runtime_timed_out"] is True
+    assert report["runtime_timeout_stall"] is True
+    assert report["runtime_kill_attempted"] is True
+    assert report["runtime_kill_result"]["status"] == "runtime_execution_killed_after_timeout"
+    assert "runtime_bounded_command" in report["required_runtime_harness_assertions_failed"]
+
+
+def test_runtime_harness_validation_rejects_command_pin_verified_without_pinned() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report["runtime_command_pin_verified"] = True
+    report["runtime_command_pinned"] = False
+
+    validation = runtime_harness.validate_runtime_harness_report(report, strict=True)
+
+    assert validation.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in validation.error_codes
 
 
 def test_runtime_harness_validation_rejects_execution_verified_without_attempt() -> None:

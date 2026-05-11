@@ -265,11 +265,16 @@ The dedicated runtime harness slice adds `tools/o3de/runtime_harness.py` as a st
 ```powershell
 python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --mode fixture
 python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --check-local-readiness --strict --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report artifacts/o3de-integration/apb/<run>/asset_processor_batch_live_report.json
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --pin-runtime-command --strict --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report artifacts/o3de-integration/apb/<run>/asset_processor_batch_live_report.json --timeout-seconds 120
 ```
 
 Fixture mode validates the report contract without launching runtime. Readiness mode requires trusted APB product evidence for all release-rigged products, `cache_heuristic_used=false`, a project path paired to `MAXINE_GoldenCorpus`, an engine profile-bin launcher candidate, and closed publication/release-packaging/production-mutation gates.
 
-Live bounded runtime mode is separately gated by `MAXINE_ENABLE_O3DE_RUNTIME_HARNESS=1` and `MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS=1`. Even with those gates set, this slice records `blocked_by_unpinned_runtime_command` until a later slice validates a concrete HeadlessServerLauncher/GameLauncher command line with safe arguments. Harness readiness is not runtime execution proof, and it is not runtime character proof. Runtime character proof remains unclaimed unless a bounded runtime process actually runs, completes, captures stdout/stderr/log refs, passes missing actor/mesh/material/animation/load-error scans, and records character-specific evidence.
+Command-pinning mode records the concrete non-publishing command envelope without launching runtime. The pinned command uses the selected `MAXINE_GoldenCorpus.HeadlessServerLauncher.exe` with `--project-path=<project>`, `-NullRenderer`, `-rhi=null`, `--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0`, and `--console-command-file=<artifact cfg containing quit>`. The supporting local source evidence is `Launcher.cpp` for `--console-command-file`, `SystemInit.cpp` for the `quit` console command, `GameApplication.cpp` for `-NullRenderer`, and `SettingsRegistryMergeUtils.cpp` for `--project-path`.
+
+Live bounded runtime mode is separately gated by `MAXINE_ENABLE_O3DE_RUNTIME_HARNESS=1` and `MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS=1`. It now requires readiness plus `runtime_command_pin_verified=true` before launching the pinned command. Harness readiness is not command-pinning proof, command-pinning proof is not runtime execution proof, and neither is runtime character proof. Runtime character proof remains unclaimed unless a bounded runtime process actually runs, completes, captures stdout/stderr/log refs, passes missing actor/mesh/material/animation/load-error scans, and records character-specific evidence.
+
+The current paired runner records the pinned command envelope as pass, but the gated live command attempt exits before timeout with code `3221225477`. Treat that as `runtime_execution_failed`: the stdout/stderr/log refs are useful evidence, but `runtime_execution_verified=false` and `runtime_character_proof_claimed=false` remain required.
 
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 
