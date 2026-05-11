@@ -199,6 +199,8 @@ Runtime exit diagnostic evidence is a sixth layer. When a gated bounded command 
 
 Runtime quit-variant evidence is a seventh layer. The harness records `runtime_command_variant_matrix` entries for the preserved baseline, source-validated attemptable variants, and rejected variants with typed reasons. Each attempted variant carries command arguments, source-validation notes, timeout, stdout/stderr/log refs, exit code decimal/hex/classification, AssetManager/shader serializer/Asset Processor negotiation summaries, and missing actor/mesh/material/animation/load-error scans. A variant pass requires expected exit code `0` and no disqualifying scanned signals; expected exit codes must not be widened to hide `0xC0000005`.
 
+Runtime exit-strategy evidence is an eighth layer. It records `runtime_exit_strategy_candidate_matrix` entries for source-supported exit surfaces, source refs, rejected candidates, attempted candidates, per-candidate stdout/stderr/log refs, exit code decimal/hex/classification, timeout/kill state, AssetManager/shader serializer/Asset Processor negotiation summaries, and missing actor/mesh/material/animation/load-error scans. Source validation alone is not runtime execution proof: immediate `--console-command-file` quit and Settings Registry runtime-console quit are source-validated but rejected for this failure family because local launcher source executes the command file before `RunMainLoop`. Candidate passes require strict expected exit semantics and no disqualifying scanned signals. The current blocker is `blocked_by_missing_source_validated_runtime_exit_strategy`, with runtime character proof still unclaimed.
+
 ## Golden Project Fixture Evidence
 
 Golden project fixture evidence may be attached as:

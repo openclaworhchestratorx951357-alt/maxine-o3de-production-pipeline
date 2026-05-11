@@ -162,6 +162,16 @@ python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigge
 
 The diagnostic preserves the original pinned command, records rejected help/version/no-console/delayed/fallback variants unless source validates a bounded exit strategy, and attempts only source-validated no-level variants. `-NullRenderer`-only and `-rhi=null`-only are currently the first attemptable HeadlessServerLauncher variants because local source validates both as console-mode triggers. A clean quit variant can verify bounded runtime command execution, but not runtime character proof.
 
+The source-validated exit-strategy diagnostic entry point is:
+
+```powershell
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-exit-strategies --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+This diagnostic focuses on the exit mechanism instead of more renderer-flag permutations. It records source refs for console-command-file timing, `quit`, Settings Registry runtime console commands, and launcher lifecycle callbacks before deciding whether a candidate can run. On the current source inspection, immediate console-file quit and Settings Registry runtime-console quit are source-validated but rejected because they still execute before the launcher main loop; delayed/tick-queued quit, help/version/no-op, command-line-plus-quit, ServerLauncher fallback, and temp/sandbox level exit remain rejected until source validates a bounded no-production-level exit path. A blocked diagnostic is honest evidence and must not be converted into runtime execution proof.
+
 When using the produced paired Editor on the controlled runner, pass it explicitly:
 
 ```powershell
