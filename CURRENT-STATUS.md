@@ -1,7 +1,16 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Harden Direct ProcPrefab Content Assertions v1 is in progress:
+- Pin Character-Specific ProcPrefab Component Assertions v1 is in progress:
+  - PR #121 was merged into `main`, and `codex/pin-character-specific-procprefab-component-assertions-v1` was created from updated `main`
+  - the direct `.procprefab` product instantiation proof remains preserved: APB evidence for `pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab`, Asset Catalog path `assets/characters/maxine/release/maxine_idle_fbx.procprefab`, AssetId `{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305`, and `PrefabPublicRequestBus.InstantiatePrefab` with product path string, empty parent entity id, and `azlmbr.math.Vector3`
+  - the PR #121 structural content assertions remain preserved: valid created container/entity evidence, owning prefab path match, positive created entity count, Transform inventory on direct procprefab-created content, and clean selected-path missing-asset/load-error scans
+  - added targeted `procprefab-character-component-assertions` diagnostics for the approved temp level; the mode inspects direct-product-created container/child entities, probes safe `EditorComponentAPIBus` candidate component TypeIds, and records character-specific component presence and asset-reference readback separately from generic Transform/content evidence
+  - live discovery found stable candidate TypeIds for Actor `{A863EE1B-8CFD-4EDD-BA0D-1CEC2879AD44}`, Mesh `{DCE68F6E-2E16-4CB4-A834-B6C2F900A7E9}`, Material `{02B60E9D-470B-447D-A6EE-7D635B154183}`, Animation `{770F0A71-59EA-413B-8DAB-235FB0FF1384}`, and PhysX `{2389DDC7-871B-42C6-9C95-2A679DDA0158}` / `{20382794-0E74-4860-9C35-A19F22DC80D4}`; Skinned Mesh discovery remains `blocked_by_missing_binding`
+  - the current direct `.procprefab` Editor product instance exposes no Actor/Mesh/Material/Animation/PhysX component presence or APB-product asset-reference readback through the validated Editor component inventory, so `procprefab_character_assertions` is recorded as `unavailable_with_verified_reason` with `direct_procprefab_character_components_not_exposed_in_editor_product_instance`; Transform-only evidence is not counted as character-specific pass
+  - required character assertions currently require no selected-path missing actor, mesh, material, animation, or load-error signals; that scan passed, and no required character-specific assertion failed
+  - Actor asset assignment remains proven, temp source-prefab instantiation remains proven, direct product content assertions remain proven, live publication remains false, release packaging remains false, production levels remain forbidden, and no production-ready release claim is made
+- Harden Direct ProcPrefab Content Assertions v1 completed in PR #121:
   - PR #120 was merged into `main`, and `codex/harden-direct-procprefab-content-assertions-v1` was created from updated `main`
   - the direct `.procprefab` product instantiation proof from PR #120 is preserved, but the smoke contract now requires `direct_procprefab_content_assertions` before a verified direct product pass can stand
   - added targeted `procprefab-content-assertions` diagnostics for the approved temp level; the mode uses the already-pinned `PrefabPublicRequestBus.InstantiatePrefab` direct product path and records post-instantiation assertions separately from the source-prefab baseline

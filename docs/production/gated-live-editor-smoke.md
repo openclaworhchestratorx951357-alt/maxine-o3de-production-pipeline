@@ -225,6 +225,20 @@ This mode still requires the APB `procprefab` product evidence and still uses `P
 
 Full smoke may pass only when direct product instantiation remains verified and no required content assertion fails. Source-prefab creation remains the stable Editor smoke baseline, but it is not counted as direct product content proof.
 
+## Character-Specific ProcPrefab Assertions
+
+The character-specific assertion slice adds a targeted diagnostic mode for the already-proven direct product path:
+
+```powershell
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --enable-editor-smoke --strict-integration --diagnostic-mode procprefab-character-component-assertions --timeout-seconds 480 --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de --apb-report artifacts/o3de-integration/apb/<run>/asset_processor_batch_live_report.json
+```
+
+This mode keeps generic direct product content assertions separate from character-specific proof. It reuses the direct `.procprefab` instantiation path, validates the PR #121 container/entity/owning-path/content checks, traverses the created container/child entities through safe Editor APIs, probes candidate character component TypeIds with `EditorComponentAPIBus.FindComponentTypeIdsByEntityType` and `HasComponentOfType`, and records any safe component property or asset-reference readback.
+
+The current paired runner discovers candidate TypeIds for Actor, Mesh, Material, Animation, and PhysX-related components, while Skinned Mesh discovery remains typed `blocked_by_missing_binding`. The instantiated direct `.procprefab` product currently exposes no Actor, Mesh, Material, Animation, PhysX, or APB-product asset-reference component evidence through the validated Editor component inventory. The report therefore records `procprefab_character_assertions.status=unavailable_with_verified_reason` with `direct_procprefab_character_components_not_exposed_in_editor_product_instance`; Transform-only evidence remains structural content evidence and is not counted as character-specific pass.
+
+Required character assertions currently require the selected direct product path to have no missing actor, mesh, material, animation, or load-error signals in bounded Editor log scanning. Those required checks must pass for full smoke. Optional or unavailable character component surfaces remain explicit typed evidence and do not become required passes until live evidence proves they are stable and expected for this product.
+
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 
 This wiring does not publish, mutate production levels, contact external services, or claim production-ready completion.
