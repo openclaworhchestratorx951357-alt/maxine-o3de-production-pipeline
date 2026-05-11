@@ -32,6 +32,7 @@ DIAGNOSTIC_MODES = {
     "actor-asset-assignment",
     "prefab-binding",
     "prefab-instantiation",
+    "procprefab-product-instantiation",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -41,6 +42,23 @@ TYPED_BLOCKED_STATUSES = {
     "blocked_by_missing_product_evidence",
     "blocked_by_missing_binding",
     "blocked_by_unsafe_operation",
+    "blocked_by_unpinned_signature",
+    "blocked_by_unsafe_argument_semantics",
+    "blocked_by_unsupported_product_asset_type",
+    "blocked_by_editor_binding_limitation",
+    "unsupported_by_engine_binding",
+    "procprefab_product_not_editor_instantiable_with_current_binding",
+    "procprefab_product_requires_runtime_spawnable_path",
+    "source_prefab_instantiation_pass_direct_product_unsupported",
+}
+DIRECT_PROCPREFAB_TYPED_NONVERIFIED_STATUSES = {
+    "procprefab_product_not_editor_instantiable_with_current_binding",
+    "procprefab_product_requires_runtime_spawnable_path",
+    "blocked_by_unpinned_signature",
+    "blocked_by_unsafe_argument_semantics",
+    "blocked_by_unsupported_product_asset_type",
+    "blocked_by_editor_binding_limitation",
+    "blocked_by_missing_binding",
     "unsupported_by_engine_binding",
 }
 SCRIPT_STARTED_MONOTONIC = time.monotonic()
@@ -123,6 +141,8 @@ def main() -> int:
             "component_binding_checks": report.get("component_binding_checks", {"status": "not_run"}),
             "actor_binding_checks": report.get("actor_binding_checks", {"status": "not_run"}),
             "prefab_binding_checks": report.get("prefab_binding_checks", {"status": "not_run"}),
+            "source_prefab_baseline_result": report.get("source_prefab_baseline_result", {"status": "not_run"}),
+            "direct_procprefab_product_semantics": report.get("direct_procprefab_product_semantics", {"status": "not_run"}),
             "property_path_discovery": report.get("property_path_discovery", {}),
             "property_list_summary": report.get("property_list_summary", {}),
             "property_access_summary": report.get("property_access_summary", {}),
@@ -144,6 +164,7 @@ def main() -> int:
         "actor-asset-assignment",
         "prefab-binding",
         "prefab-instantiation",
+        "procprefab-product-instantiation",
         "full",
     }
     if needs_temp_level and not allow_temp_level:
@@ -199,6 +220,7 @@ def main() -> int:
         "actor-asset-assignment",
         "prefab-binding",
         "prefab-instantiation",
+        "procprefab-product-instantiation",
         "full",
     }:
         _write_progress_marker(progress_log, "entity_create_started", "started", "Creating minimal temporary smoke entity.")
@@ -226,6 +248,7 @@ def main() -> int:
         "actor-asset-assignment",
         "prefab-binding",
         "prefab-instantiation",
+        "procprefab-product-instantiation",
         "full",
     }:
         binding_report = _run_binding_checks(
@@ -486,19 +509,24 @@ def _run_binding_checks(
     else:
         result["actor_binding_checks"] = _skipped_check("actor-binding")
 
-    if diagnostic_mode in {"prefab-binding", "prefab-instantiation", "full"}:
+    if diagnostic_mode in {"prefab-binding", "prefab-instantiation", "procprefab-product-instantiation", "full"}:
         _write_progress_marker(progress_log, "prefab_binding_started", "started", "Running prefab/procprefab binding surface checks.")
         prefab_checks = _run_prefab_binding_checks(
             report,
             safe_call_results,
             entity_id=entity_id,
-            attempt_instantiation=diagnostic_mode in {"prefab-instantiation", "full"},
+            attempt_instantiation=diagnostic_mode in {"prefab-instantiation", "procprefab-product-instantiation", "full"},
+            attempt_direct_product=diagnostic_mode in {"procprefab-product-instantiation", "full"},
             progress_log=progress_log,
         )
         result["prefab_binding_checks"] = prefab_checks
         result["prefab_smoke"] = _smoke_from_binding_check(prefab_checks)
         if isinstance(prefab_checks.get("instantiation"), Mapping):
             result["prefab_instantiation"] = prefab_checks["instantiation"]
+        if isinstance(prefab_checks.get("source_prefab_baseline_result"), Mapping):
+            result["source_prefab_baseline_result"] = prefab_checks["source_prefab_baseline_result"]
+        if isinstance(prefab_checks.get("direct_procprefab_product_semantics"), Mapping):
+            result["direct_procprefab_product_semantics"] = prefab_checks["direct_procprefab_product_semantics"]
         _write_progress_marker(progress_log, "prefab_binding_returned", str(prefab_checks.get("status", "returned")), "Prefab binding checks returned.")
     else:
         result["prefab_binding_checks"] = _skipped_check("prefab-binding")
@@ -529,6 +557,7 @@ def _targeted_binding_blocker(report: Mapping[str, Any], diagnostic_mode: str) -
         "actor-asset-assignment": "actor_binding_checks",
         "prefab-binding": "prefab_binding_checks",
         "prefab-instantiation": "prefab_binding_checks",
+        "procprefab-product-instantiation": "prefab_binding_checks",
     }
     field = target_fields.get(diagnostic_mode)
     if not field:
@@ -847,6 +876,7 @@ def _run_prefab_binding_checks(
     *,
     entity_id: Any,
     attempt_instantiation: bool,
+    attempt_direct_product: bool,
     progress_log: Path | None,
 ) -> Dict[str, Any]:
     procprefab_product = _product_ref(report, "procprefab") or _product_ref(report, "prefab")
@@ -885,7 +915,33 @@ def _run_prefab_binding_checks(
         str(instantiation.get("status", "returned")),
         "Prefab instantiation diagnostic returned.",
     )
-    if instantiation.get("status") == "pass":
+    source_prefab_baseline_result = dict(instantiation)
+    if attempt_direct_product:
+        _write_progress_marker(
+            progress_log,
+            "procprefab_product_instantiation_started",
+            "started",
+            "Probing direct APB .procprefab product load and instantiation semantics.",
+        )
+        direct_semantics = _probe_direct_procprefab_product_semantics(
+            report,
+            surface,
+            safe_call_results,
+            entity_id=entity_id,
+        )
+        direct_semantics["source_prefab_baseline_result"] = source_prefab_baseline_result
+        _write_progress_marker(
+            progress_log,
+            "procprefab_product_instantiation_returned",
+            str(direct_semantics.get("status", "returned")),
+            "Direct APB .procprefab product semantics probe returned.",
+        )
+    else:
+        direct_semantics = _skipped_check("procprefab-product-instantiation")
+
+    if instantiation.get("status") == "pass" and (
+        not attempt_direct_product or _direct_procprefab_semantics_allows_pass(direct_semantics)
+    ):
         return {
             **result,
             "status": "pass",
@@ -897,14 +953,16 @@ def _run_prefab_binding_checks(
                 "position": "azlmbr.math.Vector3",
             },
             "instantiation": instantiation,
-            "procprefab_direct_load": {
-                "status": "unsupported_by_engine_binding",
-                "reason": "PrefabPublicRequestBus.InstantiatePrefab is documented for source .prefab paths; APB procprefab remains product evidence, not the selected Editor source-prefab argument.",
-            },
+            "source_prefab_baseline_result": source_prefab_baseline_result,
+            "direct_procprefab_product_semantics": direct_semantics,
         }
     return {
         **result,
-        "status": instantiation.get("status", "blocked_by_unsafe_operation"),
+        "status": (
+            direct_semantics.get("status", "blocked_by_unsafe_operation")
+            if instantiation.get("status") == "pass"
+            else instantiation.get("status", "blocked_by_unsafe_operation")
+        ),
         "selected_call": "PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab",
         "argument_value_shape": {
             "prefab_path": "absolute temp-level .prefab path under Levels/_maxine_smoke",
@@ -913,7 +971,13 @@ def _run_prefab_binding_checks(
             "position": "azlmbr.math.Vector3",
         },
         "instantiation": instantiation,
-        "blocked_reason": instantiation.get("blocked_reason", "prefab_instantiation_failed"),
+        "source_prefab_baseline_result": source_prefab_baseline_result,
+        "direct_procprefab_product_semantics": direct_semantics,
+        "blocked_reason": (
+            direct_semantics.get("blocked_reason")
+            or direct_semantics.get("unsupported_reason")
+            or instantiation.get("blocked_reason", "prefab_instantiation_failed")
+        ),
         "message": "Prefab surface discovery passed, but temp-level prefab instantiation did not pass.",
     }
 
@@ -1443,6 +1507,359 @@ def _instantiate_temp_prefab(entity_id: Any, safe_call_results: List[Dict[str, A
         "created_entity_id": _safe_serialize(created_entity_id),
         "owning_instance_prefab_path": _redacted_project_temp_path(str(_unwrap_outcome(owning_value))) if owning_status == "pass" else "",
         "owning_instance_prefab_path_status": owning_status,
+    }
+
+
+def _direct_procprefab_semantics_allows_pass(semantics: Mapping[str, Any]) -> bool:
+    if semantics.get("direct_product_instantiation_verified") is True:
+        instantiation = semantics.get("procprefab_direct_product_instantiation_result", {})
+        try:
+            created_count = int(instantiation.get("created_entity_count", 0) or 0) if isinstance(instantiation, Mapping) else 0
+        except (TypeError, ValueError):
+            created_count = 0
+        return (
+            semantics.get("direct_product_instantiation_claimed") is True
+            and semantics.get("direct_product_instantiation_supported") is True
+            and isinstance(instantiation, Mapping)
+            and instantiation.get("status") == "pass"
+            and created_count > 0
+        )
+    status = str(semantics.get("status", "")).strip()
+    instantiation = semantics.get("procprefab_direct_product_instantiation_result", {})
+    instantiation_status = str(instantiation.get("status", "")).strip() if isinstance(instantiation, Mapping) else ""
+    reason = str(
+        semantics.get("unsupported_reason")
+        or semantics.get("blocked_reason")
+        or (instantiation.get("reason", "") if isinstance(instantiation, Mapping) else "")
+    ).strip()
+    return (instantiation_status or status) in DIRECT_PROCPREFAB_TYPED_NONVERIFIED_STATUSES and bool(reason)
+
+
+def _probe_direct_procprefab_product_semantics(
+    report: Mapping[str, Any],
+    prefab_surface: Mapping[str, Any],
+    safe_call_results: List[Dict[str, Any]],
+    *,
+    entity_id: Any,
+) -> Dict[str, Any]:
+    procprefab_product = _product_ref(report, "procprefab")
+    if not procprefab_product:
+        return {
+            "status": "blocked_by_missing_product_evidence",
+            "procprefab_product_evidence": {"status": "missing"},
+            "direct_product_instantiation_claimed": False,
+            "direct_product_instantiation_supported": False,
+            "direct_product_instantiation_verified": False,
+            "blocked_reason": "procprefab_product_missing",
+        }
+
+    asset_resolution = _resolve_asset_id(procprefab_product, safe_call_results)
+    base: Dict[str, Any] = {
+        "status": "blocked_by_editor_binding_limitation",
+        "procprefab_product_evidence": {
+            "status": "pass",
+            "product_path": procprefab_product,
+            "evidence_source": "APB product evidence",
+        },
+        "procprefab_product_path": procprefab_product,
+        "procprefab_asset_id_resolution": _public_asset_resolution(asset_resolution),
+        "procprefab_asset_id": str(asset_resolution.get("asset_id", "")),
+        "procprefab_asset_hint": str(asset_resolution.get("selected_asset_catalog_path", "")),
+        "procprefab_catalog_lookup_result": _public_asset_resolution(asset_resolution),
+        "procprefab_binding_surface": {
+            **dict(prefab_surface),
+            "source_evidence": {
+                "status": "pass",
+                "selected_editor_surface": "PrefabPublicRequestBus.InstantiatePrefab",
+                "source_refs": [
+                    "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/UI/Prefab/PrefabSaveLoadHandler.cpp",
+                    "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/UI/Prefab/PrefabIntegrationManager.cpp",
+                    "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabPublicRequestBus.h",
+                ],
+                "conclusion": "Editor procedural-prefab UI paths pass product .procprefab paths into PrefabPublicInterface::InstantiatePrefab.",
+            },
+        },
+        "procprefab_selected_call": "PrefabPublicRequestBus.InstantiatePrefab",
+        "procprefab_argument_shape": {
+            "prefab_path": "APB procprefab product path or AssetCatalog-selected product path",
+            "parent_entity_id": "azlmbr.entity.EntityId",
+            "position": "azlmbr.math.Vector3",
+        },
+        "direct_product_instantiation_claimed": False,
+        "direct_product_instantiation_supported": False,
+        "direct_product_instantiation_verified": False,
+        "fake_success": False,
+    }
+
+    if entity_id is None:
+        return {
+            **base,
+            "status": "blocked_by_readiness",
+            "blocked_reason": "entity_smoke_not_available",
+            "procprefab_direct_product_instantiation_result": {
+                "status": "blocked_by_readiness",
+                "reason": "entity_smoke_not_available",
+                "created_entity_count": 0,
+            },
+            "procprefab_created_entity_evidence": {"status": "not_created", "created_entity_count": 0},
+        }
+
+    try:
+        import azlmbr.bus as bus  # type: ignore
+        import azlmbr.entity as entity  # type: ignore
+        import azlmbr.math as math  # type: ignore
+        import azlmbr.prefab as prefab  # type: ignore
+    except Exception as exc:
+        return {
+            **base,
+            "status": "unsupported_by_engine_binding",
+            "blocked_reason": "azlmbr_prefab_direct_product_import_failed",
+            "error": str(exc),
+            "procprefab_direct_product_instantiation_result": {
+                "status": "unsupported_by_engine_binding",
+                "reason": "azlmbr_prefab_direct_product_import_failed",
+                "created_entity_count": 0,
+            },
+            "procprefab_created_entity_evidence": {"status": "not_created", "created_entity_count": 0},
+        }
+
+    candidates = _procprefab_product_path_candidates(procprefab_product, asset_resolution)
+    instantiation = _probe_direct_procprefab_instantiate(prefab, bus, entity, math, candidates, safe_call_results)
+    load_result = {
+        "status": "skipped_by_mode",
+        "selected_call": "azlmbr.prefab.LoadTemplate",
+        "reason": "Direct InstantiatePrefab probe is the selected bounded product-path check.",
+    }
+    spawnable_result = {
+        "status": "skipped_by_mode",
+        "selected_call": "PrefabPublicRequestBus.CreateInMemorySpawnableAsset",
+        "reason": "Spawnable load-only probe is opt-in after direct instantiation does not pass.",
+    }
+
+    if instantiation.get("status") == "pass":
+        return {
+            **base,
+            "status": "pass",
+            "procprefab_direct_product_load_result": load_result,
+            "procprefab_direct_product_instantiation_result": instantiation,
+            "procprefab_created_entity_evidence": {
+                "status": "pass",
+                "created_entity_count": instantiation.get("created_entity_count", 0),
+                "container_entity": instantiation.get("container_entity", ""),
+                "owning_instance_prefab_path": instantiation.get("owning_instance_prefab_path", ""),
+            },
+            "direct_product_instantiation_claimed": True,
+            "direct_product_instantiation_supported": True,
+            "direct_product_instantiation_verified": True,
+            "unsupported_reason": "",
+            "blocked_reason": "",
+        }
+
+    if os.environ.get("MAXINE_EDITOR_SMOKE_ENABLE_DIRECT_PROCPREFAB_LOAD_PROBES") == "1":
+        load_result = _probe_direct_procprefab_product_load(prefab, bus, candidates, safe_call_results)
+        spawnable_result = _probe_direct_procprefab_spawnable(prefab, bus, candidates, safe_call_results)
+
+    unsupported_reason = "procprefab_product_not_editor_instantiable_with_current_binding"
+    if spawnable_result.get("status") == "pass":
+        unsupported_reason = "procprefab_product_requires_runtime_spawnable_path"
+    return {
+        **base,
+        "status": unsupported_reason,
+        "procprefab_direct_product_load_result": load_result,
+        "procprefab_direct_product_instantiation_result": {
+            **instantiation,
+            "status": unsupported_reason,
+            "reason": instantiation.get("blocked_reason")
+            or instantiation.get("reason")
+            or "PrefabPublicRequestBus.InstantiatePrefab did not produce a valid Editor entity from the direct APB procprefab product path.",
+        },
+        "procprefab_created_entity_evidence": {"status": "not_created", "created_entity_count": 0},
+        "spawnable_or_load_probe": spawnable_result,
+        "unsupported_reason": unsupported_reason,
+        "blocked_reason": "",
+    }
+
+
+def _procprefab_product_path_candidates(product_path: str, asset_resolution: Mapping[str, Any]) -> List[str]:
+    normalized = product_path.replace("\\", "/").strip()
+    candidates = [normalized]
+    selected = str(asset_resolution.get("selected_asset_catalog_path", "")).strip()
+    if selected:
+        candidates.append(selected.replace("\\", "/"))
+    if normalized.lower().startswith("pc/"):
+        candidates.append(normalized[3:])
+    if normalized.lower().startswith("cache/"):
+        parts = normalized.split("/", 2)
+        if len(parts) == 3:
+            candidates.append(parts[2])
+    return _unique([candidate for candidate in candidates if candidate.lower().endswith(".procprefab")])
+
+
+def _probe_direct_procprefab_product_load(
+    prefab: Any,
+    bus: Any,
+    candidates: Sequence[str],
+    safe_call_results: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    attempts: List[Dict[str, Any]] = []
+    if hasattr(prefab, "LoadTemplate"):
+        for candidate in candidates:
+            try:
+                value = prefab.LoadTemplate(candidate)
+                serialized = _safe_serialize(value)
+                status = "pass" if str(serialized).strip() not in {"", "0", "None"} else "fail"
+                attempts.append({"path": candidate, "status": status, "template_id": serialized})
+                safe_call_results.append(
+                    {
+                        "call": "azlmbr.prefab.LoadTemplate",
+                        "status": status,
+                        "args_shape": "1 argument",
+                        "asset_path": candidate,
+                        "result": serialized,
+                    }
+                )
+                if status == "pass":
+                    return {
+                        "status": "pass",
+                        "selected_call": "azlmbr.prefab.LoadTemplate",
+                        "selected_product_path": candidate,
+                        "template_id": serialized,
+                        "attempts": attempts,
+                    }
+            except Exception as exc:
+                attempts.append({"path": candidate, "status": "unsupported_by_engine_binding", "error": str(exc)})
+                safe_call_results.append(
+                    {
+                        "call": "azlmbr.prefab.LoadTemplate",
+                        "status": "unsupported_by_engine_binding",
+                        "args_shape": "1 argument",
+                        "asset_path": candidate,
+                        "error": str(exc),
+                    }
+                )
+    if hasattr(prefab, "PrefabLoaderScriptingBus"):
+        try:
+            value = prefab.PrefabLoaderScriptingBus(bus.Broadcast, "SaveTemplateToString", 0)
+            safe_call_results.append(
+                {
+                    "call": "PrefabLoaderScriptingBus.SaveTemplateToString",
+                    "status": "unsupported_by_engine_binding" if not _outcome_success(value) else "pass",
+                    "args_shape": "1 argument",
+                    "result": _safe_serialize(_unwrap_outcome(value)),
+                }
+            )
+        except Exception as exc:
+            safe_call_results.append(
+                {
+                    "call": "PrefabLoaderScriptingBus.SaveTemplateToString",
+                    "status": "unsupported_by_engine_binding",
+                    "args_shape": "1 argument",
+                    "error": str(exc),
+                }
+            )
+    return {
+        "status": "unsupported_by_engine_binding",
+        "selected_call": "azlmbr.prefab.LoadTemplate",
+        "attempts": attempts,
+        "reason": "No safe direct procprefab template-load result was exposed by the current Editor Python binding surface.",
+    }
+
+
+def _probe_direct_procprefab_spawnable(
+    prefab: Any,
+    bus: Any,
+    candidates: Sequence[str],
+    safe_call_results: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    spawnable_name = "maxine_smoke_direct_procprefab_spawnable"
+    attempts: List[Dict[str, Any]] = []
+    for candidate in candidates:
+        status, value = _prefab_bus_call(prefab, bus, "CreateInMemorySpawnableAsset", (candidate, spawnable_name), safe_call_results)
+        attempts.append({"path": candidate, "status": status, "asset_id": _safe_serialize(_unwrap_outcome(value))})
+        if status == "pass":
+            has_status, has_value = _prefab_bus_call(prefab, bus, "HasInMemorySpawnableAsset", (spawnable_name,), safe_call_results)
+            id_status, id_value = _prefab_bus_call(prefab, bus, "GetInMemorySpawnableAssetId", (spawnable_name,), safe_call_results)
+            remove_status, _remove_value = _prefab_bus_call(prefab, bus, "RemoveInMemorySpawnableAsset", (spawnable_name,), safe_call_results)
+            return {
+                "status": "pass",
+                "selected_call": "PrefabPublicRequestBus.CreateInMemorySpawnableAsset",
+                "selected_product_path": candidate,
+                "spawnable_name": spawnable_name,
+                "asset_id": _safe_serialize(_unwrap_outcome(id_value)) if id_status == "pass" else _safe_serialize(_unwrap_outcome(value)),
+                "has_spawnable_status": has_status,
+                "has_spawnable": bool(_unwrap_outcome(has_value)) if has_status == "pass" else False,
+                "cleanup_status": remove_status,
+                "attempts": attempts,
+            }
+    return {
+        "status": "unsupported_by_engine_binding",
+        "selected_call": "PrefabPublicRequestBus.CreateInMemorySpawnableAsset",
+        "attempts": attempts,
+        "reason": "Direct procprefab product did not create an in-memory spawnable through the current Editor Python binding surface.",
+    }
+
+
+def _probe_direct_procprefab_instantiate(
+    prefab: Any,
+    bus: Any,
+    entity: Any,
+    math: Any,
+    candidates: Sequence[str],
+    safe_call_results: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    attempts: List[Dict[str, Any]] = []
+    for candidate in candidates:
+        status, value = _prefab_bus_call(
+            prefab,
+            bus,
+            "InstantiatePrefab",
+            (candidate, entity.EntityId(), math.Vector3(0.0, 0.0, 0.0)),
+            safe_call_results,
+        )
+        created_entity_id = _unwrap_outcome(value)
+        attempt = {
+            "path": candidate,
+            "status": status,
+            "result": _safe_serialize(created_entity_id),
+        }
+        attempts.append(attempt)
+        if status == "pass" and _entity_id_valid(created_entity_id):
+            owning_status, owning_value = _prefab_bus_call(
+                prefab,
+                bus,
+                "GetOwningInstancePrefabPath",
+                (created_entity_id,),
+                safe_call_results,
+            )
+            owning_path = str(_unwrap_outcome(owning_value)) if owning_status == "pass" else ""
+            return {
+                "status": "pass",
+                "selected_call": "PrefabPublicRequestBus.InstantiatePrefab",
+                "selected_product_path": candidate,
+                "argument_value_shape": {
+                    "prefab_path": "direct APB procprefab product path",
+                    "parent_entity_id": "azlmbr.entity.EntityId()",
+                    "position": "azlmbr.math.Vector3",
+                },
+                "created_entity_count": 1,
+                "container_entity": _safe_serialize(created_entity_id),
+                "created_entity_id": _safe_serialize(created_entity_id),
+                "owning_instance_prefab_path": _redacted_project_temp_path(owning_path) if owning_path else "",
+                "owning_instance_prefab_path_status": owning_status,
+                "attempts": attempts,
+            }
+    return {
+        "status": "procprefab_product_not_editor_instantiable_with_current_binding",
+        "selected_call": "PrefabPublicRequestBus.InstantiatePrefab",
+        "argument_value_shape": {
+            "prefab_path": "direct APB procprefab product path",
+            "parent_entity_id": "azlmbr.entity.EntityId()",
+            "position": "azlmbr.math.Vector3",
+        },
+        "attempted_product_paths": list(candidates),
+        "created_entity_count": 0,
+        "attempts": attempts,
+        "blocked_reason": "direct_procprefab_instantiate_returned_no_container_entity",
     }
 
 

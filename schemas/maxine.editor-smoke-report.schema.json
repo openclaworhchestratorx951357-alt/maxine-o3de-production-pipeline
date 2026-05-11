@@ -100,6 +100,7 @@
         "actor-asset-assignment",
         "prefab-binding",
         "prefab-instantiation",
+        "procprefab-product-instantiation",
         "full"
       ]
     },
@@ -345,6 +346,14 @@
       "additionalProperties": true
     },
     "prefab_instantiation": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "source_prefab_baseline_result": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "direct_procprefab_product_semantics": {
       "type": "object",
       "additionalProperties": true
     },

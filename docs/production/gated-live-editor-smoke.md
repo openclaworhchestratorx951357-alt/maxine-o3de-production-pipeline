@@ -191,9 +191,27 @@ Prefab instantiation is pinned to this temp-level-only Editor source-prefab sequ
 - call `azlmbr.prefab.PrefabPublicRequestBus.InstantiatePrefab` with the temp source `.prefab`, an empty parent entity id, and `azlmbr.math.Vector3`
 - verify a created entity/container id and confirm `GetOwningInstancePrefabPath` points back to the temp source prefab
 
-This is a true Editor prefab instantiation proof for an approved temporary source prefab. Direct `.procprefab` product instantiation is not claimed: current binding evidence shows `.procprefab` product availability, but the selected safe Editor call path expects a source `.prefab` path. Reports keep that distinction explicit.
+This remains a true Editor prefab instantiation proof for an approved temporary source prefab. Direct `.procprefab` product instantiation is tracked separately so source-prefab success cannot be mistaken for direct product proof.
 
 Full smoke now incorporates Actor assignment and prefab instantiation evidence. A `full` pass is rejected when `actor_asset_assignment.readback.matched_approved_product` is not true, or when prefab instantiation lacks a created entity or verified template-load evidence.
+
+## Direct ProcPrefab Product Semantics
+
+The direct procprefab slice adds one more targeted diagnostic mode:
+
+```powershell
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --enable-editor-smoke --strict-integration --diagnostic-mode procprefab-product-instantiation --timeout-seconds 420 --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de --apb-report artifacts/o3de-integration/apb/<run>/asset_processor_batch_live_report.json
+```
+
+This mode specifically tests direct use of the APB product:
+
+```text
+pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab
+```
+
+It keeps the source-prefab baseline separate. `PrefabPublicRequestBus.CreatePrefabInMemory + PrefabPublicRequestBus.InstantiatePrefab` remains the stable Editor smoke path for a temporary source `.prefab` under `Levels/_maxine_smoke`. The direct product diagnostic records `direct_procprefab_product_semantics`, including APB product evidence, Asset Catalog lookup, the discovered `azlmbr.prefab` surface, the selected call and argument shape, direct load result, direct instantiation result, and explicit booleans for `direct_product_instantiation_claimed`, `direct_product_instantiation_supported`, and `direct_product_instantiation_verified`.
+
+The current authoritative source inspection shows O3DE Editor UI paths for procedural-prefab selection pass `.procprefab` product paths into `PrefabPublicInterface::InstantiatePrefab`. Live evidence now pins the matching Python-exposed path: `PrefabPublicRequestBus.InstantiatePrefab` with the AssetCatalog-selected product path `assets/characters/maxine/release/maxine_idle_fbx.procprefab`, an empty parent entity id, and `azlmbr.math.Vector3`. The APB-style `pc/...` path is recorded as a failed attempt, while the AssetCatalog-selected path instantiates and returns verified created-entity evidence. Load-only and in-memory spawnable probes are opt-in debugging aids and are not required for the full smoke pass.
 
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 

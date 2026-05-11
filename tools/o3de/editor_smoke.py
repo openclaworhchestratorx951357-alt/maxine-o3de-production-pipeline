@@ -48,9 +48,24 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     "actor-asset-assignment": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_actor_asset_assignment_smoke.py",
     "prefab-binding": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_prefab_binding_smoke.py",
     "prefab-instantiation": REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_prefab_instantiation_smoke.py",
+    "procprefab-product-instantiation": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_procprefab_product_instantiation_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
+DIRECT_PROCPREFAB_TYPED_NONVERIFIED_STATUSES = {
+    "procprefab_product_not_editor_instantiable_with_current_binding",
+    "procprefab_product_requires_runtime_spawnable_path",
+    "blocked_by_unpinned_signature",
+    "blocked_by_unsafe_argument_semantics",
+    "blocked_by_unsupported_product_asset_type",
+    "blocked_by_editor_binding_limitation",
+    "blocked_by_missing_binding",
+    "unsupported_by_engine_binding",
+}
 LIVE_EDITOR_GATE_ENV_VARS = (
     "MAXINE_ENABLE_O3DE_INTEGRATION",
     "MAXINE_ENABLE_O3DE_EDITOR_SMOKE",
@@ -118,6 +133,7 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             "actor-asset-assignment": "actor_binding_checks",
             "prefab-binding": "prefab_binding_checks",
             "prefab-instantiation": "prefab_binding_checks",
+            "procprefab-product-instantiation": "prefab_binding_checks",
         }
         target_field = targeted_binding_fields.get(diagnostic_mode)
         if str(report.get("status", "")) == "pass" and target_field:
@@ -162,6 +178,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
                     MXN_RUNTIME_SMOKE_FAIL,
                     "Prefab instantiation cannot report pass without created-instance or verified template-load evidence.",
                 )
+        if str(report.get("status", "")) == "pass" and diagnostic_mode in {"procprefab-product-instantiation", "full"}:
+            _validate_direct_procprefab_product_semantics(report, result)
         for smoke_field, check_field in (
             ("actor_smoke", "actor_binding_checks"),
             ("prefab_smoke", "prefab_binding_checks"),
@@ -219,6 +237,85 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
 
     result.details["cache_heuristic_used"] = cache_heuristic_used
     return result
+
+
+def _validate_direct_procprefab_product_semantics(report: Mapping[str, Any], result: ValidationResult) -> None:
+    prefab_checks = report.get("prefab_binding_checks", {})
+    semantics = report.get("direct_procprefab_product_semantics")
+    if not isinstance(semantics, Mapping) and isinstance(prefab_checks, Mapping):
+        semantics = prefab_checks.get("direct_procprefab_product_semantics")
+    if not isinstance(semantics, Mapping):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Direct procprefab diagnostics cannot pass without direct_procprefab_product_semantics evidence.",
+        )
+        return
+
+    product_evidence = semantics.get("procprefab_product_evidence", {})
+    if not isinstance(product_evidence, Mapping) or product_evidence.get("status") != "pass":
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Direct procprefab diagnostics require APB-backed procprefab product evidence.",
+        )
+
+    source_baseline = semantics.get("source_prefab_baseline_result")
+    if not isinstance(source_baseline, Mapping):
+        source_baseline = report.get("source_prefab_baseline_result")
+    if not isinstance(source_baseline, Mapping) and isinstance(prefab_checks, Mapping):
+        source_baseline = prefab_checks.get("source_prefab_baseline_result")
+    if not isinstance(source_baseline, Mapping) or source_baseline.get("status") != "pass":
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Direct procprefab diagnostics must preserve the proven source-prefab baseline pass.",
+        )
+
+    claimed = semantics.get("direct_product_instantiation_claimed") is True
+    verified = semantics.get("direct_product_instantiation_verified") is True
+    supported = semantics.get("direct_product_instantiation_supported") is True
+    direct_instantiation = semantics.get("procprefab_direct_product_instantiation_result", {})
+    if claimed and not verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Direct procprefab instantiation cannot be claimed without direct_product_instantiation_verified=true.",
+        )
+    if verified and (not claimed or not supported):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Verified direct procprefab instantiation must also be explicitly claimed and supported.",
+        )
+    if verified:
+        created_count = 0
+        if isinstance(direct_instantiation, Mapping):
+            try:
+                created_count = int(direct_instantiation.get("created_entity_count", 0) or 0)
+            except (TypeError, ValueError):
+                created_count = 0
+        if (
+            not isinstance(direct_instantiation, Mapping)
+            or direct_instantiation.get("status") != "pass"
+            or created_count <= 0
+            or not str(semantics.get("procprefab_selected_call", "")).strip()
+        ):
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Verified direct procprefab instantiation requires selected-call and created-entity evidence.",
+            )
+    else:
+        direct_status = ""
+        if isinstance(direct_instantiation, Mapping):
+            direct_status = str(direct_instantiation.get("status", "")).strip()
+        semantic_status = str(semantics.get("status", "")).strip()
+        observed_status = direct_status or semantic_status
+        reason = str(
+            semantics.get("unsupported_reason")
+            or semantics.get("blocked_reason")
+            or (direct_instantiation.get("reason", "") if isinstance(direct_instantiation, Mapping) else "")
+        ).strip()
+        if observed_status not in DIRECT_PROCPREFAB_TYPED_NONVERIFIED_STATUSES or not reason:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Unverified direct procprefab product behavior must report a precise typed unsupported or blocked reason.",
+            )
 
 
 def run_editor_smoke_corpus(
@@ -872,6 +969,8 @@ def _live_report_template(
         "component_binding_checks": {"status": "not_run"},
         "actor_binding_checks": {"status": "not_run"},
         "prefab_binding_checks": {"status": "not_run"},
+        "source_prefab_baseline_result": {"status": "not_run"},
+        "direct_procprefab_product_semantics": {"status": "not_run"},
         "property_path_discovery": {},
         "property_list_summary": {},
         "no_fake_success": True,
@@ -1004,6 +1103,8 @@ def _classify_stall_phase(marker: Mapping[str, Any]) -> str:
         return "prefab_binding_stall"
     if step == "prefab_instantiation_started":
         return "prefab_instantiation_stall"
+    if step == "procprefab_product_instantiation_started":
+        return "procprefab_product_instantiation_stall"
     if step == "report_write_started":
         return "report_write_stall"
     if status in {"started", "running"}:

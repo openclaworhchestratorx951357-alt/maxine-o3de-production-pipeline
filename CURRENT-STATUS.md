@@ -1,14 +1,25 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Prove Actor Asset Assignment and Prefab Instantiation in Temp Level v1 is in progress:
+- Pin Direct ProcPrefab Product Load/Instantiation Semantics v1 is in progress:
+  - PR #119 was merged into `main`, and `codex/pin-direct-procprefab-product-instantiation-semantics-v1` was created from updated `main`
+  - the Editor smoke contract now includes targeted `procprefab-product-instantiation` diagnostics plus semantic validation that separates direct `.procprefab` product proof from the already-proven temp source-prefab baseline
+  - direct `.procprefab` product instantiation is live-proven in the approved temp level: the smoke confirms APB product evidence for `pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab`, resolves the Asset Catalog path `assets/characters/maxine/release/maxine_idle_fbx.procprefab` to `{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305`, and calls `PrefabPublicRequestBus.InstantiatePrefab` with that AssetCatalog-selected product path, an empty parent entity id, and `azlmbr.math.Vector3`
+  - the APB-style `pc/...` procprefab path is recorded as a failed direct instantiate attempt; the AssetCatalog-selected product path returned a valid created entity/container and `GetOwningInstancePrefabPath` read back the direct `.procprefab` product path, so `direct_product_instantiation_claimed=true`, `direct_product_instantiation_supported=true`, and `direct_product_instantiation_verified=true`
+  - the source-prefab baseline remains live-proven and stable: `PrefabPublicRequestBus.CreatePrefabInMemory` followed by `PrefabPublicRequestBus.InstantiatePrefab` still creates and instantiates a temporary source `.prefab` under `Levels/_maxine_smoke`
+  - Actor asset assignment remains live-proven with Actor component `{A863EE1B-8CFD-4EDD-BA0D-1CEC2879AD44}`, property path `Actor asset`, setter `EditorComponentAPIBus.SetComponentProperty`, and `azlmbr.asset.AssetId` resolved from the approved `jack.actor` product
+  - APB product evidence remains a hard prerequisite; the latest live APB baseline, APB-only suite, and product evidence audit passed with `azmodel`, `actor`, `procprefab`, `motion`, `motionset`, `animgraph`, `pxmesh`, and `azmaterial`, with `cache_heuristic_used=false`
+  - targeted live diagnostics passed for `component-binding`, `actor-asset-assignment`, `prefab-instantiation`, `procprefab-product-instantiation`, and `full`; the include-editor-smoke integration suite also passed after rerunning APB first
+  - sanitized full-pass evidence is represented by `examples/editor-smoke/editor-smoke-live.release-rigged.pass.example.json`
+  - live publication remains false, release packaging remains false, Asset Cache deletion remains forbidden, production levels remain forbidden, and no production-ready release claim is made
+- Prove Actor Asset Assignment and Prefab Instantiation in Temp Level v1 completed in PR #119:
   - PR #118 was merged into `main`, and `codex/prove-actor-asset-assignment-prefab-instantiation-v1` was created from updated `main`
   - the Editor smoke contract now includes targeted `actor-asset-assignment` and `prefab-instantiation` diagnostic modes, with semantic validation that rejects live-pass reports unless Actor assignment readback and prefab created-instance/template-load evidence are present
   - Actor asset assignment is live-proven in the approved temp level: the smoke adds the Actor component `{A863EE1B-8CFD-4EDD-BA0D-1CEC2879AD44}`, discovers the `Actor asset` property path, resolves `pc/assets/characters/maxine/release/jack.actor` through the Asset Catalog as `assets/characters/maxine/release/jack.actor`, sets the property with `EditorComponentAPIBus.SetComponentProperty`, and verifies readback with `EditorComponentAPIBus.CompareComponentProperty`
   - prefab instantiation is live-proven with a temp source `.prefab` created under `Levels/_maxine_smoke`: the smoke uses `PrefabPublicRequestBus.CreatePrefabInMemory` followed by `PrefabPublicRequestBus.InstantiatePrefab`, verifies a created entity/container id, and confirms `GetOwningInstancePrefabPath` points back to the approved temp-level prefab path
   - APB product evidence remains a hard prerequisite; the latest live APB baseline and product evidence audit passed with `azmodel`, `actor`, `procprefab`, `motion`, `motionset`, `animgraph`, `pxmesh`, and `azmaterial`, with `cache_heuristic_used=false`
   - targeted live diagnostics passed for `component-binding`, `actor-binding`, `actor-asset-assignment`, `prefab-binding`, `prefab-instantiation`, and `full`; the include-editor-smoke integration suite also passed after rerunning APB first
-  - direct `.procprefab` product instantiation remains recorded as unsupported by the current Editor prefab binding semantics; this slice proves safe Editor source-prefab create/instantiate behavior in the approved temp level while preserving the `procprefab` product-evidence prerequisite
+  - direct `.procprefab` product instantiation remained the next precise target; this slice proved safe Editor source-prefab create/instantiate behavior in the approved temp level while preserving the `procprefab` product-evidence prerequisite
   - sanitized full-pass evidence is represented by `examples/editor-smoke/editor-smoke-live.release-rigged.pass.example.json`
   - live publication remains false, release packaging remains false, Asset Cache deletion remains forbidden, and production levels remain forbidden
 - Harden Editor Smoke Actor/Prefab/Component Binding Checks v1 completed in PR #118:
