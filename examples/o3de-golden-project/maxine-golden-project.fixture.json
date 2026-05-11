@@ -146,6 +146,29 @@
     "MAXINE_ENABLE_O3DE_EDITOR_SMOKE": "1 required for local Editor smoke integration",
     "MAXINE_ALLOW_LIVE_O3DE_COMMANDS": "1 required before any future live O3DE command"
   },
+  "runtime_exit_fixture": {
+    "fixture_source_ref": "o3de/gems/MaxineRuntimeExitFixture",
+    "gem_name": "MaxineRuntimeExitFixture",
+    "gem_type": "Code",
+    "shipping_behavior": false,
+    "enabled_by_default": false,
+    "settings_registry_keys": [
+      "/Amazon/MAXINE/RuntimeHarness/EnableExitFixture",
+      "/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks"
+    ],
+    "runtime_gates": [
+      "MAXINE_ENABLE_O3DE_RUNTIME_HARNESS",
+      "MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS",
+      "MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"
+    ],
+    "project_mutation_gate": "MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION",
+    "rebuild_gate": "MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD",
+    "source_readiness_is_runtime_execution_proof": false,
+    "rebuild_readiness_is_runtime_execution_proof": false,
+    "fixture_execution_is_runtime_character_proof": false,
+    "registration_enablement_policy": "Do not register or enable the fixture Gem in the live project unless the project mutation gate is explicit and the change is reversible.",
+    "rebuild_policy": "Do not rebuild runtime targets unless the rebuild gate is explicit. Never commit runtime binaries or build outputs."
+  },
   "safety": {
     "no_live_publication": true,
     "no_external_services": true,

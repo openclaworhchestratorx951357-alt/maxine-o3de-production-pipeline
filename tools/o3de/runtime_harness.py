@@ -38,6 +38,38 @@ DEFAULT_ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "o3de-integration" / "runtime-
 EXPECTED_PRODUCTS = ("azmodel", "actor", "procprefab", "motion", "motionset", "animgraph", "pxmesh", "azmaterial")
 RUNTIME_GATE_ENV_VARS = ("MAXINE_ENABLE_O3DE_RUNTIME_HARNESS", "MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS")
 PROJECT_NAME = "MAXINE_GoldenCorpus"
+RUNTIME_EXIT_FIXTURE_GEM_NAME = "MaxineRuntimeExitFixture"
+RUNTIME_EXIT_FIXTURE_SOURCE_PATH = REPO_ROOT / "o3de" / "gems" / RUNTIME_EXIT_FIXTURE_GEM_NAME
+RUNTIME_EXIT_FIXTURE_GEM_JSON = RUNTIME_EXIT_FIXTURE_SOURCE_PATH / "gem.json"
+RUNTIME_EXIT_FIXTURE_CMAKE = RUNTIME_EXIT_FIXTURE_SOURCE_PATH / "Code" / "CMakeLists.txt"
+RUNTIME_EXIT_FIXTURE_COMPONENT_HEADER = (
+    RUNTIME_EXIT_FIXTURE_SOURCE_PATH
+    / "Code"
+    / "Source"
+    / "Clients"
+    / "MaxineRuntimeExitFixtureSystemComponent.h"
+)
+RUNTIME_EXIT_FIXTURE_COMPONENT_SOURCE = (
+    RUNTIME_EXIT_FIXTURE_SOURCE_PATH
+    / "Code"
+    / "Source"
+    / "Clients"
+    / "MaxineRuntimeExitFixtureSystemComponent.cpp"
+)
+RUNTIME_EXIT_FIXTURE_MODULE_SOURCE = (
+    RUNTIME_EXIT_FIXTURE_SOURCE_PATH / "Code" / "Source" / "Clients" / "MaxineRuntimeExitFixtureModule.cpp"
+)
+RUNTIME_EXIT_FIXTURE_SETTINGS_KEYS = (
+    "/Amazon/MAXINE/RuntimeHarness/EnableExitFixture",
+    "/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks",
+)
+RUNTIME_EXIT_FIXTURE_GATE_ENV = (
+    "MAXINE_ENABLE_O3DE_RUNTIME_HARNESS=1",
+    "MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS=1",
+    "MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE=1",
+)
+RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION=1",)
+RUNTIME_EXIT_FIXTURE_REBUILD_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD=1",)
 WINDOWS_NTSTATUS_NAMES = {
     0xC0000005: "STATUS_ACCESS_VIOLATION",
 }
@@ -98,6 +130,8 @@ def run_runtime_harness(
     diagnose_runtime_quit_variants: bool = False,
     diagnose_runtime_exit_strategies: bool = False,
     diagnose_runtime_exit_fixture: bool = False,
+    check_runtime_exit_fixture_source: bool = False,
+    check_runtime_exit_fixture_rebuild_gate: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -117,6 +151,8 @@ def run_runtime_harness(
         and not diagnose_runtime_quit_variants
         and not diagnose_runtime_exit_strategies
         and not diagnose_runtime_exit_fixture
+        and not check_runtime_exit_fixture_source
+        and not check_runtime_exit_fixture_rebuild_gate
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -141,12 +177,18 @@ def run_runtime_harness(
             and not diagnose_runtime_quit_variants
             and not diagnose_runtime_exit_strategies
             and not diagnose_runtime_exit_fixture
+            and not check_runtime_exit_fixture_source
+            and not check_runtime_exit_fixture_rebuild_gate
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
             if diagnose_runtime_exit_strategies
             else "runtime_exit_fixture_diagnostic"
             if diagnose_runtime_exit_fixture
+            else "runtime_exit_fixture_source_readiness"
+            if check_runtime_exit_fixture_source
+            else "runtime_exit_fixture_rebuild_gate"
+            if check_runtime_exit_fixture_rebuild_gate
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -222,6 +264,8 @@ def run_runtime_harness(
         and not diagnose_runtime_quit_variants
         and not diagnose_runtime_exit_strategies
         and not diagnose_runtime_exit_fixture
+        and not check_runtime_exit_fixture_source
+        and not check_runtime_exit_fixture_rebuild_gate
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -255,6 +299,17 @@ def run_runtime_harness(
             }
         )
         return _finalize_report(report)
+
+    if check_runtime_exit_fixture_source:
+        return _run_runtime_exit_fixture_source_check(report, timeout_seconds=timeout_seconds)
+
+    if check_runtime_exit_fixture_rebuild_gate:
+        return _run_runtime_exit_fixture_rebuild_gate_check(
+            report,
+            engine_root=selected_engine,
+            project=selected_project,
+            timeout_seconds=timeout_seconds,
+        )
 
     gate_status = _runtime_gate_status(env_map)
     if gate_status["status"] != "pass":
@@ -408,6 +463,26 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
         "production_behavior",
     }:
         result.add_error(MXN_PATH_UNSAFE, "Runtime exit fixture must not be shipping or production behavior.")
+    if report.get("runtime_exit_fixture_is_shipping_behavior") is True:
+        result.add_error(MXN_PATH_UNSAFE, "Runtime exit fixture source must remain non-shipping behavior.")
+    if report.get("runtime_exit_fixture_enabled_by_default") is True:
+        result.add_error(MXN_PATH_UNSAFE, "Runtime exit fixture must be disabled by default.")
+    if str(report.get("runtime_exit_fixture_source_status", "")).strip() == "runtime_exit_fixture_source_ready":
+        if report.get("runtime_exit_fixture_source_owned_by_repo") is not True:
+            result.add_error(MXN_PATH_UNSAFE, "Ready runtime exit fixture source must be owned by this repository.")
+        source_path = str(report.get("runtime_exit_fixture_source_path", "")).replace("\\", "/").strip()
+        if source_path.startswith("/") or ":" in source_path or ".." in Path(source_path).parts:
+            result.add_error(MXN_PATH_UNSAFE, "Runtime exit fixture source path must be a safe repository-relative path.")
+        if report.get("runtime_execution_verified") is True and report.get("runtime_exit_fixture_execution_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime fixture source readiness is not runtime execution proof.")
+    if report.get("runtime_exit_fixture_project_mutation_attempted") is True and str(
+        report.get("runtime_exit_fixture_project_mutation_status", "")
+    ).strip() != "runtime_exit_fixture_project_mutation_gate_pass":
+        result.add_error(MXN_PATH_UNSAFE, "Runtime exit fixture project mutation requires the explicit project mutation gate.")
+    if report.get("runtime_exit_fixture_rebuild_attempted") is True and str(
+        report.get("runtime_exit_fixture_rebuild_gate_status", "")
+    ).strip() != "runtime_exit_fixture_rebuild_gate_pass":
+        result.add_error(MXN_PATH_UNSAFE, "Runtime exit fixture rebuild requires the explicit rebuild gate.")
 
     variants = report.get("runtime_command_variant_matrix", [])
     if isinstance(variants, list):
@@ -518,6 +593,12 @@ def print_text_report(report: Mapping[str, Any]) -> None:
         print(f"runtime_exit_fixture_status: {report.get('runtime_exit_fixture_status', '')}")
         print(f"runtime_exit_fixture_available: {str(report.get('runtime_exit_fixture_available', False)).lower()}")
         print(f"runtime_exit_fixture_execution_verified: {str(report.get('runtime_exit_fixture_execution_verified', False)).lower()}")
+    if report.get("runtime_exit_fixture_source_status") not in {None, "", "not_run"}:
+        print(f"runtime_exit_fixture_source_status: {report.get('runtime_exit_fixture_source_status', '')}")
+        print(f"runtime_exit_fixture_source_path: {report.get('runtime_exit_fixture_source_path', '')}")
+    if report.get("runtime_exit_fixture_rebuild_gate_status") not in {None, "", "not_run"}:
+        print(f"runtime_exit_fixture_rebuild_gate_status: {report.get('runtime_exit_fixture_rebuild_gate_status', '')}")
+        print(f"runtime_exit_fixture_rebuild_attempted: {str(report.get('runtime_exit_fixture_rebuild_attempted', False)).lower()}")
     print(f"runtime_character_proof_claimed: {str(report.get('runtime_character_proof_claimed', False)).lower()}")
     print(f"runtime_character_proof_verified: {str(report.get('runtime_character_proof_verified', False)).lower()}")
     print(f"live_runtime_execution: {str(report.get('live_runtime_execution', False)).lower()}")
@@ -641,12 +722,23 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_exit_fixture_scope": "",
         "runtime_exit_fixture_shipping_status": "",
         "runtime_exit_fixture_source_discovery_status": "not_run",
+        "runtime_exit_fixture_source_status": "not_run",
+        "runtime_exit_fixture_source_path": "",
+        "runtime_exit_fixture_source_owned_by_repo": False,
+        "runtime_exit_fixture_gem_name": "",
+        "runtime_exit_fixture_gem_type": "",
+        "runtime_exit_fixture_gem_json_path": "",
+        "runtime_exit_fixture_cmake_path": "",
+        "runtime_exit_fixture_component_name": "",
+        "runtime_exit_fixture_component_services": [],
         "runtime_exit_fixture_source_validation": {},
         "runtime_exit_fixture_source_refs": [],
         "runtime_exit_fixture_component_or_hook": "",
         "runtime_exit_fixture_lifecycle_point": "",
+        "runtime_exit_fixture_exit_api": "",
         "runtime_exit_fixture_gate": "",
         "runtime_exit_fixture_gate_env": [],
+        "runtime_exit_fixture_settings_registry_keys": [],
         "runtime_exit_fixture_settings_registry_key": "",
         "runtime_exit_fixture_command_line_arg": "",
         "runtime_exit_fixture_wait_ticks": "",
@@ -655,8 +747,23 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_exit_fixture_argument_shape": {},
         "runtime_exit_fixture_safety_profile": {},
         "runtime_exit_fixture_requires_rebuild": False,
+        "runtime_exit_fixture_rebuild_gate_status": "not_run",
+        "runtime_exit_fixture_rebuild_command": [],
+        "runtime_exit_fixture_rebuild_target": "",
+        "runtime_exit_fixture_rebuild_attempted": False,
+        "runtime_exit_fixture_rebuild_result": "",
+        "runtime_exit_fixture_rebuild_artifact_refs": [],
         "runtime_exit_fixture_rebuild_status": "",
         "runtime_exit_fixture_enabled_for_project": False,
+        "runtime_exit_fixture_registration_status": "not_run",
+        "runtime_exit_fixture_enablement_status": "not_run",
+        "runtime_exit_fixture_requires_project_mutation": False,
+        "runtime_exit_fixture_project_mutation_status": "not_run",
+        "runtime_exit_fixture_project_mutation_attempted": False,
+        "runtime_exit_fixture_project_mutation_reversible": False,
+        "runtime_exit_fixture_project_mutation_gate_env": [],
+        "runtime_exit_fixture_enabled_by_default": False,
+        "runtime_exit_fixture_is_shipping_behavior": False,
         "runtime_exit_fixture_mutates_production": False,
         "runtime_exit_fixture_uses_production_level": False,
         "runtime_exit_fixture_uses_temp_level": False,
@@ -1185,6 +1292,34 @@ def _run_runtime_exit_fixture_diagnostics(
 ) -> Dict[str, Any]:
     report.update(_runtime_command_pin_payload(command, timeout_seconds=timeout_seconds, execution_requested=False))
     report.update(_top_level_exit_fixture_blocked_payload(timeout_seconds=timeout_seconds))
+    return _finalize_report(report)
+
+
+def _run_runtime_exit_fixture_source_check(report: Dict[str, Any], *, timeout_seconds: int) -> Dict[str, Any]:
+    source_payload = _runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds)
+    report.update(source_payload)
+    return _finalize_report(report)
+
+
+def _run_runtime_exit_fixture_rebuild_gate_check(
+    report: Dict[str, Any],
+    *,
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+) -> Dict[str, Any]:
+    source_payload = _runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds)
+    if source_payload.get("status") != "pass":
+        report.update(source_payload)
+        report["runtime_harness_mode"] = "runtime_exit_fixture_rebuild_gate"
+        return _finalize_report(report)
+    rebuild_payload = _runtime_exit_fixture_rebuild_gate_payload(
+        engine_root=engine_root,
+        project=project,
+        timeout_seconds=timeout_seconds,
+    )
+    report.update(source_payload)
+    report.update(rebuild_payload)
     return _finalize_report(report)
 
 
@@ -1790,6 +1925,431 @@ def _top_level_exit_strategy_blocked_payload(candidates: Sequence[Mapping[str, A
             "runtime_exit_strategy_blocker_is_not_runtime_character_proof",
         ],
     }
+
+
+def _runtime_exit_fixture_source_probe() -> Dict[str, Any]:
+    checks: List[Dict[str, Any]] = []
+    errors: List[str] = []
+
+    def _record(check_id: str, passed: bool, detail: str) -> None:
+        checks.append({"id": check_id, "status": "pass" if passed else "fail", "detail": detail})
+        if not passed:
+            errors.append(check_id)
+
+    source_path = RUNTIME_EXIT_FIXTURE_SOURCE_PATH
+    source_owned_by_repo = _is_repo_relative_path(source_path)
+    _record("fixture_source_path_exists", source_path.is_dir(), _repo_relative(source_path))
+    _record("fixture_source_owned_by_repo", source_owned_by_repo, _repo_relative(source_path))
+    _record("fixture_gem_json_exists", RUNTIME_EXIT_FIXTURE_GEM_JSON.is_file(), _repo_relative(RUNTIME_EXIT_FIXTURE_GEM_JSON))
+    _record("fixture_cmake_exists", RUNTIME_EXIT_FIXTURE_CMAKE.is_file(), _repo_relative(RUNTIME_EXIT_FIXTURE_CMAKE))
+    _record(
+        "fixture_component_header_exists",
+        RUNTIME_EXIT_FIXTURE_COMPONENT_HEADER.is_file(),
+        _repo_relative(RUNTIME_EXIT_FIXTURE_COMPONENT_HEADER),
+    )
+    _record(
+        "fixture_component_source_exists",
+        RUNTIME_EXIT_FIXTURE_COMPONENT_SOURCE.is_file(),
+        _repo_relative(RUNTIME_EXIT_FIXTURE_COMPONENT_SOURCE),
+    )
+    _record(
+        "fixture_module_source_exists",
+        RUNTIME_EXIT_FIXTURE_MODULE_SOURCE.is_file(),
+        _repo_relative(RUNTIME_EXIT_FIXTURE_MODULE_SOURCE),
+    )
+
+    gem_payload: Dict[str, Any] = {}
+    if RUNTIME_EXIT_FIXTURE_GEM_JSON.is_file():
+        try:
+            gem_payload = json.loads(RUNTIME_EXIT_FIXTURE_GEM_JSON.read_text(encoding="utf-8-sig"))
+        except json.JSONDecodeError:
+            errors.append("fixture_gem_json_parse")
+            checks.append({"id": "fixture_gem_json_parse", "status": "fail", "detail": "gem.json is not valid JSON"})
+    _record(
+        "fixture_gem_name_matches",
+        str(gem_payload.get("gem_name", "")).strip() == RUNTIME_EXIT_FIXTURE_GEM_NAME,
+        str(gem_payload.get("gem_name", "")),
+    )
+    _record("fixture_gem_type_code", str(gem_payload.get("type", "")).strip() == "Code", str(gem_payload.get("type", "")))
+    metadata_text = json.dumps(gem_payload, sort_keys=True).lower() if gem_payload else ""
+    _record("fixture_metadata_non_shipping", "non-shipping" in metadata_text or "nonshipping" in metadata_text, "gem metadata")
+    _record("fixture_metadata_harness_only", "harness" in metadata_text and "runtime" in metadata_text, "gem metadata")
+
+    cmake_text = _read_text_if_present(RUNTIME_EXIT_FIXTURE_CMAKE)
+    source_text = _read_text_if_present(RUNTIME_EXIT_FIXTURE_COMPONENT_SOURCE)
+    header_text = _read_text_if_present(RUNTIME_EXIT_FIXTURE_COMPONENT_HEADER)
+    module_text = _read_text_if_present(RUNTIME_EXIT_FIXTURE_MODULE_SOURCE)
+    combined_source = "\n".join([cmake_text, source_text, header_text, module_text])
+    _record("fixture_uses_tick_bus", "AZ::TickBus" in combined_source, "AZ::TickBus")
+    _record("fixture_uses_exit_main_loop", "ExitMainLoop" in combined_source, "AzFramework::ApplicationRequests::ExitMainLoop")
+    _record(
+        "fixture_uses_settings_registry_enable_key",
+        RUNTIME_EXIT_FIXTURE_SETTINGS_KEYS[0] in combined_source,
+        RUNTIME_EXIT_FIXTURE_SETTINGS_KEYS[0],
+    )
+    _record(
+        "fixture_uses_settings_registry_tick_key",
+        RUNTIME_EXIT_FIXTURE_SETTINGS_KEYS[1] in combined_source,
+        RUNTIME_EXIT_FIXTURE_SETTINGS_KEYS[1],
+    )
+    _record("fixture_registers_system_component", "GetRequiredSystemComponents" in module_text, "AZ::Module")
+
+    source_ready = not errors
+    return {
+        "status": "runtime_exit_fixture_source_ready" if source_ready else "blocked_by_missing_repo_owned_runtime_fixture_gem",
+        "checks": checks,
+        "errors": errors,
+        "gem_payload": gem_payload,
+        "source_owned_by_repo": source_owned_by_repo,
+    }
+
+
+def _runtime_exit_fixture_source_ready_payload(*, timeout_seconds: int) -> Dict[str, Any]:
+    probe = _runtime_exit_fixture_source_probe()
+    source_ready = str(probe.get("status", "")).strip() == "runtime_exit_fixture_source_ready"
+    source_status = "runtime_exit_fixture_source_ready" if source_ready else "blocked_by_missing_repo_owned_runtime_fixture_gem"
+    source_validation = {
+        "status": source_status,
+        "summary": (
+            "A repo-owned, non-shipping O3DE Code Gem source path is present for a TickBus after-initialization "
+            "exit fixture. Source readiness is not runtime execution proof and does not enable or build the fixture."
+        )
+        if source_ready
+        else "The repo-owned runtime exit fixture Gem source path is missing or incomplete.",
+        "checks": probe.get("checks", []),
+        "source_refs": _runtime_exit_fixture_repo_source_refs(),
+        "lifecycle_surface": "AZ::Component::Activate plus AZ::TickBus::OnTick",
+        "exit_api": "AzFramework::ApplicationRequests::ExitMainLoop",
+        "settings_registry_keys": list(RUNTIME_EXIT_FIXTURE_SETTINGS_KEYS),
+        "repo_scope_result": source_status,
+    }
+    fixture = _runtime_exit_fixture_static_payload(timeout_seconds=timeout_seconds)
+    fixture.update(
+        {
+            "runtime_exit_fixture_status": "runtime_exit_fixture_ready_not_built" if source_ready else source_status,
+            "runtime_exit_fixture_available": False,
+            "runtime_exit_fixture_source_discovery_status": "runtime_exit_fixture_source_discovery_pass"
+            if source_ready
+            else "runtime_exit_fixture_source_discovery_inconclusive",
+            "runtime_exit_fixture_source_status": source_status,
+            "runtime_exit_fixture_source_validation": source_validation,
+            "runtime_exit_fixture_source_refs": _runtime_exit_fixture_source_refs() + _runtime_exit_fixture_repo_source_refs(),
+            "runtime_exit_fixture_blocked_reason": "blocked_by_fixture_not_enabled_for_project"
+            if source_ready
+            else "blocked_by_missing_repo_owned_runtime_fixture_gem",
+            "runtime_exit_fixture_unavailable_reason": "blocked_by_fixture_not_enabled_for_project"
+            if source_ready
+            else "blocked_by_missing_repo_owned_runtime_fixture_gem",
+            "runtime_exit_fixture_rebuild_status": "not_attempted",
+        }
+    )
+    return {
+        "status": "pass" if source_ready else "fail",
+        "runtime_harness_status": "runtime_exit_fixture_source_ready" if source_ready else source_status,
+        "runtime_harness_mode": "runtime_exit_fixture_source_readiness",
+        "runtime_exit_fixture": fixture,
+        **fixture,
+        "runtime_command_pinning_result": _runtime_command_pinning_result(),
+        "runtime_original_command_result": _runtime_original_command_result(),
+        "runtime_quit_variant_matrix_result": _runtime_quit_variant_matrix_result(),
+        "runtime_exit_strategy_result": _runtime_exit_strategy_result(),
+        "runtime_execution_attempted": False,
+        "runtime_execution_completed": False,
+        "runtime_execution_verified": False,
+        "runtime_execution_status": "runtime_execution_not_attempted",
+        "live_runtime_execution": False,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+        "runtime_harness_proof_claimed": True,
+        "runtime_harness_proof_verified": source_ready,
+        "runtime_harness_proof_is_character_proof": False,
+        "required_runtime_harness_assertions_passed": [
+            "runtime_exit_fixture_source_owned_by_repo",
+            "runtime_exit_fixture_gem_manifest_valid",
+            "runtime_exit_fixture_cmake_source_shape_valid",
+            "runtime_exit_fixture_non_shipping_disabled_by_default",
+            "runtime_execution_not_attempted_in_fixture_source_mode",
+            "runtime_character_proof_not_claimed",
+        ]
+        if source_ready
+        else [],
+        "required_runtime_harness_assertions_failed": [] if source_ready else ["runtime_exit_fixture_source_ready"],
+        "runtime_harness_assertion_informational": [
+            "runtime_exit_fixture_source_readiness_is_not_runtime_execution_proof",
+            "runtime_exit_fixture_rebuild_readiness_is_not_runtime_execution_proof",
+            "runtime_exit_fixture_is_not_runtime_character_proof",
+        ],
+        "runtime_harness_unavailable_reasons": [
+            {
+                "assertion": "runtime_exit_fixture_execution",
+                "status": "blocked_by_fixture_not_enabled_for_project",
+                "reason": "fixture source is present but not enabled or rebuilt for the live project",
+            }
+        ]
+        if source_ready
+        else [
+            {
+                "assertion": "runtime_exit_fixture_source",
+                "status": source_status,
+                "reason": "repo-owned fixture source is missing or incomplete",
+            }
+        ],
+    }
+
+
+def _runtime_exit_fixture_rebuild_gate_payload(
+    *,
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+) -> Dict[str, Any]:
+    fixture = _runtime_exit_fixture_static_payload(timeout_seconds=timeout_seconds)
+    project_enabled = _runtime_exit_fixture_enabled_for_project(project)
+    register_command = _runtime_exit_fixture_register_command(engine_root)
+    enable_command = _runtime_exit_fixture_enable_command(engine_root=engine_root, project=project)
+    rebuild_command = _runtime_exit_fixture_rebuild_command(engine_root=engine_root, project=project)
+    fixture.update(
+        {
+            "runtime_exit_fixture_status": "runtime_exit_fixture_ready_not_built",
+            "runtime_exit_fixture_available": False,
+            "runtime_exit_fixture_source_discovery_status": "runtime_exit_fixture_source_discovery_pass",
+            "runtime_exit_fixture_source_status": "runtime_exit_fixture_source_ready",
+            "runtime_exit_fixture_source_validation": _runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds)[
+                "runtime_exit_fixture_source_validation"
+            ],
+            "runtime_exit_fixture_source_refs": _runtime_exit_fixture_source_refs() + _runtime_exit_fixture_repo_source_refs(),
+            "runtime_exit_fixture_registration_status": "runtime_exit_fixture_registration_ready_not_attempted",
+            "runtime_exit_fixture_enablement_status": "runtime_exit_fixture_enabled_for_project"
+            if project_enabled
+            else "blocked_by_fixture_not_enabled_for_project",
+            "runtime_exit_fixture_requires_project_mutation": not project_enabled,
+            "runtime_exit_fixture_project_mutation_status": "blocked_by_fixture_missing_project_mutation_gate"
+            if not project_enabled
+            else "project_mutation_not_required",
+            "runtime_exit_fixture_project_mutation_attempted": False,
+            "runtime_exit_fixture_project_mutation_reversible": True,
+            "runtime_exit_fixture_project_mutation_gate_env": list(RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV),
+            "runtime_exit_fixture_rebuild_gate_status": "runtime_exit_fixture_rebuild_gate_pass",
+            "runtime_exit_fixture_rebuild_command": rebuild_command,
+            "runtime_exit_fixture_rebuild_target": _runtime_exit_fixture_rebuild_target(project),
+            "runtime_exit_fixture_rebuild_attempted": False,
+            "runtime_exit_fixture_rebuild_result": "runtime_exit_fixture_rebuild_not_attempted",
+            "runtime_exit_fixture_rebuild_status": "not_attempted",
+            "runtime_exit_fixture_rebuild_artifact_refs": [],
+            "runtime_exit_fixture_enabled_for_project": project_enabled,
+            "runtime_exit_fixture_argument_shape": {
+                "register_command": register_command,
+                "enable_command": enable_command,
+                "rebuild_command": rebuild_command,
+                "fixture_strategy": "repo-owned external Code Gem enabled only through explicit project mutation and rebuild gates",
+            },
+            "runtime_exit_fixture_blocked_reason": ""
+            if project_enabled
+            else "blocked_by_fixture_not_enabled_for_project",
+            "runtime_exit_fixture_unavailable_reason": ""
+            if project_enabled
+            else "blocked_by_fixture_requires_live_project_mutation",
+        }
+    )
+    return {
+        "status": "pass",
+        "runtime_harness_status": "runtime_exit_fixture_rebuild_gate_pass",
+        "runtime_harness_mode": "runtime_exit_fixture_rebuild_gate",
+        "runtime_exit_fixture": fixture,
+        **fixture,
+        "runtime_command_pinning_result": _runtime_command_pinning_result(),
+        "runtime_original_command_result": _runtime_original_command_result(),
+        "runtime_quit_variant_matrix_result": _runtime_quit_variant_matrix_result(),
+        "runtime_exit_strategy_result": _runtime_exit_strategy_result(),
+        "runtime_execution_attempted": False,
+        "runtime_execution_completed": False,
+        "runtime_execution_verified": False,
+        "runtime_execution_status": "runtime_execution_not_attempted",
+        "live_runtime_execution": False,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+        "runtime_harness_proof_claimed": True,
+        "runtime_harness_proof_verified": True,
+        "runtime_harness_proof_is_character_proof": False,
+        "required_runtime_harness_assertions_passed": [
+            "runtime_exit_fixture_source_ready",
+            "runtime_exit_fixture_rebuild_gate_pass",
+            "runtime_exit_fixture_rebuild_not_attempted_without_gate",
+            "runtime_exit_fixture_project_mutation_not_attempted_without_gate",
+            "runtime_execution_not_attempted_in_rebuild_gate_mode",
+            "runtime_character_proof_not_claimed",
+        ],
+        "required_runtime_harness_assertions_failed": [],
+        "runtime_harness_assertion_informational": [
+            "runtime_exit_fixture_rebuild_gate_is_not_runtime_execution_proof",
+            "runtime_exit_fixture_source_readiness_is_not_runtime_execution_proof",
+            "runtime_exit_fixture_is_not_runtime_character_proof",
+        ],
+        "runtime_harness_unavailable_reasons": [
+            {
+                "assertion": "runtime_exit_fixture_enablement",
+                "status": "blocked_by_fixture_not_enabled_for_project",
+                "reason": "fixture Gem is source-ready but not enabled/rebuilt for the live project; mutation and rebuild gates remain unset",
+            }
+        ]
+        if not project_enabled
+        else [],
+    }
+
+
+def _runtime_exit_fixture_static_payload(*, timeout_seconds: int) -> Dict[str, Any]:
+    safety_profile = {
+        "local": True,
+        "bounded_by_timeout": True,
+        "evidence_captured": True,
+        "stdout_stderr_capture_required": True,
+        "log_capture_best_effort": True,
+        "non_publishing": True,
+        "non_packaging": True,
+        "mutates_production": False,
+        "production_level_mutation": False,
+        "uses_production_level": False,
+        "uses_temp_level": False,
+        "uses_no_level": True,
+        "shipping_behavior": False,
+        "runtime_process_launched": False,
+    }
+    return {
+        "runtime_exit_fixture_status": "runtime_exit_fixture_ready_not_built",
+        "runtime_exit_fixture_available": False,
+        "runtime_exit_fixture_kind": "repo_owned_external_code_gem_tickbus_exit_fixture",
+        "runtime_exit_fixture_scope": "repo_owned_external_code_gem_harness_only",
+        "runtime_exit_fixture_shipping_status": "non_shipping_harness_only_disabled_by_default",
+        "runtime_exit_fixture_source_status": "runtime_exit_fixture_source_ready",
+        "runtime_exit_fixture_source_path": _repo_relative(RUNTIME_EXIT_FIXTURE_SOURCE_PATH),
+        "runtime_exit_fixture_source_owned_by_repo": _is_repo_relative_path(RUNTIME_EXIT_FIXTURE_SOURCE_PATH),
+        "runtime_exit_fixture_gem_name": RUNTIME_EXIT_FIXTURE_GEM_NAME,
+        "runtime_exit_fixture_gem_type": "Code",
+        "runtime_exit_fixture_gem_json_path": _repo_relative(RUNTIME_EXIT_FIXTURE_GEM_JSON),
+        "runtime_exit_fixture_cmake_path": _repo_relative(RUNTIME_EXIT_FIXTURE_CMAKE),
+        "runtime_exit_fixture_component_name": "MaxineRuntimeExitFixtureSystemComponent",
+        "runtime_exit_fixture_component_services": ["MaxineRuntimeExitFixtureService"],
+        "runtime_exit_fixture_component_or_hook": "MaxineRuntimeExitFixtureSystemComponent",
+        "runtime_exit_fixture_lifecycle_point": "AZ::Component::Activate plus AZ::TickBus::OnTick",
+        "runtime_exit_fixture_exit_api": "AzFramework::ApplicationRequests::ExitMainLoop",
+        "runtime_exit_fixture_gate": "MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE",
+        "runtime_exit_fixture_gate_env": list(RUNTIME_EXIT_FIXTURE_GATE_ENV),
+        "runtime_exit_fixture_settings_registry_keys": list(RUNTIME_EXIT_FIXTURE_SETTINGS_KEYS),
+        "runtime_exit_fixture_settings_registry_key": RUNTIME_EXIT_FIXTURE_SETTINGS_KEYS[1],
+        "runtime_exit_fixture_command_line_arg": (
+            "--regset=/Amazon/MAXINE/RuntimeHarness/EnableExitFixture=true "
+            "--regset=/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks=<positive integer>"
+        ),
+        "runtime_exit_fixture_wait_ticks": "settings_registry_controlled_positive_integer",
+        "runtime_exit_fixture_command": "",
+        "runtime_exit_fixture_arguments": [],
+        "runtime_exit_fixture_argument_shape": {
+            "fixture_strategy": "repo-owned TickBus exit-after-initialization component",
+            "runtime_gate": list(RUNTIME_EXIT_FIXTURE_GATE_ENV),
+            "settings_registry_keys": list(RUNTIME_EXIT_FIXTURE_SETTINGS_KEYS),
+        },
+        "runtime_exit_fixture_safety_profile": safety_profile,
+        "runtime_exit_fixture_requires_rebuild": True,
+        "runtime_exit_fixture_rebuild_status": "not_attempted",
+        "runtime_exit_fixture_enabled_for_project": False,
+        "runtime_exit_fixture_enabled_by_default": False,
+        "runtime_exit_fixture_is_shipping_behavior": False,
+        "runtime_exit_fixture_mutates_production": False,
+        "runtime_exit_fixture_uses_production_level": False,
+        "runtime_exit_fixture_uses_temp_level": False,
+        "runtime_exit_fixture_uses_no_level": True,
+        "runtime_exit_fixture_execution_attempted": False,
+        "runtime_exit_fixture_execution_completed": False,
+        "runtime_exit_fixture_execution_verified": False,
+        "runtime_exit_fixture_exit_code_decimal": None,
+        "runtime_exit_fixture_exit_code_hex": "",
+        "runtime_exit_fixture_exit_classification": "runtime_execution_not_attempted",
+        "runtime_exit_fixture_timeout_seconds": int(timeout_seconds),
+        "runtime_exit_fixture_timed_out": False,
+        "runtime_exit_fixture_kill_attempted": False,
+        "runtime_exit_fixture_kill_result": {"status": "not_run"},
+        "runtime_exit_fixture_stdout_ref": "",
+        "runtime_exit_fixture_stderr_ref": "",
+        "runtime_exit_fixture_log_refs": [],
+        "runtime_exit_fixture_log_scan": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_exit_fixture_asserts": {"status": "runtime_execution_not_attempted", "count": 0, "sample_lines": []},
+        "runtime_exit_fixture_missing_asset_signals": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_exit_fixture_disqualifying_signals": {"status": "runtime_execution_not_attempted", "matches": []},
+        "runtime_exit_fixture_unsupported_reason": "",
+        "runtime_exit_fixture_is_runtime_character_proof": False,
+        "runtime_exit_fixture_character_proof_claimed": False,
+        "runtime_exit_fixture_character_proof_verified": False,
+    }
+
+
+def _runtime_exit_fixture_repo_source_refs() -> List[str]:
+    return [
+        _repo_relative(RUNTIME_EXIT_FIXTURE_GEM_JSON),
+        _repo_relative(RUNTIME_EXIT_FIXTURE_CMAKE),
+        _repo_relative(RUNTIME_EXIT_FIXTURE_COMPONENT_HEADER),
+        _repo_relative(RUNTIME_EXIT_FIXTURE_COMPONENT_SOURCE),
+        _repo_relative(RUNTIME_EXIT_FIXTURE_MODULE_SOURCE),
+    ]
+
+
+def _runtime_exit_fixture_enabled_for_project(project: Path | None) -> bool:
+    if project is None:
+        return False
+    project_json = project / "project.json"
+    if not project_json.is_file():
+        return False
+    try:
+        payload = json.loads(project_json.read_text(encoding="utf-8-sig"))
+    except json.JSONDecodeError:
+        return False
+    gem_names = payload.get("gem_names", [])
+    if isinstance(gem_names, list) and RUNTIME_EXIT_FIXTURE_GEM_NAME in {str(item) for item in gem_names}:
+        return True
+    gems = payload.get("gems", [])
+    if isinstance(gems, list) and RUNTIME_EXIT_FIXTURE_GEM_NAME in {str(item) for item in gems}:
+        return True
+    return False
+
+
+def _runtime_exit_fixture_register_command(engine_root: Path | None) -> List[str]:
+    o3de_cli = _o3de_cli_path(engine_root)
+    return [o3de_cli, "register", "--gem-path", str(RUNTIME_EXIT_FIXTURE_SOURCE_PATH)]
+
+
+def _runtime_exit_fixture_enable_command(*, engine_root: Path | None, project: Path | None) -> List[str]:
+    o3de_cli = _o3de_cli_path(engine_root)
+    return [o3de_cli, "enable-gem", "--gem-name", RUNTIME_EXIT_FIXTURE_GEM_NAME, "--project-path", str(project or "")]
+
+
+def _runtime_exit_fixture_rebuild_command(*, engine_root: Path | None, project: Path | None) -> List[str]:
+    target = _runtime_exit_fixture_rebuild_target(project)
+    build_root = str((engine_root / "build" / "windows") if engine_root is not None else Path("<engine-root>") / "build" / "windows")
+    return ["cmake", "--build", build_root, "--target", target, "--config", "profile", "--parallel"]
+
+
+def _runtime_exit_fixture_rebuild_target(project: Path | None) -> str:
+    return f"{_project_name(project) or PROJECT_NAME}.HeadlessServerLauncher"
+
+
+def _o3de_cli_path(engine_root: Path | None) -> str:
+    if engine_root is None:
+        return "<engine-root>/scripts/o3de.bat"
+    return str(engine_root / "scripts" / "o3de.bat")
+
+
+def _is_repo_relative_path(path: Path) -> bool:
+    try:
+        path.resolve().relative_to(REPO_ROOT.resolve())
+        return True
+    except ValueError:
+        return False
+
+
+def _read_text_if_present(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8-sig") if path.is_file() else ""
+    except OSError:
+        return ""
 
 
 def _runtime_exit_fixture_source_validation() -> Dict[str, Any]:
@@ -3105,6 +3665,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--diagnose-runtime-quit-variants", action="store_true")
     parser.add_argument("--diagnose-runtime-exit-strategies", action="store_true")
     parser.add_argument("--diagnose-runtime-exit-fixture", action="store_true")
+    parser.add_argument("--check-runtime-exit-fixture-source", action="store_true")
+    parser.add_argument("--check-runtime-exit-fixture-rebuild-gate", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -3127,6 +3689,8 @@ def main() -> int:
         diagnose_runtime_quit_variants=args.diagnose_runtime_quit_variants,
         diagnose_runtime_exit_strategies=args.diagnose_runtime_exit_strategies,
         diagnose_runtime_exit_fixture=args.diagnose_runtime_exit_fixture,
+        check_runtime_exit_fixture_source=args.check_runtime_exit_fixture_source,
+        check_runtime_exit_fixture_rebuild_gate=args.check_runtime_exit_fixture_rebuild_gate,
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
         strict_integration=args.strict_integration,

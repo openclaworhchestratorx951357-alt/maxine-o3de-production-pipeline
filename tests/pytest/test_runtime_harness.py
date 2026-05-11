@@ -810,6 +810,157 @@ def test_runtime_harness_exit_fixture_diagnostic_records_project_rebuild_blocker
     assert report["runtime_command_pinning_result"]["status"] == "preserved_from_pr125"
 
 
+def test_runtime_harness_exit_fixture_source_check_records_repo_owned_gem_source_ready(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=False)
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        check_runtime_exit_fixture_source=True,
+        strict=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_exit_fixture_source_readiness"
+    assert report["runtime_exit_fixture_source_status"] == "runtime_exit_fixture_source_ready"
+    assert report["runtime_exit_fixture_source_owned_by_repo"] is True
+    assert report["runtime_exit_fixture_source_path"] == "o3de/gems/MaxineRuntimeExitFixture"
+    assert report["runtime_exit_fixture_gem_name"] == "MaxineRuntimeExitFixture"
+    assert report["runtime_exit_fixture_gem_type"] == "Code"
+    assert report["runtime_exit_fixture_gem_json_path"].endswith("gem.json")
+    assert report["runtime_exit_fixture_cmake_path"].endswith("Code/CMakeLists.txt")
+    assert report["runtime_exit_fixture_component_name"] == "MaxineRuntimeExitFixtureSystemComponent"
+    assert report["runtime_exit_fixture_lifecycle_point"] == "AZ::Component::Activate plus AZ::TickBus::OnTick"
+    assert report["runtime_exit_fixture_exit_api"] == "AzFramework::ApplicationRequests::ExitMainLoop"
+    assert "/Amazon/MAXINE/RuntimeHarness/EnableExitFixture" in report["runtime_exit_fixture_settings_registry_keys"]
+    assert "/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks" in report["runtime_exit_fixture_settings_registry_keys"]
+    assert "MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE=1" in report["runtime_exit_fixture_gate_env"]
+    assert report["runtime_exit_fixture_enabled_by_default"] is False
+    assert report["runtime_exit_fixture_is_shipping_behavior"] is False
+    assert report["runtime_exit_fixture_execution_attempted"] is False
+    assert report["runtime_exit_fixture_execution_verified"] is False
+    assert report["runtime_execution_verified"] is False
+    assert report["runtime_exit_fixture_character_proof_claimed"] is False
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_exit_fixture_rebuild_gate_records_mutation_and_rebuild_not_attempted(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=False)
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        check_runtime_exit_fixture_rebuild_gate=True,
+        strict=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_exit_fixture_rebuild_gate"
+    assert report["runtime_exit_fixture_source_status"] == "runtime_exit_fixture_source_ready"
+    assert report["runtime_exit_fixture_registration_status"] == "runtime_exit_fixture_registration_ready_not_attempted"
+    assert report["runtime_exit_fixture_enablement_status"] == "blocked_by_fixture_not_enabled_for_project"
+    assert report["runtime_exit_fixture_requires_project_mutation"] is True
+    assert report["runtime_exit_fixture_project_mutation_attempted"] is False
+    assert report["runtime_exit_fixture_project_mutation_reversible"] is True
+    assert "MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION=1" in report["runtime_exit_fixture_project_mutation_gate_env"]
+    assert report["runtime_exit_fixture_requires_rebuild"] is True
+    assert report["runtime_exit_fixture_rebuild_gate_status"] == "runtime_exit_fixture_rebuild_gate_pass"
+    assert report["runtime_exit_fixture_rebuild_attempted"] is False
+    assert report["runtime_exit_fixture_rebuild_result"] == "runtime_exit_fixture_rebuild_not_attempted"
+    assert report["runtime_exit_fixture_enabled_for_project"] is False
+    assert report["runtime_exit_fixture_execution_attempted"] is False
+    assert report["runtime_execution_attempted"] is False
+    assert report["runtime_execution_verified"] is False
+    assert report["runtime_exit_fixture_is_runtime_character_proof"] is False
+    assert report["runtime_exit_fixture_character_proof_claimed"] is False
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_validation_rejects_fixture_source_ready_when_not_repo_owned() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_exit_fixture_source_status": "runtime_exit_fixture_source_ready",
+            "runtime_exit_fixture_source_owned_by_repo": False,
+            "runtime_exit_fixture_source_path": "C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus/Gem",
+        }
+    )
+
+    validation = runtime_harness.validate_runtime_harness_report(report, strict=True)
+
+    assert validation.status == "fail"
+    assert "MXN_PATH_UNSAFE" in validation.error_codes
+
+
+def test_runtime_harness_validation_rejects_fixture_enabled_by_default_or_shipping() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_exit_fixture_source_status": "runtime_exit_fixture_source_ready",
+            "runtime_exit_fixture_source_owned_by_repo": True,
+            "runtime_exit_fixture_enabled_by_default": True,
+            "runtime_exit_fixture_is_shipping_behavior": True,
+        }
+    )
+
+    validation = runtime_harness.validate_runtime_harness_report(report, strict=True)
+
+    assert validation.status == "fail"
+    assert "MXN_PATH_UNSAFE" in validation.error_codes
+
+
+def test_runtime_harness_validation_rejects_fixture_project_mutation_without_gate() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_exit_fixture_source_status": "runtime_exit_fixture_source_ready",
+            "runtime_exit_fixture_source_owned_by_repo": True,
+            "runtime_exit_fixture_project_mutation_attempted": True,
+            "runtime_exit_fixture_project_mutation_status": "blocked_by_fixture_missing_project_mutation_gate",
+        }
+    )
+
+    validation = runtime_harness.validate_runtime_harness_report(report, strict=True)
+
+    assert validation.status == "fail"
+    assert "MXN_PATH_UNSAFE" in validation.error_codes
+
+
+def test_runtime_harness_validation_rejects_fixture_rebuild_without_gate_or_as_execution_proof() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_exit_fixture_source_status": "runtime_exit_fixture_source_ready",
+            "runtime_exit_fixture_source_owned_by_repo": True,
+            "runtime_exit_fixture_rebuild_attempted": True,
+            "runtime_exit_fixture_rebuild_gate_status": "blocked_by_fixture_missing_rebuild_gate",
+            "runtime_execution_verified": True,
+            "runtime_exit_fixture_execution_attempted": False,
+            "runtime_exit_fixture_execution_verified": False,
+        }
+    )
+
+    validation = runtime_harness.validate_runtime_harness_report(report, strict=True)
+
+    assert validation.status == "fail"
+    assert "MXN_PATH_UNSAFE" in validation.error_codes
+    assert "MXN_RUNTIME_SMOKE_FAIL" in validation.error_codes
+
+
 def test_runtime_harness_validation_rejects_exit_fixture_verified_without_clean_execution() -> None:
     report = runtime_harness.fixture_runtime_harness_report()
     report.update(

@@ -1,0 +1,21 @@
+{
+  "gem_name": "MaxineRuntimeExitFixture",
+  "version": "0.1.0",
+  "display_name": "MAXINE Runtime Exit Fixture",
+  "license": "Apache-2.0 OR MIT",
+  "origin": "M.A.X.I.N.E. O3DE production pipeline repository",
+  "type": "Code",
+  "summary": "Non-shipping, harness-only runtime exit fixture for bounded no-level command-envelope diagnostics.",
+  "canonical_tags": [
+    "Gem"
+  ],
+  "user_tags": [
+    "Runtime",
+    "Harness",
+    "Testing",
+    "Non-Shipping"
+  ],
+  "requirements": "Disabled by default. Enable only for controlled runtime harness diagnostics through explicit MAXINE gates and Settings Registry keys. Do not include in release packaging or production behavior.",
+  "documentation_url": "",
+  "dependencies": []
+}
