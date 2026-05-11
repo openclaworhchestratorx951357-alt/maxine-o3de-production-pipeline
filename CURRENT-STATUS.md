@@ -1,7 +1,22 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Pin Bounded Non-Publishing Runtime Command v1 is implemented on `codex/pin-bounded-nonpublishing-runtime-command-v1`:
+- Diagnose Bounded Runtime Exit 3221225477 v1 is implemented on `codex/diagnose-bounded-runtime-exit-3221225477-v1`:
+  - PR #125 was merged into `main`, and `codex/diagnose-bounded-runtime-exit-3221225477-v1` was created from updated `main`
+  - the pinned bounded, non-publishing HeadlessServerLauncher command envelope from PR #125 remains preserved: `--project-path=<MAXINE_GoldenCorpus>`, `-NullRenderer`, `-rhi=null`, `--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0`, and `--console-command-file=<artifact cfg containing quit>`
+  - `tools/o3de/runtime_harness.py` now records runtime exit diagnostics for bounded live command attempts, including decimal exit code, hex rendering, signed 32-bit interpretation, Windows NTSTATUS-like classification, crash-like classification, assertion summaries, AssetManager shutdown assert summaries, stdout/stderr/log error summaries, and command-variant status
+  - exit code `3221225477` is rendered as `0xC0000005` with signed interpretation `-1073741819` and classified as `runtime_execution_failed_access_violation_like_exit`; the classifier records that the code is diagnostic evidence only and does not infer root cause from the exit code alone
+  - local evidence from the PR #125 run showed AssetManager shutdown asserts in stderr, Asset Processor negotiation failure and shader serialization errors in stdout, and shader serializer errors in `C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus/user/log/Server.log`; these are summarized in reports rather than committed as raw private logs
+  - root-cause confidence remains low: AssetManager shutdown asserts were observed after the bounded console-quit envelope, so shutdown ordering or quit timing is suspect but not proven
+  - no safer runtime command variant is attempted unless source/log evidence justifies it; this slice records `runtime_command_variant_not_attempted` for the preserved pinned envelope rather than changing flags to hide the failure
+  - nonzero runtime exits remain failures: `runtime_execution_verified=false`, `runtime_character_proof_claimed=false`, and `runtime_character_proof_verified=false`; validation rejects forged verified execution paired with crash-like or nonzero exit diagnostics
+  - live APB product evidence was rerun and passed; APB evidence remains complete for `azmodel`, `actor`, `procprefab`, `motion`, `motionset`, `animgraph`, `pxmesh`, and `azmaterial`, with `missing_products=[]`, `pending_products=[]`, and `cache_heuristic_used=false`
+  - targeted live Editor diagnostics and full Editor smoke passed against the fresh APB baseline; the latest full live report is under `artifacts/o3de-integration/editor-smoke/editor-smoke-20260511T144436Z/`
+  - the gated runtime harness was rerun through the preserved pinned command and wrote `artifacts/o3de-integration/runtime-harness/runtime-exit-diagnostic-report.json`; the process again exited `3221225477`/`0xC0000005`, did not time out, was not killed, and remains unverified runtime execution
+  - the include-editor-smoke integration suite passed after the targeted diagnostics, with live APB and live Editor execution true and live runtime execution false inside the suite
+  - direct `.procprefab` product instantiation, direct content assertions, Editor-side character-specific typed unavailable evidence, PR #123 runtime/spawnable proof-surface evidence, PR #124 runtime harness readiness, PR #125 command-pinning evidence, Actor asset assignment, temp source-prefab instantiation, and APB product-evidence prerequisites remain preserved
+  - live publication remains false, release packaging remains false, production level mutation remains forbidden, runtime character proof remains unclaimed, and no production-ready release claim is made
+- Pin Bounded Non-Publishing Runtime Command v1 completed in PR #125:
   - PR #124 was merged into `main`, and `codex/pin-bounded-nonpublishing-runtime-command-v1` was created from updated `main`
   - `tools/o3de/runtime_harness.py` now has `--pin-runtime-command` mode in addition to fixture, strict readiness, and live-gated runtime harness modes
   - the selected executable remains `C:/src/o3de/build/windows/bin/profile/MAXINE_GoldenCorpus.HeadlessServerLauncher.exe` with `engine_profile_bin` provenance and `MAXINE_GoldenCorpus` project/engine pairing

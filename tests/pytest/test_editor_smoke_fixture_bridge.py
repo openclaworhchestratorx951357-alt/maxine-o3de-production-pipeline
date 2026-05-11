@@ -863,6 +863,9 @@ def test_editor_smoke_full_report_records_runtime_harness_without_character_over
     assert runtime_harness["runtime_command_pin_verified"] is True
     assert runtime_harness["runtime_execution_attempted"] is False
     assert runtime_harness["runtime_execution_verified"] is False
+    assert runtime_harness["runtime_exit_diagnostic_status"] == "runtime_execution_not_attempted"
+    assert runtime_harness["runtime_exit_is_crash_like"] is False
+    assert runtime_harness["runtime_command_variant_result"]["status"] == "runtime_command_variant_not_attempted"
     assert runtime_harness["runtime_harness_proof_is_character_proof"] is False
     assert runtime_harness["runtime_character_proof_claimed"] is False
 

@@ -4,7 +4,9 @@
 This tool pins the runtime harness readiness layer separately from runtime
 character proof.  It can discover launcher candidates, validate provenance and
 project pairing, require explicit live runtime gates, and record a typed blocker
-when a bounded runtime command has not yet been pinned.
+when a bounded runtime command has not yet been pinned.  When a bounded command
+does run, nonzero exits are classified as diagnostic evidence without becoming
+runtime execution proof or runtime character proof.
 """
 
 from __future__ import annotations
@@ -36,6 +38,9 @@ DEFAULT_ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "o3de-integration" / "runtime-
 EXPECTED_PRODUCTS = ("azmodel", "actor", "procprefab", "motion", "motionset", "animgraph", "pxmesh", "azmaterial")
 RUNTIME_GATE_ENV_VARS = ("MAXINE_ENABLE_O3DE_RUNTIME_HARNESS", "MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS")
 PROJECT_NAME = "MAXINE_GoldenCorpus"
+WINDOWS_NTSTATUS_NAMES = {
+    0xC0000005: "STATUS_ACCESS_VIOLATION",
+}
 
 MISSING_RUNTIME_SIGNAL_PATTERNS = {
     "runtime_missing_actor_signal": ("missing actor", "failed to load actor", ".actor not found"),
@@ -278,6 +283,15 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime execution verified=true requires runtime_execution_completed=true.")
     if verified and execution_status != "runtime_execution_pass":
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime execution verified=true requires runtime_execution_status=runtime_execution_pass.")
+    exit_code_decimal = report.get("runtime_exit_code_decimal")
+    try:
+        exit_code_is_nonzero = exit_code_decimal is not None and int(exit_code_decimal) != 0
+    except (TypeError, ValueError):
+        exit_code_is_nonzero = False
+    if verified and exit_code_is_nonzero:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime execution verified=true cannot be paired with a nonzero runtime exit code.")
+    if verified and report.get("runtime_exit_is_crash_like") is True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime execution verified=true cannot be paired with crash-like exit classification.")
     if report.get("live_runtime_execution") is True and not attempted:
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "live_runtime_execution=true requires runtime_execution_attempted=true.")
     if attempted and report.get("runtime_command_pin_verified") is not True:
@@ -331,6 +345,10 @@ def print_text_report(report: Mapping[str, Any]) -> None:
     print(f"runtime_execution_attempted: {str(report.get('runtime_execution_attempted', False)).lower()}")
     print(f"runtime_execution_completed: {str(report.get('runtime_execution_completed', False)).lower()}")
     print(f"runtime_execution_verified: {str(report.get('runtime_execution_verified', False)).lower()}")
+    if report.get("runtime_exit_code_decimal") is not None:
+        print(f"runtime_exit_code_decimal: {report.get('runtime_exit_code_decimal')}")
+        print(f"runtime_exit_code_hex: {report.get('runtime_exit_code_hex', '')}")
+        print(f"runtime_exit_classification: {report.get('runtime_exit_classification', '')}")
     print(f"runtime_character_proof_claimed: {str(report.get('runtime_character_proof_claimed', False)).lower()}")
     print(f"runtime_character_proof_verified: {str(report.get('runtime_character_proof_verified', False)).lower()}")
     print(f"live_runtime_execution: {str(report.get('live_runtime_execution', False)).lower()}")
@@ -401,6 +419,38 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_execution_verified": False,
         "runtime_execution_status": "runtime_execution_not_attempted",
         "runtime_exit_code": None,
+        "runtime_exit_classification": "runtime_execution_not_attempted",
+        "runtime_exit_code_decimal": None,
+        "runtime_exit_code_hex": "",
+        "runtime_exit_code_signed": None,
+        "runtime_exit_code_name": "",
+        "runtime_exit_is_windows_ntstatus_like": False,
+        "runtime_exit_is_crash_like": False,
+        "runtime_crash_classification": "",
+        "runtime_crash_evidence": [],
+        "runtime_assertion_summary": {"status": "runtime_execution_not_attempted", "assert_count": 0},
+        "runtime_asset_manager_asserts": {"status": "runtime_execution_not_attempted", "count": 0, "sample_lines": []},
+        "runtime_shutdown_asserts": {"status": "runtime_execution_not_attempted", "count": 0, "sample_lines": []},
+        "runtime_stack_or_crash_ref": "",
+        "runtime_command_variant": "pinned_headless_console_quit_envelope",
+        "runtime_command_variant_result": {
+            "status": "runtime_command_variant_not_attempted",
+            "attempted": False,
+            "reason": "No safer command variant has been source-validated for fixture/readiness mode.",
+        },
+        "runtime_command_variant_reason": "",
+        "runtime_command_variant_safety_profile": {},
+        "runtime_command_variant_selected": False,
+        "runtime_command_variant_rejected_reason": "",
+        "runtime_log_error_summary": {"status": "runtime_execution_not_attempted"},
+        "runtime_stdout_error_summary": {"status": "runtime_execution_not_attempted"},
+        "runtime_stderr_error_summary": {"status": "runtime_execution_not_attempted"},
+        "runtime_exit_diagnostic_status": "runtime_execution_not_attempted",
+        "runtime_exit_diagnostic_reason": "",
+        "runtime_root_cause_classification": "runtime_execution_not_attempted",
+        "runtime_root_cause_hypothesis": "",
+        "runtime_root_cause_confidence": "",
+        "runtime_next_diagnostic_recommendation": "",
         "runtime_timed_out": False,
         "runtime_timeout_stall": False,
         "runtime_kill_attempted": False,
@@ -769,13 +819,23 @@ def _run_bounded_runtime_command(
         timed_out = True
         proc = subprocess.CompletedProcess(argv, None, stdout=exc.output or "", stderr=exc.stderr or "")
 
-    stdout_path.write_text(str(proc.stdout or ""), encoding="utf-8")
-    stderr_path.write_text(str(proc.stderr or ""), encoding="utf-8")
+    stdout_text = str(proc.stdout or "")
+    stderr_text = str(proc.stderr or "")
+    stdout_path.write_text(stdout_text, encoding="utf-8")
+    stderr_path.write_text(stderr_text, encoding="utf-8")
     project_path = _runtime_project_path(report)
     log_refs = _runtime_log_refs(project_path)
     log_text = _read_runtime_logs(log_refs)
-    scan = _scan_runtime_output(str(proc.stdout or "") + "\n" + str(proc.stderr or "") + "\n" + log_text)
+    scan = _scan_runtime_output(stdout_text + "\n" + stderr_text + "\n" + log_text)
     exit_code = proc.returncode
+    diagnostics = _runtime_exit_diagnostics(
+        exit_code=exit_code,
+        timed_out=timed_out,
+        stdout=stdout_text,
+        stderr=stderr_text,
+        log_text=log_text,
+        log_refs=log_refs,
+    )
     expected_exit_codes = set(int(code) for code in command.get("expected_exit_codes", [0]))
     passed = exit_code in expected_exit_codes and not timed_out and scan["status"] == "pass"
     report.update(
@@ -809,6 +869,7 @@ def _run_bounded_runtime_command(
             "required_runtime_harness_assertions_failed": [] if passed else ["runtime_bounded_command"],
         }
     )
+    report.update(diagnostics)
     report.update(_runtime_signal_fields(scan))
     return _finalize_report(report)
 
@@ -874,6 +935,278 @@ def _scan_runtime_output(text: str) -> Dict[str, Any]:
             if pattern in lower:
                 matches.append({"signal": signal, "pattern": pattern})
     return {"status": "fail" if matches else "pass", "matches": matches}
+
+
+def _signed_32bit(value: int) -> int:
+    unsigned = int(value) & 0xFFFFFFFF
+    return unsigned - 0x100000000 if unsigned >= 0x80000000 else unsigned
+
+
+def _exit_code_hex(value: int | None) -> str:
+    if value is None:
+        return ""
+    return f"0x{(int(value) & 0xFFFFFFFF):08X}"
+
+
+def _matching_lines(text: str, patterns: Sequence[str], *, limit: int = 5) -> List[str]:
+    lowered_patterns = [pattern.lower() for pattern in patterns]
+    matches: List[str] = []
+    for line in text.splitlines():
+        lower_line = line.lower()
+        if any(pattern in lower_line for pattern in lowered_patterns):
+            normalized = " ".join(line.strip().split())
+            matches.append(normalized[:240])
+        if len(matches) >= limit:
+            break
+    return matches
+
+
+def _count_patterns(text: str, patterns: Sequence[str]) -> int:
+    lower = text.lower()
+    return sum(lower.count(pattern.lower()) for pattern in patterns)
+
+
+def _runtime_text_error_summary(text: str, *, source: str, log_refs: Sequence[str] | None = None) -> Dict[str, Any]:
+    if source == "log" and not log_refs:
+        return {
+            "status": "blocked_by_missing_runtime_log",
+            "reason": "No runtime log ref was discovered under the project user/log directory.",
+            "asset_processor_negotiation_failure_count": 0,
+            "shader_serializer_error_count": 0,
+            "asset_manager_shutdown_assert_count": 0,
+            "assert_count": 0,
+            "fatal_or_exception_count": 0,
+            "sample_lines": [],
+        }
+
+    asset_processor_count = _count_patterns(
+        text,
+        (
+            "AssetProcessorConnection",
+            "Asset Processor Connection",
+            "Negotiation with asset processor failed",
+        ),
+    )
+    shader_serializer_count = _count_patterns(
+        text,
+        (
+            "[Error] (Serialize)",
+            "not registered with the serializer",
+        ),
+    )
+    asset_manager_count = _count_patterns(text, ("AssetManager has been destroyed",))
+    assert_count = _count_patterns(text, ("Assert:",))
+    fatal_or_exception_count = _count_patterns(text, ("Fatal", "Exception", "Access violation"))
+    sample_lines = _matching_lines(
+        text,
+        (
+            "AssetProcessorConnection",
+            "Negotiation with asset processor failed",
+            "[Error] (Serialize)",
+            "not registered with the serializer",
+            "AssetManager has been destroyed",
+            "Assert:",
+            "Fatal",
+            "Exception",
+            "Access violation",
+        ),
+    )
+    detected = bool(asset_processor_count or shader_serializer_count or asset_manager_count or assert_count or fatal_or_exception_count)
+    status_prefix = "runtime_log" if source == "log" else "runtime_output"
+    return {
+        "status": f"{status_prefix}_errors_detected" if detected else "pass",
+        "asset_processor_negotiation_failure_count": asset_processor_count,
+        "shader_serializer_error_count": shader_serializer_count,
+        "asset_manager_shutdown_assert_count": asset_manager_count,
+        "assert_count": assert_count,
+        "fatal_or_exception_count": fatal_or_exception_count,
+        "sample_lines": sample_lines,
+    }
+
+
+def _runtime_assertion_diagnostics(combined_text: str) -> Dict[str, Any]:
+    assert_lines = _matching_lines(combined_text, ("Assert:",), limit=8)
+    asset_manager_lines = _matching_lines(combined_text, ("AssetManager has been destroyed",), limit=8)
+    assert_count = _count_patterns(combined_text, ("Assert:",))
+    asset_manager_count = _count_patterns(combined_text, ("AssetManager has been destroyed",))
+    assertion_status = "runtime_execution_failed_asset_manager_shutdown_assert" if asset_manager_count else "runtime_assertions_detected" if assert_count else "pass"
+    return {
+        "runtime_assertion_summary": {
+            "status": assertion_status,
+            "assert_count": assert_count,
+            "asset_manager_shutdown_assert_count": asset_manager_count,
+            "sample_lines": assert_lines,
+        },
+        "runtime_asset_manager_asserts": {
+            "status": "runtime_execution_failed_asset_manager_shutdown_assert" if asset_manager_count else "pass",
+            "count": asset_manager_count,
+            "sample_lines": asset_manager_lines,
+        },
+        "runtime_shutdown_asserts": {
+            "status": assertion_status,
+            "count": assert_count,
+            "sample_lines": assert_lines,
+        },
+    }
+
+
+def _runtime_exit_diagnostics(
+    *,
+    exit_code: int | None,
+    timed_out: bool,
+    stdout: str,
+    stderr: str,
+    log_text: str,
+    log_refs: Sequence[str],
+) -> Dict[str, Any]:
+    stdout_summary = _runtime_text_error_summary(stdout, source="stdout")
+    stderr_summary = _runtime_text_error_summary(stderr, source="stderr")
+    log_summary = _runtime_text_error_summary(log_text, source="log", log_refs=log_refs)
+    combined_text = "\n".join([stdout, stderr, log_text])
+    assertion_payload = _runtime_assertion_diagnostics(combined_text)
+    asset_manager_count = int(assertion_payload["runtime_asset_manager_asserts"].get("count", 0))
+
+    payload: Dict[str, Any] = {
+        "runtime_stdout_error_summary": stdout_summary,
+        "runtime_stderr_error_summary": stderr_summary,
+        "runtime_log_error_summary": log_summary,
+        "runtime_stack_or_crash_ref": "",
+        "runtime_command_variant": "pinned_headless_console_quit_envelope",
+        "runtime_command_variant_result": {
+            "status": "runtime_command_variant_not_attempted",
+            "attempted": False,
+            "reason": "This diagnostic run classified the pinned command result before changing command shape.",
+        },
+        "runtime_command_variant_reason": "No safer variant was attempted without a source-validated reason.",
+        "runtime_command_variant_safety_profile": {},
+        "runtime_command_variant_selected": False,
+        "runtime_command_variant_rejected_reason": "",
+    }
+    payload.update(assertion_payload)
+
+    if timed_out:
+        payload.update(
+            {
+                "runtime_exit_classification": "runtime_execution_timed_out",
+                "runtime_exit_code_decimal": None,
+                "runtime_exit_code_hex": "",
+                "runtime_exit_code_signed": None,
+                "runtime_exit_code_name": "",
+                "runtime_exit_is_windows_ntstatus_like": False,
+                "runtime_exit_is_crash_like": False,
+                "runtime_crash_classification": "",
+                "runtime_crash_evidence": ["runtime_command_timed_out"],
+                "runtime_exit_diagnostic_status": "runtime_exit_diagnostic_inconclusive",
+                "runtime_exit_diagnostic_reason": "Runtime process exceeded the bounded timeout before an exit code was available.",
+                "runtime_root_cause_classification": "runtime_execution_timed_out",
+                "runtime_root_cause_hypothesis": "runtime_command_timeout",
+                "runtime_root_cause_confidence": "medium",
+                "runtime_next_diagnostic_recommendation": "Inspect timeout logs before changing the pinned command envelope.",
+            }
+        )
+        return payload
+
+    if exit_code is None:
+        payload.update(
+            {
+                "runtime_exit_classification": "runtime_exit_code_unclassified",
+                "runtime_exit_code_decimal": None,
+                "runtime_exit_code_hex": "",
+                "runtime_exit_code_signed": None,
+                "runtime_exit_code_name": "",
+                "runtime_exit_is_windows_ntstatus_like": False,
+                "runtime_exit_is_crash_like": False,
+                "runtime_crash_classification": "",
+                "runtime_crash_evidence": [],
+                "runtime_exit_diagnostic_status": "runtime_exit_diagnostic_inconclusive",
+                "runtime_exit_diagnostic_reason": "Runtime process did not provide an exit code.",
+                "runtime_root_cause_classification": "runtime_execution_failed_unknown",
+                "runtime_root_cause_hypothesis": "runtime_exit_code_unavailable",
+                "runtime_root_cause_confidence": "low",
+                "runtime_next_diagnostic_recommendation": "Capture a bounded runtime process exit code before claiming runtime proof.",
+            }
+        )
+        return payload
+
+    exit_decimal = int(exit_code)
+    unsigned = exit_decimal & 0xFFFFFFFF
+    exit_hex = _exit_code_hex(exit_decimal)
+    exit_name = WINDOWS_NTSTATUS_NAMES.get(unsigned, "")
+    is_ntstatus_like = unsigned >= 0xC0000000
+    is_crash_like = exit_decimal != 0 and (is_ntstatus_like or bool(exit_name))
+    if exit_decimal == 0:
+        classification = "runtime_execution_pass"
+        diagnostic_status = "runtime_exit_diagnostic_pass"
+        reason = "Runtime process exited with expected code 0."
+        crash_classification = ""
+        root_cause = "pass"
+        root_hypothesis = ""
+        confidence = ""
+        recommendation = ""
+    elif unsigned == 0xC0000005:
+        classification = "runtime_execution_failed_access_violation_like_exit"
+        diagnostic_status = "runtime_exit_code_classified"
+        reason = (
+            f"Runtime exited with {exit_decimal} ({exit_hex}), an access-violation-like Windows NTSTATUS. "
+            "The exit code is diagnostic evidence only and is not treated as root cause by itself."
+        )
+        crash_classification = classification
+        root_cause = "runtime_execution_failed_asset_manager_shutdown_assert" if asset_manager_count else "runtime_execution_failed_unknown"
+        root_hypothesis = (
+            "AssetManager shutdown asserts were observed after the bounded console quit envelope; "
+            "shutdown ordering or quit timing is suspect but not proven."
+            if asset_manager_count
+            else "Access-violation-like exit without enough log evidence for a root cause."
+        )
+        confidence = "low"
+        recommendation = (
+            "Inspect AssetManager shutdown ordering, shader serializer errors, and source-validated delayed/no-op quit variants "
+            "before broadening expected exit codes or claiming runtime execution proof."
+        )
+    else:
+        classification = "runtime_execution_failed_nonzero_exit"
+        diagnostic_status = "runtime_exit_code_classified"
+        reason = f"Runtime exited with unexpected nonzero code {exit_decimal} ({exit_hex})."
+        crash_classification = "runtime_execution_failed_unknown"
+        root_cause = "runtime_execution_failed_unknown"
+        root_hypothesis = "Nonzero runtime exit without a verified root cause."
+        confidence = "low"
+        recommendation = "Inspect bounded stdout/stderr/runtime logs before changing expected exit semantics."
+
+    evidence: List[str] = []
+    if exit_decimal != 0:
+        evidence.append(f"nonzero_exit_code:{exit_hex}")
+    if is_crash_like:
+        evidence.append("windows_ntstatus_like_exit")
+    if asset_manager_count:
+        evidence.append("asset_manager_shutdown_assert")
+    if stdout_summary.get("asset_processor_negotiation_failure_count", 0):
+        evidence.append("asset_processor_negotiation_failure")
+    if stdout_summary.get("shader_serializer_error_count", 0) or log_summary.get("shader_serializer_error_count", 0):
+        evidence.append("shader_serializer_errors")
+    if log_summary.get("status") == "blocked_by_missing_runtime_log":
+        evidence.append("runtime_log_missing")
+
+    payload.update(
+        {
+            "runtime_exit_classification": classification,
+            "runtime_exit_code_decimal": exit_decimal,
+            "runtime_exit_code_hex": exit_hex,
+            "runtime_exit_code_signed": _signed_32bit(exit_decimal),
+            "runtime_exit_code_name": exit_name,
+            "runtime_exit_is_windows_ntstatus_like": is_ntstatus_like,
+            "runtime_exit_is_crash_like": is_crash_like,
+            "runtime_crash_classification": crash_classification,
+            "runtime_crash_evidence": evidence,
+            "runtime_exit_diagnostic_status": diagnostic_status,
+            "runtime_exit_diagnostic_reason": reason,
+            "runtime_root_cause_classification": root_cause,
+            "runtime_root_cause_hypothesis": root_hypothesis,
+            "runtime_root_cause_confidence": confidence,
+            "runtime_next_diagnostic_recommendation": recommendation,
+        }
+    )
+    return payload
 
 
 def _runtime_signal_fields(scan: Mapping[str, Any]) -> Dict[str, Any]:
