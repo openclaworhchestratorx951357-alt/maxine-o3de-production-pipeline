@@ -334,6 +334,24 @@ The source discovery records that command-line `--regremove` is parsed during co
 
 The bounded LoadLevel-override fixture run remains unverified: it exited `0` and observed the fixture marker, but still loaded `Levels/defaultlevel/defaultlevel.spawnable`. The report keeps `runtime_loadlevel_override_verified=false`, `runtime_exit_fixture_execution_verified=false`, and `runtime_execution_verified=false`; stdout reports both regremove targets as missing at parse time, so the candidate-specific blocker is `blocked_by_settings_registry_merge_order` while the launch blocker remains `blocked_by_default_level_autoload`. AP negotiation and shader serializer signals remain disqualifying until resolved or source/log-classified.
 
+Later-precedence registry patch diagnostics move past early `--regremove` attempts and source-validate O3DE's final command-line registry-file merge:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-later-registry-patch --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-exit-fixture-later-registry-patch --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+The selected candidate is `artifact_setreg_merge_patch_null_autoexec_and_deferred_loadlevel`. It generates a temporary `maxine_runtime_later_precedence_loadlevel_null_remove.setreg` under the runtime harness artifact directory and passes it through `--regset-file=<artifact patch>`. Source evidence records `ComponentApplication::MergeUserSettings` final command-line merge after project/project-user registry loads, `SettingsRegistryMergeUtils` `--regset-file` parsing, `.setreg` JSON Merge Patch semantics, Console autoexec notifications, and `SpawnableLevelSystem` deferred-load handling. The generated patch null-deletes `/O3DE/Autoexec/ConsoleCommands/LoadLevel` and `/O3DE/Runtime/SpawnableLevelSystem/DeferredLoadLevel`; it must not be committed as active project configuration and must not mutate `Registry/load_level.setreg`, `Levels/defaultlevel`, or production levels. The rejected `artifact_setregpatch_remove_autoexec_and_deferred_loadlevel` candidate remains recorded because JSON Patch `remove` can fail when the target is absent at command-line parse time.
+
+Patch generation and use require `MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH=1`. A generated patch is source-validated evidence only until a bounded fixture command exits cleanly with no defaultlevel or production level load and no disqualifying AP/shader/runtime log signals. A clean command-envelope proof is still not runtime character proof.
+
+If the selected `.setreg` JSON Merge Patch merges cleanly but `Levels/defaultlevel/defaultlevel.spawnable` still loads, keep the result blocked as `blocked_by_settings_registry_merge_order` / `blocked_by_default_level_autoload`. That combination means the non-mutating final `--regset-file` pass exists but did not run early enough to prevent the project autoexec notification from invoking `LoadLevel`.
+
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 
 This wiring does not publish, mutate production levels, contact external services, or claim production-ready completion.

@@ -72,6 +72,7 @@ RUNTIME_EXIT_FIXTURE_GATE_ENV = (
 )
 RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION=1",)
 RUNTIME_EXIT_FIXTURE_REBUILD_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD=1",)
+RUNTIME_EXIT_FIXTURE_TEMP_REGISTRY_PATCH_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH=1",)
 RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY = "/O3DE/Autoexec/ConsoleCommands/LoadLevel"
 RUNTIME_DEFERRED_LOADLEVEL_KEY = "/O3DE/Runtime/SpawnableLevelSystem/DeferredLoadLevel"
 RUNTIME_DEFAULT_LEVEL_PRODUCT_PATH = "Levels/defaultlevel/defaultlevel.spawnable"
@@ -82,6 +83,9 @@ RUNTIME_LOADLEVEL_OVERRIDE_ARGS = (
     RUNTIME_NO_DEFAULT_LEVEL_REGREMOVE_ARG,
     RUNTIME_DEFERRED_LOADLEVEL_REGREMOVE_ARG,
 )
+RUNTIME_LATER_REGISTRY_PATCH_SELECTED = "artifact_setreg_merge_patch_null_autoexec_and_deferred_loadlevel"
+RUNTIME_LATER_REGISTRY_PATCH_FAILED_JSON_PATCH_REMOVE = "artifact_setregpatch_remove_autoexec_and_deferred_loadlevel"
+RUNTIME_LATER_REGISTRY_PATCH_FILENAME = "maxine_runtime_later_precedence_loadlevel_null_remove.setreg"
 WINDOWS_NTSTATUS_NAMES = {
     0xC0000005: "STATUS_ACCESS_VIOLATION",
 }
@@ -152,6 +156,8 @@ def run_runtime_harness(
     enable_runtime_exit_fixture_no_default_level: bool = False,
     diagnose_runtime_loadlevel_override: bool = False,
     enable_runtime_exit_fixture_loadlevel_override: bool = False,
+    diagnose_runtime_later_registry_patch: bool = False,
+    enable_runtime_exit_fixture_later_registry_patch: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -181,6 +187,8 @@ def run_runtime_harness(
         and not enable_runtime_exit_fixture_no_default_level
         and not diagnose_runtime_loadlevel_override
         and not enable_runtime_exit_fixture_loadlevel_override
+        and not diagnose_runtime_later_registry_patch
+        and not enable_runtime_exit_fixture_later_registry_patch
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -215,6 +223,8 @@ def run_runtime_harness(
             and not enable_runtime_exit_fixture_no_default_level
             and not diagnose_runtime_loadlevel_override
             and not enable_runtime_exit_fixture_loadlevel_override
+            and not diagnose_runtime_later_registry_patch
+            and not enable_runtime_exit_fixture_later_registry_patch
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -241,6 +251,10 @@ def run_runtime_harness(
             if diagnose_runtime_loadlevel_override
             else "runtime_exit_fixture_loadlevel_override_command"
             if enable_runtime_exit_fixture_loadlevel_override
+            else "runtime_later_registry_patch_diagnostic"
+            if diagnose_runtime_later_registry_patch
+            else "runtime_exit_fixture_later_registry_patch_command"
+            if enable_runtime_exit_fixture_later_registry_patch
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -326,6 +340,8 @@ def run_runtime_harness(
         and not enable_runtime_exit_fixture_no_default_level
         and not diagnose_runtime_loadlevel_override
         and not enable_runtime_exit_fixture_loadlevel_override
+        and not diagnose_runtime_later_registry_patch
+        and not enable_runtime_exit_fixture_later_registry_patch
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -418,6 +434,16 @@ def run_runtime_harness(
             engine_root=selected_engine,
             project=selected_project,
             timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+
+    if diagnose_runtime_later_registry_patch:
+        return _run_runtime_later_registry_patch_diagnostic(
+            report,
+            engine_root=selected_engine,
+            project=selected_project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
         )
 
     gate_status = _runtime_gate_status(env_map)
@@ -440,6 +466,7 @@ def run_runtime_harness(
         enable_runtime_exit_fixture_command
         or enable_runtime_exit_fixture_no_default_level
         or enable_runtime_exit_fixture_loadlevel_override
+        or enable_runtime_exit_fixture_later_registry_patch
     ):
         return _run_runtime_exit_fixture_command(
             report,
@@ -449,6 +476,7 @@ def run_runtime_harness(
             command_runner=command_runner,
             no_default_level=enable_runtime_exit_fixture_no_default_level,
             loadlevel_override=enable_runtime_exit_fixture_loadlevel_override,
+            later_registry_patch=enable_runtime_exit_fixture_later_registry_patch,
         )
 
     command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
@@ -566,6 +594,18 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
             result.add_error(MXN_PATH_UNSAFE, "runtime_loadlevel_override_verified=true cannot allow defaultlevel autoload.")
         if not str(report.get("runtime_loadlevel_override_selected", "")).strip():
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_loadlevel_override_verified=true requires a selected LoadLevel override.")
+    if report.get("runtime_later_registry_patch_verified") is True:
+        if report.get("runtime_execution_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_later_registry_patch_verified=true requires verified runtime execution.")
+        if str(report.get("runtime_launch_hygiene_status", "")).strip() != "runtime_launch_hygiene_pass":
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_later_registry_patch_verified=true requires runtime_launch_hygiene_pass.")
+        if report.get("runtime_default_level_autoload_detected") is True:
+            result.add_error(MXN_PATH_UNSAFE, "runtime_later_registry_patch_verified=true cannot allow defaultlevel autoload.")
+        if not str(report.get("runtime_later_registry_patch_selected", "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_later_registry_patch_verified=true requires a selected later-precedence registry patch.")
+        patch_path_text = str(report.get("runtime_later_registry_patch_candidate_patch_path", "")).replace("\\", "/")
+        if patch_path_text and "/artifacts/o3de-integration/runtime-harness/" not in patch_path_text and "pytest-" not in patch_path_text:
+            result.add_error(MXN_PATH_UNSAFE, "runtime_later_registry_patch_verified=true requires a temp artifact registry patch path.")
     if report.get("runtime_exit_fixture_execution_verified") is True:
         if report.get("runtime_exit_fixture_execution_attempted") is not True:
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_exit_fixture_execution_verified=true requires fixture execution attempt.")
@@ -754,6 +794,9 @@ def print_text_report(report: Mapping[str, Any]) -> None:
     if report.get("runtime_loadlevel_override_status") not in {None, "", "not_run", "runtime_execution_not_attempted"}:
         print(f"runtime_loadlevel_override_status: {report.get('runtime_loadlevel_override_status', '')}")
         print(f"runtime_loadlevel_override_verified: {str(report.get('runtime_loadlevel_override_verified', False)).lower()}")
+    if report.get("runtime_later_registry_patch_status") not in {None, "", "not_run", "runtime_execution_not_attempted"}:
+        print(f"runtime_later_registry_patch_status: {report.get('runtime_later_registry_patch_status', '')}")
+        print(f"runtime_later_registry_patch_verified: {str(report.get('runtime_later_registry_patch_verified', False)).lower()}")
     print(f"runtime_character_proof_claimed: {str(report.get('runtime_character_proof_claimed', False)).lower()}")
     print(f"runtime_character_proof_verified: {str(report.get('runtime_character_proof_verified', False)).lower()}")
     print(f"live_runtime_execution: {str(report.get('live_runtime_execution', False)).lower()}")
@@ -972,6 +1015,7 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit": False,
         "runtime_exit_fixture_runtime_command_uses_no_default_level_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy": False,
+        "runtime_exit_fixture_runtime_command_uses_later_registry_patch_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
         "runtime_exit_fixture_level_load_observed": False,
         "runtime_exit_fixture_unexpected_level_load": False,
@@ -1027,6 +1071,39 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_loadlevel_override_selected": "",
         "runtime_loadlevel_override_selected_reason": "",
         "runtime_loadlevel_override_verified": False,
+        "runtime_later_registry_patch": {"status": "runtime_execution_not_attempted"},
+        "runtime_later_registry_patch_status": "runtime_execution_not_attempted",
+        "runtime_later_registry_patch_candidates": [],
+        "runtime_later_registry_patch_candidate_matrix_recorded": False,
+        "runtime_later_registry_patch_candidate_id": "",
+        "runtime_later_registry_patch_candidate_name": "",
+        "runtime_later_registry_patch_candidate_kind": "",
+        "runtime_later_registry_patch_candidate_source_validation": {},
+        "runtime_later_registry_patch_candidate_source_refs": [],
+        "runtime_later_registry_patch_candidate_patch_path": "",
+        "runtime_later_registry_patch_candidate_patch_contents_summary": "",
+        "runtime_later_registry_patch_candidate_merge_mechanism": "",
+        "runtime_later_registry_patch_candidate_merge_order": "",
+        "runtime_later_registry_patch_candidate_gate_env": [],
+        "runtime_later_registry_patch_candidate_mutates_project": False,
+        "runtime_later_registry_patch_candidate_mutates_defaultlevel": False,
+        "runtime_later_registry_patch_candidate_mutates_production_level": False,
+        "runtime_later_registry_patch_candidate_command_args": [],
+        "runtime_later_registry_patch_candidate_settings_registry_keys": [],
+        "runtime_later_registry_patch_candidate_expected_registry_state": {},
+        "runtime_later_registry_patch_candidate_actual_registry_state": {},
+        "runtime_later_registry_patch_candidate_expected_level_loads": [],
+        "runtime_later_registry_patch_candidate_actual_level_loads": [],
+        "runtime_later_registry_patch_candidate_attempted": False,
+        "runtime_later_registry_patch_candidate_result": "",
+        "runtime_later_registry_patch_candidate_rejected_reason": "",
+        "runtime_later_registry_patch_candidate_blocker": "",
+        "runtime_later_registry_patch_selected": "",
+        "runtime_later_registry_patch_selected_reason": "",
+        "runtime_later_registry_patch_verified": False,
+        "runtime_later_registry_patch_gate_env": [],
+        "runtime_later_registry_patch_gate_status": {"status": "not_run", "required": [], "missing": []},
+        "runtime_later_registry_patch_generation_status": "not_attempted",
         "runtime_settings_registry_merge_order_summary": {},
         "runtime_settings_registry_command_line_override_order": "",
         "runtime_settings_registry_project_registry_order": "",
@@ -2000,6 +2077,7 @@ def _run_runtime_loadlevel_override_diagnostic(
     engine_root: Path | None,
     project: Path | None,
     timeout_seconds: int,
+    artifact_dir: Path | None = None,
 ) -> Dict[str, Any]:
     report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
     report["runtime_harness_mode"] = "runtime_loadlevel_override_diagnostic"
@@ -2044,6 +2122,59 @@ def _run_runtime_loadlevel_override_diagnostic(
     return _finalize_report(report)
 
 
+def _run_runtime_later_registry_patch_diagnostic(
+    report: Dict[str, Any],
+    *,
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
+    report["runtime_harness_mode"] = "runtime_later_registry_patch_diagnostic"
+    payload = _runtime_later_registry_patch_source_payload(
+        project=project,
+        engine_root=engine_root,
+        timeout_seconds=timeout_seconds,
+        artifact_dir=artifact_dir,
+    )
+    source_validated = payload["runtime_later_registry_patch_status"] == "runtime_later_registry_patch_source_discovery_pass"
+    report.update(payload)
+    report.update(
+        {
+            "status": "pass" if source_validated else "fail",
+            "runtime_harness_status": payload["runtime_later_registry_patch_status"],
+            "runtime_execution_status": "runtime_execution_not_attempted",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "live_runtime_execution": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "defaultlevel_mutation": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_exit_fixture_source_ready",
+                "runtime_default_level_source_recorded",
+                "runtime_later_registry_patch_source_validated",
+                "runtime_later_registry_patch_candidate_matrix_recorded",
+                "runtime_execution_not_attempted_in_later_registry_patch_diagnostic",
+                "runtime_character_proof_not_claimed",
+            ]
+            if source_validated
+            else [],
+            "required_runtime_harness_assertions_failed": []
+            if source_validated
+            else ["runtime_later_registry_patch_source_validation"],
+            "runtime_harness_assertion_informational": [
+                "later_registry_patch_diagnostic_does_not_launch_runtime",
+                "later_registry_patch_source_validation_is_not_runtime_execution_proof",
+                "temp_registry_patch_generation_requires_explicit_gate",
+            ],
+        }
+    )
+    return _finalize_report(report)
+
+
 def _run_runtime_exit_fixture_command(
     report: Dict[str, Any],
     *,
@@ -2053,10 +2184,13 @@ def _run_runtime_exit_fixture_command(
     command_runner: Callable[..., subprocess.CompletedProcess[str]] | None,
     no_default_level: bool = False,
     loadlevel_override: bool = False,
+    later_registry_patch: bool = False,
 ) -> Dict[str, Any]:
     report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
     report["runtime_harness_mode"] = (
-        "runtime_exit_fixture_loadlevel_override_command"
+        "runtime_exit_fixture_later_registry_patch_command"
+        if later_registry_patch
+        else "runtime_exit_fixture_loadlevel_override_command"
         if loadlevel_override
         else "runtime_exit_fixture_no_default_level_command"
         if no_default_level
@@ -2086,6 +2220,54 @@ def _run_runtime_exit_fixture_command(
         return _finalize_report(report)
 
     project = _runtime_project_path(report)
+    if later_registry_patch:
+        patch_gate = _runtime_temp_registry_patch_gate_status(env)
+        report["runtime_later_registry_patch_gate_env"] = list(RUNTIME_EXIT_FIXTURE_TEMP_REGISTRY_PATCH_GATE_ENV)
+        report["runtime_later_registry_patch_gate_status"] = patch_gate
+        readiness_payload = report.get("runtime_harness_readiness", {})
+        source_engine_root = (
+            Path(str(readiness_payload.get("engine_root", "")))
+            if isinstance(readiness_payload, Mapping) and str(readiness_payload.get("engine_root", "")).strip()
+            else None
+        )
+        if patch_gate["status"] != "pass":
+            payload = _runtime_later_registry_patch_source_payload(
+                project=project,
+                engine_root=source_engine_root,
+                timeout_seconds=timeout_seconds,
+                artifact_dir=artifact_dir,
+            )
+            payload.update(
+                {
+                    "runtime_later_registry_patch_status": "blocked_by_fixture_temp_registry_patch_gate_missing",
+                    "runtime_later_registry_patch_candidate_result": "runtime_later_registry_patch_candidate_rejected_unsafe",
+                    "runtime_later_registry_patch_candidate_attempted": False,
+                    "runtime_later_registry_patch_candidate_blocker": "blocked_by_fixture_temp_registry_patch_gate_missing",
+                    "runtime_later_registry_patch_verified": False,
+                    "runtime_default_level_override_blocker": "blocked_by_fixture_temp_registry_patch_gate_missing",
+                }
+            )
+            report.update(payload)
+            report.update(
+                {
+                    "status": "fail",
+                    "runtime_harness_status": "blocked_by_fixture_temp_registry_patch_gate_missing",
+                    "runtime_exit_fixture_status": "blocked_by_fixture_temp_registry_patch_gate_missing",
+                    "runtime_exit_fixture_blocked_reason": "blocked_by_fixture_temp_registry_patch_gate_missing",
+                    "runtime_harness_blocked_reason": "blocked_by_fixture_temp_registry_patch_gate_missing",
+                    "runtime_execution_status": "runtime_execution_not_attempted",
+                    "runtime_execution_attempted": False,
+                    "runtime_execution_completed": False,
+                    "runtime_execution_verified": False,
+                    "runtime_exit_fixture_execution_attempted": False,
+                    "runtime_exit_fixture_execution_completed": False,
+                    "runtime_exit_fixture_execution_verified": False,
+                    "live_runtime_execution": False,
+                    "required_runtime_harness_assertions_failed": ["runtime_fixture_temp_registry_patch_gate"],
+                }
+            )
+            return _finalize_report(report)
+
     if not _runtime_exit_fixture_enabled_for_project(project):
         report.update(
             {
@@ -2113,6 +2295,8 @@ def _run_runtime_exit_fixture_command(
         timeout_seconds=timeout_seconds,
         no_default_level=no_default_level,
         loadlevel_override=loadlevel_override,
+        later_registry_patch=later_registry_patch,
+        artifact_dir=artifact_dir,
     )
     if not command.get("selected"):
         report.update(_unpinned_runtime_command_payload(command))
@@ -2120,6 +2304,8 @@ def _run_runtime_exit_fixture_command(
         return _finalize_report(report)
 
     artifact_dir.mkdir(parents=True, exist_ok=True)
+    if later_registry_patch:
+        _write_runtime_later_registry_patch(_runtime_later_registry_patch_path(artifact_dir))
     stdout_path = artifact_dir / "runtime_exit_fixture_stdout.txt"
     stderr_path = artifact_dir / "runtime_exit_fixture_stderr.txt"
     report.update(_runtime_command_pin_payload(command, timeout_seconds=timeout_seconds, execution_requested=True))
@@ -2132,8 +2318,9 @@ def _run_runtime_exit_fixture_command(
             "runtime_exit_fixture_runtime_command_status": "runtime_exit_fixture_runtime_command_pinned",
             "runtime_exit_fixture_runtime_command_uses_console_command_file_quit": False,
             "runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit": True,
-            "runtime_exit_fixture_runtime_command_uses_no_default_level_strategy": no_default_level or loadlevel_override,
-            "runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy": loadlevel_override,
+            "runtime_exit_fixture_runtime_command_uses_no_default_level_strategy": no_default_level or loadlevel_override or later_registry_patch,
+            "runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy": loadlevel_override or later_registry_patch,
+            "runtime_exit_fixture_runtime_command_uses_later_registry_patch_strategy": later_registry_patch,
             "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
             "runtime_exit_fixture_command": str(command.get("argv", [""])[0]),
             "runtime_exit_fixture_arguments": list(command.get("argv", []))[1:],
@@ -2208,7 +2395,7 @@ def _run_runtime_exit_fixture_command(
         diagnostics=diagnostics,
         actual_level_loads=level_loads,
         disqualifying=disqualifying,
-        no_default_level=no_default_level or loadlevel_override,
+        no_default_level=no_default_level or loadlevel_override or later_registry_patch,
     )
     loadlevel_override_payload = _runtime_loadlevel_override_execution_payload(
         project=project,
@@ -2217,9 +2404,22 @@ def _run_runtime_exit_fixture_command(
         actual_level_loads=level_loads,
         no_default_level=no_default_level,
         loadlevel_override=loadlevel_override,
+        later_registry_patch=later_registry_patch,
         launch_hygiene=launch_hygiene,
         exit_code=proc.returncode,
         marker_observed=marker_observed,
+        combined_text=combined_text,
+    )
+    later_registry_patch_payload = _runtime_later_registry_patch_execution_payload(
+        project=project,
+        command=command,
+        diagnostics=diagnostics,
+        actual_level_loads=level_loads,
+        later_registry_patch=later_registry_patch,
+        launch_hygiene=launch_hygiene,
+        exit_code=proc.returncode,
+        marker_observed=marker_observed,
+        artifact_dir=artifact_dir,
         combined_text=combined_text,
     )
     launch_hygiene_pass = launch_hygiene.get("runtime_launch_hygiene_status") == "runtime_launch_hygiene_pass"
@@ -2247,6 +2447,7 @@ def _run_runtime_exit_fixture_command(
     report.update(diagnostics)
     report.update(_runtime_signal_fields(scan))
     report.update(loadlevel_override_payload)
+    report.update(later_registry_patch_payload)
     report.update(launch_hygiene)
     blocked_reason = _runtime_launch_hygiene_blocked_reason(launch_hygiene)
     report.update(
@@ -2952,6 +3153,16 @@ def _runtime_exit_fixture_gate_status(env: Mapping[str, str]) -> Dict[str, Any]:
     return {"status": "pass" if not missing else "blocked_by_fixture_runtime_gate_missing", "required": list(required), "missing": missing}
 
 
+def _runtime_temp_registry_patch_gate_status(env: Mapping[str, str]) -> Dict[str, Any]:
+    required = ("MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH",)
+    missing = [name for name in required if not _gate_enabled(env, name)]
+    return {
+        "status": "pass" if not missing else "blocked_by_fixture_temp_registry_patch_gate_missing",
+        "required": list(required),
+        "missing": missing,
+    }
+
+
 def _run_command_capture(
     argv: Sequence[str],
     *,
@@ -3111,6 +3322,8 @@ def _select_runtime_exit_fixture_command(
     timeout_seconds: int,
     no_default_level: bool = False,
     loadlevel_override: bool = False,
+    later_registry_patch: bool = False,
+    artifact_dir: Path | None = None,
 ) -> Dict[str, Any]:
     executable = str(report.get("runtime_executable_path", "")).strip()
     readiness = report.get("runtime_harness_readiness", {})
@@ -3126,18 +3339,30 @@ def _select_runtime_exit_fixture_command(
             "blocked_reason": "blocked_by_missing_runtime_readiness",
             "safety_flags": _runtime_command_safety_flags(),
         }
+    later_patch_path = _runtime_later_registry_patch_path(artifact_dir or DEFAULT_ARTIFACT_ROOT)
+    later_patch_arg = f"--regset-file={later_patch_path}"
     argv = [
         executable,
         f"--project-path={project_path}",
         "-NullRenderer",
         "-rhi=null",
-        *(list(RUNTIME_LOADLEVEL_OVERRIDE_ARGS) if loadlevel_override else [RUNTIME_NO_DEFAULT_LEVEL_REGREMOVE_ARG] if no_default_level else []),
+        *(
+            [later_patch_arg]
+            if later_registry_patch
+            else list(RUNTIME_LOADLEVEL_OVERRIDE_ARGS)
+            if loadlevel_override
+            else [RUNTIME_NO_DEFAULT_LEVEL_REGREMOVE_ARG]
+            if no_default_level
+            else []
+        ),
         "--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0",
         "--regset=/Amazon/MAXINE/RuntimeHarness/EnableExitFixture=true",
         "--regset=/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks=5",
     ]
     selected_reason = (
-        "repo_owned_fixture_tickbus_exit_main_loop_loadlevel_deferred_regremove_envelope"
+        "repo_owned_fixture_tickbus_exit_main_loop_later_registry_patch_envelope"
+        if later_registry_patch
+        else "repo_owned_fixture_tickbus_exit_main_loop_loadlevel_deferred_regremove_envelope"
         if loadlevel_override
         else "repo_owned_fixture_tickbus_exit_main_loop_no_default_level_regremove_envelope"
         if no_default_level
@@ -3150,7 +3375,16 @@ def _select_runtime_exit_fixture_command(
         "console_command_file_not_used",
         "wait_for_connect_nonfatal",
     ]
-    if loadlevel_override:
+    if later_registry_patch:
+        safety_flags.extend(
+            [
+                "settings_registry_regset_file_json_merge_patch",
+                "settings_registry_patch_null_deletes_autoexec_loadlevel",
+                "settings_registry_patch_null_deletes_spawnable_deferred_loadlevel",
+                "temp_registry_patch_gate_required",
+            ]
+        )
+    elif loadlevel_override:
         safety_flags.extend(
             [
                 "settings_registry_regremove_autoexec_loadlevel",
@@ -3164,7 +3398,9 @@ def _select_runtime_exit_fixture_command(
     return {
         "selected": True,
         "argv": argv,
-        "kind": "headless_settings_registry_runtime_exit_fixture_loadlevel_override_envelope"
+        "kind": "headless_settings_registry_runtime_exit_fixture_later_registry_patch_envelope"
+        if later_registry_patch
+        else "headless_settings_registry_runtime_exit_fixture_loadlevel_override_envelope"
         if loadlevel_override
         else "headless_settings_registry_runtime_exit_fixture_no_default_level_envelope"
         if no_default_level
@@ -3178,7 +3414,9 @@ def _select_runtime_exit_fixture_command(
             "argv0": "runtime executable path",
             "project_path": "--project-path=<MAXINE_GoldenCorpus project path>",
             "rendering": ["-NullRenderer", "-rhi=null"],
-            "launch_hygiene": list(RUNTIME_LOADLEVEL_OVERRIDE_ARGS)
+            "launch_hygiene": [later_patch_arg]
+            if later_registry_patch
+            else list(RUNTIME_LOADLEVEL_OVERRIDE_ARGS)
             if loadlevel_override
             else [RUNTIME_NO_DEFAULT_LEVEL_REGREMOVE_ARG]
             if no_default_level
@@ -3208,8 +3446,11 @@ def _select_runtime_exit_fixture_command(
             "safe_to_kill_after_timeout": True,
             "uses_console_command_file_quit": False,
             "uses_settings_registry_fixture_exit": True,
-            "uses_no_default_level_strategy": no_default_level or loadlevel_override,
-            "uses_loadlevel_override_strategy": loadlevel_override,
+            "uses_no_default_level_strategy": no_default_level or loadlevel_override or later_registry_patch,
+            "uses_loadlevel_override_strategy": loadlevel_override or later_registry_patch,
+            "uses_later_registry_patch_strategy": later_registry_patch,
+            "temp_registry_patch_path": str(later_patch_path) if later_registry_patch else "",
+            "temp_registry_patch_gate_required": later_registry_patch,
         },
         "source_evidence_refs": [
             _repo_relative(RUNTIME_EXIT_FIXTURE_COMPONENT_SOURCE),
@@ -3492,6 +3733,7 @@ def _runtime_loadlevel_override_execution_payload(
     actual_level_loads: Sequence[str],
     no_default_level: bool,
     loadlevel_override: bool,
+    later_registry_patch: bool,
     launch_hygiene: Mapping[str, Any],
     exit_code: int | None,
     marker_observed: bool,
@@ -3502,12 +3744,28 @@ def _runtime_loadlevel_override_execution_payload(
         engine_root=_runtime_engine_root_from_command(command),
         timeout_seconds=int(command.get("timeout_seconds", 120)),
     )
-    if not loadlevel_override:
+    if not loadlevel_override and not later_registry_patch:
         return source_payload
 
-    selected_candidate = _runtime_loadlevel_override_selected_candidate(
-        project,
-        _runtime_engine_root_from_command(command),
+    selected_candidate = (
+        _runtime_later_registry_patch_selected_candidate(
+            project=project,
+            engine_root=_runtime_engine_root_from_command(command),
+            artifact_dir=_runtime_later_registry_patch_dir_from_command(command),
+        )
+        if later_registry_patch
+        else _runtime_loadlevel_override_selected_candidate(
+            project,
+            _runtime_engine_root_from_command(command),
+        )
+    )
+    selected_id = (
+        RUNTIME_LATER_REGISTRY_PATCH_SELECTED if later_registry_patch else RUNTIME_LOADLEVEL_OVERRIDE_SELECTED
+    )
+    selected_reason = (
+        "uses_final_command_line_regset_file_json_merge_patch_null_delete_after_project_registry"
+        if later_registry_patch
+        else "removes_project_autoexec_key_and_spawnable_level_system_deferred_load_queue"
     )
     default_level_detected = bool(launch_hygiene.get("runtime_default_level_autoload_detected"))
     launch_pass = str(launch_hygiene.get("runtime_launch_hygiene_status", "")).strip() == "runtime_launch_hygiene_pass"
@@ -3540,7 +3798,7 @@ def _runtime_loadlevel_override_execution_payload(
         {
             "runtime_loadlevel_override": {
                 "status": override_status,
-                "selected": RUNTIME_LOADLEVEL_OVERRIDE_SELECTED,
+                "selected": selected_id,
                 "attempted": True,
                 "actual_level_loads": list(actual_level_loads),
             },
@@ -3551,7 +3809,9 @@ def _runtime_loadlevel_override_execution_payload(
             "runtime_loadlevel_override_candidate_source_validation": selected_candidate["source_validation"],
             "runtime_loadlevel_override_candidate_source_refs": selected_candidate["source_refs"],
             "runtime_loadlevel_override_candidate_command_args": [
-                str(arg) for arg in command.get("argv", []) if str(arg).startswith("--regremove=")
+                str(arg)
+                for arg in command.get("argv", [])
+                if str(arg).startswith("--regremove=") or str(arg).startswith("--regset-file=")
             ],
             "runtime_loadlevel_override_candidate_settings_registry_keys": selected_candidate[
                 "settings_registry_keys"
@@ -3572,11 +3832,15 @@ def _runtime_loadlevel_override_execution_payload(
             "runtime_loadlevel_override_candidate_result": candidate_result,
             "runtime_loadlevel_override_candidate_rejected_reason": "",
             "runtime_loadlevel_override_candidate_blocker": blocker,
-            "runtime_loadlevel_override_selected": RUNTIME_LOADLEVEL_OVERRIDE_SELECTED,
-            "runtime_loadlevel_override_selected_reason": "removes_project_autoexec_key_and_spawnable_level_system_deferred_load_queue",
+            "runtime_loadlevel_override_selected": selected_id,
+            "runtime_loadlevel_override_selected_reason": selected_reason,
             "runtime_loadlevel_override_verified": bool(launch_pass),
             "runtime_autoexec_console_command_override_state": {
-                "selected_args": [str(arg) for arg in command.get("argv", []) if str(arg).startswith("--regremove=")],
+                "selected_args": [
+                    str(arg)
+                    for arg in command.get("argv", [])
+                    if str(arg).startswith("--regremove=") or str(arg).startswith("--regset-file=")
+                ],
                 "mutates_project_registry": False,
                 "mutates_defaultlevel": False,
                 "exit_code_decimal": exit_code,
@@ -3588,6 +3852,419 @@ def _runtime_loadlevel_override_execution_payload(
         }
     )
     return source_payload
+
+
+def _runtime_later_registry_patch_source_payload(
+    *,
+    project: Path | None,
+    engine_root: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    loadlevel_payload = _runtime_loadlevel_override_source_payload(
+        project=project,
+        engine_root=engine_root,
+        timeout_seconds=timeout_seconds,
+    )
+    source_validated = _runtime_later_registry_patch_source_validated(engine_root)
+    status = (
+        "runtime_later_registry_patch_source_discovery_pass"
+        if source_validated
+        else "runtime_later_registry_patch_source_discovery_inconclusive"
+    )
+    selected_candidate = _runtime_later_registry_patch_selected_candidate(
+        project=project,
+        engine_root=engine_root,
+        artifact_dir=artifact_dir,
+    )
+    candidates = _runtime_later_registry_patch_candidate_matrix(
+        project=project,
+        engine_root=engine_root,
+        artifact_dir=artifact_dir,
+    )
+    loadlevel_payload.update(
+        {
+            "runtime_later_registry_patch": {
+                "status": status,
+                "selected": RUNTIME_LATER_REGISTRY_PATCH_SELECTED if source_validated else "",
+                "candidate_count": len(candidates),
+            },
+            "runtime_later_registry_patch_status": status,
+            "runtime_later_registry_patch_candidates": candidates,
+            "runtime_later_registry_patch_candidate_matrix_recorded": bool(candidates),
+            "runtime_later_registry_patch_candidate_id": selected_candidate["id"] if source_validated else "",
+            "runtime_later_registry_patch_candidate_name": selected_candidate["name"] if source_validated else "",
+            "runtime_later_registry_patch_candidate_kind": selected_candidate["kind"] if source_validated else "",
+            "runtime_later_registry_patch_candidate_source_validation": selected_candidate["source_validation"]
+            if source_validated
+            else {},
+            "runtime_later_registry_patch_candidate_source_refs": selected_candidate["source_refs"]
+            if source_validated
+            else [],
+            "runtime_later_registry_patch_candidate_patch_path": selected_candidate["patch_path"]
+            if source_validated
+            else "",
+            "runtime_later_registry_patch_candidate_patch_contents_summary": selected_candidate[
+                "patch_contents_summary"
+            ]
+            if source_validated
+            else "",
+            "runtime_later_registry_patch_candidate_merge_mechanism": selected_candidate["merge_mechanism"]
+            if source_validated
+            else "",
+            "runtime_later_registry_patch_candidate_merge_order": selected_candidate["merge_order"]
+            if source_validated
+            else "",
+            "runtime_later_registry_patch_candidate_gate_env": selected_candidate["gate_env"]
+            if source_validated
+            else [],
+            "runtime_later_registry_patch_candidate_mutates_project": False,
+            "runtime_later_registry_patch_candidate_mutates_defaultlevel": False,
+            "runtime_later_registry_patch_candidate_mutates_production_level": False,
+            "runtime_later_registry_patch_candidate_command_args": selected_candidate["command_args"]
+            if source_validated
+            else [],
+            "runtime_later_registry_patch_candidate_settings_registry_keys": selected_candidate[
+                "settings_registry_keys"
+            ]
+            if source_validated
+            else [],
+            "runtime_later_registry_patch_candidate_expected_registry_state": selected_candidate[
+                "expected_registry_state"
+            ]
+            if source_validated
+            else {},
+            "runtime_later_registry_patch_candidate_actual_registry_state": {},
+            "runtime_later_registry_patch_candidate_expected_level_loads": selected_candidate["expected_level_loads"]
+            if source_validated
+            else [],
+            "runtime_later_registry_patch_candidate_actual_level_loads": [],
+            "runtime_later_registry_patch_candidate_attempted": False,
+            "runtime_later_registry_patch_candidate_result": selected_candidate["result"] if source_validated else "",
+            "runtime_later_registry_patch_candidate_rejected_reason": "",
+            "runtime_later_registry_patch_candidate_blocker": "",
+            "runtime_later_registry_patch_selected": RUNTIME_LATER_REGISTRY_PATCH_SELECTED if source_validated else "",
+            "runtime_later_registry_patch_selected_reason": "uses_final_command_line_regset_file_json_merge_patch_null_delete_after_project_registry"
+            if source_validated
+            else "",
+            "runtime_later_registry_patch_verified": False,
+            "runtime_later_registry_patch_gate_env": list(RUNTIME_EXIT_FIXTURE_TEMP_REGISTRY_PATCH_GATE_ENV),
+            "runtime_later_registry_patch_generation_status": "requires_gate_before_generation",
+            "runtime_settings_registry_merge_order_summary": _runtime_settings_registry_merge_order_summary(
+                project,
+                engine_root,
+                status=status,
+            ),
+            "runtime_default_level_override_blocker": ""
+            if source_validated
+            else "blocked_by_missing_later_precedence_registry_patch",
+            "defaultlevel_mutation": False,
+            "production_level_mutation": False,
+        }
+    )
+    return loadlevel_payload
+
+
+def _runtime_later_registry_patch_execution_payload(
+    *,
+    project: Path | None,
+    command: Mapping[str, Any],
+    diagnostics: Mapping[str, Any],
+    actual_level_loads: Sequence[str],
+    later_registry_patch: bool,
+    launch_hygiene: Mapping[str, Any],
+    exit_code: int | None,
+    marker_observed: bool,
+    artifact_dir: Path,
+    combined_text: str = "",
+) -> Dict[str, Any]:
+    if not later_registry_patch:
+        return {}
+    source_payload = _runtime_later_registry_patch_source_payload(
+        project=project,
+        engine_root=_runtime_engine_root_from_command(command),
+        timeout_seconds=int(command.get("timeout_seconds", 120)),
+        artifact_dir=artifact_dir,
+    )
+    selected_candidate = _runtime_later_registry_patch_selected_candidate(
+        project=project,
+        engine_root=_runtime_engine_root_from_command(command),
+        artifact_dir=artifact_dir,
+    )
+    default_level_detected = bool(launch_hygiene.get("runtime_default_level_autoload_detected"))
+    launch_pass = str(launch_hygiene.get("runtime_launch_hygiene_status", "")).strip() == "runtime_launch_hygiene_pass"
+    ap_status = str(
+        launch_hygiene.get("runtime_asset_processor_negotiation_signal_status", "runtime_execution_not_attempted")
+    )
+    shader_status = str(launch_hygiene.get("runtime_shader_serializer_signal_status", "runtime_execution_not_attempted"))
+    patch_merge_failed = "Merging of file".lower() in combined_text.lower()
+    if launch_pass:
+        patch_status = "runtime_later_registry_patch_verified_no_defaultlevel"
+        candidate_result = "runtime_later_registry_patch_candidate_attempted_pass"
+        blocker = ""
+    elif default_level_detected:
+        patch_status = "runtime_later_registry_patch_candidate_attempted_failed_defaultlevel_autoload"
+        candidate_result = patch_status
+        blocker = "blocked_by_settings_registry_merge_order"
+    elif launch_hygiene.get("runtime_asset_processor_negotiation_disqualifying") is True or launch_hygiene.get(
+        "runtime_shader_serializer_disqualifying"
+    ) is True:
+        patch_status = "runtime_later_registry_patch_candidate_attempted_failed_disqualifying_signal"
+        candidate_result = patch_status
+        blocker = "blocked_by_disqualifying_runtime_signals"
+    else:
+        patch_status = "runtime_later_registry_patch_candidate_attempted_failed_disqualifying_signal"
+        candidate_result = patch_status
+        blocker = "blocked_by_disqualifying_runtime_signals"
+
+    source_payload.update(
+        {
+            "runtime_later_registry_patch": {
+                "status": patch_status,
+                "selected": RUNTIME_LATER_REGISTRY_PATCH_SELECTED,
+                "attempted": True,
+                "actual_level_loads": list(actual_level_loads),
+            },
+            "runtime_later_registry_patch_status": patch_status,
+            "runtime_later_registry_patch_candidate_id": selected_candidate["id"],
+            "runtime_later_registry_patch_candidate_name": selected_candidate["name"],
+            "runtime_later_registry_patch_candidate_kind": selected_candidate["kind"],
+            "runtime_later_registry_patch_candidate_source_validation": selected_candidate["source_validation"],
+            "runtime_later_registry_patch_candidate_source_refs": selected_candidate["source_refs"],
+            "runtime_later_registry_patch_candidate_patch_path": selected_candidate["patch_path"],
+            "runtime_later_registry_patch_candidate_patch_contents_summary": selected_candidate[
+                "patch_contents_summary"
+            ],
+            "runtime_later_registry_patch_candidate_merge_mechanism": selected_candidate["merge_mechanism"],
+            "runtime_later_registry_patch_candidate_merge_order": selected_candidate["merge_order"],
+            "runtime_later_registry_patch_candidate_gate_env": selected_candidate["gate_env"],
+            "runtime_later_registry_patch_candidate_mutates_project": False,
+            "runtime_later_registry_patch_candidate_mutates_defaultlevel": False,
+            "runtime_later_registry_patch_candidate_mutates_production_level": False,
+            "runtime_later_registry_patch_candidate_command_args": [
+                str(arg) for arg in command.get("argv", []) if str(arg).startswith("--regset-file=")
+            ],
+            "runtime_later_registry_patch_candidate_settings_registry_keys": selected_candidate[
+                "settings_registry_keys"
+            ],
+            "runtime_later_registry_patch_candidate_expected_registry_state": selected_candidate[
+                "expected_registry_state"
+            ],
+            "runtime_later_registry_patch_candidate_actual_registry_state": {
+                "defaultlevel_autoload_detected": default_level_detected,
+                "autoexec_loadlevel_removed_by_later_patch": not default_level_detected,
+                "spawnable_deferred_loadlevel_removed_by_later_patch": not default_level_detected,
+                "regset_file_merge_failed": patch_merge_failed,
+                "autoexec_notification_already_executed_before_final_regset_file": default_level_detected
+                and not patch_merge_failed,
+                "asset_processor_negotiation_status": ap_status,
+                "shader_serializer_status": shader_status,
+            },
+            "runtime_later_registry_patch_candidate_expected_level_loads": [],
+            "runtime_later_registry_patch_candidate_actual_level_loads": list(actual_level_loads),
+            "runtime_later_registry_patch_candidate_attempted": True,
+            "runtime_later_registry_patch_candidate_result": candidate_result,
+            "runtime_later_registry_patch_candidate_rejected_reason": "",
+            "runtime_later_registry_patch_candidate_blocker": blocker,
+            "runtime_later_registry_patch_selected": RUNTIME_LATER_REGISTRY_PATCH_SELECTED,
+            "runtime_later_registry_patch_selected_reason": "uses_final_command_line_regset_file_json_merge_patch_null_delete_after_project_registry",
+            "runtime_later_registry_patch_verified": bool(launch_pass),
+            "runtime_loadlevel_override_status": "runtime_loadlevel_override_verified_no_defaultlevel"
+            if launch_pass
+            else "runtime_loadlevel_override_candidate_attempted_failed_defaultlevel_autoload"
+            if default_level_detected
+            else "runtime_loadlevel_override_candidate_attempted_failed_disqualifying_signal",
+            "runtime_loadlevel_override_selected": RUNTIME_LATER_REGISTRY_PATCH_SELECTED,
+            "runtime_loadlevel_override_selected_reason": "uses_final_command_line_regset_file_json_merge_patch_null_delete_after_project_registry",
+            "runtime_loadlevel_override_verified": bool(launch_pass),
+            "runtime_later_registry_patch_generation_status": "runtime_later_registry_patch_generated",
+            "runtime_autoexec_console_command_override_state": {
+                "selected_args": [
+                    str(arg) for arg in command.get("argv", []) if str(arg).startswith("--regset-file=")
+                ],
+                "patch_path": selected_candidate["patch_path"],
+                "mutates_project_registry": False,
+                "mutates_defaultlevel": False,
+                "exit_code_decimal": exit_code,
+                "exit_code_hex": _exit_code_hex(exit_code),
+                "fixture_marker_observed": marker_observed,
+            },
+            "runtime_default_level_override_blocker": blocker,
+            "defaultlevel_mutation": False,
+            "production_level_mutation": False,
+        }
+    )
+    return source_payload
+
+
+def _runtime_later_registry_patch_selected_candidate(
+    *,
+    project: Path | None,
+    engine_root: Path | None,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    patch_path = _runtime_later_registry_patch_path(artifact_dir)
+    return {
+        "id": RUNTIME_LATER_REGISTRY_PATCH_SELECTED,
+        "name": "Final command-line .setreg merge patch null-deletes Autoexec LoadLevel and deferred LoadLevel",
+        "kind": "command_line_regset_file_setreg_merge_patch_null_delete",
+        "source_validation": {
+            "status": "runtime_later_registry_patch_candidate_source_validated"
+            if _runtime_later_registry_patch_source_validated(engine_root)
+            else "runtime_later_registry_patch_candidate_rejected_missing_source_validation",
+            "summary": (
+                "ComponentApplication performs a final command-line merge after project registry and project-user registry, "
+                "and SettingsRegistryMergeUtils parses --regset-file with JSON Merge Patch semantics for .setreg files. "
+                "The selected harness patch uses null values to delete the Autoexec LoadLevel key and the "
+                "SpawnableLevelSystem deferred LoadLevel queue without mutating project Registry/load_level.setreg "
+                "or Levels/defaultlevel. This avoids JSON Patch remove failures when a target is absent at the early "
+                "command-line parse point."
+            ),
+        },
+        "source_refs": _runtime_later_registry_patch_source_refs(project, engine_root),
+        "patch_path": str(patch_path),
+        "patch_contents_summary": (
+            "JSON Merge Patch sets /O3DE/Autoexec/ConsoleCommands/LoadLevel and "
+            "/O3DE/Runtime/SpawnableLevelSystem/DeferredLoadLevel to null so the keys are deleted."
+        ),
+        "merge_mechanism": "command_line_regset_file_setreg_json_merge_patch_null_delete",
+        "merge_order": "final_command_line_regset_file_after_project_registry_and_project_user_registry",
+        "gate_env": list(RUNTIME_EXIT_FIXTURE_TEMP_REGISTRY_PATCH_GATE_ENV),
+        "command_args": [f"--regset-file={patch_path}"],
+        "settings_registry_keys": [RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY, RUNTIME_DEFERRED_LOADLEVEL_KEY],
+        "expected_registry_state": {
+            "autoexec_loadlevel": "deleted_by_final_regset_file_json_merge_patch_null",
+            "spawnable_deferred_loadlevel": "deleted_by_final_regset_file_json_merge_patch_null",
+            "project_registry_mutation": False,
+            "defaultlevel_mutation": False,
+            "production_level_mutation": False,
+        },
+        "expected_level_loads": [],
+        "result": "runtime_later_registry_patch_candidate_source_validated",
+    }
+
+
+def _runtime_later_registry_patch_candidate_matrix(
+    *,
+    project: Path | None,
+    engine_root: Path | None,
+    artifact_dir: Path,
+) -> List[Dict[str, Any]]:
+    historical = _runtime_loadlevel_override_candidate_matrix(project, engine_root)
+    selected = _runtime_later_registry_patch_selected_candidate(
+        project=project,
+        engine_root=engine_root,
+        artifact_dir=artifact_dir,
+    )
+    return [
+        {
+            **historical[0],
+            "result": "runtime_later_registry_patch_candidate_rejected_prior_regremove_failed_defaultlevel_autoload",
+            "blocker": "blocked_by_regremove_ineffective",
+        },
+        {
+            **historical[1],
+            "attempted": True,
+            "actual_level_loads": [RUNTIME_DEFAULT_LEVEL_PRODUCT_PATH],
+            "actual_registry_state": {
+                "autoexec_regremove_reported_missing_value": True,
+                "deferred_loadlevel_regremove_reported_missing_value": True,
+            },
+            "result": "runtime_later_registry_patch_candidate_rejected_prior_regremove_failed_defaultlevel_autoload",
+            "blocker": "blocked_by_settings_registry_merge_order",
+        },
+        {
+            "id": RUNTIME_LATER_REGISTRY_PATCH_FAILED_JSON_PATCH_REMOVE,
+            "name": "Final command-line .setregpatch JSON Patch remove",
+            "kind": "command_line_regset_file_setregpatch_json_patch_remove",
+            "source_validation": {
+                "status": "runtime_later_registry_patch_candidate_source_validated",
+                "summary": (
+                    "SettingsRegistryMergeUtils parses .setregpatch files as JSON Patch. JSON Patch remove requires "
+                    "the target path to exist, and the live fixture attempt reported a Settings Registry merge failure "
+                    "when the remove targets were absent at command-line parse time."
+                ),
+            },
+            "source_refs": _runtime_later_registry_patch_source_refs(project, engine_root),
+            "patch_path": str(artifact_dir / "maxine_runtime_later_precedence_loadlevel_remove.setregpatch"),
+            "patch_contents_summary": (
+                "JSON Patch remove operations for /O3DE/Autoexec/ConsoleCommands/LoadLevel and "
+                "/O3DE/Runtime/SpawnableLevelSystem/DeferredLoadLevel."
+            ),
+            "merge_mechanism": "command_line_regset_file_setregpatch_json_patch_remove",
+            "merge_order": "final_command_line_regset_file_after_project_registry_and_project_user_registry",
+            "gate_env": list(RUNTIME_EXIT_FIXTURE_TEMP_REGISTRY_PATCH_GATE_ENV),
+            "command_args": [
+                f"--regset-file={artifact_dir / 'maxine_runtime_later_precedence_loadlevel_remove.setregpatch'}"
+            ],
+            "settings_registry_keys": [RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY, RUNTIME_DEFERRED_LOADLEVEL_KEY],
+            "expected_registry_state": {
+                "autoexec_loadlevel": "remove_attempted_by_json_patch",
+                "spawnable_deferred_loadlevel": "remove_attempted_by_json_patch",
+                "project_registry_mutation": False,
+                "defaultlevel_mutation": False,
+                "production_level_mutation": False,
+            },
+            "actual_registry_state": {
+                "json_patch_remove_target_missing": True,
+                "settings_registry_merge_failed": True,
+            },
+            "expected_level_loads": [],
+            "actual_level_loads": [RUNTIME_DEFAULT_LEVEL_PRODUCT_PATH],
+            "attempted": True,
+            "result": "runtime_later_registry_patch_candidate_rejected_json_patch_remove_target_missing",
+            "blocker": "blocked_by_fixture_temp_registry_patch_not_safe",
+        },
+        {
+            **selected,
+            "actual_registry_state": {},
+            "actual_level_loads": [],
+            "attempted": False,
+            "blocker": "",
+        },
+    ]
+
+
+def _runtime_later_registry_patch_source_validated(engine_root: Path | None) -> bool:
+    return _runtime_loadlevel_override_source_validated(engine_root)
+
+
+def _runtime_later_registry_patch_source_refs(project: Path | None, engine_root: Path | None) -> List[str]:
+    return _runtime_loadlevel_override_source_refs(project, engine_root)
+
+
+def _runtime_later_registry_patch_path(artifact_dir: Path) -> Path:
+    return artifact_dir / RUNTIME_LATER_REGISTRY_PATCH_FILENAME
+
+
+def _runtime_later_registry_patch_dir_from_command(command: Mapping[str, Any]) -> Path:
+    for arg in command.get("argv", []):
+        text = str(arg)
+        if text.startswith("--regset-file="):
+            return Path(text.split("=", 1)[1]).parent
+    return DEFAULT_ARTIFACT_ROOT
+
+
+def _runtime_later_registry_patch_contents() -> Dict[str, Any]:
+    return {
+        "O3DE": {
+            "Autoexec": {
+                "ConsoleCommands": {
+                    "LoadLevel": None,
+                }
+            },
+            "Runtime": {
+                "SpawnableLevelSystem": {
+                    "DeferredLoadLevel": None,
+                }
+            },
+        }
+    }
+
+
+def _write_runtime_later_registry_patch(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(_runtime_later_registry_patch_contents(), indent=2) + "\n", encoding="utf-8")
 
 
 def _runtime_loadlevel_override_selected_candidate(project: Path | None, engine_root: Path | None) -> Dict[str, Any]:
@@ -3683,7 +4360,9 @@ def _runtime_settings_registry_merge_order_summary(
             "ComponentApplication merges command-line settings once before project registry files and again after "
             "project user registry. Console registers settings-registry merge notifications, so Autoexec "
             "ConsoleCommands can execute during Registry/load_level.setreg merge before the final command-line "
-            "regremove pass. SpawnableLevelSystem queues early LoadLevel values under DeferredLoadLevel."
+            "override pass. SpawnableLevelSystem queues early LoadLevel values under DeferredLoadLevel. "
+            "--regset-file can merge an artifact .setreg as JSON Merge Patch at the final pass, where null values "
+            "delete keys without the missing-target failure mode of JSON Patch remove."
         ),
         "project_registry_file": str((project or Path("<project>")) / "Registry" / "load_level.setreg"),
         "source_refs": _runtime_loadlevel_override_source_refs(project, engine_root),
@@ -3711,6 +4390,7 @@ def _runtime_loadlevel_override_source_refs(project: Path | None, engine_root: P
         str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Component" / "ComponentApplication.cpp"),
         str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryMergeUtils.cpp"),
         str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryMergeUtils.h"),
+        str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryImpl.cpp"),
         str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "Console.cpp"),
         str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "IConsole.h"),
         str(root / "Code" / "Legacy" / "CrySystem" / "LevelSystem" / "SpawnableLevelSystem.cpp"),
@@ -5753,6 +6433,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--enable-runtime-exit-fixture-no-default-level", action="store_true")
     parser.add_argument("--diagnose-runtime-loadlevel-override", action="store_true")
     parser.add_argument("--enable-runtime-exit-fixture-loadlevel-override", action="store_true")
+    parser.add_argument("--diagnose-runtime-later-registry-patch", action="store_true")
+    parser.add_argument("--enable-runtime-exit-fixture-later-registry-patch", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -5785,6 +6467,8 @@ def main() -> int:
         enable_runtime_exit_fixture_no_default_level=args.enable_runtime_exit_fixture_no_default_level,
         diagnose_runtime_loadlevel_override=args.diagnose_runtime_loadlevel_override,
         enable_runtime_exit_fixture_loadlevel_override=args.enable_runtime_exit_fixture_loadlevel_override,
+        diagnose_runtime_later_registry_patch=args.diagnose_runtime_later_registry_patch,
+        enable_runtime_exit_fixture_later_registry_patch=args.enable_runtime_exit_fixture_later_registry_patch,
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
         strict_integration=args.strict_integration,

@@ -608,6 +608,9 @@
     "runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy": {
       "type": "boolean"
     },
+    "runtime_exit_fixture_runtime_command_uses_later_registry_patch_strategy": {
+      "type": "boolean"
+    },
     "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": {
       "type": "boolean"
     },
@@ -764,6 +767,110 @@
     },
     "runtime_loadlevel_override_verified": {
       "type": "boolean"
+    },
+    "runtime_later_registry_patch": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_later_registry_patch_status": {
+      "type": "string"
+    },
+    "runtime_later_registry_patch_candidates": {
+      "type": "array"
+    },
+    "runtime_later_registry_patch_candidate_matrix_recorded": {
+      "type": "boolean"
+    },
+    "runtime_later_registry_patch_candidate_id": {
+      "type": "string"
+    },
+    "runtime_later_registry_patch_candidate_name": {
+      "type": "string"
+    },
+    "runtime_later_registry_patch_candidate_kind": {
+      "type": "string"
+    },
+    "runtime_later_registry_patch_candidate_source_validation": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_later_registry_patch_candidate_source_refs": {
+      "type": "array"
+    },
+    "runtime_later_registry_patch_candidate_patch_path": {
+      "type": "string"
+    },
+    "runtime_later_registry_patch_candidate_patch_contents_summary": {
+      "type": "string"
+    },
+    "runtime_later_registry_patch_candidate_merge_mechanism": {
+      "type": "string"
+    },
+    "runtime_later_registry_patch_candidate_merge_order": {
+      "type": "string"
+    },
+    "runtime_later_registry_patch_candidate_gate_env": {
+      "type": "array"
+    },
+    "runtime_later_registry_patch_candidate_mutates_project": {
+      "type": "boolean"
+    },
+    "runtime_later_registry_patch_candidate_mutates_defaultlevel": {
+      "type": "boolean"
+    },
+    "runtime_later_registry_patch_candidate_mutates_production_level": {
+      "type": "boolean"
+    },
+    "runtime_later_registry_patch_candidate_command_args": {
+      "type": "array"
+    },
+    "runtime_later_registry_patch_candidate_settings_registry_keys": {
+      "type": "array"
+    },
+    "runtime_later_registry_patch_candidate_expected_registry_state": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_later_registry_patch_candidate_actual_registry_state": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_later_registry_patch_candidate_expected_level_loads": {
+      "type": "array"
+    },
+    "runtime_later_registry_patch_candidate_actual_level_loads": {
+      "type": "array"
+    },
+    "runtime_later_registry_patch_candidate_attempted": {
+      "type": "boolean"
+    },
+    "runtime_later_registry_patch_candidate_result": {
+      "type": "string"
+    },
+    "runtime_later_registry_patch_candidate_rejected_reason": {
+      "type": "string"
+    },
+    "runtime_later_registry_patch_candidate_blocker": {
+      "type": "string"
+    },
+    "runtime_later_registry_patch_selected": {
+      "type": "string"
+    },
+    "runtime_later_registry_patch_selected_reason": {
+      "type": "string"
+    },
+    "runtime_later_registry_patch_verified": {
+      "type": "boolean"
+    },
+    "runtime_later_registry_patch_gate_env": {
+      "type": "array"
+    },
+    "runtime_later_registry_patch_gate_status": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_later_registry_patch_generation_status": {
+      "type": "string"
     },
     "runtime_settings_registry_merge_order_summary": {
       "type": "object",
