@@ -128,6 +128,9 @@
     "production_level_mutation": {
       "type": "boolean"
     },
+    "defaultlevel_mutation": {
+      "type": "boolean"
+    },
     "editor_python_bindings_required": {
       "type": "boolean"
     },
@@ -602,6 +605,9 @@
     "runtime_exit_fixture_runtime_command_uses_no_default_level_strategy": {
       "type": "boolean"
     },
+    "runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy": {
+      "type": "boolean"
+    },
     "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": {
       "type": "boolean"
     },
@@ -687,6 +693,112 @@
       "type": "boolean"
     },
     "runtime_no_default_level_execution_verified": {
+      "type": "boolean"
+    },
+    "runtime_loadlevel_override": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_loadlevel_override_status": {
+      "type": "string"
+    },
+    "runtime_loadlevel_override_candidates": {
+      "type": "array"
+    },
+    "runtime_loadlevel_override_candidate_matrix_recorded": {
+      "type": "boolean"
+    },
+    "runtime_loadlevel_override_candidate_id": {
+      "type": "string"
+    },
+    "runtime_loadlevel_override_candidate_name": {
+      "type": "string"
+    },
+    "runtime_loadlevel_override_candidate_kind": {
+      "type": "string"
+    },
+    "runtime_loadlevel_override_candidate_source_validation": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_loadlevel_override_candidate_source_refs": {
+      "type": "array"
+    },
+    "runtime_loadlevel_override_candidate_command_args": {
+      "type": "array"
+    },
+    "runtime_loadlevel_override_candidate_settings_registry_keys": {
+      "type": "array"
+    },
+    "runtime_loadlevel_override_candidate_expected_registry_state": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_loadlevel_override_candidate_actual_registry_state": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_loadlevel_override_candidate_expected_level_loads": {
+      "type": "array"
+    },
+    "runtime_loadlevel_override_candidate_actual_level_loads": {
+      "type": "array"
+    },
+    "runtime_loadlevel_override_candidate_attempted": {
+      "type": "boolean"
+    },
+    "runtime_loadlevel_override_candidate_result": {
+      "type": "string"
+    },
+    "runtime_loadlevel_override_candidate_rejected_reason": {
+      "type": "string"
+    },
+    "runtime_loadlevel_override_candidate_blocker": {
+      "type": "string"
+    },
+    "runtime_loadlevel_override_selected": {
+      "type": "string"
+    },
+    "runtime_loadlevel_override_selected_reason": {
+      "type": "string"
+    },
+    "runtime_loadlevel_override_verified": {
+      "type": "boolean"
+    },
+    "runtime_settings_registry_merge_order_summary": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_settings_registry_command_line_override_order": {
+      "type": "string"
+    },
+    "runtime_settings_registry_project_registry_order": {
+      "type": "string"
+    },
+    "runtime_autoexec_console_command_source": {
+      "type": "string"
+    },
+    "runtime_autoexec_console_command_effective_state": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_autoexec_console_command_override_state": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_default_level_override_blocker": {
+      "type": "string"
+    },
+    "runtime_temp_harness_level_strategy": {
+      "type": "string"
+    },
+    "runtime_temp_harness_level_path": {
+      "type": "string"
+    },
+    "runtime_temp_harness_level_generation_status": {
+      "type": "string"
+    },
+    "runtime_temp_harness_level_production_mutation": {
       "type": "boolean"
     },
     "runtime_empty_harness_level_strategy": {

@@ -24,6 +24,7 @@ def _engine(root: Path, *, launcher: bool = True) -> Path:
     for source_path in (
         engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryMergeUtils.cpp",
         engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryMergeUtils.h",
+        engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Component" / "ComponentApplication.cpp",
         engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "IConsole.h",
         engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "Console.cpp",
         engine / "Code" / "Legacy" / "CrySystem" / "LevelSystem" / "SpawnableLevelSystem.cpp",
@@ -1414,6 +1415,145 @@ def test_runtime_harness_no_default_level_fixture_command_blocks_shader_serializ
     assert report["runtime_launch_hygiene_status"] == "runtime_launch_hygiene_failed"
     assert report["runtime_shader_serializer_signal_status"] == "runtime_shader_serializer_signal_present"
     assert report["runtime_shader_serializer_disqualifying"] is True
+    assert report["runtime_exit_fixture_execution_verified"] is False
+    assert report["runtime_execution_verified"] is False
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_loadlevel_override_diagnostic_records_effective_candidate_matrix(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    registry = project / "Registry"
+    registry.mkdir()
+    (registry / "load_level.setreg").write_text(
+        json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}}),
+        encoding="utf-8",
+    )
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_loadlevel_override=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_loadlevel_override_diagnostic"
+    assert report["runtime_loadlevel_override_status"] == "runtime_loadlevel_override_source_discovery_pass"
+    assert report["runtime_settings_registry_merge_order_summary"]["status"] == "runtime_loadlevel_override_source_discovery_pass"
+    assert report["runtime_settings_registry_command_line_override_order"] == "command_line_runs_before_project_registry_and_again_after_project_user_registry"
+    assert report["runtime_settings_registry_project_registry_order"] == "project_registry_merges_after_early_command_line_and_before_final_command_line"
+    assert report["runtime_autoexec_console_command_source"] == str(registry / "load_level.setreg")
+    assert report["runtime_autoexec_console_command_effective_state"]["queued_key"] == runtime_harness.RUNTIME_DEFERRED_LOADLEVEL_KEY
+    assert report["runtime_loadlevel_override_candidate_matrix_recorded"] is True
+    candidate_ids = [candidate["id"] for candidate in report["runtime_loadlevel_override_candidates"]]
+    assert candidate_ids == [
+        "settings_registry_regremove_autoexec_loadlevel",
+        "settings_registry_regremove_autoexec_and_deferred_loadlevel",
+    ]
+    assert report["runtime_loadlevel_override_candidates"][0]["result"] == "runtime_loadlevel_override_candidate_attempted_failed_defaultlevel_autoload"
+    assert report["runtime_loadlevel_override_selected"] == "settings_registry_regremove_autoexec_and_deferred_loadlevel"
+    assert report["runtime_loadlevel_override_selected_reason"] == "removes_project_autoexec_key_and_spawnable_level_system_deferred_load_queue"
+    assert report["runtime_loadlevel_override_candidate_command_args"] == [
+        "--regremove=/O3DE/Autoexec/ConsoleCommands/LoadLevel",
+        "--regremove=/O3DE/Runtime/SpawnableLevelSystem/DeferredLoadLevel",
+    ]
+    assert report["runtime_loadlevel_override_verified"] is False
+    assert report["runtime_execution_attempted"] is False
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_loadlevel_override_fixture_command_uses_deferred_removal_and_verifies_clean_launch(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+    launched = []
+
+    def runner(argv, **kwargs):
+        launched.append(argv)
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout="MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=5\n",
+            stderr="",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_exit_fixture_loadlevel_override=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_exit_fixture_loadlevel_override_command"
+    assert report["runtime_loadlevel_override_status"] == "runtime_loadlevel_override_verified_no_defaultlevel"
+    assert report["runtime_loadlevel_override_verified"] is True
+    assert report["runtime_loadlevel_override_selected"] == "settings_registry_regremove_autoexec_and_deferred_loadlevel"
+    assert "--regremove=/O3DE/Autoexec/ConsoleCommands/LoadLevel" in launched[0]
+    assert "--regremove=/O3DE/Runtime/SpawnableLevelSystem/DeferredLoadLevel" in launched[0]
+    assert report["runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy"] is True
+    assert report["runtime_exit_fixture_runtime_command_uses_console_command_file_quit"] is False
+    assert report["runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit"] is True
+    assert report["runtime_default_level_autoload_detected"] is False
+    assert report["runtime_loadlevel_override_candidate_actual_level_loads"] == []
+    assert report["runtime_launch_hygiene_status"] == "runtime_launch_hygiene_pass"
+    assert report["runtime_exit_fixture_execution_verified"] is True
+    assert report["runtime_execution_verified"] is True
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_loadlevel_override_fixture_command_blocks_when_defaultlevel_still_loads(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    def runner(argv, **kwargs):
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout=(
+                "MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=5\n"
+                "Game Level Load Time: Level Levels/defaultlevel/defaultlevel.spawnable loaded in 0.00 seconds\n"
+            ),
+            stderr="",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_exit_fixture_loadlevel_override=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_harness_status"] == "blocked_by_default_level_autoload"
+    assert report["runtime_loadlevel_override_status"] == "runtime_loadlevel_override_candidate_attempted_failed_defaultlevel_autoload"
+    assert report["runtime_loadlevel_override_verified"] is False
+    assert report["runtime_default_level_autoload_detected"] is True
+    assert report["runtime_default_level_disqualifying"] is True
     assert report["runtime_exit_fixture_execution_verified"] is False
     assert report["runtime_execution_verified"] is False
     assert report["runtime_character_proof_claimed"] is False

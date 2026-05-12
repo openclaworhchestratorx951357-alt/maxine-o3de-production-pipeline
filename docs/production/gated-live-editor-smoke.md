@@ -319,6 +319,21 @@ The no-default-level fixture command keeps the Settings Registry fixture exit ke
 
 The first bounded no-default-level run still observed `Levels/defaultlevel/defaultlevel.spawnable` and therefore records `blocked_by_default_level_autoload`. That result keeps `runtime_exit_fixture_execution_verified=false` and `runtime_execution_verified=false`; the next safe investigation must explain whether command-line `--regremove` is applied before project registry merge, whether a later per-process override can remove or neutralize the autoexec command, or whether this launcher configuration requires a non-production temp harness level.
 
+LoadLevel override diagnostics pin that investigation as a separate runtime harness layer:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-loadlevel-override --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-exit-fixture-loadlevel-override --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+The source discovery records that command-line `--regremove` is parsed during command-line settings merges, while console autoexec command notifications can still produce a `SpawnableLevelSystem` deferred load at `/O3DE/Runtime/SpawnableLevelSystem/DeferredLoadLevel`. The selected per-process candidate therefore removes both `/O3DE/Autoexec/ConsoleCommands/LoadLevel` and `/O3DE/Runtime/SpawnableLevelSystem/DeferredLoadLevel`. It does not edit the live project registry or `Levels/defaultlevel`.
+
+The bounded LoadLevel-override fixture run remains unverified: it exited `0` and observed the fixture marker, but still loaded `Levels/defaultlevel/defaultlevel.spawnable`. The report keeps `runtime_loadlevel_override_verified=false`, `runtime_exit_fixture_execution_verified=false`, and `runtime_execution_verified=false`; stdout reports both regremove targets as missing at parse time, so the candidate-specific blocker is `blocked_by_settings_registry_merge_order` while the launch blocker remains `blocked_by_default_level_autoload`. AP negotiation and shader serializer signals remain disqualifying until resolved or source/log-classified.
+
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 
 This wiring does not publish, mutate production levels, contact external services, or claim production-ready completion.
