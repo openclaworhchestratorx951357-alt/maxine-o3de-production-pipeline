@@ -599,6 +599,12 @@
     "runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit": {
       "type": "boolean"
     },
+    "runtime_exit_fixture_runtime_command_uses_no_default_level_strategy": {
+      "type": "boolean"
+    },
+    "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": {
+      "type": "boolean"
+    },
     "runtime_exit_fixture_marker_observed": {
       "type": "boolean"
     },
@@ -606,6 +612,143 @@
       "type": "boolean"
     },
     "runtime_exit_fixture_unexpected_level_load": {
+      "type": "boolean"
+    },
+    "runtime_exit_fixture_actual_level_loads": {
+      "type": "array"
+    },
+    "runtime_launch_hygiene": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_launch_hygiene_status": {
+      "type": "string"
+    },
+    "runtime_launch_level_policy": {
+      "type": "string"
+    },
+    "runtime_launch_level_policy_status": {
+      "type": "string"
+    },
+    "runtime_default_level_autoload_detected": {
+      "type": "boolean"
+    },
+    "runtime_default_level_path": {
+      "type": "string"
+    },
+    "runtime_default_level_product_path": {
+      "type": "string"
+    },
+    "runtime_default_level_source": {
+      "type": "string"
+    },
+    "runtime_default_level_source_evidence": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_default_level_disqualifying": {
+      "type": "boolean"
+    },
+    "runtime_default_level_classification": {
+      "type": "string"
+    },
+    "runtime_default_level_blocked_reason": {
+      "type": "string"
+    },
+    "runtime_no_default_level_strategy": {
+      "type": "string"
+    },
+    "runtime_no_default_level_strategy_status": {
+      "type": "string"
+    },
+    "runtime_no_default_level_source_validation": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_no_default_level_source_refs": {
+      "type": "array"
+    },
+    "runtime_no_default_level_command": {
+      "type": "string"
+    },
+    "runtime_no_default_level_arguments": {
+      "type": "array"
+    },
+    "runtime_no_default_level_settings_registry_keys": {
+      "type": "array"
+    },
+    "runtime_no_default_level_expected_level_loads": {
+      "type": "array"
+    },
+    "runtime_no_default_level_actual_level_loads": {
+      "type": "array"
+    },
+    "runtime_no_default_level_execution_attempted": {
+      "type": "boolean"
+    },
+    "runtime_no_default_level_execution_verified": {
+      "type": "boolean"
+    },
+    "runtime_empty_harness_level_strategy": {
+      "type": "string"
+    },
+    "runtime_empty_harness_level_path": {
+      "type": "string"
+    },
+    "runtime_empty_harness_level_generation_status": {
+      "type": "string"
+    },
+    "runtime_empty_harness_level_mutation_status": {
+      "type": "string"
+    },
+    "runtime_empty_harness_level_production_mutation": {
+      "type": "boolean"
+    },
+    "runtime_asset_processor_negotiation_signal": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_asset_processor_negotiation_signal_status": {
+      "type": "string"
+    },
+    "runtime_asset_processor_negotiation_status": {
+      "type": "string"
+    },
+    "runtime_asset_processor_negotiation_classification": {
+      "type": "string"
+    },
+    "runtime_asset_processor_negotiation_disqualifying": {
+      "type": "boolean"
+    },
+    "runtime_shader_serializer_signal": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_shader_serializer_signal_status": {
+      "type": "string"
+    },
+    "runtime_shader_serializer_status": {
+      "type": "string"
+    },
+    "runtime_shader_serializer_classification": {
+      "type": "string"
+    },
+    "runtime_shader_serializer_disqualifying": {
+      "type": "boolean"
+    },
+    "runtime_disqualifying_signal_summary": {
+      "type": "array"
+    },
+    "runtime_disqualifying_signal_count": {
+      "type": "integer"
+    },
+    "runtime_fixture_marker_observed": {
+      "type": "boolean"
+    },
+    "runtime_fixture_exit_code_clean": {
+      "type": "boolean"
+    },
+    "runtime_fixture_clean_launch_verified": {
       "type": "boolean"
     },
     "runtime_exit_fixture_enabled_by_default": {

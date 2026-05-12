@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -71,6 +72,9 @@ RUNTIME_EXIT_FIXTURE_GATE_ENV = (
 )
 RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION=1",)
 RUNTIME_EXIT_FIXTURE_REBUILD_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD=1",)
+RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY = "/O3DE/Autoexec/ConsoleCommands/LoadLevel"
+RUNTIME_DEFAULT_LEVEL_PRODUCT_PATH = "Levels/defaultlevel/defaultlevel.spawnable"
+RUNTIME_NO_DEFAULT_LEVEL_REGREMOVE_ARG = f"--regremove={RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY}"
 WINDOWS_NTSTATUS_NAMES = {
     0xC0000005: "STATUS_ACCESS_VIOLATION",
 }
@@ -137,6 +141,8 @@ def run_runtime_harness(
     enable_runtime_exit_fixture: bool = False,
     rebuild_runtime_exit_fixture: bool = False,
     enable_runtime_exit_fixture_command: bool = False,
+    diagnose_runtime_launch_hygiene: bool = False,
+    enable_runtime_exit_fixture_no_default_level: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -162,6 +168,8 @@ def run_runtime_harness(
         and not enable_runtime_exit_fixture
         and not rebuild_runtime_exit_fixture
         and not enable_runtime_exit_fixture_command
+        and not diagnose_runtime_launch_hygiene
+        and not enable_runtime_exit_fixture_no_default_level
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -192,6 +200,8 @@ def run_runtime_harness(
             and not enable_runtime_exit_fixture
             and not rebuild_runtime_exit_fixture
             and not enable_runtime_exit_fixture_command
+            and not diagnose_runtime_launch_hygiene
+            and not enable_runtime_exit_fixture_no_default_level
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -210,6 +220,10 @@ def run_runtime_harness(
             if rebuild_runtime_exit_fixture
             else "runtime_exit_fixture_command"
             if enable_runtime_exit_fixture_command
+            else "runtime_launch_hygiene_diagnostic"
+            if diagnose_runtime_launch_hygiene
+            else "runtime_exit_fixture_no_default_level_command"
+            if enable_runtime_exit_fixture_no_default_level
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -291,6 +305,8 @@ def run_runtime_harness(
         and not enable_runtime_exit_fixture
         and not rebuild_runtime_exit_fixture
         and not enable_runtime_exit_fixture_command
+        and not diagnose_runtime_launch_hygiene
+        and not enable_runtime_exit_fixture_no_default_level
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -369,6 +385,14 @@ def run_runtime_harness(
             command_runner=command_runner,
         )
 
+    if diagnose_runtime_launch_hygiene:
+        return _run_runtime_launch_hygiene_diagnostic(
+            report,
+            engine_root=selected_engine,
+            project=selected_project,
+            timeout_seconds=timeout_seconds,
+        )
+
     gate_status = _runtime_gate_status(env_map)
     if gate_status["status"] != "pass":
         report.update(
@@ -385,13 +409,14 @@ def run_runtime_harness(
         )
         return _finalize_report(report)
 
-    if enable_runtime_exit_fixture_command:
+    if enable_runtime_exit_fixture_command or enable_runtime_exit_fixture_no_default_level:
         return _run_runtime_exit_fixture_command(
             report,
             env=env_map,
             timeout_seconds=timeout_seconds,
             artifact_dir=artifact_dir,
             command_runner=command_runner,
+            no_default_level=enable_runtime_exit_fixture_no_default_level,
         )
 
     command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
@@ -516,6 +541,14 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime exit fixture cannot verify execution with a nonzero exit code.")
         if report.get("runtime_exit_fixture_timed_out") is True:
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime exit fixture cannot verify execution after timeout.")
+        if str(report.get("runtime_launch_hygiene_status", "")).strip() != "runtime_launch_hygiene_pass":
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime exit fixture verification requires runtime_launch_hygiene_pass.")
+        if report.get("runtime_default_level_autoload_detected") is True:
+            result.add_error(MXN_PATH_UNSAFE, "Runtime exit fixture verification cannot allow defaultlevel autoload.")
+        if report.get("runtime_asset_processor_negotiation_disqualifying") is True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime exit fixture verification cannot allow disqualifying Asset Processor negotiation signals.")
+        if report.get("runtime_shader_serializer_disqualifying") is True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime exit fixture verification cannot allow disqualifying shader serializer signals.")
     if report.get("runtime_exit_fixture_character_proof_claimed") is True and report.get(
         "runtime_exit_fixture_character_proof_verified"
     ) is not True:
@@ -891,14 +924,60 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_exit_fixture_runtime_command_arguments": [],
         "runtime_exit_fixture_runtime_command_uses_console_command_file_quit": False,
         "runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit": False,
+        "runtime_exit_fixture_runtime_command_uses_no_default_level_strategy": False,
+        "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
         "runtime_exit_fixture_level_load_observed": False,
         "runtime_exit_fixture_unexpected_level_load": False,
+        "runtime_exit_fixture_actual_level_loads": [],
         "runtime_exit_fixture_blocked_reason": "",
         "runtime_exit_fixture_unavailable_reason": "",
         "runtime_exit_fixture_unsupported_reason": "",
         "runtime_exit_fixture_is_runtime_character_proof": False,
         "runtime_exit_fixture_character_proof_claimed": False,
         "runtime_exit_fixture_character_proof_verified": False,
+        "runtime_launch_hygiene": {"status": "not_run"},
+        "runtime_launch_hygiene_status": "not_run",
+        "runtime_launch_level_policy": "",
+        "runtime_launch_level_policy_status": "not_run",
+        "runtime_default_level_autoload_detected": False,
+        "runtime_default_level_path": "",
+        "runtime_default_level_product_path": "",
+        "runtime_default_level_source": "",
+        "runtime_default_level_source_evidence": {},
+        "runtime_default_level_disqualifying": False,
+        "runtime_default_level_classification": "",
+        "runtime_default_level_blocked_reason": "",
+        "runtime_no_default_level_strategy": "",
+        "runtime_no_default_level_strategy_status": "not_run",
+        "runtime_no_default_level_source_validation": {},
+        "runtime_no_default_level_source_refs": [],
+        "runtime_no_default_level_command": "",
+        "runtime_no_default_level_arguments": [],
+        "runtime_no_default_level_settings_registry_keys": [],
+        "runtime_no_default_level_expected_level_loads": [],
+        "runtime_no_default_level_actual_level_loads": [],
+        "runtime_no_default_level_execution_attempted": False,
+        "runtime_no_default_level_execution_verified": False,
+        "runtime_empty_harness_level_strategy": "",
+        "runtime_empty_harness_level_path": "",
+        "runtime_empty_harness_level_generation_status": "not_run",
+        "runtime_empty_harness_level_mutation_status": "not_run",
+        "runtime_empty_harness_level_production_mutation": False,
+        "runtime_asset_processor_negotiation_signal": {"status": "not_run", "count": 0},
+        "runtime_asset_processor_negotiation_signal_status": "not_run",
+        "runtime_asset_processor_negotiation_status": "not_run",
+        "runtime_asset_processor_negotiation_classification": "",
+        "runtime_asset_processor_negotiation_disqualifying": False,
+        "runtime_shader_serializer_signal": {"status": "not_run", "count": 0},
+        "runtime_shader_serializer_signal_status": "not_run",
+        "runtime_shader_serializer_status": "not_run",
+        "runtime_shader_serializer_classification": "",
+        "runtime_shader_serializer_disqualifying": False,
+        "runtime_disqualifying_signal_summary": [],
+        "runtime_disqualifying_signal_count": 0,
+        "runtime_fixture_marker_observed": False,
+        "runtime_fixture_exit_code_clean": False,
+        "runtime_fixture_clean_launch_verified": False,
         "runtime_log_error_summary": {"status": "runtime_execution_not_attempted"},
         "runtime_stdout_error_summary": {"status": "runtime_execution_not_attempted"},
         "runtime_stderr_error_summary": {"status": "runtime_execution_not_attempted"},
@@ -1786,6 +1865,54 @@ def _run_runtime_exit_fixture_rebuild(
     return _finalize_report(report)
 
 
+def _run_runtime_launch_hygiene_diagnostic(
+    report: Dict[str, Any],
+    *,
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+) -> Dict[str, Any]:
+    report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
+    report["runtime_harness_mode"] = "runtime_launch_hygiene_diagnostic"
+    payload = _runtime_launch_hygiene_source_payload(
+        project=project,
+        engine_root=engine_root,
+        timeout_seconds=timeout_seconds,
+    )
+    source_validated = payload["runtime_no_default_level_strategy_status"] == "runtime_no_default_level_strategy_source_validated"
+    report.update(payload)
+    report.update(
+        {
+            "status": "pass" if source_validated else "fail",
+            "runtime_harness_status": payload["runtime_launch_hygiene_status"],
+            "runtime_execution_status": "runtime_execution_not_attempted",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "live_runtime_execution": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_exit_fixture_source_ready",
+                "runtime_default_level_source_recorded",
+                "runtime_no_default_level_strategy_source_validated",
+                "runtime_execution_not_attempted_in_launch_hygiene_diagnostic",
+                "runtime_character_proof_not_claimed",
+            ]
+            if source_validated
+            else [],
+            "required_runtime_harness_assertions_failed": []
+            if source_validated
+            else ["runtime_no_default_level_strategy_source_validation"],
+            "runtime_harness_assertion_informational": [
+                "launch_hygiene_diagnostic_does_not_launch_runtime",
+                "no_default_level_source_validation_is_not_runtime_execution_proof",
+            ],
+        }
+    )
+    return _finalize_report(report)
+
+
 def _run_runtime_exit_fixture_command(
     report: Dict[str, Any],
     *,
@@ -1793,9 +1920,12 @@ def _run_runtime_exit_fixture_command(
     timeout_seconds: int,
     artifact_dir: Path,
     command_runner: Callable[..., subprocess.CompletedProcess[str]] | None,
+    no_default_level: bool = False,
 ) -> Dict[str, Any]:
     report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
-    report["runtime_harness_mode"] = "runtime_exit_fixture_command"
+    report["runtime_harness_mode"] = (
+        "runtime_exit_fixture_no_default_level_command" if no_default_level else "runtime_exit_fixture_command"
+    )
     fixture_gate = _runtime_exit_fixture_gate_status(env)
     report["runtime_exit_fixture_runtime_command_status"] = fixture_gate["status"]
     if fixture_gate["status"] != "pass":
@@ -1842,7 +1972,11 @@ def _run_runtime_exit_fixture_command(
         )
         return _finalize_report(report)
 
-    command = _select_runtime_exit_fixture_command(report, timeout_seconds=timeout_seconds)
+    command = _select_runtime_exit_fixture_command(
+        report,
+        timeout_seconds=timeout_seconds,
+        no_default_level=no_default_level,
+    )
     if not command.get("selected"):
         report.update(_unpinned_runtime_command_payload(command))
         report["runtime_exit_fixture_status"] = command.get("blocked_reason", "blocked_by_missing_runtime_readiness")
@@ -1861,6 +1995,8 @@ def _run_runtime_exit_fixture_command(
             "runtime_exit_fixture_runtime_command_status": "runtime_exit_fixture_runtime_command_pinned",
             "runtime_exit_fixture_runtime_command_uses_console_command_file_quit": False,
             "runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit": True,
+            "runtime_exit_fixture_runtime_command_uses_no_default_level_strategy": no_default_level,
+            "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
             "runtime_exit_fixture_command": str(command.get("argv", [""])[0]),
             "runtime_exit_fixture_arguments": list(command.get("argv", []))[1:],
             "runtime_exit_fixture_argument_shape": command.get("argument_shape", {}),
@@ -1919,7 +2055,8 @@ def _run_runtime_exit_fixture_command(
         log_text=log_text,
         log_refs=log_refs,
     )
-    level_load_observed = _runtime_fixture_level_load_observed(combined_text)
+    level_loads = _runtime_level_load_events(combined_text)
+    level_load_observed = bool(level_loads)
     disqualifying = _runtime_exit_fixture_disqualifying_signals(
         scan=scan,
         diagnostics=diagnostics,
@@ -1927,12 +2064,22 @@ def _run_runtime_exit_fixture_command(
     )
     marker_observed = "MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT" in combined_text
     expected_exit_codes = set(int(code) for code in command.get("expected_exit_codes", [0]))
+    launch_hygiene = _runtime_launch_hygiene_execution_payload(
+        project=project,
+        command=command,
+        diagnostics=diagnostics,
+        actual_level_loads=level_loads,
+        disqualifying=disqualifying,
+        no_default_level=no_default_level,
+    )
+    launch_hygiene_pass = launch_hygiene.get("runtime_launch_hygiene_status") == "runtime_launch_hygiene_pass"
     passed = (
         proc.returncode in expected_exit_codes
         and not timed_out
         and scan.get("status") == "pass"
         and not disqualifying
         and marker_observed
+        and launch_hygiene_pass
     )
     if passed:
         fixture_status = "runtime_exit_fixture_verified_clean_exit"
@@ -1942,22 +2089,28 @@ def _run_runtime_exit_fixture_command(
         fixture_status = "runtime_exit_fixture_execution_failed_access_violation_like_exit"
     elif proc.returncode not in expected_exit_codes:
         fixture_status = "runtime_exit_fixture_execution_failed_nonzero_exit"
+    elif launch_hygiene.get("runtime_default_level_autoload_detected") is True:
+        fixture_status = "runtime_fixture_execution_failed_default_level_autoload"
     else:
         fixture_status = "runtime_exit_fixture_execution_failed_disqualifying_log_signal"
 
     report.update(diagnostics)
     report.update(_runtime_signal_fields(scan))
+    report.update(launch_hygiene)
+    blocked_reason = _runtime_launch_hygiene_blocked_reason(launch_hygiene)
     report.update(
         {
             "status": "pass" if passed else "fail",
-            "runtime_harness_status": "runtime_execution_pass" if passed else "blocked_by_fixture_runtime_execution_failed",
+            "runtime_harness_status": "runtime_execution_pass"
+            if passed
+            else blocked_reason or "blocked_by_fixture_runtime_execution_failed",
             "runtime_exit_fixture_status": fixture_status,
             "runtime_exit_fixture_execution_completed": True,
             "runtime_exit_fixture_execution_verified": passed,
             "runtime_exit_fixture_exit_code_decimal": proc.returncode,
             "runtime_exit_fixture_exit_code_hex": _exit_code_hex(proc.returncode),
             "runtime_exit_fixture_exit_classification": diagnostics.get("runtime_exit_classification", ""),
-            "runtime_exit_fixture_blocked_reason": "" if passed else "blocked_by_fixture_runtime_execution_failed",
+            "runtime_exit_fixture_blocked_reason": "" if passed else blocked_reason,
             "runtime_exit_fixture_unavailable_reason": "",
             "runtime_exit_fixture_unsupported_reason": "",
             "runtime_exit_fixture_timeout_seconds": int(timeout_seconds),
@@ -1980,10 +2133,13 @@ def _run_runtime_exit_fixture_command(
                 "matches": disqualifying,
             },
             "runtime_exit_fixture_marker_observed": marker_observed,
+            "runtime_fixture_marker_observed": marker_observed,
+            "runtime_fixture_exit_code_clean": proc.returncode in expected_exit_codes and not timed_out,
             "runtime_exit_fixture_level_load_observed": level_load_observed,
             "runtime_exit_fixture_unexpected_level_load": level_load_observed,
             "runtime_exit_fixture_uses_no_level": not level_load_observed,
             "runtime_exit_fixture_uses_production_level": level_load_observed,
+            "runtime_exit_fixture_actual_level_loads": level_loads,
             "runtime_execution_completed": True,
             "runtime_execution_verified": passed,
             "runtime_execution_status": "runtime_execution_pass"
@@ -2016,6 +2172,7 @@ def _run_runtime_exit_fixture_command(
                 "runtime_fixture_settings_registry_command_pinned",
                 "runtime_fixture_bounded_command_executed",
                 "runtime_exit_fixture_marker_observed",
+                "runtime_launch_hygiene_pass",
                 "runtime_exit_fixture_clean_exit",
                 "runtime_character_proof_not_claimed",
             ]
@@ -2797,10 +2954,20 @@ def _runtime_exit_fixture_enablement_rollback(project: Path | None) -> str:
     return f"Run o3de disable-gem --gem-name {RUNTIME_EXIT_FIXTURE_GEM_NAME} --project-path {project_path}, then rebuild the scoped launcher target if needed."
 
 
-def _select_runtime_exit_fixture_command(report: Mapping[str, Any], *, timeout_seconds: int) -> Dict[str, Any]:
+def _select_runtime_exit_fixture_command(
+    report: Mapping[str, Any],
+    *,
+    timeout_seconds: int,
+    no_default_level: bool = False,
+) -> Dict[str, Any]:
     executable = str(report.get("runtime_executable_path", "")).strip()
     readiness = report.get("runtime_harness_readiness", {})
     project_path = str(readiness.get("project_path", "")).strip() if isinstance(readiness, Mapping) else ""
+    engine_root = (
+        Path(str(readiness.get("engine_root", ""))).resolve()
+        if isinstance(readiness, Mapping) and str(readiness.get("engine_root", "")).strip()
+        else Path("<engine-root>")
+    )
     if not executable or not project_path:
         return {
             "selected": False,
@@ -2812,31 +2979,39 @@ def _select_runtime_exit_fixture_command(report: Mapping[str, Any], *, timeout_s
         f"--project-path={project_path}",
         "-NullRenderer",
         "-rhi=null",
+        *([RUNTIME_NO_DEFAULT_LEVEL_REGREMOVE_ARG] if no_default_level else []),
         "--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0",
         "--regset=/Amazon/MAXINE/RuntimeHarness/EnableExitFixture=true",
         "--regset=/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks=5",
     ]
+    selected_reason = "repo_owned_fixture_tickbus_exit_main_loop_no_default_level_regremove_envelope" if no_default_level else "repo_owned_fixture_tickbus_exit_main_loop_settings_registry_envelope"
+    safety_flags = _runtime_command_safety_flags() + [
+        "project_path_explicit",
+        "null_renderer_requested",
+        "settings_registry_fixture_exit_enabled",
+        "console_command_file_not_used",
+        "wait_for_connect_nonfatal",
+    ]
+    if no_default_level:
+        safety_flags.append("settings_registry_regremove_autoexec_loadlevel")
+    else:
+        safety_flags.append("no_level_or_map_argument")
     return {
         "selected": True,
         "argv": argv,
-        "kind": "headless_settings_registry_runtime_exit_fixture_envelope",
-        "selected_reason": "repo_owned_fixture_tickbus_exit_main_loop_settings_registry_envelope",
+        "kind": "headless_settings_registry_runtime_exit_fixture_no_default_level_envelope"
+        if no_default_level
+        else "headless_settings_registry_runtime_exit_fixture_envelope",
+        "selected_reason": selected_reason,
         "expected_exit_codes": [0],
         "timeout_seconds": int(timeout_seconds),
         "kill_policy": "subprocess_timeout_kill_and_report",
-        "safety_flags": _runtime_command_safety_flags()
-        + [
-            "project_path_explicit",
-            "null_renderer_requested",
-            "no_level_or_map_argument",
-            "settings_registry_fixture_exit_enabled",
-            "console_command_file_not_used",
-            "wait_for_connect_nonfatal",
-        ],
+        "safety_flags": safety_flags,
         "argument_shape": {
             "argv0": "runtime executable path",
             "project_path": "--project-path=<MAXINE_GoldenCorpus project path>",
             "rendering": ["-NullRenderer", "-rhi=null"],
+            "launch_hygiene": [RUNTIME_NO_DEFAULT_LEVEL_REGREMOVE_ARG] if no_default_level else [],
             "asset_processor_connect": "--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0",
             "exit_strategy": [
                 "--regset=/Amazon/MAXINE/RuntimeHarness/EnableExitFixture=true",
@@ -2862,15 +3037,275 @@ def _select_runtime_exit_fixture_command(report: Mapping[str, Any], *, timeout_s
             "safe_to_kill_after_timeout": True,
             "uses_console_command_file_quit": False,
             "uses_settings_registry_fixture_exit": True,
+            "uses_no_default_level_strategy": no_default_level,
         },
         "source_evidence_refs": [
             _repo_relative(RUNTIME_EXIT_FIXTURE_COMPONENT_SOURCE),
             _repo_relative(RUNTIME_EXIT_FIXTURE_COMPONENT_HEADER),
-            "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Application/Application.h",
-            "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Application/ApplicationAPI.h",
-            "C:/src/o3de/Code/Framework/AzCore/AzCore/Component/TickBus.h",
+            str(engine_root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Application" / "Application.h"),
+            str(engine_root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Application" / "ApplicationAPI.h"),
+            str(engine_root / "Code" / "Framework" / "AzCore" / "AzCore" / "Component" / "TickBus.h"),
+            str(engine_root / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryMergeUtils.cpp"),
+            str(engine_root / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "IConsole.h"),
         ],
     }
+
+
+def _runtime_launch_hygiene_source_payload(
+    *,
+    project: Path | None,
+    engine_root: Path | None,
+    timeout_seconds: int,
+) -> Dict[str, Any]:
+    source = _runtime_default_level_source(project)
+    strategy_validated = _runtime_no_default_level_strategy_source_validated(engine_root)
+    strategy_status = (
+        "runtime_no_default_level_strategy_source_validated"
+        if strategy_validated
+        else "blocked_by_missing_no_default_level_launch_strategy"
+    )
+    return {
+        "runtime_launch_hygiene": {
+            "status": strategy_status,
+            "default_level_source": source,
+            "no_default_level_strategy": "settings_registry_regremove_autoexec_loadlevel",
+        },
+        "runtime_launch_hygiene_status": strategy_status,
+        "runtime_launch_level_policy": "no_default_or_production_level",
+        "runtime_launch_level_policy_status": strategy_status,
+        "runtime_default_level_autoload_detected": False,
+        "runtime_default_level_path": RUNTIME_DEFAULT_LEVEL_PRODUCT_PATH,
+        "runtime_default_level_product_path": RUNTIME_DEFAULT_LEVEL_PRODUCT_PATH,
+        "runtime_default_level_source": source.get("path", ""),
+        "runtime_default_level_source_evidence": source,
+        "runtime_default_level_disqualifying": bool(source.get("configured")),
+        "runtime_default_level_classification": "runtime_default_level_autoload_blocking"
+        if source.get("configured")
+        else "runtime_default_level_autoload_not_configured",
+        "runtime_default_level_blocked_reason": "blocked_by_default_level_autoload" if source.get("configured") else "",
+        "runtime_no_default_level_strategy": "settings_registry_regremove_autoexec_loadlevel",
+        "runtime_no_default_level_strategy_status": strategy_status,
+        "runtime_no_default_level_source_validation": {
+            "status": strategy_status,
+            "summary": (
+                "Project Registry/load_level.setreg sets /O3DE/Autoexec/ConsoleCommands/LoadLevel=defaultlevel; "
+                "SettingsRegistryMergeUtils parses --regremove and removes the JSON pointer during command-line merge."
+            ),
+        },
+        "runtime_no_default_level_source_refs": _runtime_no_default_level_source_refs(project, engine_root),
+        "runtime_no_default_level_command": "HeadlessServerLauncher with --regremove for Autoexec LoadLevel",
+        "runtime_no_default_level_arguments": [RUNTIME_NO_DEFAULT_LEVEL_REGREMOVE_ARG],
+        "runtime_no_default_level_settings_registry_keys": [RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY],
+        "runtime_no_default_level_expected_level_loads": [],
+        "runtime_no_default_level_actual_level_loads": [],
+        "runtime_no_default_level_execution_attempted": False,
+        "runtime_no_default_level_execution_verified": False,
+        "runtime_empty_harness_level_strategy": "not_used",
+        "runtime_empty_harness_level_path": "",
+        "runtime_empty_harness_level_generation_status": "not_attempted",
+        "runtime_empty_harness_level_mutation_status": "not_attempted",
+        "runtime_empty_harness_level_production_mutation": False,
+        "runtime_asset_processor_negotiation_signal": {"status": "runtime_execution_not_attempted", "count": 0},
+        "runtime_asset_processor_negotiation_signal_status": "runtime_execution_not_attempted",
+        "runtime_asset_processor_negotiation_status": "runtime_execution_not_attempted",
+        "runtime_asset_processor_negotiation_classification": "runtime_execution_not_attempted",
+        "runtime_asset_processor_negotiation_disqualifying": False,
+        "runtime_shader_serializer_signal": {"status": "runtime_execution_not_attempted", "count": 0},
+        "runtime_shader_serializer_signal_status": "runtime_execution_not_attempted",
+        "runtime_shader_serializer_status": "runtime_execution_not_attempted",
+        "runtime_shader_serializer_classification": "runtime_execution_not_attempted",
+        "runtime_shader_serializer_disqualifying": False,
+        "runtime_disqualifying_signal_summary": [],
+        "runtime_disqualifying_signal_count": 0,
+        "runtime_fixture_marker_observed": False,
+        "runtime_fixture_exit_code_clean": False,
+        "runtime_fixture_clean_launch_verified": False,
+    }
+
+
+def _runtime_launch_hygiene_execution_payload(
+    *,
+    project: Path | None,
+    command: Mapping[str, Any],
+    diagnostics: Mapping[str, Any],
+    actual_level_loads: Sequence[str],
+    disqualifying: Sequence[Mapping[str, Any]],
+    no_default_level: bool,
+) -> Dict[str, Any]:
+    source_payload = _runtime_launch_hygiene_source_payload(
+        project=project,
+        engine_root=_runtime_engine_root_from_command(command),
+        timeout_seconds=int(command.get("timeout_seconds", 120)),
+    )
+    default_level_detected = any(_is_default_level_path(path) for path in actual_level_loads)
+    ap_count = _runtime_diagnostic_count(diagnostics, "asset_processor_negotiation_failure_count")
+    shader_count = _runtime_diagnostic_count(diagnostics, "shader_serializer_error_count")
+    ap_status = (
+        "runtime_asset_processor_negotiation_signal_present"
+        if ap_count
+        else "runtime_asset_processor_negotiation_signal_absent"
+    )
+    shader_status = "runtime_shader_serializer_signal_present" if shader_count else "runtime_shader_serializer_signal_absent"
+    signal_summary = [dict(item) for item in disqualifying if isinstance(item, Mapping)]
+    launch_pass = not default_level_detected and ap_count == 0 and shader_count == 0 and not signal_summary
+    no_default_status = (
+        "runtime_no_default_level_strategy_pass"
+        if no_default_level and launch_pass
+        else "runtime_no_default_level_strategy_failed"
+        if no_default_level
+        else source_payload["runtime_no_default_level_strategy_status"]
+    )
+    source_payload.update(
+        {
+            "runtime_launch_hygiene": {
+                "status": "runtime_launch_hygiene_pass" if launch_pass else "runtime_launch_hygiene_failed",
+                "default_level_autoload_detected": default_level_detected,
+                "actual_level_loads": list(actual_level_loads),
+                "asset_processor_negotiation_count": ap_count,
+                "shader_serializer_count": shader_count,
+            },
+            "runtime_launch_hygiene_status": "runtime_launch_hygiene_pass"
+            if launch_pass
+            else "runtime_launch_hygiene_failed",
+            "runtime_launch_level_policy_status": "runtime_launch_hygiene_pass"
+            if launch_pass
+            else "runtime_launch_hygiene_failed",
+            "runtime_default_level_autoload_detected": default_level_detected,
+            "runtime_default_level_disqualifying": default_level_detected,
+            "runtime_default_level_classification": "runtime_default_level_autoload_blocking"
+            if default_level_detected
+            else "runtime_default_level_autoload_absent",
+            "runtime_default_level_blocked_reason": "blocked_by_default_level_autoload" if default_level_detected else "",
+            "runtime_no_default_level_strategy_status": no_default_status,
+            "runtime_no_default_level_command": " ".join(str(arg) for arg in command.get("argv", [])),
+            "runtime_no_default_level_arguments": [
+                str(arg) for arg in command.get("argv", []) if str(arg).startswith("--regremove=")
+            ],
+            "runtime_no_default_level_expected_level_loads": [],
+            "runtime_no_default_level_actual_level_loads": list(actual_level_loads),
+            "runtime_no_default_level_execution_attempted": bool(no_default_level),
+            "runtime_no_default_level_execution_verified": bool(no_default_level and launch_pass),
+            "runtime_asset_processor_negotiation_signal": {"status": ap_status, "count": ap_count},
+            "runtime_asset_processor_negotiation_signal_status": ap_status,
+            "runtime_asset_processor_negotiation_status": ap_status,
+            "runtime_asset_processor_negotiation_classification": "blocked_by_asset_processor_negotiation_signal"
+            if ap_count
+            else "runtime_asset_processor_negotiation_signal_absent",
+            "runtime_asset_processor_negotiation_disqualifying": bool(ap_count),
+            "runtime_shader_serializer_signal": {"status": shader_status, "count": shader_count},
+            "runtime_shader_serializer_signal_status": shader_status,
+            "runtime_shader_serializer_status": shader_status,
+            "runtime_shader_serializer_classification": "blocked_by_shader_serializer_signal"
+            if shader_count
+            else "runtime_shader_serializer_signal_absent",
+            "runtime_shader_serializer_disqualifying": bool(shader_count),
+            "runtime_disqualifying_signal_summary": signal_summary,
+            "runtime_disqualifying_signal_count": len(signal_summary),
+            "runtime_fixture_clean_launch_verified": launch_pass,
+        }
+    )
+    return source_payload
+
+
+def _runtime_default_level_source(project: Path | None) -> Dict[str, Any]:
+    registry_path = (project or Path("")) / "Registry" / "load_level.setreg"
+    payload: Dict[str, Any] = {
+        "status": "runtime_default_level_source_not_found",
+        "path": str(registry_path) if project is not None else "",
+        "configured": False,
+        "settings_registry_key": RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY,
+        "value": "",
+    }
+    if not registry_path.is_file():
+        return payload
+    text = registry_path.read_text(encoding="utf-8-sig", errors="replace")
+    configured = "LoadLevel" in text and "defaultlevel" in text.lower()
+    payload.update(
+        {
+            "status": "runtime_default_level_source_found" if configured else "runtime_default_level_source_not_configured",
+            "configured": configured,
+            "value": "defaultlevel" if configured else "",
+            "summary": "Project Registry/load_level.setreg configures O3DE Autoexec ConsoleCommands LoadLevel=defaultlevel."
+            if configured
+            else "Project Registry/load_level.setreg does not configure defaultlevel autoload.",
+        }
+    )
+    return payload
+
+
+def _runtime_no_default_level_strategy_source_validated(engine_root: Path | None) -> bool:
+    root = engine_root or Path("")
+    return (root / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryMergeUtils.cpp").is_file() and (
+        root / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "IConsole.h"
+    ).is_file()
+
+
+def _runtime_no_default_level_source_refs(project: Path | None, engine_root: Path | None) -> List[str]:
+    root = engine_root or Path("<engine-root>")
+    refs = [
+        str((project or Path("<project>")) / "Registry" / "load_level.setreg"),
+        str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryMergeUtils.cpp"),
+        str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryMergeUtils.h"),
+        str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "IConsole.h"),
+        str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "Console.cpp"),
+        str(root / "Code" / "Legacy" / "CrySystem" / "LevelSystem" / "SpawnableLevelSystem.cpp"),
+    ]
+    return refs
+
+
+def _runtime_engine_root_from_command(command: Mapping[str, Any]) -> Path | None:
+    refs = command.get("source_evidence_refs", [])
+    if isinstance(refs, Sequence):
+        for ref in refs:
+            text = str(ref).replace("\\", "/")
+            marker = "/Code/Framework/AzCore/"
+            if marker in text:
+                return Path(text.split(marker, 1)[0])
+    return None
+
+
+def _runtime_level_load_events(text: str) -> List[str]:
+    normalized = text.replace("\\", "/")
+    patterns = [
+        r"Level\s+(Levels/[^\s'\"\r\n]+?\.spawnable)\s+loaded",
+        r"root spawnable ['\"](Levels/[^'\"]+?\.spawnable)['\"]",
+        r"\b(Levels/[^\s'\"\r\n]+?\.spawnable)\b",
+    ]
+    matches: List[str] = []
+    for pattern in patterns:
+        for match in re.finditer(pattern, normalized, flags=re.IGNORECASE):
+            value = match.group(1)
+            if value not in matches:
+                matches.append(value)
+    return matches
+
+
+def _is_default_level_path(path: str) -> bool:
+    return path.lower().replace("\\", "/").endswith("levels/defaultlevel/defaultlevel.spawnable")
+
+
+def _runtime_diagnostic_count(diagnostics: Mapping[str, Any], count_key: str) -> int:
+    total = 0
+    for field in ("runtime_stdout_error_summary", "runtime_stderr_error_summary", "runtime_log_error_summary"):
+        payload = diagnostics.get(field, {})
+        if isinstance(payload, Mapping):
+            try:
+                total += int(payload.get(count_key, 0) or 0)
+            except (TypeError, ValueError):
+                pass
+    return total
+
+
+def _runtime_launch_hygiene_blocked_reason(payload: Mapping[str, Any]) -> str:
+    if payload.get("runtime_default_level_autoload_detected") is True:
+        return "blocked_by_default_level_autoload"
+    if payload.get("runtime_asset_processor_negotiation_disqualifying") is True:
+        return "blocked_by_asset_processor_negotiation_signal"
+    if payload.get("runtime_shader_serializer_disqualifying") is True:
+        return "blocked_by_shader_serializer_signal"
+    if payload.get("runtime_disqualifying_signal_count", 0):
+        return "blocked_by_disqualifying_runtime_signals"
+    return "blocked_by_fixture_runtime_execution_failed"
 
 
 def _runtime_exit_fixture_disqualifying_signals(
@@ -2917,8 +3352,7 @@ def _runtime_exit_fixture_disqualifying_signals(
 
 
 def _runtime_fixture_level_load_observed(text: str) -> bool:
-    lower = text.lower().replace("\\", "/")
-    return "level levels/" in lower or "root spawnable 'levels/" in lower or ".spawnable loaded" in lower
+    return bool(_runtime_level_load_events(text))
 
 
 def _runtime_exit_fixture_source_probe() -> Dict[str, Any]:
@@ -3299,8 +3733,54 @@ def _runtime_exit_fixture_static_payload(*, timeout_seconds: int) -> Dict[str, A
         "runtime_exit_fixture_runtime_command_arguments": [],
         "runtime_exit_fixture_runtime_command_uses_console_command_file_quit": False,
         "runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit": False,
+        "runtime_exit_fixture_runtime_command_uses_no_default_level_strategy": False,
+        "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
         "runtime_exit_fixture_level_load_observed": False,
         "runtime_exit_fixture_unexpected_level_load": False,
+        "runtime_exit_fixture_actual_level_loads": [],
+        "runtime_launch_hygiene": {"status": "runtime_execution_not_attempted"},
+        "runtime_launch_hygiene_status": "runtime_execution_not_attempted",
+        "runtime_launch_level_policy": "no_default_or_production_level",
+        "runtime_launch_level_policy_status": "runtime_execution_not_attempted",
+        "runtime_default_level_autoload_detected": False,
+        "runtime_default_level_path": RUNTIME_DEFAULT_LEVEL_PRODUCT_PATH,
+        "runtime_default_level_product_path": RUNTIME_DEFAULT_LEVEL_PRODUCT_PATH,
+        "runtime_default_level_source": "",
+        "runtime_default_level_source_evidence": {},
+        "runtime_default_level_disqualifying": False,
+        "runtime_default_level_classification": "runtime_execution_not_attempted",
+        "runtime_default_level_blocked_reason": "",
+        "runtime_no_default_level_strategy": "settings_registry_regremove_autoexec_loadlevel",
+        "runtime_no_default_level_strategy_status": "runtime_execution_not_attempted",
+        "runtime_no_default_level_source_validation": {},
+        "runtime_no_default_level_source_refs": [],
+        "runtime_no_default_level_command": "",
+        "runtime_no_default_level_arguments": [],
+        "runtime_no_default_level_settings_registry_keys": [RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY],
+        "runtime_no_default_level_expected_level_loads": [],
+        "runtime_no_default_level_actual_level_loads": [],
+        "runtime_no_default_level_execution_attempted": False,
+        "runtime_no_default_level_execution_verified": False,
+        "runtime_empty_harness_level_strategy": "not_used",
+        "runtime_empty_harness_level_path": "",
+        "runtime_empty_harness_level_generation_status": "not_attempted",
+        "runtime_empty_harness_level_mutation_status": "not_attempted",
+        "runtime_empty_harness_level_production_mutation": False,
+        "runtime_asset_processor_negotiation_signal": {"status": "runtime_execution_not_attempted", "count": 0},
+        "runtime_asset_processor_negotiation_signal_status": "runtime_execution_not_attempted",
+        "runtime_asset_processor_negotiation_status": "runtime_execution_not_attempted",
+        "runtime_asset_processor_negotiation_classification": "runtime_execution_not_attempted",
+        "runtime_asset_processor_negotiation_disqualifying": False,
+        "runtime_shader_serializer_signal": {"status": "runtime_execution_not_attempted", "count": 0},
+        "runtime_shader_serializer_signal_status": "runtime_execution_not_attempted",
+        "runtime_shader_serializer_status": "runtime_execution_not_attempted",
+        "runtime_shader_serializer_classification": "runtime_execution_not_attempted",
+        "runtime_shader_serializer_disqualifying": False,
+        "runtime_disqualifying_signal_summary": [],
+        "runtime_disqualifying_signal_count": 0,
+        "runtime_fixture_marker_observed": False,
+        "runtime_fixture_exit_code_clean": False,
+        "runtime_fixture_clean_launch_verified": False,
         "runtime_exit_fixture_unsupported_reason": "",
         "runtime_exit_fixture_is_runtime_character_proof": False,
         "runtime_exit_fixture_character_proof_claimed": False,
@@ -4712,6 +5192,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--enable-runtime-exit-fixture", action="store_true")
     parser.add_argument("--rebuild-runtime-exit-fixture", action="store_true")
     parser.add_argument("--enable-runtime-exit-fixture-command", action="store_true")
+    parser.add_argument("--diagnose-runtime-launch-hygiene", action="store_true")
+    parser.add_argument("--enable-runtime-exit-fixture-no-default-level", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -4740,6 +5222,8 @@ def main() -> int:
         enable_runtime_exit_fixture=args.enable_runtime_exit_fixture,
         rebuild_runtime_exit_fixture=args.rebuild_runtime_exit_fixture,
         enable_runtime_exit_fixture_command=args.enable_runtime_exit_fixture_command,
+        diagnose_runtime_launch_hygiene=args.diagnose_runtime_launch_hygiene,
+        enable_runtime_exit_fixture_no_default_level=args.enable_runtime_exit_fixture_no_default_level,
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
         strict_integration=args.strict_integration,

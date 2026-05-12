@@ -21,6 +21,15 @@ def _engine(root: Path, *, launcher: bool = True) -> Path:
     bin_dir = engine / "build" / "windows" / "bin" / "profile"
     bin_dir.mkdir(parents=True)
     (engine / "engine.json").write_text('{"engine_name":"o3de"}\n', encoding="utf-8")
+    for source_path in (
+        engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryMergeUtils.cpp",
+        engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryMergeUtils.h",
+        engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "IConsole.h",
+        engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "Console.cpp",
+        engine / "Code" / "Legacy" / "CrySystem" / "LevelSystem" / "SpawnableLevelSystem.cpp",
+    ):
+        source_path.parent.mkdir(parents=True, exist_ok=True)
+        source_path.write_text("source validation fixture\n", encoding="utf-8")
     if launcher:
         (bin_dir / "MAXINE_GoldenCorpus.HeadlessServerLauncher.exe").write_text("runtime placeholder", encoding="utf-8")
     return engine
@@ -1273,14 +1282,138 @@ def test_runtime_harness_fixture_command_rejects_unexpected_level_load(tmp_path:
     )
 
     assert report["status"] == "fail"
+    assert report["runtime_harness_status"] == "blocked_by_default_level_autoload"
     assert report["runtime_exit_fixture_execution_verified"] is False
     assert report["runtime_execution_verified"] is False
     assert report["runtime_exit_fixture_level_load_observed"] is True
     assert report["runtime_exit_fixture_unexpected_level_load"] is True
     assert report["runtime_exit_fixture_uses_no_level"] is False
     assert report["runtime_exit_fixture_uses_production_level"] is True
-    assert report["runtime_exit_fixture_blocked_reason"] == "blocked_by_fixture_runtime_execution_failed"
+    assert report["runtime_exit_fixture_blocked_reason"] == "blocked_by_default_level_autoload"
     assert any(
         item.get("signal") == "unexpected_level_load"
         for item in report["runtime_exit_fixture_disqualifying_signals"]["matches"]
     )
+
+
+def test_runtime_harness_launch_hygiene_diagnostic_source_validates_regremove_strategy(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    registry = project / "Registry"
+    registry.mkdir()
+    (registry / "load_level.setreg").write_text(
+        json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}}),
+        encoding="utf-8",
+    )
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_launch_hygiene=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_launch_hygiene_diagnostic"
+    assert report["runtime_launch_hygiene_status"] == "runtime_no_default_level_strategy_source_validated"
+    assert report["runtime_default_level_source"] == str(registry / "load_level.setreg")
+    assert report["runtime_default_level_path"] == "Levels/defaultlevel/defaultlevel.spawnable"
+    assert report["runtime_default_level_disqualifying"] is True
+    assert report["runtime_no_default_level_strategy"] == "settings_registry_regremove_autoexec_loadlevel"
+    assert report["runtime_no_default_level_strategy_status"] == "runtime_no_default_level_strategy_source_validated"
+    assert "--regremove=/O3DE/Autoexec/ConsoleCommands/LoadLevel" in report["runtime_no_default_level_arguments"]
+    assert report["runtime_execution_attempted"] is False
+    assert report["runtime_execution_verified"] is False
+
+
+def test_runtime_harness_no_default_level_fixture_command_verifies_clean_launch(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+    launched = []
+
+    def runner(argv, **kwargs):
+        launched.append(argv)
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout="MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=5\n",
+            stderr="",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_exit_fixture_no_default_level=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_launch_hygiene_status"] == "runtime_launch_hygiene_pass"
+    assert report["runtime_no_default_level_strategy_status"] == "runtime_no_default_level_strategy_pass"
+    assert report["runtime_exit_fixture_execution_verified"] is True
+    assert report["runtime_execution_verified"] is True
+    assert report["runtime_exit_fixture_runtime_command_uses_console_command_file_quit"] is False
+    assert report["runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit"] is True
+    assert report["runtime_exit_fixture_runtime_command_uses_no_default_level_strategy"] is True
+    assert any(arg == "--regremove=/O3DE/Autoexec/ConsoleCommands/LoadLevel" for arg in launched[0])
+    assert report["runtime_default_level_autoload_detected"] is False
+    assert report["runtime_no_default_level_actual_level_loads"] == []
+    assert report["runtime_asset_processor_negotiation_signal_status"] == "runtime_asset_processor_negotiation_signal_absent"
+    assert report["runtime_shader_serializer_signal_status"] == "runtime_shader_serializer_signal_absent"
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_no_default_level_fixture_command_blocks_shader_serializer_signal(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    def runner(argv, **kwargs):
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout=(
+                "MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=5\n"
+                "[Error] (Serialize) Shader serializer failed to load descriptor\n"
+            ),
+            stderr="",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_exit_fixture_no_default_level=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_harness_status"] == "blocked_by_shader_serializer_signal"
+    assert report["runtime_launch_hygiene_status"] == "runtime_launch_hygiene_failed"
+    assert report["runtime_shader_serializer_signal_status"] == "runtime_shader_serializer_signal_present"
+    assert report["runtime_shader_serializer_disqualifying"] is True
+    assert report["runtime_exit_fixture_execution_verified"] is False
+    assert report["runtime_execution_verified"] is False
+    assert report["runtime_character_proof_claimed"] is False

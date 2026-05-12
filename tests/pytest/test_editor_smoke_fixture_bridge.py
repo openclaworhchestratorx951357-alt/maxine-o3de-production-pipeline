@@ -890,9 +890,24 @@ def test_editor_smoke_full_report_records_runtime_harness_without_character_over
     assert runtime_harness["runtime_exit_fixture_execution_verified"] is False
     assert runtime_harness["runtime_exit_fixture_runtime_command_uses_console_command_file_quit"] is False
     assert runtime_harness["runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit"] is False
+    assert runtime_harness["runtime_exit_fixture_runtime_command_uses_no_default_level_strategy"] is False
+    assert runtime_harness["runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level"] is False
     assert runtime_harness["runtime_exit_fixture_marker_observed"] is False
     assert runtime_harness["runtime_exit_fixture_level_load_observed"] is False
     assert runtime_harness["runtime_exit_fixture_unexpected_level_load"] is False
+    assert runtime_harness["runtime_exit_fixture_actual_level_loads"] == []
+    assert runtime_harness["runtime_launch_hygiene_status"] == "runtime_execution_not_attempted"
+    assert runtime_harness["runtime_default_level_autoload_detected"] is False
+    assert runtime_harness["runtime_default_level_path"] == "Levels/defaultlevel/defaultlevel.spawnable"
+    assert runtime_harness["runtime_default_level_disqualifying"] is False
+    assert runtime_harness["runtime_no_default_level_strategy"] == "settings_registry_regremove_autoexec_loadlevel"
+    assert runtime_harness["runtime_no_default_level_strategy_status"] == "runtime_execution_not_attempted"
+    assert runtime_harness["runtime_no_default_level_execution_attempted"] is False
+    assert runtime_harness["runtime_no_default_level_execution_verified"] is False
+    assert runtime_harness["runtime_asset_processor_negotiation_signal_status"] == "runtime_execution_not_attempted"
+    assert runtime_harness["runtime_asset_processor_negotiation_disqualifying"] is False
+    assert runtime_harness["runtime_shader_serializer_signal_status"] == "runtime_execution_not_attempted"
+    assert runtime_harness["runtime_shader_serializer_disqualifying"] is False
     assert runtime_harness["runtime_exit_fixture_is_runtime_character_proof"] is False
     assert runtime_harness["runtime_exit_fixture_character_proof_claimed"] is False
     assert runtime_harness["runtime_harness_proof_is_character_proof"] is False
