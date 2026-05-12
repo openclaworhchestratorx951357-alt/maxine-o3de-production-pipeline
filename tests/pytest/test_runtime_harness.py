@@ -1789,3 +1789,311 @@ def test_runtime_harness_validation_rejects_later_registry_patch_verified_withou
 
     assert not result.ok
     assert any("runtime_later_registry_patch_verified=true requires verified runtime execution" in message for message in result.messages)
+
+
+def test_runtime_harness_pre_autoexec_diagnostic_records_source_validated_candidate_matrix(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    registry = project / "Registry"
+    registry.mkdir()
+    (registry / "load_level.setreg").write_text(
+        json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}}),
+        encoding="utf-8",
+    )
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_pre_autoexec_loadlevel_suppression=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_pre_autoexec_loadlevel_suppression_diagnostic"
+    assert report["runtime_pre_autoexec_loadlevel_suppression_status"] == (
+        "runtime_pre_autoexec_suppression_source_discovery_pass"
+    )
+    assert report["runtime_settings_registry_project_user_registry_order"] == (
+        "project_user_registry_merges_before_project_registry_in_shared_settings_and_again_after_project_registry_in_user_settings"
+    )
+    assert report["runtime_console_autoexec_notification_timing"] == (
+        "console_registers_settings_registry_notifier_before_project_registry_merge_and_executes_autoexec_on_each_merged_key"
+    )
+    assert report["runtime_spawnable_level_deferred_load_timing"] == (
+        "LoadLevel_before_level_system_queues_deferred_key_and_spawnable_level_system_consumes_it_in_constructor"
+    )
+    assert report["runtime_pre_autoexec_candidate_matrix_recorded"] is True
+    candidate_ids = [candidate["id"] for candidate in report["runtime_pre_autoexec_loadlevel_suppression_candidates"]]
+    assert candidate_ids == [
+        "settings_registry_regremove_autoexec_loadlevel",
+        "settings_registry_regremove_autoexec_and_deferred_loadlevel",
+        "artifact_setreg_merge_patch_null_autoexec_and_deferred_loadlevel",
+        "project_user_registry_null_delete_loadlevel",
+        "project_cache_bootstrap_setreg_defaultlevel_suppression",
+        "project_registry_load_level_setreg_temporarily_disabled_pre_autoexec",
+    ]
+    rejected_user = report["runtime_pre_autoexec_loadlevel_suppression_candidates"][3]
+    assert rejected_user["result"] == "runtime_pre_autoexec_candidate_rejected_project_user_precedes_project_registry"
+    assert rejected_user["blocker"] == "blocked_by_project_user_registry_override_not_safe"
+    rejected_cache = report["runtime_pre_autoexec_loadlevel_suppression_candidates"][4]
+    assert rejected_cache["result"] == "runtime_pre_autoexec_candidate_rejected_requires_asset_cache_mutation"
+    assert rejected_cache["blocker"] == "blocked_by_project_cache_bootstrap_defaultlevel_autoload"
+    assert report["runtime_pre_autoexec_selected"] == "project_registry_load_level_setreg_temporarily_disabled_pre_autoexec"
+    assert report["runtime_pre_autoexec_candidate_mutates_project"] is True
+    assert report["runtime_pre_autoexec_candidate_mutates_project_user"] is False
+    assert report["runtime_pre_autoexec_candidate_mutates_defaultlevel"] is False
+    assert report["runtime_pre_autoexec_candidate_mutates_production_level"] is False
+    assert report["runtime_pre_autoexec_candidate_reversible"] is True
+    assert "MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION=1" in report["runtime_pre_autoexec_candidate_gate_env"]
+    assert report["runtime_pre_autoexec_suppression_verified"] is False
+    assert report["runtime_execution_attempted"] is False
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_pre_autoexec_records_cache_bootstrap_blocker(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION"] = "1"
+    registry = project / "Registry"
+    registry.mkdir()
+    source = registry / "load_level.setreg"
+    source.write_text(
+        json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}}),
+        encoding="utf-8",
+    )
+    cache = project / "Cache" / "pc"
+    cache.mkdir(parents=True)
+    (cache / "bootstrap.server.profile.setreg").write_text(
+        json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}}),
+        encoding="utf-8",
+    )
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    def runner(argv, **kwargs):
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout=(
+                "MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=5\n"
+                "Game Level Load Time: Level Levels/defaultlevel/defaultlevel.spawnable loaded in 0.00 seconds\n"
+            ),
+            stderr="",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_harness_status"] == "blocked_by_project_cache_bootstrap_defaultlevel_autoload"
+    assert report["runtime_pre_autoexec_candidate_blocker"] == "blocked_by_project_cache_bootstrap_defaultlevel_autoload"
+    assert report["runtime_pre_autoexec_cache_bootstrap_loadlevel_source_count"] == 1
+    assert report["runtime_pre_autoexec_cache_bootstrap_loadlevel_sources"][0].endswith(
+        "Cache/pc/bootstrap.server.profile.setreg"
+    )
+    assert report["runtime_pre_autoexec_suppression_verified"] is False
+    assert source.exists()
+
+
+def test_runtime_harness_pre_autoexec_fixture_requires_project_mutation_gate(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    registry = project / "Registry"
+    registry.mkdir()
+    source = registry / "load_level.setreg"
+    source.write_text(
+        json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}}),
+        encoding="utf-8",
+    )
+    original = source.read_text(encoding="utf-8")
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    def runner(argv, **kwargs):
+        raise AssertionError("runtime command must not launch without the project mutation gate")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_harness_status"] == "blocked_by_fixture_project_mutation_gate_missing"
+    assert report["runtime_pre_autoexec_loadlevel_suppression_status"] == (
+        "blocked_by_fixture_project_mutation_gate_missing"
+    )
+    assert report["runtime_pre_autoexec_candidate_attempted"] is False
+    assert report["runtime_execution_attempted"] is False
+    assert report["runtime_exit_fixture_execution_attempted"] is False
+    assert source.exists()
+    assert source.read_text(encoding="utf-8") == original
+
+
+def test_runtime_harness_pre_autoexec_fixture_temporarily_disables_load_level_and_restores(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION"] = "1"
+    registry = project / "Registry"
+    registry.mkdir()
+    source = registry / "load_level.setreg"
+    source.write_text(
+        json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}}),
+        encoding="utf-8",
+    )
+    original = source.read_text(encoding="utf-8")
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+    launched = []
+
+    def runner(argv, **kwargs):
+        launched.append(argv)
+        assert not source.exists()
+        assert (registry / "load_level.setreg.maxine_pre_autoexec_disabled").exists()
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout="MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=5\n",
+            stderr="",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_exit_fixture_pre_autoexec_loadlevel_suppression_command"
+    assert report["runtime_pre_autoexec_loadlevel_suppression_status"] == (
+        "runtime_pre_autoexec_suppression_verified_no_defaultlevel"
+    )
+    assert report["runtime_pre_autoexec_suppression_verified"] is True
+    assert report["runtime_pre_autoexec_candidate_result"] == "runtime_pre_autoexec_candidate_attempted_pass"
+    assert report["runtime_exit_fixture_runtime_command_uses_pre_autoexec_suppression_strategy"] is True
+    assert report["runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit"] is True
+    assert report["runtime_exit_fixture_runtime_command_uses_console_command_file_quit"] is False
+    assert not any(str(arg).startswith("--regremove=") for arg in launched[0])
+    assert not any(str(arg).startswith("--regset-file=") for arg in launched[0])
+    assert report["runtime_pre_autoexec_candidate_actual_level_loads"] == []
+    assert report["runtime_pre_autoexec_candidate_mutation_path"].endswith("Registry/load_level.setreg")
+    assert report["runtime_pre_autoexec_candidate_mutation_restored"] is True
+    assert source.exists()
+    assert source.read_text(encoding="utf-8") == original
+    assert not (registry / "load_level.setreg.maxine_pre_autoexec_disabled").exists()
+    assert report["runtime_default_level_autoload_detected"] is False
+    assert report["runtime_launch_hygiene_status"] == "runtime_launch_hygiene_pass"
+    assert report["runtime_exit_fixture_execution_verified"] is True
+    assert report["runtime_execution_verified"] is True
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["defaultlevel_mutation"] is False
+    assert report["production_level_mutation"] is False
+
+
+def test_runtime_harness_pre_autoexec_fixture_blocks_when_defaultlevel_still_loads(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION"] = "1"
+    registry = project / "Registry"
+    registry.mkdir()
+    source = registry / "load_level.setreg"
+    source.write_text(
+        json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}}),
+        encoding="utf-8",
+    )
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    def runner(argv, **kwargs):
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout=(
+                "MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=5\n"
+                "Game Level Load Time: Level Levels/defaultlevel/defaultlevel.spawnable loaded in 0.00 seconds\n"
+            ),
+            stderr="",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_harness_status"] == "blocked_by_default_level_autoload"
+    assert report["runtime_pre_autoexec_loadlevel_suppression_status"] == (
+        "runtime_pre_autoexec_candidate_attempted_failed_defaultlevel_autoload"
+    )
+    assert report["runtime_pre_autoexec_suppression_verified"] is False
+    assert report["runtime_pre_autoexec_candidate_blocker"] == "blocked_by_default_level_autoload"
+    assert report["runtime_default_level_autoload_detected"] is True
+    assert report["runtime_default_level_disqualifying"] is True
+    assert report["runtime_exit_fixture_execution_verified"] is False
+    assert report["runtime_execution_verified"] is False
+    assert report["runtime_character_proof_claimed"] is False
+    assert source.exists()
+
+
+def test_runtime_harness_validation_rejects_pre_autoexec_verified_without_clean_execution() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_pre_autoexec_suppression_verified": True,
+            "runtime_pre_autoexec_selected": "project_registry_load_level_setreg_temporarily_disabled_pre_autoexec",
+            "runtime_pre_autoexec_candidate_reversible": True,
+            "runtime_pre_autoexec_candidate_mutation_restored": True,
+            "runtime_execution_verified": False,
+            "runtime_launch_hygiene_status": "runtime_launch_hygiene_failed",
+            "runtime_default_level_autoload_detected": True,
+        }
+    )
+
+    result = runtime_harness.validate_runtime_harness_report(report)
+
+    assert not result.ok
+    assert any("runtime_pre_autoexec_suppression_verified=true requires verified runtime execution" in message for message in result.messages)

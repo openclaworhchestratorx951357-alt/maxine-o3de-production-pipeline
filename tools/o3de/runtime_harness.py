@@ -86,6 +86,10 @@ RUNTIME_LOADLEVEL_OVERRIDE_ARGS = (
 RUNTIME_LATER_REGISTRY_PATCH_SELECTED = "artifact_setreg_merge_patch_null_autoexec_and_deferred_loadlevel"
 RUNTIME_LATER_REGISTRY_PATCH_FAILED_JSON_PATCH_REMOVE = "artifact_setregpatch_remove_autoexec_and_deferred_loadlevel"
 RUNTIME_LATER_REGISTRY_PATCH_FILENAME = "maxine_runtime_later_precedence_loadlevel_null_remove.setreg"
+RUNTIME_PRE_AUTOEXEC_SUPPRESSION_SELECTED = "project_registry_load_level_setreg_temporarily_disabled_pre_autoexec"
+RUNTIME_PRE_AUTOEXEC_SUPPRESSION_DISABLED_FILENAME = "load_level.setreg.maxine_pre_autoexec_disabled"
+RUNTIME_PRE_AUTOEXEC_SUPPRESSION_BACKUP_FILENAME = "maxine_runtime_pre_autoexec_load_level_setreg_backup.txt"
+RUNTIME_PRE_AUTOEXEC_CACHE_BOOTSTRAP_BLOCKER = "blocked_by_project_cache_bootstrap_defaultlevel_autoload"
 WINDOWS_NTSTATUS_NAMES = {
     0xC0000005: "STATUS_ACCESS_VIOLATION",
 }
@@ -158,6 +162,8 @@ def run_runtime_harness(
     enable_runtime_exit_fixture_loadlevel_override: bool = False,
     diagnose_runtime_later_registry_patch: bool = False,
     enable_runtime_exit_fixture_later_registry_patch: bool = False,
+    diagnose_runtime_pre_autoexec_loadlevel_suppression: bool = False,
+    enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -189,6 +195,8 @@ def run_runtime_harness(
         and not enable_runtime_exit_fixture_loadlevel_override
         and not diagnose_runtime_later_registry_patch
         and not enable_runtime_exit_fixture_later_registry_patch
+        and not diagnose_runtime_pre_autoexec_loadlevel_suppression
+        and not enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -225,6 +233,8 @@ def run_runtime_harness(
             and not enable_runtime_exit_fixture_loadlevel_override
             and not diagnose_runtime_later_registry_patch
             and not enable_runtime_exit_fixture_later_registry_patch
+            and not diagnose_runtime_pre_autoexec_loadlevel_suppression
+            and not enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -255,6 +265,10 @@ def run_runtime_harness(
             if diagnose_runtime_later_registry_patch
             else "runtime_exit_fixture_later_registry_patch_command"
             if enable_runtime_exit_fixture_later_registry_patch
+            else "runtime_pre_autoexec_loadlevel_suppression_diagnostic"
+            if diagnose_runtime_pre_autoexec_loadlevel_suppression
+            else "runtime_exit_fixture_pre_autoexec_loadlevel_suppression_command"
+            if enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -342,6 +356,8 @@ def run_runtime_harness(
         and not enable_runtime_exit_fixture_loadlevel_override
         and not diagnose_runtime_later_registry_patch
         and not enable_runtime_exit_fixture_later_registry_patch
+        and not diagnose_runtime_pre_autoexec_loadlevel_suppression
+        and not enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -446,6 +462,15 @@ def run_runtime_harness(
             artifact_dir=artifact_dir,
         )
 
+    if diagnose_runtime_pre_autoexec_loadlevel_suppression:
+        return _run_runtime_pre_autoexec_suppression_diagnostic(
+            report,
+            engine_root=selected_engine,
+            project=selected_project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+
     gate_status = _runtime_gate_status(env_map)
     if gate_status["status"] != "pass":
         report.update(
@@ -467,6 +492,7 @@ def run_runtime_harness(
         or enable_runtime_exit_fixture_no_default_level
         or enable_runtime_exit_fixture_loadlevel_override
         or enable_runtime_exit_fixture_later_registry_patch
+        or enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression
     ):
         return _run_runtime_exit_fixture_command(
             report,
@@ -477,6 +503,7 @@ def run_runtime_harness(
             no_default_level=enable_runtime_exit_fixture_no_default_level,
             loadlevel_override=enable_runtime_exit_fixture_loadlevel_override,
             later_registry_patch=enable_runtime_exit_fixture_later_registry_patch,
+            pre_autoexec_suppression=enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression,
         )
 
     command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
@@ -606,6 +633,19 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
         patch_path_text = str(report.get("runtime_later_registry_patch_candidate_patch_path", "")).replace("\\", "/")
         if patch_path_text and "/artifacts/o3de-integration/runtime-harness/" not in patch_path_text and "pytest-" not in patch_path_text:
             result.add_error(MXN_PATH_UNSAFE, "runtime_later_registry_patch_verified=true requires a temp artifact registry patch path.")
+    if report.get("runtime_pre_autoexec_suppression_verified") is True:
+        if report.get("runtime_execution_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_pre_autoexec_suppression_verified=true requires verified runtime execution.")
+        if str(report.get("runtime_launch_hygiene_status", "")).strip() != "runtime_launch_hygiene_pass":
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_pre_autoexec_suppression_verified=true requires runtime_launch_hygiene_pass.")
+        if report.get("runtime_default_level_autoload_detected") is True:
+            result.add_error(MXN_PATH_UNSAFE, "runtime_pre_autoexec_suppression_verified=true cannot allow defaultlevel autoload.")
+        if not str(report.get("runtime_pre_autoexec_selected", "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_pre_autoexec_suppression_verified=true requires a selected pre-autoexec suppression.")
+        if report.get("runtime_pre_autoexec_candidate_reversible") is not True:
+            result.add_error(MXN_PATH_UNSAFE, "runtime_pre_autoexec_suppression_verified=true requires a reversible suppression candidate.")
+        if report.get("runtime_pre_autoexec_candidate_mutation_restored") is not True:
+            result.add_error(MXN_PATH_UNSAFE, "runtime_pre_autoexec_suppression_verified=true requires restored project registry mutation.")
     if report.get("runtime_exit_fixture_execution_verified") is True:
         if report.get("runtime_exit_fixture_execution_attempted") is not True:
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_exit_fixture_execution_verified=true requires fixture execution attempt.")
@@ -1016,6 +1056,7 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_exit_fixture_runtime_command_uses_no_default_level_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_later_registry_patch_strategy": False,
+        "runtime_exit_fixture_runtime_command_uses_pre_autoexec_suppression_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
         "runtime_exit_fixture_level_load_observed": False,
         "runtime_exit_fixture_unexpected_level_load": False,
@@ -1104,6 +1145,52 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_later_registry_patch_gate_env": [],
         "runtime_later_registry_patch_gate_status": {"status": "not_run", "required": [], "missing": []},
         "runtime_later_registry_patch_generation_status": "not_attempted",
+        "runtime_pre_autoexec_loadlevel_suppression": {"status": "runtime_execution_not_attempted"},
+        "runtime_pre_autoexec_loadlevel_suppression_status": "runtime_execution_not_attempted",
+        "runtime_pre_autoexec_loadlevel_suppression_candidates": [],
+        "runtime_pre_autoexec_candidate_matrix_recorded": False,
+        "runtime_pre_autoexec_candidate_id": "",
+        "runtime_pre_autoexec_candidate_name": "",
+        "runtime_pre_autoexec_candidate_kind": "",
+        "runtime_pre_autoexec_candidate_source_validation": {},
+        "runtime_pre_autoexec_candidate_source_refs": [],
+        "runtime_pre_autoexec_candidate_surface": "",
+        "runtime_pre_autoexec_candidate_merge_order": "",
+        "runtime_pre_autoexec_candidate_pre_autoexec_verified": False,
+        "runtime_pre_autoexec_candidate_patch_path": "",
+        "runtime_pre_autoexec_candidate_patch_contents_summary": "",
+        "runtime_pre_autoexec_candidate_mutates_project": False,
+        "runtime_pre_autoexec_candidate_mutates_project_user": False,
+        "runtime_pre_autoexec_candidate_mutates_defaultlevel": False,
+        "runtime_pre_autoexec_candidate_mutates_production_level": False,
+        "runtime_pre_autoexec_candidate_reversible": False,
+        "runtime_pre_autoexec_candidate_rollback": "",
+        "runtime_pre_autoexec_candidate_gate_env": [],
+        "runtime_pre_autoexec_candidate_command_args": [],
+        "runtime_pre_autoexec_candidate_settings_registry_keys": [],
+        "runtime_pre_autoexec_candidate_expected_registry_state": {},
+        "runtime_pre_autoexec_candidate_actual_registry_state": {},
+        "runtime_pre_autoexec_candidate_expected_level_loads": [],
+        "runtime_pre_autoexec_candidate_actual_level_loads": [],
+        "runtime_pre_autoexec_candidate_attempted": False,
+        "runtime_pre_autoexec_candidate_result": "",
+        "runtime_pre_autoexec_candidate_rejected_reason": "",
+        "runtime_pre_autoexec_candidate_blocker": "",
+        "runtime_pre_autoexec_candidate_mutation_path": "",
+        "runtime_pre_autoexec_candidate_mutation_disabled_path": "",
+        "runtime_pre_autoexec_candidate_mutation_backup_path": "",
+        "runtime_pre_autoexec_candidate_mutation_pre_refs": [],
+        "runtime_pre_autoexec_candidate_mutation_post_refs": [],
+        "runtime_pre_autoexec_candidate_mutation_restored": False,
+        "runtime_pre_autoexec_cache_bootstrap_loadlevel_sources": [],
+        "runtime_pre_autoexec_cache_bootstrap_loadlevel_source_count": 0,
+        "runtime_pre_autoexec_cache_bootstrap_loadlevel_blocker": "",
+        "runtime_pre_autoexec_selected": "",
+        "runtime_pre_autoexec_selected_reason": "",
+        "runtime_pre_autoexec_suppression_verified": False,
+        "runtime_settings_registry_project_user_registry_order": "",
+        "runtime_console_autoexec_notification_timing": "",
+        "runtime_spawnable_level_deferred_load_timing": "",
         "runtime_settings_registry_merge_order_summary": {},
         "runtime_settings_registry_command_line_override_order": "",
         "runtime_settings_registry_project_registry_order": "",
@@ -2175,6 +2262,62 @@ def _run_runtime_later_registry_patch_diagnostic(
     return _finalize_report(report)
 
 
+def _run_runtime_pre_autoexec_suppression_diagnostic(
+    report: Dict[str, Any],
+    *,
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
+    report["runtime_harness_mode"] = "runtime_pre_autoexec_loadlevel_suppression_diagnostic"
+    payload = _runtime_pre_autoexec_suppression_source_payload(
+        project=project,
+        engine_root=engine_root,
+        timeout_seconds=timeout_seconds,
+        artifact_dir=artifact_dir,
+    )
+    source_validated = (
+        payload["runtime_pre_autoexec_loadlevel_suppression_status"]
+        == "runtime_pre_autoexec_suppression_source_discovery_pass"
+    )
+    report.update(payload)
+    report.update(
+        {
+            "status": "pass" if source_validated else "fail",
+            "runtime_harness_status": payload["runtime_pre_autoexec_loadlevel_suppression_status"],
+            "runtime_execution_status": "runtime_execution_not_attempted",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "live_runtime_execution": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "defaultlevel_mutation": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_exit_fixture_source_ready",
+                "runtime_default_level_source_recorded",
+                "runtime_pre_autoexec_suppression_source_validated",
+                "runtime_pre_autoexec_candidate_matrix_recorded",
+                "runtime_execution_not_attempted_in_pre_autoexec_diagnostic",
+                "runtime_character_proof_not_claimed",
+            ]
+            if source_validated
+            else [],
+            "required_runtime_harness_assertions_failed": []
+            if source_validated
+            else ["runtime_pre_autoexec_suppression_source_validation"],
+            "runtime_harness_assertion_informational": [
+                "pre_autoexec_suppression_diagnostic_does_not_launch_runtime",
+                "pre_autoexec_source_validation_is_not_runtime_execution_proof",
+                "project_registry_mutation_requires_explicit_gate",
+            ],
+        }
+    )
+    return _finalize_report(report)
+
+
 def _run_runtime_exit_fixture_command(
     report: Dict[str, Any],
     *,
@@ -2185,11 +2328,14 @@ def _run_runtime_exit_fixture_command(
     no_default_level: bool = False,
     loadlevel_override: bool = False,
     later_registry_patch: bool = False,
+    pre_autoexec_suppression: bool = False,
 ) -> Dict[str, Any]:
     report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
     report["runtime_harness_mode"] = (
         "runtime_exit_fixture_later_registry_patch_command"
         if later_registry_patch
+        else "runtime_exit_fixture_pre_autoexec_loadlevel_suppression_command"
+        if pre_autoexec_suppression
         else "runtime_exit_fixture_loadlevel_override_command"
         if loadlevel_override
         else "runtime_exit_fixture_no_default_level_command"
@@ -2268,6 +2414,62 @@ def _run_runtime_exit_fixture_command(
             )
             return _finalize_report(report)
 
+    if pre_autoexec_suppression:
+        mutation_gate = _runtime_project_mutation_gate_status()
+        mutation_gate["missing"] = [
+            name for name in mutation_gate["required"] if not _gate_enabled(env, name)
+        ]
+        mutation_gate["status"] = (
+            "pass" if not mutation_gate["missing"] else "blocked_by_fixture_project_mutation_gate_missing"
+        )
+        report["runtime_pre_autoexec_candidate_gate_env"] = list(RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV)
+        report["runtime_exit_fixture_project_mutation_gate_env"] = list(RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV)
+        readiness_payload = report.get("runtime_harness_readiness", {})
+        source_engine_root = (
+            Path(str(readiness_payload.get("engine_root", "")))
+            if isinstance(readiness_payload, Mapping) and str(readiness_payload.get("engine_root", "")).strip()
+            else None
+        )
+        if mutation_gate["status"] != "pass":
+            payload = _runtime_pre_autoexec_suppression_source_payload(
+                project=project,
+                engine_root=source_engine_root,
+                timeout_seconds=timeout_seconds,
+                artifact_dir=artifact_dir,
+            )
+            payload.update(
+                {
+                    "runtime_pre_autoexec_loadlevel_suppression_status": "blocked_by_fixture_project_mutation_gate_missing",
+                    "runtime_pre_autoexec_candidate_result": "runtime_pre_autoexec_candidate_rejected_unsafe",
+                    "runtime_pre_autoexec_candidate_attempted": False,
+                    "runtime_pre_autoexec_candidate_blocker": "blocked_by_fixture_project_mutation_gate_missing",
+                    "runtime_pre_autoexec_suppression_verified": False,
+                    "runtime_default_level_override_blocker": "blocked_by_fixture_project_mutation_gate_missing",
+                }
+            )
+            report.update(payload)
+            report.update(
+                {
+                    "status": "fail",
+                    "runtime_harness_status": "blocked_by_fixture_project_mutation_gate_missing",
+                    "runtime_exit_fixture_status": "blocked_by_fixture_project_mutation_gate_missing",
+                    "runtime_exit_fixture_blocked_reason": "blocked_by_fixture_project_mutation_gate_missing",
+                    "runtime_harness_blocked_reason": "blocked_by_fixture_project_mutation_gate_missing",
+                    "runtime_exit_fixture_project_mutation_status": "blocked_by_fixture_project_mutation_gate_missing",
+                    "runtime_exit_fixture_project_mutation_attempted": False,
+                    "runtime_execution_status": "runtime_execution_not_attempted",
+                    "runtime_execution_attempted": False,
+                    "runtime_execution_completed": False,
+                    "runtime_execution_verified": False,
+                    "runtime_exit_fixture_execution_attempted": False,
+                    "runtime_exit_fixture_execution_completed": False,
+                    "runtime_exit_fixture_execution_verified": False,
+                    "live_runtime_execution": False,
+                    "required_runtime_harness_assertions_failed": ["runtime_fixture_project_mutation_gate"],
+                }
+            )
+            return _finalize_report(report)
+
     if not _runtime_exit_fixture_enabled_for_project(project):
         report.update(
             {
@@ -2296,6 +2498,7 @@ def _run_runtime_exit_fixture_command(
         no_default_level=no_default_level,
         loadlevel_override=loadlevel_override,
         later_registry_patch=later_registry_patch,
+        pre_autoexec_suppression=pre_autoexec_suppression,
         artifact_dir=artifact_dir,
     )
     if not command.get("selected"):
@@ -2306,6 +2509,44 @@ def _run_runtime_exit_fixture_command(
     artifact_dir.mkdir(parents=True, exist_ok=True)
     if later_registry_patch:
         _write_runtime_later_registry_patch(_runtime_later_registry_patch_path(artifact_dir))
+    pre_autoexec_mutation = (
+        _apply_runtime_pre_autoexec_suppression(project=project, artifact_dir=artifact_dir)
+        if pre_autoexec_suppression
+        else {}
+    )
+    if pre_autoexec_suppression and pre_autoexec_mutation.get("status") != "runtime_pre_autoexec_project_registry_mutation_applied":
+        payload = _runtime_pre_autoexec_suppression_source_payload(
+            project=project,
+            engine_root=_runtime_engine_root_from_command(command),
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+        payload.update(
+            {
+                "runtime_pre_autoexec_loadlevel_suppression_status": "blocked_by_project_registry_override_not_safe",
+                "runtime_pre_autoexec_candidate_result": "runtime_pre_autoexec_candidate_rejected_unsafe",
+                "runtime_pre_autoexec_candidate_attempted": False,
+                "runtime_pre_autoexec_candidate_blocker": "blocked_by_project_registry_override_not_safe",
+                "runtime_pre_autoexec_candidate_actual_registry_state": dict(pre_autoexec_mutation),
+                "runtime_pre_autoexec_suppression_verified": False,
+                "runtime_default_level_override_blocker": "blocked_by_project_registry_override_not_safe",
+            }
+        )
+        report.update(payload)
+        report.update(
+            {
+                "status": "fail",
+                "runtime_harness_status": "blocked_by_project_registry_override_not_safe",
+                "runtime_exit_fixture_status": "blocked_by_project_registry_override_not_safe",
+                "runtime_exit_fixture_execution_attempted": False,
+                "runtime_execution_attempted": False,
+                "runtime_execution_completed": False,
+                "runtime_execution_verified": False,
+                "live_runtime_execution": False,
+                "required_runtime_harness_assertions_failed": ["runtime_pre_autoexec_project_registry_mutation"],
+            }
+        )
+        return _finalize_report(report)
     stdout_path = artifact_dir / "runtime_exit_fixture_stdout.txt"
     stderr_path = artifact_dir / "runtime_exit_fixture_stderr.txt"
     report.update(_runtime_command_pin_payload(command, timeout_seconds=timeout_seconds, execution_requested=True))
@@ -2318,9 +2559,14 @@ def _run_runtime_exit_fixture_command(
             "runtime_exit_fixture_runtime_command_status": "runtime_exit_fixture_runtime_command_pinned",
             "runtime_exit_fixture_runtime_command_uses_console_command_file_quit": False,
             "runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit": True,
-            "runtime_exit_fixture_runtime_command_uses_no_default_level_strategy": no_default_level or loadlevel_override or later_registry_patch,
-            "runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy": loadlevel_override or later_registry_patch,
+            "runtime_exit_fixture_runtime_command_uses_no_default_level_strategy": (
+                no_default_level or loadlevel_override or later_registry_patch or pre_autoexec_suppression
+            ),
+            "runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy": (
+                loadlevel_override or later_registry_patch or pre_autoexec_suppression
+            ),
             "runtime_exit_fixture_runtime_command_uses_later_registry_patch_strategy": later_registry_patch,
+            "runtime_exit_fixture_runtime_command_uses_pre_autoexec_suppression_strategy": pre_autoexec_suppression,
             "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
             "runtime_exit_fixture_command": str(command.get("argv", [""])[0]),
             "runtime_exit_fixture_arguments": list(command.get("argv", []))[1:],
@@ -2363,6 +2609,9 @@ def _run_runtime_exit_fixture_command(
             stdout=exc.output or "",
             stderr=exc.stderr or "",
         )
+    finally:
+        if pre_autoexec_suppression:
+            _restore_runtime_pre_autoexec_suppression(pre_autoexec_mutation)
 
     stdout_text = str(proc.stdout or "")
     stderr_text = str(proc.stderr or "")
@@ -2395,7 +2644,7 @@ def _run_runtime_exit_fixture_command(
         diagnostics=diagnostics,
         actual_level_loads=level_loads,
         disqualifying=disqualifying,
-        no_default_level=no_default_level or loadlevel_override or later_registry_patch,
+        no_default_level=no_default_level or loadlevel_override or later_registry_patch or pre_autoexec_suppression,
     )
     loadlevel_override_payload = _runtime_loadlevel_override_execution_payload(
         project=project,
@@ -2421,6 +2670,18 @@ def _run_runtime_exit_fixture_command(
         marker_observed=marker_observed,
         artifact_dir=artifact_dir,
         combined_text=combined_text,
+    )
+    pre_autoexec_payload = _runtime_pre_autoexec_suppression_execution_payload(
+        project=project,
+        command=command,
+        diagnostics=diagnostics,
+        actual_level_loads=level_loads,
+        pre_autoexec_suppression=pre_autoexec_suppression,
+        launch_hygiene=launch_hygiene,
+        exit_code=proc.returncode,
+        marker_observed=marker_observed,
+        artifact_dir=artifact_dir,
+        mutation_state=pre_autoexec_mutation,
     )
     launch_hygiene_pass = launch_hygiene.get("runtime_launch_hygiene_status") == "runtime_launch_hygiene_pass"
     passed = (
@@ -2448,8 +2709,11 @@ def _run_runtime_exit_fixture_command(
     report.update(_runtime_signal_fields(scan))
     report.update(loadlevel_override_payload)
     report.update(later_registry_patch_payload)
+    report.update(pre_autoexec_payload)
     report.update(launch_hygiene)
     blocked_reason = _runtime_launch_hygiene_blocked_reason(launch_hygiene)
+    if pre_autoexec_suppression and str(pre_autoexec_payload.get("runtime_pre_autoexec_candidate_blocker", "")).strip():
+        blocked_reason = str(pre_autoexec_payload.get("runtime_pre_autoexec_candidate_blocker", "")).strip()
     report.update(
         {
             "status": "pass" if passed else "fail",
@@ -3163,6 +3427,15 @@ def _runtime_temp_registry_patch_gate_status(env: Mapping[str, str]) -> Dict[str
     }
 
 
+def _runtime_project_mutation_gate_status() -> Dict[str, Any]:
+    required = ("MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION",)
+    return {
+        "status": "not_run",
+        "required": list(required),
+        "missing": list(required),
+    }
+
+
 def _run_command_capture(
     argv: Sequence[str],
     *,
@@ -3323,6 +3596,7 @@ def _select_runtime_exit_fixture_command(
     no_default_level: bool = False,
     loadlevel_override: bool = False,
     later_registry_patch: bool = False,
+    pre_autoexec_suppression: bool = False,
     artifact_dir: Path | None = None,
 ) -> Dict[str, Any]:
     executable = str(report.get("runtime_executable_path", "")).strip()
@@ -3362,6 +3636,8 @@ def _select_runtime_exit_fixture_command(
     selected_reason = (
         "repo_owned_fixture_tickbus_exit_main_loop_later_registry_patch_envelope"
         if later_registry_patch
+        else "repo_owned_fixture_tickbus_exit_main_loop_pre_autoexec_loadlevel_suppression_envelope"
+        if pre_autoexec_suppression
         else "repo_owned_fixture_tickbus_exit_main_loop_loadlevel_deferred_regremove_envelope"
         if loadlevel_override
         else "repo_owned_fixture_tickbus_exit_main_loop_no_default_level_regremove_envelope"
@@ -3384,6 +3660,16 @@ def _select_runtime_exit_fixture_command(
                 "temp_registry_patch_gate_required",
             ]
         )
+    elif pre_autoexec_suppression:
+        safety_flags.extend(
+            [
+                "pre_autoexec_loadlevel_suppression",
+                "project_registry_load_level_setreg_temporarily_disabled",
+                "project_mutation_gate_required",
+                "project_registry_mutation_reversible",
+                "defaultlevel_content_not_mutated",
+            ]
+        )
     elif loadlevel_override:
         safety_flags.extend(
             [
@@ -3400,6 +3686,8 @@ def _select_runtime_exit_fixture_command(
         "argv": argv,
         "kind": "headless_settings_registry_runtime_exit_fixture_later_registry_patch_envelope"
         if later_registry_patch
+        else "headless_settings_registry_runtime_exit_fixture_pre_autoexec_suppression_envelope"
+        if pre_autoexec_suppression
         else "headless_settings_registry_runtime_exit_fixture_loadlevel_override_envelope"
         if loadlevel_override
         else "headless_settings_registry_runtime_exit_fixture_no_default_level_envelope"
@@ -3416,6 +3704,8 @@ def _select_runtime_exit_fixture_command(
             "rendering": ["-NullRenderer", "-rhi=null"],
             "launch_hygiene": [later_patch_arg]
             if later_registry_patch
+            else ["temporary_project_registry_load_level_setreg_disable"]
+            if pre_autoexec_suppression
             else list(RUNTIME_LOADLEVEL_OVERRIDE_ARGS)
             if loadlevel_override
             else [RUNTIME_NO_DEFAULT_LEVEL_REGREMOVE_ARG]
@@ -3446,11 +3736,14 @@ def _select_runtime_exit_fixture_command(
             "safe_to_kill_after_timeout": True,
             "uses_console_command_file_quit": False,
             "uses_settings_registry_fixture_exit": True,
-            "uses_no_default_level_strategy": no_default_level or loadlevel_override or later_registry_patch,
-            "uses_loadlevel_override_strategy": loadlevel_override or later_registry_patch,
+            "uses_no_default_level_strategy": no_default_level or loadlevel_override or later_registry_patch or pre_autoexec_suppression,
+            "uses_loadlevel_override_strategy": loadlevel_override or later_registry_patch or pre_autoexec_suppression,
             "uses_later_registry_patch_strategy": later_registry_patch,
+            "uses_pre_autoexec_suppression_strategy": pre_autoexec_suppression,
             "temp_registry_patch_path": str(later_patch_path) if later_registry_patch else "",
             "temp_registry_patch_gate_required": later_registry_patch,
+            "project_registry_mutation_gate_required": pre_autoexec_suppression,
+            "project_registry_mutation_reversible": pre_autoexec_suppression,
         },
         "source_evidence_refs": [
             _repo_relative(RUNTIME_EXIT_FIXTURE_COMPONENT_SOURCE),
@@ -4267,6 +4560,532 @@ def _write_runtime_later_registry_patch(path: Path) -> None:
     path.write_text(json.dumps(_runtime_later_registry_patch_contents(), indent=2) + "\n", encoding="utf-8")
 
 
+def _runtime_pre_autoexec_suppression_source_payload(
+    *,
+    project: Path | None,
+    engine_root: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    later_payload = _runtime_later_registry_patch_source_payload(
+        project=project,
+        engine_root=engine_root,
+        timeout_seconds=timeout_seconds,
+        artifact_dir=artifact_dir,
+    )
+    source_validated = _runtime_pre_autoexec_source_validated(engine_root)
+    status = (
+        "runtime_pre_autoexec_suppression_source_discovery_pass"
+        if source_validated
+        else "runtime_pre_autoexec_suppression_source_discovery_inconclusive"
+    )
+    selected_candidate = _runtime_pre_autoexec_selected_candidate(
+        project=project,
+        engine_root=engine_root,
+        artifact_dir=artifact_dir,
+    )
+    cache_bootstrap_sources = _runtime_cache_bootstrap_default_level_sources(project)
+    candidates = _runtime_pre_autoexec_candidate_matrix(
+        project=project,
+        engine_root=engine_root,
+        artifact_dir=artifact_dir,
+    )
+    later_payload.update(
+        {
+            "runtime_pre_autoexec_loadlevel_suppression": {
+                "status": status,
+                "selected": RUNTIME_PRE_AUTOEXEC_SUPPRESSION_SELECTED if source_validated else "",
+                "candidate_count": len(candidates),
+            },
+            "runtime_pre_autoexec_loadlevel_suppression_status": status,
+            "runtime_pre_autoexec_loadlevel_suppression_candidates": candidates,
+            "runtime_pre_autoexec_candidate_matrix_recorded": bool(candidates),
+            "runtime_pre_autoexec_candidate_id": selected_candidate["id"] if source_validated else "",
+            "runtime_pre_autoexec_candidate_name": selected_candidate["name"] if source_validated else "",
+            "runtime_pre_autoexec_candidate_kind": selected_candidate["kind"] if source_validated else "",
+            "runtime_pre_autoexec_candidate_source_validation": selected_candidate["source_validation"]
+            if source_validated
+            else {},
+            "runtime_pre_autoexec_candidate_source_refs": selected_candidate["source_refs"] if source_validated else [],
+            "runtime_pre_autoexec_candidate_surface": selected_candidate["surface"] if source_validated else "",
+            "runtime_pre_autoexec_candidate_merge_order": selected_candidate["merge_order"] if source_validated else "",
+            "runtime_pre_autoexec_candidate_pre_autoexec_verified": bool(source_validated),
+            "runtime_pre_autoexec_candidate_patch_path": selected_candidate["patch_path"] if source_validated else "",
+            "runtime_pre_autoexec_candidate_patch_contents_summary": selected_candidate["patch_contents_summary"]
+            if source_validated
+            else "",
+            "runtime_pre_autoexec_candidate_mutates_project": selected_candidate["mutates_project"]
+            if source_validated
+            else False,
+            "runtime_pre_autoexec_candidate_mutates_project_user": selected_candidate["mutates_project_user"]
+            if source_validated
+            else False,
+            "runtime_pre_autoexec_candidate_mutates_defaultlevel": False,
+            "runtime_pre_autoexec_candidate_mutates_production_level": False,
+            "runtime_pre_autoexec_candidate_reversible": selected_candidate["reversible"] if source_validated else False,
+            "runtime_pre_autoexec_candidate_rollback": selected_candidate["rollback"] if source_validated else "",
+            "runtime_pre_autoexec_candidate_gate_env": selected_candidate["gate_env"] if source_validated else [],
+            "runtime_pre_autoexec_candidate_command_args": [],
+            "runtime_pre_autoexec_candidate_settings_registry_keys": selected_candidate["settings_registry_keys"]
+            if source_validated
+            else [],
+            "runtime_pre_autoexec_candidate_expected_registry_state": selected_candidate["expected_registry_state"]
+            if source_validated
+            else {},
+            "runtime_pre_autoexec_candidate_actual_registry_state": {},
+            "runtime_pre_autoexec_candidate_expected_level_loads": [],
+            "runtime_pre_autoexec_candidate_actual_level_loads": [],
+            "runtime_pre_autoexec_candidate_attempted": False,
+            "runtime_pre_autoexec_candidate_result": selected_candidate["result"] if source_validated else "",
+            "runtime_pre_autoexec_candidate_rejected_reason": "",
+            "runtime_pre_autoexec_candidate_blocker": "",
+            "runtime_pre_autoexec_candidate_mutation_path": selected_candidate["mutation_path"] if source_validated else "",
+            "runtime_pre_autoexec_candidate_mutation_disabled_path": selected_candidate["disabled_path"]
+            if source_validated
+            else "",
+            "runtime_pre_autoexec_candidate_mutation_backup_path": selected_candidate["backup_path"]
+            if source_validated
+            else "",
+            "runtime_pre_autoexec_candidate_mutation_pre_refs": [],
+            "runtime_pre_autoexec_candidate_mutation_post_refs": [],
+            "runtime_pre_autoexec_candidate_mutation_restored": False,
+            "runtime_pre_autoexec_cache_bootstrap_loadlevel_sources": cache_bootstrap_sources,
+            "runtime_pre_autoexec_cache_bootstrap_loadlevel_source_count": len(cache_bootstrap_sources),
+            "runtime_pre_autoexec_cache_bootstrap_loadlevel_blocker": (
+                RUNTIME_PRE_AUTOEXEC_CACHE_BOOTSTRAP_BLOCKER if cache_bootstrap_sources else ""
+            ),
+            "runtime_pre_autoexec_selected": RUNTIME_PRE_AUTOEXEC_SUPPRESSION_SELECTED if source_validated else "",
+            "runtime_pre_autoexec_selected_reason": "temporarily_disables_project_registry_load_level_setreg_before_autoexec"
+            if source_validated
+            else "",
+            "runtime_pre_autoexec_suppression_verified": False,
+            "runtime_settings_registry_project_user_registry_order": (
+                "project_user_registry_merges_before_project_registry_in_shared_settings_and_again_after_project_registry_in_user_settings"
+            )
+            if source_validated
+            else "",
+            "runtime_console_autoexec_notification_timing": (
+                "console_registers_settings_registry_notifier_before_project_registry_merge_and_executes_autoexec_on_each_merged_key"
+            )
+            if source_validated
+            else "",
+            "runtime_spawnable_level_deferred_load_timing": (
+                "LoadLevel_before_level_system_queues_deferred_key_and_spawnable_level_system_consumes_it_in_constructor"
+            )
+            if source_validated
+            else "",
+            "runtime_default_level_override_blocker": ""
+            if source_validated
+            else "blocked_by_missing_pre_autoexec_loadlevel_suppression",
+            "defaultlevel_mutation": False,
+            "production_level_mutation": False,
+        }
+    )
+    return later_payload
+
+
+def _runtime_pre_autoexec_suppression_execution_payload(
+    *,
+    project: Path | None,
+    command: Mapping[str, Any],
+    diagnostics: Mapping[str, Any],
+    actual_level_loads: Sequence[str],
+    pre_autoexec_suppression: bool,
+    launch_hygiene: Mapping[str, Any],
+    exit_code: int | None,
+    marker_observed: bool,
+    artifact_dir: Path,
+    mutation_state: Mapping[str, Any],
+) -> Dict[str, Any]:
+    if not pre_autoexec_suppression:
+        return {}
+    source_payload = _runtime_pre_autoexec_suppression_source_payload(
+        project=project,
+        engine_root=_runtime_engine_root_from_command(command),
+        timeout_seconds=int(command.get("timeout_seconds", 120)),
+        artifact_dir=artifact_dir,
+    )
+    selected_candidate = _runtime_pre_autoexec_selected_candidate(
+        project=project,
+        engine_root=_runtime_engine_root_from_command(command),
+        artifact_dir=artifact_dir,
+    )
+    cache_bootstrap_sources = _runtime_cache_bootstrap_default_level_sources(project)
+    default_level_detected = bool(launch_hygiene.get("runtime_default_level_autoload_detected"))
+    launch_pass = str(launch_hygiene.get("runtime_launch_hygiene_status", "")).strip() == "runtime_launch_hygiene_pass"
+    ap_status = str(
+        launch_hygiene.get("runtime_asset_processor_negotiation_signal_status", "runtime_execution_not_attempted")
+    )
+    shader_status = str(launch_hygiene.get("runtime_shader_serializer_signal_status", "runtime_execution_not_attempted"))
+    if launch_pass:
+        suppression_status = "runtime_pre_autoexec_suppression_verified_no_defaultlevel"
+        candidate_result = "runtime_pre_autoexec_candidate_attempted_pass"
+        blocker = ""
+    elif default_level_detected:
+        suppression_status = "runtime_pre_autoexec_candidate_attempted_failed_defaultlevel_autoload"
+        candidate_result = suppression_status
+        blocker = RUNTIME_PRE_AUTOEXEC_CACHE_BOOTSTRAP_BLOCKER if cache_bootstrap_sources else "blocked_by_default_level_autoload"
+    elif launch_hygiene.get("runtime_asset_processor_negotiation_disqualifying") is True or launch_hygiene.get(
+        "runtime_shader_serializer_disqualifying"
+    ) is True:
+        suppression_status = "runtime_pre_autoexec_candidate_attempted_failed_disqualifying_signal"
+        candidate_result = suppression_status
+        blocker = "blocked_by_disqualifying_runtime_signals"
+    else:
+        suppression_status = "runtime_pre_autoexec_candidate_attempted_failed_disqualifying_signal"
+        candidate_result = suppression_status
+        blocker = "blocked_by_disqualifying_runtime_signals"
+
+    source_payload.update(
+        {
+            "runtime_pre_autoexec_loadlevel_suppression": {
+                "status": suppression_status,
+                "selected": RUNTIME_PRE_AUTOEXEC_SUPPRESSION_SELECTED,
+                "attempted": True,
+                "actual_level_loads": list(actual_level_loads),
+            },
+            "runtime_pre_autoexec_loadlevel_suppression_status": suppression_status,
+            "runtime_pre_autoexec_candidate_id": selected_candidate["id"],
+            "runtime_pre_autoexec_candidate_name": selected_candidate["name"],
+            "runtime_pre_autoexec_candidate_kind": selected_candidate["kind"],
+            "runtime_pre_autoexec_candidate_source_validation": selected_candidate["source_validation"],
+            "runtime_pre_autoexec_candidate_source_refs": selected_candidate["source_refs"],
+            "runtime_pre_autoexec_candidate_surface": selected_candidate["surface"],
+            "runtime_pre_autoexec_candidate_merge_order": selected_candidate["merge_order"],
+            "runtime_pre_autoexec_candidate_pre_autoexec_verified": True,
+            "runtime_pre_autoexec_candidate_patch_path": "",
+            "runtime_pre_autoexec_candidate_patch_contents_summary": "",
+            "runtime_pre_autoexec_candidate_mutates_project": True,
+            "runtime_pre_autoexec_candidate_mutates_project_user": False,
+            "runtime_pre_autoexec_candidate_mutates_defaultlevel": False,
+            "runtime_pre_autoexec_candidate_mutates_production_level": False,
+            "runtime_pre_autoexec_candidate_reversible": True,
+            "runtime_pre_autoexec_candidate_rollback": selected_candidate["rollback"],
+            "runtime_pre_autoexec_candidate_gate_env": selected_candidate["gate_env"],
+            "runtime_pre_autoexec_candidate_command_args": [],
+            "runtime_pre_autoexec_candidate_settings_registry_keys": selected_candidate["settings_registry_keys"],
+            "runtime_pre_autoexec_candidate_expected_registry_state": selected_candidate["expected_registry_state"],
+            "runtime_pre_autoexec_candidate_actual_registry_state": {
+                "defaultlevel_autoload_detected": default_level_detected,
+                "load_level_setreg_temporarily_disabled": mutation_state.get("applied", False),
+                "load_level_setreg_restored_after_run": mutation_state.get("restored", False),
+                "asset_processor_negotiation_status": ap_status,
+                "shader_serializer_status": shader_status,
+            },
+            "runtime_pre_autoexec_candidate_expected_level_loads": [],
+            "runtime_pre_autoexec_candidate_actual_level_loads": list(actual_level_loads),
+            "runtime_pre_autoexec_candidate_attempted": True,
+            "runtime_pre_autoexec_candidate_result": candidate_result,
+            "runtime_pre_autoexec_candidate_rejected_reason": "",
+            "runtime_pre_autoexec_candidate_blocker": blocker,
+            "runtime_pre_autoexec_candidate_mutation_path": _path_text(str(mutation_state.get("source_path", ""))),
+            "runtime_pre_autoexec_candidate_mutation_disabled_path": _path_text(
+                str(mutation_state.get("disabled_path", ""))
+            ),
+            "runtime_pre_autoexec_candidate_mutation_backup_path": _path_text(str(mutation_state.get("backup_path", ""))),
+            "runtime_pre_autoexec_candidate_mutation_pre_refs": list(mutation_state.get("pre_refs", [])),
+            "runtime_pre_autoexec_candidate_mutation_post_refs": list(mutation_state.get("post_refs", [])),
+            "runtime_pre_autoexec_candidate_mutation_restored": bool(mutation_state.get("restored", False)),
+            "runtime_pre_autoexec_cache_bootstrap_loadlevel_sources": cache_bootstrap_sources,
+            "runtime_pre_autoexec_cache_bootstrap_loadlevel_source_count": len(cache_bootstrap_sources),
+            "runtime_pre_autoexec_cache_bootstrap_loadlevel_blocker": (
+                RUNTIME_PRE_AUTOEXEC_CACHE_BOOTSTRAP_BLOCKER if cache_bootstrap_sources else ""
+            ),
+            "runtime_pre_autoexec_selected": RUNTIME_PRE_AUTOEXEC_SUPPRESSION_SELECTED,
+            "runtime_pre_autoexec_selected_reason": "temporarily_disables_project_registry_load_level_setreg_before_autoexec",
+            "runtime_pre_autoexec_suppression_verified": bool(launch_pass),
+            "runtime_loadlevel_override_status": "runtime_loadlevel_override_verified_no_defaultlevel"
+            if launch_pass
+            else "runtime_loadlevel_override_candidate_attempted_failed_defaultlevel_autoload"
+            if default_level_detected
+            else "runtime_loadlevel_override_candidate_attempted_failed_disqualifying_signal",
+            "runtime_loadlevel_override_selected": RUNTIME_PRE_AUTOEXEC_SUPPRESSION_SELECTED,
+            "runtime_loadlevel_override_selected_reason": "pre_autoexec_project_registry_load_level_suppression",
+            "runtime_loadlevel_override_verified": bool(launch_pass),
+            "runtime_autoexec_console_command_override_state": {
+                "selected_args": [],
+                "mutates_project_registry": True,
+                "mutates_project_user_registry": False,
+                "mutates_defaultlevel": False,
+                "mutation_path": _path_text(str(mutation_state.get("source_path", ""))),
+                "mutation_restored": bool(mutation_state.get("restored", False)),
+                "exit_code_decimal": exit_code,
+                "exit_code_hex": _exit_code_hex(exit_code),
+                "fixture_marker_observed": marker_observed,
+            },
+            "runtime_default_level_override_blocker": blocker,
+            "defaultlevel_mutation": False,
+            "production_level_mutation": False,
+            "runtime_exit_fixture_project_mutation_status": "runtime_exit_fixture_project_mutation_gate_pass",
+            "runtime_exit_fixture_project_mutation_attempted": True,
+            "runtime_exit_fixture_project_mutation_files": [_path_text(str(mutation_state.get("source_path", "")))],
+            "runtime_exit_fixture_project_mutation_before_refs": list(mutation_state.get("pre_refs", [])),
+            "runtime_exit_fixture_project_mutation_after_refs": list(mutation_state.get("post_refs", [])),
+            "runtime_exit_fixture_project_mutation_diff_summary": [
+                "temporarily_renamed_project_registry_load_level_setreg",
+                "restored_project_registry_load_level_setreg_after_runtime_command",
+            ],
+            "runtime_exit_fixture_project_mutation_reversible": True,
+            "runtime_exit_fixture_project_mutation_rollback": selected_candidate["rollback"],
+            "runtime_exit_fixture_project_mutation_gate_env": list(RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV),
+        }
+    )
+    return source_payload
+
+
+def _runtime_pre_autoexec_selected_candidate(
+    *,
+    project: Path | None,
+    engine_root: Path | None,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    source_path = _runtime_default_level_source_path(project)
+    disabled_path = _runtime_pre_autoexec_disabled_path(project)
+    backup_path = artifact_dir / RUNTIME_PRE_AUTOEXEC_SUPPRESSION_BACKUP_FILENAME
+    return {
+        "id": RUNTIME_PRE_AUTOEXEC_SUPPRESSION_SELECTED,
+        "name": "Temporarily disable project Registry/load_level.setreg before console autoexec",
+        "kind": "gated_reversible_project_registry_file_suppression",
+        "source_validation": {
+            "status": "runtime_pre_autoexec_candidate_source_validated"
+            if _runtime_pre_autoexec_source_validated(engine_root)
+            else "runtime_pre_autoexec_candidate_rejected_missing_source_validation",
+            "summary": (
+                "ComponentApplication creates the console and registers settings-registry notifications before "
+                "MergeSettingsToRegistry loads project Registry files. MergeSettingsFolder applies project files one by one "
+                "and notifies merged keys immediately, so Registry/load_level.setreg executes LoadLevel before project-user "
+                "or final command-line overrides can clear it. The selected safe harness strategy temporarily renames the "
+                "project load_level.setreg file before launch and restores it after the bounded fixture process exits."
+            ),
+        },
+        "source_refs": _runtime_pre_autoexec_source_refs(project, engine_root),
+        "surface": _path_text(source_path),
+        "merge_order": "suppresses_project_registry_file_before_project_registry_merge_and_before_console_autoexec_notification",
+        "patch_path": "",
+        "patch_contents_summary": "",
+        "mutates_project": True,
+        "mutates_project_user": False,
+        "reversible": True,
+        "rollback": _runtime_pre_autoexec_rollback(project),
+        "gate_env": list(RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV),
+        "mutation_path": _path_text(source_path),
+        "disabled_path": _path_text(disabled_path),
+        "backup_path": _path_text(backup_path),
+        "settings_registry_keys": [RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY, RUNTIME_DEFERRED_LOADLEVEL_KEY],
+        "expected_registry_state": {
+            "project_registry_load_level_file": "temporarily_absent_during_runtime_launch",
+            "autoexec_loadlevel": "not_merged_from_project_load_level_setreg",
+            "spawnable_deferred_loadlevel": "not_queued_from_project_load_level_setreg",
+            "project_registry_mutation": "temporary_rename_with_backup_and_restore",
+            "defaultlevel_mutation": False,
+            "production_level_mutation": False,
+        },
+        "expected_level_loads": [],
+        "result": "runtime_pre_autoexec_candidate_source_validated",
+    }
+
+
+def _runtime_pre_autoexec_candidate_matrix(
+    *,
+    project: Path | None,
+    engine_root: Path | None,
+    artifact_dir: Path,
+) -> List[Dict[str, Any]]:
+    loadlevel = _runtime_loadlevel_override_candidate_matrix(project, engine_root)
+    later = _runtime_later_registry_patch_selected_candidate(
+        project=project,
+        engine_root=engine_root,
+        artifact_dir=artifact_dir,
+    )
+    selected = _runtime_pre_autoexec_selected_candidate(
+        project=project,
+        engine_root=engine_root,
+        artifact_dir=artifact_dir,
+    )
+    return [
+        {
+            **loadlevel[0],
+            "result": "runtime_pre_autoexec_candidate_rejected_prior_regremove_failed_defaultlevel_autoload",
+            "blocker": "blocked_by_regremove_ineffective",
+        },
+        {
+            **loadlevel[1],
+            "attempted": True,
+            "actual_level_loads": [RUNTIME_DEFAULT_LEVEL_PRODUCT_PATH],
+            "result": "runtime_pre_autoexec_candidate_rejected_prior_regremove_failed_defaultlevel_autoload",
+            "blocker": "blocked_by_settings_registry_merge_order",
+        },
+        {
+            **later,
+            "attempted": True,
+            "actual_level_loads": [RUNTIME_DEFAULT_LEVEL_PRODUCT_PATH],
+            "actual_registry_state": {
+                "final_regset_file_merge_failed": False,
+                "autoexec_notification_already_executed_before_final_regset_file": True,
+            },
+            "result": "runtime_pre_autoexec_candidate_rejected_late_command_line_registry_merge",
+            "blocker": "blocked_by_late_command_line_registry_merge",
+        },
+        {
+            "id": "project_user_registry_null_delete_loadlevel",
+            "name": "Project-user registry null-deletes Autoexec LoadLevel",
+            "kind": "project_user_registry_json_merge_patch_null_delete",
+            "source_validation": {
+                "status": "runtime_pre_autoexec_candidate_source_validated",
+                "summary": (
+                    "Project-user registry is merged before project registry in shared settings and again after "
+                    "project registry in user settings. The early pass is overwritten by Registry/load_level.setreg, "
+                    "and the late pass occurs after the project registry notification has already executed LoadLevel."
+                ),
+            },
+            "source_refs": _runtime_pre_autoexec_source_refs(project, engine_root),
+            "surface": _path_text((project or Path("<project>")) / "user" / "Registry"),
+            "merge_order": "project_user_registry_before_project_registry_then_after_autoexec_notification",
+            "gate_env": list(RUNTIME_EXIT_FIXTURE_TEMP_REGISTRY_PATCH_GATE_ENV),
+            "settings_registry_keys": [RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY, RUNTIME_DEFERRED_LOADLEVEL_KEY],
+            "expected_registry_state": {
+                "autoexec_loadlevel": "not_reliably_suppressed_before_project_registry_notification",
+                "project_registry_mutation": False,
+                "defaultlevel_mutation": False,
+                "production_level_mutation": False,
+            },
+            "expected_level_loads": [],
+            "actual_level_loads": [RUNTIME_DEFAULT_LEVEL_PRODUCT_PATH],
+            "attempted": False,
+            "result": "runtime_pre_autoexec_candidate_rejected_project_user_precedes_project_registry",
+            "blocker": "blocked_by_project_user_registry_override_not_safe",
+        },
+        {
+            "id": "project_cache_bootstrap_setreg_defaultlevel_suppression",
+            "name": "Project Cache bootstrap setreg defaultlevel suppression",
+            "kind": "generated_project_cache_bootstrap_registry_mutation",
+            "source_validation": {
+                "status": "runtime_pre_autoexec_candidate_source_validated",
+                "summary": (
+                    "Read-only live evidence shows generated project Cache/pc/bootstrap*.setreg files can embed "
+                    "O3DE Autoexec ConsoleCommands LoadLevel=defaultlevel. Mutating those generated cache products "
+                    "would touch Asset Cache/build products, so this slice records the source as a blocker instead "
+                    "of editing or deleting cache content."
+                ),
+            },
+            "source_refs": _runtime_cache_bootstrap_default_level_sources(project),
+            "surface": _path_text((project or Path("<project>")) / "Cache" / "pc" / "bootstrap*.setreg"),
+            "merge_order": "cache_bootstrap_registry_is_available_before_project_registry_source_suppression",
+            "gate_env": [],
+            "settings_registry_keys": [RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY, RUNTIME_DEFERRED_LOADLEVEL_KEY],
+            "expected_registry_state": {
+                "autoexec_loadlevel": "would_require_generated_cache_bootstrap_mutation",
+                "asset_cache_mutation": True,
+                "defaultlevel_mutation": False,
+                "production_level_mutation": False,
+            },
+            "expected_level_loads": [],
+            "actual_level_loads": [RUNTIME_DEFAULT_LEVEL_PRODUCT_PATH],
+            "attempted": False,
+            "result": "runtime_pre_autoexec_candidate_rejected_requires_asset_cache_mutation",
+            "blocker": RUNTIME_PRE_AUTOEXEC_CACHE_BOOTSTRAP_BLOCKER,
+        },
+        {
+            **selected,
+            "actual_registry_state": {},
+            "actual_level_loads": [],
+            "attempted": False,
+            "blocker": "",
+        },
+    ]
+
+
+def _runtime_pre_autoexec_source_validated(engine_root: Path | None) -> bool:
+    return _runtime_loadlevel_override_source_validated(engine_root)
+
+
+def _runtime_pre_autoexec_source_refs(project: Path | None, engine_root: Path | None) -> List[str]:
+    return _runtime_loadlevel_override_source_refs(project, engine_root)
+
+
+def _runtime_default_level_source_path(project: Path | None) -> Path:
+    return (project or Path("<project>")) / "Registry" / "load_level.setreg"
+
+
+def _runtime_pre_autoexec_disabled_path(project: Path | None) -> Path:
+    return (project or Path("<project>")) / "Registry" / RUNTIME_PRE_AUTOEXEC_SUPPRESSION_DISABLED_FILENAME
+
+
+def _runtime_cache_bootstrap_default_level_sources(project: Path | None) -> List[str]:
+    if project is None:
+        return []
+    cache_dir = project / "Cache" / "pc"
+    if not cache_dir.is_dir():
+        return []
+    sources: List[str] = []
+    for path in sorted(cache_dir.glob("bootstrap*.setreg")):
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8-sig", errors="replace")
+        if "LoadLevel" in text and "defaultlevel" in text.lower():
+            sources.append(_path_text(path))
+    return sources
+
+
+def _runtime_pre_autoexec_rollback(project: Path | None) -> str:
+    source_path = _runtime_default_level_source_path(project)
+    disabled_path = _runtime_pre_autoexec_disabled_path(project)
+    return (
+        f"If interrupted, move {disabled_path} back to {source_path}; the harness also writes a backup under "
+        f"{DEFAULT_ARTIFACT_ROOT / RUNTIME_PRE_AUTOEXEC_SUPPRESSION_BACKUP_FILENAME}."
+    )
+
+
+def _apply_runtime_pre_autoexec_suppression(*, project: Path | None, artifact_dir: Path) -> Dict[str, Any]:
+    source_path = _runtime_default_level_source_path(project)
+    disabled_path = _runtime_pre_autoexec_disabled_path(project)
+    backup_path = artifact_dir / RUNTIME_PRE_AUTOEXEC_SUPPRESSION_BACKUP_FILENAME
+    state: Dict[str, Any] = {
+        "status": "runtime_pre_autoexec_project_registry_mutation_not_attempted",
+        "source_path": _path_text(source_path),
+        "disabled_path": _path_text(disabled_path),
+        "backup_path": _path_text(backup_path),
+        "applied": False,
+        "restored": False,
+        "pre_refs": [_path_text(source_path)],
+        "post_refs": [],
+    }
+    if project is None or not source_path.is_file():
+        state["status"] = "blocked_by_missing_project_load_level_setreg"
+        return state
+    if disabled_path.exists():
+        state["status"] = "blocked_by_existing_pre_autoexec_disabled_file"
+        return state
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    backup_path.write_text(source_path.read_text(encoding="utf-8-sig", errors="replace"), encoding="utf-8")
+    source_path.replace(disabled_path)
+    state.update(
+        {
+            "status": "runtime_pre_autoexec_project_registry_mutation_applied",
+            "applied": True,
+            "pre_refs": [_path_text(source_path), _path_text(backup_path)],
+            "post_refs": [_path_text(disabled_path), _path_text(backup_path)],
+        }
+    )
+    return state
+
+
+def _restore_runtime_pre_autoexec_suppression(state: Dict[str, Any]) -> None:
+    if not state or not state.get("applied"):
+        return
+    source_path = Path(str(state.get("source_path", "")))
+    disabled_path = Path(str(state.get("disabled_path", "")))
+    if disabled_path.is_file() and not source_path.exists():
+        disabled_path.replace(source_path)
+        state["restored"] = True
+        state["status"] = "runtime_pre_autoexec_project_registry_mutation_restored"
+        state["post_refs"] = [_path_text(source_path), _path_text(str(state.get("backup_path", "")))]
+    else:
+        state["restored"] = source_path.is_file() and not disabled_path.exists()
+        if state["restored"]:
+            state["status"] = "runtime_pre_autoexec_project_registry_mutation_restored"
+
+
 def _runtime_loadlevel_override_selected_candidate(project: Path | None, engine_root: Path | None) -> Dict[str, Any]:
     source_refs = _runtime_loadlevel_override_source_refs(project, engine_root)
     return {
@@ -4925,6 +5744,7 @@ def _runtime_exit_fixture_static_payload(*, timeout_seconds: int) -> Dict[str, A
         "runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit": False,
         "runtime_exit_fixture_runtime_command_uses_no_default_level_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy": False,
+        "runtime_exit_fixture_runtime_command_uses_pre_autoexec_suppression_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
         "runtime_exit_fixture_level_load_observed": False,
         "runtime_exit_fixture_unexpected_level_load": False,
@@ -6406,6 +7226,10 @@ def _repo_relative(path: Path | str) -> str:
         return str(path).replace("\\", "/")
 
 
+def _path_text(path: Path | str) -> str:
+    return str(path).replace("\\", "/")
+
+
 def _unique(values: Sequence[str]) -> List[str]:
     result: List[str] = []
     for value in values:
@@ -6435,6 +7259,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--enable-runtime-exit-fixture-loadlevel-override", action="store_true")
     parser.add_argument("--diagnose-runtime-later-registry-patch", action="store_true")
     parser.add_argument("--enable-runtime-exit-fixture-later-registry-patch", action="store_true")
+    parser.add_argument("--diagnose-runtime-pre-autoexec-loadlevel-suppression", action="store_true")
+    parser.add_argument("--enable-runtime-exit-fixture-pre-autoexec-loadlevel-suppression", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -6469,6 +7295,10 @@ def main() -> int:
         enable_runtime_exit_fixture_loadlevel_override=args.enable_runtime_exit_fixture_loadlevel_override,
         diagnose_runtime_later_registry_patch=args.diagnose_runtime_later_registry_patch,
         enable_runtime_exit_fixture_later_registry_patch=args.enable_runtime_exit_fixture_later_registry_patch,
+        diagnose_runtime_pre_autoexec_loadlevel_suppression=args.diagnose_runtime_pre_autoexec_loadlevel_suppression,
+        enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression=(
+            args.enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression
+        ),
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
         strict_integration=args.strict_integration,

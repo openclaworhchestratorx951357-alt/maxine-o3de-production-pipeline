@@ -272,6 +272,24 @@ The selected candidate is `artifact_setreg_merge_patch_null_autoexec_and_deferre
 
 If the fixture run still records defaultlevel autoload after the `.setreg` patch and no Settings Registry merge failure is present, keep the runtime result failed with `blocked_by_settings_registry_merge_order`. The later file merge is then source-valid but too late for this launcher path's autoexec notification timing.
 
+Pre-autoexec LoadLevel suppression diagnostics inspect the earlier side-effect surface and may run a reversible project-registry suppression only under an explicit mutation gate:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-pre-autoexec-loadlevel-suppression --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-exit-fixture-pre-autoexec-loadlevel-suppression --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+The selected pre-autoexec candidate is `project_registry_load_level_setreg_temporarily_disabled_pre_autoexec`. Source inspection shows that project-user registry overlays either merge before the project registry file or after the autoexec notification has already fired, while project registry files notify the console as each file merges. The harness therefore temporarily renames `C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus/Registry/load_level.setreg` before launch, writes `maxine_runtime_pre_autoexec_load_level_setreg_backup.txt` under runtime artifacts, and restores the original file in a `finally` path. Manual rollback after interruption is to move `load_level.setreg.maxine_pre_autoexec_disabled` back to `load_level.setreg`.
+
+This mode must not edit `Levels/defaultlevel`, production levels, shipping fixture behavior, or committed project-private content. A clean exit and fixture marker are still insufficient if defaultlevel autoload, AP negotiation, shader serializer, missing/load/error/assert, timeout, or crash-like signals remain unclassified and disqualifying.
+
+If the project registry file is restored but defaultlevel still loads, inspect the pre-autoexec report fields `runtime_pre_autoexec_cache_bootstrap_loadlevel_sources` and `runtime_pre_autoexec_cache_bootstrap_loadlevel_blocker`. Generated `Cache/pc/bootstrap*.setreg` files can carry the same Autoexec LoadLevel setting into the runtime before source-registry suppression helps. Those cache bootstrap files are generated products and must not be edited or deleted in this slice; classify the result as `blocked_by_project_cache_bootstrap_defaultlevel_autoload` and keep runtime proof false.
+
 When using the produced paired Editor on the controlled runner, pass it explicitly:
 
 ```powershell

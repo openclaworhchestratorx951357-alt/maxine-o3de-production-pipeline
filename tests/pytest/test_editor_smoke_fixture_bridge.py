@@ -892,6 +892,7 @@ def test_editor_smoke_full_report_records_runtime_harness_without_character_over
     assert runtime_harness["runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit"] is False
     assert runtime_harness["runtime_exit_fixture_runtime_command_uses_no_default_level_strategy"] is False
     assert runtime_harness["runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy"] is False
+    assert runtime_harness["runtime_exit_fixture_runtime_command_uses_pre_autoexec_suppression_strategy"] is False
     assert runtime_harness["runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level"] is False
     assert runtime_harness["runtime_exit_fixture_marker_observed"] is False
     assert runtime_harness["runtime_exit_fixture_level_load_observed"] is False
@@ -915,7 +916,18 @@ def test_editor_smoke_full_report_records_runtime_harness_without_character_over
     assert runtime_harness["runtime_later_registry_patch_candidate_gate_env"] == []
     assert runtime_harness["runtime_later_registry_patch_verified"] is False
     assert runtime_harness["runtime_exit_fixture_runtime_command_uses_later_registry_patch_strategy"] is False
+    assert runtime_harness["runtime_pre_autoexec_loadlevel_suppression_status"] == "runtime_execution_not_attempted"
+    assert runtime_harness["runtime_pre_autoexec_candidate_matrix_recorded"] is False
+    assert runtime_harness["runtime_pre_autoexec_loadlevel_suppression_candidates"] == []
+    assert runtime_harness["runtime_pre_autoexec_candidate_gate_env"] == []
+    assert runtime_harness["runtime_pre_autoexec_suppression_verified"] is False
+    assert runtime_harness["runtime_pre_autoexec_cache_bootstrap_loadlevel_sources"] == []
+    assert runtime_harness["runtime_pre_autoexec_cache_bootstrap_loadlevel_source_count"] == 0
+    assert runtime_harness["runtime_pre_autoexec_cache_bootstrap_loadlevel_blocker"] == ""
     assert runtime_harness["runtime_settings_registry_merge_order_summary"] == {}
+    assert runtime_harness["runtime_settings_registry_project_user_registry_order"] == ""
+    assert runtime_harness["runtime_console_autoexec_notification_timing"] == ""
+    assert runtime_harness["runtime_spawnable_level_deferred_load_timing"] == ""
     assert runtime_harness["runtime_autoexec_console_command_effective_state"] == {}
     assert runtime_harness["runtime_asset_processor_negotiation_signal_status"] == "runtime_execution_not_attempted"
     assert runtime_harness["runtime_asset_processor_negotiation_disqualifying"] is False
