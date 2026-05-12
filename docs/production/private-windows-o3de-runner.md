@@ -307,6 +307,21 @@ python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigge
 
 This mode source-validates `SettingsRegistryBuilder.cpp` as the generator of `bootstrap.<launcher>.<config>.setreg` products and `GameApplication.cpp` as the runtime cache-bootstrap loader. It scans `Cache/pc/bootstrap*.setreg` read-only by default. The fixture strategy can temporarily backup, neutralize, restore, and hash-verify scoped bootstrap files, but only under `MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION=1`; Asset Cache deletion remains forbidden, generated cache/bootstrap files must not be committed, and runtime proof still requires no defaultlevel load plus resolved or source-classified AP/shader signals.
 
+AP/shader signal classification diagnostics source-validate the remaining no-defaultlevel fixture blockers:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-ap-shader-signals --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-exit-fixture-ap-shader-signal-classification --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+This mode preserves the PR #136 cache-bootstrap no-defaultlevel strategy and then classifies only source-pinned signal families. Asset Processor negotiation is harmless only when `Launcher.cpp` is using `wait_for_connect=0`, APB product evidence is complete, no selected product fails to load, and the fixture remains bounded/no-level. Shader serializer lines are harmless only when they match the known stale non-selected DX12/Vulkan RHI class IDs under the `-NullRenderer` plus `-rhi=null` fixture envelope. Any different AP/shader/assert/load-error signature remains disqualifying, and runtime character proof remains false.
+
 When using the produced paired Editor on the controlled runner, pass it explicitly:
 
 ```powershell

@@ -926,20 +926,30 @@ def test_editor_smoke_full_report_records_runtime_harness_without_character_over
     assert runtime_harness["runtime_pre_autoexec_cache_bootstrap_loadlevel_source_count"] == 0
     assert runtime_harness["runtime_pre_autoexec_cache_bootstrap_loadlevel_blocker"] == ""
     assert runtime_harness["runtime_cache_bootstrap_loadlevel_source_status"] == "runtime_execution_not_attempted"
+    assert runtime_harness["runtime_exit_fixture_runtime_command_uses_ap_shader_strategy"] is False
     assert runtime_harness["runtime_cache_bootstrap_source_discovery_status"] == "runtime_execution_not_attempted"
     assert runtime_harness["runtime_cache_bootstrap_candidate_matrix_recorded"] is False
     assert runtime_harness["runtime_cache_bootstrap_files"] == []
     assert runtime_harness["runtime_cache_bootstrap_verified"] is False
     assert runtime_harness["asset_cache_deleted"] is False
+    assert runtime_harness["runtime_signal_classification_status"] == "runtime_execution_not_attempted"
+    assert runtime_harness["runtime_signal_classification_candidate_matrix_recorded"] is False
+    assert runtime_harness["runtime_signal_classification_candidates"] == []
+    assert runtime_harness["runtime_signal_classification_verified"] is False
     assert runtime_harness["runtime_settings_registry_merge_order_summary"] == {}
     assert runtime_harness["runtime_settings_registry_project_user_registry_order"] == ""
     assert runtime_harness["runtime_console_autoexec_notification_timing"] == ""
     assert runtime_harness["runtime_spawnable_level_deferred_load_timing"] == ""
     assert runtime_harness["runtime_autoexec_console_command_effective_state"] == {}
     assert runtime_harness["runtime_asset_processor_negotiation_signal_status"] == "runtime_execution_not_attempted"
+    assert runtime_harness["runtime_asset_processor_negotiation_signal_present"] is False
+    assert runtime_harness["runtime_asset_processor_negotiation_source_refs"] == []
     assert runtime_harness["runtime_asset_processor_negotiation_disqualifying"] is False
     assert runtime_harness["runtime_shader_serializer_signal_status"] == "runtime_execution_not_attempted"
+    assert runtime_harness["runtime_shader_serializer_signal_present"] is False
+    assert runtime_harness["runtime_shader_serializer_source_refs"] == []
     assert runtime_harness["runtime_shader_serializer_disqualifying"] is False
+    assert runtime_harness["runtime_production_level_loaded"] is False
     assert runtime_harness["runtime_exit_fixture_is_runtime_character_proof"] is False
     assert runtime_harness["runtime_exit_fixture_character_proof_claimed"] is False
     assert runtime_harness["runtime_harness_proof_is_character_proof"] is False

@@ -26,6 +26,14 @@ def _engine(root: Path, *, launcher: bool = True) -> Path:
         engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryMergeUtils.h",
         engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Component" / "ComponentApplication.cpp",
         engine / "Code" / "Framework" / "AzGameFramework" / "AzGameFramework" / "Application" / "GameApplication.cpp",
+        engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Network" / "AssetProcessorConnection.cpp",
+        engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Asset" / "AssetSystemComponent.cpp",
+        engine / "Code" / "LauncherUnified" / "Launcher.cpp",
+        engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Serialization" / "ObjectStream.cpp",
+        engine / "Gems" / "Atom" / "RHI" / "Null" / "Code" / "Source" / "RHI.Reflect" / "ReflectSystemComponent.cpp",
+        engine / "Gems" / "Atom" / "RHI" / "DX12" / "Code" / "Include" / "Atom" / "RHI.Reflect" / "DX12" / "ShaderStageFunction.h",
+        engine / "Gems" / "Atom" / "RHI" / "DX12" / "Code" / "Include" / "Atom" / "RHI.Reflect" / "DX12" / "PipelineLayoutDescriptor.h",
+        engine / "Gems" / "Atom" / "RHI" / "Vulkan" / "Code" / "Include" / "Atom" / "RHI.Reflect" / "Vulkan" / "ShaderStageFunction.h",
         engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "IConsole.h",
         engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "Console.cpp",
         engine / "Code" / "Tools" / "AssetProcessor" / "native" / "InternalBuilders" / "SettingsRegistryBuilder.cpp",
@@ -2409,3 +2417,150 @@ def test_runtime_harness_validation_rejects_asset_cache_deletion() -> None:
 
     assert not result.ok
     assert any("Runtime harness must not delete Asset Cache" in message for message in result.messages)
+
+
+def test_runtime_harness_ap_shader_signal_diagnostic_records_source_classification_matrix(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_ap_shader_signals=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_ap_shader_signal_classification_diagnostic"
+    assert report["runtime_signal_classification_status"] == "runtime_signal_classification_source_discovery_pass"
+    assert report["runtime_signal_classification_candidate_matrix_recorded"] is True
+    candidate_ids = [candidate["id"] for candidate in report["runtime_signal_classification_candidates"]]
+    assert candidate_ids == [
+        "ap_shader_read_only_existing_log_classification",
+        "ap_shader_no_defaultlevel_cache_bootstrap_fixture_rerun",
+        "ap_shader_controlled_asset_processor_session_comparison",
+        "ap_shader_shader_product_completeness_audit",
+        "ap_shader_keep_disqualifying_if_unclassified",
+    ]
+    assert report["runtime_signal_classification_selected"] == "ap_shader_no_defaultlevel_cache_bootstrap_fixture_rerun"
+    assert "AssetProcessorConnection.cpp" in " ".join(report["runtime_asset_processor_negotiation_source_refs"])
+    assert "Launcher.cpp" in " ".join(report["runtime_asset_processor_negotiation_source_refs"])
+    assert "ObjectStream.cpp" in " ".join(report["runtime_shader_serializer_source_refs"])
+    assert "Atom/RHI/Null" in " ".join(report["runtime_shader_serializer_source_refs"])
+    assert report["runtime_signal_classification_verified"] is False
+    assert report["runtime_execution_attempted"] is False
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_ap_shader_fixture_classifies_known_signals_without_character_proof(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION"] = "1"
+    registry = project / "Registry"
+    registry.mkdir()
+    source = registry / "load_level.setreg"
+    source.write_text(
+        json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}}),
+        encoding="utf-8",
+    )
+    cache = project / "Cache" / "pc"
+    cache.mkdir(parents=True)
+    bootstrap = cache / "bootstrap.server.profile.setreg"
+    original_bootstrap = json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}})
+    bootstrap.write_text(original_bootstrap, encoding="utf-8")
+    original_source = source.read_text(encoding="utf-8")
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    def runner(argv, **kwargs):
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout=(
+                "Launcher: Connecting to Asset Processor...\n"
+                "AssetProcessorConnection::ConnectThread: Network connection attempt failure, negotiation with 127.0.0.1:45643 failed.\n"
+                "GAME: Negotiation with asset processor failed\n"
+                "<12:38:04> [Error] (Serialize) - Element 'NULL'(0x41405e39) with class ID "
+                "'{1BAEE536-96CA-4AEB-BA73-D5D72EE35B45}' found in 'AZStd::intrusive_ptr<ShaderStageFunction>' "
+                "is not registered with the serializer!\n"
+                "<12:38:04> [Error] (Serialize) - Element 'NULL'(0x41405e39) with class ID "
+                "'{A606478A-97E9-402D-A776-88EE72DAC6F9}' found in 'AZStd::intrusive_ptr<ShaderStageFunction>' "
+                "is not registered with the serializer!\n"
+                "<12:38:04> [Error] (Serialize) - Element 'NULL'(0x41405e39) with class ID "
+                "'{A10B0F03-F43D-4462-9306-66195B4EFC46}' found in 'AZStd::intrusive_ptr<PipelineLayoutDescriptor>' "
+                "is not registered with the serializer!\n"
+                "MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=5\n"
+            ),
+            stderr="",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_exit_fixture_ap_shader_signal_classification=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_exit_fixture_ap_shader_signal_classification_command"
+    assert report["runtime_signal_classification_status"] == "runtime_signal_classification_verified"
+    assert report["runtime_signal_classification_verified"] is True
+    assert report["runtime_asset_processor_negotiation_signal_present"] is True
+    assert report["runtime_asset_processor_negotiation_classification"] == "runtime_asset_processor_negotiation_classified_harmless"
+    assert report["runtime_asset_processor_negotiation_disqualifying"] is False
+    assert report["runtime_shader_serializer_signal_present"] is True
+    assert report["runtime_shader_serializer_classification"] == "runtime_shader_serializer_classified_harmless"
+    assert report["runtime_shader_serializer_disqualifying"] is False
+    assert report["runtime_default_level_autoload_detected"] is False
+    assert report["runtime_production_level_loaded"] is False
+    assert report["runtime_launch_hygiene_status"] == "runtime_launch_hygiene_pass"
+    assert report["runtime_exit_fixture_execution_verified"] is True
+    assert report["runtime_execution_verified"] is True
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_cache_bootstrap_candidate_restore_status"] == "runtime_cache_bootstrap_restore_pass"
+    assert report["runtime_cache_bootstrap_candidate_hash_verified"] is True
+    assert source.exists()
+    assert source.read_text(encoding="utf-8") == original_source
+    assert bootstrap.read_text(encoding="utf-8") == original_bootstrap
+    assert report["asset_cache_deleted"] is False
+
+
+def test_runtime_harness_validation_rejects_signal_classification_without_source_refs() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_signal_classification_verified": True,
+            "runtime_signal_classification_selected": "ap_shader_no_defaultlevel_cache_bootstrap_fixture_rerun",
+            "runtime_execution_verified": True,
+            "runtime_launch_hygiene_status": "runtime_launch_hygiene_pass",
+            "runtime_asset_processor_negotiation_signal_present": True,
+            "runtime_asset_processor_negotiation_classification": "runtime_asset_processor_negotiation_classified_harmless",
+            "runtime_asset_processor_negotiation_disqualifying": False,
+            "runtime_asset_processor_negotiation_source_refs": [],
+            "runtime_asset_processor_negotiation_harmless_only_if": [],
+            "runtime_shader_serializer_signal_present": True,
+            "runtime_shader_serializer_classification": "runtime_shader_serializer_classified_harmless",
+            "runtime_shader_serializer_disqualifying": False,
+            "runtime_shader_serializer_source_refs": [],
+            "runtime_shader_serializer_harmless_only_if": [],
+        }
+    )
+
+    result = runtime_harness.validate_runtime_harness_report(report)
+
+    assert not result.ok
+    assert any("runtime_signal_classification_verified=true requires AP and shader source refs" in message for message in result.messages)
