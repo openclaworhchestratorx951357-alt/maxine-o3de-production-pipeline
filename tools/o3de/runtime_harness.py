@@ -73,8 +73,15 @@ RUNTIME_EXIT_FIXTURE_GATE_ENV = (
 RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION=1",)
 RUNTIME_EXIT_FIXTURE_REBUILD_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD=1",)
 RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY = "/O3DE/Autoexec/ConsoleCommands/LoadLevel"
+RUNTIME_DEFERRED_LOADLEVEL_KEY = "/O3DE/Runtime/SpawnableLevelSystem/DeferredLoadLevel"
 RUNTIME_DEFAULT_LEVEL_PRODUCT_PATH = "Levels/defaultlevel/defaultlevel.spawnable"
 RUNTIME_NO_DEFAULT_LEVEL_REGREMOVE_ARG = f"--regremove={RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY}"
+RUNTIME_DEFERRED_LOADLEVEL_REGREMOVE_ARG = f"--regremove={RUNTIME_DEFERRED_LOADLEVEL_KEY}"
+RUNTIME_LOADLEVEL_OVERRIDE_SELECTED = "settings_registry_regremove_autoexec_and_deferred_loadlevel"
+RUNTIME_LOADLEVEL_OVERRIDE_ARGS = (
+    RUNTIME_NO_DEFAULT_LEVEL_REGREMOVE_ARG,
+    RUNTIME_DEFERRED_LOADLEVEL_REGREMOVE_ARG,
+)
 WINDOWS_NTSTATUS_NAMES = {
     0xC0000005: "STATUS_ACCESS_VIOLATION",
 }
@@ -143,6 +150,8 @@ def run_runtime_harness(
     enable_runtime_exit_fixture_command: bool = False,
     diagnose_runtime_launch_hygiene: bool = False,
     enable_runtime_exit_fixture_no_default_level: bool = False,
+    diagnose_runtime_loadlevel_override: bool = False,
+    enable_runtime_exit_fixture_loadlevel_override: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -170,6 +179,8 @@ def run_runtime_harness(
         and not enable_runtime_exit_fixture_command
         and not diagnose_runtime_launch_hygiene
         and not enable_runtime_exit_fixture_no_default_level
+        and not diagnose_runtime_loadlevel_override
+        and not enable_runtime_exit_fixture_loadlevel_override
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -202,6 +213,8 @@ def run_runtime_harness(
             and not enable_runtime_exit_fixture_command
             and not diagnose_runtime_launch_hygiene
             and not enable_runtime_exit_fixture_no_default_level
+            and not diagnose_runtime_loadlevel_override
+            and not enable_runtime_exit_fixture_loadlevel_override
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -224,6 +237,10 @@ def run_runtime_harness(
             if diagnose_runtime_launch_hygiene
             else "runtime_exit_fixture_no_default_level_command"
             if enable_runtime_exit_fixture_no_default_level
+            else "runtime_loadlevel_override_diagnostic"
+            if diagnose_runtime_loadlevel_override
+            else "runtime_exit_fixture_loadlevel_override_command"
+            if enable_runtime_exit_fixture_loadlevel_override
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -307,6 +324,8 @@ def run_runtime_harness(
         and not enable_runtime_exit_fixture_command
         and not diagnose_runtime_launch_hygiene
         and not enable_runtime_exit_fixture_no_default_level
+        and not diagnose_runtime_loadlevel_override
+        and not enable_runtime_exit_fixture_loadlevel_override
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -393,6 +412,14 @@ def run_runtime_harness(
             timeout_seconds=timeout_seconds,
         )
 
+    if diagnose_runtime_loadlevel_override:
+        return _run_runtime_loadlevel_override_diagnostic(
+            report,
+            engine_root=selected_engine,
+            project=selected_project,
+            timeout_seconds=timeout_seconds,
+        )
+
     gate_status = _runtime_gate_status(env_map)
     if gate_status["status"] != "pass":
         report.update(
@@ -409,7 +436,11 @@ def run_runtime_harness(
         )
         return _finalize_report(report)
 
-    if enable_runtime_exit_fixture_command or enable_runtime_exit_fixture_no_default_level:
+    if (
+        enable_runtime_exit_fixture_command
+        or enable_runtime_exit_fixture_no_default_level
+        or enable_runtime_exit_fixture_loadlevel_override
+    ):
         return _run_runtime_exit_fixture_command(
             report,
             env=env_map,
@@ -417,6 +448,7 @@ def run_runtime_harness(
             artifact_dir=artifact_dir,
             command_runner=command_runner,
             no_default_level=enable_runtime_exit_fixture_no_default_level,
+            loadlevel_override=enable_runtime_exit_fixture_loadlevel_override,
         )
 
     command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
@@ -473,6 +505,8 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
         result.add_error(MXN_PATH_UNSAFE, "Runtime harness must not enable release packaging.")
     if report.get("production_level_mutation") is True:
         result.add_error(MXN_PATH_UNSAFE, "Runtime harness must not mutate production levels.")
+    if report.get("defaultlevel_mutation") is True:
+        result.add_error(MXN_PATH_UNSAFE, "Runtime harness must not mutate defaultlevel.")
 
     attempted = report.get("runtime_execution_attempted") is True
     completed = report.get("runtime_execution_completed") is True
@@ -523,6 +557,15 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_exit_strategy_verified=true requires verified runtime execution.")
         if not str(report.get("runtime_exit_strategy_selected", "")).strip():
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_exit_strategy_verified=true requires a selected exit strategy.")
+    if report.get("runtime_loadlevel_override_verified") is True:
+        if report.get("runtime_execution_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_loadlevel_override_verified=true requires verified runtime execution.")
+        if str(report.get("runtime_launch_hygiene_status", "")).strip() != "runtime_launch_hygiene_pass":
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_loadlevel_override_verified=true requires runtime_launch_hygiene_pass.")
+        if report.get("runtime_default_level_autoload_detected") is True:
+            result.add_error(MXN_PATH_UNSAFE, "runtime_loadlevel_override_verified=true cannot allow defaultlevel autoload.")
+        if not str(report.get("runtime_loadlevel_override_selected", "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_loadlevel_override_verified=true requires a selected LoadLevel override.")
     if report.get("runtime_exit_fixture_execution_verified") is True:
         if report.get("runtime_exit_fixture_execution_attempted") is not True:
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_exit_fixture_execution_verified=true requires fixture execution attempt.")
@@ -708,6 +751,9 @@ def print_text_report(report: Mapping[str, Any]) -> None:
     if report.get("runtime_exit_fixture_rebuild_status") not in {None, "", "not_run", "not_attempted"}:
         print(f"runtime_exit_fixture_rebuild_status: {report.get('runtime_exit_fixture_rebuild_status', '')}")
         print(f"runtime_exit_fixture_rebuild_exit_code: {report.get('runtime_exit_fixture_rebuild_exit_code', '')}")
+    if report.get("runtime_loadlevel_override_status") not in {None, "", "not_run", "runtime_execution_not_attempted"}:
+        print(f"runtime_loadlevel_override_status: {report.get('runtime_loadlevel_override_status', '')}")
+        print(f"runtime_loadlevel_override_verified: {str(report.get('runtime_loadlevel_override_verified', False)).lower()}")
     print(f"runtime_character_proof_claimed: {str(report.get('runtime_character_proof_claimed', False)).lower()}")
     print(f"runtime_character_proof_verified: {str(report.get('runtime_character_proof_verified', False)).lower()}")
     print(f"live_runtime_execution: {str(report.get('live_runtime_execution', False)).lower()}")
@@ -925,6 +971,7 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_exit_fixture_runtime_command_uses_console_command_file_quit": False,
         "runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit": False,
         "runtime_exit_fixture_runtime_command_uses_no_default_level_strategy": False,
+        "runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
         "runtime_exit_fixture_level_load_observed": False,
         "runtime_exit_fixture_unexpected_level_load": False,
@@ -958,6 +1005,39 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_no_default_level_actual_level_loads": [],
         "runtime_no_default_level_execution_attempted": False,
         "runtime_no_default_level_execution_verified": False,
+        "runtime_loadlevel_override": {"status": "not_run"},
+        "runtime_loadlevel_override_status": "not_run",
+        "runtime_loadlevel_override_candidates": [],
+        "runtime_loadlevel_override_candidate_matrix_recorded": False,
+        "runtime_loadlevel_override_candidate_id": "",
+        "runtime_loadlevel_override_candidate_name": "",
+        "runtime_loadlevel_override_candidate_kind": "",
+        "runtime_loadlevel_override_candidate_source_validation": {},
+        "runtime_loadlevel_override_candidate_source_refs": [],
+        "runtime_loadlevel_override_candidate_command_args": [],
+        "runtime_loadlevel_override_candidate_settings_registry_keys": [],
+        "runtime_loadlevel_override_candidate_expected_registry_state": {},
+        "runtime_loadlevel_override_candidate_actual_registry_state": {},
+        "runtime_loadlevel_override_candidate_expected_level_loads": [],
+        "runtime_loadlevel_override_candidate_actual_level_loads": [],
+        "runtime_loadlevel_override_candidate_attempted": False,
+        "runtime_loadlevel_override_candidate_result": "",
+        "runtime_loadlevel_override_candidate_rejected_reason": "",
+        "runtime_loadlevel_override_candidate_blocker": "",
+        "runtime_loadlevel_override_selected": "",
+        "runtime_loadlevel_override_selected_reason": "",
+        "runtime_loadlevel_override_verified": False,
+        "runtime_settings_registry_merge_order_summary": {},
+        "runtime_settings_registry_command_line_override_order": "",
+        "runtime_settings_registry_project_registry_order": "",
+        "runtime_autoexec_console_command_source": "",
+        "runtime_autoexec_console_command_effective_state": {},
+        "runtime_autoexec_console_command_override_state": {},
+        "runtime_default_level_override_blocker": "",
+        "runtime_temp_harness_level_strategy": "not_used",
+        "runtime_temp_harness_level_path": "",
+        "runtime_temp_harness_level_generation_status": "not_attempted",
+        "runtime_temp_harness_level_production_mutation": False,
         "runtime_empty_harness_level_strategy": "",
         "runtime_empty_harness_level_path": "",
         "runtime_empty_harness_level_generation_status": "not_run",
@@ -1030,6 +1110,7 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "live_publication": False,
         "release_packaging": False,
         "production_level_mutation": False,
+        "defaultlevel_mutation": False,
         "fake_success": False,
         "cache_heuristic_used": False,
         "errors": [],
@@ -1913,6 +1994,56 @@ def _run_runtime_launch_hygiene_diagnostic(
     return _finalize_report(report)
 
 
+def _run_runtime_loadlevel_override_diagnostic(
+    report: Dict[str, Any],
+    *,
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+) -> Dict[str, Any]:
+    report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
+    report["runtime_harness_mode"] = "runtime_loadlevel_override_diagnostic"
+    payload = _runtime_loadlevel_override_source_payload(
+        project=project,
+        engine_root=engine_root,
+        timeout_seconds=timeout_seconds,
+    )
+    source_validated = payload["runtime_loadlevel_override_status"] == "runtime_loadlevel_override_source_discovery_pass"
+    report.update(payload)
+    report.update(
+        {
+            "status": "pass" if source_validated else "fail",
+            "runtime_harness_status": payload["runtime_loadlevel_override_status"],
+            "runtime_execution_status": "runtime_execution_not_attempted",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "live_runtime_execution": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "defaultlevel_mutation": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_exit_fixture_source_ready",
+                "runtime_default_level_source_recorded",
+                "runtime_settings_registry_merge_order_source_validated",
+                "runtime_loadlevel_override_candidate_matrix_recorded",
+                "runtime_execution_not_attempted_in_loadlevel_override_diagnostic",
+                "runtime_character_proof_not_claimed",
+            ]
+            if source_validated
+            else [],
+            "required_runtime_harness_assertions_failed": []
+            if source_validated
+            else ["runtime_loadlevel_override_source_validation"],
+            "runtime_harness_assertion_informational": [
+                "loadlevel_override_diagnostic_does_not_launch_runtime",
+                "loadlevel_override_source_validation_is_not_runtime_execution_proof",
+            ],
+        }
+    )
+    return _finalize_report(report)
+
+
 def _run_runtime_exit_fixture_command(
     report: Dict[str, Any],
     *,
@@ -1921,10 +2052,15 @@ def _run_runtime_exit_fixture_command(
     artifact_dir: Path,
     command_runner: Callable[..., subprocess.CompletedProcess[str]] | None,
     no_default_level: bool = False,
+    loadlevel_override: bool = False,
 ) -> Dict[str, Any]:
     report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
     report["runtime_harness_mode"] = (
-        "runtime_exit_fixture_no_default_level_command" if no_default_level else "runtime_exit_fixture_command"
+        "runtime_exit_fixture_loadlevel_override_command"
+        if loadlevel_override
+        else "runtime_exit_fixture_no_default_level_command"
+        if no_default_level
+        else "runtime_exit_fixture_command"
     )
     fixture_gate = _runtime_exit_fixture_gate_status(env)
     report["runtime_exit_fixture_runtime_command_status"] = fixture_gate["status"]
@@ -1976,6 +2112,7 @@ def _run_runtime_exit_fixture_command(
         report,
         timeout_seconds=timeout_seconds,
         no_default_level=no_default_level,
+        loadlevel_override=loadlevel_override,
     )
     if not command.get("selected"):
         report.update(_unpinned_runtime_command_payload(command))
@@ -1995,7 +2132,8 @@ def _run_runtime_exit_fixture_command(
             "runtime_exit_fixture_runtime_command_status": "runtime_exit_fixture_runtime_command_pinned",
             "runtime_exit_fixture_runtime_command_uses_console_command_file_quit": False,
             "runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit": True,
-            "runtime_exit_fixture_runtime_command_uses_no_default_level_strategy": no_default_level,
+            "runtime_exit_fixture_runtime_command_uses_no_default_level_strategy": no_default_level or loadlevel_override,
+            "runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy": loadlevel_override,
             "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
             "runtime_exit_fixture_command": str(command.get("argv", [""])[0]),
             "runtime_exit_fixture_arguments": list(command.get("argv", []))[1:],
@@ -2070,7 +2208,19 @@ def _run_runtime_exit_fixture_command(
         diagnostics=diagnostics,
         actual_level_loads=level_loads,
         disqualifying=disqualifying,
+        no_default_level=no_default_level or loadlevel_override,
+    )
+    loadlevel_override_payload = _runtime_loadlevel_override_execution_payload(
+        project=project,
+        command=command,
+        diagnostics=diagnostics,
+        actual_level_loads=level_loads,
         no_default_level=no_default_level,
+        loadlevel_override=loadlevel_override,
+        launch_hygiene=launch_hygiene,
+        exit_code=proc.returncode,
+        marker_observed=marker_observed,
+        combined_text=combined_text,
     )
     launch_hygiene_pass = launch_hygiene.get("runtime_launch_hygiene_status") == "runtime_launch_hygiene_pass"
     passed = (
@@ -2096,6 +2246,7 @@ def _run_runtime_exit_fixture_command(
 
     report.update(diagnostics)
     report.update(_runtime_signal_fields(scan))
+    report.update(loadlevel_override_payload)
     report.update(launch_hygiene)
     blocked_reason = _runtime_launch_hygiene_blocked_reason(launch_hygiene)
     report.update(
@@ -2959,6 +3110,7 @@ def _select_runtime_exit_fixture_command(
     *,
     timeout_seconds: int,
     no_default_level: bool = False,
+    loadlevel_override: bool = False,
 ) -> Dict[str, Any]:
     executable = str(report.get("runtime_executable_path", "")).strip()
     readiness = report.get("runtime_harness_readiness", {})
@@ -2979,12 +3131,18 @@ def _select_runtime_exit_fixture_command(
         f"--project-path={project_path}",
         "-NullRenderer",
         "-rhi=null",
-        *([RUNTIME_NO_DEFAULT_LEVEL_REGREMOVE_ARG] if no_default_level else []),
+        *(list(RUNTIME_LOADLEVEL_OVERRIDE_ARGS) if loadlevel_override else [RUNTIME_NO_DEFAULT_LEVEL_REGREMOVE_ARG] if no_default_level else []),
         "--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0",
         "--regset=/Amazon/MAXINE/RuntimeHarness/EnableExitFixture=true",
         "--regset=/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks=5",
     ]
-    selected_reason = "repo_owned_fixture_tickbus_exit_main_loop_no_default_level_regremove_envelope" if no_default_level else "repo_owned_fixture_tickbus_exit_main_loop_settings_registry_envelope"
+    selected_reason = (
+        "repo_owned_fixture_tickbus_exit_main_loop_loadlevel_deferred_regremove_envelope"
+        if loadlevel_override
+        else "repo_owned_fixture_tickbus_exit_main_loop_no_default_level_regremove_envelope"
+        if no_default_level
+        else "repo_owned_fixture_tickbus_exit_main_loop_settings_registry_envelope"
+    )
     safety_flags = _runtime_command_safety_flags() + [
         "project_path_explicit",
         "null_renderer_requested",
@@ -2992,14 +3150,23 @@ def _select_runtime_exit_fixture_command(
         "console_command_file_not_used",
         "wait_for_connect_nonfatal",
     ]
-    if no_default_level:
+    if loadlevel_override:
+        safety_flags.extend(
+            [
+                "settings_registry_regremove_autoexec_loadlevel",
+                "settings_registry_regremove_spawnable_deferred_loadlevel",
+            ]
+        )
+    elif no_default_level:
         safety_flags.append("settings_registry_regremove_autoexec_loadlevel")
     else:
         safety_flags.append("no_level_or_map_argument")
     return {
         "selected": True,
         "argv": argv,
-        "kind": "headless_settings_registry_runtime_exit_fixture_no_default_level_envelope"
+        "kind": "headless_settings_registry_runtime_exit_fixture_loadlevel_override_envelope"
+        if loadlevel_override
+        else "headless_settings_registry_runtime_exit_fixture_no_default_level_envelope"
         if no_default_level
         else "headless_settings_registry_runtime_exit_fixture_envelope",
         "selected_reason": selected_reason,
@@ -3011,7 +3178,11 @@ def _select_runtime_exit_fixture_command(
             "argv0": "runtime executable path",
             "project_path": "--project-path=<MAXINE_GoldenCorpus project path>",
             "rendering": ["-NullRenderer", "-rhi=null"],
-            "launch_hygiene": [RUNTIME_NO_DEFAULT_LEVEL_REGREMOVE_ARG] if no_default_level else [],
+            "launch_hygiene": list(RUNTIME_LOADLEVEL_OVERRIDE_ARGS)
+            if loadlevel_override
+            else [RUNTIME_NO_DEFAULT_LEVEL_REGREMOVE_ARG]
+            if no_default_level
+            else [],
             "asset_processor_connect": "--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0",
             "exit_strategy": [
                 "--regset=/Amazon/MAXINE/RuntimeHarness/EnableExitFixture=true",
@@ -3037,7 +3208,8 @@ def _select_runtime_exit_fixture_command(
             "safe_to_kill_after_timeout": True,
             "uses_console_command_file_quit": False,
             "uses_settings_registry_fixture_exit": True,
-            "uses_no_default_level_strategy": no_default_level,
+            "uses_no_default_level_strategy": no_default_level or loadlevel_override,
+            "uses_loadlevel_override_strategy": loadlevel_override,
         },
         "source_evidence_refs": [
             _repo_relative(RUNTIME_EXIT_FIXTURE_COMPONENT_SOURCE),
@@ -3205,6 +3377,344 @@ def _runtime_launch_hygiene_execution_payload(
         }
     )
     return source_payload
+
+
+def _runtime_loadlevel_override_source_payload(
+    *,
+    project: Path | None,
+    engine_root: Path | None,
+    timeout_seconds: int,
+) -> Dict[str, Any]:
+    launch_payload = _runtime_launch_hygiene_source_payload(
+        project=project,
+        engine_root=engine_root,
+        timeout_seconds=timeout_seconds,
+    )
+    source_validated = _runtime_loadlevel_override_source_validated(engine_root)
+    status = (
+        "runtime_loadlevel_override_source_discovery_pass"
+        if source_validated
+        else "runtime_loadlevel_override_source_discovery_inconclusive"
+    )
+    selected_candidate = _runtime_loadlevel_override_selected_candidate(project, engine_root)
+    candidates = _runtime_loadlevel_override_candidate_matrix(project, engine_root)
+    source = _runtime_default_level_source(project)
+    merge_order = _runtime_settings_registry_merge_order_summary(project, engine_root, status=status)
+    launch_payload.update(
+        {
+            "runtime_loadlevel_override": {
+                "status": status,
+                "selected": RUNTIME_LOADLEVEL_OVERRIDE_SELECTED if source_validated else "",
+                "candidate_count": len(candidates),
+            },
+            "runtime_loadlevel_override_status": status,
+            "runtime_loadlevel_override_candidates": candidates,
+            "runtime_loadlevel_override_candidate_matrix_recorded": bool(candidates),
+            "runtime_loadlevel_override_candidate_id": selected_candidate["id"] if source_validated else "",
+            "runtime_loadlevel_override_candidate_name": selected_candidate["name"] if source_validated else "",
+            "runtime_loadlevel_override_candidate_kind": selected_candidate["kind"] if source_validated else "",
+            "runtime_loadlevel_override_candidate_source_validation": selected_candidate["source_validation"]
+            if source_validated
+            else {},
+            "runtime_loadlevel_override_candidate_source_refs": selected_candidate["source_refs"]
+            if source_validated
+            else [],
+            "runtime_loadlevel_override_candidate_command_args": selected_candidate["command_args"]
+            if source_validated
+            else [],
+            "runtime_loadlevel_override_candidate_settings_registry_keys": selected_candidate["settings_registry_keys"]
+            if source_validated
+            else [],
+            "runtime_loadlevel_override_candidate_expected_registry_state": selected_candidate[
+                "expected_registry_state"
+            ]
+            if source_validated
+            else {},
+            "runtime_loadlevel_override_candidate_actual_registry_state": {},
+            "runtime_loadlevel_override_candidate_expected_level_loads": selected_candidate["expected_level_loads"]
+            if source_validated
+            else [],
+            "runtime_loadlevel_override_candidate_actual_level_loads": [],
+            "runtime_loadlevel_override_candidate_attempted": False,
+            "runtime_loadlevel_override_candidate_result": selected_candidate["result"] if source_validated else "",
+            "runtime_loadlevel_override_candidate_rejected_reason": "",
+            "runtime_loadlevel_override_candidate_blocker": "",
+            "runtime_loadlevel_override_selected": RUNTIME_LOADLEVEL_OVERRIDE_SELECTED if source_validated else "",
+            "runtime_loadlevel_override_selected_reason": "removes_project_autoexec_key_and_spawnable_level_system_deferred_load_queue"
+            if source_validated
+            else "",
+            "runtime_loadlevel_override_verified": False,
+            "runtime_settings_registry_merge_order_summary": merge_order,
+            "runtime_settings_registry_command_line_override_order": "command_line_runs_before_project_registry_and_again_after_project_user_registry"
+            if source_validated
+            else "",
+            "runtime_settings_registry_project_registry_order": "project_registry_merges_after_early_command_line_and_before_final_command_line"
+            if source_validated
+            else "",
+            "runtime_autoexec_console_command_source": source.get("path", ""),
+            "runtime_autoexec_console_command_effective_state": {
+                "autoexec_key": RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY,
+                "value": source.get("value", ""),
+                "queued_key": RUNTIME_DEFERRED_LOADLEVEL_KEY,
+                "queued_value": source.get("value", ""),
+                "reason": (
+                    "Console autoexec notification can execute LoadLevel while SpawnableLevelSystem is unavailable; "
+                    "LoadLevel queues the value under DeferredLoadLevel."
+                ),
+            }
+            if source_validated and source.get("configured")
+            else {},
+            "runtime_autoexec_console_command_override_state": {
+                "selected_args": list(RUNTIME_LOADLEVEL_OVERRIDE_ARGS),
+                "mutates_project_registry": False,
+                "mutates_defaultlevel": False,
+            }
+            if source_validated
+            else {},
+            "runtime_default_level_override_blocker": ""
+            if source_validated
+            else "blocked_by_missing_effective_loadlevel_override",
+            "runtime_temp_harness_level_strategy": "not_used",
+            "runtime_temp_harness_level_path": "",
+            "runtime_temp_harness_level_generation_status": "not_attempted",
+            "runtime_temp_harness_level_production_mutation": False,
+            "defaultlevel_mutation": False,
+        }
+    )
+    return launch_payload
+
+
+def _runtime_loadlevel_override_execution_payload(
+    *,
+    project: Path | None,
+    command: Mapping[str, Any],
+    diagnostics: Mapping[str, Any],
+    actual_level_loads: Sequence[str],
+    no_default_level: bool,
+    loadlevel_override: bool,
+    launch_hygiene: Mapping[str, Any],
+    exit_code: int | None,
+    marker_observed: bool,
+    combined_text: str = "",
+) -> Dict[str, Any]:
+    source_payload = _runtime_loadlevel_override_source_payload(
+        project=project,
+        engine_root=_runtime_engine_root_from_command(command),
+        timeout_seconds=int(command.get("timeout_seconds", 120)),
+    )
+    if not loadlevel_override:
+        return source_payload
+
+    selected_candidate = _runtime_loadlevel_override_selected_candidate(
+        project,
+        _runtime_engine_root_from_command(command),
+    )
+    default_level_detected = bool(launch_hygiene.get("runtime_default_level_autoload_detected"))
+    launch_pass = str(launch_hygiene.get("runtime_launch_hygiene_status", "")).strip() == "runtime_launch_hygiene_pass"
+    ap_status = str(
+        launch_hygiene.get("runtime_asset_processor_negotiation_signal_status", "runtime_execution_not_attempted")
+    )
+    shader_status = str(launch_hygiene.get("runtime_shader_serializer_signal_status", "runtime_execution_not_attempted"))
+    regremove_miss_state = _runtime_loadlevel_regremove_miss_state(combined_text)
+    merge_order_blocker = default_level_detected and any(regremove_miss_state.values())
+    if launch_pass:
+        override_status = "runtime_loadlevel_override_verified_no_defaultlevel"
+        candidate_result = "runtime_loadlevel_override_candidate_attempted_pass"
+        blocker = ""
+    elif default_level_detected:
+        override_status = "runtime_loadlevel_override_candidate_attempted_failed_defaultlevel_autoload"
+        candidate_result = override_status
+        blocker = "blocked_by_settings_registry_merge_order" if merge_order_blocker else "blocked_by_default_level_autoload"
+    elif launch_hygiene.get("runtime_asset_processor_negotiation_disqualifying") is True or launch_hygiene.get(
+        "runtime_shader_serializer_disqualifying"
+    ) is True:
+        override_status = "runtime_loadlevel_override_candidate_attempted_failed_disqualifying_signal"
+        candidate_result = override_status
+        blocker = "blocked_by_disqualifying_runtime_signals"
+    else:
+        override_status = "runtime_loadlevel_override_candidate_attempted_failed_disqualifying_signal"
+        candidate_result = override_status
+        blocker = "blocked_by_disqualifying_runtime_signals"
+
+    source_payload.update(
+        {
+            "runtime_loadlevel_override": {
+                "status": override_status,
+                "selected": RUNTIME_LOADLEVEL_OVERRIDE_SELECTED,
+                "attempted": True,
+                "actual_level_loads": list(actual_level_loads),
+            },
+            "runtime_loadlevel_override_status": override_status,
+            "runtime_loadlevel_override_candidate_id": selected_candidate["id"],
+            "runtime_loadlevel_override_candidate_name": selected_candidate["name"],
+            "runtime_loadlevel_override_candidate_kind": selected_candidate["kind"],
+            "runtime_loadlevel_override_candidate_source_validation": selected_candidate["source_validation"],
+            "runtime_loadlevel_override_candidate_source_refs": selected_candidate["source_refs"],
+            "runtime_loadlevel_override_candidate_command_args": [
+                str(arg) for arg in command.get("argv", []) if str(arg).startswith("--regremove=")
+            ],
+            "runtime_loadlevel_override_candidate_settings_registry_keys": selected_candidate[
+                "settings_registry_keys"
+            ],
+            "runtime_loadlevel_override_candidate_expected_registry_state": selected_candidate[
+                "expected_registry_state"
+            ],
+            "runtime_loadlevel_override_candidate_actual_registry_state": {
+                "defaultlevel_autoload_detected": default_level_detected,
+                "spawnable_deferred_load_key_removed_by_command": not default_level_detected,
+                "asset_processor_negotiation_status": ap_status,
+                "shader_serializer_status": shader_status,
+                **regremove_miss_state,
+            },
+            "runtime_loadlevel_override_candidate_expected_level_loads": [],
+            "runtime_loadlevel_override_candidate_actual_level_loads": list(actual_level_loads),
+            "runtime_loadlevel_override_candidate_attempted": True,
+            "runtime_loadlevel_override_candidate_result": candidate_result,
+            "runtime_loadlevel_override_candidate_rejected_reason": "",
+            "runtime_loadlevel_override_candidate_blocker": blocker,
+            "runtime_loadlevel_override_selected": RUNTIME_LOADLEVEL_OVERRIDE_SELECTED,
+            "runtime_loadlevel_override_selected_reason": "removes_project_autoexec_key_and_spawnable_level_system_deferred_load_queue",
+            "runtime_loadlevel_override_verified": bool(launch_pass),
+            "runtime_autoexec_console_command_override_state": {
+                "selected_args": [str(arg) for arg in command.get("argv", []) if str(arg).startswith("--regremove=")],
+                "mutates_project_registry": False,
+                "mutates_defaultlevel": False,
+                "exit_code_decimal": exit_code,
+                "exit_code_hex": _exit_code_hex(exit_code),
+                "fixture_marker_observed": marker_observed,
+            },
+            "runtime_default_level_override_blocker": blocker,
+            "defaultlevel_mutation": False,
+        }
+    )
+    return source_payload
+
+
+def _runtime_loadlevel_override_selected_candidate(project: Path | None, engine_root: Path | None) -> Dict[str, Any]:
+    source_refs = _runtime_loadlevel_override_source_refs(project, engine_root)
+    return {
+        "id": RUNTIME_LOADLEVEL_OVERRIDE_SELECTED,
+        "name": "Remove Autoexec LoadLevel and SpawnableLevelSystem deferred load",
+        "kind": "command_line_regremove_autoexec_and_deferred_loadlevel",
+        "source_validation": {
+            "status": "runtime_loadlevel_override_candidate_source_validated"
+            if _runtime_loadlevel_override_source_validated(engine_root)
+            else "runtime_loadlevel_override_candidate_rejected_missing_source_validation",
+            "summary": (
+                "Project Registry/load_level.setreg triggers the Autoexec LoadLevel console command during settings merge. "
+                "SpawnableLevelSystem stores early LoadLevel requests under /O3DE/Runtime/SpawnableLevelSystem/DeferredLoadLevel, "
+                "so the effective per-process override removes both the Autoexec key and the deferred-load queue key."
+            ),
+        },
+        "source_refs": source_refs,
+        "command_args": list(RUNTIME_LOADLEVEL_OVERRIDE_ARGS),
+        "settings_registry_keys": [RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY, RUNTIME_DEFERRED_LOADLEVEL_KEY],
+        "expected_registry_state": {
+            "autoexec_loadlevel": "removed",
+            "spawnable_deferred_loadlevel": "removed",
+            "project_registry_mutation": False,
+            "defaultlevel_mutation": False,
+        },
+        "expected_level_loads": [],
+        "result": "runtime_loadlevel_override_candidate_source_validated",
+    }
+
+
+def _runtime_loadlevel_regremove_miss_state(text: str) -> Dict[str, bool]:
+    return {
+        "autoexec_regremove_reported_missing_value": (
+            f"Unable to remove value at JSON Pointer {RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY}".lower() in text.lower()
+        ),
+        "deferred_loadlevel_regremove_reported_missing_value": (
+            f"Unable to remove value at JSON Pointer {RUNTIME_DEFERRED_LOADLEVEL_KEY}".lower() in text.lower()
+        ),
+    }
+
+
+def _runtime_loadlevel_override_candidate_matrix(project: Path | None, engine_root: Path | None) -> List[Dict[str, Any]]:
+    source_refs = _runtime_loadlevel_override_source_refs(project, engine_root)
+    return [
+        {
+            "id": "settings_registry_regremove_autoexec_loadlevel",
+            "name": "Remove Autoexec LoadLevel only",
+            "kind": "command_line_regremove_autoexec_loadlevel",
+            "source_validation": {
+                "status": "runtime_loadlevel_override_candidate_source_validated",
+                "summary": (
+                    "This preserves the PR #132 candidate. It removes the Autoexec key at final command-line merge, "
+                    "but does not clear a LoadLevel value already queued under SpawnableLevelSystem DeferredLoadLevel."
+                ),
+            },
+            "source_refs": source_refs,
+            "command_args": [RUNTIME_NO_DEFAULT_LEVEL_REGREMOVE_ARG],
+            "settings_registry_keys": [RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY],
+            "expected_registry_state": {
+                "autoexec_loadlevel": "removed",
+                "spawnable_deferred_loadlevel": "unmodified",
+            },
+            "actual_registry_state": {
+                "spawnable_deferred_loadlevel": "defaultlevel_queued_before_final_regremove",
+            },
+            "expected_level_loads": [],
+            "actual_level_loads": [RUNTIME_DEFAULT_LEVEL_PRODUCT_PATH],
+            "attempted": True,
+            "result": "runtime_loadlevel_override_candidate_attempted_failed_defaultlevel_autoload",
+            "blocker": "blocked_by_regremove_ineffective",
+        },
+        {
+            **_runtime_loadlevel_override_selected_candidate(project, engine_root),
+            "actual_registry_state": {},
+            "actual_level_loads": [],
+            "attempted": False,
+            "blocker": "",
+        },
+    ]
+
+
+def _runtime_settings_registry_merge_order_summary(
+    project: Path | None,
+    engine_root: Path | None,
+    *,
+    status: str,
+) -> Dict[str, Any]:
+    return {
+        "status": status,
+        "summary": (
+            "ComponentApplication merges command-line settings once before project registry files and again after "
+            "project user registry. Console registers settings-registry merge notifications, so Autoexec "
+            "ConsoleCommands can execute during Registry/load_level.setreg merge before the final command-line "
+            "regremove pass. SpawnableLevelSystem queues early LoadLevel values under DeferredLoadLevel."
+        ),
+        "project_registry_file": str((project or Path("<project>")) / "Registry" / "load_level.setreg"),
+        "source_refs": _runtime_loadlevel_override_source_refs(project, engine_root),
+    }
+
+
+def _runtime_loadlevel_override_source_validated(engine_root: Path | None) -> bool:
+    root = engine_root or Path("")
+    return all(
+        path.is_file()
+        for path in (
+            root / "Code" / "Framework" / "AzCore" / "AzCore" / "Component" / "ComponentApplication.cpp",
+            root / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryMergeUtils.cpp",
+            root / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "Console.cpp",
+            root / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "IConsole.h",
+            root / "Code" / "Legacy" / "CrySystem" / "LevelSystem" / "SpawnableLevelSystem.cpp",
+        )
+    )
+
+
+def _runtime_loadlevel_override_source_refs(project: Path | None, engine_root: Path | None) -> List[str]:
+    root = engine_root or Path("<engine-root>")
+    return [
+        str((project or Path("<project>")) / "Registry" / "load_level.setreg"),
+        str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Component" / "ComponentApplication.cpp"),
+        str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryMergeUtils.cpp"),
+        str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryMergeUtils.h"),
+        str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "Console.cpp"),
+        str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "IConsole.h"),
+        str(root / "Code" / "Legacy" / "CrySystem" / "LevelSystem" / "SpawnableLevelSystem.cpp"),
+    ]
 
 
 def _runtime_default_level_source(project: Path | None) -> Dict[str, Any]:
@@ -3734,6 +4244,7 @@ def _runtime_exit_fixture_static_payload(*, timeout_seconds: int) -> Dict[str, A
         "runtime_exit_fixture_runtime_command_uses_console_command_file_quit": False,
         "runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit": False,
         "runtime_exit_fixture_runtime_command_uses_no_default_level_strategy": False,
+        "runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
         "runtime_exit_fixture_level_load_observed": False,
         "runtime_exit_fixture_unexpected_level_load": False,
@@ -3761,6 +4272,39 @@ def _runtime_exit_fixture_static_payload(*, timeout_seconds: int) -> Dict[str, A
         "runtime_no_default_level_actual_level_loads": [],
         "runtime_no_default_level_execution_attempted": False,
         "runtime_no_default_level_execution_verified": False,
+        "runtime_loadlevel_override": {"status": "runtime_execution_not_attempted"},
+        "runtime_loadlevel_override_status": "runtime_execution_not_attempted",
+        "runtime_loadlevel_override_candidates": [],
+        "runtime_loadlevel_override_candidate_matrix_recorded": False,
+        "runtime_loadlevel_override_candidate_id": "",
+        "runtime_loadlevel_override_candidate_name": "",
+        "runtime_loadlevel_override_candidate_kind": "",
+        "runtime_loadlevel_override_candidate_source_validation": {},
+        "runtime_loadlevel_override_candidate_source_refs": [],
+        "runtime_loadlevel_override_candidate_command_args": [],
+        "runtime_loadlevel_override_candidate_settings_registry_keys": [],
+        "runtime_loadlevel_override_candidate_expected_registry_state": {},
+        "runtime_loadlevel_override_candidate_actual_registry_state": {},
+        "runtime_loadlevel_override_candidate_expected_level_loads": [],
+        "runtime_loadlevel_override_candidate_actual_level_loads": [],
+        "runtime_loadlevel_override_candidate_attempted": False,
+        "runtime_loadlevel_override_candidate_result": "",
+        "runtime_loadlevel_override_candidate_rejected_reason": "",
+        "runtime_loadlevel_override_candidate_blocker": "",
+        "runtime_loadlevel_override_selected": "",
+        "runtime_loadlevel_override_selected_reason": "",
+        "runtime_loadlevel_override_verified": False,
+        "runtime_settings_registry_merge_order_summary": {},
+        "runtime_settings_registry_command_line_override_order": "",
+        "runtime_settings_registry_project_registry_order": "",
+        "runtime_autoexec_console_command_source": "",
+        "runtime_autoexec_console_command_effective_state": {},
+        "runtime_autoexec_console_command_override_state": {},
+        "runtime_default_level_override_blocker": "",
+        "runtime_temp_harness_level_strategy": "not_used",
+        "runtime_temp_harness_level_path": "",
+        "runtime_temp_harness_level_generation_status": "not_attempted",
+        "runtime_temp_harness_level_production_mutation": False,
         "runtime_empty_harness_level_strategy": "not_used",
         "runtime_empty_harness_level_path": "",
         "runtime_empty_harness_level_generation_status": "not_attempted",
@@ -5128,7 +5672,20 @@ def _finalize_report(report: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _with_nested_runtime_harness(report: Dict[str, Any]) -> Dict[str, Any]:
-    nested_keys = [key for key in report if key.startswith("runtime_") or key in {"live_publication", "release_packaging", "production_level_mutation", "fake_success", "cache_heuristic_used"}]
+    nested_keys = [
+        key
+        for key in report
+        if key.startswith("runtime_")
+        or key
+        in {
+            "live_publication",
+            "release_packaging",
+            "production_level_mutation",
+            "defaultlevel_mutation",
+            "fake_success",
+            "cache_heuristic_used",
+        }
+    ]
     nested = {key: report[key] for key in nested_keys}
     report["runtime_harness"] = nested
     return report
@@ -5194,6 +5751,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--enable-runtime-exit-fixture-command", action="store_true")
     parser.add_argument("--diagnose-runtime-launch-hygiene", action="store_true")
     parser.add_argument("--enable-runtime-exit-fixture-no-default-level", action="store_true")
+    parser.add_argument("--diagnose-runtime-loadlevel-override", action="store_true")
+    parser.add_argument("--enable-runtime-exit-fixture-loadlevel-override", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -5224,6 +5783,8 @@ def main() -> int:
         enable_runtime_exit_fixture_command=args.enable_runtime_exit_fixture_command,
         diagnose_runtime_launch_hygiene=args.diagnose_runtime_launch_hygiene,
         enable_runtime_exit_fixture_no_default_level=args.enable_runtime_exit_fixture_no_default_level,
+        diagnose_runtime_loadlevel_override=args.diagnose_runtime_loadlevel_override,
+        enable_runtime_exit_fixture_loadlevel_override=args.enable_runtime_exit_fixture_loadlevel_override,
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
         strict_integration=args.strict_integration,

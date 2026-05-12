@@ -891,6 +891,7 @@ def test_editor_smoke_full_report_records_runtime_harness_without_character_over
     assert runtime_harness["runtime_exit_fixture_runtime_command_uses_console_command_file_quit"] is False
     assert runtime_harness["runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit"] is False
     assert runtime_harness["runtime_exit_fixture_runtime_command_uses_no_default_level_strategy"] is False
+    assert runtime_harness["runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy"] is False
     assert runtime_harness["runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level"] is False
     assert runtime_harness["runtime_exit_fixture_marker_observed"] is False
     assert runtime_harness["runtime_exit_fixture_level_load_observed"] is False
@@ -904,6 +905,12 @@ def test_editor_smoke_full_report_records_runtime_harness_without_character_over
     assert runtime_harness["runtime_no_default_level_strategy_status"] == "runtime_execution_not_attempted"
     assert runtime_harness["runtime_no_default_level_execution_attempted"] is False
     assert runtime_harness["runtime_no_default_level_execution_verified"] is False
+    assert runtime_harness["runtime_loadlevel_override_status"] == "runtime_execution_not_attempted"
+    assert runtime_harness["runtime_loadlevel_override_candidate_matrix_recorded"] is False
+    assert runtime_harness["runtime_loadlevel_override_candidates"] == []
+    assert runtime_harness["runtime_loadlevel_override_verified"] is False
+    assert runtime_harness["runtime_settings_registry_merge_order_summary"] == {}
+    assert runtime_harness["runtime_autoexec_console_command_effective_state"] == {}
     assert runtime_harness["runtime_asset_processor_negotiation_signal_status"] == "runtime_execution_not_attempted"
     assert runtime_harness["runtime_asset_processor_negotiation_disqualifying"] is False
     assert runtime_harness["runtime_shader_serializer_signal_status"] == "runtime_execution_not_attempted"

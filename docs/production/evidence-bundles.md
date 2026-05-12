@@ -211,6 +211,10 @@ Runtime launch-hygiene evidence is separate again. It records whether the projec
 
 If the no-default-level command still loads defaultlevel, the evidence bundle must keep the failure as `blocked_by_default_level_autoload` and preserve stdout/stderr/log refs. Exit code `0` and fixture marker evidence remain useful diagnostics, but they cannot be promoted to runtime execution proof while defaultlevel autoload, AP negotiation, or shader serializer signals remain disqualifying.
 
+Runtime LoadLevel override evidence records a candidate matrix beyond the first autoexec-only `--regremove`. The preserved failed candidate is `settings_registry_regremove_autoexec_loadlevel`; the selected follow-up candidate is `settings_registry_regremove_autoexec_and_deferred_loadlevel`, which adds `--regremove=/O3DE/Runtime/SpawnableLevelSystem/DeferredLoadLevel` to account for `SpawnableLevelSystem` queuing early `LoadLevel` requests. Evidence must include Settings Registry merge-order summary, command-line override order, project registry order, autoexec source/effective state, selected args, expected and actual registry state, expected and actual level loads, AP negotiation status, shader serializer status, exit code, and fixture marker state.
+
+The current live LoadLevel-override run still fails cleanly as evidence rather than proof. It launched the fixture command, exited `0`, and observed the fixture marker, but defaultlevel still autoloaded and stdout reported both regremove targets as missing at parse time. The candidate-specific blocker is `blocked_by_settings_registry_merge_order`; the launch-hygiene blocker remains `blocked_by_default_level_autoload`. Keep `runtime_loadlevel_override_verified=false`, `runtime_exit_fixture_execution_verified=false`, `runtime_execution_verified=false`, and `runtime_character_proof_claimed=false`.
+
 ## Golden Project Fixture Evidence
 
 Golden project fixture evidence may be attached as:
