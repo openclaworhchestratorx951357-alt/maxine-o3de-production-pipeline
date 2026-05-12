@@ -396,6 +396,25 @@ python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigge
 
 The diagnostic separates signal detection from classification and proof. Asset Processor negotiation can be harmless only under the source-validated `wait_for_connect=0` no-defaultlevel fixture envelope with complete APB product evidence and no selected-product load failures. Shader serializer lines can be harmless only when they match the known stale non-selected DX12/Vulkan RHI serialized class IDs while the command runs `-NullRenderer` plus `-rhi=null`. A clean AP/shader-classified fixture exit may verify only command-envelope runtime execution; runtime character proof remains unclaimed without character-specific runtime evidence.
 
+Runtime character product-load evidence is the next layer above command-envelope proof:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-character-product-load --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-character-product-load-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 180
+```
+
+The product-load diagnostic source-validates `AssetCatalogRequestBus::GetAssetIdByPath`, `AssetCatalogRequests::GetAssetInfoById`, `AZ::Data::AssetManager::GetHandler`, `AZ::Data::AssetManager::GetAsset`, `AZ::Data::Asset::IsReady`, `AZ::Data::Asset::IsError`, and reset/release behavior before any live fixture attempt. The fixture probe is disabled by default and runs only through `/Amazon/MAXINE/RuntimeHarness/EnableCharacterProductLoadProbe=true` plus product list keys under `/Amazon/MAXINE/RuntimeHarness/CharacterProductLoadProbe/Products/<index>/...`. The harness writes those keys into a temporary `.setreg` artifact under `MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH=1` for live attempts. It emits parseable `MAXINE_RUNTIME_PRODUCT_LOAD_*` markers for start, resolution, ready/error/timeout, summary, and release.
+
+A runtime product-load pass requires the PR #136 cache/bootstrap no-defaultlevel strategy, the PR #137 AP/shader classified-harmless envelope, complete APB evidence, no defaultlevel or production level load, no selected-product missing/load-error logs, and every required approved product resolving to a valid `AssetId`, having a registered runtime handler, and reaching ready state. The approved categories are `azmodel`, `actor`, `procprefab`, `motion`, `motionset`, `animgraph`, `pxmesh`, and `azmaterial`. A resolved product with `asset_handler_missing` is a typed blocker. This proof is still narrower than runtime instantiation, spawning, animation, runtime character proof, or production-ready release proof.
+
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 
 This wiring does not publish, mutate production levels, contact external services, or claim production-ready completion.

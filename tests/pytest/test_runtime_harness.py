@@ -30,10 +30,21 @@ def _engine(root: Path, *, launcher: bool = True) -> Path:
         engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Asset" / "AssetSystemComponent.cpp",
         engine / "Code" / "LauncherUnified" / "Launcher.cpp",
         engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Serialization" / "ObjectStream.cpp",
+        engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Asset" / "AssetManagerBus.h",
+        engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Asset" / "AssetManager.h",
+        engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Asset" / "AssetCommon.h",
         engine / "Gems" / "Atom" / "RHI" / "Null" / "Code" / "Source" / "RHI.Reflect" / "ReflectSystemComponent.cpp",
         engine / "Gems" / "Atom" / "RHI" / "DX12" / "Code" / "Include" / "Atom" / "RHI.Reflect" / "DX12" / "ShaderStageFunction.h",
         engine / "Gems" / "Atom" / "RHI" / "DX12" / "Code" / "Include" / "Atom" / "RHI.Reflect" / "DX12" / "PipelineLayoutDescriptor.h",
         engine / "Gems" / "Atom" / "RHI" / "Vulkan" / "Code" / "Include" / "Atom" / "RHI.Reflect" / "Vulkan" / "ShaderStageFunction.h",
+        engine / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "ActorAsset.h",
+        engine / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "MotionAsset.h",
+        engine / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "MotionSetAsset.h",
+        engine / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "AnimGraphAsset.h",
+        engine / "Gems" / "Atom" / "RPI" / "Code" / "Include" / "Atom" / "RPI.Reflect" / "Model" / "ModelAsset.h",
+        engine / "Gems" / "Atom" / "RPI" / "Code" / "Include" / "Atom" / "RPI.Reflect" / "Material" / "MaterialAsset.h",
+        engine / "Gems" / "PhysX" / "Core" / "Code" / "Include" / "PhysX" / "MeshAsset.h",
+        engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableAssetHandler.h",
         engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "IConsole.h",
         engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "Console.cpp",
         engine / "Code" / "Tools" / "AssetProcessor" / "native" / "InternalBuilders" / "SettingsRegistryBuilder.cpp",
@@ -96,6 +107,28 @@ def _runtime_env(tmp_path: Path, *, launcher: bool = True, gates: bool = False) 
         env["MAXINE_ENABLE_O3DE_RUNTIME_HARNESS"] = "1"
         env["MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS"] = "1"
     return env, engine, project, apb
+
+
+def _enable_fixture_gem(project: Path) -> None:
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload.setdefault("gem_names", []).append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_defaultlevel_bootstrap(project: Path) -> tuple[Path, Path, str, str]:
+    registry = project / "Registry"
+    registry.mkdir()
+    source = registry / "load_level.setreg"
+    source.write_text(
+        json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}}),
+        encoding="utf-8",
+    )
+    cache = project / "Cache" / "pc"
+    cache.mkdir(parents=True)
+    bootstrap = cache / "bootstrap.server.profile.setreg"
+    original_bootstrap = json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}})
+    bootstrap.write_text(original_bootstrap, encoding="utf-8")
+    return source, bootstrap, source.read_text(encoding="utf-8"), original_bootstrap
 
 
 def test_runtime_harness_fixture_mode_reports_pass() -> None:
@@ -2564,3 +2597,331 @@ def test_runtime_harness_validation_rejects_signal_classification_without_source
 
     assert not result.ok
     assert any("runtime_signal_classification_verified=true requires AP and shader source refs" in message for message in result.messages)
+
+
+def test_runtime_harness_character_product_load_diagnostic_records_source_validation_matrix(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _enable_fixture_gem(project)
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_character_product_load=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_character_product_load_diagnostic"
+    assert report["runtime_character_product_load_status"] == "runtime_character_product_load_source_discovery_pass"
+    assert report["runtime_character_product_load_probe_enabled"] is False
+    assert report["runtime_character_product_load_probe_shipping_behavior"] is False
+    assert report["runtime_character_product_load_source_refs"]
+    assert "AssetManagerBus.h" in " ".join(report["runtime_character_product_load_source_refs"])
+    assert "AssetManager.h" in " ".join(report["runtime_character_product_load_source_refs"])
+    assert "AssetCommon.h" in " ".join(report["runtime_character_product_load_source_refs"])
+    assert report["runtime_character_product_load_asset_catalog_api"] == "AZ::Data::AssetCatalogRequestBus::GetAssetIdByPath"
+    assert report["runtime_character_product_load_asset_manager_api"] == "AZ::Data::AssetManager::GetAsset"
+    assert report["runtime_character_product_load_candidate_matrix_recorded"] is True
+    candidate_ids = [candidate["id"] for candidate in report["runtime_character_product_load_candidate_matrix"]]
+    assert candidate_ids == [
+        "runtime_character_product_load_source_api_discovery",
+        "runtime_character_product_load_assetcatalog_resolution_only",
+        "runtime_character_product_load_generic_assetmanager_load",
+        "runtime_character_product_load_type_specific_assetmanager_load",
+        "runtime_character_product_load_keep_blocked_without_source_validation",
+    ]
+    assert report["runtime_character_product_load_selected_strategy"] == "runtime_character_product_load_generic_assetmanager_load"
+    assert [product["product_kind"] for product in report["runtime_character_product_load_products"]] == list(runtime_harness.EXPECTED_PRODUCTS)
+    assert all(product["catalog_path"].startswith("assets/") for product in report["runtime_character_product_load_products"])
+    assert report["runtime_character_product_load_claimed"] is False
+    assert report["runtime_character_product_load_verified"] is False
+    assert report["runtime_character_product_load_is_instantiation_proof"] is False
+    assert report["runtime_character_instantiation_claimed"] is False
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_fixture_product_load_registry_reads_do_not_accumulate_values() -> None:
+    source = (
+        Path("o3de/gems/MaxineRuntimeExitFixture/Code/Source/Clients/MaxineRuntimeExitFixtureSystemComponent.cpp")
+        .read_text(encoding="utf-8")
+    )
+
+    assert "ReadProductProbeValue" in source
+    assert "CharacterProductLoadProbeProductSpecsKey" in source
+    assert "CharacterProductLoadProbeProductSpecsHexKey" in source
+    assert "DecodeProductLoadSpecHex" in source
+    assert "SplitProductLoadSpec" in source
+    assert 'entry.m_kind = ReadProductProbeValue("Kind");' in source
+    assert 'entry.m_productPath = ReadProductProbeValue("ProductPath");' in source
+    assert 'entry.m_catalogPath = ReadProductProbeValue("CatalogPath");' in source
+    assert 'entry.m_expectedCategory = ReadProductProbeValue("ExpectedCategory");' in source
+
+
+def test_runtime_harness_character_product_load_fixture_requires_probe_gate(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION"] = "1"
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_character_product_load_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_harness_status"] == "blocked_by_runtime_character_product_load_probe_gate_missing"
+    assert report["runtime_character_product_load_status"] == "blocked_by_runtime_character_product_load_probe_gate_missing"
+    assert report["runtime_character_product_load_probe_enabled"] is False
+    assert report["runtime_exit_fixture_execution_attempted"] is False
+    assert report["runtime_character_product_load_claimed"] is False
+    assert report["runtime_character_product_load_verified"] is False
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_character_product_load_fixture_requires_temp_registry_patch_gate(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    env["MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION"] = "1"
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_character_product_load_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_harness_status"] == "blocked_by_fixture_temp_registry_patch_gate_missing"
+    assert report["runtime_character_product_load_status"] == "blocked_by_fixture_temp_registry_patch_gate_missing"
+    assert report["runtime_execution_attempted"] is False
+    assert not (tmp_path / "artifacts" / runtime_harness.RUNTIME_CHARACTER_PRODUCT_LOAD_PATCH_FILENAME).exists()
+
+
+def test_runtime_harness_character_product_load_fixture_records_all_products_ready_without_character_proof(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    env["MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH"] = "1"
+    _enable_fixture_gem(project)
+    source, bootstrap, original_source, original_bootstrap = _write_defaultlevel_bootstrap(project)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(runtime_harness._product_evidence_from_apb(apb))
+
+    def runner(argv, **kwargs):
+        marker_lines = ["MAXINE_RUNTIME_PRODUCT_LOAD_START count=8 timeout_ticks=120 require_all=true"]
+        for index, product in enumerate(products):
+            marker_lines.extend(
+                [
+                    (
+                        f"MAXINE_RUNTIME_PRODUCT_LOAD_RESOLVED index={index} kind={product['product_kind']} "
+                        f"path={product['product_path']} catalog_path={product['catalog_path']} "
+                        f"asset_id={{11111111-1111-4111-8111-111111111111}}:{index + 1} "
+                        f"asset_type={{22222222-2222-4222-8222-222222222222}} asset_type_name=runtime_catalog_asset_type"
+                    ),
+                    f"MAXINE_RUNTIME_PRODUCT_LOAD_READY index={index} kind={product['product_kind']} path={product['product_path']} status=ready",
+                    f"MAXINE_RUNTIME_PRODUCT_LOAD_RELEASED index={index} kind={product['product_kind']} path={product['product_path']} status=released",
+                ]
+            )
+        marker_lines.append("MAXINE_RUNTIME_PRODUCT_LOAD_SUMMARY status=pass required=8 ready=8 failed=0 timed_out=0")
+        prefixed_marker_lines = [
+            f"<12:38:04> (MaxineRuntimeExitFixture) - {line}" for line in marker_lines
+        ]
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout=(
+                "Launcher: Connecting to Asset Processor...\n"
+                "AssetProcessorConnection::ConnectThread: Network connection attempt failure, negotiation with 127.0.0.1:45643 failed.\n"
+                "GAME: Negotiation with asset processor failed\n"
+                "<12:38:04> [Error] (Serialize) - Element 'NULL'(0x41405e39) with class ID "
+                "'{1BAEE536-96CA-4AEB-BA73-D5D72EE35B45}' found in 'AZStd::intrusive_ptr<ShaderStageFunction>' "
+                "is not registered with the serializer!\n"
+                "<12:38:04> [Error] (Serialize) - Element 'NULL'(0x41405e39) with class ID "
+                "'{A606478A-97E9-402D-A776-88EE72DAC6F9}' found in 'AZStd::intrusive_ptr<ShaderStageFunction>' "
+                "is not registered with the serializer!\n"
+                "<12:38:04> [Error] (Serialize) - Element 'NULL'(0x41405e39) with class ID "
+                "'{A10B0F03-F43D-4462-9306-66195B4EFC46}' found in 'AZStd::intrusive_ptr<PipelineLayoutDescriptor>' "
+                "is not registered with the serializer!\n"
+                + "\n".join(prefixed_marker_lines)
+                + "\nMAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=5\n"
+            ),
+            stderr="",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_character_product_load_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_character_product_load_fixture_command"
+    assert report["runtime_exit_fixture_runtime_command_uses_product_load_probe"] is True
+    command_text = " ".join(report["runtime_exit_fixture_runtime_command"])
+    assert f"--regset-file={tmp_path / 'artifacts' / runtime_harness.RUNTIME_CHARACTER_PRODUCT_LOAD_PATCH_FILENAME}" in command_text
+    assert "/CharacterProductLoadProbe/Products/0/ProductPath=" not in command_text
+    patch = json.loads(
+        (tmp_path / "artifacts" / runtime_harness.RUNTIME_CHARACTER_PRODUCT_LOAD_PATCH_FILENAME).read_text(encoding="utf-8")
+    )
+    probe = patch["Amazon"]["MAXINE"]["RuntimeHarness"]["CharacterProductLoadProbe"]
+    assert probe["ProductCount"] == 8
+    assert probe["Products"]["0"]["ProductPath"] == products[0]["product_path"]
+    assert probe["Products"]["7"]["CatalogPath"] == products[7]["catalog_path"]
+    assert probe["TimeoutTicks"] == 3600
+    assert report["runtime_character_product_load_status"] == "runtime_character_product_load_verified_all_required_products_ready"
+    assert report["runtime_character_product_load_claimed"] is True
+    assert report["runtime_character_product_load_verified"] is True
+    assert report["runtime_character_product_load_all_required_ready"] is True
+    assert report["runtime_character_product_load_required_products_complete"] is True
+    assert report["runtime_character_product_load_missing_products"] == []
+    assert report["runtime_character_product_load_timed_out_products"] == []
+    assert report["runtime_character_product_load_failed_products"] == []
+    assert len(report["runtime_character_product_load_products"]) == 8
+    assert all(product["ready"] is True for product in report["runtime_character_product_load_products"])
+    assert all(product["load_requested"] is True for product in report["runtime_character_product_load_products"])
+    assert all(product["release_status"] == "runtime_character_product_load_product_released" for product in report["runtime_character_product_load_products"])
+    assert report["runtime_signal_classification_verified"] is True
+    assert report["runtime_cache_bootstrap_verified"] is True
+    assert report["runtime_exit_fixture_execution_verified"] is True
+    assert report["runtime_execution_verified"] is True
+    assert report["runtime_default_level_autoload_detected"] is False
+    assert report["runtime_production_level_loaded"] is False
+    assert report["runtime_character_product_load_is_instantiation_proof"] is False
+    assert report["runtime_character_instantiation_claimed"] is False
+    assert report["runtime_character_instantiation_verified"] is False
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+    assert source.exists()
+    assert source.read_text(encoding="utf-8") == original_source
+    assert bootstrap.read_text(encoding="utf-8") == original_bootstrap
+    assert report["asset_cache_deleted"] is False
+
+
+def test_runtime_harness_validation_rejects_product_load_verified_without_ready_products() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_character_product_load_verified": True,
+            "runtime_character_product_load_claimed": True,
+            "runtime_character_product_load_selected_strategy": "runtime_character_product_load_generic_assetmanager_load",
+            "runtime_character_product_load_source_refs": ["C:/src/o3de/Code/Framework/AzCore/AzCore/Asset/AssetManager.h"],
+            "runtime_character_product_load_required_products_complete": True,
+            "runtime_character_product_load_all_required_ready": False,
+            "runtime_character_product_load_products": [
+                {
+                    "product_kind": "actor",
+                    "product_path": "pc/assets/characters/maxine/release/jack.actor",
+                    "catalog_path": "assets/characters/maxine/release/jack.actor",
+                    "resolution_status": "runtime_character_product_load_product_resolved",
+                    "load_status": "runtime_character_product_load_product_timeout",
+                    "ready": False,
+                }
+            ],
+            "runtime_execution_verified": True,
+            "runtime_launch_hygiene_status": "runtime_launch_hygiene_pass",
+            "runtime_exit_fixture_execution_verified": True,
+            "runtime_signal_classification_verified": True,
+            "runtime_cache_bootstrap_verified": True,
+        }
+    )
+
+    result = runtime_harness.validate_runtime_harness_report(report)
+
+    assert not result.ok
+    assert any("runtime_character_product_load_verified=true requires every required selected product ready" in message for message in result.messages)
+
+
+def test_runtime_character_product_load_selected_errors_match_asset_id_no_handler() -> None:
+    products = [
+        {
+            "product_kind": "procprefab",
+            "product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+            "catalog_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+            "asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305",
+        }
+    ]
+    combined_text = (
+        "[Error] (AssetDatabase) - No handler was registered for this asset "
+        "(id={794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305, type={9B7C8459-471E-4EAD-A363-7990CC4065A9})!"
+    )
+
+    matches = runtime_harness._runtime_character_product_selected_product_errors(products, combined_text)
+
+    assert matches == [
+        {
+            "product_kind": "procprefab",
+            "product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+            "catalog_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+            "line": combined_text,
+        }
+    ]
+
+
+def test_runtime_character_product_load_error_marker_preserves_resolved_asset_id() -> None:
+    products = [
+        {
+            "product_kind": "procprefab",
+            "product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+            "catalog_path": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+            "asset_id": "",
+            "asset_type_id": "",
+            "resolution_status": "runtime_character_product_load_not_attempted",
+            "load_status": "runtime_character_product_load_not_attempted",
+            "ready": False,
+            "timeout": False,
+            "error": "",
+            "release_status": "runtime_character_product_load_release_not_required",
+        }
+    ]
+    combined_text = (
+        "<15:58:07> (MaxineRuntimeExitFixture) - MAXINE_RUNTIME_PRODUCT_LOAD_ERROR index=2 kind=procprefab "
+        "path=pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab "
+        "catalog_path=assets/characters/maxine/release/maxine_idle_fbx.procprefab "
+        "asset_id={794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305 "
+        "asset_type={9B7C8459-471E-4EAD-A363-7990CC4065A9} error=asset_handler_missing"
+    )
+
+    parsed, _summary, observed = runtime_harness._runtime_character_product_load_parse_markers(
+        products=products,
+        combined_text=combined_text,
+    )
+
+    assert observed is True
+    assert parsed[0]["asset_id"] == "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305"
+    assert parsed[0]["asset_type_id"] == "{9B7C8459-471E-4EAD-A363-7990CC4065A9}"
+    assert parsed[0]["resolution_status"] == "runtime_character_product_load_product_resolved"
+    assert parsed[0]["load_status"] == "runtime_character_product_load_product_error"
+    assert parsed[0]["error"] == "asset_handler_missing"

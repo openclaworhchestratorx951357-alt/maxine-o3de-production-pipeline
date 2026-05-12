@@ -99,6 +99,14 @@ $env:MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD="1"
 
 Cache-bootstrap diagnostics add two narrower gates. Use `MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_REFRESH=1` only for a source-validated scoped bootstrap refresh, and `MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION=1` only for the backup/neutralize/restore fixture path. Neither gate permits Asset Cache deletion or committing generated cache/bootstrap files.
 
+Runtime character product-load probing adds its own gate and remains disabled by default:
+
+```powershell
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE="1"
+```
+
+That gate only permits the non-shipping fixture to read the explicit product-load Settings Registry keys and request runtime asset loads for approved products. It does not permit production/defaultlevel mutation, Asset Cache deletion, publication, packaging, spawning, animation proof, or full runtime character proof.
+
 The repository now owns source for `o3de/gems/MaxineRuntimeExitFixture`, but it is disabled by default and is not runtime execution proof. Without the mutation/rebuild gates, the runner records source and rebuild-gate readiness only; it must not register the Gem, rebuild runtime targets, or launch a fixture command.
 
 ## Beginner Commands
@@ -205,6 +213,23 @@ python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigge
 ```
 
 The source check validates `o3de/gems/MaxineRuntimeExitFixture`, Gem metadata, CMake/source shape, disabled-by-default behavior, `AZ::TickBus::OnTick`, `AzFramework::ApplicationRequests::ExitMainLoop`, and Settings Registry keys. The rebuild-gate check records registration, enablement, and build command candidates but does not mutate the live project or rebuild unless the explicit gates above are set.
+
+The product-load source diagnostic and gated fixture entry points are:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-character-product-load --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-character-product-load-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 180
+```
+
+Run APB product evidence first and rebuild the fixture under `MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD=1` whenever the fixture C++ source changed. The harness writes the product list as an artifact `.setreg` file under the temp-registry-patch gate so command-line registry value limits cannot truncate the product matrix. The product-load pass criteria require every approved selected product to resolve to a valid runtime `AssetId`, have a registered runtime `AssetManager` handler, reach ready state, avoid selected-product load errors, preserve no-defaultlevel launch hygiene, and keep the PR #137 AP/shader signals within their classified harmless conditions. A resolved product that reports `asset_handler_missing` remains a typed product-load blocker, not a partial pass.
 
 When the APB evidence, runtime readiness, and command pinning gates are clean, registration and enablement are run through the harness rather than by hand:
 
