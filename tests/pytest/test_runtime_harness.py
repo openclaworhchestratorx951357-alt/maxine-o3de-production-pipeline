@@ -835,7 +835,7 @@ def test_runtime_harness_exit_fixture_source_check_records_repo_owned_gem_source
     assert report["runtime_exit_fixture_gem_name"] == "MaxineRuntimeExitFixture"
     assert report["runtime_exit_fixture_gem_type"] == "Code"
     assert report["runtime_exit_fixture_gem_json_path"].endswith("gem.json")
-    assert report["runtime_exit_fixture_cmake_path"].endswith("Code/CMakeLists.txt")
+    assert report["runtime_exit_fixture_cmake_path"].endswith("MaxineRuntimeExitFixture/CMakeLists.txt")
     assert report["runtime_exit_fixture_component_name"] == "MaxineRuntimeExitFixtureSystemComponent"
     assert report["runtime_exit_fixture_lifecycle_point"] == "AZ::Component::Activate plus AZ::TickBus::OnTick"
     assert report["runtime_exit_fixture_exit_api"] == "AzFramework::ApplicationRequests::ExitMainLoop"
@@ -1088,3 +1088,199 @@ def test_runtime_harness_validation_rejects_execution_verified_without_attempt()
 
     assert validation.status == "fail"
     assert "MXN_RUNTIME_SMOKE_FAIL" in validation.error_codes
+
+
+def test_runtime_harness_registration_missing_gate_blocks_project_mutation(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path)
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        register_runtime_exit_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_exit_fixture_registration_status"] == "blocked_by_fixture_registration_missing_gate"
+    assert report["runtime_exit_fixture_registration_attempted"] is False
+    assert report["runtime_exit_fixture_project_mutation_attempted"] is False
+    assert report["runtime_execution_verified"] is False
+
+
+def test_runtime_harness_register_and_enable_fixture_record_reversible_project_mutation(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path)
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION"] = "1"
+
+    def runner(argv, **kwargs):
+        if "register" in argv:
+            payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+            payload.setdefault("external_subdirectories", []).append(str(runtime_harness.RUNTIME_EXIT_FIXTURE_SOURCE_PATH))
+            (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+            return subprocess.CompletedProcess(argv, 0, stdout="registered fixture\n", stderr="")
+        if "enable-gem" in argv:
+            payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+            payload.setdefault("gem_names", []).append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+            (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+            return subprocess.CompletedProcess(argv, 0, stdout="enabled fixture\n", stderr="")
+        raise AssertionError(argv)
+
+    registration = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        register_runtime_exit_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+    )
+    enablement = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_exit_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+    )
+
+    assert registration["status"] == "pass"
+    assert registration["runtime_exit_fixture_registration_status"] == "runtime_exit_fixture_registration_pass"
+    assert registration["runtime_exit_fixture_registration_attempted"] is True
+    assert registration["runtime_exit_fixture_project_mutation_attempted"] is True
+    assert registration["runtime_exit_fixture_project_mutation_reversible"] is True
+    assert registration["runtime_exit_fixture_registration_stdout_ref"].endswith("runtime_exit_fixture_registration_stdout.txt")
+    assert enablement["status"] == "pass"
+    assert enablement["runtime_exit_fixture_enablement_status"] == "runtime_exit_fixture_enablement_pass"
+    assert enablement["runtime_exit_fixture_enabled_for_project"] is True
+    assert enablement["runtime_execution_verified"] is False
+
+
+def test_runtime_harness_rebuild_gate_runs_scoped_target_only_with_gate(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path)
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD"] = "1"
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+    launched = []
+
+    def runner(argv, **kwargs):
+        launched.append(argv)
+        return subprocess.CompletedProcess(argv, 0, stdout="built target\n", stderr="")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        rebuild_runtime_exit_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=1800,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_exit_fixture_rebuild_status"] == "runtime_exit_fixture_rebuild_pass"
+    assert report["runtime_exit_fixture_rebuild_attempted"] is True
+    assert report["runtime_exit_fixture_rebuild_exit_code"] == 0
+    assert "--target" in launched[0]
+    assert "MAXINE_GoldenCorpus.HeadlessServerLauncher" in launched[0]
+    assert report["runtime_execution_verified"] is False
+
+
+def test_runtime_harness_fixture_command_uses_settings_registry_exit_not_console_quit(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+    launched = []
+
+    def runner(argv, **kwargs):
+        launched.append(argv)
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout="MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=5\n",
+            stderr="",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_exit_fixture_command=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_exit_fixture_status"] == "runtime_exit_fixture_verified_clean_exit"
+    assert report["runtime_exit_fixture_execution_attempted"] is True
+    assert report["runtime_exit_fixture_execution_verified"] is True
+    assert report["runtime_execution_verified"] is True
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_exit_fixture_character_proof_claimed"] is False
+    assert report["runtime_exit_fixture_runtime_command_uses_console_command_file_quit"] is False
+    assert report["runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit"] is True
+    assert any("/Amazon/MAXINE/RuntimeHarness/EnableExitFixture=true" in arg for arg in launched[0])
+    assert not any(str(arg).startswith("--console-command-file=") for arg in launched[0])
+    assert report["runtime_exit_fixture_marker_observed"] is True
+    assert report["runtime_exit_fixture_blocked_reason"] == ""
+
+
+def test_runtime_harness_fixture_command_rejects_unexpected_level_load(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    def runner(argv, **kwargs):
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout=(
+                "MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=5\n"
+                "Game Level Load Time: Level Levels/defaultlevel/defaultlevel.spawnable loaded in 0.00 seconds\n"
+            ),
+            stderr="",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_exit_fixture_command=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_exit_fixture_execution_verified"] is False
+    assert report["runtime_execution_verified"] is False
+    assert report["runtime_exit_fixture_level_load_observed"] is True
+    assert report["runtime_exit_fixture_unexpected_level_load"] is True
+    assert report["runtime_exit_fixture_uses_no_level"] is False
+    assert report["runtime_exit_fixture_uses_production_level"] is True
+    assert report["runtime_exit_fixture_blocked_reason"] == "blocked_by_fixture_runtime_execution_failed"
+    assert any(
+        item.get("signal") == "unexpected_level_load"
+        for item in report["runtime_exit_fixture_disqualifying_signals"]["matches"]
+    )

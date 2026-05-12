@@ -291,6 +291,19 @@ The repository now owns a non-shipping external Code Gem source at `o3de/gems/Ma
 
 Rebuild-gate checks record the exact non-default controls without mutating the live project: `MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION=1` is required before registration/enablement and `MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD=1` is required before any target rebuild. The gate report records `runtime_exit_fixture_rebuild_gate_status=runtime_exit_fixture_rebuild_gate_pass`, `runtime_exit_fixture_rebuild_attempted=false`, and `runtime_exit_fixture_rebuild_result=runtime_exit_fixture_rebuild_not_attempted` when those gates are unset. A future clean fixture exit may prove only bounded runtime command-envelope execution; it is not runtime character proof.
 
+The registration/enable/rebuild slice adds four explicit runtime harness modes:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --register-runtime-exit-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON>
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-exit-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON>
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --rebuild-runtime-exit-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 1800
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-exit-fixture-command --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+Registration uses O3DE CLI external-subdirectory project registration, enablement uses `enable-gem --gem-path`, and rebuild is scoped to `MAXINE_GoldenCorpus.HeadlessServerLauncher`. The live project mutation is limited to `project.json` Gem metadata and is reversible by disabling/removing `MaxineRuntimeExitFixture` and rebuilding the scoped launcher. The fixture command uses Settings Registry keys (`/Amazon/MAXINE/RuntimeHarness/EnableExitFixture=true`, `/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks=5`) and never uses `--console-command-file` for fixture proof.
+
+The first live fixture command exited `0` and observed `MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT`, but it was not accepted as runtime execution proof because the runtime output/log scan found Asset Processor negotiation failures, shader serializer errors, and an unexpected auto-load of `Levels/defaultlevel/defaultlevel.spawnable`. The harness records `runtime_exit_fixture_unexpected_level_load=true` and keeps `runtime_exit_fixture_execution_verified=false`, `runtime_execution_verified=false`, and runtime character proof unclaimed. A clean future fixture proof must avoid production/default level load and disqualifying runtime log signals.
+
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 
 This wiring does not publish, mutate production levels, contact external services, or claim production-ready completion.

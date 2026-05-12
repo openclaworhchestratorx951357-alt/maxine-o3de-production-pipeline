@@ -878,9 +878,21 @@ def test_editor_smoke_full_report_records_runtime_harness_without_character_over
     assert runtime_harness["runtime_exit_fixture_source_owned_by_repo"] is False
     assert runtime_harness["runtime_exit_fixture_rebuild_gate_status"] == "not_run"
     assert runtime_harness["runtime_exit_fixture_rebuild_attempted"] is False
+    assert runtime_harness["runtime_exit_fixture_rebuild_exit_code"] is None
+    assert runtime_harness["runtime_exit_fixture_registration_attempted"] is False
+    assert runtime_harness["runtime_exit_fixture_registration_command"] == []
+    assert runtime_harness["runtime_exit_fixture_enablement_attempted"] is False
+    assert runtime_harness["runtime_exit_fixture_enablement_command"] == []
     assert runtime_harness["runtime_exit_fixture_project_mutation_attempted"] is False
+    assert runtime_harness["runtime_exit_fixture_project_mutation_files"] == []
+    assert runtime_harness["runtime_exit_fixture_project_mutation_diff_summary"] == []
     assert runtime_harness["runtime_exit_fixture_is_shipping_behavior"] is False
     assert runtime_harness["runtime_exit_fixture_execution_verified"] is False
+    assert runtime_harness["runtime_exit_fixture_runtime_command_uses_console_command_file_quit"] is False
+    assert runtime_harness["runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit"] is False
+    assert runtime_harness["runtime_exit_fixture_marker_observed"] is False
+    assert runtime_harness["runtime_exit_fixture_level_load_observed"] is False
+    assert runtime_harness["runtime_exit_fixture_unexpected_level_load"] is False
     assert runtime_harness["runtime_exit_fixture_is_runtime_character_proof"] is False
     assert runtime_harness["runtime_exit_fixture_character_proof_claimed"] is False
     assert runtime_harness["runtime_harness_proof_is_character_proof"] is False

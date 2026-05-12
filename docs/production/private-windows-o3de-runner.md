@@ -204,6 +204,30 @@ python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigge
 
 The source check validates `o3de/gems/MaxineRuntimeExitFixture`, Gem metadata, CMake/source shape, disabled-by-default behavior, `AZ::TickBus::OnTick`, `AzFramework::ApplicationRequests::ExitMainLoop`, and Settings Registry keys. The rebuild-gate check records registration, enablement, and build command candidates but does not mutate the live project or rebuild unless the explicit gates above are set.
 
+When the APB evidence, runtime readiness, and command pinning gates are clean, registration and enablement are run through the harness rather than by hand:
+
+```powershell
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --register-runtime-exit-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON>
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-exit-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON>
+```
+
+The mutation is limited to project Gem metadata. Rollback is: disable/remove `MaxineRuntimeExitFixture` from `gem_names`, remove the repo fixture path from `external_subdirectories`, then rebuild the scoped launcher if needed. Do not commit the live project `project.json`.
+
+The scoped rebuild and fixture command require their own gates:
+
+```powershell
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --rebuild-runtime-exit-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 1800
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-exit-fixture-command --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+The fixture command must use Settings Registry keys and must not use `--console-command-file`. If the launcher auto-loads `Levels/defaultlevel/defaultlevel.spawnable` or emits Asset Processor negotiation/shader serializer/AssetManager/assert errors, the harness records a failure such as `runtime_exit_fixture_execution_failed_disqualifying_log_signal` and keeps runtime execution proof and runtime character proof false.
+
 When using the produced paired Editor on the controlled runner, pass it explicitly:
 
 ```powershell
