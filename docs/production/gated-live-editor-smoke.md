@@ -304,6 +304,21 @@ Registration uses O3DE CLI external-subdirectory project registration, enablemen
 
 The first live fixture command exited `0` and observed `MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT`, but it was not accepted as runtime execution proof because the runtime output/log scan found Asset Processor negotiation failures, shader serializer errors, and an unexpected auto-load of `Levels/defaultlevel/defaultlevel.spawnable`. The harness records `runtime_exit_fixture_unexpected_level_load=true` and keeps `runtime_exit_fixture_execution_verified=false`, `runtime_execution_verified=false`, and runtime character proof unclaimed. A clean future fixture proof must avoid production/default level load and disqualifying runtime log signals.
 
+Launch-hygiene diagnostics are the next layer. Source inspection on the paired project found the default-level source in `C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus/Registry/load_level.setreg`, where `/O3DE/Autoexec/ConsoleCommands/LoadLevel` is set to `defaultlevel`. O3DE source validation ties that setting to console autoexec processing and the spawnable level system: `SettingsRegistryMergeUtils` supports command-line `--regremove`, `IConsole.h`/`Console.cpp` define and execute `/O3DE/Autoexec/ConsoleCommands`, and `SpawnableLevelSystem.cpp` handles `LoadLevel` by loading the requested spawnable level.
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-launch-hygiene --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-exit-fixture-no-default-level --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+The no-default-level fixture command keeps the Settings Registry fixture exit keys and adds `--regremove=/O3DE/Autoexec/ConsoleCommands/LoadLevel` to remove the autoexec `LoadLevel` key for that process. This is a runtime launch-hygiene strategy only: source validation does not prove runtime execution, and a fixture marker plus exit code `0` still fails verification if defaultlevel autoload, production level load, Asset Processor negotiation failures, shader serializer errors, AssetManager asserts, or selected-path missing/load-error signals remain unclassified and disqualifying.
+
+The first bounded no-default-level run still observed `Levels/defaultlevel/defaultlevel.spawnable` and therefore records `blocked_by_default_level_autoload`. That result keeps `runtime_exit_fixture_execution_verified=false` and `runtime_execution_verified=false`; the next safe investigation must explain whether command-line `--regremove` is applied before project registry merge, whether a later per-process override can remove or neutralize the autoexec command, or whether this launcher configuration requires a non-production temp harness level.
+
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 
 This wiring does not publish, mutate production levels, contact external services, or claim production-ready completion.

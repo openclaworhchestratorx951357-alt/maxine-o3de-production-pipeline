@@ -228,6 +228,21 @@ python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigge
 
 The fixture command must use Settings Registry keys and must not use `--console-command-file`. If the launcher auto-loads `Levels/defaultlevel/defaultlevel.spawnable` or emits Asset Processor negotiation/shader serializer/AssetManager/assert errors, the harness records a failure such as `runtime_exit_fixture_execution_failed_disqualifying_log_signal` and keeps runtime execution proof and runtime character proof false.
 
+Launch-hygiene diagnostics inspect and, when gated, exercise the no-default-level fixture command:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-launch-hygiene --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-exit-fixture-no-default-level --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+The current project autoload source is `Registry/load_level.setreg`, which sets `/O3DE/Autoexec/ConsoleCommands/LoadLevel=defaultlevel`. The no-default-level command uses `--regremove=/O3DE/Autoexec/ConsoleCommands/LoadLevel` so the process does not execute that autoexec level command. This does not mutate `Levels/defaultlevel`, does not edit production content, and does not claim character proof. A pass still requires no unexpected level loads, no production level load, fixture marker evidence, expected exit code, no timeout, and absent or source-classified Asset Processor negotiation and shader serializer signals.
+
+If the command exits `0` but still reports `runtime_default_level_autoload_detected=true`, stop at that report. The expected typed blocker is `blocked_by_default_level_autoload`; do not try to compensate by editing `Levels/defaultlevel`, broadening exit codes, or treating the fixture marker as proof.
+
 When using the produced paired Editor on the controlled runner, pass it explicitly:
 
 ```powershell
