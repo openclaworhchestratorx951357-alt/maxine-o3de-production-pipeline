@@ -620,6 +620,9 @@
     "runtime_exit_fixture_runtime_command_uses_cache_bootstrap_strategy": {
       "type": "boolean"
     },
+    "runtime_exit_fixture_runtime_command_uses_ap_shader_strategy": {
+      "type": "boolean"
+    },
     "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": {
       "type": "boolean"
     },
@@ -1145,6 +1148,67 @@
     "runtime_cache_bootstrap_refresh_log_refs": {
       "type": "array"
     },
+    "runtime_signal_classification": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_signal_classification_status": {
+      "type": "string"
+    },
+    "runtime_signal_classification_candidates": {
+      "type": "array"
+    },
+    "runtime_signal_classification_candidate_matrix_recorded": {
+      "type": "boolean"
+    },
+    "runtime_signal_classification_candidate_id": {
+      "type": "string"
+    },
+    "runtime_signal_classification_candidate_name": {
+      "type": "string"
+    },
+    "runtime_signal_classification_candidate_kind": {
+      "type": "string"
+    },
+    "runtime_signal_classification_candidate_source_validation": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_signal_classification_candidate_source_refs": {
+      "type": "array"
+    },
+    "runtime_signal_classification_candidate_expected_signals": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_signal_classification_candidate_actual_signals": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_signal_classification_candidate_expected_level_loads": {
+      "type": "array"
+    },
+    "runtime_signal_classification_candidate_actual_level_loads": {
+      "type": "array"
+    },
+    "runtime_signal_classification_candidate_attempted": {
+      "type": "boolean"
+    },
+    "runtime_signal_classification_candidate_result": {
+      "type": "string"
+    },
+    "runtime_signal_classification_candidate_blocker": {
+      "type": "string"
+    },
+    "runtime_signal_classification_selected": {
+      "type": "string"
+    },
+    "runtime_signal_classification_selected_reason": {
+      "type": "string"
+    },
+    "runtime_signal_classification_verified": {
+      "type": "boolean"
+    },
     "runtime_settings_registry_merge_order_summary": {
       "type": "object",
       "additionalProperties": true
@@ -1212,14 +1276,50 @@
     "runtime_asset_processor_negotiation_signal_status": {
       "type": "string"
     },
+    "runtime_asset_processor_negotiation_signal_present": {
+      "type": "boolean"
+    },
+    "runtime_asset_processor_negotiation_signal_lines": {
+      "type": "array"
+    },
+    "runtime_asset_processor_negotiation_signal_sources": {
+      "type": "array"
+    },
+    "runtime_asset_processor_negotiation_source_file": {
+      "type": "string"
+    },
+    "runtime_asset_processor_negotiation_source_function": {
+      "type": "string"
+    },
+    "runtime_asset_processor_negotiation_source_refs": {
+      "type": "array"
+    },
     "runtime_asset_processor_negotiation_status": {
       "type": "string"
     },
     "runtime_asset_processor_negotiation_classification": {
       "type": "string"
     },
+    "runtime_asset_processor_negotiation_classification_reason": {
+      "type": "string"
+    },
     "runtime_asset_processor_negotiation_disqualifying": {
       "type": "boolean"
+    },
+    "runtime_asset_processor_negotiation_requires_ap_running": {
+      "type": "boolean"
+    },
+    "runtime_asset_processor_negotiation_wait_for_connect_value": {
+      "type": "string"
+    },
+    "runtime_asset_processor_negotiation_ap_session_status": {
+      "type": "string"
+    },
+    "runtime_asset_processor_negotiation_harmless_only_if": {
+      "type": "array"
+    },
+    "runtime_asset_processor_negotiation_blocker": {
+      "type": "string"
     },
     "runtime_shader_serializer_signal": {
       "type": "object",
@@ -1228,13 +1328,52 @@
     "runtime_shader_serializer_signal_status": {
       "type": "string"
     },
+    "runtime_shader_serializer_signal_present": {
+      "type": "boolean"
+    },
+    "runtime_shader_serializer_signal_lines": {
+      "type": "array"
+    },
+    "runtime_shader_serializer_signal_sources": {
+      "type": "array"
+    },
+    "runtime_shader_serializer_source_file": {
+      "type": "string"
+    },
+    "runtime_shader_serializer_source_function": {
+      "type": "string"
+    },
+    "runtime_shader_serializer_source_refs": {
+      "type": "array"
+    },
     "runtime_shader_serializer_status": {
       "type": "string"
     },
     "runtime_shader_serializer_classification": {
       "type": "string"
     },
+    "runtime_shader_serializer_classification_reason": {
+      "type": "string"
+    },
     "runtime_shader_serializer_disqualifying": {
+      "type": "boolean"
+    },
+    "runtime_shader_serializer_related_products": {
+      "type": "array"
+    },
+    "runtime_shader_serializer_related_assets": {
+      "type": "array"
+    },
+    "runtime_shader_serializer_null_headless_context": {
+      "type": "boolean"
+    },
+    "runtime_shader_serializer_harmless_only_if": {
+      "type": "array"
+    },
+    "runtime_shader_serializer_blocker": {
+      "type": "string"
+    },
+    "runtime_production_level_loaded": {
       "type": "boolean"
     },
     "runtime_disqualifying_signal_summary": {

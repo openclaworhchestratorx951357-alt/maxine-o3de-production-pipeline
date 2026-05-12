@@ -229,6 +229,8 @@ Runtime cache-bootstrap source evidence is now tracked as its own layer. The dia
 
 Cache-bootstrap fixture evidence may temporarily neutralize generated bootstrap `LoadLevel` keys only under explicit gates. The harness requires `MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION=1` for the paired source-registry suppression and `MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION=1` before touching generated bootstrap files. Every touched bootstrap file must be backed up under runtime artifacts, restored in a `finally` path, and hash-verified; `asset_cache_deleted` must remain false and generated bootstrap/cache files must not be committed. A clean cache-bootstrap strategy can prove only command-envelope fixture execution, never runtime character proof.
 
+Runtime AP/shader signal classification is another separate layer. Evidence records `runtime_signal_classification_candidates`, AP negotiation signal lines/source refs/classification, shader serializer signal lines/source refs/classification, harmless-only constraints, expected and actual level loads, and whether the PR #136 cache-bootstrap strategy was used. Asset Processor negotiation can be classified harmless only for the source-validated `wait_for_connect=0` no-defaultlevel fixture envelope with complete APB evidence and no selected-product load failures. Shader serializer signals can be classified harmless only for the exact stale non-selected DX12/Vulkan RHI serialized class IDs observed under `-NullRenderer` plus `-rhi=null`; other serializer/load/assert patterns remain disqualifying. AP/shader classification may unblock command-envelope runtime execution, but it is not runtime character proof.
+
 ## Golden Project Fixture Evidence
 
 Golden project fixture evidence may be attached as:

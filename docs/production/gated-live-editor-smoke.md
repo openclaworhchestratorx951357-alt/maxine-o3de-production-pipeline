@@ -381,6 +381,21 @@ python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigge
 
 Source evidence records `SettingsRegistryBuilder.cpp` as the Asset Processor generator for `bootstrap.<launcher>.<config>.setreg` products and `GameApplication.cpp` as the runtime loader that merges the matching cache bootstrap file from `Cache/pc` before user settings. The diagnostic inventories every `Cache/pc/bootstrap*.setreg` path, hash, mtime, `LoadLevel` value, and `DeferredLoadLevel` value without deleting Asset Cache or treating cache contents as release product proof. The selected gated fixture strategy combines the PR #135 source-registry suppression with a temporary backup/neutralization/restore of generated bootstrap `LoadLevel` keys. It requires `MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION=1`, backs files up under runtime artifacts, restores in a `finally` path, hash-verifies restoration, and still cannot prove runtime execution while defaultlevel autoload or disqualifying AP/shader/runtime signals remain.
 
+Runtime AP/shader signal classification records the final current launch-hygiene boundary:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-ap-shader-signals --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-exit-fixture-ap-shader-signal-classification --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+The diagnostic separates signal detection from classification and proof. Asset Processor negotiation can be harmless only under the source-validated `wait_for_connect=0` no-defaultlevel fixture envelope with complete APB product evidence and no selected-product load failures. Shader serializer lines can be harmless only when they match the known stale non-selected DX12/Vulkan RHI serialized class IDs while the command runs `-NullRenderer` plus `-rhi=null`. A clean AP/shader-classified fixture exit may verify only command-envelope runtime execution; runtime character proof remains unclaimed without character-specific runtime evidence.
+
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 
 This wiring does not publish, mutate production levels, contact external services, or claim production-ready completion.

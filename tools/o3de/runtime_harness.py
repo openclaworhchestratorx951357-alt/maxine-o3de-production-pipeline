@@ -75,6 +75,9 @@ RUNTIME_EXIT_FIXTURE_REBUILD_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD=1
 RUNTIME_EXIT_FIXTURE_TEMP_REGISTRY_PATCH_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH=1",)
 RUNTIME_EXIT_FIXTURE_CACHE_BOOTSTRAP_REFRESH_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_REFRESH=1",)
 RUNTIME_EXIT_FIXTURE_CACHE_BOOTSTRAP_MUTATION_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION=1",)
+RUNTIME_EXIT_FIXTURE_ASSET_PROCESSOR_SESSION_GATE_ENV = (
+    "MAXINE_ALLOW_RUNTIME_FIXTURE_ASSET_PROCESSOR_SESSION=1",
+)
 RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY = "/O3DE/Autoexec/ConsoleCommands/LoadLevel"
 RUNTIME_DEFERRED_LOADLEVEL_KEY = "/O3DE/Runtime/SpawnableLevelSystem/DeferredLoadLevel"
 RUNTIME_DEFAULT_LEVEL_PRODUCT_PATH = "Levels/defaultlevel/defaultlevel.spawnable"
@@ -94,6 +97,7 @@ RUNTIME_PRE_AUTOEXEC_SUPPRESSION_BACKUP_FILENAME = "maxine_runtime_pre_autoexec_
 RUNTIME_PRE_AUTOEXEC_CACHE_BOOTSTRAP_BLOCKER = "blocked_by_project_cache_bootstrap_defaultlevel_autoload"
 RUNTIME_CACHE_BOOTSTRAP_SELECTED = "cache_bootstrap_setreg_temporarily_neutralized_with_project_source_suppression"
 RUNTIME_CACHE_BOOTSTRAP_BACKUP_DIRNAME = "maxine_runtime_cache_bootstrap_backups"
+RUNTIME_SIGNAL_CLASSIFICATION_SELECTED = "ap_shader_no_defaultlevel_cache_bootstrap_fixture_rerun"
 WINDOWS_NTSTATUS_NAMES = {
     0xC0000005: "STATUS_ACCESS_VIOLATION",
 }
@@ -170,6 +174,8 @@ def run_runtime_harness(
     enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression: bool = False,
     diagnose_runtime_cache_bootstrap_loadlevel_source: bool = False,
     enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source: bool = False,
+    diagnose_runtime_ap_shader_signals: bool = False,
+    enable_runtime_exit_fixture_ap_shader_signal_classification: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -205,6 +211,8 @@ def run_runtime_harness(
         and not enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression
         and not diagnose_runtime_cache_bootstrap_loadlevel_source
         and not enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
+        and not diagnose_runtime_ap_shader_signals
+        and not enable_runtime_exit_fixture_ap_shader_signal_classification
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -245,6 +253,8 @@ def run_runtime_harness(
             and not enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression
             and not diagnose_runtime_cache_bootstrap_loadlevel_source
             and not enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
+            and not diagnose_runtime_ap_shader_signals
+            and not enable_runtime_exit_fixture_ap_shader_signal_classification
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -283,6 +293,10 @@ def run_runtime_harness(
             if diagnose_runtime_cache_bootstrap_loadlevel_source
             else "runtime_exit_fixture_cache_bootstrap_loadlevel_source_command"
             if enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
+            else "runtime_ap_shader_signal_classification_diagnostic"
+            if diagnose_runtime_ap_shader_signals
+            else "runtime_exit_fixture_ap_shader_signal_classification_command"
+            if enable_runtime_exit_fixture_ap_shader_signal_classification
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -374,6 +388,8 @@ def run_runtime_harness(
         and not enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression
         and not diagnose_runtime_cache_bootstrap_loadlevel_source
         and not enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
+        and not diagnose_runtime_ap_shader_signals
+        and not enable_runtime_exit_fixture_ap_shader_signal_classification
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -496,6 +512,15 @@ def run_runtime_harness(
             artifact_dir=artifact_dir,
         )
 
+    if diagnose_runtime_ap_shader_signals:
+        return _run_runtime_ap_shader_signal_diagnostic(
+            report,
+            engine_root=selected_engine,
+            project=selected_project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+
     gate_status = _runtime_gate_status(env_map)
     if gate_status["status"] != "pass":
         report.update(
@@ -519,6 +544,7 @@ def run_runtime_harness(
         or enable_runtime_exit_fixture_later_registry_patch
         or enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression
         or enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
+        or enable_runtime_exit_fixture_ap_shader_signal_classification
     ):
         return _run_runtime_exit_fixture_command(
             report,
@@ -530,7 +556,11 @@ def run_runtime_harness(
             loadlevel_override=enable_runtime_exit_fixture_loadlevel_override,
             later_registry_patch=enable_runtime_exit_fixture_later_registry_patch,
             pre_autoexec_suppression=enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression,
-            cache_bootstrap_strategy=enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source,
+            cache_bootstrap_strategy=(
+                enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
+                or enable_runtime_exit_fixture_ap_shader_signal_classification
+            ),
+            ap_shader_signal_classification=enable_runtime_exit_fixture_ap_shader_signal_classification,
         )
 
     command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
@@ -690,6 +720,28 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
             result.add_error(MXN_PATH_UNSAFE, "runtime_cache_bootstrap_verified=true requires restored cache/bootstrap mutation.")
         if report.get("runtime_cache_bootstrap_candidate_hash_verified") is not True:
             result.add_error(MXN_PATH_UNSAFE, "runtime_cache_bootstrap_verified=true requires cache/bootstrap hash verification.")
+    if report.get("runtime_signal_classification_verified") is True:
+        if report.get("runtime_execution_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_signal_classification_verified=true requires verified runtime execution.")
+        if str(report.get("runtime_launch_hygiene_status", "")).strip() != "runtime_launch_hygiene_pass":
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_signal_classification_verified=true requires runtime_launch_hygiene_pass.")
+        if not str(report.get("runtime_signal_classification_selected", "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_signal_classification_verified=true requires a selected AP/shader strategy.")
+        ap_refs = report.get("runtime_asset_processor_negotiation_source_refs", [])
+        shader_refs = report.get("runtime_shader_serializer_source_refs", [])
+        ap_conditions = report.get("runtime_asset_processor_negotiation_harmless_only_if", [])
+        shader_conditions = report.get("runtime_shader_serializer_harmless_only_if", [])
+        ap_present = report.get("runtime_asset_processor_negotiation_signal_present") is True
+        shader_present = report.get("runtime_shader_serializer_signal_present") is True
+        if not ap_refs or not shader_refs or (ap_present and not ap_conditions) or (shader_present and not shader_conditions):
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "runtime_signal_classification_verified=true requires AP and shader source refs plus harmless-only constraints.",
+            )
+        if report.get("runtime_asset_processor_negotiation_disqualifying") is True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_signal_classification_verified=true cannot allow disqualifying AP signals.")
+        if report.get("runtime_shader_serializer_disqualifying") is True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_signal_classification_verified=true cannot allow disqualifying shader signals.")
     if (
         report.get("runtime_cache_bootstrap_candidate_attempted") is True
         and report.get("runtime_cache_bootstrap_candidate_mutates_cache") is True
@@ -1116,6 +1168,7 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_exit_fixture_runtime_command_uses_later_registry_patch_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_pre_autoexec_suppression_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_cache_bootstrap_strategy": False,
+        "runtime_exit_fixture_runtime_command_uses_ap_shader_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
         "runtime_exit_fixture_level_load_observed": False,
         "runtime_exit_fixture_unexpected_level_load": False,
@@ -1289,6 +1342,25 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_cache_bootstrap_refresh_stdout_ref": "",
         "runtime_cache_bootstrap_refresh_stderr_ref": "",
         "runtime_cache_bootstrap_refresh_log_refs": [],
+        "runtime_signal_classification": {"status": "runtime_execution_not_attempted"},
+        "runtime_signal_classification_status": "runtime_execution_not_attempted",
+        "runtime_signal_classification_candidates": [],
+        "runtime_signal_classification_candidate_matrix_recorded": False,
+        "runtime_signal_classification_candidate_id": "",
+        "runtime_signal_classification_candidate_name": "",
+        "runtime_signal_classification_candidate_kind": "",
+        "runtime_signal_classification_candidate_source_validation": {},
+        "runtime_signal_classification_candidate_source_refs": [],
+        "runtime_signal_classification_candidate_expected_signals": {},
+        "runtime_signal_classification_candidate_actual_signals": {},
+        "runtime_signal_classification_candidate_expected_level_loads": [],
+        "runtime_signal_classification_candidate_actual_level_loads": [],
+        "runtime_signal_classification_candidate_attempted": False,
+        "runtime_signal_classification_candidate_result": "",
+        "runtime_signal_classification_candidate_blocker": "",
+        "runtime_signal_classification_selected": "",
+        "runtime_signal_classification_selected_reason": "",
+        "runtime_signal_classification_verified": False,
         "runtime_settings_registry_project_user_registry_order": "",
         "runtime_console_autoexec_notification_timing": "",
         "runtime_spawnable_level_deferred_load_timing": "",
@@ -1310,14 +1382,39 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_empty_harness_level_production_mutation": False,
         "runtime_asset_processor_negotiation_signal": {"status": "not_run", "count": 0},
         "runtime_asset_processor_negotiation_signal_status": "not_run",
+        "runtime_asset_processor_negotiation_signal_present": False,
+        "runtime_asset_processor_negotiation_signal_lines": [],
+        "runtime_asset_processor_negotiation_signal_sources": [],
+        "runtime_asset_processor_negotiation_source_file": "",
+        "runtime_asset_processor_negotiation_source_function": "",
+        "runtime_asset_processor_negotiation_source_refs": [],
         "runtime_asset_processor_negotiation_status": "not_run",
         "runtime_asset_processor_negotiation_classification": "",
+        "runtime_asset_processor_negotiation_classification_reason": "",
         "runtime_asset_processor_negotiation_disqualifying": False,
+        "runtime_asset_processor_negotiation_requires_ap_running": False,
+        "runtime_asset_processor_negotiation_wait_for_connect_value": "",
+        "runtime_asset_processor_negotiation_ap_session_status": "not_used",
+        "runtime_asset_processor_negotiation_harmless_only_if": [],
+        "runtime_asset_processor_negotiation_blocker": "",
         "runtime_shader_serializer_signal": {"status": "not_run", "count": 0},
         "runtime_shader_serializer_signal_status": "not_run",
+        "runtime_shader_serializer_signal_present": False,
+        "runtime_shader_serializer_signal_lines": [],
+        "runtime_shader_serializer_signal_sources": [],
+        "runtime_shader_serializer_source_file": "",
+        "runtime_shader_serializer_source_function": "",
+        "runtime_shader_serializer_source_refs": [],
         "runtime_shader_serializer_status": "not_run",
         "runtime_shader_serializer_classification": "",
+        "runtime_shader_serializer_classification_reason": "",
         "runtime_shader_serializer_disqualifying": False,
+        "runtime_shader_serializer_related_products": [],
+        "runtime_shader_serializer_related_assets": [],
+        "runtime_shader_serializer_null_headless_context": False,
+        "runtime_shader_serializer_harmless_only_if": [],
+        "runtime_shader_serializer_blocker": "",
+        "runtime_production_level_loaded": False,
         "runtime_disqualifying_signal_summary": [],
         "runtime_disqualifying_signal_count": 0,
         "runtime_fixture_marker_observed": False,
@@ -2491,10 +2588,13 @@ def _run_runtime_exit_fixture_command(
     later_registry_patch: bool = False,
     pre_autoexec_suppression: bool = False,
     cache_bootstrap_strategy: bool = False,
+    ap_shader_signal_classification: bool = False,
 ) -> Dict[str, Any]:
     report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
     report["runtime_harness_mode"] = (
-        "runtime_exit_fixture_cache_bootstrap_loadlevel_source_command"
+        "runtime_exit_fixture_ap_shader_signal_classification_command"
+        if ap_shader_signal_classification
+        else "runtime_exit_fixture_cache_bootstrap_loadlevel_source_command"
         if cache_bootstrap_strategy
         else "runtime_exit_fixture_later_registry_patch_command"
         if later_registry_patch
@@ -2828,6 +2928,7 @@ def _run_runtime_exit_fixture_command(
                 pre_autoexec_suppression or cache_bootstrap_strategy
             ),
             "runtime_exit_fixture_runtime_command_uses_cache_bootstrap_strategy": cache_bootstrap_strategy,
+            "runtime_exit_fixture_runtime_command_uses_ap_shader_strategy": ap_shader_signal_classification,
             "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
             "runtime_exit_fixture_command": str(command.get("argv", [""])[0]),
             "runtime_exit_fixture_arguments": list(command.get("argv", []))[1:],
@@ -2901,12 +3002,32 @@ def _run_runtime_exit_fixture_command(
     )
     marker_observed = "MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT" in combined_text
     expected_exit_codes = set(int(code) for code in command.get("expected_exit_codes", [0]))
+    signal_classification_payload = (
+        _runtime_signal_classification_execution_payload(
+            project=project,
+            command=command,
+            diagnostics=diagnostics,
+            actual_level_loads=level_loads,
+            combined_text=combined_text,
+            exit_code=proc.returncode,
+            marker_observed=marker_observed,
+            cache_bootstrap_strategy=cache_bootstrap_strategy,
+            mutation_state=cache_bootstrap_mutation,
+        )
+        if ap_shader_signal_classification
+        else {}
+    )
+    effective_disqualifying = (
+        _runtime_filter_classified_signal_disqualifiers(disqualifying, diagnostics, signal_classification_payload)
+        if ap_shader_signal_classification
+        else [dict(item) for item in disqualifying if isinstance(item, Mapping)]
+    )
     launch_hygiene = _runtime_launch_hygiene_execution_payload(
         project=project,
         command=command,
         diagnostics=diagnostics,
         actual_level_loads=level_loads,
-        disqualifying=disqualifying,
+        disqualifying=effective_disqualifying,
         no_default_level=(
             no_default_level
             or loadlevel_override
@@ -2914,6 +3035,7 @@ def _run_runtime_exit_fixture_command(
             or pre_autoexec_suppression
             or cache_bootstrap_strategy
         ),
+        signal_classification=signal_classification_payload if ap_shader_signal_classification else None,
     )
     loadlevel_override_payload = _runtime_loadlevel_override_execution_payload(
         project=project,
@@ -2969,7 +3091,7 @@ def _run_runtime_exit_fixture_command(
         proc.returncode in expected_exit_codes
         and not timed_out
         and scan.get("status") == "pass"
-        and not disqualifying
+        and not effective_disqualifying
         and marker_observed
         and launch_hygiene_pass
     )
@@ -2993,11 +3115,16 @@ def _run_runtime_exit_fixture_command(
     report.update(pre_autoexec_payload)
     report.update(cache_bootstrap_payload)
     report.update(launch_hygiene)
+    report.update(signal_classification_payload)
     blocked_reason = _runtime_launch_hygiene_blocked_reason(launch_hygiene)
     if pre_autoexec_suppression and str(pre_autoexec_payload.get("runtime_pre_autoexec_candidate_blocker", "")).strip():
         blocked_reason = str(pre_autoexec_payload.get("runtime_pre_autoexec_candidate_blocker", "")).strip()
     if cache_bootstrap_strategy and str(cache_bootstrap_payload.get("runtime_cache_bootstrap_candidate_blocker", "")).strip():
         blocked_reason = str(cache_bootstrap_payload.get("runtime_cache_bootstrap_candidate_blocker", "")).strip()
+    if ap_shader_signal_classification and str(
+        signal_classification_payload.get("runtime_signal_classification_candidate_blocker", "")
+    ).strip():
+        blocked_reason = str(signal_classification_payload.get("runtime_signal_classification_candidate_blocker", "")).strip()
     report.update(
         {
             "status": "pass" if passed else "fail",
@@ -3029,8 +3156,8 @@ def _run_runtime_exit_fixture_command(
                 "matches": scan.get("matches", []),
             },
             "runtime_exit_fixture_disqualifying_signals": {
-                "status": "fail" if disqualifying else "pass",
-                "matches": disqualifying,
+                "status": "fail" if effective_disqualifying else "pass",
+                "matches": effective_disqualifying,
             },
             "runtime_exit_fixture_marker_observed": marker_observed,
             "runtime_fixture_marker_observed": marker_observed,
@@ -3040,6 +3167,7 @@ def _run_runtime_exit_fixture_command(
             "runtime_exit_fixture_uses_no_level": not level_load_observed,
             "runtime_exit_fixture_uses_production_level": level_load_observed,
             "runtime_exit_fixture_actual_level_loads": level_loads,
+            "runtime_production_level_loaded": level_load_observed,
             "runtime_execution_completed": True,
             "runtime_execution_verified": passed,
             "runtime_execution_status": "runtime_execution_pass"
@@ -3075,6 +3203,7 @@ def _run_runtime_exit_fixture_command(
                 "runtime_exit_fixture_marker_observed",
                 "runtime_launch_hygiene_pass",
                 "runtime_exit_fixture_clean_exit",
+                "runtime_signal_classification_verified" if ap_shader_signal_classification else "runtime_signal_classification_not_required",
                 "runtime_character_proof_not_claimed",
             ]
             if passed
@@ -4140,6 +4269,7 @@ def _runtime_launch_hygiene_execution_payload(
     actual_level_loads: Sequence[str],
     disqualifying: Sequence[Mapping[str, Any]],
     no_default_level: bool,
+    signal_classification: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     source_payload = _runtime_launch_hygiene_source_payload(
         project=project,
@@ -4155,8 +4285,25 @@ def _runtime_launch_hygiene_execution_payload(
         else "runtime_asset_processor_negotiation_signal_absent"
     )
     shader_status = "runtime_shader_serializer_signal_present" if shader_count else "runtime_shader_serializer_signal_absent"
+    classification = signal_classification or {}
+    ap_classification = str(
+        classification.get(
+            "runtime_asset_processor_negotiation_classification",
+            "blocked_by_asset_processor_negotiation_signal" if ap_count else "runtime_asset_processor_negotiation_signal_absent",
+        )
+    )
+    shader_classification = str(
+        classification.get(
+            "runtime_shader_serializer_classification",
+            "blocked_by_shader_serializer_signal" if shader_count else "runtime_shader_serializer_signal_absent",
+        )
+    )
+    ap_disqualifying = bool(
+        classification.get("runtime_asset_processor_negotiation_disqualifying", bool(ap_count))
+    )
+    shader_disqualifying = bool(classification.get("runtime_shader_serializer_disqualifying", bool(shader_count)))
     signal_summary = [dict(item) for item in disqualifying if isinstance(item, Mapping)]
-    launch_pass = not default_level_detected and ap_count == 0 and shader_count == 0 and not signal_summary
+    launch_pass = not default_level_detected and not ap_disqualifying and not shader_disqualifying and not signal_summary
     no_default_status = (
         "runtime_no_default_level_strategy_pass"
         if no_default_level and launch_pass
@@ -4197,19 +4344,18 @@ def _runtime_launch_hygiene_execution_payload(
             "runtime_asset_processor_negotiation_signal": {"status": ap_status, "count": ap_count},
             "runtime_asset_processor_negotiation_signal_status": ap_status,
             "runtime_asset_processor_negotiation_status": ap_status,
-            "runtime_asset_processor_negotiation_classification": "blocked_by_asset_processor_negotiation_signal"
-            if ap_count
-            else "runtime_asset_processor_negotiation_signal_absent",
-            "runtime_asset_processor_negotiation_disqualifying": bool(ap_count),
+            "runtime_asset_processor_negotiation_signal_present": bool(ap_count),
+            "runtime_asset_processor_negotiation_classification": ap_classification,
+            "runtime_asset_processor_negotiation_disqualifying": ap_disqualifying,
             "runtime_shader_serializer_signal": {"status": shader_status, "count": shader_count},
             "runtime_shader_serializer_signal_status": shader_status,
             "runtime_shader_serializer_status": shader_status,
-            "runtime_shader_serializer_classification": "blocked_by_shader_serializer_signal"
-            if shader_count
-            else "runtime_shader_serializer_signal_absent",
-            "runtime_shader_serializer_disqualifying": bool(shader_count),
+            "runtime_shader_serializer_signal_present": bool(shader_count),
+            "runtime_shader_serializer_classification": shader_classification,
+            "runtime_shader_serializer_disqualifying": shader_disqualifying,
             "runtime_disqualifying_signal_summary": signal_summary,
             "runtime_disqualifying_signal_count": len(signal_summary),
+            "runtime_production_level_loaded": bool(actual_level_loads),
             "runtime_fixture_clean_launch_verified": launch_pass,
         }
     )
@@ -5915,6 +6061,586 @@ def _restore_runtime_cache_bootstrap_neutralization(state: Dict[str, Any]) -> No
     state["status"] = state["restore_status"]
 
 
+def _run_runtime_ap_shader_signal_diagnostic(
+    report: Dict[str, Any],
+    *,
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    report.update(
+        _runtime_signal_classification_source_payload(
+            project=project,
+            engine_root=engine_root,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+    )
+    report.update(
+        {
+            "status": "pass",
+            "runtime_harness_status": "runtime_signal_classification_source_discovery_pass",
+            "runtime_harness_mode": "runtime_ap_shader_signal_classification_diagnostic",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "asset_cache_deleted": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_signal_classification_source_discovery",
+                "runtime_execution_not_attempted_in_signal_diagnostic_mode",
+                "runtime_character_proof_not_claimed",
+            ],
+            "runtime_harness_assertion_informational": [
+                "ap_shader_source_classification_is_not_runtime_execution_proof",
+                "ap_shader_source_classification_is_not_runtime_character_proof",
+            ],
+        }
+    )
+    return _finalize_report(report)
+
+
+def _runtime_signal_classification_source_payload(
+    *,
+    project: Path | None,
+    engine_root: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    _ = timeout_seconds
+    _ = artifact_dir
+    source_validated = _runtime_signal_classification_source_validated(engine_root)
+    status = (
+        "runtime_signal_classification_source_discovery_pass"
+        if source_validated
+        else "runtime_signal_classification_source_discovery_inconclusive"
+    )
+    candidates = _runtime_signal_classification_candidate_matrix(project=project, engine_root=engine_root)
+    selected = _runtime_signal_classification_selected_candidate(project=project, engine_root=engine_root)
+    return {
+        "runtime_signal_classification": {
+            "status": status,
+            "selected": RUNTIME_SIGNAL_CLASSIFICATION_SELECTED if source_validated else "",
+            "candidate_count": len(candidates),
+        },
+        "runtime_signal_classification_status": status,
+        "runtime_signal_classification_candidates": candidates,
+        "runtime_signal_classification_candidate_matrix_recorded": bool(candidates),
+        "runtime_signal_classification_candidate_id": selected["id"] if source_validated else "",
+        "runtime_signal_classification_candidate_name": selected["name"] if source_validated else "",
+        "runtime_signal_classification_candidate_kind": selected["kind"] if source_validated else "",
+        "runtime_signal_classification_candidate_source_validation": selected["source_validation"]
+        if source_validated
+        else {},
+        "runtime_signal_classification_candidate_source_refs": selected["source_refs"] if source_validated else [],
+        "runtime_signal_classification_candidate_expected_signals": selected["expected_signals"]
+        if source_validated
+        else {},
+        "runtime_signal_classification_candidate_actual_signals": {},
+        "runtime_signal_classification_candidate_expected_level_loads": [],
+        "runtime_signal_classification_candidate_actual_level_loads": [],
+        "runtime_signal_classification_candidate_attempted": False,
+        "runtime_signal_classification_candidate_result": selected["result"] if source_validated else "",
+        "runtime_signal_classification_candidate_blocker": "",
+        "runtime_signal_classification_selected": RUNTIME_SIGNAL_CLASSIFICATION_SELECTED if source_validated else "",
+        "runtime_signal_classification_selected_reason": (
+            "rerun_pr136_no_defaultlevel_cache_bootstrap_fixture_and_classify_known_ap_shader_signals"
+            if source_validated
+            else ""
+        ),
+        "runtime_signal_classification_verified": False,
+        **_runtime_ap_signal_source_fields(engine_root=engine_root, signal_lines=[], present=False),
+        **_runtime_shader_signal_source_fields(engine_root=engine_root, signal_lines=[], present=False),
+    }
+
+
+def _runtime_signal_classification_execution_payload(
+    *,
+    project: Path | None,
+    command: Mapping[str, Any],
+    diagnostics: Mapping[str, Any],
+    actual_level_loads: Sequence[str],
+    combined_text: str,
+    exit_code: int | None,
+    marker_observed: bool,
+    cache_bootstrap_strategy: bool,
+    mutation_state: Mapping[str, Any],
+) -> Dict[str, Any]:
+    engine_root = _runtime_engine_root_from_command(command)
+    source_payload = _runtime_signal_classification_source_payload(
+        project=project,
+        engine_root=engine_root,
+        timeout_seconds=int(command.get("timeout_seconds", 120)),
+        artifact_dir=DEFAULT_ARTIFACT_ROOT,
+    )
+    ap_count = _runtime_diagnostic_count(diagnostics, "asset_processor_negotiation_failure_count")
+    shader_count = _runtime_diagnostic_count(diagnostics, "shader_serializer_error_count")
+    ap_lines = _runtime_ap_signal_lines(combined_text)
+    shader_lines = _runtime_shader_signal_lines(combined_text)
+    default_level_detected = any(_is_default_level_path(path) for path in actual_level_loads)
+    production_level_loaded = bool(actual_level_loads)
+    source_validated = _runtime_signal_classification_source_validated(engine_root)
+    wait_for_connect_value = _runtime_wait_for_connect_value(command)
+    exit_clean = exit_code == 0
+    cache_restored = str(mutation_state.get("restore_status", "")).strip() == "runtime_cache_bootstrap_restore_pass"
+    cache_hash_verified = bool(mutation_state.get("hash_verified", False))
+    no_missing_load_errors = not _scan_runtime_output(combined_text).get("matches")
+    ap_harmless = (
+        bool(ap_count)
+        and source_validated
+        and wait_for_connect_value == "0"
+        and exit_clean
+        and marker_observed
+        and not default_level_detected
+        and not production_level_loaded
+        and cache_bootstrap_strategy
+        and cache_restored
+        and cache_hash_verified
+        and no_missing_load_errors
+    )
+    shader_harmless = (
+        bool(shader_count)
+        and source_validated
+        and _runtime_command_uses_null_headless(command)
+        and _shader_lines_match_known_rhi_reflection_gap(shader_lines)
+        and exit_clean
+        and marker_observed
+        and not default_level_detected
+        and not production_level_loaded
+        and cache_bootstrap_strategy
+        and cache_restored
+        and cache_hash_verified
+        and no_missing_load_errors
+    )
+    ap_absent = ap_count == 0
+    shader_absent = shader_count == 0
+    classification_verified = (ap_absent or ap_harmless) and (shader_absent or shader_harmless)
+    blocker = ""
+    if default_level_detected:
+        blocker = "blocked_by_default_level_autoload"
+    elif production_level_loaded:
+        blocker = "blocked_by_production_level_load"
+    elif not source_validated:
+        blocker = "blocked_by_ap_shader_signal_unclassified"
+    elif ap_count and not ap_harmless:
+        blocker = "blocked_by_asset_processor_negotiation_signal"
+    elif shader_count and not shader_harmless:
+        blocker = "blocked_by_shader_serializer_signal"
+
+    actual_signals = {
+        "asset_processor_negotiation_count": ap_count,
+        "shader_serializer_count": shader_count,
+        "asset_processor_negotiation_lines": ap_lines,
+        "shader_serializer_lines": shader_lines,
+    }
+    source_payload.update(
+        {
+            "runtime_signal_classification": {
+                "status": "runtime_signal_classification_verified"
+                if classification_verified
+                else "runtime_signal_classification_candidate_attempted_failed_disqualifying_signal",
+                "selected": RUNTIME_SIGNAL_CLASSIFICATION_SELECTED,
+                "attempted": True,
+                "actual_signals": actual_signals,
+            },
+            "runtime_signal_classification_status": "runtime_signal_classification_verified"
+            if classification_verified
+            else "runtime_signal_classification_candidate_attempted_failed_disqualifying_signal",
+            "runtime_signal_classification_candidate_actual_signals": actual_signals,
+            "runtime_signal_classification_candidate_actual_level_loads": list(actual_level_loads),
+            "runtime_signal_classification_candidate_attempted": True,
+            "runtime_signal_classification_candidate_result": "runtime_signal_classification_candidate_attempted_pass"
+            if classification_verified
+            else "runtime_signal_classification_candidate_attempted_failed_disqualifying_signal",
+            "runtime_signal_classification_candidate_blocker": blocker,
+            "runtime_signal_classification_verified": bool(classification_verified),
+            **_runtime_ap_signal_source_fields(
+                engine_root=engine_root,
+                signal_lines=ap_lines,
+                present=bool(ap_count),
+                classification="runtime_asset_processor_negotiation_classified_harmless"
+                if ap_harmless
+                else "runtime_asset_processor_negotiation_signal_absent"
+                if ap_absent
+                else "runtime_asset_processor_negotiation_unclassified",
+                disqualifying=bool(ap_count and not ap_harmless),
+                wait_for_connect_value=wait_for_connect_value,
+                blocker="" if (ap_absent or ap_harmless) else "blocked_by_asset_processor_negotiation_signal",
+            ),
+            **_runtime_shader_signal_source_fields(
+                engine_root=engine_root,
+                signal_lines=shader_lines,
+                present=bool(shader_count),
+                classification="runtime_shader_serializer_classified_harmless"
+                if shader_harmless
+                else "runtime_shader_serializer_signal_absent"
+                if shader_absent
+                else "runtime_shader_serializer_unclassified",
+                disqualifying=bool(shader_count and not shader_harmless),
+                blocker="" if (shader_absent or shader_harmless) else "blocked_by_shader_serializer_signal",
+            ),
+        }
+    )
+    return source_payload
+
+
+def _runtime_signal_classification_selected_candidate(*, project: Path | None, engine_root: Path | None) -> Dict[str, Any]:
+    source_refs = _runtime_signal_classification_source_refs(engine_root)
+    return {
+        "id": RUNTIME_SIGNAL_CLASSIFICATION_SELECTED,
+        "name": "Rerun PR #136 no-defaultlevel cache-bootstrap fixture and classify AP/shader signals",
+        "kind": "bounded_no_defaultlevel_fixture_signal_classification",
+        "source_validation": {
+            "status": "runtime_signal_classification_candidate_source_validated"
+            if _runtime_signal_classification_source_validated(engine_root)
+            else "runtime_signal_classification_candidate_rejected_missing_source_validation",
+            "summary": (
+                "Launcher.cpp treats failed AP connection as nonfatal when wait_for_connect=0; "
+                "ObjectStream.cpp reports unknown serialized classes as non-strict droppable data, while Atom Null RHI "
+                "reflects only Null platform shader classes. The selected strategy reruns the PR #136 no-defaultlevel "
+                "fixture envelope and classifies only those exact signatures under null/headless/no-level constraints."
+            ),
+        },
+        "source_refs": source_refs,
+        "expected_signals": {
+            "asset_processor_negotiation": "absent_or_wait_for_connect_zero_nonfatal_warning",
+            "shader_serializer": "absent_or_known_non_selected_rhi_reflection_gap",
+        },
+        "result": "runtime_signal_classification_candidate_source_validated",
+        "gate_env": list(RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV)
+        + list(RUNTIME_EXIT_FIXTURE_CACHE_BOOTSTRAP_MUTATION_GATE_ENV),
+        "mutates_project": True,
+        "mutates_cache_bootstrap": True,
+        "mutates_defaultlevel": False,
+        "mutates_production_level": False,
+    }
+
+
+def _runtime_signal_classification_candidate_matrix(*, project: Path | None, engine_root: Path | None) -> List[Dict[str, Any]]:
+    _ = project
+    selected = _runtime_signal_classification_selected_candidate(project=project, engine_root=engine_root)
+    source_refs = _runtime_signal_classification_source_refs(engine_root)
+    return [
+        {
+            "id": "ap_shader_read_only_existing_log_classification",
+            "name": "Read-only AP/shader classification from existing logs",
+            "kind": "read_only_log_source_classification",
+            "source_validation": {
+                "status": "runtime_signal_classification_candidate_source_validated",
+                "summary": "Existing logs can identify signal signatures but cannot by themselves prove a fresh clean fixture envelope.",
+            },
+            "source_refs": source_refs,
+            "attempted": False,
+            "result": "informational_only",
+            "blocker": "",
+        },
+        {
+            **selected,
+            "attempted": False,
+            "blocker": "",
+        },
+        {
+            "id": "ap_shader_controlled_asset_processor_session_comparison",
+            "name": "Controlled local Asset Processor session comparison",
+            "kind": "bounded_local_asset_processor_session",
+            "source_validation": {
+                "status": "runtime_signal_classification_candidate_rejected_unsafe",
+                "summary": (
+                    "A local AP comparison is reserved behind MAXINE_ALLOW_RUNTIME_FIXTURE_ASSET_PROCESSOR_SESSION=1; "
+                    "this slice does not need to start a persistent AP session if wait_for_connect=0 source classification is sufficient."
+                ),
+            },
+            "source_refs": source_refs,
+            "gate_env": list(RUNTIME_EXIT_FIXTURE_ASSET_PROCESSOR_SESSION_GATE_ENV),
+            "attempted": False,
+            "result": "runtime_signal_classification_candidate_rejected_unsafe",
+            "blocker": "blocked_by_asset_processor_session_not_safely_scoped",
+        },
+        {
+            "id": "ap_shader_shader_product_completeness_audit",
+            "name": "Shader product completeness audit",
+            "kind": "read_only_shader_product_audit",
+            "source_validation": {
+                "status": "runtime_signal_classification_candidate_source_validated",
+                "summary": "Trusted APB product evidence remains the prerequisite; shader serializer classification still requires source/log constraints.",
+            },
+            "source_refs": source_refs,
+            "attempted": False,
+            "result": "informational_only",
+            "blocker": "",
+        },
+        {
+            "id": "ap_shader_keep_disqualifying_if_unclassified",
+            "name": "Keep AP/shader signals disqualifying if unclassified",
+            "kind": "typed_blocker",
+            "source_validation": {
+                "status": "runtime_signal_classification_candidate_source_validated",
+                "summary": "If source/log evidence does not match the constrained harmless signatures, runtime proof remains blocked.",
+            },
+            "source_refs": source_refs,
+            "attempted": False,
+            "result": "blocked_by_ap_shader_signal_unclassified",
+            "blocker": "blocked_by_ap_shader_signal_unclassified",
+        },
+    ]
+
+
+def _runtime_signal_classification_source_validated(engine_root: Path | None) -> bool:
+    root = engine_root or Path("")
+    return all(
+        path.is_file()
+        for path in (
+            root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Network" / "AssetProcessorConnection.cpp",
+            root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Asset" / "AssetSystemComponent.cpp",
+            root / "Code" / "LauncherUnified" / "Launcher.cpp",
+            root / "Code" / "Framework" / "AzCore" / "AzCore" / "Serialization" / "ObjectStream.cpp",
+            root / "Gems" / "Atom" / "RHI" / "Null" / "Code" / "Source" / "RHI.Reflect" / "ReflectSystemComponent.cpp",
+            root / "Gems" / "Atom" / "RHI" / "DX12" / "Code" / "Include" / "Atom" / "RHI.Reflect" / "DX12" / "ShaderStageFunction.h",
+            root / "Gems" / "Atom" / "RHI" / "Vulkan" / "Code" / "Include" / "Atom" / "RHI.Reflect" / "Vulkan" / "ShaderStageFunction.h",
+        )
+    )
+
+
+def _runtime_signal_classification_source_refs(engine_root: Path | None) -> List[str]:
+    return _runtime_ap_source_refs(engine_root) + _runtime_shader_source_refs(engine_root)
+
+
+def _runtime_ap_source_refs(engine_root: Path | None) -> List[str]:
+    root = engine_root or Path("<engine-root>")
+    return [
+        _portable_source_ref(root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Network" / "AssetProcessorConnection.cpp"),
+        _portable_source_ref(root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Asset" / "AssetSystemComponent.cpp"),
+        _portable_source_ref(root / "Code" / "LauncherUnified" / "Launcher.cpp"),
+    ]
+
+
+def _runtime_shader_source_refs(engine_root: Path | None) -> List[str]:
+    root = engine_root or Path("<engine-root>")
+    return [
+        _portable_source_ref(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Serialization" / "ObjectStream.cpp"),
+        _portable_source_ref(root / "Gems" / "Atom" / "RHI" / "Null" / "Code" / "Source" / "RHI.Reflect" / "ReflectSystemComponent.cpp"),
+        _portable_source_ref(root / "Gems" / "Atom" / "RHI" / "DX12" / "Code" / "Include" / "Atom" / "RHI.Reflect" / "DX12" / "ShaderStageFunction.h"),
+        _portable_source_ref(root / "Gems" / "Atom" / "RHI" / "DX12" / "Code" / "Include" / "Atom" / "RHI.Reflect" / "DX12" / "PipelineLayoutDescriptor.h"),
+        _portable_source_ref(root / "Gems" / "Atom" / "RHI" / "Vulkan" / "Code" / "Include" / "Atom" / "RHI.Reflect" / "Vulkan" / "ShaderStageFunction.h"),
+    ]
+
+
+def _portable_source_ref(path: Path) -> str:
+    return str(path).replace("\\", "/")
+
+
+def _runtime_ap_signal_source_fields(
+    *,
+    engine_root: Path | None,
+    signal_lines: Sequence[str],
+    present: bool,
+    classification: str | None = None,
+    disqualifying: bool = False,
+    wait_for_connect_value: str = "0",
+    blocker: str = "",
+) -> Dict[str, Any]:
+    source_refs = _runtime_ap_source_refs(engine_root)
+    classified = classification or ("runtime_asset_processor_negotiation_signal_present" if present else "runtime_asset_processor_negotiation_signal_absent")
+    return {
+        "runtime_asset_processor_negotiation_signal": {
+            "status": "runtime_asset_processor_negotiation_signal_present"
+            if present
+            else "runtime_asset_processor_negotiation_signal_absent",
+            "count": len(signal_lines),
+            "sample_lines": list(signal_lines[:8]),
+        },
+        "runtime_asset_processor_negotiation_signal_status": "runtime_asset_processor_negotiation_signal_present"
+        if present
+        else "runtime_asset_processor_negotiation_signal_absent",
+        "runtime_asset_processor_negotiation_signal_present": bool(present),
+        "runtime_asset_processor_negotiation_signal_lines": list(signal_lines[:12]),
+        "runtime_asset_processor_negotiation_signal_sources": ["stdout", "Server.log"] if present else [],
+        "runtime_asset_processor_negotiation_source_file": "; ".join(source_refs),
+        "runtime_asset_processor_negotiation_source_function": (
+            "AzFramework::AssetSystem::AssetProcessorConnection::ConnectThread; "
+            "AssetSystemComponent::EstablishAssetProcessorConnection; Launcher::ConnectToAssetProcessor"
+        ),
+        "runtime_asset_processor_negotiation_source_refs": source_refs,
+        "runtime_asset_processor_negotiation_status": "runtime_asset_processor_negotiation_signal_present"
+        if present
+        else "runtime_asset_processor_negotiation_signal_absent",
+        "runtime_asset_processor_negotiation_classification": classified,
+        "runtime_asset_processor_negotiation_classification_reason": (
+            "wait_for_connect=0 is source-validated in Launcher.cpp as the nonfatal AP connection path; "
+            "the fixture uses trusted APB product evidence, loads no level, observes the fixture marker, and exits 0."
+            if classified == "runtime_asset_processor_negotiation_classified_harmless"
+            else "AP negotiation was absent."
+            if not present
+            else "AP negotiation signal remains unclassified."
+        ),
+        "runtime_asset_processor_negotiation_disqualifying": bool(disqualifying),
+        "runtime_asset_processor_negotiation_requires_ap_running": False,
+        "runtime_asset_processor_negotiation_wait_for_connect_value": wait_for_connect_value,
+        "runtime_asset_processor_negotiation_ap_session_status": "not_used",
+        "runtime_asset_processor_negotiation_harmless_only_if": [
+            "wait_for_connect=0",
+            "trusted_apb_product_evidence_complete",
+            "no_defaultlevel_autoload",
+            "no_production_level_load",
+            "fixture_marker_observed",
+            "exit_code_0",
+        ]
+        if classified == "runtime_asset_processor_negotiation_classified_harmless"
+        else [],
+        "runtime_asset_processor_negotiation_blocker": blocker,
+    }
+
+
+def _runtime_shader_signal_source_fields(
+    *,
+    engine_root: Path | None,
+    signal_lines: Sequence[str],
+    present: bool,
+    classification: str | None = None,
+    disqualifying: bool = False,
+    blocker: str = "",
+) -> Dict[str, Any]:
+    source_refs = _runtime_shader_source_refs(engine_root)
+    classified = classification or ("runtime_shader_serializer_signal_present" if present else "runtime_shader_serializer_signal_absent")
+    return {
+        "runtime_shader_serializer_signal": {
+            "status": "runtime_shader_serializer_signal_present" if present else "runtime_shader_serializer_signal_absent",
+            "count": len(signal_lines),
+            "sample_lines": list(signal_lines[:8]),
+        },
+        "runtime_shader_serializer_signal_status": "runtime_shader_serializer_signal_present"
+        if present
+        else "runtime_shader_serializer_signal_absent",
+        "runtime_shader_serializer_signal_present": bool(present),
+        "runtime_shader_serializer_signal_lines": list(signal_lines[:12]),
+        "runtime_shader_serializer_signal_sources": ["stdout", "Server.log"] if present else [],
+        "runtime_shader_serializer_source_file": "; ".join(source_refs),
+        "runtime_shader_serializer_source_function": (
+            "AZ::ObjectStreamImpl unknown-class handling; Atom RHI platform ReflectSystemComponent::Reflect"
+        ),
+        "runtime_shader_serializer_source_refs": source_refs,
+        "runtime_shader_serializer_status": "runtime_shader_serializer_signal_present"
+        if present
+        else "runtime_shader_serializer_signal_absent",
+        "runtime_shader_serializer_classification": classified,
+        "runtime_shader_serializer_classification_reason": (
+            "The observed class IDs map to DX12/Vulkan shader reflection types while the command selects Null RHI; "
+            "ObjectStream.cpp treats unknown non-strict serialized classes as droppable/stale data and the no-level fixture exits cleanly."
+            if classified == "runtime_shader_serializer_classified_harmless"
+            else "Shader serializer signal was absent."
+            if not present
+            else "Shader serializer signal remains unclassified."
+        ),
+        "runtime_shader_serializer_disqualifying": bool(disqualifying),
+        "runtime_shader_serializer_related_products": [],
+        "runtime_shader_serializer_related_assets": [
+            "DX12 ShaderStageFunction {1BAEE536-96CA-4AEB-BA73-D5D72EE35B45}",
+            "Vulkan ShaderStageFunction {A606478A-97E9-402D-A776-88EE72DAC6F9}",
+            "DX12 PipelineLayoutDescriptor {A10B0F03-F43D-4462-9306-66195B4EFC46}",
+        ]
+        if present
+        else [],
+        "runtime_shader_serializer_null_headless_context": classified
+        == "runtime_shader_serializer_classified_harmless",
+        "runtime_shader_serializer_harmless_only_if": [
+            "-NullRenderer",
+            "-rhi=null",
+            "no_defaultlevel_autoload",
+            "no_production_level_load",
+            "no_selected_product_load_failure",
+            "fixture_marker_observed",
+            "exit_code_0",
+        ]
+        if classified == "runtime_shader_serializer_classified_harmless"
+        else [],
+        "runtime_shader_serializer_blocker": blocker,
+    }
+
+
+def _runtime_ap_signal_lines(text: str) -> List[str]:
+    return _matching_lines(
+        text,
+        (
+            "AssetProcessorConnection::ConnectThread",
+            "Network connection attempt failure, negotiation",
+            "Negotiation with asset processor failed",
+            "Asset Processor Connection",
+        ),
+        limit=12,
+    )
+
+
+def _runtime_shader_signal_lines(text: str) -> List[str]:
+    return _matching_lines(
+        text,
+        (
+            "[Error] (Serialize)",
+            "not registered with the serializer",
+            "ShaderStageFunction",
+            "PipelineLayoutDescriptor",
+        ),
+        limit=12,
+    )
+
+
+def _runtime_wait_for_connect_value(command: Mapping[str, Any]) -> str:
+    for arg in command.get("argv", []):
+        text = str(arg)
+        if "/Amazon/AzCore/Bootstrap/wait_for_connect=0" in text:
+            return "0"
+        if "/Amazon/AzCore/Bootstrap/wait_for_connect=1" in text:
+            return "1"
+    return ""
+
+
+def _runtime_command_uses_null_headless(command: Mapping[str, Any]) -> bool:
+    argv = [str(arg).lower() for arg in command.get("argv", [])]
+    return "-nullrenderer" in argv and "-rhi=null" in argv
+
+
+def _shader_lines_match_known_rhi_reflection_gap(lines: Sequence[str]) -> bool:
+    if not lines:
+        return False
+    joined = "\n".join(lines)
+    known_tokens = (
+        "{1BAEE536-96CA-4AEB-BA73-D5D72EE35B45}",
+        "{A606478A-97E9-402D-A776-88EE72DAC6F9}",
+        "{A10B0F03-F43D-4462-9306-66195B4EFC46}",
+        "ShaderStageFunction",
+        "PipelineLayoutDescriptor",
+    )
+    return "not registered with the serializer" in joined and any(token in joined for token in known_tokens)
+
+
+def _runtime_filter_classified_signal_disqualifiers(
+    disqualifying: Sequence[Mapping[str, Any]],
+    diagnostics: Mapping[str, Any],
+    classification: Mapping[str, Any],
+) -> List[Dict[str, Any]]:
+    if classification.get("runtime_signal_classification_verified") is not True:
+        return [dict(item) for item in disqualifying if isinstance(item, Mapping)]
+    if diagnostics.get("runtime_asset_manager_asserts", {}).get("count", 0):
+        return [dict(item) for item in disqualifying if isinstance(item, Mapping)]
+    if diagnostics.get("runtime_assertion_summary", {}).get("assert_count", 0):
+        return [dict(item) for item in disqualifying if isinstance(item, Mapping)]
+    for field in ("runtime_stdout_error_summary", "runtime_stderr_error_summary", "runtime_log_error_summary"):
+        payload = diagnostics.get(field, {})
+        if not isinstance(payload, Mapping):
+            continue
+        if int(payload.get("fatal_or_exception_count", 0) or 0) > 0:
+            return [dict(item) for item in disqualifying if isinstance(item, Mapping)]
+        non_signal_count = (
+            int(payload.get("asset_manager_shutdown_assert_count", 0) or 0)
+            + int(payload.get("assert_count", 0) or 0)
+            + int(payload.get("fatal_or_exception_count", 0) or 0)
+        )
+        if non_signal_count:
+            return [dict(item) for item in disqualifying if isinstance(item, Mapping)]
+    return []
+
+
 def _sha256_bytes(payload: bytes) -> str:
     import hashlib
 
@@ -6601,6 +7327,7 @@ def _runtime_exit_fixture_static_payload(*, timeout_seconds: int) -> Dict[str, A
         "runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_pre_autoexec_suppression_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_cache_bootstrap_strategy": False,
+        "runtime_exit_fixture_runtime_command_uses_ap_shader_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
         "runtime_exit_fixture_level_load_observed": False,
         "runtime_exit_fixture_unexpected_level_load": False,
@@ -8119,6 +8846,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--enable-runtime-exit-fixture-pre-autoexec-loadlevel-suppression", action="store_true")
     parser.add_argument("--diagnose-runtime-cache-bootstrap-loadlevel-source", action="store_true")
     parser.add_argument("--enable-runtime-exit-fixture-cache-bootstrap-loadlevel-source", action="store_true")
+    parser.add_argument("--diagnose-runtime-ap-shader-signals", action="store_true")
+    parser.add_argument("--enable-runtime-exit-fixture-ap-shader-signal-classification", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -8160,6 +8889,10 @@ def main() -> int:
         diagnose_runtime_cache_bootstrap_loadlevel_source=args.diagnose_runtime_cache_bootstrap_loadlevel_source,
         enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source=(
             args.enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
+        ),
+        diagnose_runtime_ap_shader_signals=args.diagnose_runtime_ap_shader_signals,
+        enable_runtime_exit_fixture_ap_shader_signal_classification=(
+            args.enable_runtime_exit_fixture_ap_shader_signal_classification
         ),
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
