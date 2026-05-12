@@ -1557,3 +1557,235 @@ def test_runtime_harness_loadlevel_override_fixture_command_blocks_when_defaultl
     assert report["runtime_exit_fixture_execution_verified"] is False
     assert report["runtime_execution_verified"] is False
     assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_later_registry_patch_diagnostic_records_source_validated_candidate_matrix(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    registry = project / "Registry"
+    registry.mkdir()
+    (registry / "load_level.setreg").write_text(
+        json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}}),
+        encoding="utf-8",
+    )
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_later_registry_patch=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_later_registry_patch_diagnostic"
+    assert report["runtime_later_registry_patch_status"] == "runtime_later_registry_patch_source_discovery_pass"
+    assert report["runtime_later_registry_patch_candidate_matrix_recorded"] is True
+    candidate_ids = [candidate["id"] for candidate in report["runtime_later_registry_patch_candidates"]]
+    assert candidate_ids == [
+        "settings_registry_regremove_autoexec_loadlevel",
+        "settings_registry_regremove_autoexec_and_deferred_loadlevel",
+        "artifact_setregpatch_remove_autoexec_and_deferred_loadlevel",
+        "artifact_setreg_merge_patch_null_autoexec_and_deferred_loadlevel",
+    ]
+    failed_json_patch = report["runtime_later_registry_patch_candidates"][2]
+    assert failed_json_patch["result"] == "runtime_later_registry_patch_candidate_rejected_json_patch_remove_target_missing"
+    assert failed_json_patch["blocker"] == "blocked_by_fixture_temp_registry_patch_not_safe"
+    assert report["runtime_later_registry_patch_selected"] == (
+        "artifact_setreg_merge_patch_null_autoexec_and_deferred_loadlevel"
+    )
+    assert report["runtime_later_registry_patch_candidate_patch_path"].endswith(
+        "maxine_runtime_later_precedence_loadlevel_null_remove.setreg"
+    )
+    assert report["runtime_later_registry_patch_candidate_patch_contents_summary"] == (
+        "JSON Merge Patch sets /O3DE/Autoexec/ConsoleCommands/LoadLevel and "
+        "/O3DE/Runtime/SpawnableLevelSystem/DeferredLoadLevel to null so the keys are deleted."
+    )
+    assert report["runtime_later_registry_patch_candidate_merge_mechanism"] == (
+        "command_line_regset_file_setreg_json_merge_patch_null_delete"
+    )
+    assert report["runtime_later_registry_patch_candidate_merge_order"] == (
+        "final_command_line_regset_file_after_project_registry_and_project_user_registry"
+    )
+    assert "MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH=1" in report[
+        "runtime_later_registry_patch_candidate_gate_env"
+    ]
+    assert report["runtime_later_registry_patch_candidate_mutates_project"] is False
+    assert report["runtime_later_registry_patch_candidate_mutates_defaultlevel"] is False
+    assert report["runtime_later_registry_patch_candidate_mutates_production_level"] is False
+    assert report["runtime_later_registry_patch_candidate_command_args"] == [
+        f"--regset-file={report['runtime_later_registry_patch_candidate_patch_path']}"
+    ]
+    assert report["runtime_later_registry_patch_verified"] is False
+    assert report["runtime_execution_attempted"] is False
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_later_registry_patch_fixture_requires_temp_registry_patch_gate(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    def runner(argv, **kwargs):
+        raise AssertionError("runtime command must not launch without the temp registry patch gate")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_exit_fixture_later_registry_patch=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_harness_status"] == "blocked_by_fixture_temp_registry_patch_gate_missing"
+    assert report["runtime_later_registry_patch_status"] == "blocked_by_fixture_temp_registry_patch_gate_missing"
+    assert report["runtime_later_registry_patch_candidate_attempted"] is False
+    assert report["runtime_execution_attempted"] is False
+    assert report["runtime_exit_fixture_execution_attempted"] is False
+    assert not (tmp_path / "artifacts" / "maxine_runtime_later_precedence_loadlevel_null_remove.setreg").exists()
+
+
+def test_runtime_harness_later_registry_patch_fixture_command_generates_patch_and_verifies_clean_launch(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH"] = "1"
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+    launched = []
+
+    def runner(argv, **kwargs):
+        launched.append(argv)
+        regset_file_arg = next(arg for arg in argv if str(arg).startswith("--regset-file="))
+        patch_path = Path(str(regset_file_arg).split("=", 1)[1])
+        assert patch_path.exists()
+        assert json.loads(patch_path.read_text(encoding="utf-8")) == {
+            "O3DE": {
+                "Autoexec": {"ConsoleCommands": {"LoadLevel": None}},
+                "Runtime": {"SpawnableLevelSystem": {"DeferredLoadLevel": None}},
+            }
+        }
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout="MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=5\n",
+            stderr="",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_exit_fixture_later_registry_patch=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_exit_fixture_later_registry_patch_command"
+    assert report["runtime_later_registry_patch_status"] == "runtime_later_registry_patch_verified_no_defaultlevel"
+    assert report["runtime_later_registry_patch_verified"] is True
+    assert report["runtime_loadlevel_override_verified"] is True
+    assert report["runtime_later_registry_patch_candidate_result"] == "runtime_later_registry_patch_candidate_attempted_pass"
+    assert report["runtime_exit_fixture_runtime_command_uses_later_registry_patch_strategy"] is True
+    assert report["runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy"] is True
+    assert report["runtime_exit_fixture_runtime_command_uses_console_command_file_quit"] is False
+    assert report["runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit"] is True
+    assert any(str(arg).startswith("--regset-file=") for arg in launched[0])
+    assert not any(str(arg).startswith("--regremove=") for arg in launched[0])
+    assert report["runtime_later_registry_patch_candidate_patch_path"].endswith(
+        "maxine_runtime_later_precedence_loadlevel_null_remove.setreg"
+    )
+    assert report["runtime_later_registry_patch_candidate_actual_level_loads"] == []
+    assert report["runtime_default_level_autoload_detected"] is False
+    assert report["runtime_launch_hygiene_status"] == "runtime_launch_hygiene_pass"
+    assert report["runtime_exit_fixture_execution_verified"] is True
+    assert report["runtime_execution_verified"] is True
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["defaultlevel_mutation"] is False
+    assert report["production_level_mutation"] is False
+
+
+def test_runtime_harness_later_registry_patch_fixture_command_blocks_when_defaultlevel_still_loads(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH"] = "1"
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    def runner(argv, **kwargs):
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout=(
+                "MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=5\n"
+                "Game Level Load Time: Level Levels/defaultlevel/defaultlevel.spawnable loaded in 0.00 seconds\n"
+            ),
+            stderr="",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_exit_fixture_later_registry_patch=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_harness_status"] == "blocked_by_default_level_autoload"
+    assert report["runtime_later_registry_patch_status"] == (
+        "runtime_later_registry_patch_candidate_attempted_failed_defaultlevel_autoload"
+    )
+    assert report["runtime_later_registry_patch_verified"] is False
+    assert report["runtime_later_registry_patch_candidate_blocker"] == "blocked_by_settings_registry_merge_order"
+    assert report["runtime_default_level_autoload_detected"] is True
+    assert report["runtime_default_level_disqualifying"] is True
+    assert report["runtime_exit_fixture_execution_verified"] is False
+    assert report["runtime_execution_verified"] is False
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_validation_rejects_later_registry_patch_verified_without_clean_execution() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_later_registry_patch_verified": True,
+            "runtime_later_registry_patch_selected": "artifact_setreg_merge_patch_null_autoexec_and_deferred_loadlevel",
+            "runtime_execution_verified": False,
+            "runtime_launch_hygiene_status": "runtime_launch_hygiene_failed",
+            "runtime_default_level_autoload_detected": True,
+        }
+    )
+
+    result = runtime_harness.validate_runtime_harness_report(report)
+
+    assert not result.ok
+    assert any("runtime_later_registry_patch_verified=true requires verified runtime execution" in message for message in result.messages)

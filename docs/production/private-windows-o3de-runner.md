@@ -256,6 +256,22 @@ python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigge
 
 The selected LoadLevel candidate removes both `/O3DE/Autoexec/ConsoleCommands/LoadLevel` and `/O3DE/Runtime/SpawnableLevelSystem/DeferredLoadLevel` per process. If stdout reports those JSON pointers as missing and defaultlevel still autoloads, record `blocked_by_settings_registry_merge_order` for the candidate and keep runtime proof false. This is still not permission to mutate `Registry/load_level.setreg`, `Levels/defaultlevel`, production levels, or shipping behavior.
 
+Later-precedence registry patch diagnostics add the final command-line `--regset-file` path:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-later-registry-patch --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-exit-fixture-later-registry-patch --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+The selected candidate is `artifact_setreg_merge_patch_null_autoexec_and_deferred_loadlevel`. The harness writes a temporary `maxine_runtime_later_precedence_loadlevel_null_remove.setreg` under runtime harness artifacts and passes it as `--regset-file=<artifact patch>`. Source refs pin that this file is merged at the final command-line pass after project/project-user registry, and `.setreg` is parsed as JSON Merge Patch. This patch null-deletes the Autoexec `LoadLevel` key and the `SpawnableLevelSystem` deferred load key without editing live project registry files or `Levels/defaultlevel`. The failed JSON Patch remove candidate remains recorded as unsafe for absent targets. Do not commit active generated patch files; sanitized examples are the only acceptable committed patch evidence.
+
+If the fixture run still records defaultlevel autoload after the `.setreg` patch and no Settings Registry merge failure is present, keep the runtime result failed with `blocked_by_settings_registry_merge_order`. The later file merge is then source-valid but too late for this launcher path's autoexec notification timing.
+
 When using the produced paired Editor on the controlled runner, pass it explicitly:
 
 ```powershell

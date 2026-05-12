@@ -909,6 +909,12 @@ def test_editor_smoke_full_report_records_runtime_harness_without_character_over
     assert runtime_harness["runtime_loadlevel_override_candidate_matrix_recorded"] is False
     assert runtime_harness["runtime_loadlevel_override_candidates"] == []
     assert runtime_harness["runtime_loadlevel_override_verified"] is False
+    assert runtime_harness["runtime_later_registry_patch_status"] == "runtime_execution_not_attempted"
+    assert runtime_harness["runtime_later_registry_patch_candidate_matrix_recorded"] is False
+    assert runtime_harness["runtime_later_registry_patch_candidates"] == []
+    assert runtime_harness["runtime_later_registry_patch_candidate_gate_env"] == []
+    assert runtime_harness["runtime_later_registry_patch_verified"] is False
+    assert runtime_harness["runtime_exit_fixture_runtime_command_uses_later_registry_patch_strategy"] is False
     assert runtime_harness["runtime_settings_registry_merge_order_summary"] == {}
     assert runtime_harness["runtime_autoexec_console_command_effective_state"] == {}
     assert runtime_harness["runtime_asset_processor_negotiation_signal_status"] == "runtime_execution_not_attempted"
