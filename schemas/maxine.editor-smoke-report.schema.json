@@ -611,6 +611,9 @@
     "runtime_exit_fixture_runtime_command_uses_later_registry_patch_strategy": {
       "type": "boolean"
     },
+    "runtime_exit_fixture_runtime_command_uses_pre_autoexec_suppression_strategy": {
+      "type": "boolean"
+    },
     "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": {
       "type": "boolean"
     },
@@ -872,6 +875,142 @@
     "runtime_later_registry_patch_generation_status": {
       "type": "string"
     },
+    "runtime_pre_autoexec_loadlevel_suppression": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_pre_autoexec_loadlevel_suppression_status": {
+      "type": "string"
+    },
+    "runtime_pre_autoexec_loadlevel_suppression_candidates": {
+      "type": "array"
+    },
+    "runtime_pre_autoexec_candidate_matrix_recorded": {
+      "type": "boolean"
+    },
+    "runtime_pre_autoexec_candidate_id": {
+      "type": "string"
+    },
+    "runtime_pre_autoexec_candidate_name": {
+      "type": "string"
+    },
+    "runtime_pre_autoexec_candidate_kind": {
+      "type": "string"
+    },
+    "runtime_pre_autoexec_candidate_source_validation": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_pre_autoexec_candidate_source_refs": {
+      "type": "array"
+    },
+    "runtime_pre_autoexec_candidate_surface": {
+      "type": "string"
+    },
+    "runtime_pre_autoexec_candidate_merge_order": {
+      "type": "string"
+    },
+    "runtime_pre_autoexec_candidate_pre_autoexec_verified": {
+      "type": "boolean"
+    },
+    "runtime_pre_autoexec_candidate_patch_path": {
+      "type": "string"
+    },
+    "runtime_pre_autoexec_candidate_patch_contents_summary": {
+      "type": "string"
+    },
+    "runtime_pre_autoexec_candidate_mutates_project": {
+      "type": "boolean"
+    },
+    "runtime_pre_autoexec_candidate_mutates_project_user": {
+      "type": "boolean"
+    },
+    "runtime_pre_autoexec_candidate_mutates_defaultlevel": {
+      "type": "boolean"
+    },
+    "runtime_pre_autoexec_candidate_mutates_production_level": {
+      "type": "boolean"
+    },
+    "runtime_pre_autoexec_candidate_reversible": {
+      "type": "boolean"
+    },
+    "runtime_pre_autoexec_candidate_rollback": {
+      "type": "string"
+    },
+    "runtime_pre_autoexec_candidate_gate_env": {
+      "type": "array"
+    },
+    "runtime_pre_autoexec_candidate_command_args": {
+      "type": "array"
+    },
+    "runtime_pre_autoexec_candidate_settings_registry_keys": {
+      "type": "array"
+    },
+    "runtime_pre_autoexec_candidate_expected_registry_state": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_pre_autoexec_candidate_actual_registry_state": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_pre_autoexec_candidate_expected_level_loads": {
+      "type": "array"
+    },
+    "runtime_pre_autoexec_candidate_actual_level_loads": {
+      "type": "array"
+    },
+    "runtime_pre_autoexec_candidate_attempted": {
+      "type": "boolean"
+    },
+    "runtime_pre_autoexec_candidate_result": {
+      "type": "string"
+    },
+    "runtime_pre_autoexec_candidate_rejected_reason": {
+      "type": "string"
+    },
+    "runtime_pre_autoexec_candidate_blocker": {
+      "type": "string"
+    },
+    "runtime_pre_autoexec_candidate_mutation_path": {
+      "type": "string"
+    },
+    "runtime_pre_autoexec_candidate_mutation_disabled_path": {
+      "type": "string"
+    },
+    "runtime_pre_autoexec_candidate_mutation_backup_path": {
+      "type": "string"
+    },
+    "runtime_pre_autoexec_candidate_mutation_pre_refs": {
+      "type": "array"
+    },
+    "runtime_pre_autoexec_candidate_mutation_post_refs": {
+      "type": "array"
+    },
+    "runtime_pre_autoexec_candidate_mutation_restored": {
+      "type": "boolean"
+    },
+    "runtime_pre_autoexec_cache_bootstrap_loadlevel_sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "runtime_pre_autoexec_cache_bootstrap_loadlevel_source_count": {
+      "type": "integer"
+    },
+    "runtime_pre_autoexec_cache_bootstrap_loadlevel_blocker": {
+      "type": "string"
+    },
+    "runtime_pre_autoexec_selected": {
+      "type": "string"
+    },
+    "runtime_pre_autoexec_selected_reason": {
+      "type": "string"
+    },
+    "runtime_pre_autoexec_suppression_verified": {
+      "type": "boolean"
+    },
     "runtime_settings_registry_merge_order_summary": {
       "type": "object",
       "additionalProperties": true
@@ -880,6 +1019,15 @@
       "type": "string"
     },
     "runtime_settings_registry_project_registry_order": {
+      "type": "string"
+    },
+    "runtime_settings_registry_project_user_registry_order": {
+      "type": "string"
+    },
+    "runtime_console_autoexec_notification_timing": {
+      "type": "string"
+    },
+    "runtime_spawnable_level_deferred_load_timing": {
       "type": "string"
     },
     "runtime_autoexec_console_command_source": {

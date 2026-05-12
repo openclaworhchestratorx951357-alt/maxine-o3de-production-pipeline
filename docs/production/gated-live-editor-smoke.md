@@ -352,6 +352,20 @@ Patch generation and use require `MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PAT
 
 If the selected `.setreg` JSON Merge Patch merges cleanly but `Levels/defaultlevel/defaultlevel.spawnable` still loads, keep the result blocked as `blocked_by_settings_registry_merge_order` / `blocked_by_default_level_autoload`. That combination means the non-mutating final `--regset-file` pass exists but did not run early enough to prevent the project autoexec notification from invoking `LoadLevel`.
 
+Pre-autoexec LoadLevel suppression records the next boundary explicitly:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-pre-autoexec-loadlevel-suppression --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-exit-fixture-pre-autoexec-loadlevel-suppression --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+Source evidence now distinguishes early command-line merge, project-user registry merge, project registry merge, final command-line merge, console autoexec notification, and `SpawnableLevelSystem` deferred-load consumption. The selected candidate is `project_registry_load_level_setreg_temporarily_disabled_pre_autoexec`: under the project-mutation gate only, the harness temporarily renames `Registry/load_level.setreg` to a non-`.setreg` suffix before launching the bounded fixture command, writes an artifact backup/rollback reference, and restores the file after the process exits. This is a reversible live project registry mutation; it is not a defaultlevel content mutation, production level mutation, release package, or committed active registry patch. If generated `Cache/pc/bootstrap*.setreg` files still contain `Autoexec/LoadLevel=defaultlevel`, classify the remaining blocker as `blocked_by_project_cache_bootstrap_defaultlevel_autoload`; those cache bootstrap files are read-only evidence in this slice and must not be edited or deleted. A pass still requires no defaultlevel autoload, no production level load, fixture marker observed, expected exit code, and no unclassified AP/shader/runtime log blockers.
+
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 
 This wiring does not publish, mutate production levels, contact external services, or claim production-ready completion.
