@@ -161,6 +161,10 @@ def test_integration_suite_fixture_mode_scrubs_live_env_gates(monkeypatch):
     env["MAXINE_ENABLE_O3DE_INTEGRATION"] = "1"
     env["MAXINE_ENABLE_ASSET_PROCESSOR_BATCH"] = "1"
     env["MAXINE_ALLOW_LIVE_O3DE_COMMANDS"] = "1"
+    env["MAXINE_ENABLE_O3DE_RUNTIME_HARNESS"] = "1"
+    env["MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_REFRESH"] = "1"
 
     report = suite_module.run_integration_suite(mode="fixture", env=env)
 
@@ -170,6 +174,10 @@ def test_integration_suite_fixture_mode_scrubs_live_env_gates(monkeypatch):
         assert command_env.get("MAXINE_ENABLE_O3DE_INTEGRATION") != "1"
         assert command_env.get("MAXINE_ENABLE_ASSET_PROCESSOR_BATCH") != "1"
         assert command_env.get("MAXINE_ALLOW_LIVE_O3DE_COMMANDS") != "1"
+        assert command_env.get("MAXINE_ENABLE_O3DE_RUNTIME_HARNESS") != "1"
+        assert command_env.get("MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS") != "1"
+        assert command_env.get("MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION") != "1"
+        assert command_env.get("MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_REFRESH") != "1"
 
 
 def test_integration_suite_integration_unavailable_skips_non_strict(tmp_path):

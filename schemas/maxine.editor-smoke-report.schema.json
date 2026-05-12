@@ -131,6 +131,9 @@
     "defaultlevel_mutation": {
       "type": "boolean"
     },
+    "asset_cache_deleted": {
+      "type": "boolean"
+    },
     "editor_python_bindings_required": {
       "type": "boolean"
     },
@@ -614,6 +617,9 @@
     "runtime_exit_fixture_runtime_command_uses_pre_autoexec_suppression_strategy": {
       "type": "boolean"
     },
+    "runtime_exit_fixture_runtime_command_uses_cache_bootstrap_strategy": {
+      "type": "boolean"
+    },
     "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": {
       "type": "boolean"
     },
@@ -1010,6 +1016,134 @@
     },
     "runtime_pre_autoexec_suppression_verified": {
       "type": "boolean"
+    },
+    "runtime_cache_bootstrap_loadlevel_source": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_cache_bootstrap_loadlevel_source_status": {
+      "type": "string"
+    },
+    "runtime_cache_bootstrap_source_discovery_status": {
+      "type": "string"
+    },
+    "runtime_cache_bootstrap_files": {
+      "type": "array"
+    },
+    "runtime_cache_bootstrap_generation_source": {
+      "type": "string"
+    },
+    "runtime_cache_bootstrap_generation_source_refs": {
+      "type": "array"
+    },
+    "runtime_cache_bootstrap_generation_timing": {
+      "type": "string"
+    },
+    "runtime_cache_bootstrap_runtime_load_timing": {
+      "type": "string"
+    },
+    "runtime_cache_bootstrap_autoload_correlation": {
+      "type": "string"
+    },
+    "runtime_cache_bootstrap_candidate_matrix": {
+      "type": "array"
+    },
+    "runtime_cache_bootstrap_candidate_matrix_recorded": {
+      "type": "boolean"
+    },
+    "runtime_cache_bootstrap_candidate_id": {
+      "type": "string"
+    },
+    "runtime_cache_bootstrap_candidate_name": {
+      "type": "string"
+    },
+    "runtime_cache_bootstrap_candidate_kind": {
+      "type": "string"
+    },
+    "runtime_cache_bootstrap_candidate_source_validation": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_cache_bootstrap_candidate_source_refs": {
+      "type": "array"
+    },
+    "runtime_cache_bootstrap_candidate_expected_files": {
+      "type": "array"
+    },
+    "runtime_cache_bootstrap_candidate_actual_files": {
+      "type": "array"
+    },
+    "runtime_cache_bootstrap_candidate_expected_level_loads": {
+      "type": "array"
+    },
+    "runtime_cache_bootstrap_candidate_actual_level_loads": {
+      "type": "array"
+    },
+    "runtime_cache_bootstrap_candidate_mutates_cache": {
+      "type": "boolean"
+    },
+    "runtime_cache_bootstrap_candidate_mutates_project": {
+      "type": "boolean"
+    },
+    "runtime_cache_bootstrap_candidate_mutates_defaultlevel": {
+      "type": "boolean"
+    },
+    "runtime_cache_bootstrap_candidate_mutates_production_level": {
+      "type": "boolean"
+    },
+    "runtime_cache_bootstrap_candidate_reversible": {
+      "type": "boolean"
+    },
+    "runtime_cache_bootstrap_candidate_backup_refs": {
+      "type": "array"
+    },
+    "runtime_cache_bootstrap_candidate_restore_status": {
+      "type": "string"
+    },
+    "runtime_cache_bootstrap_candidate_hash_verified": {
+      "type": "boolean"
+    },
+    "runtime_cache_bootstrap_candidate_gate_env": {
+      "type": "array"
+    },
+    "runtime_cache_bootstrap_candidate_attempted": {
+      "type": "boolean"
+    },
+    "runtime_cache_bootstrap_candidate_result": {
+      "type": "string"
+    },
+    "runtime_cache_bootstrap_candidate_blocker": {
+      "type": "string"
+    },
+    "runtime_cache_bootstrap_selected": {
+      "type": "string"
+    },
+    "runtime_cache_bootstrap_selected_reason": {
+      "type": "string"
+    },
+    "runtime_cache_bootstrap_verified": {
+      "type": "boolean"
+    },
+    "runtime_cache_bootstrap_refresh_required": {
+      "type": "boolean"
+    },
+    "runtime_cache_bootstrap_refresh_attempted": {
+      "type": "boolean"
+    },
+    "runtime_cache_bootstrap_refresh_command": {
+      "type": "array"
+    },
+    "runtime_cache_bootstrap_refresh_result": {
+      "type": "string"
+    },
+    "runtime_cache_bootstrap_refresh_stdout_ref": {
+      "type": "string"
+    },
+    "runtime_cache_bootstrap_refresh_stderr_ref": {
+      "type": "string"
+    },
+    "runtime_cache_bootstrap_refresh_log_refs": {
+      "type": "array"
     },
     "runtime_settings_registry_merge_order_summary": {
       "type": "object",

@@ -917,6 +917,7 @@ def test_editor_smoke_full_report_records_runtime_harness_without_character_over
     assert runtime_harness["runtime_later_registry_patch_verified"] is False
     assert runtime_harness["runtime_exit_fixture_runtime_command_uses_later_registry_patch_strategy"] is False
     assert runtime_harness["runtime_pre_autoexec_loadlevel_suppression_status"] == "runtime_execution_not_attempted"
+    assert runtime_harness["runtime_exit_fixture_runtime_command_uses_cache_bootstrap_strategy"] is False
     assert runtime_harness["runtime_pre_autoexec_candidate_matrix_recorded"] is False
     assert runtime_harness["runtime_pre_autoexec_loadlevel_suppression_candidates"] == []
     assert runtime_harness["runtime_pre_autoexec_candidate_gate_env"] == []
@@ -924,6 +925,12 @@ def test_editor_smoke_full_report_records_runtime_harness_without_character_over
     assert runtime_harness["runtime_pre_autoexec_cache_bootstrap_loadlevel_sources"] == []
     assert runtime_harness["runtime_pre_autoexec_cache_bootstrap_loadlevel_source_count"] == 0
     assert runtime_harness["runtime_pre_autoexec_cache_bootstrap_loadlevel_blocker"] == ""
+    assert runtime_harness["runtime_cache_bootstrap_loadlevel_source_status"] == "runtime_execution_not_attempted"
+    assert runtime_harness["runtime_cache_bootstrap_source_discovery_status"] == "runtime_execution_not_attempted"
+    assert runtime_harness["runtime_cache_bootstrap_candidate_matrix_recorded"] is False
+    assert runtime_harness["runtime_cache_bootstrap_files"] == []
+    assert runtime_harness["runtime_cache_bootstrap_verified"] is False
+    assert runtime_harness["asset_cache_deleted"] is False
     assert runtime_harness["runtime_settings_registry_merge_order_summary"] == {}
     assert runtime_harness["runtime_settings_registry_project_user_registry_order"] == ""
     assert runtime_harness["runtime_console_autoexec_notification_timing"] == ""

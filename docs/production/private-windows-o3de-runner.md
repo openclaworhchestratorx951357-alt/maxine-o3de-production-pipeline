@@ -97,6 +97,8 @@ $env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
 $env:MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD="1"
 ```
 
+Cache-bootstrap diagnostics add two narrower gates. Use `MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_REFRESH=1` only for a source-validated scoped bootstrap refresh, and `MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION=1` only for the backup/neutralize/restore fixture path. Neither gate permits Asset Cache deletion or committing generated cache/bootstrap files.
+
 The repository now owns source for `o3de/gems/MaxineRuntimeExitFixture`, but it is disabled by default and is not runtime execution proof. Without the mutation/rebuild gates, the runner records source and rebuild-gate readiness only; it must not register the Gem, rebuild runtime targets, or launch a fixture command.
 
 ## Beginner Commands
@@ -289,6 +291,21 @@ The selected pre-autoexec candidate is `project_registry_load_level_setreg_tempo
 This mode must not edit `Levels/defaultlevel`, production levels, shipping fixture behavior, or committed project-private content. A clean exit and fixture marker are still insufficient if defaultlevel autoload, AP negotiation, shader serializer, missing/load/error/assert, timeout, or crash-like signals remain unclassified and disqualifying.
 
 If the project registry file is restored but defaultlevel still loads, inspect the pre-autoexec report fields `runtime_pre_autoexec_cache_bootstrap_loadlevel_sources` and `runtime_pre_autoexec_cache_bootstrap_loadlevel_blocker`. Generated `Cache/pc/bootstrap*.setreg` files can carry the same Autoexec LoadLevel setting into the runtime before source-registry suppression helps. Those cache bootstrap files are generated products and must not be edited or deleted in this slice; classify the result as `blocked_by_project_cache_bootstrap_defaultlevel_autoload` and keep runtime proof false.
+
+Cache-bootstrap LoadLevel source diagnostics inventory that generated layer and may run a stricter gated fixture strategy:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-cache-bootstrap-loadlevel-source --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-exit-fixture-cache-bootstrap-loadlevel-source --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+This mode source-validates `SettingsRegistryBuilder.cpp` as the generator of `bootstrap.<launcher>.<config>.setreg` products and `GameApplication.cpp` as the runtime cache-bootstrap loader. It scans `Cache/pc/bootstrap*.setreg` read-only by default. The fixture strategy can temporarily backup, neutralize, restore, and hash-verify scoped bootstrap files, but only under `MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION=1`; Asset Cache deletion remains forbidden, generated cache/bootstrap files must not be committed, and runtime proof still requires no defaultlevel load plus resolved or source-classified AP/shader signals.
 
 When using the produced paired Editor on the controlled runner, pass it explicitly:
 

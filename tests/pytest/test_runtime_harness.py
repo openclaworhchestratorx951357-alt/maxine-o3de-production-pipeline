@@ -25,9 +25,12 @@ def _engine(root: Path, *, launcher: bool = True) -> Path:
         engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryMergeUtils.cpp",
         engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryMergeUtils.h",
         engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Component" / "ComponentApplication.cpp",
+        engine / "Code" / "Framework" / "AzGameFramework" / "AzGameFramework" / "Application" / "GameApplication.cpp",
         engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "IConsole.h",
         engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "Console.cpp",
+        engine / "Code" / "Tools" / "AssetProcessor" / "native" / "InternalBuilders" / "SettingsRegistryBuilder.cpp",
         engine / "Code" / "Legacy" / "CrySystem" / "LevelSystem" / "SpawnableLevelSystem.cpp",
+        engine / "Assets" / "Engine" / "SeedAssetList.seed",
     ):
         source_path.parent.mkdir(parents=True, exist_ok=True)
         source_path.write_text("source validation fixture\n", encoding="utf-8")
@@ -2097,3 +2100,312 @@ def test_runtime_harness_validation_rejects_pre_autoexec_verified_without_clean_
 
     assert not result.ok
     assert any("runtime_pre_autoexec_suppression_verified=true requires verified runtime execution" in message for message in result.messages)
+
+
+def test_runtime_harness_cache_bootstrap_diagnostic_records_inventory_and_candidate_matrix(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    registry = project / "Registry"
+    registry.mkdir()
+    (registry / "load_level.setreg").write_text(
+        json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}}),
+        encoding="utf-8",
+    )
+    cache = project / "Cache" / "pc"
+    cache.mkdir(parents=True)
+    bootstrap = cache / "bootstrap.server.profile.setreg"
+    bootstrap.write_text(
+        json.dumps(
+            {
+                "O3DE": {
+                    "Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}},
+                    "Runtime": {"SpawnableLevelSystem": {"DeferredLoadLevel": "defaultlevel"}},
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_cache_bootstrap_loadlevel_source=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_cache_bootstrap_loadlevel_source_diagnostic"
+    assert report["runtime_cache_bootstrap_loadlevel_source_status"] == "runtime_cache_bootstrap_source_discovery_pass"
+    assert report["runtime_cache_bootstrap_source_discovery_status"] == "runtime_cache_bootstrap_loadlevel_source_detected"
+    assert report["runtime_cache_bootstrap_generation_source"] == "AssetProcessor_SettingsRegistryBuilder"
+    assert "SettingsRegistryBuilder.cpp" in " ".join(report["runtime_cache_bootstrap_generation_source_refs"])
+    assert "GameApplication.cpp" in " ".join(report["runtime_cache_bootstrap_generation_source_refs"])
+    assert report["runtime_cache_bootstrap_runtime_load_timing"] == (
+        "GameApplication_MergeSettingsToRegistry_merges_bootstrap_launcher_config_setreg_from_cache_root_after_shared_settings_before_user_settings"
+    )
+    assert report["runtime_cache_bootstrap_candidate_matrix_recorded"] is True
+    candidate_ids = [candidate["id"] for candidate in report["runtime_cache_bootstrap_candidate_matrix"]]
+    assert candidate_ids == [
+        "cache_bootstrap_read_only_inventory",
+        "cache_bootstrap_scoped_apb_refresh_after_source_suppression",
+        "cache_bootstrap_generated_registry_overlay_before_autoexec",
+        "cache_bootstrap_setreg_temporarily_neutralized_with_project_source_suppression",
+        "cache_bootstrap_requires_asset_cache_deletion",
+    ]
+    assert report["runtime_cache_bootstrap_selected"] == (
+        "cache_bootstrap_setreg_temporarily_neutralized_with_project_source_suppression"
+    )
+    assert report["runtime_cache_bootstrap_verified"] is False
+    assert report["asset_cache_deleted"] is False
+    assert len(report["runtime_cache_bootstrap_files"]) == 1
+    scanned = report["runtime_cache_bootstrap_files"][0]
+    assert scanned["path"].endswith("Cache/pc/bootstrap.server.profile.setreg")
+    assert scanned["exists"] is True
+    assert scanned["hash"]
+    assert scanned["mtime"]
+    assert scanned["contains_loadlevel"] is True
+    assert scanned["contains_deferred_loadlevel"] is True
+    assert scanned["loadlevel_value"] == "defaultlevel"
+    assert scanned["source_candidate"] == "project_registry_load_level_setreg"
+    assert report["runtime_execution_attempted"] is False
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_cache_bootstrap_fixture_requires_mutation_gate(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION"] = "1"
+    registry = project / "Registry"
+    registry.mkdir()
+    source = registry / "load_level.setreg"
+    source.write_text(
+        json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}}),
+        encoding="utf-8",
+    )
+    cache = project / "Cache" / "pc"
+    cache.mkdir(parents=True)
+    bootstrap = cache / "bootstrap.server.profile.setreg"
+    original_bootstrap = json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}})
+    bootstrap.write_text(original_bootstrap, encoding="utf-8")
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    def runner(argv, **kwargs):
+        raise AssertionError("runtime command must not launch without the cache-bootstrap mutation gate")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_harness_status"] == "blocked_by_fixture_cache_bootstrap_mutation_gate_missing"
+    assert report["runtime_cache_bootstrap_loadlevel_source_status"] == (
+        "blocked_by_fixture_cache_bootstrap_mutation_gate_missing"
+    )
+    assert report["runtime_cache_bootstrap_candidate_attempted"] is False
+    assert report["runtime_execution_attempted"] is False
+    assert report["runtime_exit_fixture_execution_attempted"] is False
+    assert source.exists()
+    assert bootstrap.read_text(encoding="utf-8") == original_bootstrap
+    assert report["asset_cache_deleted"] is False
+
+
+def test_runtime_harness_cache_bootstrap_fixture_neutralizes_bootstrap_and_restores_hashes(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION"] = "1"
+    registry = project / "Registry"
+    registry.mkdir()
+    source = registry / "load_level.setreg"
+    source.write_text(
+        json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}}),
+        encoding="utf-8",
+    )
+    cache = project / "Cache" / "pc"
+    cache.mkdir(parents=True)
+    bootstrap = cache / "bootstrap.server.profile.setreg"
+    original_bootstrap = json.dumps(
+        {
+            "O3DE": {
+                "Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}},
+                "Runtime": {"SpawnableLevelSystem": {"DeferredLoadLevel": "defaultlevel"}},
+            }
+        }
+    )
+    bootstrap.write_text(original_bootstrap, encoding="utf-8")
+    original_source = source.read_text(encoding="utf-8")
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+    launched = []
+
+    def runner(argv, **kwargs):
+        launched.append(argv)
+        assert not source.exists()
+        mutated = json.loads(bootstrap.read_text(encoding="utf-8"))
+        assert "LoadLevel" not in mutated["O3DE"]["Autoexec"]["ConsoleCommands"]
+        assert "DeferredLoadLevel" not in mutated["O3DE"]["Runtime"]["SpawnableLevelSystem"]
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout="MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=5\n",
+            stderr="",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_exit_fixture_cache_bootstrap_loadlevel_source_command"
+    assert report["runtime_cache_bootstrap_loadlevel_source_status"] == "runtime_cache_bootstrap_verified_no_defaultlevel"
+    assert report["runtime_cache_bootstrap_candidate_result"] == "runtime_cache_bootstrap_candidate_attempted_pass"
+    assert report["runtime_cache_bootstrap_verified"] is True
+    assert report["runtime_exit_fixture_runtime_command_uses_cache_bootstrap_strategy"] is True
+    assert report["runtime_exit_fixture_runtime_command_uses_pre_autoexec_suppression_strategy"] is True
+    assert report["runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit"] is True
+    assert report["runtime_exit_fixture_runtime_command_uses_console_command_file_quit"] is False
+    assert not any(str(arg).startswith("--regremove=") for arg in launched[0])
+    assert not any(str(arg).startswith("--regset-file=") for arg in launched[0])
+    assert report["runtime_cache_bootstrap_candidate_backup_refs"]
+    assert report["runtime_cache_bootstrap_candidate_restore_status"] == "runtime_cache_bootstrap_restore_pass"
+    assert report["runtime_cache_bootstrap_candidate_hash_verified"] is True
+    assert report["runtime_cache_bootstrap_candidate_mutates_cache"] is True
+    assert report["runtime_cache_bootstrap_candidate_mutates_project"] is True
+    assert report["runtime_cache_bootstrap_candidate_mutates_defaultlevel"] is False
+    assert report["runtime_cache_bootstrap_candidate_mutates_production_level"] is False
+    assert report["runtime_cache_bootstrap_candidate_actual_level_loads"] == []
+    assert report["runtime_default_level_autoload_detected"] is False
+    assert report["runtime_launch_hygiene_status"] == "runtime_launch_hygiene_pass"
+    assert report["runtime_exit_fixture_execution_verified"] is True
+    assert report["runtime_execution_verified"] is True
+    assert report["runtime_character_proof_claimed"] is False
+    assert source.exists()
+    assert source.read_text(encoding="utf-8") == original_source
+    assert bootstrap.read_text(encoding="utf-8") == original_bootstrap
+    assert report["asset_cache_deleted"] is False
+    assert report["defaultlevel_mutation"] is False
+    assert report["production_level_mutation"] is False
+
+
+def test_runtime_harness_cache_bootstrap_fixture_blocks_when_defaultlevel_still_loads(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION"] = "1"
+    registry = project / "Registry"
+    registry.mkdir()
+    source = registry / "load_level.setreg"
+    source.write_text(
+        json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}}),
+        encoding="utf-8",
+    )
+    cache = project / "Cache" / "pc"
+    cache.mkdir(parents=True)
+    bootstrap = cache / "bootstrap.server.profile.setreg"
+    bootstrap.write_text(
+        json.dumps({"O3DE": {"Autoexec": {"ConsoleCommands": {"LoadLevel": "defaultlevel"}}}}),
+        encoding="utf-8",
+    )
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    payload["gem_names"].append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
+    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    def runner(argv, **kwargs):
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout=(
+                "MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=5\n"
+                "Game Level Load Time: Level Levels/defaultlevel/defaultlevel.spawnable loaded in 0.00 seconds\n"
+            ),
+            stderr="",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=120,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_harness_status"] == "blocked_by_default_level_autoload"
+    assert report["runtime_cache_bootstrap_loadlevel_source_status"] == (
+        "runtime_cache_bootstrap_candidate_attempted_failed_defaultlevel_autoload"
+    )
+    assert report["runtime_cache_bootstrap_candidate_blocker"] == "blocked_by_default_level_autoload"
+    assert report["runtime_cache_bootstrap_candidate_restore_status"] == "runtime_cache_bootstrap_restore_pass"
+    assert report["runtime_cache_bootstrap_candidate_hash_verified"] is True
+    assert report["runtime_cache_bootstrap_verified"] is False
+    assert report["runtime_default_level_autoload_detected"] is True
+    assert report["runtime_default_level_disqualifying"] is True
+    assert report["runtime_exit_fixture_execution_verified"] is False
+    assert report["runtime_execution_verified"] is False
+    assert report["runtime_character_proof_claimed"] is False
+    assert source.exists()
+    assert bootstrap.exists()
+    assert report["asset_cache_deleted"] is False
+
+
+def test_runtime_harness_validation_rejects_cache_bootstrap_verified_without_clean_execution() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_cache_bootstrap_verified": True,
+            "runtime_cache_bootstrap_selected": "cache_bootstrap_setreg_temporarily_neutralized_with_project_source_suppression",
+            "runtime_cache_bootstrap_candidate_reversible": True,
+            "runtime_cache_bootstrap_candidate_restore_status": "runtime_cache_bootstrap_restore_pass",
+            "runtime_cache_bootstrap_candidate_hash_verified": True,
+            "runtime_execution_verified": False,
+            "runtime_launch_hygiene_status": "runtime_launch_hygiene_failed",
+            "runtime_default_level_autoload_detected": True,
+        }
+    )
+
+    result = runtime_harness.validate_runtime_harness_report(report)
+
+    assert not result.ok
+    assert any("runtime_cache_bootstrap_verified=true requires verified runtime execution" in message for message in result.messages)
+
+
+def test_runtime_harness_validation_rejects_asset_cache_deletion() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report["asset_cache_deleted"] = True
+
+    result = runtime_harness.validate_runtime_harness_report(report)
+
+    assert not result.ok
+    assert any("Runtime harness must not delete Asset Cache" in message for message in result.messages)
