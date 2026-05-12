@@ -73,6 +73,8 @@ RUNTIME_EXIT_FIXTURE_GATE_ENV = (
 RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION=1",)
 RUNTIME_EXIT_FIXTURE_REBUILD_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD=1",)
 RUNTIME_EXIT_FIXTURE_TEMP_REGISTRY_PATCH_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH=1",)
+RUNTIME_EXIT_FIXTURE_CACHE_BOOTSTRAP_REFRESH_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_REFRESH=1",)
+RUNTIME_EXIT_FIXTURE_CACHE_BOOTSTRAP_MUTATION_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION=1",)
 RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY = "/O3DE/Autoexec/ConsoleCommands/LoadLevel"
 RUNTIME_DEFERRED_LOADLEVEL_KEY = "/O3DE/Runtime/SpawnableLevelSystem/DeferredLoadLevel"
 RUNTIME_DEFAULT_LEVEL_PRODUCT_PATH = "Levels/defaultlevel/defaultlevel.spawnable"
@@ -90,6 +92,8 @@ RUNTIME_PRE_AUTOEXEC_SUPPRESSION_SELECTED = "project_registry_load_level_setreg_
 RUNTIME_PRE_AUTOEXEC_SUPPRESSION_DISABLED_FILENAME = "load_level.setreg.maxine_pre_autoexec_disabled"
 RUNTIME_PRE_AUTOEXEC_SUPPRESSION_BACKUP_FILENAME = "maxine_runtime_pre_autoexec_load_level_setreg_backup.txt"
 RUNTIME_PRE_AUTOEXEC_CACHE_BOOTSTRAP_BLOCKER = "blocked_by_project_cache_bootstrap_defaultlevel_autoload"
+RUNTIME_CACHE_BOOTSTRAP_SELECTED = "cache_bootstrap_setreg_temporarily_neutralized_with_project_source_suppression"
+RUNTIME_CACHE_BOOTSTRAP_BACKUP_DIRNAME = "maxine_runtime_cache_bootstrap_backups"
 WINDOWS_NTSTATUS_NAMES = {
     0xC0000005: "STATUS_ACCESS_VIOLATION",
 }
@@ -164,6 +168,8 @@ def run_runtime_harness(
     enable_runtime_exit_fixture_later_registry_patch: bool = False,
     diagnose_runtime_pre_autoexec_loadlevel_suppression: bool = False,
     enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression: bool = False,
+    diagnose_runtime_cache_bootstrap_loadlevel_source: bool = False,
+    enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -197,6 +203,8 @@ def run_runtime_harness(
         and not enable_runtime_exit_fixture_later_registry_patch
         and not diagnose_runtime_pre_autoexec_loadlevel_suppression
         and not enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression
+        and not diagnose_runtime_cache_bootstrap_loadlevel_source
+        and not enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -235,6 +243,8 @@ def run_runtime_harness(
             and not enable_runtime_exit_fixture_later_registry_patch
             and not diagnose_runtime_pre_autoexec_loadlevel_suppression
             and not enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression
+            and not diagnose_runtime_cache_bootstrap_loadlevel_source
+            and not enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -269,6 +279,10 @@ def run_runtime_harness(
             if diagnose_runtime_pre_autoexec_loadlevel_suppression
             else "runtime_exit_fixture_pre_autoexec_loadlevel_suppression_command"
             if enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression
+            else "runtime_cache_bootstrap_loadlevel_source_diagnostic"
+            if diagnose_runtime_cache_bootstrap_loadlevel_source
+            else "runtime_exit_fixture_cache_bootstrap_loadlevel_source_command"
+            if enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -358,6 +372,8 @@ def run_runtime_harness(
         and not enable_runtime_exit_fixture_later_registry_patch
         and not diagnose_runtime_pre_autoexec_loadlevel_suppression
         and not enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression
+        and not diagnose_runtime_cache_bootstrap_loadlevel_source
+        and not enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -471,6 +487,15 @@ def run_runtime_harness(
             artifact_dir=artifact_dir,
         )
 
+    if diagnose_runtime_cache_bootstrap_loadlevel_source:
+        return _run_runtime_cache_bootstrap_diagnostic(
+            report,
+            engine_root=selected_engine,
+            project=selected_project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+
     gate_status = _runtime_gate_status(env_map)
     if gate_status["status"] != "pass":
         report.update(
@@ -493,6 +518,7 @@ def run_runtime_harness(
         or enable_runtime_exit_fixture_loadlevel_override
         or enable_runtime_exit_fixture_later_registry_patch
         or enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression
+        or enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
     ):
         return _run_runtime_exit_fixture_command(
             report,
@@ -504,6 +530,7 @@ def run_runtime_harness(
             loadlevel_override=enable_runtime_exit_fixture_loadlevel_override,
             later_registry_patch=enable_runtime_exit_fixture_later_registry_patch,
             pre_autoexec_suppression=enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression,
+            cache_bootstrap_strategy=enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source,
         )
 
     command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
@@ -562,6 +589,8 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
         result.add_error(MXN_PATH_UNSAFE, "Runtime harness must not mutate production levels.")
     if report.get("defaultlevel_mutation") is True:
         result.add_error(MXN_PATH_UNSAFE, "Runtime harness must not mutate defaultlevel.")
+    if report.get("asset_cache_deleted") is True:
+        result.add_error(MXN_PATH_UNSAFE, "Runtime harness must not delete Asset Cache.")
 
     attempted = report.get("runtime_execution_attempted") is True
     completed = report.get("runtime_execution_completed") is True
@@ -646,6 +675,29 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
             result.add_error(MXN_PATH_UNSAFE, "runtime_pre_autoexec_suppression_verified=true requires a reversible suppression candidate.")
         if report.get("runtime_pre_autoexec_candidate_mutation_restored") is not True:
             result.add_error(MXN_PATH_UNSAFE, "runtime_pre_autoexec_suppression_verified=true requires restored project registry mutation.")
+    if report.get("runtime_cache_bootstrap_verified") is True:
+        if report.get("runtime_execution_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_cache_bootstrap_verified=true requires verified runtime execution.")
+        if str(report.get("runtime_launch_hygiene_status", "")).strip() != "runtime_launch_hygiene_pass":
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_cache_bootstrap_verified=true requires runtime_launch_hygiene_pass.")
+        if report.get("runtime_default_level_autoload_detected") is True:
+            result.add_error(MXN_PATH_UNSAFE, "runtime_cache_bootstrap_verified=true cannot allow defaultlevel autoload.")
+        if not str(report.get("runtime_cache_bootstrap_selected", "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_cache_bootstrap_verified=true requires a selected cache-bootstrap strategy.")
+        if report.get("runtime_cache_bootstrap_candidate_reversible") is not True:
+            result.add_error(MXN_PATH_UNSAFE, "runtime_cache_bootstrap_verified=true requires a reversible cache-bootstrap candidate.")
+        if str(report.get("runtime_cache_bootstrap_candidate_restore_status", "")).strip() != "runtime_cache_bootstrap_restore_pass":
+            result.add_error(MXN_PATH_UNSAFE, "runtime_cache_bootstrap_verified=true requires restored cache/bootstrap mutation.")
+        if report.get("runtime_cache_bootstrap_candidate_hash_verified") is not True:
+            result.add_error(MXN_PATH_UNSAFE, "runtime_cache_bootstrap_verified=true requires cache/bootstrap hash verification.")
+    if (
+        report.get("runtime_cache_bootstrap_candidate_attempted") is True
+        and report.get("runtime_cache_bootstrap_candidate_mutates_cache") is True
+    ):
+        if str(report.get("runtime_cache_bootstrap_candidate_restore_status", "")).strip() != "runtime_cache_bootstrap_restore_pass":
+            result.add_error(MXN_PATH_UNSAFE, "Cache/bootstrap mutation attempts must restore generated bootstrap files.")
+        if report.get("runtime_cache_bootstrap_candidate_hash_verified") is not True:
+            result.add_error(MXN_PATH_UNSAFE, "Cache/bootstrap mutation attempts must hash-verify restored bootstrap files.")
     if report.get("runtime_exit_fixture_execution_verified") is True:
         if report.get("runtime_exit_fixture_execution_attempted") is not True:
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_exit_fixture_execution_verified=true requires fixture execution attempt.")
@@ -837,6 +889,12 @@ def print_text_report(report: Mapping[str, Any]) -> None:
     if report.get("runtime_later_registry_patch_status") not in {None, "", "not_run", "runtime_execution_not_attempted"}:
         print(f"runtime_later_registry_patch_status: {report.get('runtime_later_registry_patch_status', '')}")
         print(f"runtime_later_registry_patch_verified: {str(report.get('runtime_later_registry_patch_verified', False)).lower()}")
+    if report.get("runtime_pre_autoexec_loadlevel_suppression_status") not in {None, "", "not_run", "runtime_execution_not_attempted"}:
+        print(f"runtime_pre_autoexec_loadlevel_suppression_status: {report.get('runtime_pre_autoexec_loadlevel_suppression_status', '')}")
+        print(f"runtime_pre_autoexec_suppression_verified: {str(report.get('runtime_pre_autoexec_suppression_verified', False)).lower()}")
+    if report.get("runtime_cache_bootstrap_loadlevel_source_status") not in {None, "", "not_run", "runtime_execution_not_attempted"}:
+        print(f"runtime_cache_bootstrap_loadlevel_source_status: {report.get('runtime_cache_bootstrap_loadlevel_source_status', '')}")
+        print(f"runtime_cache_bootstrap_verified: {str(report.get('runtime_cache_bootstrap_verified', False)).lower()}")
     print(f"runtime_character_proof_claimed: {str(report.get('runtime_character_proof_claimed', False)).lower()}")
     print(f"runtime_character_proof_verified: {str(report.get('runtime_character_proof_verified', False)).lower()}")
     print(f"live_runtime_execution: {str(report.get('live_runtime_execution', False)).lower()}")
@@ -1057,6 +1115,7 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_later_registry_patch_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_pre_autoexec_suppression_strategy": False,
+        "runtime_exit_fixture_runtime_command_uses_cache_bootstrap_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
         "runtime_exit_fixture_level_load_observed": False,
         "runtime_exit_fixture_unexpected_level_load": False,
@@ -1188,6 +1247,48 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_pre_autoexec_selected": "",
         "runtime_pre_autoexec_selected_reason": "",
         "runtime_pre_autoexec_suppression_verified": False,
+        "runtime_cache_bootstrap_loadlevel_source": {"status": "runtime_execution_not_attempted"},
+        "runtime_cache_bootstrap_loadlevel_source_status": "runtime_execution_not_attempted",
+        "runtime_cache_bootstrap_source_discovery_status": "runtime_execution_not_attempted",
+        "runtime_cache_bootstrap_files": [],
+        "runtime_cache_bootstrap_generation_source": "",
+        "runtime_cache_bootstrap_generation_source_refs": [],
+        "runtime_cache_bootstrap_generation_timing": "",
+        "runtime_cache_bootstrap_runtime_load_timing": "",
+        "runtime_cache_bootstrap_autoload_correlation": "",
+        "runtime_cache_bootstrap_candidate_matrix": [],
+        "runtime_cache_bootstrap_candidate_matrix_recorded": False,
+        "runtime_cache_bootstrap_candidate_id": "",
+        "runtime_cache_bootstrap_candidate_name": "",
+        "runtime_cache_bootstrap_candidate_kind": "",
+        "runtime_cache_bootstrap_candidate_source_validation": {},
+        "runtime_cache_bootstrap_candidate_source_refs": [],
+        "runtime_cache_bootstrap_candidate_expected_files": [],
+        "runtime_cache_bootstrap_candidate_actual_files": [],
+        "runtime_cache_bootstrap_candidate_expected_level_loads": [],
+        "runtime_cache_bootstrap_candidate_actual_level_loads": [],
+        "runtime_cache_bootstrap_candidate_mutates_cache": False,
+        "runtime_cache_bootstrap_candidate_mutates_project": False,
+        "runtime_cache_bootstrap_candidate_mutates_defaultlevel": False,
+        "runtime_cache_bootstrap_candidate_mutates_production_level": False,
+        "runtime_cache_bootstrap_candidate_reversible": False,
+        "runtime_cache_bootstrap_candidate_backup_refs": [],
+        "runtime_cache_bootstrap_candidate_restore_status": "not_attempted",
+        "runtime_cache_bootstrap_candidate_hash_verified": False,
+        "runtime_cache_bootstrap_candidate_gate_env": [],
+        "runtime_cache_bootstrap_candidate_attempted": False,
+        "runtime_cache_bootstrap_candidate_result": "",
+        "runtime_cache_bootstrap_candidate_blocker": "",
+        "runtime_cache_bootstrap_selected": "",
+        "runtime_cache_bootstrap_selected_reason": "",
+        "runtime_cache_bootstrap_verified": False,
+        "runtime_cache_bootstrap_refresh_required": False,
+        "runtime_cache_bootstrap_refresh_attempted": False,
+        "runtime_cache_bootstrap_refresh_command": [],
+        "runtime_cache_bootstrap_refresh_result": "runtime_cache_bootstrap_refresh_not_attempted",
+        "runtime_cache_bootstrap_refresh_stdout_ref": "",
+        "runtime_cache_bootstrap_refresh_stderr_ref": "",
+        "runtime_cache_bootstrap_refresh_log_refs": [],
         "runtime_settings_registry_project_user_registry_order": "",
         "runtime_console_autoexec_notification_timing": "",
         "runtime_spawnable_level_deferred_load_timing": "",
@@ -1275,6 +1376,7 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "release_packaging": False,
         "production_level_mutation": False,
         "defaultlevel_mutation": False,
+        "asset_cache_deleted": False,
         "fake_success": False,
         "cache_heuristic_used": False,
         "errors": [],
@@ -2318,6 +2420,65 @@ def _run_runtime_pre_autoexec_suppression_diagnostic(
     return _finalize_report(report)
 
 
+def _run_runtime_cache_bootstrap_diagnostic(
+    report: Dict[str, Any],
+    *,
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
+    report["runtime_harness_mode"] = "runtime_cache_bootstrap_loadlevel_source_diagnostic"
+    payload = _runtime_cache_bootstrap_source_payload(
+        project=project,
+        engine_root=engine_root,
+        timeout_seconds=timeout_seconds,
+        artifact_dir=artifact_dir,
+    )
+    source_validated = (
+        payload["runtime_cache_bootstrap_loadlevel_source_status"]
+        == "runtime_cache_bootstrap_source_discovery_pass"
+    )
+    report.update(payload)
+    report.update(
+        {
+            "status": "pass" if source_validated else "fail",
+            "runtime_harness_status": payload["runtime_cache_bootstrap_loadlevel_source_status"],
+            "runtime_execution_status": "runtime_execution_not_attempted",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "live_runtime_execution": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "defaultlevel_mutation": False,
+            "production_level_mutation": False,
+            "asset_cache_deleted": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_exit_fixture_source_ready",
+                "runtime_cache_bootstrap_source_validated",
+                "runtime_cache_bootstrap_candidate_matrix_recorded",
+                "runtime_execution_not_attempted_in_cache_bootstrap_diagnostic",
+                "runtime_character_proof_not_claimed",
+                "asset_cache_not_deleted",
+            ]
+            if source_validated
+            else [],
+            "required_runtime_harness_assertions_failed": []
+            if source_validated
+            else ["runtime_cache_bootstrap_source_validation"],
+            "runtime_harness_assertion_informational": [
+                "cache_bootstrap_diagnostic_does_not_launch_runtime",
+                "cache_bootstrap_source_validation_is_not_runtime_execution_proof",
+                "cache_bootstrap_mutation_requires_explicit_gate",
+                "asset_cache_deletion_forbidden",
+            ],
+        }
+    )
+    return _finalize_report(report)
+
+
 def _run_runtime_exit_fixture_command(
     report: Dict[str, Any],
     *,
@@ -2329,10 +2490,13 @@ def _run_runtime_exit_fixture_command(
     loadlevel_override: bool = False,
     later_registry_patch: bool = False,
     pre_autoexec_suppression: bool = False,
+    cache_bootstrap_strategy: bool = False,
 ) -> Dict[str, Any]:
     report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
     report["runtime_harness_mode"] = (
-        "runtime_exit_fixture_later_registry_patch_command"
+        "runtime_exit_fixture_cache_bootstrap_loadlevel_source_command"
+        if cache_bootstrap_strategy
+        else "runtime_exit_fixture_later_registry_patch_command"
         if later_registry_patch
         else "runtime_exit_fixture_pre_autoexec_loadlevel_suppression_command"
         if pre_autoexec_suppression
@@ -2410,6 +2574,55 @@ def _run_runtime_exit_fixture_command(
                     "runtime_exit_fixture_execution_verified": False,
                     "live_runtime_execution": False,
                     "required_runtime_harness_assertions_failed": ["runtime_fixture_temp_registry_patch_gate"],
+                }
+            )
+            return _finalize_report(report)
+
+    if cache_bootstrap_strategy:
+        cache_gate = _runtime_cache_bootstrap_mutation_gate_status(env)
+        report["runtime_cache_bootstrap_candidate_gate_env"] = (
+            list(RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV)
+            + list(RUNTIME_EXIT_FIXTURE_CACHE_BOOTSTRAP_MUTATION_GATE_ENV)
+        )
+        readiness_payload = report.get("runtime_harness_readiness", {})
+        source_engine_root = (
+            Path(str(readiness_payload.get("engine_root", "")))
+            if isinstance(readiness_payload, Mapping) and str(readiness_payload.get("engine_root", "")).strip()
+            else None
+        )
+        if cache_gate["status"] != "pass":
+            payload = _runtime_cache_bootstrap_source_payload(
+                project=project,
+                engine_root=source_engine_root,
+                timeout_seconds=timeout_seconds,
+                artifact_dir=artifact_dir,
+            )
+            payload.update(
+                {
+                    "runtime_cache_bootstrap_loadlevel_source_status": cache_gate["status"],
+                    "runtime_cache_bootstrap_candidate_result": "runtime_cache_bootstrap_candidate_rejected_unsafe",
+                    "runtime_cache_bootstrap_candidate_attempted": False,
+                    "runtime_cache_bootstrap_candidate_blocker": cache_gate["status"],
+                    "runtime_cache_bootstrap_verified": False,
+                    "runtime_default_level_override_blocker": cache_gate["status"],
+                }
+            )
+            report.update(payload)
+            report.update(
+                {
+                    "status": "fail",
+                    "runtime_harness_status": cache_gate["status"],
+                    "runtime_exit_fixture_status": cache_gate["status"],
+                    "runtime_exit_fixture_blocked_reason": cache_gate["status"],
+                    "runtime_harness_blocked_reason": cache_gate["status"],
+                    "runtime_exit_fixture_execution_attempted": False,
+                    "runtime_execution_status": "runtime_execution_not_attempted",
+                    "runtime_execution_attempted": False,
+                    "runtime_execution_completed": False,
+                    "runtime_execution_verified": False,
+                    "live_runtime_execution": False,
+                    "asset_cache_deleted": False,
+                    "required_runtime_harness_assertions_failed": ["runtime_fixture_cache_bootstrap_mutation_gate"],
                 }
             )
             return _finalize_report(report)
@@ -2499,6 +2712,7 @@ def _run_runtime_exit_fixture_command(
         loadlevel_override=loadlevel_override,
         later_registry_patch=later_registry_patch,
         pre_autoexec_suppression=pre_autoexec_suppression,
+        cache_bootstrap_strategy=cache_bootstrap_strategy,
         artifact_dir=artifact_dir,
     )
     if not command.get("selected"):
@@ -2511,10 +2725,10 @@ def _run_runtime_exit_fixture_command(
         _write_runtime_later_registry_patch(_runtime_later_registry_patch_path(artifact_dir))
     pre_autoexec_mutation = (
         _apply_runtime_pre_autoexec_suppression(project=project, artifact_dir=artifact_dir)
-        if pre_autoexec_suppression
+        if pre_autoexec_suppression or cache_bootstrap_strategy
         else {}
     )
-    if pre_autoexec_suppression and pre_autoexec_mutation.get("status") != "runtime_pre_autoexec_project_registry_mutation_applied":
+    if (pre_autoexec_suppression or cache_bootstrap_strategy) and pre_autoexec_mutation.get("status") != "runtime_pre_autoexec_project_registry_mutation_applied":
         payload = _runtime_pre_autoexec_suppression_source_payload(
             project=project,
             engine_root=_runtime_engine_root_from_command(command),
@@ -2547,6 +2761,46 @@ def _run_runtime_exit_fixture_command(
             }
         )
         return _finalize_report(report)
+    cache_bootstrap_mutation = (
+        _apply_runtime_cache_bootstrap_neutralization(project=project, artifact_dir=artifact_dir)
+        if cache_bootstrap_strategy
+        else {}
+    )
+    if cache_bootstrap_strategy and cache_bootstrap_mutation.get("status") != "runtime_cache_bootstrap_mutation_applied":
+        _restore_runtime_pre_autoexec_suppression(pre_autoexec_mutation)
+        payload = _runtime_cache_bootstrap_source_payload(
+            project=project,
+            engine_root=_runtime_engine_root_from_command(command),
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+        payload.update(
+            {
+                "runtime_cache_bootstrap_loadlevel_source_status": "blocked_by_cache_bootstrap_mutation_not_safely_scoped",
+                "runtime_cache_bootstrap_candidate_result": "runtime_cache_bootstrap_candidate_rejected_unsafe",
+                "runtime_cache_bootstrap_candidate_attempted": False,
+                "runtime_cache_bootstrap_candidate_blocker": "blocked_by_cache_bootstrap_mutation_not_safely_scoped",
+                "runtime_cache_bootstrap_candidate_actual_files": list(cache_bootstrap_mutation.get("files", [])),
+                "runtime_cache_bootstrap_verified": False,
+                "runtime_default_level_override_blocker": "blocked_by_cache_bootstrap_mutation_not_safely_scoped",
+            }
+        )
+        report.update(payload)
+        report.update(
+            {
+                "status": "fail",
+                "runtime_harness_status": "blocked_by_cache_bootstrap_mutation_not_safely_scoped",
+                "runtime_exit_fixture_status": "blocked_by_cache_bootstrap_mutation_not_safely_scoped",
+                "runtime_exit_fixture_execution_attempted": False,
+                "runtime_execution_attempted": False,
+                "runtime_execution_completed": False,
+                "runtime_execution_verified": False,
+                "live_runtime_execution": False,
+                "asset_cache_deleted": False,
+                "required_runtime_harness_assertions_failed": ["runtime_cache_bootstrap_mutation"],
+            }
+        )
+        return _finalize_report(report)
     stdout_path = artifact_dir / "runtime_exit_fixture_stdout.txt"
     stderr_path = artifact_dir / "runtime_exit_fixture_stderr.txt"
     report.update(_runtime_command_pin_payload(command, timeout_seconds=timeout_seconds, execution_requested=True))
@@ -2560,13 +2814,20 @@ def _run_runtime_exit_fixture_command(
             "runtime_exit_fixture_runtime_command_uses_console_command_file_quit": False,
             "runtime_exit_fixture_runtime_command_uses_settings_registry_fixture_exit": True,
             "runtime_exit_fixture_runtime_command_uses_no_default_level_strategy": (
-                no_default_level or loadlevel_override or later_registry_patch or pre_autoexec_suppression
+                no_default_level
+                or loadlevel_override
+                or later_registry_patch
+                or pre_autoexec_suppression
+                or cache_bootstrap_strategy
             ),
             "runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy": (
                 loadlevel_override or later_registry_patch or pre_autoexec_suppression
             ),
             "runtime_exit_fixture_runtime_command_uses_later_registry_patch_strategy": later_registry_patch,
-            "runtime_exit_fixture_runtime_command_uses_pre_autoexec_suppression_strategy": pre_autoexec_suppression,
+            "runtime_exit_fixture_runtime_command_uses_pre_autoexec_suppression_strategy": (
+                pre_autoexec_suppression or cache_bootstrap_strategy
+            ),
+            "runtime_exit_fixture_runtime_command_uses_cache_bootstrap_strategy": cache_bootstrap_strategy,
             "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
             "runtime_exit_fixture_command": str(command.get("argv", [""])[0]),
             "runtime_exit_fixture_arguments": list(command.get("argv", []))[1:],
@@ -2610,7 +2871,9 @@ def _run_runtime_exit_fixture_command(
             stderr=exc.stderr or "",
         )
     finally:
-        if pre_autoexec_suppression:
+        if cache_bootstrap_strategy:
+            _restore_runtime_cache_bootstrap_neutralization(cache_bootstrap_mutation)
+        if pre_autoexec_suppression or cache_bootstrap_strategy:
             _restore_runtime_pre_autoexec_suppression(pre_autoexec_mutation)
 
     stdout_text = str(proc.stdout or "")
@@ -2644,7 +2907,13 @@ def _run_runtime_exit_fixture_command(
         diagnostics=diagnostics,
         actual_level_loads=level_loads,
         disqualifying=disqualifying,
-        no_default_level=no_default_level or loadlevel_override or later_registry_patch or pre_autoexec_suppression,
+        no_default_level=(
+            no_default_level
+            or loadlevel_override
+            or later_registry_patch
+            or pre_autoexec_suppression
+            or cache_bootstrap_strategy
+        ),
     )
     loadlevel_override_payload = _runtime_loadlevel_override_execution_payload(
         project=project,
@@ -2676,12 +2945,24 @@ def _run_runtime_exit_fixture_command(
         command=command,
         diagnostics=diagnostics,
         actual_level_loads=level_loads,
-        pre_autoexec_suppression=pre_autoexec_suppression,
+        pre_autoexec_suppression=pre_autoexec_suppression or cache_bootstrap_strategy,
         launch_hygiene=launch_hygiene,
         exit_code=proc.returncode,
         marker_observed=marker_observed,
         artifact_dir=artifact_dir,
         mutation_state=pre_autoexec_mutation,
+    )
+    cache_bootstrap_payload = _runtime_cache_bootstrap_execution_payload(
+        project=project,
+        command=command,
+        diagnostics=diagnostics,
+        actual_level_loads=level_loads,
+        cache_bootstrap_strategy=cache_bootstrap_strategy,
+        launch_hygiene=launch_hygiene,
+        exit_code=proc.returncode,
+        marker_observed=marker_observed,
+        artifact_dir=artifact_dir,
+        mutation_state=cache_bootstrap_mutation,
     )
     launch_hygiene_pass = launch_hygiene.get("runtime_launch_hygiene_status") == "runtime_launch_hygiene_pass"
     passed = (
@@ -2710,10 +2991,13 @@ def _run_runtime_exit_fixture_command(
     report.update(loadlevel_override_payload)
     report.update(later_registry_patch_payload)
     report.update(pre_autoexec_payload)
+    report.update(cache_bootstrap_payload)
     report.update(launch_hygiene)
     blocked_reason = _runtime_launch_hygiene_blocked_reason(launch_hygiene)
     if pre_autoexec_suppression and str(pre_autoexec_payload.get("runtime_pre_autoexec_candidate_blocker", "")).strip():
         blocked_reason = str(pre_autoexec_payload.get("runtime_pre_autoexec_candidate_blocker", "")).strip()
+    if cache_bootstrap_strategy and str(cache_bootstrap_payload.get("runtime_cache_bootstrap_candidate_blocker", "")).strip():
+        blocked_reason = str(cache_bootstrap_payload.get("runtime_cache_bootstrap_candidate_blocker", "")).strip()
     report.update(
         {
             "status": "pass" if passed else "fail",
@@ -2782,6 +3066,7 @@ def _run_runtime_exit_fixture_command(
             "runtime_exit_fixture_is_runtime_character_proof": False,
             "runtime_exit_fixture_character_proof_claimed": False,
             "runtime_exit_fixture_character_proof_verified": False,
+            "asset_cache_deleted": False,
             "required_runtime_harness_assertions_passed": [
                 "runtime_exit_fixture_source_ready",
                 "runtime_exit_fixture_enabled_for_project",
@@ -3436,6 +3721,21 @@ def _runtime_project_mutation_gate_status() -> Dict[str, Any]:
     }
 
 
+def _runtime_cache_bootstrap_mutation_gate_status(env: Mapping[str, str]) -> Dict[str, Any]:
+    required = (
+        "MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION",
+        "MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION",
+    )
+    missing = [name for name in required if not _gate_enabled(env, name)]
+    if not missing:
+        status = "pass"
+    elif "MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION" in missing:
+        status = "blocked_by_fixture_cache_bootstrap_mutation_gate_missing"
+    else:
+        status = "blocked_by_fixture_project_mutation_gate_missing"
+    return {"status": status, "required": list(required), "missing": missing}
+
+
 def _run_command_capture(
     argv: Sequence[str],
     *,
@@ -3597,6 +3897,7 @@ def _select_runtime_exit_fixture_command(
     loadlevel_override: bool = False,
     later_registry_patch: bool = False,
     pre_autoexec_suppression: bool = False,
+    cache_bootstrap_strategy: bool = False,
     artifact_dir: Path | None = None,
 ) -> Dict[str, Any]:
     executable = str(report.get("runtime_executable_path", "")).strip()
@@ -3634,7 +3935,9 @@ def _select_runtime_exit_fixture_command(
         "--regset=/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks=5",
     ]
     selected_reason = (
-        "repo_owned_fixture_tickbus_exit_main_loop_later_registry_patch_envelope"
+        "repo_owned_fixture_tickbus_exit_main_loop_cache_bootstrap_loadlevel_source_envelope"
+        if cache_bootstrap_strategy
+        else "repo_owned_fixture_tickbus_exit_main_loop_later_registry_patch_envelope"
         if later_registry_patch
         else "repo_owned_fixture_tickbus_exit_main_loop_pre_autoexec_loadlevel_suppression_envelope"
         if pre_autoexec_suppression
@@ -5086,6 +5389,558 @@ def _restore_runtime_pre_autoexec_suppression(state: Dict[str, Any]) -> None:
             state["status"] = "runtime_pre_autoexec_project_registry_mutation_restored"
 
 
+def _runtime_cache_bootstrap_source_payload(
+    *,
+    project: Path | None,
+    engine_root: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    pre_autoexec_payload = _runtime_pre_autoexec_suppression_source_payload(
+        project=project,
+        engine_root=engine_root,
+        timeout_seconds=timeout_seconds,
+        artifact_dir=artifact_dir,
+    )
+    source_validated = _runtime_cache_bootstrap_source_validated(engine_root)
+    files = _runtime_cache_bootstrap_files(project)
+    loadlevel_files = [entry for entry in files if entry.get("contains_loadlevel")]
+    status = (
+        "runtime_cache_bootstrap_source_discovery_pass"
+        if source_validated
+        else "runtime_cache_bootstrap_source_discovery_inconclusive"
+    )
+    discovery_status = (
+        "runtime_cache_bootstrap_loadlevel_source_detected"
+        if loadlevel_files
+        else "runtime_cache_bootstrap_loadlevel_source_absent"
+    )
+    candidates = _runtime_cache_bootstrap_candidate_matrix(
+        project=project,
+        engine_root=engine_root,
+        artifact_dir=artifact_dir,
+        files=files,
+    )
+    selected = _runtime_cache_bootstrap_selected_candidate(
+        project=project,
+        engine_root=engine_root,
+        artifact_dir=artifact_dir,
+        files=files,
+    )
+    pre_autoexec_payload.update(
+        {
+            "runtime_cache_bootstrap_loadlevel_source": {
+                "status": status,
+                "source_discovery_status": discovery_status,
+                "file_count": len(files),
+                "loadlevel_file_count": len(loadlevel_files),
+            },
+            "runtime_cache_bootstrap_loadlevel_source_status": status,
+            "runtime_cache_bootstrap_source_discovery_status": discovery_status,
+            "runtime_cache_bootstrap_files": files,
+            "runtime_cache_bootstrap_generation_source": "AssetProcessor_SettingsRegistryBuilder",
+            "runtime_cache_bootstrap_generation_source_refs": _runtime_cache_bootstrap_source_refs(project, engine_root),
+            "runtime_cache_bootstrap_generation_timing": (
+                "AssetProcessor_internal_SettingsRegistryBuilder_generates_bootstrap_launcher_config_setreg_products_from_engine_gem_project_registry"
+            ),
+            "runtime_cache_bootstrap_runtime_load_timing": (
+                "GameApplication_MergeSettingsToRegistry_merges_bootstrap_launcher_config_setreg_from_cache_root_after_shared_settings_before_user_settings"
+            ),
+            "runtime_cache_bootstrap_autoload_correlation": (
+                "cache_bootstrap_files_contain_autoexec_loadlevel_defaultlevel"
+                if loadlevel_files
+                else "cache_bootstrap_files_do_not_contain_autoexec_loadlevel_defaultlevel"
+            ),
+            "runtime_cache_bootstrap_candidate_matrix": candidates,
+            "runtime_cache_bootstrap_candidate_matrix_recorded": bool(candidates),
+            "runtime_cache_bootstrap_candidate_id": selected["id"] if source_validated else "",
+            "runtime_cache_bootstrap_candidate_name": selected["name"] if source_validated else "",
+            "runtime_cache_bootstrap_candidate_kind": selected["kind"] if source_validated else "",
+            "runtime_cache_bootstrap_candidate_source_validation": selected["source_validation"] if source_validated else {},
+            "runtime_cache_bootstrap_candidate_source_refs": selected["source_refs"] if source_validated else [],
+            "runtime_cache_bootstrap_candidate_expected_files": selected["expected_files"] if source_validated else [],
+            "runtime_cache_bootstrap_candidate_actual_files": files,
+            "runtime_cache_bootstrap_candidate_expected_level_loads": [],
+            "runtime_cache_bootstrap_candidate_actual_level_loads": [],
+            "runtime_cache_bootstrap_candidate_mutates_cache": selected["mutates_cache"] if source_validated else False,
+            "runtime_cache_bootstrap_candidate_mutates_project": selected["mutates_project"] if source_validated else False,
+            "runtime_cache_bootstrap_candidate_mutates_defaultlevel": False,
+            "runtime_cache_bootstrap_candidate_mutates_production_level": False,
+            "runtime_cache_bootstrap_candidate_reversible": selected["reversible"] if source_validated else False,
+            "runtime_cache_bootstrap_candidate_backup_refs": [],
+            "runtime_cache_bootstrap_candidate_restore_status": "not_attempted",
+            "runtime_cache_bootstrap_candidate_hash_verified": False,
+            "runtime_cache_bootstrap_candidate_gate_env": selected["gate_env"] if source_validated else [],
+            "runtime_cache_bootstrap_candidate_attempted": False,
+            "runtime_cache_bootstrap_candidate_result": selected["result"] if source_validated else "",
+            "runtime_cache_bootstrap_candidate_blocker": "",
+            "runtime_cache_bootstrap_selected": RUNTIME_CACHE_BOOTSTRAP_SELECTED if source_validated else "",
+            "runtime_cache_bootstrap_selected_reason": "temporarily_neutralizes_generated_cache_bootstrap_loadlevel_with_backup_restore_hash_verification"
+            if source_validated
+            else "",
+            "runtime_cache_bootstrap_verified": False,
+            "runtime_cache_bootstrap_refresh_required": False,
+            "runtime_cache_bootstrap_refresh_attempted": False,
+            "runtime_cache_bootstrap_refresh_command": [],
+            "runtime_cache_bootstrap_refresh_result": "runtime_cache_bootstrap_refresh_not_attempted",
+            "runtime_cache_bootstrap_refresh_stdout_ref": "",
+            "runtime_cache_bootstrap_refresh_stderr_ref": "",
+            "runtime_cache_bootstrap_refresh_log_refs": [],
+            "asset_cache_deleted": False,
+            "runtime_default_level_override_blocker": ""
+            if source_validated
+            else "blocked_by_cache_bootstrap_loadlevel_source",
+        }
+    )
+    return pre_autoexec_payload
+
+
+def _runtime_cache_bootstrap_execution_payload(
+    *,
+    project: Path | None,
+    command: Mapping[str, Any],
+    diagnostics: Mapping[str, Any],
+    actual_level_loads: Sequence[str],
+    cache_bootstrap_strategy: bool,
+    launch_hygiene: Mapping[str, Any],
+    exit_code: int | None,
+    marker_observed: bool,
+    artifact_dir: Path,
+    mutation_state: Mapping[str, Any],
+) -> Dict[str, Any]:
+    if not cache_bootstrap_strategy:
+        return {}
+    source_payload = _runtime_cache_bootstrap_source_payload(
+        project=project,
+        engine_root=_runtime_engine_root_from_command(command),
+        timeout_seconds=int(command.get("timeout_seconds", 120)),
+        artifact_dir=artifact_dir,
+    )
+    selected = _runtime_cache_bootstrap_selected_candidate(
+        project=project,
+        engine_root=_runtime_engine_root_from_command(command),
+        artifact_dir=artifact_dir,
+        files=_runtime_cache_bootstrap_files(project),
+    )
+    default_level_detected = bool(launch_hygiene.get("runtime_default_level_autoload_detected"))
+    launch_pass = str(launch_hygiene.get("runtime_launch_hygiene_status", "")).strip() == "runtime_launch_hygiene_pass"
+    ap_status = str(
+        launch_hygiene.get("runtime_asset_processor_negotiation_signal_status", "runtime_execution_not_attempted")
+    )
+    shader_status = str(launch_hygiene.get("runtime_shader_serializer_signal_status", "runtime_execution_not_attempted"))
+    if launch_pass:
+        cache_status = "runtime_cache_bootstrap_verified_no_defaultlevel"
+        candidate_result = "runtime_cache_bootstrap_candidate_attempted_pass"
+        blocker = ""
+    elif default_level_detected:
+        cache_status = "runtime_cache_bootstrap_candidate_attempted_failed_defaultlevel_autoload"
+        candidate_result = cache_status
+        blocker = "blocked_by_default_level_autoload"
+    elif launch_hygiene.get("runtime_asset_processor_negotiation_disqualifying") is True or launch_hygiene.get(
+        "runtime_shader_serializer_disqualifying"
+    ) is True:
+        cache_status = "runtime_cache_bootstrap_candidate_attempted_failed_disqualifying_signal"
+        candidate_result = cache_status
+        blocker = "blocked_by_disqualifying_runtime_signals"
+    else:
+        cache_status = "runtime_cache_bootstrap_candidate_attempted_failed_disqualifying_signal"
+        candidate_result = cache_status
+        blocker = "blocked_by_disqualifying_runtime_signals"
+
+    source_payload.update(
+        {
+            "runtime_cache_bootstrap_loadlevel_source": {
+                "status": cache_status,
+                "selected": RUNTIME_CACHE_BOOTSTRAP_SELECTED,
+                "attempted": True,
+                "actual_level_loads": list(actual_level_loads),
+            },
+            "runtime_cache_bootstrap_loadlevel_source_status": cache_status,
+            "runtime_cache_bootstrap_candidate_id": selected["id"],
+            "runtime_cache_bootstrap_candidate_name": selected["name"],
+            "runtime_cache_bootstrap_candidate_kind": selected["kind"],
+            "runtime_cache_bootstrap_candidate_source_validation": selected["source_validation"],
+            "runtime_cache_bootstrap_candidate_source_refs": selected["source_refs"],
+            "runtime_cache_bootstrap_candidate_expected_files": selected["expected_files"],
+            "runtime_cache_bootstrap_candidate_actual_files": list(mutation_state.get("files", [])),
+            "runtime_cache_bootstrap_candidate_expected_level_loads": [],
+            "runtime_cache_bootstrap_candidate_actual_level_loads": list(actual_level_loads),
+            "runtime_cache_bootstrap_candidate_mutates_cache": True,
+            "runtime_cache_bootstrap_candidate_mutates_project": True,
+            "runtime_cache_bootstrap_candidate_mutates_defaultlevel": False,
+            "runtime_cache_bootstrap_candidate_mutates_production_level": False,
+            "runtime_cache_bootstrap_candidate_reversible": True,
+            "runtime_cache_bootstrap_candidate_backup_refs": list(mutation_state.get("backup_refs", [])),
+            "runtime_cache_bootstrap_candidate_restore_status": str(
+                mutation_state.get("restore_status", "runtime_cache_bootstrap_restore_not_attempted")
+            ),
+            "runtime_cache_bootstrap_candidate_hash_verified": bool(mutation_state.get("hash_verified", False)),
+            "runtime_cache_bootstrap_candidate_gate_env": selected["gate_env"],
+            "runtime_cache_bootstrap_candidate_attempted": True,
+            "runtime_cache_bootstrap_candidate_result": candidate_result,
+            "runtime_cache_bootstrap_candidate_blocker": blocker,
+            "runtime_cache_bootstrap_selected": RUNTIME_CACHE_BOOTSTRAP_SELECTED,
+            "runtime_cache_bootstrap_selected_reason": "temporarily_neutralizes_generated_cache_bootstrap_loadlevel_with_backup_restore_hash_verification",
+            "runtime_cache_bootstrap_verified": bool(launch_pass),
+            "runtime_cache_bootstrap_refresh_required": False,
+            "runtime_cache_bootstrap_refresh_attempted": False,
+            "runtime_cache_bootstrap_refresh_result": "runtime_cache_bootstrap_refresh_not_attempted",
+            "runtime_autoexec_console_command_override_state": {
+                "selected_args": [],
+                "mutates_project_registry": True,
+                "mutates_cache_bootstrap": True,
+                "mutates_defaultlevel": False,
+                "cache_bootstrap_restore_status": mutation_state.get("restore_status", ""),
+                "cache_bootstrap_hash_verified": bool(mutation_state.get("hash_verified", False)),
+                "exit_code_decimal": exit_code,
+                "exit_code_hex": _exit_code_hex(exit_code),
+                "fixture_marker_observed": marker_observed,
+            },
+            "runtime_default_level_override_blocker": blocker,
+            "asset_cache_deleted": False,
+            "defaultlevel_mutation": False,
+            "production_level_mutation": False,
+        }
+    )
+    return source_payload
+
+
+def _runtime_cache_bootstrap_selected_candidate(
+    *,
+    project: Path | None,
+    engine_root: Path | None,
+    artifact_dir: Path,
+    files: Sequence[Mapping[str, Any]],
+) -> Dict[str, Any]:
+    return {
+        "id": RUNTIME_CACHE_BOOTSTRAP_SELECTED,
+        "name": "Temporarily neutralize generated Cache/pc/bootstrap*.setreg LoadLevel entries with project source suppression",
+        "kind": "gated_reversible_cache_bootstrap_registry_mutation",
+        "source_validation": {
+            "status": "runtime_cache_bootstrap_candidate_source_validated"
+            if _runtime_cache_bootstrap_source_validated(engine_root)
+            else "runtime_cache_bootstrap_candidate_rejected_missing_source_validation",
+            "summary": (
+                "AssetProcessor SettingsRegistryBuilder creates bootstrap.<launcher-type>.<configuration>.setreg products "
+                "from engine, gem, and project Registry folders. GameApplication then merges the matching cache bootstrap "
+                "file from the project cache root before user settings. The selected diagnostic strategy combines the "
+                "PR #135 project source-registry suppression with a gated temporary neutralization of generated bootstrap "
+                "LoadLevel and DeferredLoadLevel entries, then restores every generated file and verifies hashes."
+            ),
+        },
+        "source_refs": _runtime_cache_bootstrap_source_refs(project, engine_root),
+        "expected_files": [dict(entry) for entry in files if entry.get("contains_loadlevel") or entry.get("contains_deferred_loadlevel")],
+        "mutates_cache": True,
+        "mutates_project": True,
+        "reversible": True,
+        "gate_env": list(RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV)
+        + list(RUNTIME_EXIT_FIXTURE_CACHE_BOOTSTRAP_MUTATION_GATE_ENV),
+        "result": "runtime_cache_bootstrap_candidate_source_validated",
+    }
+
+
+def _runtime_cache_bootstrap_candidate_matrix(
+    *,
+    project: Path | None,
+    engine_root: Path | None,
+    artifact_dir: Path,
+    files: Sequence[Mapping[str, Any]],
+) -> List[Dict[str, Any]]:
+    selected = _runtime_cache_bootstrap_selected_candidate(
+        project=project,
+        engine_root=engine_root,
+        artifact_dir=artifact_dir,
+        files=files,
+    )
+    source_refs = _runtime_cache_bootstrap_source_refs(project, engine_root)
+    return [
+        {
+            "id": "cache_bootstrap_read_only_inventory",
+            "name": "Read-only Cache/pc/bootstrap*.setreg inventory",
+            "kind": "read_only_cache_bootstrap_inventory",
+            "source_validation": {
+                "status": "runtime_cache_bootstrap_candidate_source_validated",
+                "summary": "Inventory records path, hash, mtime, and LoadLevel/DeferredLoadLevel keys without mutating Asset Cache.",
+            },
+            "source_refs": source_refs,
+            "expected_files": [dict(entry) for entry in files],
+            "actual_files": [dict(entry) for entry in files],
+            "mutates_cache": False,
+            "mutates_project": False,
+            "reversible": True,
+            "gate_env": [],
+            "attempted": False,
+            "result": "runtime_cache_bootstrap_loadlevel_source_detected"
+            if any(entry.get("contains_loadlevel") for entry in files)
+            else "runtime_cache_bootstrap_loadlevel_source_absent",
+            "blocker": RUNTIME_PRE_AUTOEXEC_CACHE_BOOTSTRAP_BLOCKER
+            if any(entry.get("contains_loadlevel") for entry in files)
+            else "",
+        },
+        {
+            "id": "cache_bootstrap_scoped_apb_refresh_after_source_suppression",
+            "name": "Scoped APB/bootstrap refresh after source suppression",
+            "kind": "asset_processor_settings_registry_builder_refresh",
+            "source_validation": {
+                "status": "runtime_cache_bootstrap_candidate_source_validated",
+                "summary": (
+                    "SettingsRegistryBuilder is the source-validated generator, but this harness has not found a "
+                    "single-product bootstrap-only refresh command that avoids broader Asset Cache writes."
+                ),
+            },
+            "source_refs": source_refs,
+            "expected_files": [],
+            "actual_files": [dict(entry) for entry in files],
+            "mutates_cache": True,
+            "mutates_project": True,
+            "reversible": False,
+            "gate_env": list(RUNTIME_EXIT_FIXTURE_CACHE_BOOTSTRAP_REFRESH_GATE_ENV)
+            + list(RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV),
+            "attempted": False,
+            "result": "runtime_cache_bootstrap_candidate_rejected_regeneration_not_safely_scoped",
+            "blocker": "blocked_by_cache_bootstrap_regeneration_not_safely_scoped",
+        },
+        {
+            "id": "cache_bootstrap_generated_registry_overlay_before_autoexec",
+            "name": "Generated registry overlay loaded before cache bootstrap autoexec",
+            "kind": "pre_autoexec_cache_bootstrap_overlay",
+            "source_validation": {
+                "status": "runtime_cache_bootstrap_candidate_rejected_missing_source_validation",
+                "summary": "No source-supported command-line or artifact overlay was found that merges before GameApplication cache bootstrap load.",
+            },
+            "source_refs": source_refs,
+            "expected_files": [],
+            "actual_files": [dict(entry) for entry in files],
+            "mutates_cache": False,
+            "mutates_project": False,
+            "reversible": True,
+            "gate_env": list(RUNTIME_EXIT_FIXTURE_TEMP_REGISTRY_PATCH_GATE_ENV),
+            "attempted": False,
+            "result": "runtime_cache_bootstrap_candidate_rejected_missing_source_validation",
+            "blocker": "blocked_by_cache_bootstrap_loadlevel_source",
+        },
+        {
+            **selected,
+            "actual_files": [],
+            "attempted": False,
+            "blocker": "",
+        },
+        {
+            "id": "cache_bootstrap_requires_asset_cache_deletion",
+            "name": "Delete Asset Cache to force bootstrap regeneration",
+            "kind": "asset_cache_deletion",
+            "source_validation": {
+                "status": "runtime_cache_bootstrap_candidate_rejected_unsafe",
+                "summary": "Asset Cache deletion is explicitly forbidden for this production harness slice.",
+            },
+            "source_refs": source_refs,
+            "expected_files": [],
+            "actual_files": [dict(entry) for entry in files],
+            "mutates_cache": True,
+            "deletes_asset_cache": True,
+            "mutates_project": False,
+            "reversible": False,
+            "gate_env": [],
+            "attempted": False,
+            "result": "runtime_cache_bootstrap_candidate_rejected_requires_asset_cache_deletion",
+            "blocker": "blocked_by_asset_cache_deletion_required",
+        },
+    ]
+
+
+def _runtime_cache_bootstrap_source_validated(engine_root: Path | None) -> bool:
+    root = engine_root or Path("")
+    return all(
+        path.is_file()
+        for path in (
+            root / "Code" / "Tools" / "AssetProcessor" / "native" / "InternalBuilders" / "SettingsRegistryBuilder.cpp",
+            root / "Code" / "Framework" / "AzGameFramework" / "AzGameFramework" / "Application" / "GameApplication.cpp",
+            root / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryMergeUtils.cpp",
+        )
+    )
+
+
+def _runtime_cache_bootstrap_source_refs(project: Path | None, engine_root: Path | None) -> List[str]:
+    root = engine_root or Path("<engine-root>")
+    return [
+        str(root / "Code" / "Tools" / "AssetProcessor" / "native" / "InternalBuilders" / "SettingsRegistryBuilder.cpp"),
+        str(root / "Code" / "Framework" / "AzGameFramework" / "AzGameFramework" / "Application" / "GameApplication.cpp"),
+        str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Settings" / "SettingsRegistryMergeUtils.cpp"),
+        str(root / "Assets" / "Engine" / "SeedAssetList.seed"),
+        str((project or Path("<project>")) / "Cache" / "pc" / "bootstrap*.setreg"),
+        str((project or Path("<project>")) / "Registry" / "load_level.setreg"),
+    ]
+
+
+def _runtime_cache_bootstrap_files(project: Path | None) -> List[Dict[str, Any]]:
+    if project is None:
+        return []
+    cache_dir = project / "Cache" / "pc"
+    if not cache_dir.is_dir():
+        return []
+    entries: List[Dict[str, Any]] = []
+    for path in sorted(cache_dir.glob("bootstrap*.setreg")):
+        if not path.is_file():
+            continue
+        raw = path.read_bytes()
+        text = raw.decode("utf-8-sig", errors="replace")
+        data: Any = {}
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError:
+            data = {}
+        loadlevel_value = _json_pointer_get(data, RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY)
+        deferred_value = _json_pointer_get(data, RUNTIME_DEFERRED_LOADLEVEL_KEY)
+        stat = path.stat()
+        contains_loadlevel = loadlevel_value is not None or "LoadLevel" in text
+        contains_deferred = deferred_value is not None or "DeferredLoadLevel" in text
+        entries.append(
+            {
+                "path": _path_text(path),
+                "exists": True,
+                "hash": _sha256_bytes(raw),
+                "mtime": datetime.fromtimestamp(stat.st_mtime, timezone.utc)
+                .replace(microsecond=0)
+                .isoformat()
+                .replace("+00:00", "Z"),
+                "contains_loadlevel": bool(contains_loadlevel),
+                "contains_deferred_loadlevel": bool(contains_deferred),
+                "loadlevel_value": "" if loadlevel_value is None else str(loadlevel_value),
+                "deferred_loadlevel_value": "" if deferred_value is None else str(deferred_value),
+                "source_candidate": "project_registry_load_level_setreg"
+                if str(loadlevel_value).lower() == "defaultlevel"
+                else "",
+            }
+        )
+    return entries
+
+
+def _runtime_cache_bootstrap_default_level_sources(project: Path | None) -> List[str]:
+    return [
+        str(entry.get("path", ""))
+        for entry in _runtime_cache_bootstrap_files(project)
+        if str(entry.get("loadlevel_value", "")).lower() == "defaultlevel"
+    ]
+
+
+def _apply_runtime_cache_bootstrap_neutralization(*, project: Path | None, artifact_dir: Path) -> Dict[str, Any]:
+    backup_dir = artifact_dir / RUNTIME_CACHE_BOOTSTRAP_BACKUP_DIRNAME
+    state: Dict[str, Any] = {
+        "status": "runtime_cache_bootstrap_mutation_not_attempted",
+        "applied": False,
+        "restored": False,
+        "hash_verified": False,
+        "restore_status": "runtime_cache_bootstrap_restore_not_attempted",
+        "files": [],
+        "backup_refs": [],
+        "asset_cache_deleted": False,
+    }
+    if project is None:
+        state["status"] = "blocked_by_missing_project_path"
+        return state
+    targets = [
+        Path(str(entry.get("path", "")))
+        for entry in _runtime_cache_bootstrap_files(project)
+        if entry.get("contains_loadlevel") or entry.get("contains_deferred_loadlevel")
+    ]
+    if not targets:
+        state.update(
+            {
+                "status": "runtime_cache_bootstrap_mutation_applied",
+                "applied": True,
+                "restored": True,
+                "hash_verified": True,
+                "restore_status": "runtime_cache_bootstrap_restore_pass",
+            }
+        )
+        return state
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    files: List[Dict[str, Any]] = []
+    try:
+        for path in targets:
+            if not path.is_file():
+                continue
+            raw = path.read_bytes()
+            pre_hash = _sha256_bytes(raw)
+            backup_path = backup_dir / path.name
+            backup_path.write_bytes(raw)
+            data = json.loads(raw.decode("utf-8-sig", errors="replace"))
+            _json_pointer_delete(data, RUNTIME_DEFAULT_LEVEL_AUTOEXEC_KEY)
+            _json_pointer_delete(data, RUNTIME_DEFERRED_LOADLEVEL_KEY)
+            path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+            files.append(
+                {
+                    "path": _path_text(path),
+                    "backup_path": _path_text(backup_path),
+                    "pre_hash": pre_hash,
+                    "mutated_hash": _sha256_bytes(path.read_bytes()),
+                    "contains_loadlevel_after_mutation": "LoadLevel" in path.read_text(encoding="utf-8-sig", errors="replace"),
+                }
+            )
+        state.update(
+            {
+                "status": "runtime_cache_bootstrap_mutation_applied",
+                "applied": True,
+                "files": files,
+                "backup_refs": [_path_text(item["backup_path"]) for item in files],
+            }
+        )
+    except Exception as exc:
+        state["applied"] = bool(files)
+        _restore_runtime_cache_bootstrap_neutralization(state)
+        state["status"] = "blocked_by_cache_bootstrap_mutation_not_safely_scoped"
+        state["error"] = str(exc)
+    return state
+
+
+def _restore_runtime_cache_bootstrap_neutralization(state: Dict[str, Any]) -> None:
+    if not state or not state.get("applied"):
+        return
+    restored = True
+    for item in state.get("files", []):
+        if not isinstance(item, Mapping):
+            continue
+        path = Path(str(item.get("path", "")))
+        backup_path = Path(str(item.get("backup_path", "")))
+        if backup_path.is_file():
+            path.write_bytes(backup_path.read_bytes())
+        post_hash = _sha256_bytes(path.read_bytes()) if path.is_file() else ""
+        item["post_restore_hash"] = post_hash
+        item["hash_verified"] = bool(post_hash and post_hash == str(item.get("pre_hash", "")))
+        restored = restored and bool(item["hash_verified"])
+    state["restored"] = restored
+    state["hash_verified"] = restored
+    state["restore_status"] = "runtime_cache_bootstrap_restore_pass" if restored else "blocked_by_cache_bootstrap_restore_failed"
+    state["status"] = state["restore_status"]
+
+
+def _sha256_bytes(payload: bytes) -> str:
+    import hashlib
+
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _json_pointer_get(data: Any, pointer: str) -> Any:
+    current = data
+    for part in pointer.strip("/").split("/"):
+        if not isinstance(current, Mapping) or part not in current:
+            return None
+        current = current[part]
+    return current
+
+
+def _json_pointer_delete(data: Any, pointer: str) -> None:
+    parts = pointer.strip("/").split("/")
+    current = data
+    for part in parts[:-1]:
+        if not isinstance(current, dict) or part not in current:
+            return
+        current = current[part]
+    if isinstance(current, dict):
+        current.pop(parts[-1], None)
+
+
 def _runtime_loadlevel_override_selected_candidate(project: Path | None, engine_root: Path | None) -> Dict[str, Any]:
     source_refs = _runtime_loadlevel_override_source_refs(project, engine_root)
     return {
@@ -5745,6 +6600,7 @@ def _runtime_exit_fixture_static_payload(*, timeout_seconds: int) -> Dict[str, A
         "runtime_exit_fixture_runtime_command_uses_no_default_level_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_loadlevel_override_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_pre_autoexec_suppression_strategy": False,
+        "runtime_exit_fixture_runtime_command_uses_cache_bootstrap_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
         "runtime_exit_fixture_level_load_observed": False,
         "runtime_exit_fixture_unexpected_level_load": False,
@@ -7261,6 +8117,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--enable-runtime-exit-fixture-later-registry-patch", action="store_true")
     parser.add_argument("--diagnose-runtime-pre-autoexec-loadlevel-suppression", action="store_true")
     parser.add_argument("--enable-runtime-exit-fixture-pre-autoexec-loadlevel-suppression", action="store_true")
+    parser.add_argument("--diagnose-runtime-cache-bootstrap-loadlevel-source", action="store_true")
+    parser.add_argument("--enable-runtime-exit-fixture-cache-bootstrap-loadlevel-source", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -7298,6 +8156,10 @@ def main() -> int:
         diagnose_runtime_pre_autoexec_loadlevel_suppression=args.diagnose_runtime_pre_autoexec_loadlevel_suppression,
         enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression=(
             args.enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression
+        ),
+        diagnose_runtime_cache_bootstrap_loadlevel_source=args.diagnose_runtime_cache_bootstrap_loadlevel_source,
+        enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source=(
+            args.enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
         ),
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
