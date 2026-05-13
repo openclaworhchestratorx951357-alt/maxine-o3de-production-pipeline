@@ -352,7 +352,10 @@ def _append_approved_character_spawnable_product(apb: Path) -> None:
     )
 
 
-def _animation_playback_surface_fixture_runner(products: list[dict]):
+def _animation_playback_surface_fixture_runner(
+    products: list[dict],
+    primary_entity_components: list[str] | None = None,
+):
     def runner(argv, **kwargs):
         marker_lines = ["MAXINE_RUNTIME_PRODUCT_LOAD_START count=8 timeout_ticks=120 require_all=true"]
         for index, product in enumerate(products):
@@ -368,6 +371,8 @@ def _animation_playback_surface_fixture_runner(products: list[dict]):
                     f"MAXINE_RUNTIME_PRODUCT_LOAD_RELEASED index={index} kind={product['product_kind']} path={product['product_path']} status=released",
                 ]
             )
+        primary_components = primary_entity_components or ["{22B10178-39B6-4C12-BB37-77DB45FDD3B6}"]
+        primary_component_blob = ";".join(primary_components)
         marker_lines.extend(
             [
                 "MAXINE_RUNTIME_PRODUCT_LOAD_SUMMARY status=pass required=8 ready=8 failed=0 timed_out=0",
@@ -387,8 +392,8 @@ def _animation_playback_surface_fixture_runner(products: list[dict]):
                 (
                     "MAXINE_RUNTIME_CHARACTER_SPAWN_ENTITY ticket=1 index=0 "
                     "entity_id={44444444-4444-4444-8444-444444444444} "
-                    "name=MAXINE_Release_Rigged_Runtime_Character_Source component_count=1 "
-                    "components={22B10178-39B6-4C12-BB37-77DB45FDD3B6}"
+                    f"name=MAXINE_Release_Rigged_Runtime_Character_Source component_count={len(primary_components)} "
+                    f"components={primary_component_blob}"
                 ),
                 (
                     "MAXINE_RUNTIME_CHARACTER_SPAWN_ENTITY ticket=1 index=1 "
@@ -4267,6 +4272,110 @@ def test_runtime_harness_character_animation_component_wiring_surface_fixture_re
     assert source.read_text(encoding="utf-8") == original_source
     assert bootstrap.read_text(encoding="utf-8") == original_bootstrap
     assert report["asset_cache_deleted"] is False
+
+
+def test_runtime_harness_character_animation_component_wiring_surface_fixture_detects_actor_simple_motion_surface(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _enable_animation_component_wiring_surface_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_character_animation_component_wiring_surface_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+            ],
+        ),
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["runtime_character_animation_component_wiring_surface"]["surface_found"] is True
+    assert report["runtime_character_animation_component_wiring_surface_found"] is True
+    assert report["runtime_character_animation_component_wiring_surface_blocker"] != (
+        "blocked_by_approved_prefab_animation_component_wiring_requires_source_validated_editor_generation"
+    )
+    assert report["runtime_character_animation_component_wiring_runtime_actor_component_found"] is True
+    assert report["runtime_character_animation_component_wiring_runtime_simple_motion_component_found"] is True
+    assert report["runtime_character_animation_component_wiring_runtime_anim_graph_component_found"] is False
+    assert report["runtime_character_animation_component_wiring_verified"] is False
+    assert report["runtime_character_animation_playback_attempted"] is False
+    assert report["runtime_character_animation_playback_observed"] is False
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_character_animation_component_wiring_surface_fixture_detects_actor_anim_graph_surface(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _enable_animation_component_wiring_surface_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_character_animation_component_wiring_surface_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{77624349-D5C4-4902-9F08-665814520999}",
+            ],
+        ),
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["runtime_character_animation_component_wiring_surface"]["surface_found"] is True
+    assert report["runtime_character_animation_component_wiring_surface_found"] is True
+    assert report["runtime_character_animation_component_wiring_surface_blocker"] != (
+        "blocked_by_approved_prefab_animation_component_wiring_requires_source_validated_editor_generation"
+    )
+    assert report["runtime_character_animation_component_wiring_runtime_actor_component_found"] is True
+    assert report["runtime_character_animation_component_wiring_runtime_simple_motion_component_found"] is False
+    assert report["runtime_character_animation_component_wiring_runtime_anim_graph_component_found"] is True
+    assert report["runtime_character_animation_component_wiring_verified"] is False
+    assert report["runtime_character_animation_playback_attempted"] is False
+    assert report["runtime_character_animation_playback_observed"] is False
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
 
 
 def test_runtime_harness_animation_playback_surface_fixture_blocks_inconclusive_source_validation(

@@ -9168,7 +9168,7 @@ def _runtime_character_animation_component_wiring_surface_execution_payload(
             "runtime_character_animation_component_wiring_surface_status": status,
             "runtime_character_animation_component_wiring_surface_diagnostic_attempted": True,
             "runtime_character_animation_component_wiring_surface_diagnostic_completed": True,
-            "runtime_character_animation_component_wiring_surface_found": False,
+            "runtime_character_animation_component_wiring_surface_found": runtime_surface_found,
             "runtime_character_animation_component_wiring_surface_verified": False,
             "runtime_character_animation_component_wiring_surface_blocker": blocker,
             "runtime_character_animation_component_wiring_candidate_matrix": _runtime_character_animation_component_wiring_candidate_matrix(
