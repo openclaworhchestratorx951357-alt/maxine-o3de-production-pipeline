@@ -1127,6 +1127,15 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime character instantiation proof cannot be claimed without verified instantiation evidence.")
     if report.get("runtime_character_animation_claimed") is True and report.get("runtime_character_animation_verified") is not True:
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime character animation proof cannot be claimed without verified animation evidence.")
+    if (
+        report.get("runtime_exit_fixture_runtime_command_uses_animation_playback_surface_probe") is True
+        and report.get("runtime_execution_status") == "runtime_execution_pass"
+        and not _runtime_character_animation_source_validation_passed(report)
+    ):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "runtime animation playback surface fixture cannot pass without positive source validation.",
+        )
     if report.get("runtime_character_animation_verified") is True:
         if report.get("runtime_execution_verified") is not True:
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_animation_verified=true requires verified runtime execution.")
@@ -4044,10 +4053,9 @@ def _run_runtime_exit_fixture_command(
         else True
     )
     character_animation_playback_surface_pass = (
-        character_animation_playback_surface_payload.get(
-            "runtime_character_animation_playback_surface_diagnostic_completed"
+        _runtime_character_animation_playback_surface_fixture_passed(
+            character_animation_playback_surface_payload
         )
-        is True
         if character_animation_playback_surface
         else True
     )
@@ -4203,6 +4211,9 @@ def _run_runtime_exit_fixture_command(
                 "runtime_character_animation_playback_surface_diagnostic_completed"
                 if character_animation_playback_surface
                 else "runtime_character_animation_playback_surface_not_required",
+                "runtime_character_animation_source_validation_passed"
+                if character_animation_playback_surface
+                else "runtime_character_animation_source_validation_not_required",
                 "runtime_character_proof_not_claimed",
             ]
             if passed
@@ -8418,6 +8429,8 @@ def _runtime_character_animation_playback_surface_source_payload(
             playback_attempted=False,
         ),
         "runtime_character_animation_source_validation": source_validation,
+        "runtime_character_animation_source_validation_status": source_validation.get("status", ""),
+        "runtime_character_animation_source_validation_verified": source_validated,
         "runtime_character_animation_source_refs": source_refs,
         "runtime_character_animation_component_type_map": _runtime_character_animation_component_type_map(),
         "runtime_character_animation_asset_type_map": _runtime_character_animation_asset_type_map(),
@@ -8600,6 +8613,93 @@ def _runtime_character_animation_playback_surface_execution_payload(
         }
     )
     return source_payload
+
+
+def _runtime_character_animation_source_validation_passed(report: Mapping[str, Any]) -> bool:
+    source_validation = report.get("runtime_character_animation_source_validation")
+    if not isinstance(source_validation, Mapping):
+        return False
+    if str(source_validation.get("status", "")).strip() != "runtime_character_animation_source_validation_pass":
+        return False
+    if report.get("runtime_character_animation_source_validation_verified") is False:
+        return False
+    if str(report.get("runtime_character_animation_playback_surface_blocker", "")).strip() == (
+        "blocked_by_runtime_animation_source_validation"
+    ):
+        return False
+    files = source_validation.get("files", [])
+    if not isinstance(files, Sequence) or isinstance(files, (str, bytes)) or not files:
+        return False
+    if any(not isinstance(item, Mapping) or item.get("status") != "pass" for item in files):
+        return False
+    if source_validation.get("missing"):
+        return False
+    source_refs = report.get("runtime_character_animation_source_refs", [])
+    if (
+        not isinstance(source_refs, Sequence)
+        or isinstance(source_refs, (str, bytes))
+        or len(source_refs) < len(_runtime_character_animation_source_specs(Path("<engine-root>")))
+    ):
+        return False
+    surfaces = source_validation.get("runtime_component_surfaces", {})
+    if not isinstance(surfaces, Mapping):
+        return False
+    required_surface_keys = {
+        "actor_component_type_id",
+        "anim_graph_component_type_id",
+        "simple_motion_component_type_id",
+        "actor_request_bus",
+        "anim_graph_request_bus",
+        "simple_motion_request_bus",
+    }
+    return all(str(surfaces.get(key, "")).strip() for key in required_surface_keys)
+
+
+def _runtime_character_animation_playback_surface_fixture_passed(report: Mapping[str, Any]) -> bool:
+    if report.get("runtime_character_animation_playback_surface_diagnostic_attempted") is not True:
+        return False
+    if report.get("runtime_character_animation_playback_surface_diagnostic_completed") is not True:
+        return False
+    if not _runtime_character_animation_source_validation_passed(report):
+        return False
+
+    blocker = str(report.get("runtime_character_animation_playback_surface_blocker", "")).strip()
+    missing_surface_blocker = blocker == RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE_MISSING_BLOCKER
+    if missing_surface_blocker:
+        return (
+            report.get("runtime_character_animation_product_load_prerequisite_verified") is True
+            and report.get("runtime_character_animation_spawn_prerequisite_verified") is True
+            and bool(report.get("runtime_character_animation_component_inventory", []))
+            and report.get("runtime_character_animation_playback_surface_found") is False
+            and report.get("runtime_character_animation_playback_surface_verified") is False
+            and not (
+                report.get("runtime_character_animation_actor_component_found") is True
+                and (
+                    report.get("runtime_character_animation_anim_graph_component_found") is True
+                    or report.get("runtime_character_animation_simple_motion_component_found") is True
+                )
+            )
+            and report.get("runtime_character_animation_claimed") is False
+            and report.get("runtime_character_animation_verified") is False
+            and report.get("runtime_character_proof_claimed") is False
+            and report.get("runtime_character_proof_verified") is False
+        )
+
+    if report.get("runtime_character_animation_verified") is True:
+        return (
+            report.get("runtime_character_animation_playback_surface_found") is True
+            and report.get("runtime_character_animation_playback_surface_verified") is True
+            and report.get("runtime_character_animation_playback_attempted") is True
+            and report.get("runtime_character_animation_playback_request_issued") is True
+            and report.get("runtime_character_animation_playback_started") is True
+            and report.get("runtime_character_animation_playback_observed") is True
+            and _int_or_zero(report.get("runtime_character_animation_playback_tick_count", 0)) > 0
+            and report.get("runtime_character_animation_playback_cleanup_complete") is True
+            and report.get("runtime_character_proof_claimed") is False
+            and report.get("runtime_character_proof_verified") is False
+        )
+
+    return False
 
 
 def _runtime_character_animation_component_type_map() -> Dict[str, Dict[str, str]]:
