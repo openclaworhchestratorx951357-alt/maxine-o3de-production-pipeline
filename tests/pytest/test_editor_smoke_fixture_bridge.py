@@ -171,6 +171,35 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
             binding_payload["source_prefab_baseline_result"] = semantics["source_prefab_baseline_result"]
             binding_payload["procprefab_character_assertions"] = semantics["procprefab_character_assertions"]
             binding_payload["runtime_spawnable_proof"] = runtime_proof
+    if diagnostic_mode == "approved-animation-component-wiring-generation":
+        binding_payload.update(
+            {
+                "approved_runtime_animation_component_wiring_editor_generation_attempted": True,
+                "approved_runtime_animation_component_wiring_editor_generation_completed": True,
+                "approved_runtime_animation_component_wiring_editor_generation_verified": False,
+                "approved_runtime_animation_component_wiring_editor_generation_blocker": "blocked_by_editor_generated_prefab_update_save_semantics",
+                "approved_runtime_animation_component_wiring_source_prefab_path": "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+                "approved_runtime_animation_component_wiring_source_prefab_modified": False,
+                "approved_runtime_animation_component_wiring_editor_generated_update_used": False,
+                "approved_runtime_animation_component_wiring_hand_authored_unknown_json_used": False,
+                "approved_runtime_animation_component_wiring_actor_component_added": True,
+                "approved_runtime_animation_component_wiring_simple_motion_component_added": True,
+                "approved_runtime_animation_component_wiring_anim_graph_component_added": False,
+                "approved_runtime_animation_component_wiring_actor_asset_assignment_verified": True,
+                "approved_runtime_animation_component_wiring_motion_asset_assignment_verified": True,
+                "approved_runtime_animation_component_wiring_actor_asset_id": "{11111111-1111-1111-1111-111111111111}:00000001",
+                "approved_runtime_animation_component_wiring_motion_asset_id": "{22222222-2222-2222-2222-222222222222}:00000002",
+                "approved_runtime_animation_component_wiring_property_readback_verified": True,
+                "approved_runtime_animation_component_wiring_prefab_save_verified": False,
+                "approved_runtime_animation_component_wiring_spawnable_regenerated_or_found": False,
+                "runtime_character_animation_component_wiring_claimed": False,
+                "runtime_character_animation_component_wiring_verified": False,
+                "runtime_character_animation_claimed": False,
+                "runtime_character_animation_verified": False,
+                "runtime_character_proof_claimed": False,
+                "runtime_character_proof_verified": False,
+            }
+        )
     payload.update(
         {
             "status": status,
@@ -1071,6 +1100,7 @@ def test_editor_smoke_binding_diagnostic_modes_route_to_target_scripts(tmp_path)
         "procprefab-content-assertions": "editor_procprefab_content_assertions_smoke.py",
         "procprefab-character-component-assertions": "editor_procprefab_character_component_assertions_smoke.py",
         "runtime-spawnable-proof-surface": "editor_runtime_spawnable_proof_surface_smoke.py",
+        "approved-animation-component-wiring-generation": "editor_approved_animation_component_wiring_generation_smoke.py",
     }
 
     for mode, script_name in expected_scripts.items():
@@ -1091,6 +1121,74 @@ def test_editor_smoke_binding_diagnostic_modes_route_to_target_scripts(tmp_path)
 
         assert result["status"] == "pass"
         assert result["diagnostic_mode"] == mode
+
+
+def test_editor_smoke_generation_diagnostic_records_source_validated_save_blocker(tmp_path):
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        assert "editor_approved_animation_component_wiring_generation_smoke.py" in argv[-1].replace("\\", "/")
+        assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == "approved-animation-component-wiring-generation"
+        return _write_in_editor_report(env)
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=_live_env(tmp_path / "generation"),
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "generation" / "editor-smoke-artifacts",
+        diagnostic_mode="approved-animation-component-wiring-generation",
+    )
+
+    assert result["status"] == "pass"
+    assert result["approved_runtime_animation_component_wiring_editor_generation_attempted"] is True
+    assert result["approved_runtime_animation_component_wiring_editor_generation_completed"] is True
+    assert result["approved_runtime_animation_component_wiring_editor_generation_verified"] is False
+    assert (
+        result["approved_runtime_animation_component_wiring_editor_generation_blocker"]
+        == "blocked_by_editor_generated_prefab_update_save_semantics"
+    )
+    assert result["approved_runtime_animation_component_wiring_actor_component_added"] is True
+    assert result["approved_runtime_animation_component_wiring_simple_motion_component_added"] is True
+    assert result["approved_runtime_animation_component_wiring_source_prefab_modified"] is False
+    assert result["approved_runtime_animation_component_wiring_hand_authored_unknown_json_used"] is False
+    assert result["runtime_character_animation_component_wiring_claimed"] is False
+    assert result["runtime_character_animation_component_wiring_verified"] is False
+    assert result["runtime_character_animation_claimed"] is False
+    assert result["runtime_character_animation_verified"] is False
+
+
+def test_editor_smoke_generation_verified_requires_source_prefab_and_spawnable_evidence():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "diagnostic_mode": "approved-animation-component-wiring-generation",
+            "live_editor_execution": True,
+            "no_fake_success": True,
+            "approved_runtime_animation_component_wiring_editor_generation_attempted": True,
+            "approved_runtime_animation_component_wiring_editor_generation_completed": True,
+            "approved_runtime_animation_component_wiring_editor_generation_verified": True,
+            "approved_runtime_animation_component_wiring_editor_generation_blocker": "",
+            "approved_runtime_animation_component_wiring_source_prefab_modified": False,
+            "approved_runtime_animation_component_wiring_editor_generated_update_used": True,
+            "approved_runtime_animation_component_wiring_hand_authored_unknown_json_used": False,
+            "approved_runtime_animation_component_wiring_actor_component_added": True,
+            "approved_runtime_animation_component_wiring_simple_motion_component_added": True,
+            "approved_runtime_animation_component_wiring_actor_asset_assignment_verified": True,
+            "approved_runtime_animation_component_wiring_motion_asset_assignment_verified": True,
+            "approved_runtime_animation_component_wiring_property_readback_verified": True,
+            "approved_runtime_animation_component_wiring_prefab_save_verified": True,
+            "approved_runtime_animation_component_wiring_spawnable_regenerated_or_found": False,
+            "runtime_character_animation_component_wiring_claimed": True,
+            "runtime_character_animation_component_wiring_verified": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
 
 
 def test_editor_smoke_cli_accepts_explicit_apb_report(tmp_path):

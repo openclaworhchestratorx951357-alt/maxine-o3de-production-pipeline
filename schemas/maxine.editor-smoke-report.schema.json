@@ -2054,6 +2054,83 @@
     "runtime_character_animation_component_wiring_verified": {
       "type": "boolean"
     },
+    "approved_runtime_animation_component_wiring_editor_generation_attempted": {
+      "type": "boolean"
+    },
+    "approved_runtime_animation_component_wiring_editor_generation_completed": {
+      "type": "boolean"
+    },
+    "approved_runtime_animation_component_wiring_editor_generation_verified": {
+      "type": "boolean"
+    },
+    "approved_runtime_animation_component_wiring_editor_generation_blocker": {
+      "type": "string"
+    },
+    "approved_runtime_animation_component_wiring_source_prefab_path": {
+      "type": "string"
+    },
+    "approved_runtime_animation_component_wiring_source_prefab_modified": {
+      "type": "boolean"
+    },
+    "approved_runtime_animation_component_wiring_editor_generated_update_used": {
+      "type": "boolean"
+    },
+    "approved_runtime_animation_component_wiring_hand_authored_unknown_json_used": {
+      "type": "boolean"
+    },
+    "approved_runtime_animation_component_wiring_actor_component_added": {
+      "type": "boolean"
+    },
+    "approved_runtime_animation_component_wiring_simple_motion_component_added": {
+      "type": "boolean"
+    },
+    "approved_runtime_animation_component_wiring_anim_graph_component_added": {
+      "type": "boolean"
+    },
+    "approved_runtime_animation_component_wiring_actor_asset_assignment_verified": {
+      "type": "boolean"
+    },
+    "approved_runtime_animation_component_wiring_motion_asset_assignment_verified": {
+      "type": "boolean"
+    },
+    "approved_runtime_animation_component_wiring_actor_asset_id": {
+      "type": "string"
+    },
+    "approved_runtime_animation_component_wiring_motion_asset_id": {
+      "type": "string"
+    },
+    "approved_runtime_animation_component_wiring_property_readback_verified": {
+      "type": "boolean"
+    },
+    "approved_runtime_animation_component_wiring_prefab_save_verified": {
+      "type": "boolean"
+    },
+    "approved_runtime_animation_component_wiring_spawnable_regenerated_or_found": {
+      "type": "boolean"
+    },
+    "approved_runtime_animation_component_wiring_source_validation_status": {
+      "type": "string"
+    },
+    "approved_runtime_animation_component_wiring_source_validation_verified": {
+      "type": "boolean"
+    },
+    "approved_runtime_animation_component_wiring_source_refs": {
+      "type": "array"
+    },
+    "approved_runtime_animation_component_wiring_candidate_matrix": {
+      "type": "array"
+    },
+    "approved_runtime_animation_component_wiring_selected_strategy": {
+      "type": "string"
+    },
+    "approved_runtime_animation_component_wiring_editor_api": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "approved_runtime_animation_component_wiring_prefab_api": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "runtime_character_product_load_contract_updated": {
       "type": "boolean"
     },
