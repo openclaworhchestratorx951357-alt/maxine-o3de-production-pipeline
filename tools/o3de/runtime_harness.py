@@ -20,6 +20,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Mapping, Sequence
+from uuid import UUID
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
@@ -83,6 +84,9 @@ RUNTIME_EXIT_FIXTURE_GATE_ENV = (
     "MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE=1",
 )
 RUNTIME_CHARACTER_PRODUCT_LOAD_GATE_ENV = ("MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE=1",)
+RUNTIME_PROCPREFAB_HANDLER_OR_SURFACE_GATE_ENV = (
+    "MAXINE_ENABLE_RUNTIME_PROCPREFAB_HANDLER_OR_SPAWNABLE_SURFACE=1",
+)
 RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION=1",)
 RUNTIME_EXIT_FIXTURE_REBUILD_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD=1",)
 RUNTIME_EXIT_FIXTURE_TEMP_REGISTRY_PATCH_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH=1",)
@@ -113,6 +117,11 @@ RUNTIME_CACHE_BOOTSTRAP_SELECTED = "cache_bootstrap_setreg_temporarily_neutraliz
 RUNTIME_CACHE_BOOTSTRAP_BACKUP_DIRNAME = "maxine_runtime_cache_bootstrap_backups"
 RUNTIME_SIGNAL_CLASSIFICATION_SELECTED = "ap_shader_no_defaultlevel_cache_bootstrap_fixture_rerun"
 RUNTIME_CHARACTER_PRODUCT_LOAD_SELECTED = "runtime_character_product_load_generic_assetmanager_load"
+RUNTIME_PROCPREFAB_HANDLER_SURFACE_SELECTED = "runtime_procprefab_handler_surface_source_diagnostic"
+RUNTIME_PROCPREFAB_ASSET_TYPE = "{9B7C8459-471E-4EAD-A363-7990CC4065A9}"
+RUNTIME_PROCPREFAB_ASSET_CLASS = "AZ::Prefab::ProceduralPrefabAsset"
+RUNTIME_PROCPREFAB_HANDLER_MODULE = "Gem::PrefabBuilder.Builders"
+RUNTIME_SPAWNABLE_ASSET_TYPE = "{855E3021-D305-4845-B284-20C3F7FDF16B}"
 WINDOWS_NTSTATUS_NAMES = {
     0xC0000005: "STATUS_ACCESS_VIOLATION",
 }
@@ -193,6 +202,7 @@ def run_runtime_harness(
     enable_runtime_exit_fixture_ap_shader_signal_classification: bool = False,
     diagnose_runtime_character_product_load: bool = False,
     enable_runtime_character_product_load_fixture: bool = False,
+    diagnose_runtime_procprefab_handler_or_spawnable_surface: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -232,6 +242,7 @@ def run_runtime_harness(
         and not enable_runtime_exit_fixture_ap_shader_signal_classification
         and not diagnose_runtime_character_product_load
         and not enable_runtime_character_product_load_fixture
+        and not diagnose_runtime_procprefab_handler_or_spawnable_surface
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -276,6 +287,7 @@ def run_runtime_harness(
             and not enable_runtime_exit_fixture_ap_shader_signal_classification
             and not diagnose_runtime_character_product_load
             and not enable_runtime_character_product_load_fixture
+            and not diagnose_runtime_procprefab_handler_or_spawnable_surface
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -322,6 +334,8 @@ def run_runtime_harness(
             if diagnose_runtime_character_product_load
             else "runtime_character_product_load_fixture_command"
             if enable_runtime_character_product_load_fixture
+            else "runtime_procprefab_handler_or_surface_diagnostic"
+            if diagnose_runtime_procprefab_handler_or_spawnable_surface
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -417,6 +431,7 @@ def run_runtime_harness(
         and not enable_runtime_exit_fixture_ap_shader_signal_classification
         and not diagnose_runtime_character_product_load
         and not enable_runtime_character_product_load_fixture
+        and not diagnose_runtime_procprefab_handler_or_spawnable_surface
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -550,6 +565,16 @@ def run_runtime_harness(
 
     if diagnose_runtime_character_product_load:
         return _run_runtime_character_product_load_diagnostic(
+            report,
+            product_evidence=product_evidence,
+            engine_root=selected_engine,
+            project=selected_project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+
+    if diagnose_runtime_procprefab_handler_or_spawnable_surface:
+        return _run_runtime_procprefab_handler_or_surface_diagnostic(
             report,
             product_evidence=product_evidence,
             engine_root=selected_engine,
@@ -788,6 +813,27 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_signal_classification_verified=true cannot allow disqualifying shader signals.")
     if report.get("runtime_character_product_load_claimed") is True and report.get("runtime_character_product_load_verified") is not True:
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime character product-load proof cannot be claimed without verified product-load evidence.")
+    if report.get("runtime_procprefab_direct_load_claimed") is True and report.get("runtime_procprefab_direct_load_verified") is not True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime direct .procprefab load proof cannot be claimed without verified direct-load evidence.")
+    if report.get("runtime_procprefab_direct_load_verified") is True:
+        if str(report.get("runtime_procprefab_direct_load_handler_status", "")).strip() != "runtime_procprefab_direct_load_handler_registered":
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "runtime_procprefab_direct_load_verified=true requires a registered runtime handler.",
+            )
+        if report.get("runtime_procprefab_direct_load_supported") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_procprefab_direct_load_verified=true requires direct runtime load support.")
+        if not str(report.get("runtime_procprefab_direct_load_asset_id", "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_procprefab_direct_load_verified=true requires .procprefab AssetId evidence.")
+        if not str(report.get("runtime_procprefab_direct_load_asset_type", "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_procprefab_direct_load_verified=true requires .procprefab AssetType evidence.")
+    if report.get("runtime_procprefab_runtime_equivalent_surface_claimed") is True and report.get(
+        "runtime_procprefab_runtime_equivalent_surface_verified"
+    ) is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Runtime equivalent prefab/spawnable surface proof cannot be claimed without verified surface evidence.",
+        )
     if report.get("runtime_character_product_load_verified") is True:
         if report.get("runtime_execution_verified") is not True:
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_product_load_verified=true requires verified command-envelope runtime execution.")
@@ -830,6 +876,15 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
             )
         elif any(not str(product.get("asset_id", "")).strip() for product in products if isinstance(product, Mapping)):
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_product_load_verified=true requires per-product AssetId evidence.")
+        if (
+            report.get("runtime_character_product_load_contract_updated") is True
+            and report.get("runtime_character_product_load_runtime_equivalent_required") is True
+            and report.get("runtime_procprefab_runtime_equivalent_surface_verified") is not True
+        ):
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "runtime_character_product_load_verified=true under updated product-load contract requires verified runtime-equivalent prefab/spawnable surface.",
+            )
     if report.get("runtime_character_product_load_is_instantiation_proof") is True and report.get("runtime_character_instantiation_verified") is not True:
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime product-load proof is not runtime instantiation proof.")
     if report.get("runtime_runtime_character_product_load_is_instantiation_proof") is True and report.get("runtime_character_instantiation_verified") is not True:
@@ -1046,6 +1101,18 @@ def print_text_report(report: Mapping[str, Any]) -> None:
     if report.get("runtime_character_product_load_status") not in {None, "", "not_run", "runtime_character_product_load_not_attempted"}:
         print(f"runtime_character_product_load_status: {report.get('runtime_character_product_load_status', '')}")
         print(f"runtime_character_product_load_verified: {str(report.get('runtime_character_product_load_verified', False)).lower()}")
+    if report.get("runtime_procprefab_handler_or_surface_status") not in {
+        None,
+        "",
+        "not_run",
+        "runtime_procprefab_handler_or_surface_not_attempted",
+    }:
+        print(f"runtime_procprefab_handler_or_surface_status: {report.get('runtime_procprefab_handler_or_surface_status', '')}")
+        print(f"runtime_procprefab_direct_load_supported: {str(report.get('runtime_procprefab_direct_load_supported', False)).lower()}")
+        print(
+            "runtime_procprefab_runtime_equivalent_surface_verified: "
+            f"{str(report.get('runtime_procprefab_runtime_equivalent_surface_verified', False)).lower()}"
+        )
     print(f"runtime_character_proof_claimed: {str(report.get('runtime_character_proof_claimed', False)).lower()}")
     print(f"runtime_character_proof_verified: {str(report.get('runtime_character_proof_verified', False)).lower()}")
     print(f"live_runtime_execution: {str(report.get('live_runtime_execution', False)).lower()}")
@@ -1553,6 +1620,33 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_character_product_load_selected_product_missing_error_scan": {"status": "runtime_character_product_load_not_attempted", "matches": []},
         "runtime_character_product_load_is_instantiation_proof": False,
         "runtime_runtime_character_product_load_is_instantiation_proof": False,
+        "runtime_procprefab_handler_or_surface": {"status": "runtime_procprefab_handler_or_surface_not_attempted"},
+        "runtime_procprefab_handler_or_surface_status": "runtime_procprefab_handler_or_surface_not_attempted",
+        "runtime_procprefab_direct_load_status": "runtime_procprefab_direct_load_not_attempted",
+        "runtime_procprefab_direct_load_product_path": "",
+        "runtime_procprefab_direct_load_catalog_path": "",
+        "runtime_procprefab_direct_load_asset_id": "",
+        "runtime_procprefab_direct_load_asset_type": "",
+        "runtime_procprefab_direct_load_asset_class": "",
+        "runtime_procprefab_direct_load_handler_status": "",
+        "runtime_procprefab_direct_load_handler_module": "",
+        "runtime_procprefab_direct_load_handler_source_refs": [],
+        "runtime_procprefab_direct_load_supported": False,
+        "runtime_procprefab_direct_load_supported_reason": "",
+        "runtime_procprefab_direct_load_blocker": "",
+        "runtime_procprefab_direct_load_claimed": False,
+        "runtime_procprefab_direct_load_verified": False,
+        "runtime_procprefab_surface_candidate_matrix": [],
+        "runtime_procprefab_surface_candidate_matrix_recorded": False,
+        "runtime_procprefab_surface_selected": "",
+        "runtime_procprefab_surface_selected_reason": "",
+        "runtime_procprefab_surface_remaining_blocker": "",
+        "runtime_procprefab_runtime_equivalent_surface_claimed": False,
+        "runtime_procprefab_runtime_equivalent_surface_verified": False,
+        "runtime_character_product_load_contract_updated": False,
+        "runtime_character_product_load_direct_procprefab_required": True,
+        "runtime_character_product_load_runtime_equivalent_required": False,
+        "runtime_character_product_load_contract_blocker": "",
         "runtime_character_instantiation_claimed": False,
         "runtime_character_instantiation_verified": False,
         "runtime_character_animation_claimed": False,
@@ -6453,6 +6547,348 @@ def _run_runtime_character_product_load_diagnostic(
     return _finalize_report(report)
 
 
+def _run_runtime_procprefab_handler_or_surface_diagnostic(
+    report: Dict[str, Any],
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    report.update(
+        _runtime_procprefab_handler_or_surface_payload(
+            product_evidence=product_evidence,
+            engine_root=engine_root,
+            project=project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+    )
+    report.update(
+        {
+            "status": "pass",
+            "runtime_harness_status": report.get("runtime_procprefab_handler_or_surface_status", ""),
+            "runtime_harness_mode": "runtime_procprefab_handler_or_surface_diagnostic",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "runtime_procprefab_direct_load_claimed": False,
+            "runtime_procprefab_direct_load_verified": False,
+            "runtime_procprefab_runtime_equivalent_surface_claimed": False,
+            "runtime_procprefab_runtime_equivalent_surface_verified": False,
+            "runtime_character_product_load_claimed": False,
+            "runtime_character_product_load_verified": False,
+            "runtime_character_instantiation_claimed": False,
+            "runtime_character_instantiation_verified": False,
+            "runtime_character_animation_claimed": False,
+            "runtime_character_animation_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "asset_cache_deleted": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_procprefab_handler_surface_source_discovery",
+                "runtime_procprefab_direct_load_blocker_preserved",
+                "runtime_spawnable_surface_candidate_matrix_recorded",
+                "runtime_execution_not_attempted_in_handler_surface_diagnostic_mode",
+                "runtime_character_proof_not_claimed",
+            ],
+            "runtime_harness_assertion_informational": [
+                "editor_direct_procprefab_instantiation_is_not_runtime_direct_load_proof",
+                "direct_procprefab_asset_id_resolution_is_not_runtime_load_proof",
+                "spawnable_surface_discovery_is_not_spawn_instantiation_proof",
+            ],
+        }
+    )
+    return _finalize_report(report)
+
+
+def _runtime_procprefab_handler_or_surface_payload(
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    _ = project
+    _ = artifact_dir
+    _ = timeout_seconds
+    source_validated = _runtime_procprefab_handler_source_validated(engine_root)
+    procprefab = _runtime_procprefab_product(product_evidence)
+    spawnable_candidates = _runtime_procprefab_spawnable_surface_candidates(product_evidence)
+    source_refs = _runtime_procprefab_handler_source_refs(engine_root)
+    candidate_matrix = _runtime_procprefab_surface_candidate_matrix(
+        engine_root=engine_root,
+        procprefab=procprefab,
+        spawnable_candidates=spawnable_candidates,
+    )
+    has_runtime_equivalent = bool(spawnable_candidates)
+    status = (
+        "runtime_procprefab_surface_source_discovery_pass"
+        if source_validated
+        else "runtime_procprefab_surface_source_discovery_inconclusive"
+    )
+    direct_status = (
+        "runtime_procprefab_direct_load_unsupported_builder_only"
+        if source_validated
+        else "runtime_procprefab_direct_load_handler_missing"
+    )
+    surface_blocker = "" if has_runtime_equivalent else "blocked_by_missing_runtime_equivalent_spawnable_surface"
+    contract_blocker = "" if has_runtime_equivalent else "blocked_by_missing_runtime_equivalent_spawnable_surface"
+    procprefab_asset_type = str(procprefab.get("asset_type_id", "")).strip() or RUNTIME_PROCPREFAB_ASSET_TYPE
+    return {
+        "runtime_procprefab_handler_or_surface": {
+            "status": status,
+            "selected": "",
+            "direct_load_supported": False,
+            "runtime_equivalent_candidates": len(spawnable_candidates),
+        },
+        "runtime_procprefab_handler_or_surface_status": status,
+        "runtime_procprefab_direct_load_status": direct_status,
+        "runtime_procprefab_direct_load_product_path": str(procprefab.get("product_path", "")),
+        "runtime_procprefab_direct_load_catalog_path": str(procprefab.get("catalog_path", "")),
+        "runtime_procprefab_direct_load_asset_id": str(procprefab.get("asset_id", "")),
+        "runtime_procprefab_direct_load_asset_type": procprefab_asset_type,
+        "runtime_procprefab_direct_load_asset_class": RUNTIME_PROCPREFAB_ASSET_CLASS if source_validated else "",
+        "runtime_procprefab_direct_load_handler_status": "runtime_procprefab_direct_load_handler_missing",
+        "runtime_procprefab_direct_load_handler_module": RUNTIME_PROCPREFAB_HANDLER_MODULE if source_validated else "",
+        "runtime_procprefab_direct_load_handler_source_refs": source_refs,
+        "runtime_procprefab_direct_load_supported": False,
+        "runtime_procprefab_direct_load_supported_reason": direct_status,
+        "runtime_procprefab_direct_load_blocker": "blocked_by_runtime_procprefab_direct_load_unsupported"
+        if source_validated
+        else "blocked_by_runtime_procprefab_asset_handler_missing",
+        "runtime_procprefab_direct_load_claimed": False,
+        "runtime_procprefab_direct_load_verified": False,
+        "runtime_procprefab_surface_candidate_matrix": candidate_matrix,
+        "runtime_procprefab_surface_candidate_matrix_recorded": bool(candidate_matrix),
+        "runtime_procprefab_surface_selected": "",
+        "runtime_procprefab_surface_selected_reason": "",
+        "runtime_procprefab_surface_remaining_blocker": surface_blocker,
+        "runtime_procprefab_runtime_equivalent_surface_claimed": False,
+        "runtime_procprefab_runtime_equivalent_surface_verified": False,
+        "runtime_character_product_load_contract_updated": bool(source_validated),
+        "runtime_character_product_load_direct_procprefab_required": False if source_validated else True,
+        "runtime_character_product_load_runtime_equivalent_required": bool(source_validated),
+        "runtime_character_product_load_contract_blocker": contract_blocker,
+        "runtime_character_product_load_verified": False,
+        "runtime_character_product_load_claimed": False,
+        "runtime_character_instantiation_claimed": False,
+        "runtime_character_instantiation_verified": False,
+        "runtime_character_animation_claimed": False,
+        "runtime_character_animation_verified": False,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+    }
+
+
+def _runtime_procprefab_product(product_evidence: Mapping[str, Any]) -> Dict[str, Any]:
+    for product in _runtime_character_product_load_products_from_apb(product_evidence):
+        if product.get("product_kind") == "procprefab":
+            return dict(product)
+    return {
+        "product_kind": "procprefab",
+        "product_path": "",
+        "catalog_path": "",
+        "asset_id": "",
+        "asset_type_id": RUNTIME_PROCPREFAB_ASSET_TYPE,
+        "asset_type_name": RUNTIME_PROCPREFAB_ASSET_CLASS,
+    }
+
+
+def _runtime_procprefab_spawnable_surface_candidates(product_evidence: Mapping[str, Any]) -> List[Dict[str, str]]:
+    candidates: List[Dict[str, str]] = []
+    for product in product_evidence.get("produced_products", []):
+        if not isinstance(product, Mapping):
+            continue
+        product_type = str(product.get("product_type", "")).strip().lower()
+        product_path = str(product.get("product_path", product.get("path", ""))).strip().replace("\\", "/")
+        if product_type != "spawnable" and not product_path.lower().endswith(".spawnable"):
+            continue
+        lower_path = product_path.lower()
+        if "characters/maxine" not in lower_path and "characters\\maxine" not in lower_path and "maxine" not in lower_path:
+            continue
+        candidates.append(
+            {
+                "product_path": product_path,
+                "catalog_path": _runtime_character_product_catalog_path(product_path),
+                "asset_id": str(product.get("asset_id", product.get("assetId", ""))).strip(),
+                "asset_type_id": str(product.get("asset_type_id", product.get("assetTypeId", RUNTIME_SPAWNABLE_ASSET_TYPE))).strip(),
+            }
+        )
+    return candidates
+
+
+def _runtime_procprefab_surface_candidate_matrix(
+    *,
+    engine_root: Path | None,
+    procprefab: Mapping[str, Any],
+    spawnable_candidates: Sequence[Mapping[str, str]],
+) -> List[Dict[str, Any]]:
+    source_refs = _runtime_procprefab_handler_source_refs(engine_root)
+    spawnable_refs = _runtime_procprefab_spawnable_source_refs(engine_root)
+    first_spawnable = dict(spawnable_candidates[0]) if spawnable_candidates else {}
+    return [
+        {
+            "id": "runtime_procprefab_direct_assetmanager_load",
+            "name": "Direct .procprefab AssetManager load",
+            "kind": "runtime_direct_procprefab_assetmanager_load",
+            "source_validation": {
+                "status": "runtime_procprefab_surface_candidate_source_validated"
+                if _runtime_procprefab_handler_source_validated(engine_root)
+                else "runtime_procprefab_surface_candidate_rejected_missing_source_validation",
+                "summary": (
+                    ".procprefab uses AZ::Prefab::ProceduralPrefabAsset and PrefabGroupAssetHandler, "
+                    "but that handler is built in PrefabBuilder.Builders/Tools, not in the runtime launcher envelope."
+                ),
+            },
+            "source_refs": source_refs,
+            "product_path": str(procprefab.get("product_path", "")),
+            "catalog_path": str(procprefab.get("catalog_path", "")),
+            "asset_id": str(procprefab.get("asset_id", "")),
+            "asset_type": str(procprefab.get("asset_type_id", RUNTIME_PROCPREFAB_ASSET_TYPE)) or RUNTIME_PROCPREFAB_ASSET_TYPE,
+            "handler_status": "runtime_procprefab_direct_load_handler_missing",
+            "runtime_api": "AZ::Data::AssetManager::GetAsset",
+            "attempted": False,
+            "result": "runtime_procprefab_direct_load_unsupported_builder_only",
+            "blocker": "blocked_by_runtime_procprefab_direct_load_unsupported",
+        },
+        {
+            "id": "runtime_spawnable_asset_load_surface",
+            "name": "Runtime spawnable AssetManager load surface",
+            "kind": "runtime_spawnable_asset_load",
+            "source_validation": {
+                "status": "runtime_procprefab_surface_candidate_source_validated"
+                if _runtime_spawnable_source_validated(engine_root)
+                else "runtime_procprefab_surface_candidate_rejected_missing_source_validation",
+                "summary": "AzFramework registers SpawnableSystemComponent and SpawnableAssetHandler as the runtime prefab/entity asset surface.",
+            },
+            "source_refs": spawnable_refs,
+            "product_path": str(first_spawnable.get("product_path", "")),
+            "catalog_path": str(first_spawnable.get("catalog_path", "")),
+            "asset_id": str(first_spawnable.get("asset_id", "")),
+            "asset_type": str(first_spawnable.get("asset_type_id", RUNTIME_SPAWNABLE_ASSET_TYPE)),
+            "handler_status": "runtime_spawnable_handler_source_validated"
+            if _runtime_spawnable_source_validated(engine_root)
+            else "runtime_spawnable_handler_source_inconclusive",
+            "runtime_api": "AZ::Data::AssetManager::GetAsset<AzFramework::Spawnable>",
+            "attempted": False,
+            "result": "runtime_procprefab_surface_candidate_source_validated"
+            if spawnable_candidates
+            else "blocked_by_missing_runtime_equivalent_spawnable_surface",
+            "blocker": "" if spawnable_candidates else "blocked_by_missing_runtime_equivalent_spawnable_surface",
+        },
+        {
+            "id": "runtime_spawnable_instantiation_surface",
+            "name": "Runtime SpawnableEntitiesInterface instantiation surface",
+            "kind": "runtime_spawnable_instantiation",
+            "source_validation": {
+                "status": "runtime_procprefab_surface_candidate_source_validated"
+                if _runtime_spawnable_source_validated(engine_root)
+                else "runtime_procprefab_surface_candidate_rejected_missing_source_validation",
+                "summary": "SpawnableEntitiesInterface can create tickets and spawn entities, but this slice does not instantiate or claim spawn proof.",
+            },
+            "source_refs": spawnable_refs,
+            "product_path": str(first_spawnable.get("product_path", "")),
+            "catalog_path": str(first_spawnable.get("catalog_path", "")),
+            "asset_id": str(first_spawnable.get("asset_id", "")),
+            "asset_type": str(first_spawnable.get("asset_type_id", RUNTIME_SPAWNABLE_ASSET_TYPE)),
+            "handler_status": "runtime_spawnable_handler_source_validated"
+            if _runtime_spawnable_source_validated(engine_root)
+            else "runtime_spawnable_handler_source_inconclusive",
+            "runtime_api": "AzFramework::SpawnableEntitiesInterface",
+            "attempted": False,
+            "result": "runtime_procprefab_surface_candidate_rejected_unsafe",
+            "blocker": "blocked_by_runtime_spawn_requires_level_context",
+        },
+        {
+            "id": "runtime_procprefab_keep_blocked_without_runtime_surface",
+            "name": "Keep product-load proof blocked without a verified runtime-equivalent surface",
+            "kind": "typed_blocker",
+            "source_validation": {
+                "status": "runtime_procprefab_surface_candidate_source_validated",
+                "summary": "Preserves the PR #138 .procprefab asset_handler_missing blocker until a runtime surface is resolved and exercised.",
+            },
+            "source_refs": source_refs + spawnable_refs,
+            "attempted": False,
+            "result": "blocked_by_missing_runtime_equivalent_spawnable_surface"
+            if not spawnable_candidates
+            else "runtime_procprefab_surface_candidate_rejected_load_not_attempted",
+            "blocker": "blocked_by_missing_runtime_equivalent_spawnable_surface" if not spawnable_candidates else "",
+        },
+    ]
+
+
+def _runtime_procprefab_handler_source_validated(engine_root: Path | None) -> bool:
+    root = engine_root or Path("")
+    return all(path.is_file() for path in _runtime_procprefab_handler_source_paths(root))
+
+
+def _runtime_spawnable_source_validated(engine_root: Path | None) -> bool:
+    root = engine_root or Path("")
+    return all(path.is_file() for path in _runtime_procprefab_spawnable_source_paths(root))
+
+
+def _runtime_procprefab_handler_source_paths(root: Path) -> List[Path]:
+    return [
+        root
+        / "Code"
+        / "Framework"
+        / "AzToolsFramework"
+        / "AzToolsFramework"
+        / "Prefab"
+        / "Procedural"
+        / "ProceduralPrefabAsset.h",
+        root
+        / "Code"
+        / "Framework"
+        / "AzToolsFramework"
+        / "AzToolsFramework"
+        / "Prefab"
+        / "Procedural"
+        / "ProceduralPrefabAsset.cpp",
+        root / "Gems" / "Prefab" / "PrefabBuilder" / "CMakeLists.txt",
+        root / "Gems" / "Prefab" / "PrefabBuilder" / "PrefabBuilderModule.cpp",
+        root / "Gems" / "Prefab" / "PrefabBuilder" / "PrefabGroup" / "ProceduralAssetHandler.cpp",
+        root / "Gems" / "Prefab" / "PrefabBuilder" / "PrefabGroup" / "ProceduralAssetHandler.h",
+    ]
+
+
+def _runtime_procprefab_spawnable_source_paths(root: Path) -> List[Path]:
+    return [
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "Spawnable.h",
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableAssetHandler.h",
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableAssetHandler.cpp",
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableSystemComponent.h",
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableSystemComponent.cpp",
+        root
+        / "Code"
+        / "Framework"
+        / "AzFramework"
+        / "AzFramework"
+        / "Spawnable"
+        / "SpawnableEntitiesInterface.h",
+        root
+        / "Code"
+        / "Framework"
+        / "AzFramework"
+        / "AzFramework"
+        / "Spawnable"
+        / "SpawnableEntitiesManager.cpp",
+    ]
+
+
+def _runtime_procprefab_handler_source_refs(engine_root: Path | None) -> List[str]:
+    root = engine_root or Path("<engine-root>")
+    return [str(path) for path in _runtime_procprefab_handler_source_paths(root)]
+
+
+def _runtime_procprefab_spawnable_source_refs(engine_root: Path | None) -> List[str]:
+    root = engine_root or Path("<engine-root>")
+    return [str(path) for path in _runtime_procprefab_spawnable_source_paths(root)]
+
+
 def _runtime_character_product_load_source_payload(
     *,
     product_evidence: Mapping[str, Any],
@@ -6572,6 +7008,12 @@ def _runtime_character_product_load_products_from_apb(product_evidence: Mapping[
         if not product_path:
             continue
         seen.add(kind)
+        asset_type_id = str(product.get("asset_type_id", product.get("assetTypeId", ""))).strip()
+        asset_type_name = str(product.get("asset_type_name", "")).strip()
+        if kind == "procprefab" and not asset_type_id:
+            asset_type_id = RUNTIME_PROCPREFAB_ASSET_TYPE
+        if kind == "procprefab" and not asset_type_name:
+            asset_type_name = RUNTIME_PROCPREFAB_ASSET_CLASS
         products.append(
             {
                 "product_kind": kind,
@@ -6579,9 +7021,9 @@ def _runtime_character_product_load_products_from_apb(product_evidence: Mapping[
                 "catalog_path": _runtime_character_product_catalog_path(product_path),
                 "expected_category": kind,
                 "expected_type": _runtime_character_product_expected_type(kind),
-                "asset_id": str(product.get("asset_id", product.get("assetId", ""))).strip(),
-                "asset_type_id": str(product.get("asset_type_id", product.get("assetTypeId", ""))).strip(),
-                "asset_type_name": str(product.get("asset_type_name", "")).strip(),
+                "asset_id": _runtime_product_asset_id(product),
+                "asset_type_id": asset_type_id,
+                "asset_type_name": asset_type_name,
                 "resolution_status": "runtime_character_product_load_not_attempted",
                 "load_requested": False,
                 "load_method": "AZ::Data::AssetManager::GetAsset",
@@ -6595,6 +7037,22 @@ def _runtime_character_product_load_products_from_apb(product_evidence: Mapping[
         )
     products.sort(key=lambda item: EXPECTED_PRODUCTS.index(item["product_kind"]))
     return products
+
+
+def _runtime_product_asset_id(product: Mapping[str, Any]) -> str:
+    explicit = str(product.get("asset_id", product.get("assetId", ""))).strip()
+    if explicit:
+        return explicit
+    source_uuid = str(product.get("source_uuid", product.get("source_guid", ""))).strip()
+    source_sub_id = str(product.get("source_sub_id", product.get("sub_id", ""))).strip()
+    if not source_uuid or not source_sub_id:
+        return ""
+    try:
+        guid = UUID(source_uuid)
+        sub_id = int(source_sub_id, 0)
+    except (TypeError, ValueError):
+        return ""
+    return f"{{{str(guid).upper()}}}:{sub_id & 0xFFFFFFFF:08x}"
 
 
 def _runtime_character_product_catalog_path(product_path: str) -> str:
@@ -9936,6 +10394,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--enable-runtime-exit-fixture-ap-shader-signal-classification", action="store_true")
     parser.add_argument("--diagnose-runtime-character-product-load", action="store_true")
     parser.add_argument("--enable-runtime-character-product-load-fixture", action="store_true")
+    parser.add_argument("--diagnose-runtime-procprefab-handler-or-spawnable-surface", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -9984,6 +10443,9 @@ def main() -> int:
         ),
         diagnose_runtime_character_product_load=args.diagnose_runtime_character_product_load,
         enable_runtime_character_product_load_fixture=args.enable_runtime_character_product_load_fixture,
+        diagnose_runtime_procprefab_handler_or_spawnable_surface=(
+            args.diagnose_runtime_procprefab_handler_or_spawnable_surface
+        ),
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
         strict_integration=args.strict_integration,

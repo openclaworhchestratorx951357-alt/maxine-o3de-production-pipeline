@@ -415,6 +415,16 @@ The product-load diagnostic source-validates `AssetCatalogRequestBus::GetAssetId
 
 A runtime product-load pass requires the PR #136 cache/bootstrap no-defaultlevel strategy, the PR #137 AP/shader classified-harmless envelope, complete APB evidence, no defaultlevel or production level load, no selected-product missing/load-error logs, and every required approved product resolving to a valid `AssetId`, having a registered runtime handler, and reaching ready state. The approved categories are `azmodel`, `actor`, `procprefab`, `motion`, `motionset`, `animgraph`, `pxmesh`, and `azmaterial`. A resolved product with `asset_handler_missing` is a typed blocker. This proof is still narrower than runtime instantiation, spawning, animation, runtime character proof, or production-ready release proof.
 
+The `.procprefab` handler/surface diagnostic answers the PR #138 blocker without weakening it:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-procprefab-handler-or-spawnable-surface --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+Source validation identifies `.procprefab` as `AZ::Prefab::ProceduralPrefabAsset` (`{9B7C8459-471E-4EAD-A363-7990CC4065A9}`) and the direct handler as `AZ::Prefab::PrefabGroupAssetHandler` in `Gem::PrefabBuilder.Builders` / `Gem::PrefabBuilder.Tools`, which is guarded for host tools and is not a runtime HeadlessServerLauncher handler. The diagnostic therefore records direct runtime `.procprefab` AssetManager load as `runtime_procprefab_direct_load_unsupported_builder_only` and preserves the PR #138 `asset_handler_missing` result as evidence, not as a pass.
+
+The runtime-equivalent surface is tracked separately through a spawnable candidate matrix. `AzFramework::Spawnable`, `SpawnableAssetHandler`, `SpawnableSystemComponent`, and `SpawnableEntitiesInterface` are source-validated runtime surfaces, but discovery alone is not spawn or product-load proof. Until an approved character spawnable or equivalent prefab runtime product is resolved and exercised without defaultlevel/production load, the updated product-load contract remains blocked by `blocked_by_missing_runtime_equivalent_spawnable_surface`; runtime instantiation, animation, and full runtime character proof remain unclaimed.
+
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 
 This wiring does not publish, mutate production levels, contact external services, or claim production-ready completion.

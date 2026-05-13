@@ -1499,6 +1499,88 @@
     "runtime_runtime_character_product_load_is_instantiation_proof": {
       "type": "boolean"
     },
+    "runtime_procprefab_handler_or_surface": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_procprefab_handler_or_surface_status": {
+      "type": "string"
+    },
+    "runtime_procprefab_direct_load_status": {
+      "type": "string"
+    },
+    "runtime_procprefab_direct_load_product_path": {
+      "type": "string"
+    },
+    "runtime_procprefab_direct_load_catalog_path": {
+      "type": "string"
+    },
+    "runtime_procprefab_direct_load_asset_id": {
+      "type": "string"
+    },
+    "runtime_procprefab_direct_load_asset_type": {
+      "type": "string"
+    },
+    "runtime_procprefab_direct_load_asset_class": {
+      "type": "string"
+    },
+    "runtime_procprefab_direct_load_handler_status": {
+      "type": "string"
+    },
+    "runtime_procprefab_direct_load_handler_module": {
+      "type": "string"
+    },
+    "runtime_procprefab_direct_load_handler_source_refs": {
+      "type": "array"
+    },
+    "runtime_procprefab_direct_load_supported": {
+      "type": "boolean"
+    },
+    "runtime_procprefab_direct_load_supported_reason": {
+      "type": "string"
+    },
+    "runtime_procprefab_direct_load_blocker": {
+      "type": "string"
+    },
+    "runtime_procprefab_direct_load_claimed": {
+      "type": "boolean"
+    },
+    "runtime_procprefab_direct_load_verified": {
+      "type": "boolean"
+    },
+    "runtime_procprefab_surface_candidate_matrix": {
+      "type": "array"
+    },
+    "runtime_procprefab_surface_candidate_matrix_recorded": {
+      "type": "boolean"
+    },
+    "runtime_procprefab_surface_selected": {
+      "type": "string"
+    },
+    "runtime_procprefab_surface_selected_reason": {
+      "type": "string"
+    },
+    "runtime_procprefab_surface_remaining_blocker": {
+      "type": "string"
+    },
+    "runtime_procprefab_runtime_equivalent_surface_claimed": {
+      "type": "boolean"
+    },
+    "runtime_procprefab_runtime_equivalent_surface_verified": {
+      "type": "boolean"
+    },
+    "runtime_character_product_load_contract_updated": {
+      "type": "boolean"
+    },
+    "runtime_character_product_load_direct_procprefab_required": {
+      "type": "boolean"
+    },
+    "runtime_character_product_load_runtime_equivalent_required": {
+      "type": "boolean"
+    },
+    "runtime_character_product_load_contract_blocker": {
+      "type": "string"
+    },
     "runtime_character_instantiation_claimed": {
       "type": "boolean"
     },

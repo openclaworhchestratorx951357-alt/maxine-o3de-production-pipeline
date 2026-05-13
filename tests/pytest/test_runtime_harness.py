@@ -45,6 +45,15 @@ def _engine(root: Path, *, launcher: bool = True) -> Path:
         engine / "Gems" / "Atom" / "RPI" / "Code" / "Include" / "Atom" / "RPI.Reflect" / "Material" / "MaterialAsset.h",
         engine / "Gems" / "PhysX" / "Core" / "Code" / "Include" / "PhysX" / "MeshAsset.h",
         engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableAssetHandler.h",
+        engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableSystemComponent.cpp",
+        engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableSystemComponent.h",
+        engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "Spawnable.h",
+        engine / "Code" / "Framework" / "AzToolsFramework" / "AzToolsFramework" / "Prefab" / "Procedural" / "ProceduralPrefabAsset.h",
+        engine / "Code" / "Framework" / "AzToolsFramework" / "AzToolsFramework" / "Prefab" / "Procedural" / "ProceduralPrefabAsset.cpp",
+        engine / "Gems" / "Prefab" / "PrefabBuilder" / "CMakeLists.txt",
+        engine / "Gems" / "Prefab" / "PrefabBuilder" / "PrefabBuilderModule.cpp",
+        engine / "Gems" / "Prefab" / "PrefabBuilder" / "PrefabGroup" / "ProceduralAssetHandler.cpp",
+        engine / "Gems" / "Prefab" / "PrefabBuilder" / "PrefabGroup" / "ProceduralAssetHandler.h",
         engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "IConsole.h",
         engine / "Code" / "Framework" / "AzCore" / "AzCore" / "Console" / "Console.cpp",
         engine / "Code" / "Tools" / "AssetProcessor" / "native" / "InternalBuilders" / "SettingsRegistryBuilder.cpp",
@@ -61,8 +70,12 @@ def _engine(root: Path, *, launcher: bool = True) -> Path:
 def _apb_report(root: Path) -> Path:
     report = root / "apb-live" / "asset_processor_batch_live_report.json"
     report.parent.mkdir(parents=True)
-    products = [
-        {
+    products = []
+    for index, product_type in enumerate(
+        ["azmodel", "actor", "procprefab", "motion", "motionset", "animgraph", "pxmesh", "azmaterial"],
+        start=1,
+    ):
+        product = {
             "product_type": product_type,
             "product_path": f"pc/assets/characters/maxine/release/maxine.{product_type}",
             "platform": "pc",
@@ -72,11 +85,16 @@ def _apb_report(root: Path) -> Path:
             "produced_by_source_uuid": True,
             "evidence_source": "asset_processor_database",
         }
-        for index, product_type in enumerate(
-            ["azmodel", "actor", "procprefab", "motion", "motionset", "animgraph", "pxmesh", "azmaterial"],
-            start=1,
-        )
-    ]
+        if product_type == "procprefab":
+            product.update(
+                {
+                    "product_path": "pc/assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+                    "asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305",
+                    "asset_type_id": "{9B7C8459-471E-4EAD-A363-7990CC4065A9}",
+                    "asset_type_name": "AZ::Prefab::ProceduralPrefabAsset",
+                }
+            )
+        products.append(product)
     report.write_text(
         json.dumps(
             {
@@ -2643,6 +2661,138 @@ def test_runtime_harness_character_product_load_diagnostic_records_source_valida
     assert report["runtime_character_instantiation_claimed"] is False
     assert report["runtime_character_animation_claimed"] is False
     assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_character_product_load_derives_asset_id_from_apb_database_fields(tmp_path: Path) -> None:
+    _env, _engine_root, _project_path, apb = _runtime_env(tmp_path, gates=True)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb)
+    )
+    procprefab = next(product for product in products if product["product_kind"] == "procprefab")
+
+    assert procprefab["asset_id"] == "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305"
+    assert procprefab["asset_type_id"] == "{9B7C8459-471E-4EAD-A363-7990CC4065A9}"
+    assert procprefab["asset_type_name"] == "AZ::Prefab::ProceduralPrefabAsset"
+    assert (
+        runtime_harness._runtime_product_asset_id(
+            {
+                "source_uuid": "634bcaf8a44b56b0bc6f4468bdd8be67",
+                "source_sub_id": "-998238619",
+            }
+        )
+        == "{634BCAF8-A44B-56B0-BC6F-4468BDD8BE67}:c4801665"
+    )
+
+
+def test_runtime_harness_procprefab_handler_surface_diagnostic_records_builder_only_handler(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _enable_fixture_gem(project)
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_procprefab_handler_or_spawnable_surface=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_procprefab_handler_or_surface_diagnostic"
+    assert report["runtime_procprefab_handler_or_surface_status"] == "runtime_procprefab_surface_source_discovery_pass"
+    assert report["runtime_procprefab_direct_load_status"] == "runtime_procprefab_direct_load_unsupported_builder_only"
+    assert report["runtime_procprefab_direct_load_asset_id"] == "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305"
+    assert report["runtime_procprefab_direct_load_asset_type"] == "{9B7C8459-471E-4EAD-A363-7990CC4065A9}"
+    assert report["runtime_procprefab_direct_load_asset_class"] == "AZ::Prefab::ProceduralPrefabAsset"
+    assert report["runtime_procprefab_direct_load_handler_status"] == "runtime_procprefab_direct_load_handler_missing"
+    assert report["runtime_procprefab_direct_load_handler_module"] == "Gem::PrefabBuilder.Builders"
+    assert report["runtime_procprefab_direct_load_supported"] is False
+    assert report["runtime_procprefab_direct_load_supported_reason"] == "runtime_procprefab_direct_load_unsupported_builder_only"
+    assert report["runtime_procprefab_direct_load_blocker"] == "blocked_by_runtime_procprefab_direct_load_unsupported"
+    assert report["runtime_procprefab_direct_load_claimed"] is False
+    assert report["runtime_procprefab_direct_load_verified"] is False
+    source_refs = " ".join(report["runtime_procprefab_direct_load_handler_source_refs"])
+    assert "ProceduralPrefabAsset.h" in source_refs
+    assert "ProceduralAssetHandler.cpp" in source_refs
+    assert "PrefabBuilder" in source_refs
+    assert report["runtime_procprefab_surface_candidate_matrix_recorded"] is True
+    candidate_ids = [candidate["id"] for candidate in report["runtime_procprefab_surface_candidate_matrix"]]
+    assert candidate_ids == [
+        "runtime_procprefab_direct_assetmanager_load",
+        "runtime_spawnable_asset_load_surface",
+        "runtime_spawnable_instantiation_surface",
+        "runtime_procprefab_keep_blocked_without_runtime_surface",
+    ]
+    assert report["runtime_procprefab_surface_selected"] == ""
+    assert report["runtime_procprefab_runtime_equivalent_surface_claimed"] is False
+    assert report["runtime_procprefab_runtime_equivalent_surface_verified"] is False
+    assert report["runtime_procprefab_surface_remaining_blocker"] == "blocked_by_missing_runtime_equivalent_spawnable_surface"
+    assert report["runtime_character_product_load_contract_updated"] is True
+    assert report["runtime_character_product_load_direct_procprefab_required"] is False
+    assert report["runtime_character_product_load_runtime_equivalent_required"] is True
+    assert report["runtime_character_product_load_contract_blocker"] == "blocked_by_missing_runtime_equivalent_spawnable_surface"
+    assert report["runtime_character_product_load_claimed"] is False
+    assert report["runtime_character_product_load_verified"] is False
+    assert report["runtime_character_instantiation_claimed"] is False
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_validation_rejects_direct_procprefab_claim_with_missing_handler() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_procprefab_direct_load_claimed": True,
+            "runtime_procprefab_direct_load_verified": True,
+            "runtime_procprefab_direct_load_handler_status": "runtime_procprefab_direct_load_handler_missing",
+            "runtime_procprefab_direct_load_asset_id": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305",
+            "runtime_procprefab_direct_load_asset_type": "{9B7C8459-471E-4EAD-A363-7990CC4065A9}",
+        }
+    )
+
+    result = runtime_harness.validate_runtime_harness_report(report)
+
+    assert not result.ok
+    assert any("runtime_procprefab_direct_load_verified=true requires a registered runtime handler" in message for message in result.messages)
+
+
+def test_runtime_harness_validation_rejects_updated_product_load_contract_without_equivalent_surface() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_character_product_load_verified": True,
+            "runtime_character_product_load_claimed": True,
+            "runtime_character_product_load_contract_updated": True,
+            "runtime_character_product_load_direct_procprefab_required": False,
+            "runtime_character_product_load_runtime_equivalent_required": True,
+            "runtime_procprefab_runtime_equivalent_surface_verified": False,
+            "runtime_character_product_load_selected_strategy": "runtime_character_product_load_generic_assetmanager_load",
+            "runtime_character_product_load_source_refs": ["C:/src/o3de/Code/Framework/AzCore/AzCore/Asset/AssetManager.h"],
+            "runtime_character_product_load_required_products_complete": True,
+            "runtime_character_product_load_all_required_ready": True,
+            "runtime_character_product_load_products": [
+                {
+                    "product_kind": "actor",
+                    "product_path": "pc/assets/characters/maxine/release/jack.actor",
+                    "catalog_path": "assets/characters/maxine/release/jack.actor",
+                    "asset_id": "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+                    "ready": True,
+                }
+            ],
+            "runtime_execution_verified": True,
+            "runtime_exit_fixture_execution_verified": True,
+            "runtime_launch_hygiene_status": "runtime_launch_hygiene_pass",
+            "runtime_signal_classification_verified": True,
+            "runtime_cache_bootstrap_verified": True,
+        }
+    )
+
+    result = runtime_harness.validate_runtime_harness_report(report)
+
+    assert not result.ok
+    assert any("updated product-load contract requires verified runtime-equivalent prefab/spawnable surface" in message for message in result.messages)
 
 
 def test_runtime_fixture_product_load_registry_reads_do_not_accumulate_values() -> None:
