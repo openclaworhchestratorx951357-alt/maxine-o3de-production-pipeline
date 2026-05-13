@@ -84,6 +84,11 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_approved_prefab_save_update_bridge_smoke.py",
+    "approved-prefab-save-update-bridge-host": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_approved_prefab_save_update_bridge_host_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -199,6 +204,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_approved_prefab_save_update_automation_surface(report, result)
         if diagnostic_mode == "approved-prefab-save-update-bridge":
             _validate_approved_prefab_save_update_bridge(report, result)
+        if diagnostic_mode == "approved-prefab-save-update-bridge-host":
+            _validate_approved_prefab_save_update_bridge_host(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -553,6 +560,113 @@ def _validate_approved_prefab_save_update_bridge(
             result.add_error(
                 MXN_RUNTIME_SMOKE_FAIL,
                 f"{field}=true is not supported by prefab save/update bridge evidence alone.",
+            )
+
+
+def _validate_approved_prefab_save_update_bridge_host(
+    report: Mapping[str, Any],
+    result: ValidationResult,
+) -> None:
+    attempted = report.get("approved_prefab_save_update_bridge_host_diagnostic_attempted") is True
+    completed = report.get("approved_prefab_save_update_bridge_host_diagnostic_completed") is True
+    source_status = str(report.get("approved_prefab_save_update_bridge_host_source_validation_status", "")).strip()
+    source_verified = report.get("approved_prefab_save_update_bridge_host_source_validation_verified") is True
+    blocker = str(report.get("approved_prefab_save_update_bridge_host_blocker", "")).strip()
+    host_callable = report.get("approved_prefab_save_update_bridge_host_callable_from_editor_python") is True
+
+    if str(report.get("status", "")).strip() == "pass" and (not attempted or not completed):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Approved prefab save/update bridge-host diagnostic cannot pass without attempted/completed evidence.",
+        )
+    if source_status != "pass" or not source_verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Approved prefab save/update bridge-host diagnostic requires positive source validation.",
+        )
+
+    if report.get("approved_prefab_save_update_bridge_host_added") is True:
+        for field, label in (
+            ("approved_prefab_save_update_bridge_host_registered", "bridge-host registration"),
+            ("approved_prefab_save_update_bridge_host_target_name", "Editor/Tools target name"),
+            ("approved_prefab_save_update_bridge_host_module_name", "Editor module name"),
+            (
+                "approved_prefab_save_update_bridge_host_aztoolsframework_dependency_present",
+                "AzToolsFramework dependency",
+            ),
+            (
+                "approved_prefab_save_update_bridge_host_behavior_context_reflected",
+                "BehaviorContext reflection",
+            ),
+            ("approved_prefab_save_update_bridge_host_runtime_excluded", "runtime exclusion"),
+        ):
+            value = report.get(field)
+            if isinstance(value, str):
+                if not value.strip():
+                    result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Bridge-host addition requires {label}.")
+            elif value is not True:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Bridge-host addition requires {label}.")
+
+    if host_callable:
+        required_true = {
+            "approved_prefab_save_update_bridge_host_added": "bridge-host source addition",
+            "approved_prefab_save_update_bridge_host_registered": "bridge-host registration",
+            "approved_prefab_save_update_bridge_host_build_verified": "bridge-host build/load verification",
+            "approved_prefab_save_update_bridge_host_aztoolsframework_dependency_present": "AzToolsFramework dependency",
+            "approved_prefab_save_update_bridge_host_behavior_context_reflected": "BehaviorContext reflection",
+            "approved_prefab_save_update_bridge_host_runtime_excluded": "runtime exclusion",
+        }
+        for field, label in required_true.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"Bridge-host callable=true requires {label}.",
+                )
+        if blocker:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Bridge-host callable=true cannot also report a bridge-host blocker.",
+            )
+    elif str(report.get("status", "")).strip() == "pass" and not blocker:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Approved prefab save/update bridge-host diagnostic pass without callability requires a typed blocker.",
+        )
+
+    if blocker == "blocked_by_editor_bridge_host_not_loaded_in_editor" and host_callable:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Bridge-host not-loaded blocker cannot report Editor Python callability.",
+        )
+    if report.get("approved_prefab_save_update_bridge_verified") is True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Bridge-host diagnostic alone cannot claim prefab save/update bridge verification.",
+        )
+    if report.get("approved_prefab_save_update_scratch_save_verified") is True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Bridge-host diagnostic alone cannot claim scratch save/update verification.",
+        )
+    if report.get("approved_runtime_animation_component_wiring_source_prefab_modified") is True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Bridge-host diagnostic must not mutate the approved runtime animation source prefab.",
+        )
+
+    false_until_runtime_component_proof = (
+        "runtime_character_animation_component_wiring_claimed",
+        "runtime_character_animation_component_wiring_verified",
+        "runtime_character_animation_claimed",
+        "runtime_character_animation_verified",
+        "runtime_character_proof_claimed",
+        "runtime_character_proof_verified",
+    )
+    for field in false_until_runtime_component_proof:
+        if report.get(field) is True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                f"{field}=true is not supported by prefab save/update bridge-host evidence alone.",
             )
 
 
@@ -2364,6 +2478,16 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Set the explicit gated enablement marker for approved prefab save/update bridge fixture proof.",
     )
+    parser.add_argument(
+        "--diagnose-approved-prefab-save-update-bridge-host",
+        action="store_true",
+        help="Run the approved prefab save/update bridge-host diagnostic.",
+    )
+    parser.add_argument(
+        "--enable-approved-prefab-save-update-bridge-host-fixture",
+        action="store_true",
+        help="Set the explicit gated enablement marker for approved prefab save/update bridge-host fixture proof.",
+    )
     parser.add_argument("--timeout-seconds", type=int, help="Bounded live Editor smoke timeout in seconds.")
     parser.add_argument("--progress-log", help="Optional JSONL progress log path for live Editor smoke diagnostics.")
     parser.add_argument("--apb-report", help="Explicit APB baseline report path for live Editor smoke product evidence.")
@@ -2421,6 +2545,14 @@ def main() -> int:
         env_map["MAXINE_ENABLE_APPROVED_PREFAB_SAVE_UPDATE_BRIDGE"] = "1"
     if args.enable_approved_prefab_save_update_bridge_fixture:
         env_map["MAXINE_ALLOW_APPROVED_PREFAB_SAVE_UPDATE_BRIDGE"] = "1"
+    if (
+        args.diagnose_approved_prefab_save_update_bridge_host
+        or args.enable_approved_prefab_save_update_bridge_host_fixture
+    ):
+        diagnostic_mode = "approved-prefab-save-update-bridge-host"
+        env_map["MAXINE_ENABLE_APPROVED_PREFAB_SAVE_UPDATE_BRIDGE_HOST"] = "1"
+    if args.enable_approved_prefab_save_update_bridge_host_fixture:
+        env_map["MAXINE_ALLOW_APPROVED_PREFAB_SAVE_UPDATE_BRIDGE_HOST"] = "1"
     result = run_editor_smoke_corpus(
         args.corpus,
         mode=args.mode,

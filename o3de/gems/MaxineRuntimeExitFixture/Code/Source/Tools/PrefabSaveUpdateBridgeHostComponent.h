@@ -1,0 +1,24 @@
+#pragma once
+
+#include <AzCore/Component/Component.h>
+#include <AzCore/std/string/string.h>
+
+namespace MaxineRuntimeExitFixture
+{
+    class PrefabSaveUpdateBridgeHostComponent
+        : public AZ::Component
+    {
+    public:
+        AZ_COMPONENT_DECL(PrefabSaveUpdateBridgeHostComponent);
+
+        static void Reflect(AZ::ReflectContext* context);
+        static void GetProvidedServices(AZ::ComponentDescriptor::DependencyArrayType& provided);
+        static void GetIncompatibleServices(AZ::ComponentDescriptor::DependencyArrayType& incompatible);
+        static void GetRequiredServices(AZ::ComponentDescriptor::DependencyArrayType& required);
+        static void GetDependentServices(AZ::ComponentDescriptor::DependencyArrayType& dependent);
+        static AZStd::string GetPrefabSaveUpdateBridgeHostStatus();
+
+        void Activate() override;
+        void Deactivate() override;
+    };
+} // namespace MaxineRuntimeExitFixture
