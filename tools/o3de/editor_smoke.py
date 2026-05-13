@@ -69,6 +69,11 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_runtime_spawnable_proof_surface_smoke.py",
+    "approved-animation-component-wiring-generation": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_approved_animation_component_wiring_generation_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -178,6 +183,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
                     MXN_RUNTIME_SMOKE_FAIL,
                     "Actor asset assignment cannot report pass without verified approved-product readback.",
                 )
+        if diagnostic_mode == "approved-animation-component-wiring-generation":
+            _validate_approved_runtime_animation_component_wiring_editor_generation(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -266,6 +273,85 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
 
     result.details["cache_heuristic_used"] = cache_heuristic_used
     return result
+
+
+def _validate_approved_runtime_animation_component_wiring_editor_generation(
+    report: Mapping[str, Any],
+    result: ValidationResult,
+) -> None:
+    attempted = report.get("approved_runtime_animation_component_wiring_editor_generation_attempted") is True
+    completed = report.get("approved_runtime_animation_component_wiring_editor_generation_completed") is True
+    verified = report.get("approved_runtime_animation_component_wiring_editor_generation_verified") is True
+    blocker = str(report.get("approved_runtime_animation_component_wiring_editor_generation_blocker", "")).strip()
+
+    if str(report.get("status", "")).strip() == "pass" and (not attempted or not completed):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Approved Editor-generated animation component wiring diagnostic cannot pass without attempted/completed evidence.",
+        )
+    if report.get("approved_runtime_animation_component_wiring_hand_authored_unknown_json_used") is not False:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Approved animation component wiring must preserve hand_authored_unknown_json_used=false.",
+        )
+
+    if verified:
+        required_true = {
+            "approved_runtime_animation_component_wiring_source_prefab_modified": "source prefab modification",
+            "approved_runtime_animation_component_wiring_editor_generated_update_used": "Editor-generated update",
+            "approved_runtime_animation_component_wiring_actor_component_added": "Actor component add",
+            "approved_runtime_animation_component_wiring_simple_motion_component_added": "Simple Motion component add",
+            "approved_runtime_animation_component_wiring_actor_asset_assignment_verified": "Actor asset assignment",
+            "approved_runtime_animation_component_wiring_motion_asset_assignment_verified": "Motion asset assignment",
+            "approved_runtime_animation_component_wiring_property_readback_verified": "property readback",
+            "approved_runtime_animation_component_wiring_prefab_save_verified": "prefab save",
+            "approved_runtime_animation_component_wiring_spawnable_regenerated_or_found": "spawnable regeneration/found evidence",
+            "runtime_character_animation_component_wiring_claimed": "runtime component wiring claim",
+            "runtime_character_animation_component_wiring_verified": "runtime component wiring verification",
+        }
+        for field, label in required_true.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"Approved Editor-generated animation component wiring verified=true requires {label}.",
+                )
+        if blocker:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Approved Editor-generated animation component wiring verified=true cannot also report a blocker.",
+            )
+    elif str(report.get("status", "")).strip() == "pass" and not blocker:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Approved Editor-generated animation component wiring diagnostic pass without verification requires a typed blocker.",
+        )
+
+    if blocker == "blocked_by_editor_generated_prefab_update_save_semantics":
+        contradictory_true = {
+            "approved_runtime_animation_component_wiring_source_prefab_modified": "source prefab modification",
+            "approved_runtime_animation_component_wiring_editor_generated_update_used": "Editor-generated source update",
+            "approved_runtime_animation_component_wiring_prefab_save_verified": "prefab save",
+            "approved_runtime_animation_component_wiring_spawnable_regenerated_or_found": "spawnable regeneration",
+        }
+        for field, label in contradictory_true.items():
+            if report.get(field) is True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"Save-semantics blocker cannot report {label} as verified.",
+                )
+
+    false_until_playback = (
+        "runtime_character_animation_claimed",
+        "runtime_character_animation_verified",
+        "runtime_character_proof_claimed",
+        "runtime_character_proof_verified",
+    )
+    for field in false_until_playback:
+        if report.get(field) is True and report.get("runtime_character_animation_playback_observed") is not True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                f"{field}=true requires observed runtime animation playback evidence.",
+            )
 
 
 def _validate_direct_procprefab_product_semantics(report: Mapping[str, Any], result: ValidationResult) -> None:
@@ -1299,6 +1385,24 @@ def _live_report_template(
         "procprefab_character_assertions": {"status": "not_run"},
         "runtime_spawnable_proof": {"status": "not_run"},
         "runtime_harness": runtime_harness_payload,
+        "approved_runtime_animation_component_wiring_editor_generation_attempted": False,
+        "approved_runtime_animation_component_wiring_editor_generation_completed": False,
+        "approved_runtime_animation_component_wiring_editor_generation_verified": False,
+        "approved_runtime_animation_component_wiring_editor_generation_blocker": "",
+        "approved_runtime_animation_component_wiring_source_prefab_path": "",
+        "approved_runtime_animation_component_wiring_source_prefab_modified": False,
+        "approved_runtime_animation_component_wiring_editor_generated_update_used": False,
+        "approved_runtime_animation_component_wiring_hand_authored_unknown_json_used": False,
+        "approved_runtime_animation_component_wiring_actor_component_added": False,
+        "approved_runtime_animation_component_wiring_simple_motion_component_added": False,
+        "approved_runtime_animation_component_wiring_anim_graph_component_added": False,
+        "approved_runtime_animation_component_wiring_actor_asset_assignment_verified": False,
+        "approved_runtime_animation_component_wiring_motion_asset_assignment_verified": False,
+        "approved_runtime_animation_component_wiring_actor_asset_id": "",
+        "approved_runtime_animation_component_wiring_motion_asset_id": "",
+        "approved_runtime_animation_component_wiring_property_readback_verified": False,
+        "approved_runtime_animation_component_wiring_prefab_save_verified": False,
+        "approved_runtime_animation_component_wiring_spawnable_regenerated_or_found": False,
         "property_path_discovery": {},
         "property_list_summary": {},
         "no_fake_success": True,
@@ -2028,6 +2132,16 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--editor-executable", help="Project/engine-paired Editor executable path.")
     parser.add_argument("--golden-project-fixture", default=str(DEFAULT_GOLDEN_PROJECT_FIXTURE), help="Golden project fixture contract path.")
     parser.add_argument("--diagnostic-mode", choices=DIAGNOSTIC_MODES, default="full", help="Live Editor diagnostic smoke scope.")
+    parser.add_argument(
+        "--diagnose-approved-runtime-animation-component-wiring-editor-generation",
+        action="store_true",
+        help="Run the approved Editor-generated runtime animation component wiring diagnostic.",
+    )
+    parser.add_argument(
+        "--enable-approved-runtime-animation-component-wiring-editor-generation",
+        action="store_true",
+        help="Set the explicit gated enablement marker for approved Editor-generated animation component wiring.",
+    )
     parser.add_argument("--timeout-seconds", type=int, help="Bounded live Editor smoke timeout in seconds.")
     parser.add_argument("--progress-log", help="Optional JSONL progress log path for live Editor smoke diagnostics.")
     parser.add_argument("--apb-report", help="Explicit APB baseline report path for live Editor smoke product evidence.")
@@ -2063,6 +2177,15 @@ def main() -> int:
         env_map["O3DE_EDITOR_EXECUTABLE"] = args.editor_executable
     if args.apb_report:
         env_map["MAXINE_APB_BASELINE_REPORT"] = args.apb_report
+    diagnostic_mode = args.diagnostic_mode
+    if (
+        args.diagnose_approved_runtime_animation_component_wiring_editor_generation
+        or args.enable_approved_runtime_animation_component_wiring_editor_generation
+    ):
+        diagnostic_mode = "approved-animation-component-wiring-generation"
+        env_map["MAXINE_ENABLE_APPROVED_RUNTIME_ANIMATION_COMPONENT_WIRING_EDITOR_GENERATION"] = "1"
+    if args.enable_approved_runtime_animation_component_wiring_editor_generation:
+        env_map["MAXINE_ALLOW_APPROVED_RUNTIME_ANIMATION_COMPONENT_WIRING_EDITOR_GENERATION"] = "1"
     result = run_editor_smoke_corpus(
         args.corpus,
         mode=args.mode,
@@ -2072,7 +2195,7 @@ def main() -> int:
         platform=args.platform,
         env=env_map,
         golden_project_fixture=args.golden_project_fixture,
-        diagnostic_mode=args.diagnostic_mode,
+        diagnostic_mode=diagnostic_mode,
         timeout_seconds=args.timeout_seconds,
         progress_log=args.progress_log,
     )

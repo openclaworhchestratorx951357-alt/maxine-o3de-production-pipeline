@@ -151,6 +151,14 @@ $env:MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE="1"
 
 These gates permit only a bounded, source-backed check of the approved prefab/component wiring path. The diagnostic source-validates EMotionFX Editor `Actor`, `Simple Motion`, and `Anim Graph` components, `EditorComponentAPIBus` add/property APIs, `PrefabPublicRequestBus` prefab APIs, and prefab-to-spawnable conversion surfaces. It does not hand-author unknown O3DE component JSON and does not mutate defaultlevel or production content. Until an Editor-generated approved prefab update is safely proven and the regenerated approved spawnable exposes runtime EMotionFX component TypeIds after spawn, the harness must keep `runtime_character_animation_component_wiring_claimed=false`, `runtime_character_animation_component_wiring_verified=false`, `runtime_character_animation_claimed=false`, and `runtime_character_proof_verified=false`.
 
+Approved Editor-generated runtime animation component wiring diagnostics require the Editor smoke gates plus an explicit generation marker:
+
+```powershell
+$env:MAXINE_ENABLE_APPROVED_RUNTIME_ANIMATION_COMPONENT_WIRING_EDITOR_GENERATION="1"
+```
+
+The optional `MAXINE_ALLOW_APPROVED_RUNTIME_ANIMATION_COMPONENT_WIRING_EDITOR_GENERATION=1` marker may be set only for a bounded Editor-generated update path after source validation proves save semantics. The current pinned result is a typed blocker: `PrefabPublicRequestBus` exposes `CreatePrefabInMemory` and `InstantiatePrefab`, but `CreatePrefabAndSaveToDisk` and `SavePrefab` are source-valid only on `PrefabPublicInterface` and are not reflected onto the Editor Python automation bus. That means the diagnostic may probe Editor Actor + Simple Motion add/property assignment in the approved temp smoke level, but it must keep `approved_runtime_animation_component_wiring_source_prefab_modified=false`, `approved_runtime_animation_component_wiring_prefab_save_verified=false`, `runtime_character_animation_component_wiring_verified=false`, and all runtime animation/full-character proof flags false.
+
 Approved runtime character prefab-source generation has a narrower gate when a repo-owned source must be staged into the live project scanfolder:
 
 ```powershell
@@ -363,6 +371,15 @@ $env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
 $env:MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION="1"
 $env:MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH="1"
 python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-character-animation-component-wiring-surface-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 180
+```
+
+Approved Editor-generated animation component wiring diagnostic entry points are:
+
+```powershell
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --mode local_editor_python --enable-editor-smoke --strict-integration --diagnose-approved-runtime-animation-component-wiring-editor-generation --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 180
+
+$env:MAXINE_ENABLE_APPROVED_RUNTIME_ANIMATION_COMPONENT_WIRING_EDITOR_GENERATION="1"
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --mode local_editor_python --enable-editor-smoke --strict-integration --diagnostic-mode approved-animation-component-wiring-generation --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 180
 ```
 
 When the APB evidence, runtime readiness, and command pinning gates are clean, registration and enablement are run through the harness rather than by hand:

@@ -36,6 +36,7 @@ DIAGNOSTIC_MODES = {
     "procprefab-content-assertions",
     "procprefab-character-component-assertions",
     "runtime-spawnable-proof-surface",
+    "approved-animation-component-wiring-generation",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -73,6 +74,10 @@ TYPED_BLOCKED_STATUSES = {
     "procprefab_product_not_editor_instantiable_with_current_binding",
     "procprefab_product_requires_runtime_spawnable_path",
     "source_prefab_instantiation_pass_direct_product_unsupported",
+    "blocked_by_editor_generated_prefab_update_save_semantics",
+    "blocked_by_editor_component_asset_assignment_unavailable",
+    "blocked_by_approved_actor_or_motion_asset_id_unresolved",
+    "blocked_by_editor_generated_prefab_update_requires_additional_source_validation",
 }
 DIRECT_PROCPREFAB_TYPED_NONVERIFIED_STATUSES = {
     "procprefab_product_not_editor_instantiable_with_current_binding",
@@ -171,6 +176,70 @@ def main() -> int:
             "procprefab_character_assertions": report.get("procprefab_character_assertions", {"status": "not_run"}),
             "runtime_spawnable_proof": report.get("runtime_spawnable_proof", {"status": "not_run"}),
             "runtime_harness": report.get("runtime_harness", {"runtime_harness_status": "not_run"}),
+            "approved_runtime_animation_component_wiring_editor_generation_attempted": report.get(
+                "approved_runtime_animation_component_wiring_editor_generation_attempted", False
+            ),
+            "approved_runtime_animation_component_wiring_editor_generation_completed": report.get(
+                "approved_runtime_animation_component_wiring_editor_generation_completed", False
+            ),
+            "approved_runtime_animation_component_wiring_editor_generation_verified": report.get(
+                "approved_runtime_animation_component_wiring_editor_generation_verified", False
+            ),
+            "approved_runtime_animation_component_wiring_editor_generation_blocker": report.get(
+                "approved_runtime_animation_component_wiring_editor_generation_blocker", ""
+            ),
+            "approved_runtime_animation_component_wiring_source_prefab_path": report.get(
+                "approved_runtime_animation_component_wiring_source_prefab_path", ""
+            ),
+            "approved_runtime_animation_component_wiring_source_prefab_modified": report.get(
+                "approved_runtime_animation_component_wiring_source_prefab_modified", False
+            ),
+            "approved_runtime_animation_component_wiring_editor_generated_update_used": report.get(
+                "approved_runtime_animation_component_wiring_editor_generated_update_used", False
+            ),
+            "approved_runtime_animation_component_wiring_hand_authored_unknown_json_used": report.get(
+                "approved_runtime_animation_component_wiring_hand_authored_unknown_json_used", False
+            ),
+            "approved_runtime_animation_component_wiring_actor_component_added": report.get(
+                "approved_runtime_animation_component_wiring_actor_component_added", False
+            ),
+            "approved_runtime_animation_component_wiring_simple_motion_component_added": report.get(
+                "approved_runtime_animation_component_wiring_simple_motion_component_added", False
+            ),
+            "approved_runtime_animation_component_wiring_anim_graph_component_added": report.get(
+                "approved_runtime_animation_component_wiring_anim_graph_component_added", False
+            ),
+            "approved_runtime_animation_component_wiring_actor_asset_assignment_verified": report.get(
+                "approved_runtime_animation_component_wiring_actor_asset_assignment_verified", False
+            ),
+            "approved_runtime_animation_component_wiring_motion_asset_assignment_verified": report.get(
+                "approved_runtime_animation_component_wiring_motion_asset_assignment_verified", False
+            ),
+            "approved_runtime_animation_component_wiring_actor_asset_id": report.get(
+                "approved_runtime_animation_component_wiring_actor_asset_id", ""
+            ),
+            "approved_runtime_animation_component_wiring_motion_asset_id": report.get(
+                "approved_runtime_animation_component_wiring_motion_asset_id", ""
+            ),
+            "approved_runtime_animation_component_wiring_property_readback_verified": report.get(
+                "approved_runtime_animation_component_wiring_property_readback_verified", False
+            ),
+            "approved_runtime_animation_component_wiring_prefab_save_verified": report.get(
+                "approved_runtime_animation_component_wiring_prefab_save_verified", False
+            ),
+            "approved_runtime_animation_component_wiring_spawnable_regenerated_or_found": report.get(
+                "approved_runtime_animation_component_wiring_spawnable_regenerated_or_found", False
+            ),
+            "runtime_character_animation_component_wiring_claimed": report.get(
+                "runtime_character_animation_component_wiring_claimed", False
+            ),
+            "runtime_character_animation_component_wiring_verified": report.get(
+                "runtime_character_animation_component_wiring_verified", False
+            ),
+            "runtime_character_animation_claimed": report.get("runtime_character_animation_claimed", False),
+            "runtime_character_animation_verified": report.get("runtime_character_animation_verified", False),
+            "runtime_character_proof_claimed": report.get("runtime_character_proof_claimed", False),
+            "runtime_character_proof_verified": report.get("runtime_character_proof_verified", False),
             "property_path_discovery": report.get("property_path_discovery", {}),
             "property_list_summary": report.get("property_list_summary", {}),
             "property_access_summary": report.get("property_access_summary", {}),
@@ -196,6 +265,7 @@ def main() -> int:
         "procprefab-content-assertions",
         "procprefab-character-component-assertions",
         "runtime-spawnable-proof-surface",
+        "approved-animation-component-wiring-generation",
         "full",
     }
     if needs_temp_level and not allow_temp_level:
@@ -255,6 +325,7 @@ def main() -> int:
         "procprefab-content-assertions",
         "procprefab-character-component-assertions",
         "runtime-spawnable-proof-surface",
+        "approved-animation-component-wiring-generation",
         "full",
     }:
         _write_progress_marker(progress_log, "entity_create_started", "started", "Creating minimal temporary smoke entity.")
@@ -286,6 +357,7 @@ def main() -> int:
         "procprefab-content-assertions",
         "procprefab-character-component-assertions",
         "runtime-spawnable-proof-surface",
+        "approved-animation-component-wiring-generation",
         "full",
     }:
         binding_report = _run_binding_checks(
@@ -545,6 +617,28 @@ def _run_binding_checks(
         _write_progress_marker(progress_log, "actor_binding_returned", str(actor_checks.get("status", "returned")), "Actor binding checks returned.")
     else:
         result["actor_binding_checks"] = _skipped_check("actor-binding")
+
+    if diagnostic_mode == "approved-animation-component-wiring-generation":
+        _write_progress_marker(
+            progress_log,
+            "approved_animation_component_wiring_generation_started",
+            "started",
+            "Running approved Actor + Simple Motion wiring generation surface diagnostic.",
+        )
+        generation = _run_approved_animation_component_wiring_generation_checks(
+            entity_id,
+            surface,
+            result,
+            safe_call_results,
+            report,
+        )
+        result.update(generation)
+        _write_progress_marker(
+            progress_log,
+            "approved_animation_component_wiring_generation_returned",
+            str(generation.get("approved_runtime_animation_component_wiring_editor_generation_blocker", "returned")),
+            "Approved animation component wiring generation diagnostic returned.",
+        )
 
     if diagnostic_mode in {
         "prefab-binding",
@@ -937,6 +1031,227 @@ def _assign_actor_asset(
         "readback": readback,
         "component_validity": component_validity,
         "blocked_reason": "" if status == "pass" else "actor_asset_assignment_readback_mismatch",
+    }
+
+
+def _run_approved_animation_component_wiring_generation_checks(
+    entity_id: Any,
+    surface: Mapping[str, Any],
+    binding_report: Mapping[str, Any],
+    safe_call_results: List[Dict[str, Any]],
+    report: Mapping[str, Any],
+) -> Dict[str, Any]:
+    source_prefab_path = "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab"
+    source_validation = _approved_animation_component_wiring_source_validation()
+    result: Dict[str, Any] = {
+        "approved_runtime_animation_component_wiring_editor_generation_attempted": True,
+        "approved_runtime_animation_component_wiring_editor_generation_completed": True,
+        "approved_runtime_animation_component_wiring_editor_generation_verified": False,
+        "approved_runtime_animation_component_wiring_editor_generation_blocker": "blocked_by_editor_generated_prefab_update_save_semantics",
+        "approved_runtime_animation_component_wiring_source_prefab_path": source_prefab_path,
+        "approved_runtime_animation_component_wiring_source_prefab_modified": False,
+        "approved_runtime_animation_component_wiring_editor_generated_update_used": False,
+        "approved_runtime_animation_component_wiring_hand_authored_unknown_json_used": False,
+        "approved_runtime_animation_component_wiring_actor_component_added": False,
+        "approved_runtime_animation_component_wiring_simple_motion_component_added": False,
+        "approved_runtime_animation_component_wiring_anim_graph_component_added": False,
+        "approved_runtime_animation_component_wiring_actor_asset_assignment_verified": False,
+        "approved_runtime_animation_component_wiring_motion_asset_assignment_verified": False,
+        "approved_runtime_animation_component_wiring_actor_asset_id": "",
+        "approved_runtime_animation_component_wiring_motion_asset_id": "",
+        "approved_runtime_animation_component_wiring_property_readback_verified": False,
+        "approved_runtime_animation_component_wiring_prefab_save_verified": False,
+        "approved_runtime_animation_component_wiring_spawnable_regenerated_or_found": False,
+        "approved_runtime_animation_component_wiring_source_validation_status": source_validation["status"],
+        "approved_runtime_animation_component_wiring_source_validation_verified": source_validation["verified"],
+        "approved_runtime_animation_component_wiring_source_refs": source_validation["refs"],
+        "approved_runtime_animation_component_wiring_candidate_matrix": _approved_animation_component_wiring_candidate_matrix(),
+        "approved_runtime_animation_component_wiring_selected_strategy": "actor_plus_simple_motion_editor_generated_surface_blocked_before_source_prefab_save",
+        "approved_runtime_animation_component_wiring_editor_api": {
+            "component_api": "EditorComponentAPIBus",
+            "component_add": "AddComponentsOfType",
+            "property_list": "BuildComponentPropertyList",
+            "property_set": "SetComponentProperty",
+            "property_readback": "GetComponentProperty",
+            "asset_value_shape": "azlmbr.asset.AssetId",
+        },
+        "approved_runtime_animation_component_wiring_prefab_api": {
+            "automation_bus": "PrefabPublicRequestBus",
+            "source_validated_available_events": [
+                "CreatePrefabInMemory",
+                "InstantiatePrefab",
+                "GetOwningInstancePrefabPath",
+                "CreateInMemorySpawnableAsset",
+            ],
+            "source_validated_missing_events": [
+                "CreatePrefabAndSaveToDisk",
+                "SavePrefab",
+            ],
+            "blocker": "blocked_by_editor_generated_prefab_update_save_semantics",
+        },
+        "runtime_character_animation_component_wiring_claimed": False,
+        "runtime_character_animation_component_wiring_verified": False,
+        "runtime_character_animation_playback_attempted": False,
+        "runtime_character_animation_playback_started": False,
+        "runtime_character_animation_playback_observed": False,
+        "runtime_character_animation_claimed": False,
+        "runtime_character_animation_verified": False,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+    }
+    if source_validation["verified"] is not True:
+        result["approved_runtime_animation_component_wiring_editor_generation_blocker"] = (
+            "blocked_by_editor_generated_prefab_update_requires_additional_source_validation"
+        )
+        return result
+
+    actor_product = _product_ref(report, "actor")
+    motion_product = _product_ref(report, "motion")
+    if not actor_product or not motion_product:
+        result["approved_runtime_animation_component_wiring_editor_generation_blocker"] = (
+            "blocked_by_approved_actor_or_motion_asset_id_unresolved"
+        )
+        result["approved_runtime_animation_component_wiring_actor_product_ref"] = actor_product
+        result["approved_runtime_animation_component_wiring_motion_product_ref"] = motion_product
+        return result
+
+    registry = binding_report["component_type_registry"]
+    property_summary = binding_report["property_list_summary"]
+    property_access = binding_report["property_access_summary"]
+
+    actor_type = _discover_component_type_ids(
+        ["Actor", "Actor Component", "EMotion FX Actor"],
+        "ApprovedEditorActor",
+        surface,
+        safe_call_results,
+        registry,
+    )
+    if actor_type.get("status") == "pass":
+        actor_add = _add_components(entity_id, actor_type.get("type_ids_raw", []), surface, safe_call_results, component_name="Actor")
+        actor_component = _first_component_reference(actor_add, entity_id, actor_type.get("type_ids_raw", []), surface, safe_call_results)
+        actor_properties = _build_component_property_list(actor_component, surface, safe_call_results)
+        property_summary["ApprovedEditorActor"] = actor_properties
+        property_access["ApprovedEditorActor"] = _get_component_property_values(actor_component, actor_properties, surface, safe_call_results)
+        result["approved_runtime_animation_component_wiring_actor_component_add_result"] = actor_add
+        result["approved_runtime_animation_component_wiring_actor_component_added"] = actor_add.get("status") == "pass"
+        actor_assignment = _assign_actor_asset(actor_component, actor_properties, surface, safe_call_results, actor_product)
+        result["approved_runtime_animation_component_wiring_actor_assignment"] = actor_assignment
+        result["approved_runtime_animation_component_wiring_actor_asset_assignment_verified"] = actor_assignment.get("status") == "pass"
+        actor_asset = actor_assignment.get("asset_resolution", {}) if isinstance(actor_assignment, Mapping) else {}
+        result["approved_runtime_animation_component_wiring_actor_asset_id"] = str(actor_asset.get("asset_id", ""))
+    else:
+        result["approved_runtime_animation_component_wiring_actor_component_type_discovery"] = actor_type
+
+    simple_type = _discover_component_type_ids(
+        ["Simple Motion", "SimpleMotion", "EMotion FX Simple Motion"],
+        "ApprovedEditorSimpleMotion",
+        surface,
+        safe_call_results,
+        registry,
+    )
+    if simple_type.get("status") == "pass":
+        simple_add = _add_components(
+            entity_id,
+            simple_type.get("type_ids_raw", []),
+            surface,
+            safe_call_results,
+            component_name="Simple Motion",
+        )
+        simple_component = _first_component_reference(simple_add, entity_id, simple_type.get("type_ids_raw", []), surface, safe_call_results)
+        simple_properties = _build_component_property_list(simple_component, surface, safe_call_results)
+        property_summary["ApprovedEditorSimpleMotion"] = simple_properties
+        property_access["ApprovedEditorSimpleMotion"] = _get_component_property_values(
+            simple_component, simple_properties, surface, safe_call_results
+        )
+        result["approved_runtime_animation_component_wiring_simple_motion_component_add_result"] = simple_add
+        result["approved_runtime_animation_component_wiring_simple_motion_component_added"] = simple_add.get("status") == "pass"
+        motion_assignment = _assign_motion_asset(simple_component, simple_properties, surface, safe_call_results, motion_product)
+        result["approved_runtime_animation_component_wiring_motion_assignment"] = motion_assignment
+        result["approved_runtime_animation_component_wiring_motion_asset_assignment_verified"] = motion_assignment.get("status") == "pass"
+        motion_asset = motion_assignment.get("asset_resolution", {}) if isinstance(motion_assignment, Mapping) else {}
+        result["approved_runtime_animation_component_wiring_motion_asset_id"] = str(motion_asset.get("asset_id", ""))
+    else:
+        result["approved_runtime_animation_component_wiring_simple_motion_component_type_discovery"] = simple_type
+
+    result["approved_runtime_animation_component_wiring_property_readback_verified"] = (
+        result["approved_runtime_animation_component_wiring_actor_asset_assignment_verified"] is True
+        and result["approved_runtime_animation_component_wiring_motion_asset_assignment_verified"] is True
+    )
+    if not result["approved_runtime_animation_component_wiring_property_readback_verified"]:
+        result["approved_runtime_animation_component_wiring_editor_generation_blocker"] = (
+            "blocked_by_editor_component_asset_assignment_unavailable"
+        )
+    return result
+
+
+def _assign_motion_asset(
+    motion_component: Mapping[str, Any],
+    properties: Mapping[str, Any],
+    surface: Mapping[str, Any],
+    safe_call_results: List[Dict[str, Any]],
+    motion_product: str,
+) -> Dict[str, Any]:
+    property_discovery = _motion_property_discovery(properties, require_settable=True)
+    property_path = _select_motion_asset_property_path(property_discovery)
+    if not property_path:
+        return {
+            "status": "blocked_by_missing_binding",
+            "property_path_discovery": property_discovery,
+            "blocked_reason": "simple_motion_asset_property_path_not_discovered",
+        }
+
+    asset_resolution = _resolve_asset_id(motion_product, safe_call_results)
+    asset_id = asset_resolution.get("asset_id_raw")
+    if asset_resolution.get("status") != "pass" or asset_id is None:
+        return {
+            "status": "blocked_by_missing_product_evidence",
+            "property_path": property_path,
+            "property_path_discovery": property_discovery,
+            "approved_product_ref": motion_product,
+            "asset_resolution": _public_asset_resolution(asset_resolution),
+            "blocked_reason": asset_resolution.get("blocked_reason", "motion_asset_catalog_id_not_found"),
+        }
+
+    component_ref = motion_component.get("component_ref")
+    if motion_component.get("status") != "pass" or component_ref is None:
+        return {
+            "status": "blocked_by_missing_binding",
+            "property_path": property_path,
+            "approved_product_ref": motion_product,
+            "blocked_reason": motion_component.get("blocked_reason", "simple_motion_component_reference_not_available"),
+        }
+
+    old_status, old_value = _component_bus_call(surface, "GetComponentProperty", (component_ref, property_path), safe_call_results)
+    set_status, set_value = _set_component_property(surface, component_ref, property_path, asset_id, safe_call_results)
+    read_status, read_value = _component_bus_call(surface, "GetComponentProperty", (component_ref, property_path), safe_call_results)
+    compare_status, compare_value = _component_bus_call(surface, "CompareComponentProperty", (component_ref, property_path, asset_id), safe_call_results)
+    component_validity = _component_validity_checks(component_ref, surface, safe_call_results)
+    matched = compare_status == "pass" and bool(_unwrap_outcome(compare_value))
+    if not matched:
+        matched = _asset_ids_match(read_value, asset_id)
+
+    readback = {
+        "status": "pass" if read_status == "pass" and matched else "fail",
+        "matched_approved_product": bool(matched),
+        "value": _safe_serialize(_unwrap_outcome(read_value)),
+        "compare_status": compare_status,
+        "compare_result": bool(_unwrap_outcome(compare_value)) if compare_status == "pass" else False,
+    }
+    status = "pass" if set_status == "pass" and readback["status"] == "pass" else "fail"
+    return {
+        "status": status,
+        "property_path": property_path,
+        "property_path_discovery": property_discovery,
+        "setter_call": "EditorComponentAPIBus.SetComponentProperty",
+        "setter_value_shape": "azlmbr.asset.AssetId",
+        "approved_product_ref": motion_product,
+        "asset_resolution": _public_asset_resolution(asset_resolution),
+        "old_value": _safe_serialize(_unwrap_outcome(old_value)) if old_status == "pass" else "",
+        "set_status": set_status,
+        "set_result": _safe_serialize(_unwrap_outcome(set_value)),
+        "readback": readback,
+        "component_validity": component_validity,
+        "blocked_reason": "" if status == "pass" else "motion_asset_assignment_readback_mismatch",
     }
 
 
@@ -3397,6 +3712,147 @@ def _select_actor_asset_property_path(discovery: Mapping[str, Any]) -> str:
             if str(candidate).strip().lower() == "actor asset":
                 return str(candidate).strip()
     return ""
+
+
+def _motion_property_discovery(properties: Mapping[str, Any], *, require_settable: bool = False) -> Dict[str, Any]:
+    values = [str(value) for value in properties.get("properties", [])] if isinstance(properties.get("properties"), list) else []
+    asset_like = [value for value in values if "motion" in value.lower() or "asset" in value.lower()]
+    preferred = [
+        value
+        for value in asset_like
+        if value.strip().lower() in {"configuration|motion", "motion"}
+    ]
+    if asset_like:
+        return {
+            "status": "pass" if preferred else "blocked_by_unsafe_operation",
+            "property_path": preferred[0] if preferred else "",
+            "candidate_property_paths": asset_like,
+            "discovery_source": "EditorSimpleMotionComponent and SimpleMotionComponent Configuration edit-context DataElement",
+            "blocked_reason": "" if preferred else "simple_motion_asset_property_path_requires_pinning_before_set",
+            "requires_settable_value": require_settable,
+        }
+    return {
+        "status": "blocked_by_missing_binding",
+        "blocked_reason": "simple_motion_asset_property_path_not_discovered",
+    }
+
+
+def _select_motion_asset_property_path(discovery: Mapping[str, Any]) -> str:
+    explicit = str(discovery.get("property_path", "")).strip()
+    if explicit:
+        return explicit
+    candidates = discovery.get("candidate_property_paths", [])
+    if isinstance(candidates, list):
+        for preferred in ("Configuration|Motion", "Motion"):
+            for candidate in candidates:
+                if str(candidate).strip().lower() == preferred.lower():
+                    return str(candidate).strip()
+    return ""
+
+
+def _approved_animation_component_wiring_source_refs() -> List[Dict[str, Any]]:
+    return [
+        {
+            "path": "C:/src/o3de/Gems/EMotionFX/Code/Source/Integration/Editor/Components/EditorActorComponent.cpp",
+            "symbols": ["EditorActorComponent", "Actor asset", "ActorAsset", "BuildGameEntity"],
+        },
+        {
+            "path": "C:/src/o3de/Gems/EMotionFX/Code/Source/Integration/Editor/Components/EditorSimpleMotionComponent.cpp",
+            "symbols": ["EditorSimpleMotionComponent", "Configuration", "BuildGameEntity"],
+        },
+        {
+            "path": "C:/src/o3de/Gems/EMotionFX/Code/Source/Integration/Components/SimpleMotionComponent.cpp",
+            "symbols": ["MotionAsset", "Motion", "SimpleMotionComponentRequestBus", "SetMotionAssetId"],
+        },
+        {
+            "path": "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabPublicRequestHandler.cpp",
+            "symbols": ["PrefabPublicRequestBus", "CreatePrefabInMemory", "InstantiatePrefab"],
+        },
+        {
+            "path": "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabPublicInterface.h",
+            "symbols": ["CreatePrefabAndSaveToDisk", "SavePrefab"],
+        },
+    ]
+
+
+def _approved_animation_component_wiring_source_validation() -> Dict[str, Any]:
+    refs: List[Dict[str, Any]] = []
+    all_passed = True
+    for spec in _approved_animation_component_wiring_source_refs():
+        path = Path(str(spec.get("path", "")))
+        symbols = [str(symbol) for symbol in spec.get("symbols", [])]
+        missing = []
+        exists = path.exists()
+        content = ""
+        if exists:
+            try:
+                content = path.read_text(encoding="utf-8", errors="ignore")
+            except Exception:
+                content = ""
+        for symbol in symbols:
+            if symbol not in content:
+                missing.append(symbol)
+        status = "pass" if exists and not missing else "inconclusive"
+        all_passed = all_passed and status == "pass"
+        refs.append(
+            {
+                "path": str(spec.get("path", "")),
+                "symbols": symbols,
+                "status": status,
+                "exists": exists,
+                "missing_symbols": missing,
+            }
+        )
+    return {
+        "status": "pass" if all_passed else "inconclusive",
+        "verified": all_passed,
+        "refs": refs,
+    }
+
+
+def _approved_animation_component_wiring_candidate_matrix() -> List[Dict[str, Any]]:
+    return [
+        {
+            "candidate": "Editor-generated approved source-prefab update using EditorComponentAPIBus + PrefabPublic APIs",
+            "outcome": "blocked",
+            "reason": "PrefabPublicRequestBus does not expose SavePrefab or CreatePrefabAndSaveToDisk to Editor Python automation.",
+        },
+        {
+            "candidate": "Actor + Simple Motion minimal surface",
+            "outcome": "selected_for_editor_component_assignment_probe",
+            "reason": "Source-validated minimal playback-capable component pair; source-prefab save remains blocked.",
+        },
+        {
+            "candidate": "Actor + Anim Graph + Motion Set",
+            "outcome": "deferred",
+            "reason": "Broader activation surface is not needed before the source-prefab save path is proven.",
+        },
+        {
+            "candidate": "hand-authored unknown .prefab component JSON",
+            "outcome": "rejected",
+            "reason": "Unknown O3DE component serialization must not be hand-authored.",
+        },
+        {
+            "candidate": "direct runtime .procprefab load",
+            "outcome": "rejected",
+            "reason": "Preserved unsupported/builder-only proof limit.",
+        },
+        {
+            "candidate": "direct product-load of actor/motion/motionset/animgraph",
+            "outcome": "rejected",
+            "reason": "Product-load is not component wiring proof.",
+        },
+        {
+            "candidate": "defaultlevel or production-level wiring/playback",
+            "outcome": "rejected",
+            "reason": "Defaultlevel and production-level mutation are disallowed for this slice.",
+        },
+        {
+            "candidate": "temp/sandbox level",
+            "outcome": "limited_to_existing_editor_binding_probe",
+            "reason": "Existing Editor smoke policy uses an approved temp level only for non-production component API probing.",
+        },
+    ]
 
 
 def _value_shape(value: Any) -> str:
