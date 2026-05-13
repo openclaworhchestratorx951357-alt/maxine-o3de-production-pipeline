@@ -2173,6 +2173,12 @@
     "approved_prefab_save_update_behavior_context_exposed": {
       "type": "boolean"
     },
+    "approved_prefab_save_update_behavior_context_observed_events": {
+      "type": "array"
+    },
+    "approved_prefab_save_update_behavior_context_missing_events": {
+      "type": "array"
+    },
     "approved_prefab_save_update_bridge_added": {
       "type": "boolean"
     },

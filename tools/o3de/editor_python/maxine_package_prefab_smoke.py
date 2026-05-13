@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from datetime import datetime, timezone
@@ -83,6 +84,7 @@ TYPED_BLOCKED_STATUSES = {
     "blocked_by_prefab_save_bridge_requires_engine_gem_rebuild",
     "blocked_by_prefab_save_update_requires_additional_source_validation",
     "blocked_by_prefab_save_update_writable_path_safety_contract",
+    "blocked_by_prefab_save_update_scratch_save_not_verified",
 }
 DIRECT_PROCPREFAB_TYPED_NONVERIFIED_STATUSES = {
     "procprefab_product_not_editor_instantiable_with_current_binding",
@@ -215,6 +217,12 @@ def main() -> int:
             "approved_prefab_save_update_api": report.get("approved_prefab_save_update_api", {}),
             "approved_prefab_save_update_behavior_context_exposed": report.get(
                 "approved_prefab_save_update_behavior_context_exposed", False
+            ),
+            "approved_prefab_save_update_behavior_context_observed_events": report.get(
+                "approved_prefab_save_update_behavior_context_observed_events", []
+            ),
+            "approved_prefab_save_update_behavior_context_missing_events": report.get(
+                "approved_prefab_save_update_behavior_context_missing_events", []
             ),
             "approved_prefab_save_update_bridge_added": report.get("approved_prefab_save_update_bridge_added", False),
             "approved_prefab_save_update_bridge_verified": report.get(
@@ -3967,6 +3975,37 @@ def _approved_prefab_save_update_source_refs() -> List[Dict[str, Any]]:
     ]
 
 
+def _observed_behavior_context_events(content: str) -> List[str]:
+    events: List[str] = []
+    seen = set()
+    for match in re.finditer(r'\bEvent\(\s*"([^"]+)"', content):
+        event_name = match.group(1)
+        if event_name not in seen:
+            events.append(event_name)
+            seen.add(event_name)
+    return events
+
+
+def _save_update_behavior_context_observation(source_validation: Mapping[str, Any]) -> Dict[str, Any]:
+    observed_events: List[str] = []
+    seen = set()
+    for ref in source_validation.get("refs", []):
+        if not isinstance(ref, Mapping):
+            continue
+        for event_name in ref.get("observed_behavior_context_events", []):
+            event = str(event_name)
+            if event and event not in seen:
+                observed_events.append(event)
+                seen.add(event)
+    required_events = ["CreatePrefabAndSaveToDisk", "SavePrefab"]
+    missing_events = [event for event in required_events if event not in seen]
+    return {
+        "observed_events": observed_events,
+        "missing_events": missing_events,
+        "exposed": not missing_events,
+    }
+
+
 def _source_validation_from_refs(specs: List[Dict[str, Any]]) -> Dict[str, Any]:
     refs: List[Dict[str, Any]] = []
     all_passed = True
@@ -3989,7 +4028,8 @@ def _source_validation_from_refs(specs: List[Dict[str, Any]]) -> Dict[str, Any]:
         for symbol in required_absent:
             if symbol in content:
                 unexpectedly_present.append(symbol)
-        status = "pass" if exists and not missing and not unexpectedly_present else "inconclusive"
+        observed_events = _observed_behavior_context_events(content)
+        status = "pass" if exists and not missing else "inconclusive"
         all_passed = all_passed and status == "pass"
         refs.append(
             {
@@ -4000,6 +4040,7 @@ def _source_validation_from_refs(specs: List[Dict[str, Any]]) -> Dict[str, Any]:
                 "exists": exists,
                 "missing_symbols": missing,
                 "unexpected_symbols": unexpectedly_present,
+                "observed_behavior_context_events": observed_events,
             }
         )
     return {
@@ -4080,26 +4121,19 @@ def _run_approved_prefab_save_update_automation_surface_checks(report: Mapping[s
     source_validation = _approved_prefab_save_update_source_validation()
     source_prefab_path = "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab"
     scratch_prefab_path = "examples/o3de-golden-project/source/Assets/_maxine_smoke/prefabs/prefab_save_update_surface_probe.prefab"
-    behavior_context_exposed = False
-    if source_validation["verified"] is True:
-        request_handler = next(
-            (
-                ref
-                for ref in source_validation["refs"]
-                if str(ref.get("path", "")).endswith("PrefabPublicRequestHandler.cpp")
-            ),
-            {},
-        )
-        behavior_context_exposed = not bool(request_handler.get("absent_symbols"))
+    behavior_context = _save_update_behavior_context_observation(source_validation)
+    behavior_context_exposed = bool(behavior_context["exposed"]) and source_validation["verified"] is True
 
     blocker = "blocked_by_prefab_save_interface_not_available_to_automation"
     if source_validation["verified"] is not True:
         blocker = "blocked_by_prefab_save_update_requires_additional_source_validation"
+    elif behavior_context_exposed:
+        blocker = "blocked_by_prefab_save_update_scratch_save_not_verified"
 
     return {
         "approved_prefab_save_update_automation_surface_diagnostic_attempted": True,
         "approved_prefab_save_update_automation_surface_diagnostic_completed": True,
-        "approved_prefab_save_update_automation_surface_found": False,
+        "approved_prefab_save_update_automation_surface_found": behavior_context_exposed,
         "approved_prefab_save_update_automation_surface_verified": False,
         "approved_prefab_save_update_automation_surface_blocker": blocker,
         "approved_prefab_save_update_automation_candidate_matrix": _approved_prefab_save_update_candidate_matrix(),
@@ -4136,6 +4170,8 @@ def _run_approved_prefab_save_update_automation_surface_checks(report: Mapping[s
             ],
         },
         "approved_prefab_save_update_behavior_context_exposed": behavior_context_exposed,
+        "approved_prefab_save_update_behavior_context_observed_events": behavior_context["observed_events"],
+        "approved_prefab_save_update_behavior_context_missing_events": behavior_context["missing_events"],
         "approved_prefab_save_update_bridge_added": False,
         "approved_prefab_save_update_bridge_verified": False,
         "approved_prefab_save_update_allowed_path_policy": {

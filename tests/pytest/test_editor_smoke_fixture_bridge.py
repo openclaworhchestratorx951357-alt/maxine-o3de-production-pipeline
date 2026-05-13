@@ -212,6 +212,14 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
                 "approved_prefab_save_update_source_validation_status": "pass",
                 "approved_prefab_save_update_source_validation_verified": True,
                 "approved_prefab_save_update_behavior_context_exposed": False,
+                "approved_prefab_save_update_behavior_context_observed_events": [
+                    "CreatePrefabInMemory",
+                    "InstantiatePrefab",
+                ],
+                "approved_prefab_save_update_behavior_context_missing_events": [
+                    "CreatePrefabAndSaveToDisk",
+                    "SavePrefab",
+                ],
                 "approved_prefab_save_update_bridge_added": False,
                 "approved_prefab_save_update_bridge_verified": False,
                 "approved_prefab_save_update_rejected_defaultlevel_path": True,
@@ -1251,6 +1259,113 @@ def test_editor_smoke_prefab_save_update_surface_records_source_validated_automa
     assert result["runtime_character_animation_component_wiring_claimed"] is False
     assert result["runtime_character_animation_verified"] is False
     assert result["runtime_character_proof_verified"] is False
+
+
+def _save_update_source_validation_with_observed_events(events, *, absent_symbols=None):
+    return {
+        "status": "pass",
+        "verified": True,
+        "refs": [
+            {
+                "path": "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabPublicRequestHandler.cpp",
+                "symbols": ["BehaviorContext", "PrefabPublicRequestBus"],
+                "absent_symbols": list(absent_symbols or []),
+                "status": "pass",
+                "exists": True,
+                "missing_symbols": [],
+                "unexpected_symbols": [],
+                "observed_behavior_context_events": list(events),
+            }
+        ],
+    }
+
+
+def test_prefab_save_update_behavior_exposure_uses_observed_events_for_current_blocker(monkeypatch):
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_approved_prefab_save_update_source_validation",
+        lambda: _save_update_source_validation_with_observed_events(
+            ["CreatePrefabInMemory", "InstantiatePrefab"],
+            absent_symbols=['Event("CreatePrefabAndSaveToDisk"', 'Event("SavePrefab"'],
+        ),
+    )
+
+    result = editor_python_smoke._run_approved_prefab_save_update_automation_surface_checks({})
+
+    assert result["approved_prefab_save_update_behavior_context_observed_events"] == [
+        "CreatePrefabInMemory",
+        "InstantiatePrefab",
+    ]
+    assert result["approved_prefab_save_update_behavior_context_missing_events"] == [
+        "CreatePrefabAndSaveToDisk",
+        "SavePrefab",
+    ]
+    assert result["approved_prefab_save_update_behavior_context_exposed"] is False
+    assert (
+        result["approved_prefab_save_update_automation_surface_blocker"]
+        == "blocked_by_prefab_save_interface_not_available_to_automation"
+    )
+    assert result["approved_prefab_save_update_automation_surface_verified"] is False
+
+
+def test_prefab_save_update_behavior_exposure_accepts_future_reflected_events(monkeypatch):
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_approved_prefab_save_update_source_validation",
+        lambda: _save_update_source_validation_with_observed_events(
+            ["CreatePrefabInMemory", "InstantiatePrefab", "CreatePrefabAndSaveToDisk", "SavePrefab"],
+            absent_symbols=['Event("CreatePrefabAndSaveToDisk"', 'Event("SavePrefab"'],
+        ),
+    )
+
+    result = editor_python_smoke._run_approved_prefab_save_update_automation_surface_checks({})
+
+    assert result["approved_prefab_save_update_behavior_context_exposed"] is True
+    assert result["approved_prefab_save_update_behavior_context_missing_events"] == []
+    assert (
+        result["approved_prefab_save_update_automation_surface_blocker"]
+        != "blocked_by_prefab_save_interface_not_available_to_automation"
+    )
+    assert result["approved_prefab_save_update_automation_surface_found"] is True
+    assert result["approved_prefab_save_update_automation_surface_verified"] is False
+
+
+def test_prefab_save_update_behavior_exposure_requires_both_save_events(monkeypatch):
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_approved_prefab_save_update_source_validation",
+        lambda: _save_update_source_validation_with_observed_events(
+            ["CreatePrefabInMemory", "InstantiatePrefab", "SavePrefab"],
+            absent_symbols=[],
+        ),
+    )
+
+    result = editor_python_smoke._run_approved_prefab_save_update_automation_surface_checks({})
+
+    assert result["approved_prefab_save_update_behavior_context_observed_events"] == [
+        "CreatePrefabInMemory",
+        "InstantiatePrefab",
+        "SavePrefab",
+    ]
+    assert result["approved_prefab_save_update_behavior_context_missing_events"] == [
+        "CreatePrefabAndSaveToDisk"
+    ]
+    assert result["approved_prefab_save_update_behavior_context_exposed"] is False
+    assert result["approved_prefab_save_update_automation_surface_verified"] is False
+
+
+def test_prefab_save_update_behavior_exposure_does_not_trust_empty_absent_symbols(monkeypatch):
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_approved_prefab_save_update_source_validation",
+        lambda: _save_update_source_validation_with_observed_events([], absent_symbols=[]),
+    )
+
+    result = editor_python_smoke._run_approved_prefab_save_update_automation_surface_checks({})
+
+    assert result["approved_prefab_save_update_behavior_context_observed_events"] == []
+    assert result["approved_prefab_save_update_behavior_context_exposed"] is False
+    assert result["approved_prefab_save_update_automation_surface_verified"] is False
 
 
 def test_editor_smoke_prefab_save_update_verified_requires_scratch_save_evidence():
