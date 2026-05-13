@@ -623,6 +623,9 @@
     "runtime_exit_fixture_runtime_command_uses_ap_shader_strategy": {
       "type": "boolean"
     },
+    "runtime_exit_fixture_runtime_command_uses_product_load_probe": {
+      "type": "boolean"
+    },
     "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": {
       "type": "boolean"
     },
@@ -1372,6 +1375,141 @@
     },
     "runtime_shader_serializer_blocker": {
       "type": "string"
+    },
+    "runtime_character_product_load": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_character_product_load_status": {
+      "type": "string"
+    },
+    "runtime_character_product_load_verified": {
+      "type": "boolean"
+    },
+    "runtime_character_product_load_claimed": {
+      "type": "boolean"
+    },
+    "runtime_character_product_load_probe_enabled": {
+      "type": "boolean"
+    },
+    "runtime_character_product_load_probe_shipping_behavior": {
+      "type": "boolean"
+    },
+    "runtime_character_product_load_source_refs": {
+      "type": "array"
+    },
+    "runtime_character_product_load_source_validation": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_character_product_load_asset_catalog_api": {
+      "type": "string"
+    },
+    "runtime_character_product_load_asset_manager_api": {
+      "type": "string"
+    },
+    "runtime_character_product_load_candidate_matrix": {
+      "type": "array"
+    },
+    "runtime_character_product_load_candidate_matrix_recorded": {
+      "type": "boolean"
+    },
+    "runtime_character_product_load_candidate_id": {
+      "type": "string"
+    },
+    "runtime_character_product_load_candidate_name": {
+      "type": "string"
+    },
+    "runtime_character_product_load_candidate_kind": {
+      "type": "string"
+    },
+    "runtime_character_product_load_candidate_source_validation": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_character_product_load_candidate_source_refs": {
+      "type": "array"
+    },
+    "runtime_character_product_load_candidate_attempted": {
+      "type": "boolean"
+    },
+    "runtime_character_product_load_candidate_result": {
+      "type": "string"
+    },
+    "runtime_character_product_load_candidate_blocker": {
+      "type": "string"
+    },
+    "runtime_character_product_load_selected_strategy": {
+      "type": "string"
+    },
+    "runtime_character_product_load_selected_reason": {
+      "type": "string"
+    },
+    "runtime_character_product_load_products": {
+      "type": "array"
+    },
+    "runtime_character_product_load_required_products": {
+      "type": "array"
+    },
+    "runtime_character_product_load_required_products_complete": {
+      "type": "boolean"
+    },
+    "runtime_character_product_load_missing_products": {
+      "type": "array"
+    },
+    "runtime_character_product_load_timed_out_products": {
+      "type": "array"
+    },
+    "runtime_character_product_load_failed_products": {
+      "type": "array"
+    },
+    "runtime_character_product_load_informational_products": {
+      "type": "array"
+    },
+    "runtime_character_product_load_all_required_ready": {
+      "type": "boolean"
+    },
+    "runtime_character_product_load_timeout_seconds": {
+      "type": "integer"
+    },
+    "runtime_character_product_load_tick_budget": {
+      "type": "integer"
+    },
+    "runtime_character_product_load_markers_observed": {
+      "type": "boolean"
+    },
+    "runtime_character_product_load_marker_summary": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_character_product_load_log_scan_summary": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_character_product_load_selected_product_log_scan": {
+      "type": "array"
+    },
+    "runtime_character_product_load_selected_product_missing_error_scan": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_character_product_load_is_instantiation_proof": {
+      "type": "boolean"
+    },
+    "runtime_runtime_character_product_load_is_instantiation_proof": {
+      "type": "boolean"
+    },
+    "runtime_character_instantiation_claimed": {
+      "type": "boolean"
+    },
+    "runtime_character_instantiation_verified": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_claimed": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_verified": {
+      "type": "boolean"
     },
     "runtime_production_level_loaded": {
       "type": "boolean"

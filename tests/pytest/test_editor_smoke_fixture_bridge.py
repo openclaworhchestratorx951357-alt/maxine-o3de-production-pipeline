@@ -936,6 +936,23 @@ def test_editor_smoke_full_report_records_runtime_harness_without_character_over
     assert runtime_harness["runtime_signal_classification_candidate_matrix_recorded"] is False
     assert runtime_harness["runtime_signal_classification_candidates"] == []
     assert runtime_harness["runtime_signal_classification_verified"] is False
+    assert runtime_harness["runtime_exit_fixture_runtime_command_uses_product_load_probe"] is False
+    assert runtime_harness["runtime_character_product_load_status"] == "runtime_character_product_load_not_attempted"
+    assert runtime_harness["runtime_character_product_load_verified"] is False
+    assert runtime_harness["runtime_character_product_load_claimed"] is False
+    assert runtime_harness["runtime_character_product_load_probe_enabled"] is False
+    assert runtime_harness["runtime_character_product_load_probe_shipping_behavior"] is False
+    assert runtime_harness["runtime_character_product_load_candidate_matrix"] == []
+    assert runtime_harness["runtime_character_product_load_products"] == []
+    assert runtime_harness["runtime_character_product_load_required_products_complete"] is False
+    assert runtime_harness["runtime_character_product_load_all_required_ready"] is False
+    assert runtime_harness["runtime_character_product_load_markers_observed"] is False
+    assert runtime_harness["runtime_character_product_load_is_instantiation_proof"] is False
+    assert runtime_harness["runtime_runtime_character_product_load_is_instantiation_proof"] is False
+    assert runtime_harness["runtime_character_instantiation_claimed"] is False
+    assert runtime_harness["runtime_character_instantiation_verified"] is False
+    assert runtime_harness["runtime_character_animation_claimed"] is False
+    assert runtime_harness["runtime_character_animation_verified"] is False
     assert runtime_harness["runtime_settings_registry_merge_order_summary"] == {}
     assert runtime_harness["runtime_settings_registry_project_user_registry_order"] == ""
     assert runtime_harness["runtime_console_autoexec_notification_timing"] == ""

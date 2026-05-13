@@ -14787,6 +14787,7 @@
     },
     "runtime_exit_fixture_runtime_command_uses_cache_bootstrap_strategy": false,
     "runtime_exit_fixture_runtime_command_uses_ap_shader_strategy": false,
+    "runtime_exit_fixture_runtime_command_uses_product_load_probe": false,
     "runtime_cache_bootstrap_loadlevel_source": {
       "status": "runtime_execution_not_attempted"
     },
@@ -14877,6 +14878,65 @@
     "runtime_shader_serializer_null_headless_context": false,
     "runtime_shader_serializer_harmless_only_if": [],
     "runtime_shader_serializer_blocker": "",
+    "runtime_character_product_load": {
+      "status": "runtime_character_product_load_not_attempted"
+    },
+    "runtime_character_product_load_status": "runtime_character_product_load_not_attempted",
+    "runtime_character_product_load_verified": false,
+    "runtime_character_product_load_claimed": false,
+    "runtime_character_product_load_probe_enabled": false,
+    "runtime_character_product_load_probe_shipping_behavior": false,
+    "runtime_character_product_load_source_refs": [],
+    "runtime_character_product_load_source_validation": {},
+    "runtime_character_product_load_asset_catalog_api": "",
+    "runtime_character_product_load_asset_manager_api": "",
+    "runtime_character_product_load_candidate_matrix": [],
+    "runtime_character_product_load_candidate_matrix_recorded": false,
+    "runtime_character_product_load_candidate_id": "",
+    "runtime_character_product_load_candidate_name": "",
+    "runtime_character_product_load_candidate_kind": "",
+    "runtime_character_product_load_candidate_source_validation": {},
+    "runtime_character_product_load_candidate_source_refs": [],
+    "runtime_character_product_load_candidate_attempted": false,
+    "runtime_character_product_load_candidate_result": "",
+    "runtime_character_product_load_candidate_blocker": "",
+    "runtime_character_product_load_selected_strategy": "",
+    "runtime_character_product_load_selected_reason": "",
+    "runtime_character_product_load_products": [],
+    "runtime_character_product_load_required_products": [
+      "azmodel",
+      "actor",
+      "procprefab",
+      "motion",
+      "motionset",
+      "animgraph",
+      "pxmesh",
+      "azmaterial"
+    ],
+    "runtime_character_product_load_required_products_complete": false,
+    "runtime_character_product_load_missing_products": [],
+    "runtime_character_product_load_timed_out_products": [],
+    "runtime_character_product_load_failed_products": [],
+    "runtime_character_product_load_informational_products": [],
+    "runtime_character_product_load_all_required_ready": false,
+    "runtime_character_product_load_timeout_seconds": 0,
+    "runtime_character_product_load_tick_budget": 0,
+    "runtime_character_product_load_markers_observed": false,
+    "runtime_character_product_load_marker_summary": {},
+    "runtime_character_product_load_log_scan_summary": {
+      "status": "runtime_character_product_load_not_attempted"
+    },
+    "runtime_character_product_load_selected_product_log_scan": [],
+    "runtime_character_product_load_selected_product_missing_error_scan": {
+      "status": "runtime_character_product_load_not_attempted",
+      "matches": []
+    },
+    "runtime_character_product_load_is_instantiation_proof": false,
+    "runtime_runtime_character_product_load_is_instantiation_proof": false,
+    "runtime_character_instantiation_claimed": false,
+    "runtime_character_instantiation_verified": false,
+    "runtime_character_animation_claimed": false,
+    "runtime_character_animation_verified": false,
     "runtime_production_level_loaded": false
   },
   "asset_cache_deleted": false

@@ -219,6 +219,20 @@ Later-precedence registry patch evidence records a separate candidate matrix aft
 
 Temporary registry patch evidence is not project configuration. The patch must live under runtime harness artifact/temp paths, require `MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH=1`, and must not be committed as an active generated patch. It must not mutate `Registry/load_level.setreg`, `Levels/defaultlevel`, production levels, live project private content, runtime binaries, build outputs, or shipping behavior. Patch generation is not runtime proof; only a bounded clean fixture command with no defaultlevel/production level load and no disqualifying runtime signals may verify command-envelope runtime execution, and that still does not claim runtime character proof.
 
+Runtime character product-load evidence is distinct from command-envelope runtime proof and from full runtime character proof. A bundle may claim `runtime_character_product_load_verified=true` only when the gated fixture probe actually runs under the PR #136 no-defaultlevel cache/bootstrap strategy and PR #137 AP/shader signal envelope, captures stdout/stderr/log refs, observes product-load markers, and records every required approved product as resolved and ready without timeout or selected-product load errors.
+
+Product-load evidence must include:
+
+- source validation refs for `AssetCatalogRequestBus::GetAssetIdByPath`, `AssetCatalogRequests::GetAssetInfoById`, `AZ::Data::AssetManager::GetAsset`, `AZ::Data::Asset::IsReady`, `AZ::Data::Asset::IsError`, and release/reset behavior
+- the selected product-load candidate and candidate matrix
+- product path, AssetCatalog path, expected category/type, runtime `AssetId`, asset type id/name when available, load method, ready/error/timeout state, and release/cleanup status for `azmodel`, `actor`, `procprefab`, `motion`, `motionset`, `animgraph`, `pxmesh`, and `azmaterial`
+- selected-product missing/load-error scans
+- explicit `runtime_character_instantiation_claimed=false`, `runtime_character_animation_claimed=false`, and `runtime_character_proof_claimed=false` unless richer runtime evidence is actually implemented and verified
+
+APB product evidence remains a prerequisite, not product-load proof by itself. Fixture marker observed, exit code `0`, command-envelope proof, product dependency proof, and product-load proof must not be promoted into runtime instantiation, animation, or production-ready release claims.
+
+An `asset_handler_missing` product-load marker means the runtime AssetCatalog resolved the product path and asset type, but `AZ::Data::AssetManager::GetHandler` had no handler for that type in the current runtime envelope. That state is recorded as a selected product-load failure and blocks `runtime_character_product_load_verified=true`.
+
 A live attempt where the `.setreg` merge patch is generated and the process exits `0` remains failed if defaultlevel autoload is observed. When no merge failure is reported, classify the candidate blocker as `blocked_by_settings_registry_merge_order`: the final file merge is non-mutating and source-valid, but it did not precede the autoexec `LoadLevel` side effect in the launcher path.
 
 Pre-autoexec LoadLevel suppression evidence is a further runtime-harness layer. It records when Settings Registry command-line passes, engine/Gem/project/project-user registry merges, console autoexec notification, and `SpawnableLevelSystem` deferred-load handling occur relative to each other. The current source-validated selected candidate is `project_registry_load_level_setreg_temporarily_disabled_pre_autoexec`: under `MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION=1`, the harness temporarily renames the live project `Registry/load_level.setreg` before launching the bounded fixture command, writes an artifact backup, and restores the file after the process exits. This is a reversible project registry mutation, not a production content mutation; it must not touch `Levels/defaultlevel`, production levels, build outputs, shipping behavior, or committed project-private content.

@@ -65,11 +65,24 @@ RUNTIME_EXIT_FIXTURE_SETTINGS_KEYS = (
     "/Amazon/MAXINE/RuntimeHarness/EnableExitFixture",
     "/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks",
 )
+RUNTIME_CHARACTER_PRODUCT_LOAD_SETTINGS_KEYS = (
+    "/Amazon/MAXINE/RuntimeHarness/EnableCharacterProductLoadProbe",
+    "/Amazon/MAXINE/RuntimeHarness/CharacterProductLoadProbe/ProductCount",
+    "/Amazon/MAXINE/RuntimeHarness/CharacterProductLoadProbe/ProductSpecs",
+    "/Amazon/MAXINE/RuntimeHarness/CharacterProductLoadProbe/ProductSpecsHex",
+    "/Amazon/MAXINE/RuntimeHarness/CharacterProductLoadProbe/TimeoutTicks",
+    "/Amazon/MAXINE/RuntimeHarness/CharacterProductLoadProbe/RequireAllProductsReady",
+    "/Amazon/MAXINE/RuntimeHarness/CharacterProductLoadProbe/Products/<index>/Kind",
+    "/Amazon/MAXINE/RuntimeHarness/CharacterProductLoadProbe/Products/<index>/ProductPath",
+    "/Amazon/MAXINE/RuntimeHarness/CharacterProductLoadProbe/Products/<index>/CatalogPath",
+    "/Amazon/MAXINE/RuntimeHarness/CharacterProductLoadProbe/Products/<index>/ExpectedCategory",
+)
 RUNTIME_EXIT_FIXTURE_GATE_ENV = (
     "MAXINE_ENABLE_O3DE_RUNTIME_HARNESS=1",
     "MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS=1",
     "MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE=1",
 )
+RUNTIME_CHARACTER_PRODUCT_LOAD_GATE_ENV = ("MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE=1",)
 RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION=1",)
 RUNTIME_EXIT_FIXTURE_REBUILD_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD=1",)
 RUNTIME_EXIT_FIXTURE_TEMP_REGISTRY_PATCH_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH=1",)
@@ -91,6 +104,7 @@ RUNTIME_LOADLEVEL_OVERRIDE_ARGS = (
 RUNTIME_LATER_REGISTRY_PATCH_SELECTED = "artifact_setreg_merge_patch_null_autoexec_and_deferred_loadlevel"
 RUNTIME_LATER_REGISTRY_PATCH_FAILED_JSON_PATCH_REMOVE = "artifact_setregpatch_remove_autoexec_and_deferred_loadlevel"
 RUNTIME_LATER_REGISTRY_PATCH_FILENAME = "maxine_runtime_later_precedence_loadlevel_null_remove.setreg"
+RUNTIME_CHARACTER_PRODUCT_LOAD_PATCH_FILENAME = "maxine_runtime_character_product_load_probe.setreg"
 RUNTIME_PRE_AUTOEXEC_SUPPRESSION_SELECTED = "project_registry_load_level_setreg_temporarily_disabled_pre_autoexec"
 RUNTIME_PRE_AUTOEXEC_SUPPRESSION_DISABLED_FILENAME = "load_level.setreg.maxine_pre_autoexec_disabled"
 RUNTIME_PRE_AUTOEXEC_SUPPRESSION_BACKUP_FILENAME = "maxine_runtime_pre_autoexec_load_level_setreg_backup.txt"
@@ -98,6 +112,7 @@ RUNTIME_PRE_AUTOEXEC_CACHE_BOOTSTRAP_BLOCKER = "blocked_by_project_cache_bootstr
 RUNTIME_CACHE_BOOTSTRAP_SELECTED = "cache_bootstrap_setreg_temporarily_neutralized_with_project_source_suppression"
 RUNTIME_CACHE_BOOTSTRAP_BACKUP_DIRNAME = "maxine_runtime_cache_bootstrap_backups"
 RUNTIME_SIGNAL_CLASSIFICATION_SELECTED = "ap_shader_no_defaultlevel_cache_bootstrap_fixture_rerun"
+RUNTIME_CHARACTER_PRODUCT_LOAD_SELECTED = "runtime_character_product_load_generic_assetmanager_load"
 WINDOWS_NTSTATUS_NAMES = {
     0xC0000005: "STATUS_ACCESS_VIOLATION",
 }
@@ -176,6 +191,8 @@ def run_runtime_harness(
     enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source: bool = False,
     diagnose_runtime_ap_shader_signals: bool = False,
     enable_runtime_exit_fixture_ap_shader_signal_classification: bool = False,
+    diagnose_runtime_character_product_load: bool = False,
+    enable_runtime_character_product_load_fixture: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -213,6 +230,8 @@ def run_runtime_harness(
         and not enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
         and not diagnose_runtime_ap_shader_signals
         and not enable_runtime_exit_fixture_ap_shader_signal_classification
+        and not diagnose_runtime_character_product_load
+        and not enable_runtime_character_product_load_fixture
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -255,6 +274,8 @@ def run_runtime_harness(
             and not enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
             and not diagnose_runtime_ap_shader_signals
             and not enable_runtime_exit_fixture_ap_shader_signal_classification
+            and not diagnose_runtime_character_product_load
+            and not enable_runtime_character_product_load_fixture
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -297,6 +318,10 @@ def run_runtime_harness(
             if diagnose_runtime_ap_shader_signals
             else "runtime_exit_fixture_ap_shader_signal_classification_command"
             if enable_runtime_exit_fixture_ap_shader_signal_classification
+            else "runtime_character_product_load_diagnostic"
+            if diagnose_runtime_character_product_load
+            else "runtime_character_product_load_fixture_command"
+            if enable_runtime_character_product_load_fixture
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -390,6 +415,8 @@ def run_runtime_harness(
         and not enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
         and not diagnose_runtime_ap_shader_signals
         and not enable_runtime_exit_fixture_ap_shader_signal_classification
+        and not diagnose_runtime_character_product_load
+        and not enable_runtime_character_product_load_fixture
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -521,6 +548,16 @@ def run_runtime_harness(
             artifact_dir=artifact_dir,
         )
 
+    if diagnose_runtime_character_product_load:
+        return _run_runtime_character_product_load_diagnostic(
+            report,
+            product_evidence=product_evidence,
+            engine_root=selected_engine,
+            project=selected_project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+
     gate_status = _runtime_gate_status(env_map)
     if gate_status["status"] != "pass":
         report.update(
@@ -545,6 +582,7 @@ def run_runtime_harness(
         or enable_runtime_exit_fixture_pre_autoexec_loadlevel_suppression
         or enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
         or enable_runtime_exit_fixture_ap_shader_signal_classification
+        or enable_runtime_character_product_load_fixture
     ):
         return _run_runtime_exit_fixture_command(
             report,
@@ -559,8 +597,14 @@ def run_runtime_harness(
             cache_bootstrap_strategy=(
                 enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
                 or enable_runtime_exit_fixture_ap_shader_signal_classification
+                or enable_runtime_character_product_load_fixture
             ),
-            ap_shader_signal_classification=enable_runtime_exit_fixture_ap_shader_signal_classification,
+            ap_shader_signal_classification=(
+                enable_runtime_exit_fixture_ap_shader_signal_classification
+                or enable_runtime_character_product_load_fixture
+            ),
+            character_product_load=enable_runtime_character_product_load_fixture,
+            product_evidence=product_evidence,
         )
 
     command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
@@ -742,6 +786,58 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_signal_classification_verified=true cannot allow disqualifying AP signals.")
         if report.get("runtime_shader_serializer_disqualifying") is True:
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_signal_classification_verified=true cannot allow disqualifying shader signals.")
+    if report.get("runtime_character_product_load_claimed") is True and report.get("runtime_character_product_load_verified") is not True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime character product-load proof cannot be claimed without verified product-load evidence.")
+    if report.get("runtime_character_product_load_verified") is True:
+        if report.get("runtime_execution_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_product_load_verified=true requires verified command-envelope runtime execution.")
+        if report.get("runtime_exit_fixture_execution_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_product_load_verified=true requires verified runtime exit fixture execution.")
+        if str(report.get("runtime_launch_hygiene_status", "")).strip() != "runtime_launch_hygiene_pass":
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_product_load_verified=true requires runtime_launch_hygiene_pass.")
+        if report.get("runtime_signal_classification_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_product_load_verified=true requires PR #137 AP/shader signal classification.")
+        if report.get("runtime_cache_bootstrap_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_product_load_verified=true requires verified cache-bootstrap no-defaultlevel strategy.")
+        if report.get("runtime_default_level_autoload_detected") is True:
+            result.add_error(MXN_PATH_UNSAFE, "runtime_character_product_load_verified=true cannot allow defaultlevel autoload.")
+        if report.get("runtime_production_level_loaded") is True:
+            result.add_error(MXN_PATH_UNSAFE, "runtime_character_product_load_verified=true cannot allow production level loads.")
+        if not str(report.get("runtime_character_product_load_selected_strategy", "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_product_load_verified=true requires a selected product-load strategy.")
+        if not report.get("runtime_character_product_load_source_refs", []):
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_product_load_verified=true requires source validation refs.")
+        if report.get("runtime_character_product_load_required_products_complete") is not True:
+            result.add_error(MXN_ASSET_PRODUCT_MISSING, "runtime_character_product_load_verified=true requires complete APB product evidence for required products.")
+        if report.get("runtime_character_product_load_all_required_ready") is not True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "runtime_character_product_load_verified=true requires every required selected product ready.",
+            )
+        if report.get("runtime_character_product_load_missing_products"):
+            result.add_error(MXN_ASSET_PRODUCT_MISSING, "runtime_character_product_load_verified=true cannot have missing selected products.")
+        if report.get("runtime_character_product_load_timed_out_products"):
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_product_load_verified=true cannot have timed-out selected products.")
+        if report.get("runtime_character_product_load_failed_products"):
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_product_load_verified=true cannot have failed selected products.")
+        products = report.get("runtime_character_product_load_products", [])
+        if not isinstance(products, list) or not products:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_product_load_verified=true requires per-product evidence.")
+        elif any(not isinstance(product, Mapping) or product.get("ready") is not True for product in products):
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "runtime_character_product_load_verified=true requires every required selected product ready.",
+            )
+        elif any(not str(product.get("asset_id", "")).strip() for product in products if isinstance(product, Mapping)):
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_product_load_verified=true requires per-product AssetId evidence.")
+    if report.get("runtime_character_product_load_is_instantiation_proof") is True and report.get("runtime_character_instantiation_verified") is not True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime product-load proof is not runtime instantiation proof.")
+    if report.get("runtime_runtime_character_product_load_is_instantiation_proof") is True and report.get("runtime_character_instantiation_verified") is not True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime product-load proof is not runtime instantiation proof.")
+    if report.get("runtime_character_instantiation_claimed") is True and report.get("runtime_character_instantiation_verified") is not True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime character instantiation proof cannot be claimed without verified instantiation evidence.")
+    if report.get("runtime_character_animation_claimed") is True and report.get("runtime_character_animation_verified") is not True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime character animation proof cannot be claimed without verified animation evidence.")
     if (
         report.get("runtime_cache_bootstrap_candidate_attempted") is True
         and report.get("runtime_cache_bootstrap_candidate_mutates_cache") is True
@@ -947,6 +1043,9 @@ def print_text_report(report: Mapping[str, Any]) -> None:
     if report.get("runtime_cache_bootstrap_loadlevel_source_status") not in {None, "", "not_run", "runtime_execution_not_attempted"}:
         print(f"runtime_cache_bootstrap_loadlevel_source_status: {report.get('runtime_cache_bootstrap_loadlevel_source_status', '')}")
         print(f"runtime_cache_bootstrap_verified: {str(report.get('runtime_cache_bootstrap_verified', False)).lower()}")
+    if report.get("runtime_character_product_load_status") not in {None, "", "not_run", "runtime_character_product_load_not_attempted"}:
+        print(f"runtime_character_product_load_status: {report.get('runtime_character_product_load_status', '')}")
+        print(f"runtime_character_product_load_verified: {str(report.get('runtime_character_product_load_verified', False)).lower()}")
     print(f"runtime_character_proof_claimed: {str(report.get('runtime_character_proof_claimed', False)).lower()}")
     print(f"runtime_character_proof_verified: {str(report.get('runtime_character_proof_verified', False)).lower()}")
     print(f"live_runtime_execution: {str(report.get('live_runtime_execution', False)).lower()}")
@@ -1169,6 +1268,7 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_exit_fixture_runtime_command_uses_pre_autoexec_suppression_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_cache_bootstrap_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_ap_shader_strategy": False,
+        "runtime_exit_fixture_runtime_command_uses_product_load_probe": False,
         "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
         "runtime_exit_fixture_level_load_observed": False,
         "runtime_exit_fixture_unexpected_level_load": False,
@@ -1414,6 +1514,49 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_shader_serializer_null_headless_context": False,
         "runtime_shader_serializer_harmless_only_if": [],
         "runtime_shader_serializer_blocker": "",
+        "runtime_character_product_load": {"status": "runtime_character_product_load_not_attempted"},
+        "runtime_character_product_load_status": "runtime_character_product_load_not_attempted",
+        "runtime_character_product_load_verified": False,
+        "runtime_character_product_load_claimed": False,
+        "runtime_character_product_load_probe_enabled": False,
+        "runtime_character_product_load_probe_shipping_behavior": False,
+        "runtime_character_product_load_source_refs": [],
+        "runtime_character_product_load_source_validation": {},
+        "runtime_character_product_load_asset_catalog_api": "",
+        "runtime_character_product_load_asset_manager_api": "",
+        "runtime_character_product_load_candidate_matrix": [],
+        "runtime_character_product_load_candidate_matrix_recorded": False,
+        "runtime_character_product_load_candidate_id": "",
+        "runtime_character_product_load_candidate_name": "",
+        "runtime_character_product_load_candidate_kind": "",
+        "runtime_character_product_load_candidate_source_validation": {},
+        "runtime_character_product_load_candidate_source_refs": [],
+        "runtime_character_product_load_candidate_attempted": False,
+        "runtime_character_product_load_candidate_result": "",
+        "runtime_character_product_load_candidate_blocker": "",
+        "runtime_character_product_load_selected_strategy": "",
+        "runtime_character_product_load_selected_reason": "",
+        "runtime_character_product_load_products": [],
+        "runtime_character_product_load_required_products": list(EXPECTED_PRODUCTS),
+        "runtime_character_product_load_required_products_complete": False,
+        "runtime_character_product_load_missing_products": [],
+        "runtime_character_product_load_timed_out_products": [],
+        "runtime_character_product_load_failed_products": [],
+        "runtime_character_product_load_informational_products": [],
+        "runtime_character_product_load_all_required_ready": False,
+        "runtime_character_product_load_timeout_seconds": 0,
+        "runtime_character_product_load_tick_budget": 0,
+        "runtime_character_product_load_markers_observed": False,
+        "runtime_character_product_load_marker_summary": {},
+        "runtime_character_product_load_log_scan_summary": {"status": "runtime_character_product_load_not_attempted"},
+        "runtime_character_product_load_selected_product_log_scan": [],
+        "runtime_character_product_load_selected_product_missing_error_scan": {"status": "runtime_character_product_load_not_attempted", "matches": []},
+        "runtime_character_product_load_is_instantiation_proof": False,
+        "runtime_runtime_character_product_load_is_instantiation_proof": False,
+        "runtime_character_instantiation_claimed": False,
+        "runtime_character_instantiation_verified": False,
+        "runtime_character_animation_claimed": False,
+        "runtime_character_animation_verified": False,
         "runtime_production_level_loaded": False,
         "runtime_disqualifying_signal_summary": [],
         "runtime_disqualifying_signal_count": 0,
@@ -2589,10 +2732,14 @@ def _run_runtime_exit_fixture_command(
     pre_autoexec_suppression: bool = False,
     cache_bootstrap_strategy: bool = False,
     ap_shader_signal_classification: bool = False,
+    character_product_load: bool = False,
+    product_evidence: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
     report["runtime_harness_mode"] = (
-        "runtime_exit_fixture_ap_shader_signal_classification_command"
+        "runtime_character_product_load_fixture_command"
+        if character_product_load
+        else "runtime_exit_fixture_ap_shader_signal_classification_command"
         if ap_shader_signal_classification
         else "runtime_exit_fixture_cache_bootstrap_loadlevel_source_command"
         if cache_bootstrap_strategy
@@ -2630,6 +2777,90 @@ def _run_runtime_exit_fixture_command(
         return _finalize_report(report)
 
     project = _runtime_project_path(report)
+    if character_product_load:
+        product_gate = _runtime_character_product_load_probe_gate_status(env)
+        if product_gate["status"] != "pass":
+            payload = _runtime_character_product_load_source_payload(
+                product_evidence=product_evidence or report.get("product_evidence_summary", {}),
+                engine_root=_runtime_engine_root_from_report(report),
+                project=project,
+                timeout_seconds=timeout_seconds,
+                artifact_dir=artifact_dir,
+            )
+            payload.update(
+                {
+                    "runtime_character_product_load_status": product_gate["status"],
+                    "runtime_character_product_load_candidate_attempted": False,
+                    "runtime_character_product_load_candidate_result": "runtime_character_product_load_candidate_rejected_unsafe",
+                    "runtime_character_product_load_candidate_blocker": product_gate["status"],
+                    "runtime_character_product_load_probe_enabled": False,
+                    "runtime_character_product_load_verified": False,
+                    "runtime_character_product_load_claimed": False,
+                }
+            )
+            report.update(payload)
+            report.update(
+                {
+                    "status": "fail",
+                    "runtime_harness_status": product_gate["status"],
+                    "runtime_harness_blocked_reason": product_gate["status"],
+                    "runtime_exit_fixture_status": product_gate["status"],
+                    "runtime_exit_fixture_blocked_reason": product_gate["status"],
+                    "runtime_execution_status": "runtime_execution_not_attempted",
+                    "runtime_execution_attempted": False,
+                    "runtime_execution_completed": False,
+                    "runtime_execution_verified": False,
+                    "runtime_exit_fixture_execution_attempted": False,
+                    "runtime_exit_fixture_execution_completed": False,
+                    "runtime_exit_fixture_execution_verified": False,
+                    "live_runtime_execution": False,
+                    "required_runtime_harness_assertions_failed": ["runtime_character_product_load_probe_gate"],
+                }
+            )
+            return _finalize_report(report)
+        product_patch_gate = _runtime_temp_registry_patch_gate_status(env)
+        report["runtime_character_product_load_temp_registry_patch_gate_env"] = list(
+            RUNTIME_EXIT_FIXTURE_TEMP_REGISTRY_PATCH_GATE_ENV
+        )
+        report["runtime_character_product_load_temp_registry_patch_gate_status"] = product_patch_gate
+        if product_patch_gate["status"] != "pass":
+            payload = _runtime_character_product_load_source_payload(
+                product_evidence=product_evidence or report.get("product_evidence_summary", {}),
+                engine_root=_runtime_engine_root_from_report(report),
+                project=project,
+                timeout_seconds=timeout_seconds,
+                artifact_dir=artifact_dir,
+            )
+            payload.update(
+                {
+                    "runtime_character_product_load_status": product_patch_gate["status"],
+                    "runtime_character_product_load_candidate_attempted": False,
+                    "runtime_character_product_load_candidate_result": "runtime_character_product_load_candidate_rejected_unsafe",
+                    "runtime_character_product_load_candidate_blocker": product_patch_gate["status"],
+                    "runtime_character_product_load_verified": False,
+                    "runtime_character_product_load_claimed": False,
+                }
+            )
+            report.update(payload)
+            report.update(
+                {
+                    "status": "fail",
+                    "runtime_harness_status": product_patch_gate["status"],
+                    "runtime_harness_blocked_reason": product_patch_gate["status"],
+                    "runtime_exit_fixture_status": product_patch_gate["status"],
+                    "runtime_exit_fixture_blocked_reason": product_patch_gate["status"],
+                    "runtime_execution_status": "runtime_execution_not_attempted",
+                    "runtime_execution_attempted": False,
+                    "runtime_execution_completed": False,
+                    "runtime_execution_verified": False,
+                    "runtime_exit_fixture_execution_attempted": False,
+                    "runtime_exit_fixture_execution_completed": False,
+                    "runtime_exit_fixture_execution_verified": False,
+                    "live_runtime_execution": False,
+                    "required_runtime_harness_assertions_failed": ["runtime_character_product_load_temp_registry_patch_gate"],
+                }
+            )
+            return _finalize_report(report)
     if later_registry_patch:
         patch_gate = _runtime_temp_registry_patch_gate_status(env)
         report["runtime_later_registry_patch_gate_env"] = list(RUNTIME_EXIT_FIXTURE_TEMP_REGISTRY_PATCH_GATE_ENV)
@@ -2814,6 +3045,8 @@ def _run_runtime_exit_fixture_command(
         pre_autoexec_suppression=pre_autoexec_suppression,
         cache_bootstrap_strategy=cache_bootstrap_strategy,
         artifact_dir=artifact_dir,
+        character_product_load=character_product_load,
+        product_evidence=product_evidence or report.get("product_evidence_summary", {}),
     )
     if not command.get("selected"):
         report.update(_unpinned_runtime_command_payload(command))
@@ -2823,6 +3056,12 @@ def _run_runtime_exit_fixture_command(
     artifact_dir.mkdir(parents=True, exist_ok=True)
     if later_registry_patch:
         _write_runtime_later_registry_patch(_runtime_later_registry_patch_path(artifact_dir))
+    if character_product_load:
+        _write_runtime_character_product_load_patch(
+            _runtime_character_product_load_patch_path(artifact_dir),
+            _runtime_character_product_load_products_from_apb(product_evidence or report.get("product_evidence_summary", {})),
+            timeout_seconds=timeout_seconds,
+        )
     pre_autoexec_mutation = (
         _apply_runtime_pre_autoexec_suppression(project=project, artifact_dir=artifact_dir)
         if pre_autoexec_suppression or cache_bootstrap_strategy
@@ -2929,6 +3168,7 @@ def _run_runtime_exit_fixture_command(
             ),
             "runtime_exit_fixture_runtime_command_uses_cache_bootstrap_strategy": cache_bootstrap_strategy,
             "runtime_exit_fixture_runtime_command_uses_ap_shader_strategy": ap_shader_signal_classification,
+            "runtime_exit_fixture_runtime_command_uses_product_load_probe": character_product_load,
             "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
             "runtime_exit_fixture_command": str(command.get("argv", [""])[0]),
             "runtime_exit_fixture_arguments": list(command.get("argv", []))[1:],
@@ -3086,7 +3326,27 @@ def _run_runtime_exit_fixture_command(
         artifact_dir=artifact_dir,
         mutation_state=cache_bootstrap_mutation,
     )
+    character_product_load_payload = (
+        _runtime_character_product_load_execution_payload(
+            product_evidence=product_evidence or report.get("product_evidence_summary", {}),
+            command=command,
+            combined_text=combined_text,
+            actual_level_loads=level_loads,
+            launch_hygiene=launch_hygiene,
+            signal_classification=signal_classification_payload,
+            cache_bootstrap=cache_bootstrap_payload,
+            exit_code=proc.returncode,
+            marker_observed=marker_observed,
+        )
+        if character_product_load
+        else {}
+    )
     launch_hygiene_pass = launch_hygiene.get("runtime_launch_hygiene_status") == "runtime_launch_hygiene_pass"
+    character_product_load_pass = (
+        character_product_load_payload.get("runtime_character_product_load_verified") is True
+        if character_product_load
+        else True
+    )
     passed = (
         proc.returncode in expected_exit_codes
         and not timed_out
@@ -3094,6 +3354,7 @@ def _run_runtime_exit_fixture_command(
         and not effective_disqualifying
         and marker_observed
         and launch_hygiene_pass
+        and character_product_load_pass
     )
     if passed:
         fixture_status = "runtime_exit_fixture_verified_clean_exit"
@@ -3105,6 +3366,8 @@ def _run_runtime_exit_fixture_command(
         fixture_status = "runtime_exit_fixture_execution_failed_nonzero_exit"
     elif launch_hygiene.get("runtime_default_level_autoload_detected") is True:
         fixture_status = "runtime_fixture_execution_failed_default_level_autoload"
+    elif character_product_load and not character_product_load_pass:
+        fixture_status = "runtime_exit_fixture_execution_failed_character_product_load"
     else:
         fixture_status = "runtime_exit_fixture_execution_failed_disqualifying_log_signal"
 
@@ -3116,6 +3379,7 @@ def _run_runtime_exit_fixture_command(
     report.update(cache_bootstrap_payload)
     report.update(launch_hygiene)
     report.update(signal_classification_payload)
+    report.update(character_product_load_payload)
     blocked_reason = _runtime_launch_hygiene_blocked_reason(launch_hygiene)
     if pre_autoexec_suppression and str(pre_autoexec_payload.get("runtime_pre_autoexec_candidate_blocker", "")).strip():
         blocked_reason = str(pre_autoexec_payload.get("runtime_pre_autoexec_candidate_blocker", "")).strip()
@@ -3125,6 +3389,10 @@ def _run_runtime_exit_fixture_command(
         signal_classification_payload.get("runtime_signal_classification_candidate_blocker", "")
     ).strip():
         blocked_reason = str(signal_classification_payload.get("runtime_signal_classification_candidate_blocker", "")).strip()
+    if character_product_load and str(
+        character_product_load_payload.get("runtime_character_product_load_candidate_blocker", "")
+    ).strip():
+        blocked_reason = str(character_product_load_payload.get("runtime_character_product_load_candidate_blocker", "")).strip()
     report.update(
         {
             "status": "pass" if passed else "fail",
@@ -3204,6 +3472,7 @@ def _run_runtime_exit_fixture_command(
                 "runtime_launch_hygiene_pass",
                 "runtime_exit_fixture_clean_exit",
                 "runtime_signal_classification_verified" if ap_shader_signal_classification else "runtime_signal_classification_not_required",
+                "runtime_character_product_load_verified" if character_product_load else "runtime_character_product_load_not_required",
                 "runtime_character_proof_not_claimed",
             ]
             if passed
@@ -4028,6 +4297,8 @@ def _select_runtime_exit_fixture_command(
     pre_autoexec_suppression: bool = False,
     cache_bootstrap_strategy: bool = False,
     artifact_dir: Path | None = None,
+    character_product_load: bool = False,
+    product_evidence: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     executable = str(report.get("runtime_executable_path", "")).strip()
     readiness = report.get("runtime_harness_readiness", {})
@@ -4045,6 +4316,13 @@ def _select_runtime_exit_fixture_command(
         }
     later_patch_path = _runtime_later_registry_patch_path(artifact_dir or DEFAULT_ARTIFACT_ROOT)
     later_patch_arg = f"--regset-file={later_patch_path}"
+    product_load_products = (
+        _runtime_character_product_load_products_from_apb(product_evidence or {})
+        if character_product_load
+        else []
+    )
+    product_load_patch_path = _runtime_character_product_load_patch_path(artifact_dir or DEFAULT_ARTIFACT_ROOT)
+    product_load_args = [f"--regset-file={product_load_patch_path}"] if character_product_load else []
     argv = [
         executable,
         f"--project-path={project_path}",
@@ -4062,9 +4340,12 @@ def _select_runtime_exit_fixture_command(
         "--regset=/Amazon/AzCore/Bootstrap/wait_for_connect=0",
         "--regset=/Amazon/MAXINE/RuntimeHarness/EnableExitFixture=true",
         "--regset=/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks=5",
+        *product_load_args,
     ]
     selected_reason = (
-        "repo_owned_fixture_tickbus_exit_main_loop_cache_bootstrap_loadlevel_source_envelope"
+        "repo_owned_fixture_character_product_load_cache_bootstrap_ap_shader_envelope"
+        if character_product_load
+        else "repo_owned_fixture_tickbus_exit_main_loop_cache_bootstrap_loadlevel_source_envelope"
         if cache_bootstrap_strategy
         else "repo_owned_fixture_tickbus_exit_main_loop_later_registry_patch_envelope"
         if later_registry_patch
@@ -4113,6 +4394,17 @@ def _select_runtime_exit_fixture_command(
         safety_flags.append("settings_registry_regremove_autoexec_loadlevel")
     else:
         safety_flags.append("no_level_or_map_argument")
+    if character_product_load:
+        safety_flags.extend(
+            [
+                "runtime_character_product_load_probe_enabled",
+                "runtime_character_product_load_probe_gate_required",
+                "runtime_character_product_load_temp_registry_patch_gate_required",
+                "assetcatalog_resolution",
+                "assetmanager_generic_load",
+                "product_load_is_not_instantiation_proof",
+            ]
+        )
     return {
         "selected": True,
         "argv": argv,
@@ -4148,6 +4440,7 @@ def _select_runtime_exit_fixture_command(
                 "--regset=/Amazon/MAXINE/RuntimeHarness/EnableExitFixture=true",
                 "--regset=/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks=5",
             ],
+            "product_load_probe": product_load_args,
         },
         "safety_profile": {
             "local": True,
@@ -4161,7 +4454,9 @@ def _select_runtime_exit_fixture_command(
             "uses_production_level": False,
             "uses_temp_level": False,
             "uses_no_level": True,
-            "loads_character_content": False,
+            "loads_character_content": bool(character_product_load),
+            "loads_character_products_only": bool(character_product_load),
+            "runtime_character_product_load_proof": bool(character_product_load),
             "runtime_character_proof": False,
             "headless_launcher": True,
             "null_renderer_requested": True,
@@ -4172,10 +4467,18 @@ def _select_runtime_exit_fixture_command(
             "uses_loadlevel_override_strategy": loadlevel_override or later_registry_patch or pre_autoexec_suppression,
             "uses_later_registry_patch_strategy": later_registry_patch,
             "uses_pre_autoexec_suppression_strategy": pre_autoexec_suppression,
-            "temp_registry_patch_path": str(later_patch_path) if later_registry_patch else "",
-            "temp_registry_patch_gate_required": later_registry_patch,
+            "temp_registry_patch_path": str(later_patch_path)
+            if later_registry_patch
+            else str(product_load_patch_path)
+            if character_product_load
+            else "",
+            "temp_registry_patch_gate_required": later_registry_patch or character_product_load,
             "project_registry_mutation_gate_required": pre_autoexec_suppression,
             "project_registry_mutation_reversible": pre_autoexec_suppression,
+            "uses_character_product_load_probe": bool(character_product_load),
+            "character_product_load_probe_gate_required": bool(character_product_load),
+            "character_product_load_temp_registry_patch_path": str(product_load_patch_path) if character_product_load else "",
+            "character_product_load_temp_registry_patch_gate_required": bool(character_product_load),
         },
         "source_evidence_refs": [
             _repo_relative(RUNTIME_EXIT_FIXTURE_COMPONENT_SOURCE),
@@ -4979,6 +5282,10 @@ def _runtime_later_registry_patch_path(artifact_dir: Path) -> Path:
     return artifact_dir / RUNTIME_LATER_REGISTRY_PATCH_FILENAME
 
 
+def _runtime_character_product_load_patch_path(artifact_dir: Path) -> Path:
+    return artifact_dir / RUNTIME_CHARACTER_PRODUCT_LOAD_PATCH_FILENAME
+
+
 def _runtime_later_registry_patch_dir_from_command(command: Mapping[str, Any]) -> Path:
     for arg in command.get("argv", []):
         text = str(arg)
@@ -5007,6 +5314,39 @@ def _runtime_later_registry_patch_contents() -> Dict[str, Any]:
 def _write_runtime_later_registry_patch(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(_runtime_later_registry_patch_contents(), indent=2) + "\n", encoding="utf-8")
+
+
+def _write_runtime_character_product_load_patch(
+    path: Path,
+    products: Sequence[Mapping[str, Any]],
+    *,
+    timeout_seconds: int,
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "Amazon": {
+            "MAXINE": {
+                "RuntimeHarness": {
+                    "EnableCharacterProductLoadProbe": True,
+                    "CharacterProductLoadProbe": {
+                        "ProductCount": len(products),
+                        "TimeoutTicks": _runtime_character_product_load_timeout_ticks(timeout_seconds),
+                        "RequireAllProductsReady": True,
+                        "Products": {
+                            str(index): {
+                                "Kind": str(product.get("product_kind", "")),
+                                "ProductPath": str(product.get("product_path", "")),
+                                "CatalogPath": str(product.get("catalog_path", "")),
+                                "ExpectedCategory": str(product.get("expected_category", "")),
+                            }
+                            for index, product in enumerate(products)
+                        },
+                    },
+                }
+            }
+        }
+    }
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
 def _runtime_pre_autoexec_suppression_source_payload(
@@ -6061,6 +6401,709 @@ def _restore_runtime_cache_bootstrap_neutralization(state: Dict[str, Any]) -> No
     state["status"] = state["restore_status"]
 
 
+def _run_runtime_character_product_load_diagnostic(
+    report: Dict[str, Any],
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    report.update(
+        _runtime_character_product_load_source_payload(
+            product_evidence=product_evidence,
+            engine_root=engine_root,
+            project=project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+    )
+    report.update(
+        {
+            "status": "pass",
+            "runtime_harness_status": report.get("runtime_character_product_load_status", ""),
+            "runtime_harness_mode": "runtime_character_product_load_diagnostic",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "runtime_character_product_load_claimed": False,
+            "runtime_character_product_load_verified": False,
+            "runtime_character_instantiation_claimed": False,
+            "runtime_character_instantiation_verified": False,
+            "runtime_character_animation_claimed": False,
+            "runtime_character_animation_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "asset_cache_deleted": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_character_product_load_source_discovery",
+                "runtime_character_product_load_candidate_matrix_recorded",
+                "runtime_execution_not_attempted_in_product_load_diagnostic_mode",
+                "runtime_character_product_load_not_claimed_without_runtime_markers",
+                "runtime_character_proof_not_claimed",
+            ],
+            "runtime_harness_assertion_informational": [
+                "product_load_source_discovery_is_not_runtime_product_load_proof",
+                "product_load_proof_is_not_instantiation_proof",
+                "product_load_proof_is_not_animation_proof",
+            ],
+        }
+    )
+    return _finalize_report(report)
+
+
+def _runtime_character_product_load_source_payload(
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    _ = project
+    _ = artifact_dir
+    source_validated = _runtime_character_product_load_source_validated(engine_root)
+    products = _runtime_character_product_load_products_from_apb(product_evidence)
+    required_complete = _runtime_character_product_load_required_complete(products, product_evidence)
+    status = (
+        "runtime_character_product_load_source_discovery_pass"
+        if source_validated and required_complete
+        else "blocked_by_missing_runtime_character_products"
+        if not required_complete
+        else "runtime_character_product_load_source_discovery_inconclusive"
+    )
+    selected = _runtime_character_product_load_selected_candidate(
+        product_evidence=product_evidence,
+        engine_root=engine_root,
+        timeout_seconds=timeout_seconds,
+    )
+    candidates = _runtime_character_product_load_candidate_matrix(
+        product_evidence=product_evidence,
+        engine_root=engine_root,
+        timeout_seconds=timeout_seconds,
+    )
+    source_refs = _runtime_character_product_load_source_refs(engine_root)
+    return {
+        "runtime_character_product_load": {
+            "status": status,
+            "selected": RUNTIME_CHARACTER_PRODUCT_LOAD_SELECTED if source_validated and required_complete else "",
+            "product_count": len(products),
+        },
+        "runtime_character_product_load_status": status,
+        "runtime_character_product_load_verified": False,
+        "runtime_character_product_load_claimed": False,
+        "runtime_character_product_load_probe_enabled": False,
+        "runtime_character_product_load_probe_shipping_behavior": False,
+        "runtime_character_product_load_source_refs": source_refs,
+        "runtime_character_product_load_source_validation": {
+            "status": "runtime_character_product_load_source_discovery_pass"
+            if source_validated
+            else "runtime_character_product_load_source_discovery_inconclusive",
+            "summary": (
+                "The runtime fixture can resolve product-relative catalog paths with "
+                "AZ::Data::AssetCatalogRequestBus::GetAssetIdByPath/GetAssetInfoById, then request loads through "
+                "AZ::Data::AssetManager::GetAsset using the catalog AssetInfo type and verify readiness with "
+                "AZ::Data::Asset::IsReady/IsError or BlockUntilLoadComplete. APB evidence remains the source of the "
+                "approved product list; the runtime probe is disabled unless its explicit Settings Registry gate is set."
+            ),
+        },
+        "runtime_character_product_load_asset_catalog_api": "AZ::Data::AssetCatalogRequestBus::GetAssetIdByPath",
+        "runtime_character_product_load_asset_manager_api": "AZ::Data::AssetManager::GetAsset",
+        "runtime_character_product_load_candidate_matrix": candidates,
+        "runtime_character_product_load_candidate_matrix_recorded": bool(candidates),
+        "runtime_character_product_load_candidate_id": selected["id"] if source_validated and required_complete else "",
+        "runtime_character_product_load_candidate_name": selected["name"] if source_validated and required_complete else "",
+        "runtime_character_product_load_candidate_kind": selected["kind"] if source_validated and required_complete else "",
+        "runtime_character_product_load_candidate_source_validation": selected["source_validation"]
+        if source_validated and required_complete
+        else {},
+        "runtime_character_product_load_candidate_source_refs": selected["source_refs"]
+        if source_validated and required_complete
+        else [],
+        "runtime_character_product_load_candidate_attempted": False,
+        "runtime_character_product_load_candidate_result": selected["result"] if source_validated and required_complete else "",
+        "runtime_character_product_load_candidate_blocker": "" if source_validated and required_complete else status,
+        "runtime_character_product_load_selected_strategy": RUNTIME_CHARACTER_PRODUCT_LOAD_SELECTED
+        if source_validated and required_complete
+        else "",
+        "runtime_character_product_load_selected_reason": (
+            "resolve_catalog_paths_and_load_generic_assetdata_with_runtime_assetinfo_types"
+            if source_validated and required_complete
+            else ""
+        ),
+        "runtime_character_product_load_products": products,
+        "runtime_character_product_load_required_products": list(EXPECTED_PRODUCTS),
+        "runtime_character_product_load_required_products_complete": required_complete,
+        "runtime_character_product_load_missing_products": [
+            product_type for product_type in EXPECTED_PRODUCTS if product_type not in {item["product_kind"] for item in products}
+        ],
+        "runtime_character_product_load_timed_out_products": [],
+        "runtime_character_product_load_failed_products": [],
+        "runtime_character_product_load_informational_products": [],
+        "runtime_character_product_load_all_required_ready": False,
+        "runtime_character_product_load_timeout_seconds": int(timeout_seconds),
+        "runtime_character_product_load_tick_budget": _runtime_character_product_load_timeout_ticks(timeout_seconds),
+        "runtime_character_product_load_log_scan_summary": {"status": "runtime_execution_not_attempted"},
+        "runtime_character_product_load_selected_product_log_scan": [],
+        "runtime_character_product_load_selected_product_missing_error_scan": {
+            "status": "runtime_execution_not_attempted",
+            "matches": [],
+        },
+        "runtime_character_product_load_is_instantiation_proof": False,
+        "runtime_runtime_character_product_load_is_instantiation_proof": False,
+        "runtime_character_instantiation_claimed": False,
+        "runtime_character_instantiation_verified": False,
+        "runtime_character_animation_claimed": False,
+        "runtime_character_animation_verified": False,
+    }
+
+
+def _runtime_character_product_load_products_from_apb(product_evidence: Mapping[str, Any]) -> List[Dict[str, Any]]:
+    products: List[Dict[str, Any]] = []
+    seen: set[str] = set()
+    for product in product_evidence.get("produced_products", []):
+        if not isinstance(product, Mapping):
+            continue
+        kind = str(product.get("product_type", "")).strip()
+        if kind not in EXPECTED_PRODUCTS or kind in seen:
+            continue
+        product_path = str(product.get("product_path", product.get("path", ""))).strip().replace("\\", "/")
+        if not product_path:
+            continue
+        seen.add(kind)
+        products.append(
+            {
+                "product_kind": kind,
+                "product_path": product_path,
+                "catalog_path": _runtime_character_product_catalog_path(product_path),
+                "expected_category": kind,
+                "expected_type": _runtime_character_product_expected_type(kind),
+                "asset_id": str(product.get("asset_id", product.get("assetId", ""))).strip(),
+                "asset_type_id": str(product.get("asset_type_id", product.get("assetTypeId", ""))).strip(),
+                "asset_type_name": str(product.get("asset_type_name", "")).strip(),
+                "resolution_status": "runtime_character_product_load_not_attempted",
+                "load_requested": False,
+                "load_method": "AZ::Data::AssetManager::GetAsset",
+                "load_status": "runtime_character_product_load_not_attempted",
+                "ready": False,
+                "timeout": False,
+                "error": "",
+                "selected_product_log_errors": [],
+                "release_status": "runtime_character_product_load_release_not_required",
+            }
+        )
+    products.sort(key=lambda item: EXPECTED_PRODUCTS.index(item["product_kind"]))
+    return products
+
+
+def _runtime_character_product_catalog_path(product_path: str) -> str:
+    normalized = str(product_path).replace("\\", "/").strip()
+    if normalized.lower().startswith("pc/"):
+        return normalized[3:]
+    return normalized
+
+
+def _runtime_character_product_expected_type(kind: str) -> str:
+    return {
+        "azmodel": "AZ::RPI::ModelAsset",
+        "actor": "EMotionFX::Integration::ActorAsset",
+        "procprefab": "AssetCatalog AssetInfo type for .procprefab",
+        "motion": "EMotionFX::Integration::MotionAsset",
+        "motionset": "EMotionFX::Integration::MotionSetAsset",
+        "animgraph": "EMotionFX::Integration::AnimGraphAsset",
+        "pxmesh": "PhysX mesh asset catalog type",
+        "azmaterial": "AZ::RPI::MaterialAsset",
+    }.get(kind, "AssetCatalog AssetInfo type")
+
+
+def _runtime_character_product_load_regset_args(
+    products: Sequence[Mapping[str, Any]],
+    *,
+    timeout_seconds: int,
+) -> List[str]:
+    if not products:
+        return []
+    args = [
+        "--regset=/Amazon/MAXINE/RuntimeHarness/EnableCharacterProductLoadProbe=true",
+        f"--regset=/Amazon/MAXINE/RuntimeHarness/CharacterProductLoadProbe/ProductCount={len(products)}",
+        "--regset=/Amazon/MAXINE/RuntimeHarness/CharacterProductLoadProbe/ProductSpecsHex="
+        + _runtime_character_product_load_product_specs_hex(products),
+        f"--regset=/Amazon/MAXINE/RuntimeHarness/CharacterProductLoadProbe/TimeoutTicks={_runtime_character_product_load_timeout_ticks(timeout_seconds)}",
+        "--regset=/Amazon/MAXINE/RuntimeHarness/CharacterProductLoadProbe/RequireAllProductsReady=true",
+    ]
+    return args
+
+
+def _runtime_character_product_load_product_specs(products: Sequence[Mapping[str, Any]]) -> str:
+    specs: List[str] = []
+    for product in products:
+        fields = [
+            str(product.get("product_kind", "")),
+            str(product.get("product_path", "")),
+            str(product.get("catalog_path", "")),
+            str(product.get("expected_category", "")),
+        ]
+        if any("|" in field or "," in field for field in fields):
+            raise ValueError("runtime product-load probe product fields cannot contain '|' or ','")
+        specs.append("|".join(fields))
+    return ",".join(specs)
+
+
+def _runtime_character_product_load_timeout_ticks(timeout_seconds: int) -> int:
+    return max(1, int(timeout_seconds) * 20)
+
+
+def _runtime_character_product_load_product_specs_hex(products: Sequence[Mapping[str, Any]]) -> str:
+    return _runtime_character_product_load_product_specs(products).encode("utf-8").hex()
+
+
+def _runtime_character_product_load_required_complete(
+    products: Sequence[Mapping[str, Any]],
+    product_evidence: Mapping[str, Any],
+) -> bool:
+    kinds = {str(product.get("product_kind", "")).strip() for product in products if isinstance(product, Mapping)}
+    return (
+        all(kind in kinds for kind in EXPECTED_PRODUCTS)
+        and bool(product_evidence.get("product_evidence_complete", False))
+        and not product_evidence.get("missing_products", [])
+        and not product_evidence.get("pending_products", [])
+        and not product_evidence.get("cache_heuristic_used", False)
+    )
+
+
+def _runtime_character_product_load_selected_candidate(
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    timeout_seconds: int,
+) -> Dict[str, Any]:
+    source_validated = _runtime_character_product_load_source_validated(engine_root)
+    required_complete = _runtime_character_product_load_required_complete(
+        _runtime_character_product_load_products_from_apb(product_evidence),
+        product_evidence,
+    )
+    return {
+        "id": RUNTIME_CHARACTER_PRODUCT_LOAD_SELECTED,
+        "name": "Runtime AssetCatalog resolution plus generic AssetManager load",
+        "kind": "runtime_assetcatalog_resolution_generic_assetmanager_load",
+        "source_validation": {
+            "status": "runtime_character_product_load_candidate_source_validated"
+            if source_validated and required_complete
+            else "runtime_character_product_load_candidate_rejected_missing_source_validation",
+            "summary": (
+                "Resolve each APB-approved product catalog path through AssetCatalogRequestBus, read AssetInfo for the "
+                "runtime asset type, then load with AssetManager::GetAsset using AssetLoadBehavior::Default and verify "
+                "ready/error status within a bounded fixture tick budget."
+            ),
+        },
+        "source_refs": _runtime_character_product_load_source_refs(engine_root),
+        "required_products": list(EXPECTED_PRODUCTS),
+        "timeout_seconds": int(timeout_seconds),
+        "gate_env": list(RUNTIME_CHARACTER_PRODUCT_LOAD_GATE_ENV),
+        "mutates_cache": False,
+        "deletes_asset_cache": False,
+        "mutates_project": False,
+        "mutates_defaultlevel": False,
+        "mutates_production_level": False,
+        "loads_level": False,
+        "result": "runtime_character_product_load_candidate_source_validated"
+        if source_validated and required_complete
+        else "runtime_character_product_load_candidate_rejected_missing_source_validation",
+    }
+
+
+def _runtime_character_product_load_candidate_matrix(
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    timeout_seconds: int,
+) -> List[Dict[str, Any]]:
+    source_refs = _runtime_character_product_load_source_refs(engine_root)
+    selected = _runtime_character_product_load_selected_candidate(
+        product_evidence=product_evidence,
+        engine_root=engine_root,
+        timeout_seconds=timeout_seconds,
+    )
+    return [
+        {
+            "id": "runtime_character_product_load_source_api_discovery",
+            "name": "Read-only runtime AssetCatalog/AssetManager API discovery",
+            "kind": "read_only_source_discovery",
+            "source_validation": {
+                "status": "runtime_character_product_load_candidate_source_validated"
+                if _runtime_character_product_load_source_validated(engine_root)
+                else "runtime_character_product_load_candidate_rejected_missing_source_validation",
+                "summary": "Records source refs for runtime AssetCatalog resolution and AssetManager load/ready APIs.",
+            },
+            "source_refs": source_refs,
+            "attempted": False,
+            "result": "runtime_character_product_load_source_discovery_pass"
+            if _runtime_character_product_load_source_validated(engine_root)
+            else "runtime_character_product_load_source_discovery_inconclusive",
+            "blocker": "",
+        },
+        {
+            "id": "runtime_character_product_load_assetcatalog_resolution_only",
+            "name": "Runtime AssetCatalog resolution only",
+            "kind": "runtime_assetcatalog_resolution_only",
+            "source_validation": {
+                "status": "runtime_character_product_load_candidate_source_validated",
+                "summary": "Safe fallback that proves AssetId resolution but is intentionally not sufficient product-load evidence.",
+            },
+            "source_refs": source_refs,
+            "attempted": False,
+            "result": "runtime_character_product_load_candidate_rejected_resolution_only_not_load_proof",
+            "blocker": "blocked_by_runtime_character_product_load_source_validation",
+        },
+        {
+            **selected,
+            "attempted": False,
+            "blocker": "",
+        },
+        {
+            "id": "runtime_character_product_load_type_specific_assetmanager_load",
+            "name": "Type-specific AssetManager load for each character product class",
+            "kind": "runtime_type_specific_assetmanager_load",
+            "source_validation": {
+                "status": "runtime_character_product_load_candidate_source_validated",
+                "summary": (
+                    "Several concrete product asset classes are source-visible, but the generic AssetInfo type path is "
+                    "less brittle for mixed product categories and avoids hard-linking extra type headers into this fixture."
+                ),
+            },
+            "source_refs": source_refs,
+            "attempted": False,
+            "result": "runtime_character_product_load_candidate_rejected_generic_assetinfo_preferred",
+            "blocker": "",
+        },
+        {
+            "id": "runtime_character_product_load_keep_blocked_without_source_validation",
+            "name": "Keep runtime product-load proof blocked if source validation or APB evidence is incomplete",
+            "kind": "typed_blocker",
+            "source_validation": {
+                "status": "runtime_character_product_load_candidate_source_validated",
+                "summary": "Selected product-load proof remains blocked instead of inferred from APB evidence or fixture marker alone.",
+            },
+            "source_refs": source_refs,
+            "attempted": False,
+            "result": "blocked_by_runtime_character_product_load_source_validation",
+            "blocker": "blocked_by_runtime_character_product_load_source_validation",
+        },
+    ]
+
+
+def _runtime_character_product_load_source_validated(engine_root: Path | None) -> bool:
+    root = engine_root or Path("")
+    return all(
+        path.is_file()
+        for path in (
+            root / "Code" / "Framework" / "AzCore" / "AzCore" / "Asset" / "AssetManagerBus.h",
+            root / "Code" / "Framework" / "AzCore" / "AzCore" / "Asset" / "AssetManager.h",
+            root / "Code" / "Framework" / "AzCore" / "AzCore" / "Asset" / "AssetCommon.h",
+        )
+    )
+
+
+def _runtime_character_product_load_source_refs(engine_root: Path | None) -> List[str]:
+    root = engine_root or Path("<engine-root>")
+    return [
+        str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Asset" / "AssetManagerBus.h"),
+        str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Asset" / "AssetManager.h"),
+        str(root / "Code" / "Framework" / "AzCore" / "AzCore" / "Asset" / "AssetCommon.h"),
+        str(root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "ActorAsset.h"),
+        str(root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "MotionAsset.h"),
+        str(root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "MotionSetAsset.h"),
+        str(root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "AnimGraphAsset.h"),
+        str(root / "Gems" / "Atom" / "RPI" / "Code" / "Include" / "Atom" / "RPI.Reflect" / "Model" / "ModelAsset.h"),
+        str(root / "Gems" / "Atom" / "RPI" / "Code" / "Include" / "Atom" / "RPI.Reflect" / "Material" / "MaterialAsset.h"),
+        str(root / "Gems" / "PhysX" / "Core" / "Code" / "Include" / "PhysX" / "MeshAsset.h"),
+        str(root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableAssetHandler.h"),
+    ]
+
+
+def _runtime_character_product_load_execution_payload(
+    *,
+    product_evidence: Mapping[str, Any],
+    command: Mapping[str, Any],
+    combined_text: str,
+    actual_level_loads: Sequence[str],
+    launch_hygiene: Mapping[str, Any],
+    signal_classification: Mapping[str, Any],
+    cache_bootstrap: Mapping[str, Any],
+    exit_code: int | None,
+    marker_observed: bool,
+) -> Dict[str, Any]:
+    engine_root = _runtime_engine_root_from_command(command)
+    products = _runtime_character_product_load_products_from_apb(product_evidence)
+    source_payload = _runtime_character_product_load_source_payload(
+        product_evidence=product_evidence,
+        engine_root=engine_root,
+        project=None,
+        timeout_seconds=int(command.get("timeout_seconds", 120)),
+        artifact_dir=DEFAULT_ARTIFACT_ROOT,
+    )
+    marker_products, marker_summary, markers_observed = _runtime_character_product_load_parse_markers(
+        products=products,
+        combined_text=combined_text,
+    )
+    selected_product_errors = _runtime_character_product_selected_product_errors(marker_products, combined_text)
+    for product in marker_products:
+        product["selected_product_log_errors"] = [
+            item for item in selected_product_errors if item.get("product_kind") == product.get("product_kind")
+        ]
+        if product["selected_product_log_errors"] and not product.get("error"):
+            product["error"] = "selected_product_log_error"
+            product["load_status"] = "runtime_character_product_load_product_error"
+
+    ready_kinds = [str(product.get("product_kind", "")) for product in marker_products if product.get("ready") is True]
+    missing_kinds = [
+        str(product.get("product_kind", ""))
+        for product in marker_products
+        if str(product.get("resolution_status", "")).strip() in {"runtime_character_product_load_product_missing", "runtime_character_product_load_not_attempted"}
+    ]
+    timed_out_kinds = [str(product.get("product_kind", "")) for product in marker_products if product.get("timeout") is True]
+    failed_kinds = [
+        str(product.get("product_kind", ""))
+        for product in marker_products
+        if str(product.get("load_status", "")).strip() == "runtime_character_product_load_product_error"
+        or bool(product.get("selected_product_log_errors"))
+    ]
+    required_complete = _runtime_character_product_load_required_complete(marker_products, product_evidence)
+    all_required_ready = (
+        required_complete
+        and set(ready_kinds) == set(EXPECTED_PRODUCTS)
+        and not missing_kinds
+        and not timed_out_kinds
+        and not failed_kinds
+    )
+    launch_pass = str(launch_hygiene.get("runtime_launch_hygiene_status", "")).strip() == "runtime_launch_hygiene_pass"
+    signal_pass = signal_classification.get("runtime_signal_classification_verified") is True
+    cache_pass = cache_bootstrap.get("runtime_cache_bootstrap_verified") is True
+    default_level_detected = bool(launch_hygiene.get("runtime_default_level_autoload_detected"))
+    production_level_loaded = bool(actual_level_loads)
+    exit_clean = exit_code == 0
+    summary_pass = str(marker_summary.get("status", "")).strip() == "pass"
+    verified = (
+        markers_observed
+        and summary_pass
+        and all_required_ready
+        and launch_pass
+        and signal_pass
+        and cache_pass
+        and not default_level_detected
+        and not production_level_loaded
+        and exit_clean
+        and marker_observed
+    )
+    blocker = ""
+    if default_level_detected:
+        blocker = "blocked_by_default_level_autoload"
+    elif production_level_loaded:
+        blocker = "blocked_by_production_level_load"
+    elif not signal_pass:
+        blocker = "blocked_by_unclassified_runtime_product_load_signal"
+    elif not cache_pass:
+        blocker = "blocked_by_cache_bootstrap_restore_failed"
+    elif missing_kinds:
+        blocker = "blocked_by_missing_runtime_character_products"
+    elif timed_out_kinds:
+        blocker = "blocked_by_runtime_character_product_load_timeout"
+    elif failed_kinds or selected_product_errors:
+        blocker = "blocked_by_runtime_character_product_load_error"
+    elif not markers_observed:
+        blocker = "blocked_by_runtime_character_product_load_error"
+
+    status = (
+        "runtime_character_product_load_verified_all_required_products_ready"
+        if verified
+        else "runtime_character_product_load_candidate_attempted_failed_timeout"
+        if timed_out_kinds
+        else "runtime_character_product_load_candidate_attempted_failed_missing_product"
+        if missing_kinds
+        else "runtime_character_product_load_candidate_attempted_failed_load_error"
+    )
+    selected = _runtime_character_product_load_selected_candidate(
+        product_evidence=product_evidence,
+        engine_root=engine_root,
+        timeout_seconds=int(command.get("timeout_seconds", 120)),
+    )
+    source_payload.update(
+        {
+            "runtime_character_product_load": {
+                "status": status,
+                "selected": RUNTIME_CHARACTER_PRODUCT_LOAD_SELECTED,
+                "attempted": True,
+                "summary": marker_summary,
+            },
+            "runtime_character_product_load_status": status,
+            "runtime_character_product_load_verified": bool(verified),
+            "runtime_character_product_load_claimed": bool(verified),
+            "runtime_character_product_load_probe_enabled": True,
+            "runtime_character_product_load_probe_shipping_behavior": False,
+            "runtime_character_product_load_candidate_id": selected["id"],
+            "runtime_character_product_load_candidate_name": selected["name"],
+            "runtime_character_product_load_candidate_kind": selected["kind"],
+            "runtime_character_product_load_candidate_source_validation": selected["source_validation"],
+            "runtime_character_product_load_candidate_source_refs": selected["source_refs"],
+            "runtime_character_product_load_candidate_attempted": True,
+            "runtime_character_product_load_candidate_result": "runtime_character_product_load_candidate_attempted_pass"
+            if verified
+            else status,
+            "runtime_character_product_load_candidate_blocker": blocker,
+            "runtime_character_product_load_selected_strategy": RUNTIME_CHARACTER_PRODUCT_LOAD_SELECTED,
+            "runtime_character_product_load_selected_reason": "runtime_fixture_resolved_and_loaded_apb_approved_character_products",
+            "runtime_character_product_load_products": marker_products,
+            "runtime_character_product_load_required_products_complete": required_complete,
+            "runtime_character_product_load_missing_products": missing_kinds,
+            "runtime_character_product_load_timed_out_products": timed_out_kinds,
+            "runtime_character_product_load_failed_products": failed_kinds,
+            "runtime_character_product_load_informational_products": [],
+            "runtime_character_product_load_all_required_ready": bool(all_required_ready),
+            "runtime_character_product_load_timeout_seconds": int(command.get("timeout_seconds", 120)),
+            "runtime_character_product_load_tick_budget": _runtime_character_product_load_timeout_ticks(
+                int(command.get("timeout_seconds", 120))
+            ),
+            "runtime_character_product_load_markers_observed": bool(markers_observed),
+            "runtime_character_product_load_marker_summary": marker_summary,
+            "runtime_character_product_load_log_scan_summary": {
+                "status": "fail" if selected_product_errors else "pass",
+                "match_count": len(selected_product_errors),
+            },
+            "runtime_character_product_load_selected_product_log_scan": selected_product_errors,
+            "runtime_character_product_load_selected_product_missing_error_scan": {
+                "status": "fail" if selected_product_errors else "pass",
+                "matches": selected_product_errors,
+            },
+            "runtime_character_product_load_is_instantiation_proof": False,
+            "runtime_runtime_character_product_load_is_instantiation_proof": False,
+            "runtime_character_instantiation_claimed": False,
+            "runtime_character_instantiation_verified": False,
+            "runtime_character_animation_claimed": False,
+            "runtime_character_animation_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+        }
+    )
+    return source_payload
+
+
+def _runtime_character_product_load_parse_markers(
+    *,
+    products: Sequence[Mapping[str, Any]],
+    combined_text: str,
+) -> tuple[List[Dict[str, Any]], Dict[str, Any], bool]:
+    by_kind = {str(product.get("product_kind", "")): dict(product) for product in products}
+    summary: Dict[str, Any] = {}
+    markers_observed = False
+    for line in combined_text.splitlines():
+        line = line.strip()
+        marker_index = line.find("MAXINE_RUNTIME_PRODUCT_LOAD_")
+        if marker_index < 0:
+            continue
+        line = line[marker_index:].strip()
+        markers_observed = True
+        fields = _runtime_marker_fields(line)
+        kind = str(fields.get("kind", "")).strip()
+        if line.startswith("MAXINE_RUNTIME_PRODUCT_LOAD_SUMMARY"):
+            summary = dict(fields)
+            continue
+        if line.startswith("MAXINE_RUNTIME_PRODUCT_LOAD_START"):
+            summary.setdefault("start", dict(fields))
+            continue
+        if not kind or kind not in by_kind:
+            continue
+        product = by_kind[kind]
+        if "path" in fields:
+            product["product_path"] = str(fields["path"])
+        if "catalog_path" in fields:
+            product["catalog_path"] = str(fields["catalog_path"])
+        if line.startswith("MAXINE_RUNTIME_PRODUCT_LOAD_RESOLVED"):
+            product["asset_id"] = str(fields.get("asset_id", product.get("asset_id", "")))
+            product["asset_type_id"] = str(fields.get("asset_type", product.get("asset_type_id", "")))
+            product["asset_type_name"] = str(fields.get("asset_type_name", product.get("asset_type_name", "")))
+            product["resolution_status"] = "runtime_character_product_load_product_resolved"
+            product["load_requested"] = True
+            product["load_status"] = "runtime_character_product_load_product_load_requested"
+        elif line.startswith("MAXINE_RUNTIME_PRODUCT_LOAD_READY"):
+            product["ready"] = True
+            product["load_requested"] = True
+            product["load_status"] = "runtime_character_product_load_product_ready"
+        elif line.startswith("MAXINE_RUNTIME_PRODUCT_LOAD_ERROR"):
+            product["ready"] = False
+            if "asset_id" in fields:
+                product["asset_id"] = str(fields.get("asset_id", product.get("asset_id", "")))
+                product["resolution_status"] = "runtime_character_product_load_product_resolved"
+            if "asset_type" in fields:
+                product["asset_type_id"] = str(fields.get("asset_type", product.get("asset_type_id", "")))
+            if "asset_type_name" in fields:
+                product["asset_type_name"] = str(fields.get("asset_type_name", product.get("asset_type_name", "")))
+            product["error"] = str(fields.get("error", fields.get("status", "runtime_product_load_error")))
+            product["load_status"] = "runtime_character_product_load_product_error"
+        elif line.startswith("MAXINE_RUNTIME_PRODUCT_LOAD_TIMEOUT"):
+            product["ready"] = False
+            product["timeout"] = True
+            product["load_status"] = "runtime_character_product_load_product_timeout"
+        elif line.startswith("MAXINE_RUNTIME_PRODUCT_LOAD_RELEASED"):
+            product["release_status"] = "runtime_character_product_load_product_released"
+    for product in by_kind.values():
+        if str(product.get("resolution_status", "")).strip() == "runtime_character_product_load_not_attempted":
+            product["resolution_status"] = "runtime_character_product_load_product_missing"
+        if product.get("ready") is True and str(product.get("release_status", "")).strip() == "runtime_character_product_load_release_not_required":
+            product["release_status"] = "runtime_character_product_load_product_released"
+    return [by_kind[kind] for kind in EXPECTED_PRODUCTS if kind in by_kind], summary, markers_observed
+
+
+def _runtime_marker_fields(line: str) -> Dict[str, str]:
+    fields: Dict[str, str] = {}
+    for token in line.split()[1:]:
+        if "=" not in token:
+            continue
+        key, value = token.split("=", 1)
+        fields[key.strip()] = value.strip()
+    return fields
+
+
+def _runtime_character_product_selected_product_errors(
+    products: Sequence[Mapping[str, Any]],
+    combined_text: str,
+) -> List[Dict[str, str]]:
+    error_terms = (
+        "failed to load",
+        "asset load failed",
+        "load error",
+        "not found",
+        "missing product",
+        "no handler was registered",
+    )
+    matches: List[Dict[str, str]] = []
+    for line in combined_text.splitlines():
+        lower_line = line.lower()
+        if not any(term in lower_line for term in error_terms):
+            continue
+        normalized = " ".join(line.strip().split())[:240]
+        for product in products:
+            if not isinstance(product, Mapping):
+                continue
+            product_path = str(product.get("product_path", "")).lower()
+            catalog_path = str(product.get("catalog_path", "")).lower()
+            asset_id = str(product.get("asset_id", "")).lower()
+            if (
+                (product_path and product_path in lower_line)
+                or (catalog_path and catalog_path in lower_line)
+                or (asset_id and asset_id in lower_line)
+            ):
+                matches.append(
+                    {
+                        "product_kind": str(product.get("product_kind", "")),
+                        "product_path": str(product.get("product_path", "")),
+                        "catalog_path": str(product.get("catalog_path", "")),
+                        "line": normalized,
+                    }
+                )
+    return matches
+
+
 def _run_runtime_ap_shader_signal_diagnostic(
     report: Dict[str, Any],
     *,
@@ -6854,6 +7897,15 @@ def _runtime_engine_root_from_command(command: Mapping[str, Any]) -> Path | None
     return None
 
 
+def _runtime_engine_root_from_report(report: Mapping[str, Any]) -> Path | None:
+    readiness = report.get("runtime_harness_readiness", {})
+    if isinstance(readiness, Mapping):
+        value = str(readiness.get("engine_root", "")).strip()
+        if value:
+            return Path(value)
+    return None
+
+
 def _runtime_level_load_events(text: str) -> List[str]:
     normalized = text.replace("\\", "/")
     patterns = [
@@ -7013,6 +8065,21 @@ def _runtime_exit_fixture_source_probe() -> Dict[str, Any]:
         RUNTIME_EXIT_FIXTURE_SETTINGS_KEYS[1] in combined_source,
         RUNTIME_EXIT_FIXTURE_SETTINGS_KEYS[1],
     )
+    _record(
+        "fixture_uses_character_product_load_probe_key",
+        RUNTIME_CHARACTER_PRODUCT_LOAD_SETTINGS_KEYS[0] in combined_source,
+        RUNTIME_CHARACTER_PRODUCT_LOAD_SETTINGS_KEYS[0],
+    )
+    _record(
+        "fixture_uses_assetcatalog_product_resolution",
+        "GetAssetIdByPath" in combined_source and "GetAssetInfoById" in combined_source,
+        "AZ::Data::AssetCatalogRequestBus",
+    )
+    _record(
+        "fixture_uses_assetmanager_product_load",
+        "AssetManager::Instance().GetAsset" in combined_source and "IsReady()" in combined_source,
+        "AZ::Data::AssetManager::GetAsset",
+    )
     _record("fixture_registers_system_component", "GetRequiredSystemComponents" in module_text, "AZ::Module")
 
     source_ready = not errors
@@ -7041,7 +8108,8 @@ def _runtime_exit_fixture_source_ready_payload(*, timeout_seconds: int) -> Dict[
         "source_refs": _runtime_exit_fixture_repo_source_refs(),
         "lifecycle_surface": "AZ::Component::Activate plus AZ::TickBus::OnTick",
         "exit_api": "AzFramework::ApplicationRequests::ExitMainLoop",
-        "settings_registry_keys": list(RUNTIME_EXIT_FIXTURE_SETTINGS_KEYS),
+        "settings_registry_keys": list(RUNTIME_EXIT_FIXTURE_SETTINGS_KEYS)
+        + list(RUNTIME_CHARACTER_PRODUCT_LOAD_SETTINGS_KEYS),
         "repo_scope_result": source_status,
     }
     fixture = _runtime_exit_fixture_static_payload(timeout_seconds=timeout_seconds)
@@ -7255,11 +8323,14 @@ def _runtime_exit_fixture_static_payload(*, timeout_seconds: int) -> Dict[str, A
         "runtime_exit_fixture_exit_api": "AzFramework::ApplicationRequests::ExitMainLoop",
         "runtime_exit_fixture_gate": "MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE",
         "runtime_exit_fixture_gate_env": list(RUNTIME_EXIT_FIXTURE_GATE_ENV),
-        "runtime_exit_fixture_settings_registry_keys": list(RUNTIME_EXIT_FIXTURE_SETTINGS_KEYS),
+        "runtime_exit_fixture_settings_registry_keys": list(RUNTIME_EXIT_FIXTURE_SETTINGS_KEYS)
+        + list(RUNTIME_CHARACTER_PRODUCT_LOAD_SETTINGS_KEYS),
+        "runtime_exit_fixture_product_load_settings_registry_keys": list(RUNTIME_CHARACTER_PRODUCT_LOAD_SETTINGS_KEYS),
         "runtime_exit_fixture_settings_registry_key": RUNTIME_EXIT_FIXTURE_SETTINGS_KEYS[1],
         "runtime_exit_fixture_command_line_arg": (
             "--regset=/Amazon/MAXINE/RuntimeHarness/EnableExitFixture=true "
-            "--regset=/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks=<positive integer>"
+            "--regset=/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks=<positive integer> "
+            "--regset=/Amazon/MAXINE/RuntimeHarness/EnableCharacterProductLoadProbe=<false unless gated>"
         ),
         "runtime_exit_fixture_wait_ticks": "settings_registry_controlled_positive_integer",
         "runtime_exit_fixture_command": "",
@@ -7268,6 +8339,7 @@ def _runtime_exit_fixture_static_payload(*, timeout_seconds: int) -> Dict[str, A
             "fixture_strategy": "repo-owned TickBus exit-after-initialization component",
             "runtime_gate": list(RUNTIME_EXIT_FIXTURE_GATE_ENV),
             "settings_registry_keys": list(RUNTIME_EXIT_FIXTURE_SETTINGS_KEYS),
+            "product_load_settings_registry_keys": list(RUNTIME_CHARACTER_PRODUCT_LOAD_SETTINGS_KEYS),
         },
         "runtime_exit_fixture_safety_profile": safety_profile,
         "runtime_exit_fixture_requires_rebuild": True,
@@ -7328,6 +8400,7 @@ def _runtime_exit_fixture_static_payload(*, timeout_seconds: int) -> Dict[str, A
         "runtime_exit_fixture_runtime_command_uses_pre_autoexec_suppression_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_cache_bootstrap_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_ap_shader_strategy": False,
+        "runtime_exit_fixture_runtime_command_uses_product_load_probe": False,
         "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
         "runtime_exit_fixture_level_load_observed": False,
         "runtime_exit_fixture_unexpected_level_load": False,
@@ -8419,6 +9492,19 @@ def _runtime_gate_status(env: Mapping[str, str]) -> Dict[str, Any]:
     }
 
 
+def _runtime_character_product_load_probe_gate_status(env: Mapping[str, str]) -> Dict[str, Any]:
+    missing = [
+        item.split("=", 1)[0]
+        for item in RUNTIME_CHARACTER_PRODUCT_LOAD_GATE_ENV
+        if str(env.get(item.split("=", 1)[0], "")).strip() != "1"
+    ]
+    return {
+        "status": "pass" if not missing else "blocked_by_runtime_character_product_load_probe_gate_missing",
+        "required": [item.split("=", 1)[0] for item in RUNTIME_CHARACTER_PRODUCT_LOAD_GATE_ENV],
+        "missing": missing,
+    }
+
+
 def _scan_runtime_output(text: str) -> Dict[str, Any]:
     lower = text.lower()
     matches: List[Dict[str, str]] = []
@@ -8848,6 +9934,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--enable-runtime-exit-fixture-cache-bootstrap-loadlevel-source", action="store_true")
     parser.add_argument("--diagnose-runtime-ap-shader-signals", action="store_true")
     parser.add_argument("--enable-runtime-exit-fixture-ap-shader-signal-classification", action="store_true")
+    parser.add_argument("--diagnose-runtime-character-product-load", action="store_true")
+    parser.add_argument("--enable-runtime-character-product-load-fixture", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -8894,6 +9982,8 @@ def main() -> int:
         enable_runtime_exit_fixture_ap_shader_signal_classification=(
             args.enable_runtime_exit_fixture_ap_shader_signal_classification
         ),
+        diagnose_runtime_character_product_load=args.diagnose_runtime_character_product_load,
+        enable_runtime_character_product_load_fixture=args.enable_runtime_character_product_load_fixture,
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
         strict_integration=args.strict_integration,
