@@ -145,6 +145,201 @@ def _runtime_env(tmp_path: Path, *, launcher: bool = True, gates: bool = False) 
     return env, engine, project, apb
 
 
+def _enable_animation_playback_surface_fixture_env(env: dict) -> None:
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    env["MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE"] = "1"
+    env["MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE"] = "1"
+    env["MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWN_INSTANTIATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_CHARACTER_SPAWN_INSTANTIATION"] = "1"
+    env["MAXINE_ENABLE_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH"] = "1"
+
+
+def _write_animation_source_validation_files(engine: Path) -> None:
+    source_files = {
+        "Gems/EMotionFX/Code/Source/Integration/Components/ActorComponent.h": (
+            'AZ_COMPONENT(ActorComponent, "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}")\n'
+            "EMotionFX::ActorInstance* GetActorInstance();\n"
+        ),
+        "Gems/EMotionFX/Code/Source/Integration/Components/ActorComponent.cpp": (
+            "ActorComponentRequestBus::Handler::BusConnect(entityId);\n"
+            "m_actorInstance = AZStd::unique_ptr<EMotionFX::ActorInstance>();\n"
+        ),
+        "Gems/EMotionFX/Code/Include/Integration/ActorComponentBus.h": (
+            "class ActorComponentRequests : public AZ::ComponentBus\n"
+            "virtual EMotionFX::ActorInstance* GetActorInstance() = 0;\n"
+            "using ActorComponentRequestBus = AZ::EBus<ActorComponentRequests>;\n"
+        ),
+        "Gems/EMotionFX/Code/Source/Integration/Components/AnimGraphComponent.h": (
+            'AZ_COMPONENT(AnimGraphComponent, "{77624349-D5C4-4902-9F08-665814520999}")\n'
+            "EMotionFX::AnimGraphInstance* GetAnimGraphInstance();\n"
+            "void SetActiveMotionSet(AZ::Data::AssetId motionSetAssetId);\n"
+            "void StartAnimGraph();\n"
+            "void StopAnimGraph();\n"
+        ),
+        "Gems/EMotionFX/Code/Source/Integration/Components/AnimGraphComponent.cpp": (
+            "AnimGraphComponentRequestBus::Handler::BusConnect(entityId);\n"
+            "SetAnimGraphAssetId(animGraphAssetId);\n"
+            "SetMotionSetAssetId(motionSetAssetId);\n"
+            "StartAnimGraph();\n"
+        ),
+        "Gems/EMotionFX/Code/Include/Integration/AnimGraphComponentBus.h": (
+            "class AnimGraphComponentRequests : public AZ::ComponentBus\n"
+            "virtual EMotionFX::AnimGraphInstance* GetAnimGraphInstance() = 0;\n"
+            "virtual void SetActiveMotionSet(AZ::Data::AssetId motionSetAssetId) = 0;\n"
+            "virtual void StartAnimGraph() = 0;\n"
+            "using AnimGraphComponentRequestBus = AZ::EBus<AnimGraphComponentRequests>;\n"
+        ),
+        "Gems/EMotionFX/Code/Source/Integration/Components/SimpleMotionComponent.h": (
+            'AZ_COMPONENT(SimpleMotionComponent, "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}")\n'
+            "float GetPlayTime() const;\n"
+            "float GetDuration() const;\n"
+            "void PlayMotion();\n"
+        ),
+        "Gems/EMotionFX/Code/Source/Integration/Components/SimpleMotionComponent.cpp": (
+            "SimpleMotionComponentRequestBus::Handler::BusConnect(entityId);\n"
+            "SetMotionAssetId(motionAssetId);\n"
+            "PlayMotionInternal();\n"
+            "actorInstance->GetMotionSystem()->PlayMotion(m_motionAsset.Get()->GetMotion(), &playInfo);\n"
+        ),
+        "Gems/EMotionFX/Code/Include/Integration/SimpleMotionComponentBus.h": (
+            "class SimpleMotionComponentRequests : public AZ::ComponentBus\n"
+            "virtual float GetPlayTime() const = 0;\n"
+            "virtual float GetDuration() const = 0;\n"
+            "virtual void Motion(AZ::Data::AssetId motionAssetId) = 0;\n"
+            "virtual void PlayMotion() = 0;\n"
+            "using SimpleMotionComponentRequestBus = AZ::EBus<SimpleMotionComponentRequests>;\n"
+        ),
+        "Gems/EMotionFX/Code/Source/Integration/Assets/ActorAsset.h": (
+            'AZ_RTTI(ActorAsset, "{F67CC648-EA51-464C-9F5D-4A9CE41A7F86}", EMotionFXAsset)\n'
+        ),
+        "Gems/EMotionFX/Code/Source/Integration/Assets/MotionAsset.h": (
+            'AZ_RTTI(MotionAsset, "{00494B8E-7578-4BA2-8B28-272E90680787}", EMotionFXAsset)\n'
+        ),
+        "Gems/EMotionFX/Code/Source/Integration/Assets/MotionSetAsset.h": (
+            'AZ_RTTI(MotionSetAsset, "{1DA936A0-F766-4B2F-B89C-9F4C8E1310F9}", EMotionFXAsset)\n'
+        ),
+        "Gems/EMotionFX/Code/Source/Integration/Assets/AnimGraphAsset.h": (
+            'AZ_RTTI(AnimGraphAsset, "{28003359-4A29-41AE-8198-0AEFE9FF5263}", EMotionFXAsset)\n'
+        ),
+        "Gems/EMotionFX/Code/Source/Integration/Assets/ActorAsset.cpp": (
+            'GetAssetType() const\nreturn azrtti_typeid<ActorAsset>();\nreturn "actor";\n'
+        ),
+        "Gems/EMotionFX/Code/Source/Integration/Assets/MotionAsset.cpp": (
+            'GetAssetType() const\nreturn azrtti_typeid<MotionAsset>();\nreturn "motion";\n'
+        ),
+        "Gems/EMotionFX/Code/Source/Integration/Assets/MotionSetAsset.cpp": (
+            'GetAssetType() const\nreturn azrtti_typeid<MotionSetAsset>();\nreturn "motionset";\n'
+        ),
+        "Gems/EMotionFX/Code/Source/Integration/Assets/AnimGraphAsset.cpp": (
+            'GetAssetType() const\nreturn azrtti_typeid<AnimGraphAsset>();\nreturn "animgraph";\n'
+        ),
+        "Gems/EMotionFX/Code/Source/Integration/System/SystemComponent.cpp": (
+            "ActorAssetHandler\nMotionAssetHandler\nMotionSetAssetHandler\nAnimGraphAssetHandler\n"
+        ),
+    }
+    for relative, content in source_files.items():
+        path = engine / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+
+
+def _append_approved_character_spawnable_product(apb: Path) -> None:
+    _append_apb_products(
+        apb,
+        [
+            {
+                "product_type": "spawnable",
+                "product_path": "pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable",
+                "source_path": "Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+                "source_uuid": "55555555555545558555555555555555",
+                "source_sub_id": "0xf6ec8847",
+                "asset_id": "{CFCA52C7-573E-579E-97E0-707122217DA0}:f6ec8847",
+                "asset_type_id": "{855E3021-D305-4845-B284-20C3F7FDF16B}",
+                "builder": "Prefabs",
+                "status": "ready",
+            }
+        ],
+    )
+
+
+def _animation_playback_surface_fixture_runner(products: list[dict]):
+    def runner(argv, **kwargs):
+        marker_lines = ["MAXINE_RUNTIME_PRODUCT_LOAD_START count=8 timeout_ticks=120 require_all=true"]
+        for index, product in enumerate(products):
+            marker_lines.extend(
+                [
+                    (
+                        f"MAXINE_RUNTIME_PRODUCT_LOAD_RESOLVED index={index} kind={product['product_kind']} "
+                        f"path={product['product_path']} catalog_path={product['catalog_path']} "
+                        f"asset_id={{11111111-1111-4111-8111-111111111111}}:{index + 1} "
+                        f"asset_type={{22222222-2222-4222-8222-222222222222}} asset_type_name=runtime_catalog_asset_type"
+                    ),
+                    f"MAXINE_RUNTIME_PRODUCT_LOAD_READY index={index} kind={product['product_kind']} path={product['product_path']} status=ready",
+                    f"MAXINE_RUNTIME_PRODUCT_LOAD_RELEASED index={index} kind={product['product_kind']} path={product['product_path']} status=released",
+                ]
+            )
+        marker_lines.extend(
+            [
+                "MAXINE_RUNTIME_PRODUCT_LOAD_SUMMARY status=pass required=8 ready=8 failed=0 timed_out=0",
+                (
+                    "MAXINE_RUNTIME_CHARACTER_SPAWN_START "
+                    "product_path=pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable "
+                    "catalog_path=assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable "
+                    "asset_id={CFCA52C7-573E-579E-97E0-707122217DA0}:f6ec8847 "
+                    "asset_type={855E3021-D305-4845-B284-20C3F7FDF16B} timeout_ticks=3600 "
+                    "require_positive_entity_count=true cleanup=true"
+                ),
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_SOURCE_VALIDATED api=AzFramework::SpawnableEntitiesInterface::SpawnAllEntities status=pass",
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_CONTEXT status=game_entity_context_available context_id={33333333-3333-4333-8333-333333333333}",
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_TICKET ticket=1 valid=true",
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_REQUESTED ticket=1 api=AzFramework::SpawnableEntitiesInterface::SpawnAllEntities",
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_COMPLETED ticket=1 result=completed entity_count=3",
+                (
+                    "MAXINE_RUNTIME_CHARACTER_SPAWN_ENTITY ticket=1 index=0 "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "name=MAXINE_Release_Rigged_Runtime_Character_Source component_count=1 "
+                    "components={22B10178-39B6-4C12-BB37-77DB45FDD3B6}"
+                ),
+                (
+                    "MAXINE_RUNTIME_CHARACTER_SPAWN_ENTITY ticket=1 index=1 "
+                    "entity_id={55555555-5555-4555-8555-555555555555} "
+                    "name=maxine_idle_fbx component_count=1 components={22B10178-39B6-4C12-BB37-77DB45FDD3B6}"
+                ),
+                (
+                    "MAXINE_RUNTIME_CHARACTER_SPAWN_ENTITY ticket=1 index=2 "
+                    "entity_id={66666666-6666-4666-8666-666666666666} "
+                    "name=transform component_count=1 components={22B10178-39B6-4C12-BB37-77DB45FDD3B6}"
+                ),
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_CLEANUP ticket=1 status=complete",
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_SUMMARY status=pass requested=1 completed=1 spawned=3 cleanup=complete timed_out=0",
+            ]
+        )
+        prefixed_marker_lines = [
+            f"<12:38:04> (MaxineRuntimeExitFixture) - {line}" for line in marker_lines
+        ]
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout=(
+                "Launcher: Connecting to Asset Processor...\n"
+                "AssetProcessorConnection::ConnectThread: Network connection attempt failure, negotiation with 127.0.0.1:45643 failed.\n"
+                "GAME: Negotiation with asset processor failed\n"
+                "<12:38:04> [Error] (Serialize) - Element 'NULL'(0x41405e39) with class ID "
+                "'{1BAEE536-96CA-4AEB-BA73-D5D72EE35B45}' found in 'AZStd::intrusive_ptr<ShaderStageFunction>' "
+                "is not registered with the serializer!\n"
+                + "\n".join(prefixed_marker_lines)
+                + "\nMAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=9\n"
+            ),
+            stderr="",
+        )
+
+    return runner
+
+
 def _enable_fixture_gem(project: Path) -> None:
     payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
     payload.setdefault("gem_names", []).append(runtime_harness.RUNTIME_EXIT_FIXTURE_GEM_NAME)
@@ -3674,6 +3869,289 @@ def test_runtime_harness_character_spawn_instantiation_fixture_records_spawned_e
     assert report["asset_cache_deleted"] is False
 
 
+def test_runtime_harness_character_animation_playback_surface_fixture_records_missing_surface_blocker(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_source_validation_files(engine)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    env["MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE"] = "1"
+    env["MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE"] = "1"
+    env["MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWN_INSTANTIATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_CHARACTER_SPAWN_INSTANTIATION"] = "1"
+    env["MAXINE_ENABLE_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH"] = "1"
+    _enable_fixture_gem(project)
+    source, bootstrap, original_source, original_bootstrap = _write_defaultlevel_bootstrap(project)
+    _append_apb_products(
+        apb,
+        [
+            {
+                "product_type": "spawnable",
+                "product_path": "pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable",
+                "source_path": "Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+                "source_uuid": "55555555555545558555555555555555",
+                "source_sub_id": "0xf6ec8847",
+                "asset_id": "{CFCA52C7-573E-579E-97E0-707122217DA0}:f6ec8847",
+                "asset_type_id": "{855E3021-D305-4845-B284-20C3F7FDF16B}",
+                "builder": "Prefabs",
+                "status": "ready",
+            }
+        ],
+    )
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+
+    def runner(argv, **kwargs):
+        marker_lines = ["MAXINE_RUNTIME_PRODUCT_LOAD_START count=8 timeout_ticks=120 require_all=true"]
+        for index, product in enumerate(products):
+            marker_lines.extend(
+                [
+                    (
+                        f"MAXINE_RUNTIME_PRODUCT_LOAD_RESOLVED index={index} kind={product['product_kind']} "
+                        f"path={product['product_path']} catalog_path={product['catalog_path']} "
+                        f"asset_id={{11111111-1111-4111-8111-111111111111}}:{index + 1} "
+                        f"asset_type={{22222222-2222-4222-8222-222222222222}} asset_type_name=runtime_catalog_asset_type"
+                    ),
+                    f"MAXINE_RUNTIME_PRODUCT_LOAD_READY index={index} kind={product['product_kind']} path={product['product_path']} status=ready",
+                    f"MAXINE_RUNTIME_PRODUCT_LOAD_RELEASED index={index} kind={product['product_kind']} path={product['product_path']} status=released",
+                ]
+            )
+        marker_lines.extend(
+            [
+                "MAXINE_RUNTIME_PRODUCT_LOAD_SUMMARY status=pass required=8 ready=8 failed=0 timed_out=0",
+                (
+                    "MAXINE_RUNTIME_CHARACTER_SPAWN_START "
+                    "product_path=pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable "
+                    "catalog_path=assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable "
+                    "asset_id={CFCA52C7-573E-579E-97E0-707122217DA0}:f6ec8847 "
+                    "asset_type={855E3021-D305-4845-B284-20C3F7FDF16B} timeout_ticks=3600 "
+                    "require_positive_entity_count=true cleanup=true"
+                ),
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_SOURCE_VALIDATED api=AzFramework::SpawnableEntitiesInterface::SpawnAllEntities status=pass",
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_CONTEXT status=game_entity_context_available context_id={33333333-3333-4333-8333-333333333333}",
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_TICKET ticket=1 valid=true",
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_REQUESTED ticket=1 api=AzFramework::SpawnableEntitiesInterface::SpawnAllEntities",
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_COMPLETED ticket=1 result=completed entity_count=3",
+                (
+                    "MAXINE_RUNTIME_CHARACTER_SPAWN_ENTITY ticket=1 index=0 "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "name=MAXINE_Release_Rigged_Runtime_Character_Source component_count=1 "
+                    "components={22B10178-39B6-4C12-BB37-77DB45FDD3B6}"
+                ),
+                (
+                    "MAXINE_RUNTIME_CHARACTER_SPAWN_ENTITY ticket=1 index=1 "
+                    "entity_id={55555555-5555-4555-8555-555555555555} "
+                    "name=maxine_idle_fbx component_count=1 components={22B10178-39B6-4C12-BB37-77DB45FDD3B6}"
+                ),
+                (
+                    "MAXINE_RUNTIME_CHARACTER_SPAWN_ENTITY ticket=1 index=2 "
+                    "entity_id={66666666-6666-4666-8666-666666666666} "
+                    "name=transform component_count=1 components={22B10178-39B6-4C12-BB37-77DB45FDD3B6}"
+                ),
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_CLEANUP ticket=1 status=complete",
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_SUMMARY status=pass requested=1 completed=1 spawned=3 cleanup=complete timed_out=0",
+            ]
+        )
+        prefixed_marker_lines = [
+            f"<12:38:04> (MaxineRuntimeExitFixture) - {line}" for line in marker_lines
+        ]
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout=(
+                "Launcher: Connecting to Asset Processor...\n"
+                "AssetProcessorConnection::ConnectThread: Network connection attempt failure, negotiation with 127.0.0.1:45643 failed.\n"
+                "GAME: Negotiation with asset processor failed\n"
+                "<12:38:04> [Error] (Serialize) - Element 'NULL'(0x41405e39) with class ID "
+                "'{1BAEE536-96CA-4AEB-BA73-D5D72EE35B45}' found in 'AZStd::intrusive_ptr<ShaderStageFunction>' "
+                "is not registered with the serializer!\n"
+                + "\n".join(prefixed_marker_lines)
+                + "\nMAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=9\n"
+            ),
+            stderr="",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_character_animation_playback_surface_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_character_animation_playback_surface_fixture_command"
+    assert report["runtime_exit_fixture_runtime_command_uses_product_load_probe"] is True
+    assert report["runtime_exit_fixture_runtime_command_uses_spawn_instantiation_probe"] is True
+    assert report["runtime_exit_fixture_runtime_command_uses_animation_playback_surface_probe"] is True
+    assert report["runtime_character_product_load_verified"] is True
+    assert report["runtime_character_spawn_instantiation_verified"] is True
+    assert report["runtime_character_animation_spawn_prerequisite_verified"] is True
+    assert report["runtime_character_animation_product_load_prerequisite_verified"] is True
+    assert report["runtime_character_animation_playback_surface_diagnostic_attempted"] is True
+    assert report["runtime_character_animation_playback_surface_diagnostic_completed"] is True
+    assert report["runtime_character_animation_playback_surface_found"] is False
+    assert report["runtime_character_animation_playback_surface_verified"] is False
+    assert report["runtime_character_animation_playback_surface_blocker"] == (
+        "runtime_animation_playback_surface_missing_on_approved_spawned_character"
+    )
+    assert report["runtime_character_animation_actor_component_found"] is False
+    assert report["runtime_character_animation_anim_graph_component_found"] is False
+    assert report["runtime_character_animation_simple_motion_component_found"] is False
+    assert report["runtime_character_animation_actor_instance_found"] is False
+    assert report["runtime_character_animation_motion_set_found"] is False
+    assert report["runtime_character_animation_anim_graph_instance_found"] is False
+    assert report["runtime_character_animation_component_inventory"][0]["entity_name"] == (
+        "MAXINE_Release_Rigged_Runtime_Character_Source"
+    )
+    assert report["runtime_character_animation_component_inventory"][0]["components"][0]["type_id"] == (
+        "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}"
+    )
+    assert any(
+        candidate["id"] == "approved_spawnable_runtime_emotionfx_surface"
+        and candidate["result"] == "runtime_animation_playback_candidate_blocked_missing_runtime_component_surface"
+        for candidate in report["runtime_character_animation_playback_candidate_matrix"]
+    )
+    assert report["runtime_character_animation_playback_attempted"] is False
+    assert report["runtime_character_animation_playback_request_issued"] is False
+    assert report["runtime_character_animation_playback_started"] is False
+    assert report["runtime_character_animation_playback_observed"] is False
+    assert report["runtime_character_animation_playback_tick_count"] == 0
+    assert report["runtime_character_animation_playback_cleanup_complete"] is True
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_animation_is_full_character_proof"] is False
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+    assert source.exists()
+    assert source.read_text(encoding="utf-8") == original_source
+    assert bootstrap.read_text(encoding="utf-8") == original_bootstrap
+    assert report["asset_cache_deleted"] is False
+
+
+def test_runtime_harness_animation_playback_surface_fixture_blocks_inconclusive_source_validation(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _enable_animation_playback_surface_fixture_env(env)
+    _enable_fixture_gem(project)
+    source, bootstrap, original_source, original_bootstrap = _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_character_animation_playback_surface_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_animation_playback_surface_fixture_runner(products),
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["runtime_character_animation_playback_surface_diagnostic_completed"] is True
+    assert report["runtime_character_animation_source_validation"]["status"] == (
+        "runtime_character_animation_source_validation_inconclusive"
+    )
+    assert report["runtime_character_animation_playback_surface_blocker"] == (
+        "blocked_by_runtime_animation_source_validation"
+    )
+    assert report["status"] != "pass"
+    assert report["runtime_harness_status"] != "runtime_execution_pass"
+    assert report["runtime_exit_fixture_status"] == (
+        "runtime_exit_fixture_execution_failed_character_animation_playback_surface"
+    )
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+    assert source.exists()
+    assert source.read_text(encoding="utf-8") == original_source
+    assert bootstrap.read_text(encoding="utf-8") == original_bootstrap
+
+
+def test_runtime_harness_animation_source_validation_helper_requires_positive_status_and_refs() -> None:
+    positive = {
+        "runtime_character_animation_source_validation": {
+            "status": "runtime_character_animation_source_validation_pass",
+            "files": [{"status": "pass", "path": "ActorComponent.h"}],
+            "missing": [],
+            "runtime_component_surfaces": {
+                "actor_component_type_id": "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "actor_request_bus": "EMotionFX::Integration::ActorComponentRequestBus",
+                "anim_graph_component_type_id": "{77624349-D5C4-4902-9F08-665814520999}",
+                "anim_graph_request_bus": "EMotionFX::Integration::AnimGraphComponentRequestBus",
+                "simple_motion_component_type_id": "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+                "simple_motion_request_bus": "EMotionFX::Integration::SimpleMotionComponentRequestBus",
+            },
+        },
+        "runtime_character_animation_source_refs": runtime_harness._runtime_character_animation_source_refs(
+            Path("<engine-root>")
+        ),
+    }
+    inconclusive = {
+        **positive,
+        "runtime_character_animation_source_validation": {
+            **positive["runtime_character_animation_source_validation"],
+            "status": "runtime_character_animation_source_validation_inconclusive",
+        },
+        "runtime_character_animation_playback_surface_blocker": "blocked_by_runtime_animation_source_validation",
+    }
+
+    assert runtime_harness._runtime_character_animation_source_validation_passed(positive) is True
+    assert runtime_harness._runtime_character_animation_source_validation_passed(inconclusive) is False
+    assert runtime_harness._runtime_character_animation_source_validation_passed({}) is False
+
+
+def test_runtime_harness_validation_rejects_animation_fixture_pass_with_missing_source_validation_fields() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "status": "pass",
+            "runtime_harness_status": "runtime_execution_pass",
+            "runtime_execution_status": "runtime_execution_pass",
+            "runtime_execution_verified": True,
+            "runtime_exit_fixture_execution_verified": True,
+            "runtime_exit_fixture_runtime_command_uses_animation_playback_surface_probe": True,
+            "runtime_character_animation_playback_surface_diagnostic_attempted": True,
+            "runtime_character_animation_playback_surface_diagnostic_completed": True,
+            "runtime_character_animation_product_load_prerequisite_verified": True,
+            "runtime_character_animation_spawn_prerequisite_verified": True,
+            "runtime_character_animation_claimed": False,
+            "runtime_character_animation_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+        }
+    )
+
+    result = runtime_harness.validate_runtime_harness_report(report)
+
+    assert not result.ok
+    assert any(
+        "runtime animation playback surface fixture cannot pass without positive source validation" in message
+        for message in result.messages
+    )
+
+
 def test_runtime_harness_validation_rejects_product_load_verified_without_ready_products() -> None:
     report = runtime_harness.fixture_runtime_harness_report()
     report.update(
@@ -3783,6 +4261,36 @@ def test_runtime_harness_validation_rejects_spawn_claim_without_positive_entity_
 
     assert not result.ok
     assert any("runtime_character_spawn_instantiation_verified=true requires positive spawned entity evidence" in message for message in result.messages)
+
+
+def test_runtime_harness_validation_rejects_animation_verified_without_playback_evidence() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_character_animation_claimed": True,
+            "runtime_character_animation_verified": True,
+            "runtime_character_animation_playback_surface_found": True,
+            "runtime_character_animation_playback_surface_verified": True,
+            "runtime_character_animation_source_refs": [
+                "C:/src/o3de/Gems/EMotionFX/Code/Source/Integration/Components/SimpleMotionComponent.cpp"
+            ],
+            "runtime_character_animation_spawn_prerequisite_verified": True,
+            "runtime_character_animation_product_load_prerequisite_verified": True,
+            "runtime_character_animation_actor_component_found": True,
+            "runtime_character_animation_simple_motion_component_found": True,
+            "runtime_character_animation_playback_attempted": True,
+            "runtime_character_animation_playback_request_issued": False,
+            "runtime_character_animation_playback_started": False,
+            "runtime_character_animation_playback_observed": False,
+            "runtime_character_animation_playback_tick_count": 0,
+            "runtime_character_animation_playback_cleanup_complete": True,
+        }
+    )
+
+    result = runtime_harness.validate_runtime_harness_report(report)
+
+    assert not result.ok
+    assert any("runtime_character_animation_verified=true requires observed playback evidence" in message for message in result.messages)
 
 
 def test_runtime_character_product_load_selected_errors_match_asset_id_no_handler() -> None:

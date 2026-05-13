@@ -15,6 +15,7 @@ Runtime harness gates must remain separate from the Gem source:
 - `MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE=1`
 - `MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE=1` only when the optional product-load probe is intentionally enabled
 - `MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE=1`, `MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWN_INSTANTIATION=1`, and `MAXINE_ALLOW_RUNTIME_CHARACTER_SPAWN_INSTANTIATION=1` only when the optional spawn-instantiation probe is intentionally enabled
+- `MAXINE_ENABLE_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE=1` and `MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE=1` only when the harness is intentionally inspecting the spawned runtime animation playback surface
 
 The component also requires Settings Registry keys before it connects to `AZ::TickBus`:
 
@@ -76,5 +77,7 @@ The spawn probe resolves and loads the approved `AzFramework::Spawnable`, verifi
 - `MAXINE_RUNTIME_CHARACTER_SPAWN_SUMMARY`
 
 Spawn-instantiation proof requires positive spawned entity evidence and clean cleanup/exit. It is not animation proof, full runtime character proof, publication, packaging, or production-ready release evidence.
+
+The animation playback-surface diagnostic currently consumes the spawn probe's bounded entity/component inventory from the Python harness rather than adding a shipping or Editor-only playback path to this Gem. Runtime animation proof remains unclaimed unless the approved spawned character exposes source-validated runtime EMotionFX playback-capable components and playback is requested, started, and observed in a bounded no-defaultlevel fixture. When the spawned surface contains only Transform components, the harness must report `runtime_animation_playback_surface_missing_on_approved_spawned_character`.
 
 The Gem is intended to be registered as an external subdirectory for private harness runs only. The root `CMakeLists.txt` delegates to `Code/CMakeLists.txt` so O3DE CMake can discover the Gem after project-scoped external-subdirectory registration. Registration, enablement, and rebuild require the runtime harness project-mutation and rebuild gates; build outputs and runtime binaries must not be committed.
