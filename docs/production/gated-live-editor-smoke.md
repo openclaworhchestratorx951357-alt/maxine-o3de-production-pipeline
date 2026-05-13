@@ -425,6 +425,14 @@ Source validation identifies `.procprefab` as `AZ::Prefab::ProceduralPrefabAsset
 
 The runtime-equivalent surface is tracked separately through a spawnable candidate matrix. `AzFramework::Spawnable`, `SpawnableAssetHandler`, `SpawnableSystemComponent`, and `SpawnableEntitiesInterface` are source-validated runtime surfaces, but discovery alone is not spawn or product-load proof. Until an approved character spawnable or equivalent prefab runtime product is resolved and exercised without defaultlevel/production load, the updated product-load contract remains blocked by `blocked_by_missing_runtime_equivalent_spawnable_surface`; runtime instantiation, animation, and full runtime character proof remain unclaimed.
 
+Approved runtime character spawnable-surface evidence is now a separate read-only diagnostic layer:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-character-spawnable-surface --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+This mode source-validates the runtime `AzFramework::Spawnable` asset type and handler registration path plus the Prefab Builder `*.prefab` to `.spawnable` generation path. It searches trusted APB evidence and the live Asset Processor database for `.spawnable` products, rejects `Levels/defaultlevel`, production/level spawnables, temp smoke-level spawnables, and generic non-character prefabs, and records `runtime_character_spawnable_surface_candidates` with typed rejection reasons. On the current paired rig, APB has no `.spawnable` product for `Assets/Characters/MAXINE/release`; the Asset Processor database only shows level/defaultlevel/temp smoke/generic prefab spawnables. The contract therefore remains `runtime_character_spawnable_surface_generation_required` with `blocked_by_runtime_character_spawnable_generation_required`. This is not product-load, spawn, animation, full character, publication, or release proof.
+
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 
 This wiring does not publish, mutate production levels, contact external services, or claim production-ready completion.

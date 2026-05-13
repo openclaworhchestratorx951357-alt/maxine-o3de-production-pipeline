@@ -45,12 +45,20 @@ def _engine(root: Path, *, launcher: bool = True) -> Path:
         engine / "Gems" / "Atom" / "RPI" / "Code" / "Include" / "Atom" / "RPI.Reflect" / "Material" / "MaterialAsset.h",
         engine / "Gems" / "PhysX" / "Core" / "Code" / "Include" / "PhysX" / "MeshAsset.h",
         engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableAssetHandler.h",
+        engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableAssetHandler.cpp",
+        engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableEntitiesInterface.h",
+        engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableEntitiesManager.cpp",
         engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableSystemComponent.cpp",
         engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableSystemComponent.h",
         engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "Spawnable.h",
+        engine / "Code" / "Framework" / "AzToolsFramework" / "AzToolsFramework" / "Prefab" / "Spawnable" / "PrefabInMemorySpawnableConverter.cpp",
+        engine / "Code" / "Framework" / "AzToolsFramework" / "AzToolsFramework" / "Prefab" / "Spawnable" / "PrefabProcessor.h",
+        engine / "Code" / "Framework" / "AzToolsFramework" / "AzToolsFramework" / "Prefab" / "Spawnable" / "PrefabProcessorContext.cpp",
+        engine / "Code" / "Framework" / "AzToolsFramework" / "AzToolsFramework" / "Prefab" / "Spawnable" / "SpawnableUtils.cpp",
         engine / "Code" / "Framework" / "AzToolsFramework" / "AzToolsFramework" / "Prefab" / "Procedural" / "ProceduralPrefabAsset.h",
         engine / "Code" / "Framework" / "AzToolsFramework" / "AzToolsFramework" / "Prefab" / "Procedural" / "ProceduralPrefabAsset.cpp",
         engine / "Gems" / "Prefab" / "PrefabBuilder" / "CMakeLists.txt",
+        engine / "Gems" / "Prefab" / "PrefabBuilder" / "PrefabBuilderComponent.cpp",
         engine / "Gems" / "Prefab" / "PrefabBuilder" / "PrefabBuilderModule.cpp",
         engine / "Gems" / "Prefab" / "PrefabBuilder" / "PrefabGroup" / "ProceduralAssetHandler.cpp",
         engine / "Gems" / "Prefab" / "PrefabBuilder" / "PrefabGroup" / "ProceduralAssetHandler.h",
@@ -110,6 +118,12 @@ def _apb_report(root: Path) -> Path:
         encoding="utf-8",
     )
     return report
+
+
+def _append_apb_products(apb_report: Path, products: list[dict]) -> None:
+    report = json.loads(apb_report.read_text(encoding="utf-8"))
+    report.setdefault("produced_products", []).extend(products)
+    apb_report.write_text(json.dumps(report), encoding="utf-8")
 
 
 def _runtime_env(tmp_path: Path, *, launcher: bool = True, gates: bool = False) -> tuple[dict, Path, Path, Path]:
@@ -2738,6 +2752,201 @@ def test_runtime_harness_procprefab_handler_surface_diagnostic_records_builder_o
     assert report["runtime_character_instantiation_claimed"] is False
     assert report["runtime_character_animation_claimed"] is False
     assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_character_spawnable_surface_diagnostic_rejects_level_and_generic_candidates(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _enable_fixture_gem(project)
+    _append_apb_products(
+        apb,
+        [
+            {
+                "product_type": "spawnable",
+                "product_path": "pc/levels/defaultlevel/defaultlevel.spawnable",
+                "source_path": "Levels/DefaultLevel/DefaultLevel.prefab",
+                "source_uuid": "22222222222242228222222222222222",
+                "source_sub_id": "-1950141713",
+                "asset_type_id": "{855E3021-D305-4845-B284-20C3F7FDF16B}",
+                "builder": "Prefabs",
+                "status": "ready",
+            },
+            {
+                "product_type": "spawnable",
+                "product_path": "pc/levels/_maxine_smoke/generated/generated.spawnable",
+                "source_path": "Levels/_maxine_smoke/generated/generated.prefab",
+                "source_uuid": "33333333333343338333333333333333",
+                "source_sub_id": "12",
+                "asset_type_id": "{855E3021-D305-4845-B284-20C3F7FDF16B}",
+                "builder": "Prefabs",
+                "status": "ready",
+            },
+            {
+                "product_type": "spawnable",
+                "product_path": "pc/prefabs/basic.spawnable",
+                "source_path": "Prefabs/Basic.prefab",
+                "source_uuid": "44444444444444448444444444444444",
+                "source_sub_id": "23",
+                "asset_type_id": "{855E3021-D305-4845-B284-20C3F7FDF16B}",
+                "builder": "Prefabs",
+                "status": "ready",
+            },
+        ],
+    )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_character_spawnable_surface=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_character_spawnable_surface_diagnostic"
+    assert report["runtime_character_spawnable_surface_status"] == "runtime_character_spawnable_surface_generation_required"
+    assert report["runtime_character_spawnable_surface_source_validation"] == "runtime_character_spawnable_surface_source_discovery_pass"
+    assert report["runtime_character_spawnable_surface_search_status"] == "approved_character_runtime_spawnable_surface_missing"
+    assert report["runtime_character_spawnable_surface_candidate_matrix_recorded"] is True
+    rejected = {
+        candidate["product_path"]: candidate["rejected_reason"]
+        for candidate in report["runtime_character_spawnable_surface_candidates"]
+    }
+    assert rejected["pc/levels/defaultlevel/defaultlevel.spawnable"] == (
+        "runtime_character_spawnable_surface_candidate_rejected_defaultlevel_spawnable"
+    )
+    assert rejected["pc/levels/_maxine_smoke/generated/generated.spawnable"] == (
+        "runtime_character_spawnable_surface_candidate_rejected_level_spawnable"
+    )
+    assert rejected["pc/prefabs/basic.spawnable"] == (
+        "runtime_character_spawnable_surface_candidate_rejected_not_character_specific"
+    )
+    assert report["runtime_character_spawnable_surface_found"] is False
+    assert report["runtime_character_spawnable_surface_claimed"] is False
+    assert report["runtime_character_spawnable_surface_verified"] is False
+    assert report["runtime_character_spawnable_surface_generation_required"] is True
+    assert report["runtime_character_spawnable_surface_generation_blocker"] == (
+        "blocked_by_runtime_character_spawnable_generation_required"
+    )
+    assert report["runtime_character_product_load_runtime_equivalent_surface_kind"] == "approved_character_spawnable"
+    assert report["runtime_character_product_load_verified"] is False
+    assert report["runtime_character_product_load_claimed"] is False
+    assert report["runtime_character_instantiation_claimed"] is False
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_character_spawnable_surface_diagnostic_selects_approved_candidate_without_spawn_claim(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _enable_fixture_gem(project)
+    _append_apb_products(
+        apb,
+        [
+            {
+                "product_type": "spawnable",
+                "product_path": "pc/assets/characters/maxine/release/maxine_character.spawnable",
+                "source_path": "Assets/Characters/Maxine/Release/maxine_character.prefab",
+                "source_uuid": "55555555555545558555555555555555",
+                "source_sub_id": "34",
+                "asset_type_id": "{855E3021-D305-4845-B284-20C3F7FDF16B}",
+                "builder": "Prefabs",
+                "status": "ready",
+            }
+        ],
+    )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_character_spawnable_surface=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_character_spawnable_surface_status"] == "runtime_character_spawnable_surface_found"
+    assert report["runtime_character_spawnable_surface_search_status"] == "approved_character_runtime_spawnable_surface_found"
+    assert report["runtime_character_spawnable_surface_found"] is True
+    assert report["runtime_character_spawnable_surface_selected"] == "pc/assets/characters/maxine/release/maxine_character.spawnable"
+    selected = report["runtime_character_spawnable_surface_candidates"][0]
+    assert selected["is_character_specific"] is True
+    assert selected["is_approved"] is True
+    assert selected["asset_id"] == "{55555555-5555-4555-8555-555555555555}:00000022"
+    assert selected["asset_type"] == "{855E3021-D305-4845-B284-20C3F7FDF16B}"
+    assert selected["handler_status"] == "runtime_character_spawnable_asset_handler_source_validated"
+    assert selected["runtime_api"] == "AZ::Data::AssetManager::GetAsset<AzFramework::Spawnable>"
+    assert selected["attempted"] is False
+    assert selected["result"] == "runtime_character_spawnable_surface_found_load_not_attempted"
+    assert report["runtime_character_spawnable_surface_claimed"] is False
+    assert report["runtime_character_spawnable_surface_verified"] is False
+    assert report["runtime_character_instantiation_claimed"] is False
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_validation_rejects_character_spawnable_surface_claim_without_verified_surface() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_character_spawnable_surface_claimed": True,
+            "runtime_character_spawnable_surface_verified": False,
+            "runtime_character_spawnable_surface_selected": "pc/assets/characters/maxine/release/maxine_character.spawnable",
+        }
+    )
+
+    result = runtime_harness.validate_runtime_harness_report(report)
+
+    assert not result.ok
+    assert any("runtime_character_spawnable_surface_claimed=true requires verified approved surface" in message for message in result.messages)
+
+
+def test_runtime_harness_validation_rejects_product_load_claim_without_approved_character_spawnable_surface() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_character_product_load_verified": True,
+            "runtime_character_product_load_claimed": True,
+            "runtime_character_product_load_contract_updated": True,
+            "runtime_character_product_load_direct_procprefab_required": False,
+            "runtime_character_product_load_runtime_equivalent_required": True,
+            "runtime_character_product_load_runtime_equivalent_surface_kind": "approved_character_spawnable",
+            "runtime_procprefab_runtime_equivalent_surface_verified": True,
+            "runtime_character_spawnable_surface_verified": False,
+            "runtime_character_product_load_selected_strategy": "runtime_character_product_load_generic_assetmanager_load",
+            "runtime_character_product_load_source_refs": ["C:/src/o3de/Code/Framework/AzCore/AzCore/Asset/AssetManager.h"],
+            "runtime_character_product_load_required_products_complete": True,
+            "runtime_character_product_load_all_required_ready": True,
+            "runtime_character_product_load_products": [
+                {
+                    "product_kind": "actor",
+                    "product_path": "pc/assets/characters/maxine/release/jack.actor",
+                    "catalog_path": "assets/characters/maxine/release/jack.actor",
+                    "asset_id": "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+                    "ready": True,
+                }
+            ],
+            "runtime_execution_verified": True,
+            "runtime_exit_fixture_execution_verified": True,
+            "runtime_launch_hygiene_status": "runtime_launch_hygiene_pass",
+            "runtime_signal_classification_verified": True,
+            "runtime_cache_bootstrap_verified": True,
+        }
+    )
+
+    result = runtime_harness.validate_runtime_harness_report(report)
+
+    assert not result.ok
+    assert any(
+        "runtime_character_product_load_verified=true requires verified approved runtime character spawnable surface"
+        in message
+        for message in result.messages
+    )
 
 
 def test_runtime_harness_validation_rejects_direct_procprefab_claim_with_missing_handler() -> None:
