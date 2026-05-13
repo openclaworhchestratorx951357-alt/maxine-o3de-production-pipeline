@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Mapping
 
 from tools.o3de.editor_smoke import (
+    DIAGNOSTIC_EDITOR_SCRIPTS,
     _exit_code_for_status,
     load_fixture_reports,
     run_editor_smoke_corpus,
@@ -607,6 +608,16 @@ def test_editor_smoke_report_schema_validates():
         assert result.status == "pass", result.messages
 
 
+def test_editor_smoke_schema_diagnostic_modes_track_editor_scripts():
+    schema = load_json(SCHEMA)
+    diagnostic_modes = schema["properties"]["diagnostic_mode"]["enum"]
+
+    for mode in DIAGNOSTIC_EDITOR_SCRIPTS:
+        assert mode in diagnostic_modes
+
+    assert "not-a-real-diagnostic-mode" not in diagnostic_modes
+
+
 def test_editor_smoke_live_pass_example_schema_and_semantics_validate():
     report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
     schema_result = schema_validate(report, load_json(SCHEMA))
@@ -1139,7 +1150,10 @@ def test_editor_smoke_generation_diagnostic_records_source_validated_save_blocke
         diagnostic_mode="approved-animation-component-wiring-generation",
     )
 
+    schema_result = schema_validate(result, load_json(SCHEMA))
+
     assert result["status"] == "pass"
+    assert schema_result.status == "pass", schema_result.messages
     assert result["approved_runtime_animation_component_wiring_editor_generation_attempted"] is True
     assert result["approved_runtime_animation_component_wiring_editor_generation_completed"] is True
     assert result["approved_runtime_animation_component_wiring_editor_generation_verified"] is False

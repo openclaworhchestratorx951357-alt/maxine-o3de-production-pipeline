@@ -104,6 +104,7 @@
         "procprefab-content-assertions",
         "procprefab-character-component-assertions",
         "runtime-spawnable-proof-surface",
+        "approved-animation-component-wiring-generation",
         "full"
       ]
     },
