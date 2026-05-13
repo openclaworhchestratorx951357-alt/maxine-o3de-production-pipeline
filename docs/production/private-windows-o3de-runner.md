@@ -107,6 +107,14 @@ $env:MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE="1"
 
 That gate only permits the non-shipping fixture to read the explicit product-load Settings Registry keys and request runtime asset loads for approved products. It does not permit production/defaultlevel mutation, Asset Cache deletion, publication, packaging, spawning, animation proof, or full runtime character proof.
 
+The `.procprefab` handler/surface diagnostic has a separate explicit gate for any future live handler/surface fixture work:
+
+```powershell
+$env:MAXINE_ENABLE_RUNTIME_PROCPREFAB_HANDLER_OR_SPAWNABLE_SURFACE="1"
+```
+
+The current diagnostic is read-only source discovery. It records that direct `.procprefab` runtime AssetManager load uses the builder/tools-only `AZ::Prefab::PrefabGroupAssetHandler`, while the runtime prefab-equivalent surface is expected to be an AzFramework spawnable surface if a character spawnable product exists. That gate does not permit production/defaultlevel mutation, Asset Cache deletion, publication, packaging, spawning, animation proof, or direct `.procprefab` proof while the handler remains missing.
+
 The repository now owns source for `o3de/gems/MaxineRuntimeExitFixture`, but it is disabled by default and is not runtime execution proof. Without the mutation/rebuild gates, the runner records source and rebuild-gate readiness only; it must not register the Gem, rebuild runtime targets, or launch a fixture command.
 
 ## Beginner Commands
@@ -230,6 +238,14 @@ python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigge
 ```
 
 Run APB product evidence first and rebuild the fixture under `MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD=1` whenever the fixture C++ source changed. The harness writes the product list as an artifact `.setreg` file under the temp-registry-patch gate so command-line registry value limits cannot truncate the product matrix. The product-load pass criteria require every approved selected product to resolve to a valid runtime `AssetId`, have a registered runtime `AssetManager` handler, reach ready state, avoid selected-product load errors, preserve no-defaultlevel launch hygiene, and keep the PR #137 AP/shader signals within their classified harmless conditions. A resolved product that reports `asset_handler_missing` remains a typed product-load blocker, not a partial pass.
+
+The `.procprefab` handler/surface diagnostic entry point is:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-procprefab-handler-or-spawnable-surface --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+This mode does not launch runtime. It source-validates `AZ::Prefab::ProceduralPrefabAsset`, `AZ::Prefab::PrefabGroupAssetHandler`, `PrefabBuilder.Builders/Tools`, `AzFramework::Spawnable`, `SpawnableAssetHandler`, `SpawnableSystemComponent`, and `SpawnableEntitiesInterface`. It preserves the `.procprefab` `asset_handler_missing` blocker and records whether a runtime-equivalent spawnable/prefab candidate exists; source discovery alone cannot claim product-load, spawn, animation, or runtime character proof.
 
 When the APB evidence, runtime readiness, and command pinning gates are clean, registration and enablement are run through the harness rather than by hand:
 

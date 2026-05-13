@@ -1,7 +1,16 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Pin Runtime Character Product Load Evidence v1 is in progress on `codex/pin-runtime-character-product-load-evidence-v1`:
+- Pin Runtime Procprefab Handler or Spawnable Surface v1 is in progress on `codex/pin-runtime-procprefab-handler-or-spawnable-surface-v1`:
+  - PR #138 was merged into `main` at `d237cd402ab22806394d29fb54db35b6859d8536`, and this branch was created from updated `main`
+  - this slice adds `--diagnose-runtime-procprefab-handler-or-spawnable-surface` to `tools/o3de/runtime_harness.py` as a read-only source-validation layer above the PR #138 product-load blocker
+  - direct `.procprefab` runtime AssetManager load is source-classified as unsupported in the current HeadlessServerLauncher envelope: `.procprefab` maps to `AZ::Prefab::ProceduralPrefabAsset` (`{9B7C8459-471E-4EAD-A363-7990CC4065A9}`), and its direct handler is `AZ::Prefab::PrefabGroupAssetHandler` in `Gem::PrefabBuilder.Builders` / `Gem::PrefabBuilder.Tools`, which is host-tools/builder scoped rather than a runtime launcher handler
+  - the PR #138 direct runtime `.procprefab` `asset_handler_missing` evidence remains preserved and is not weakened: AssetId `{794D1588-3C41-5795-8A9A-EEBD6A663A60}:11695305`, AssetType `{9B7C8459-471E-4EAD-A363-7990CC4065A9}`, `runtime_procprefab_direct_load_supported=false`, and direct runtime load proof remains unclaimed
+  - runtime spawnable/prefab-equivalent surfaces are source-validated separately through `AzFramework::Spawnable`, `SpawnableAssetHandler`, `SpawnableSystemComponent`, and `SpawnableEntitiesInterface`; current APB/product evidence does not expose an approved character `.spawnable` product, so the runtime-equivalent surface remains blocked by `blocked_by_missing_runtime_equivalent_spawnable_surface`
+  - the product-load contract is represented honestly: direct `.procprefab` runtime load is not required when source-classified unsupported, but a runtime-equivalent spawnable/prefab surface becomes required before `runtime_character_product_load_verified=true` can be claimed under an updated contract
+  - PR #137 command-envelope proof remains preserved, PR #138 product-load probe remains preserved, the seven ready product-load products remain preserved, and runtime product-load proof, runtime instantiation/spawn proof, runtime animation proof, and broader runtime character proof remain unclaimed until richer runtime evidence is captured
+  - publication remains blocked, release packaging remains blocked, production/defaultlevel mutation remains forbidden, Asset Cache deletion remains forbidden, cache heuristic release proof remains forbidden, and no production-ready release status is claimed
+- Pin Runtime Character Product Load Evidence v1 is implemented in PR #138:
   - PR #137 was merged into `main` at `6aaa697270c0933f296f8c5fc2fb41bd84e7cfb4`, and this branch was created from updated `main`
   - this slice adds a gated, non-shipping product-load probe to the repo-owned `o3de/gems/MaxineRuntimeExitFixture` path, disabled by default and controlled by `/Amazon/MAXINE/RuntimeHarness/EnableCharacterProductLoadProbe` plus explicit product-list Settings Registry keys
   - the probe source-validates runtime `AssetCatalogRequestBus::GetAssetIdByPath`, `AssetCatalogRequests::GetAssetInfoById`, `AZ::Data::AssetManager::GetAsset`, `AZ::Data::AssetManager::GetHandler`, ready/error polling, bounded timeout handling, and asset-reference release/reset behavior before any product-load proof may be claimed
