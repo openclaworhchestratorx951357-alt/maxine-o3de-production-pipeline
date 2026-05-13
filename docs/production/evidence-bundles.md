@@ -189,6 +189,17 @@ Approved prefab save/update automation surface evidence uses a dedicated Editor 
 - `approved_prefab_save_update_scratch_save_attempted`, `approved_prefab_save_update_scratch_save_verified`, and `approved_prefab_save_update_scratch_cleanup_verified`
 
 If the only validated state is that `SavePrefab` / `CreatePrefabAndSaveToDisk` are not exposed through `PrefabPublicRequestBus`, the report must use `blocked_by_prefab_save_interface_not_available_to_automation`, keep `approved_prefab_save_update_automation_surface_verified=false`, keep `approved_runtime_animation_component_wiring_source_prefab_modified=false`, and keep runtime component wiring, runtime animation, and full runtime character proof false.
+
+Approved prefab save/update bridge evidence uses the dedicated Editor diagnostic mode `approved-prefab-save-update-bridge`. Reports may include:
+
+- `approved_prefab_save_update_bridge_diagnostic_attempted` / `approved_prefab_save_update_bridge_diagnostic_completed`
+- `approved_prefab_save_update_bridge_source_validation_status`, `approved_prefab_save_update_bridge_source_validation_verified`, and `approved_prefab_save_update_bridge_source_files`
+- `approved_prefab_save_update_bridge_api`, including the selected source-backed C++ save APIs and required Editor-module/BehaviorContext bridge shape
+- `approved_prefab_save_update_bridge_behavior_context_reflected`, `approved_prefab_save_update_bridge_callable_from_editor_python`, `approved_prefab_save_update_bridge_added`, and `approved_prefab_save_update_bridge_verified`
+- `approved_prefab_save_update_rejected_defaultlevel_path`, `approved_prefab_save_update_rejected_production_level_path`, and `approved_prefab_save_update_rejected_generated_product_path`
+- `approved_prefab_save_update_scratch_save_attempted`, `approved_prefab_save_update_scratch_save_verified`, `approved_prefab_save_update_scratch_reload_or_parse_verified`, and `approved_prefab_save_update_scratch_cleanup_verified`
+
+If the only validated state is that the repo-owned Gem/tooling layout lacks an Editor-capable bridge host, the report must use `blocked_by_prefab_save_bridge_requires_editor_gem_registration`, keep `approved_prefab_save_update_bridge_verified=false`, keep scratch save/update false, keep `approved_runtime_animation_component_wiring_source_prefab_modified=false`, and keep runtime component wiring, runtime animation, and full runtime character proof false.
 - `source_prefab_baseline_result`: the already proven temp source-prefab create/instantiate result that remains the stable Editor smoke baseline.
 - `direct_product_instantiation_claimed`: true only when direct `.procprefab` product behavior is actually claimed.
 - `direct_product_instantiation_supported`: true only when the current binding surface supports the selected direct product path.

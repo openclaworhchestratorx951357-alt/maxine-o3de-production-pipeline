@@ -42,4 +42,12 @@ This diagnostic source-validates the O3DE prefab save/update API without mutatin
 
 Until a narrow source-backed bridge or equivalent automation route is implemented and scratch-save verified, the diagnostic must report `blocked_by_prefab_save_interface_not_available_to_automation`, keep `approved_prefab_save_update_automation_surface_verified=false`, keep `approved_runtime_animation_component_wiring_source_prefab_modified=false`, and keep runtime component wiring, runtime animation, and full runtime character proof unclaimed. Hand-authored unknown `.prefab` component JSON, production/defaultlevel mutation, generated product commits, and Asset Cache deletion remain forbidden.
 
+Approved prefab save/update bridge diagnostic:
+
+```powershell
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --mode local_editor_python --enable-editor-smoke --strict-integration --diagnose-approved-prefab-save-update-bridge --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 180
+```
+
+This diagnostic narrows the next bridge implementation requirement without mutating the approved source prefab. It preserves the PR #146 observed-event surface, then checks whether the repo-owned O3DE Gem/tooling layout currently provides an Editor-capable bridge host. The current selected result is `blocked_by_prefab_save_bridge_requires_editor_gem_registration`: `MaxineRuntimeExitFixture` is a runtime client fixture with Clients/Servers/Unified aliases, but no `.Editor` / `.Tools` host module, no `PAL_TRAIT_BUILD_HOST_TOOLS` Editor target, and no `AzToolsFramework` bridge dependency. Until a repo-owned Editor module is registered, built, and callable from Editor Python, the diagnostic must keep `approved_prefab_save_update_bridge_verified=false`, `approved_prefab_save_update_scratch_save_verified=false`, `approved_runtime_animation_component_wiring_source_prefab_modified=false`, and all runtime component wiring / animation / full-character proof flags false.
+
 `live_editor_execution` remains false unless a future explicitly gated command actually runs O3DE Editor and parses its evidence. This bridge does not prove final runtime gameplay readiness.

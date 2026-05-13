@@ -247,6 +247,36 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
                 "runtime_character_proof_verified": False,
             }
         )
+    if diagnostic_mode == "approved-prefab-save-update-bridge":
+        binding_payload.update(
+            {
+                "approved_prefab_save_update_bridge_diagnostic_attempted": True,
+                "approved_prefab_save_update_bridge_diagnostic_completed": True,
+                "approved_prefab_save_update_bridge_source_validation_status": "pass",
+                "approved_prefab_save_update_bridge_source_validation_verified": True,
+                "approved_prefab_save_update_bridge_added": False,
+                "approved_prefab_save_update_bridge_verified": False,
+                "approved_prefab_save_update_bridge_blocker": "blocked_by_prefab_save_bridge_requires_editor_gem_registration",
+                "approved_prefab_save_update_bridge_behavior_context_reflected": False,
+                "approved_prefab_save_update_bridge_callable_from_editor_python": False,
+                "approved_prefab_save_update_automation_surface_verified": False,
+                "approved_prefab_save_update_rejected_defaultlevel_path": True,
+                "approved_prefab_save_update_rejected_production_level_path": True,
+                "approved_prefab_save_update_rejected_generated_product_path": True,
+                "approved_prefab_save_update_scratch_save_attempted": False,
+                "approved_prefab_save_update_scratch_save_verified": False,
+                "approved_prefab_save_update_scratch_reload_or_parse_verified": False,
+                "approved_prefab_save_update_scratch_cleanup_verified": True,
+                "approved_prefab_save_update_generated_products_committed": False,
+                "approved_runtime_animation_component_wiring_source_prefab_modified": False,
+                "runtime_character_animation_component_wiring_claimed": False,
+                "runtime_character_animation_component_wiring_verified": False,
+                "runtime_character_animation_claimed": False,
+                "runtime_character_animation_verified": False,
+                "runtime_character_proof_claimed": False,
+                "runtime_character_proof_verified": False,
+            }
+        )
     payload.update(
         {
             "status": status,
@@ -1159,6 +1189,7 @@ def test_editor_smoke_binding_diagnostic_modes_route_to_target_scripts(tmp_path)
         "runtime-spawnable-proof-surface": "editor_runtime_spawnable_proof_surface_smoke.py",
         "approved-animation-component-wiring-generation": "editor_approved_animation_component_wiring_generation_smoke.py",
         "approved-prefab-save-update-automation-surface": "editor_approved_prefab_save_update_automation_surface_smoke.py",
+        "approved-prefab-save-update-bridge": "editor_approved_prefab_save_update_bridge_smoke.py",
     }
 
     for mode, script_name in expected_scripts.items():
@@ -1392,6 +1423,139 @@ def test_editor_smoke_prefab_save_update_verified_requires_scratch_save_evidence
             "approved_prefab_save_update_scratch_save_attempted": True,
             "approved_prefab_save_update_scratch_save_verified": False,
             "approved_prefab_save_update_scratch_cleanup_verified": True,
+            "approved_runtime_animation_component_wiring_source_prefab_modified": False,
+            "runtime_character_animation_component_wiring_claimed": False,
+            "runtime_character_animation_component_wiring_verified": False,
+            "runtime_character_animation_claimed": False,
+            "runtime_character_animation_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+
+
+def test_editor_smoke_prefab_save_update_bridge_records_editor_gem_registration_blocker(tmp_path):
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        assert "editor_approved_prefab_save_update_bridge_smoke.py" in argv[-1].replace("\\", "/")
+        assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == "approved-prefab-save-update-bridge"
+        return _write_in_editor_report(env)
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=_live_env(tmp_path / "save-update-bridge"),
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "save-update-bridge" / "editor-smoke-artifacts",
+        diagnostic_mode="approved-prefab-save-update-bridge",
+    )
+
+    schema_result = schema_validate(result, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(result, strict=True)
+
+    assert result["status"] == "pass"
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+    assert result["approved_prefab_save_update_bridge_diagnostic_attempted"] is True
+    assert result["approved_prefab_save_update_bridge_diagnostic_completed"] is True
+    assert result["approved_prefab_save_update_bridge_source_validation_status"] == "pass"
+    assert result["approved_prefab_save_update_bridge_source_validation_verified"] is True
+    assert result["approved_prefab_save_update_bridge_added"] is False
+    assert result["approved_prefab_save_update_bridge_verified"] is False
+    assert (
+        result["approved_prefab_save_update_bridge_blocker"]
+        == "blocked_by_prefab_save_bridge_requires_editor_gem_registration"
+    )
+    assert result["approved_prefab_save_update_bridge_behavior_context_reflected"] is False
+    assert result["approved_prefab_save_update_bridge_callable_from_editor_python"] is False
+    assert result["approved_prefab_save_update_scratch_save_attempted"] is False
+    assert result["approved_prefab_save_update_scratch_save_verified"] is False
+    assert result["approved_prefab_save_update_scratch_reload_or_parse_verified"] is False
+    assert result["approved_prefab_save_update_scratch_cleanup_verified"] is True
+    assert result["approved_runtime_animation_component_wiring_source_prefab_modified"] is False
+    assert result["runtime_character_animation_component_wiring_claimed"] is False
+    assert result["runtime_character_animation_verified"] is False
+    assert result["runtime_character_proof_verified"] is False
+
+
+def test_editor_python_prefab_save_update_bridge_future_host_symbols_do_not_keep_registration_blocker(monkeypatch):
+    future_source_validation = {
+        "status": "pass",
+        "verified": True,
+        "refs": [
+            {
+                "status": "pass",
+                "exists": True,
+                "missing_symbols": [],
+                "unexpected_symbols": [
+                    "${gem_name}.Editor",
+                    "PAL_TRAIT_BUILD_HOST_TOOLS",
+                    "AzToolsFramework",
+                    "Source/Tools/",
+                    "PrefabSaveUpdateBridge",
+                    "_Editor",
+                    "BehaviorContext",
+                    "PrefabPublicInterface",
+                ],
+                "observed_behavior_context_events": [
+                    "CreatePrefabAndSaveToDisk",
+                    "SavePrefab",
+                ],
+            }
+        ],
+    }
+
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_source_validation_from_refs",
+        lambda _refs: future_source_validation,
+    )
+
+    result = editor_python_smoke._run_approved_prefab_save_update_bridge_checks({})
+
+    assert result["approved_prefab_save_update_bridge_added"] is True
+    assert result["approved_prefab_save_update_bridge_behavior_context_reflected"] is True
+    assert result["approved_prefab_save_update_bridge_callable_from_editor_python"] is True
+    assert result["approved_prefab_save_update_automation_surface_found"] is True
+    assert result["approved_prefab_save_update_bridge_blocker"] == "blocked_by_prefab_save_update_scratch_save_not_verified"
+    assert result["approved_prefab_save_update_bridge_blocker"] != (
+        "blocked_by_prefab_save_bridge_requires_editor_gem_registration"
+    )
+    assert result["approved_prefab_save_update_bridge_verified"] is False
+    assert result["approved_prefab_save_update_scratch_save_verified"] is False
+
+
+def test_editor_smoke_prefab_save_update_bridge_verified_requires_scratch_parse_cleanup():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "diagnostic_mode": "approved-prefab-save-update-bridge",
+            "live_editor_execution": True,
+            "no_fake_success": True,
+            "approved_prefab_save_update_bridge_diagnostic_attempted": True,
+            "approved_prefab_save_update_bridge_diagnostic_completed": True,
+            "approved_prefab_save_update_bridge_source_validation_status": "pass",
+            "approved_prefab_save_update_bridge_source_validation_verified": True,
+            "approved_prefab_save_update_bridge_added": True,
+            "approved_prefab_save_update_bridge_verified": True,
+            "approved_prefab_save_update_bridge_blocker": "",
+            "approved_prefab_save_update_bridge_behavior_context_reflected": True,
+            "approved_prefab_save_update_bridge_callable_from_editor_python": True,
+            "approved_prefab_save_update_rejected_defaultlevel_path": True,
+            "approved_prefab_save_update_rejected_production_level_path": True,
+            "approved_prefab_save_update_rejected_generated_product_path": True,
+            "approved_prefab_save_update_scratch_save_attempted": True,
+            "approved_prefab_save_update_scratch_save_verified": True,
+            "approved_prefab_save_update_scratch_reload_or_parse_verified": False,
+            "approved_prefab_save_update_scratch_cleanup_verified": True,
+            "approved_prefab_save_update_generated_products_committed": False,
             "approved_runtime_animation_component_wiring_source_prefab_modified": False,
             "runtime_character_animation_component_wiring_claimed": False,
             "runtime_character_animation_component_wiring_verified": False,

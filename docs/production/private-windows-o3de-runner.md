@@ -168,6 +168,15 @@ python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.p
 
 The optional `MAXINE_ALLOW_APPROVED_PREFAB_SAVE_UPDATE_AUTOMATION_SURFACE=1` marker may be set only for a bounded scratch save/update fixture after source validation proves a callable save route. The current diagnostic is source-validation-only: `PrefabPublicInterface::CreatePrefabAndSaveToDisk` and `PrefabPublicInterface::SavePrefab` are available in C++, with `PrefabPublicHandler` using `CreatePrefabInMemory`, `SaveTemplateToFile`, `GetTemplateIdFromFilePath`, and `SaveTemplate`, but the Python-exposed `PrefabPublicRequestBus` does not reflect the save events. The diagnostic must report `blocked_by_prefab_save_interface_not_available_to_automation`, reject defaultlevel/production paths, leave scratch save unattempted, keep the approved source prefab unmodified, and keep runtime component wiring, runtime animation, and full runtime character proof false.
 
+Approved prefab save/update bridge diagnostics require the Editor smoke gates plus an explicit bridge marker:
+
+```powershell
+$env:MAXINE_ENABLE_APPROVED_PREFAB_SAVE_UPDATE_BRIDGE="1"
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --mode local_editor_python --enable-editor-smoke --strict-integration --diagnose-approved-prefab-save-update-bridge --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 180
+```
+
+The optional `MAXINE_ALLOW_APPROVED_PREFAB_SAVE_UPDATE_BRIDGE=1` marker may be set only after a source-backed Editor bridge is registered and scratch save/update is ready to execute. The current bridge diagnostic is source-validation-only: it confirms the C++ prefab save APIs and Editor-module patterns, but the repo-owned `MaxineRuntimeExitFixture` Gem is runtime-client-only and has no `.Editor` / `.Tools` module registration or `AzToolsFramework` bridge dependency. It must report `blocked_by_prefab_save_bridge_requires_editor_gem_registration`, keep scratch save unattempted, keep the approved source prefab unmodified, and keep runtime component wiring, runtime animation, and full runtime character proof false.
+
 Approved runtime character prefab-source generation has a narrower gate when a repo-owned source must be staged into the live project scanfolder:
 
 ```powershell
