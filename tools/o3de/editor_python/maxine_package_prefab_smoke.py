@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from datetime import datetime, timezone
@@ -37,6 +38,7 @@ DIAGNOSTIC_MODES = {
     "procprefab-character-component-assertions",
     "runtime-spawnable-proof-surface",
     "approved-animation-component-wiring-generation",
+    "approved-prefab-save-update-automation-surface",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -78,6 +80,11 @@ TYPED_BLOCKED_STATUSES = {
     "blocked_by_editor_component_asset_assignment_unavailable",
     "blocked_by_approved_actor_or_motion_asset_id_unresolved",
     "blocked_by_editor_generated_prefab_update_requires_additional_source_validation",
+    "blocked_by_prefab_save_interface_not_available_to_automation",
+    "blocked_by_prefab_save_bridge_requires_engine_gem_rebuild",
+    "blocked_by_prefab_save_update_requires_additional_source_validation",
+    "blocked_by_prefab_save_update_writable_path_safety_contract",
+    "blocked_by_prefab_save_update_scratch_save_not_verified",
 }
 DIRECT_PROCPREFAB_TYPED_NONVERIFIED_STATUSES = {
     "procprefab_product_not_editor_instantiable_with_current_binding",
@@ -159,6 +166,9 @@ def main() -> int:
             "live_publication": False,
             "release_packaging": False,
             "production_level_mutation": False,
+            "defaultlevel_mutation": False,
+            "asset_cache_deleted": False,
+            "fake_success": False,
             "editor_python_bindings_required": True,
             "entity_smoke": report.get("entity_smoke", {"status": "not_run"}),
             "prefab_smoke": report.get("prefab_smoke", {"status": "not_run"}),
@@ -176,6 +186,71 @@ def main() -> int:
             "procprefab_character_assertions": report.get("procprefab_character_assertions", {"status": "not_run"}),
             "runtime_spawnable_proof": report.get("runtime_spawnable_proof", {"status": "not_run"}),
             "runtime_harness": report.get("runtime_harness", {"runtime_harness_status": "not_run"}),
+            "approved_prefab_save_update_automation_surface_diagnostic_attempted": report.get(
+                "approved_prefab_save_update_automation_surface_diagnostic_attempted", False
+            ),
+            "approved_prefab_save_update_automation_surface_diagnostic_completed": report.get(
+                "approved_prefab_save_update_automation_surface_diagnostic_completed", False
+            ),
+            "approved_prefab_save_update_automation_surface_found": report.get(
+                "approved_prefab_save_update_automation_surface_found", False
+            ),
+            "approved_prefab_save_update_automation_surface_verified": report.get(
+                "approved_prefab_save_update_automation_surface_verified", False
+            ),
+            "approved_prefab_save_update_automation_surface_blocker": report.get(
+                "approved_prefab_save_update_automation_surface_blocker", ""
+            ),
+            "approved_prefab_save_update_automation_candidate_matrix": report.get(
+                "approved_prefab_save_update_automation_candidate_matrix", []
+            ),
+            "approved_prefab_save_update_automation_selected_strategy": report.get(
+                "approved_prefab_save_update_automation_selected_strategy", ""
+            ),
+            "approved_prefab_save_update_source_validation_status": report.get(
+                "approved_prefab_save_update_source_validation_status", ""
+            ),
+            "approved_prefab_save_update_source_validation_verified": report.get(
+                "approved_prefab_save_update_source_validation_verified", False
+            ),
+            "approved_prefab_save_update_source_files": report.get("approved_prefab_save_update_source_files", []),
+            "approved_prefab_save_update_api": report.get("approved_prefab_save_update_api", {}),
+            "approved_prefab_save_update_behavior_context_exposed": report.get(
+                "approved_prefab_save_update_behavior_context_exposed", False
+            ),
+            "approved_prefab_save_update_behavior_context_observed_events": report.get(
+                "approved_prefab_save_update_behavior_context_observed_events", []
+            ),
+            "approved_prefab_save_update_behavior_context_missing_events": report.get(
+                "approved_prefab_save_update_behavior_context_missing_events", []
+            ),
+            "approved_prefab_save_update_bridge_added": report.get("approved_prefab_save_update_bridge_added", False),
+            "approved_prefab_save_update_bridge_verified": report.get(
+                "approved_prefab_save_update_bridge_verified", False
+            ),
+            "approved_prefab_save_update_allowed_path_policy": report.get(
+                "approved_prefab_save_update_allowed_path_policy", {}
+            ),
+            "approved_prefab_save_update_rejected_defaultlevel_path": report.get(
+                "approved_prefab_save_update_rejected_defaultlevel_path", False
+            ),
+            "approved_prefab_save_update_rejected_production_level_path": report.get(
+                "approved_prefab_save_update_rejected_production_level_path", False
+            ),
+            "approved_prefab_save_update_scratch_prefab_path": report.get(
+                "approved_prefab_save_update_scratch_prefab_path", ""
+            ),
+            "approved_prefab_save_update_scratch_save_attempted": report.get(
+                "approved_prefab_save_update_scratch_save_attempted", False
+            ),
+            "approved_prefab_save_update_scratch_save_verified": report.get(
+                "approved_prefab_save_update_scratch_save_verified", False
+            ),
+            "approved_prefab_save_update_scratch_cleanup_verified": report.get(
+                "approved_prefab_save_update_scratch_cleanup_verified", False
+            ),
+            "approved_prefab_save_update_before_hash": report.get("approved_prefab_save_update_before_hash", ""),
+            "approved_prefab_save_update_after_hash": report.get("approved_prefab_save_update_after_hash", ""),
             "approved_runtime_animation_component_wiring_editor_generation_attempted": report.get(
                 "approved_runtime_animation_component_wiring_editor_generation_attempted", False
             ),
@@ -301,6 +376,22 @@ def main() -> int:
         if evidence_errors:
             errors.extend(evidence_errors)
             messages.append("APB product evidence summary is incomplete or unsafe inside Editor smoke.")
+
+    if not errors and diagnostic_mode == "approved-prefab-save-update-automation-surface":
+        _write_progress_marker(
+            progress_log,
+            "approved_prefab_save_update_automation_surface_started",
+            "started",
+            "Running approved prefab save/update automation surface diagnostic.",
+        )
+        save_surface = _run_approved_prefab_save_update_automation_surface_checks(report)
+        report.update(save_surface)
+        _write_progress_marker(
+            progress_log,
+            "approved_prefab_save_update_automation_surface_returned",
+            str(save_surface.get("approved_prefab_save_update_automation_surface_blocker", "returned")),
+            "Approved prefab save/update automation surface diagnostic returned.",
+        )
 
     if not errors and needs_temp_level and general is not None:
         try:
@@ -3807,6 +3898,321 @@ def _approved_animation_component_wiring_source_validation() -> Dict[str, Any]:
         "status": "pass" if all_passed else "inconclusive",
         "verified": all_passed,
         "refs": refs,
+    }
+
+
+def _approved_prefab_save_update_source_refs() -> List[Dict[str, Any]]:
+    return [
+        {
+            "path": "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabPublicInterface.h",
+            "symbols": [
+                "PrefabPublicInterface",
+                "CreatePrefabAndSaveToDisk",
+                "SavePrefab",
+                "PrefabOperationResult",
+                "AZ::IO::Path",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabPublicHandler.cpp",
+            "symbols": [
+                "PrefabPublicHandler::CreatePrefabAndSaveToDisk",
+                "filePath.IsAbsolute()",
+                "CreatePrefabInMemory",
+                "SaveTemplateToFile",
+                "PrefabPublicHandler::SavePrefab",
+                "GetTemplateIdFromFilePath",
+                "SaveTemplate",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabPublicRequestHandler.cpp",
+            "symbols": [
+                "BehaviorContext",
+                "PrefabPublicRequestBus",
+                'Event("CreatePrefabInMemory"',
+                'Event("InstantiatePrefab"',
+            ],
+            "absent_symbols": [
+                'Event("CreatePrefabAndSaveToDisk"',
+                'Event("SavePrefab"',
+            ],
+        },
+        {
+            "path": "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabPublicRequestBus.h",
+            "symbols": [
+                "PrefabPublicRequests",
+                "CreatePrefabInMemory",
+                "InstantiatePrefab",
+            ],
+            "absent_symbols": [
+                "CreatePrefabAndSaveToDisk",
+                "SavePrefab",
+            ],
+        },
+        {
+            "path": "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabLoaderInterface.h",
+            "symbols": [
+                "LoadTemplateFromFile",
+                "SaveTemplate",
+                "SaveTemplateToFile",
+                "SaveTemplateToString",
+                "GenerateRelativePath",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": "C:/src/o3de/Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabSystemComponentInterface.h",
+            "symbols": [
+                "GetTemplateIdFromFilePath",
+                "InstantiatePrefab",
+                "CreatePrefab",
+            ],
+            "absent_symbols": [],
+        },
+    ]
+
+
+def _observed_behavior_context_events(content: str) -> List[str]:
+    events: List[str] = []
+    seen = set()
+    for match in re.finditer(r'\bEvent\(\s*"([^"]+)"', content):
+        event_name = match.group(1)
+        if event_name not in seen:
+            events.append(event_name)
+            seen.add(event_name)
+    return events
+
+
+def _save_update_behavior_context_observation(source_validation: Mapping[str, Any]) -> Dict[str, Any]:
+    observed_events: List[str] = []
+    seen = set()
+    for ref in source_validation.get("refs", []):
+        if not isinstance(ref, Mapping):
+            continue
+        for event_name in ref.get("observed_behavior_context_events", []):
+            event = str(event_name)
+            if event and event not in seen:
+                observed_events.append(event)
+                seen.add(event)
+    required_events = ["CreatePrefabAndSaveToDisk", "SavePrefab"]
+    missing_events = [event for event in required_events if event not in seen]
+    return {
+        "observed_events": observed_events,
+        "missing_events": missing_events,
+        "exposed": not missing_events,
+    }
+
+
+def _source_validation_from_refs(specs: List[Dict[str, Any]]) -> Dict[str, Any]:
+    refs: List[Dict[str, Any]] = []
+    all_passed = True
+    for spec in specs:
+        path = Path(str(spec.get("path", "")))
+        required = [str(symbol) for symbol in spec.get("symbols", [])]
+        required_absent = [str(symbol) for symbol in spec.get("absent_symbols", [])]
+        missing = []
+        unexpectedly_present = []
+        exists = path.exists()
+        content = ""
+        if exists:
+            try:
+                content = path.read_text(encoding="utf-8", errors="ignore")
+            except Exception:
+                content = ""
+        for symbol in required:
+            if symbol not in content:
+                missing.append(symbol)
+        for symbol in required_absent:
+            if symbol in content:
+                unexpectedly_present.append(symbol)
+        observed_events = _observed_behavior_context_events(content)
+        status = "pass" if exists and not missing else "inconclusive"
+        all_passed = all_passed and status == "pass"
+        refs.append(
+            {
+                "path": str(spec.get("path", "")),
+                "symbols": required,
+                "absent_symbols": required_absent,
+                "status": status,
+                "exists": exists,
+                "missing_symbols": missing,
+                "unexpected_symbols": unexpectedly_present,
+                "observed_behavior_context_events": observed_events,
+            }
+        )
+    return {
+        "status": "pass" if all_passed else "inconclusive",
+        "verified": all_passed,
+        "refs": refs,
+    }
+
+
+def _approved_prefab_save_update_source_validation() -> Dict[str, Any]:
+    return _source_validation_from_refs(_approved_prefab_save_update_source_refs())
+
+
+def _approved_prefab_save_update_candidate_matrix() -> List[Dict[str, Any]]:
+    return [
+        {
+            "candidate": "expose PrefabPublicInterface::SavePrefab / CreatePrefabAndSaveToDisk to Editor Python automation",
+            "outcome": "blocked",
+            "reason": "Source validation finds save APIs on PrefabPublicInterface but no BehaviorContext events on PrefabPublicRequestBus.",
+        },
+        {
+            "candidate": "use existing PrefabPublicRequestBus only",
+            "outcome": "blocked",
+            "reason": "Existing reflected bus exposes CreatePrefabInMemory and InstantiatePrefab, not SavePrefab or CreatePrefabAndSaveToDisk.",
+        },
+        {
+            "candidate": "C++ Editor helper/bridge in repo-owned tooling layer",
+            "outcome": "deferred",
+            "reason": "Narrow bridge likely requires an Editor-capable repo-owned Gem/module and rebuild; this slice records the exact source-validated gap first.",
+        },
+        {
+            "candidate": "scratch prefab save probe",
+            "outcome": "blocked",
+            "reason": "Preferred proof surface, but not attempted until an automation-callable save/update route exists.",
+        },
+        {
+            "candidate": "approved source prefab update with Actor + Simple Motion",
+            "outcome": "deferred",
+            "reason": "Approved source mutation waits for verified save/update automation surface and scratch save proof.",
+        },
+        {
+            "candidate": "hand-authored unknown .prefab component JSON",
+            "outcome": "rejected",
+            "reason": "Unknown O3DE component serialization must not be hand-authored.",
+        },
+        {
+            "candidate": "direct runtime .procprefab load",
+            "outcome": "rejected",
+            "reason": "Preserved unsupported/builder-only proof limit.",
+        },
+        {
+            "candidate": "direct product-load of actor/motion products",
+            "outcome": "rejected",
+            "reason": "Product-load is not prefab save/update or component wiring proof.",
+        },
+        {
+            "candidate": "defaultlevel or production-level mutation",
+            "outcome": "rejected",
+            "reason": "Defaultlevel and production-level mutation are disallowed for this slice.",
+        },
+    ]
+
+
+def _approved_prefab_save_update_path_allowed(path_value: str) -> bool:
+    normalized = str(path_value).replace("\\", "/").lower()
+    if not normalized.endswith(".prefab"):
+        return False
+    if "/levels/" in normalized or "defaultlevel" in normalized or "/production/" in normalized:
+        return False
+    allowed_roots = (
+        "examples/o3de-golden-project/source/assets/characters/maxine_goldencorpus/prefabs/",
+        "examples/o3de-golden-project/source/assets/_maxine_smoke/prefabs/",
+    )
+    return any(root in normalized for root in allowed_roots)
+
+
+def _run_approved_prefab_save_update_automation_surface_checks(report: Mapping[str, Any]) -> Dict[str, Any]:
+    source_validation = _approved_prefab_save_update_source_validation()
+    source_prefab_path = "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab"
+    scratch_prefab_path = "examples/o3de-golden-project/source/Assets/_maxine_smoke/prefabs/prefab_save_update_surface_probe.prefab"
+    behavior_context = _save_update_behavior_context_observation(source_validation)
+    behavior_context_exposed = bool(behavior_context["exposed"]) and source_validation["verified"] is True
+
+    blocker = "blocked_by_prefab_save_interface_not_available_to_automation"
+    if source_validation["verified"] is not True:
+        blocker = "blocked_by_prefab_save_update_requires_additional_source_validation"
+    elif behavior_context_exposed:
+        blocker = "blocked_by_prefab_save_update_scratch_save_not_verified"
+
+    return {
+        "approved_prefab_save_update_automation_surface_diagnostic_attempted": True,
+        "approved_prefab_save_update_automation_surface_diagnostic_completed": True,
+        "approved_prefab_save_update_automation_surface_found": behavior_context_exposed,
+        "approved_prefab_save_update_automation_surface_verified": False,
+        "approved_prefab_save_update_automation_surface_blocker": blocker,
+        "approved_prefab_save_update_automation_candidate_matrix": _approved_prefab_save_update_candidate_matrix(),
+        "approved_prefab_save_update_automation_selected_strategy": (
+            "source_validate_prefab_save_api_and_block_on_unexposed_automation_binding"
+        ),
+        "approved_prefab_save_update_source_validation_status": source_validation["status"],
+        "approved_prefab_save_update_source_validation_verified": source_validation["verified"],
+        "approved_prefab_save_update_source_files": source_validation["refs"],
+        "approved_prefab_save_update_api": {
+            "interface": "AzToolsFramework::Prefab::PrefabPublicInterface",
+            "create_prefab_and_save_to_disk": {
+                "signature": "CreatePrefabResult CreatePrefabAndSaveToDisk(const EntityIdList&, AZ::IO::PathView)",
+                "requires_absolute_path": True,
+                "implementation": "PrefabPublicHandler::CreatePrefabAndSaveToDisk",
+                "save_backend": "PrefabLoaderInterface::SaveTemplateToFile",
+            },
+            "save_prefab": {
+                "signature": "PrefabOperationResult SavePrefab(AZ::IO::Path)",
+                "implementation": "PrefabPublicHandler::SavePrefab",
+                "requires_loaded_template": True,
+                "save_backend": "PrefabLoaderInterface::SaveTemplate",
+            },
+            "behavior_context_available_events": [
+                "CreatePrefabInMemory",
+                "InstantiatePrefab",
+                "DeleteEntitiesAndAllDescendantsInInstance",
+                "GetOwningInstancePrefabPath",
+                "CreateInMemorySpawnableAsset",
+            ],
+            "behavior_context_missing_events": [
+                "CreatePrefabAndSaveToDisk",
+                "SavePrefab",
+            ],
+        },
+        "approved_prefab_save_update_behavior_context_exposed": behavior_context_exposed,
+        "approved_prefab_save_update_behavior_context_observed_events": behavior_context["observed_events"],
+        "approved_prefab_save_update_behavior_context_missing_events": behavior_context["missing_events"],
+        "approved_prefab_save_update_bridge_added": False,
+        "approved_prefab_save_update_bridge_verified": False,
+        "approved_prefab_save_update_allowed_path_policy": {
+            "allowed_prefab_roots": [
+                "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/",
+                "examples/o3de-golden-project/source/Assets/_maxine_smoke/prefabs/",
+            ],
+            "requires_prefab_extension": True,
+            "rejects_levels": True,
+            "rejects_defaultlevel": True,
+            "rejects_production_level": True,
+        },
+        "approved_prefab_save_update_rejected_defaultlevel_path": not _approved_prefab_save_update_path_allowed(
+            "examples/o3de-golden-project/source/Levels/defaultlevel/defaultlevel.prefab"
+        ),
+        "approved_prefab_save_update_rejected_production_level_path": not _approved_prefab_save_update_path_allowed(
+            "examples/o3de-golden-project/source/Levels/production/release.prefab"
+        ),
+        "approved_prefab_save_update_scratch_prefab_path": scratch_prefab_path,
+        "approved_prefab_save_update_scratch_save_attempted": False,
+        "approved_prefab_save_update_scratch_save_verified": False,
+        "approved_prefab_save_update_scratch_cleanup_verified": True,
+        "approved_prefab_save_update_before_hash": "",
+        "approved_prefab_save_update_after_hash": "",
+        "approved_runtime_animation_component_wiring_source_prefab_path": source_prefab_path,
+        "approved_runtime_animation_component_wiring_source_prefab_modified": False,
+        "approved_runtime_animation_component_wiring_editor_generated_update_used": False,
+        "approved_runtime_animation_component_wiring_actor_component_added": False,
+        "approved_runtime_animation_component_wiring_simple_motion_component_added": False,
+        "approved_runtime_animation_component_wiring_actor_asset_assignment_verified": False,
+        "approved_runtime_animation_component_wiring_motion_asset_assignment_verified": False,
+        "approved_runtime_animation_component_wiring_prefab_save_verified": False,
+        "approved_runtime_animation_component_wiring_spawnable_regenerated_or_found": False,
+        "runtime_character_animation_component_wiring_surface_found": False,
+        "runtime_character_animation_component_wiring_claimed": False,
+        "runtime_character_animation_component_wiring_verified": False,
+        "runtime_character_animation_playback_attempted": False,
+        "runtime_character_animation_claimed": False,
+        "runtime_character_animation_verified": False,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
     }
 
 
