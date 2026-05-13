@@ -108,6 +108,10 @@
       "type": "object",
       "additionalProperties": true
     },
+    "approved_runtime_character_prefab_source_staging": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "apb_report_ref": {
       "type": "string"
     },

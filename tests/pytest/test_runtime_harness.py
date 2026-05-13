@@ -2634,6 +2634,21 @@ def test_runtime_harness_validation_rejects_signal_classification_without_source
 def test_runtime_harness_character_product_load_diagnostic_records_source_validation_matrix(tmp_path: Path) -> None:
     env, engine, project, apb = _runtime_env(tmp_path, gates=True)
     _enable_fixture_gem(project)
+    _append_apb_products(
+        apb,
+        [
+            {
+                "product_type": "spawnable",
+                "product_path": "pc/assets/characters/maxine/release/maxine_character.spawnable",
+                "source_path": "Assets/Characters/Maxine/Release/maxine_character.prefab",
+                "source_uuid": "55555555555545558555555555555555",
+                "source_sub_id": "45",
+                "asset_type_id": "{855E3021-D305-4845-B284-20C3F7FDF16B}",
+                "builder": "Prefabs",
+                "status": "ready",
+            }
+        ],
+    )
 
     report = runtime_harness.run_runtime_harness(
         manifest=runtime_harness.DEFAULT_MANIFEST,
@@ -2667,7 +2682,12 @@ def test_runtime_harness_character_product_load_diagnostic_records_source_valida
         "runtime_character_product_load_keep_blocked_without_source_validation",
     ]
     assert report["runtime_character_product_load_selected_strategy"] == "runtime_character_product_load_generic_assetmanager_load"
-    assert [product["product_kind"] for product in report["runtime_character_product_load_products"]] == list(runtime_harness.EXPECTED_PRODUCTS)
+    assert [product["product_kind"] for product in report["runtime_character_product_load_products"]] == list(
+        runtime_harness.RUNTIME_CHARACTER_PRODUCT_LOAD_UPDATED_REQUIRED_PRODUCTS
+    )
+    assert "procprefab" not in [product["product_kind"] for product in report["runtime_character_product_load_products"]]
+    assert report["runtime_character_product_load_direct_procprefab_required"] is False
+    assert report["runtime_character_product_load_runtime_equivalent_required"] is True
     assert all(product["catalog_path"].startswith("assets/") for product in report["runtime_character_product_load_products"])
     assert report["runtime_character_product_load_claimed"] is False
     assert report["runtime_character_product_load_verified"] is False
@@ -2890,6 +2910,152 @@ def test_runtime_harness_character_spawnable_surface_diagnostic_selects_approved
     assert report["runtime_character_proof_claimed"] is False
 
 
+def test_runtime_harness_character_prefab_source_diagnostic_reports_repo_owned_source_and_missing_apb_product(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _enable_fixture_gem(project)
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_character_prefab_source=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_character_prefab_source_diagnostic"
+    assert report["runtime_character_prefab_source_status"] == "runtime_character_prefab_source_apb_product_missing"
+    assert report["runtime_character_prefab_source_path"] == (
+        "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab"
+    )
+    assert report["runtime_character_prefab_source_kind"] == "reviewed_character_prefab_source"
+    assert report["runtime_character_prefab_source_owned_by_repo"] is True
+    assert report["runtime_character_prefab_source_committed"] is True
+    assert report["runtime_character_prefab_source_is_defaultlevel"] is False
+    assert report["runtime_character_prefab_source_is_production_level"] is False
+    assert report["runtime_character_prefab_source_is_temp"] is False
+    assert report["runtime_character_prefab_source_is_generic_transform_only"] is False
+    assert report["runtime_character_prefab_source_is_character_specific"] is True
+    assert report["runtime_character_prefab_source_is_approved"] is True
+    assert report["runtime_character_prefab_source_generation_strategy"] == (
+        "repo_owned_reviewed_prefab_source_referencing_approved_release_procprefab"
+    )
+    assert report["runtime_character_prefab_source_generation_source_validation"] == (
+        "runtime_character_prefab_source_source_discovery_pass"
+    )
+    source_refs = " ".join(report["runtime_character_prefab_source_generation_source_refs"])
+    assert "PrefabBuilderComponent.cpp" in source_refs
+    assert "SpawnableUtils.cpp" in source_refs
+    assert "release_rigged.prefab" in source_refs
+    assert report["runtime_character_prefab_source_apb_expected_product"] == (
+        "pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable"
+    )
+    assert report["runtime_character_prefab_source_apb_product_found"] is False
+    assert report["runtime_character_prefab_source_apb_product_status"] == (
+        "runtime_character_prefab_source_apb_product_missing"
+    )
+    assert report["runtime_character_spawnable_surface_generation_required"] is True
+    assert report["runtime_character_spawnable_surface_generation_completed"] is False
+    assert report["runtime_character_spawnable_surface_claimed"] is False
+    assert report["runtime_character_spawnable_surface_verified"] is False
+    assert report["runtime_character_product_load_claimed"] is False
+    assert report["runtime_character_product_load_verified"] is False
+    assert report["runtime_character_instantiation_claimed"] is False
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_character_prefab_source_diagnostic_records_generated_spawnable_without_load_claim(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _enable_fixture_gem(project)
+    _append_apb_products(
+        apb,
+        [
+            {
+                "product_type": "spawnable",
+                "product_path": "pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable",
+                "source_path": "Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+                "source_uuid": "66666666666646668666666666666666",
+                "source_sub_id": "45",
+                "asset_type_id": "{855E3021-D305-4845-B284-20C3F7FDF16B}",
+                "builder": "Prefabs",
+                "status": "ready",
+            }
+        ],
+    )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_character_prefab_source=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_character_prefab_source_status"] == "runtime_character_prefab_source_apb_product_found"
+    assert report["runtime_character_prefab_source_apb_product_found"] is True
+    assert report["runtime_character_prefab_source_apb_product_path"] == (
+        "pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable"
+    )
+    assert report["runtime_character_prefab_source_apb_product_asset_id"] == (
+        "{66666666-6666-4666-8666-666666666666}:0000002d"
+    )
+    assert report["runtime_character_prefab_source_apb_product_asset_type"] == "{855E3021-D305-4845-B284-20C3F7FDF16B}"
+    assert report["runtime_character_prefab_source_apb_product_builder"] == "Prefabs"
+    assert report["runtime_character_spawnable_surface_status"] == "runtime_character_spawnable_surface_found"
+    assert report["runtime_character_spawnable_surface_found"] is True
+    assert report["runtime_character_spawnable_surface_selected"] == (
+        "pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable"
+    )
+    assert report["runtime_character_spawnable_surface_generation_required"] is False
+    assert report["runtime_character_spawnable_surface_generation_completed"] is True
+    assert report["runtime_character_spawnable_surface_generation_source_changes"] == [
+        "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab"
+    ]
+    assert report["runtime_character_spawnable_surface_claimed"] is False
+    assert report["runtime_character_spawnable_surface_verified"] is False
+    assert report["runtime_character_product_load_claimed"] is False
+    assert report["runtime_character_product_load_verified"] is False
+    assert report["runtime_character_instantiation_claimed"] is False
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_validation_rejects_approved_prefab_source_for_defaultlevel_or_transform_only() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_character_prefab_source_status": "runtime_character_prefab_source_committed",
+            "runtime_character_prefab_source_path": "Levels/defaultlevel/defaultlevel.prefab",
+            "runtime_character_prefab_source_owned_by_repo": True,
+            "runtime_character_prefab_source_committed": True,
+            "runtime_character_prefab_source_is_defaultlevel": True,
+            "runtime_character_prefab_source_is_production_level": False,
+            "runtime_character_prefab_source_is_temp": False,
+            "runtime_character_prefab_source_is_generic_transform_only": True,
+            "runtime_character_prefab_source_is_character_specific": False,
+            "runtime_character_prefab_source_is_approved": True,
+        }
+    )
+
+    result = runtime_harness.validate_runtime_harness_report(report)
+
+    assert not result.ok
+    assert any("runtime_character_prefab_source_is_approved=true cannot use defaultlevel" in message for message in result.messages)
+    assert any("runtime_character_prefab_source_is_approved=true cannot be generic Transform-only content" in message for message in result.messages)
+
+
 def test_runtime_harness_validation_rejects_character_spawnable_surface_claim_without_verified_surface() -> None:
     report = runtime_harness.fixture_runtime_harness_report()
     report.update(
@@ -3088,7 +3254,26 @@ def test_runtime_harness_character_product_load_fixture_records_all_products_rea
     env["MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH"] = "1"
     _enable_fixture_gem(project)
     source, bootstrap, original_source, original_bootstrap = _write_defaultlevel_bootstrap(project)
-    products = runtime_harness._runtime_character_product_load_products_from_apb(runtime_harness._product_evidence_from_apb(apb))
+    _append_apb_products(
+        apb,
+        [
+            {
+                "product_type": "spawnable",
+                "product_path": "pc/assets/characters/maxine/release/maxine_character.spawnable",
+                "source_path": "Assets/Characters/Maxine/Release/maxine_character.prefab",
+                "source_uuid": "55555555555545558555555555555555",
+                "source_sub_id": "45",
+                "asset_type_id": "{855E3021-D305-4845-B284-20C3F7FDF16B}",
+                "builder": "Prefabs",
+                "status": "ready",
+            }
+        ],
+    )
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
 
     def runner(argv, **kwargs):
         marker_lines = ["MAXINE_RUNTIME_PRODUCT_LOAD_START count=8 timeout_ticks=120 require_all=true"]
@@ -3167,6 +3352,12 @@ def test_runtime_harness_character_product_load_fixture_records_all_products_rea
     assert report["runtime_character_product_load_timed_out_products"] == []
     assert report["runtime_character_product_load_failed_products"] == []
     assert len(report["runtime_character_product_load_products"]) == 8
+    assert [product["product_kind"] for product in report["runtime_character_product_load_products"]] == list(
+        runtime_harness.RUNTIME_CHARACTER_PRODUCT_LOAD_UPDATED_REQUIRED_PRODUCTS
+    )
+    assert report["runtime_character_spawnable_surface_verified"] is True
+    assert report["runtime_character_spawnable_surface_load_ready"] is True
+    assert report["runtime_procprefab_runtime_equivalent_surface_verified"] is True
     assert all(product["ready"] is True for product in report["runtime_character_product_load_products"])
     assert all(product["load_requested"] is True for product in report["runtime_character_product_load_products"])
     assert all(product["release_status"] == "runtime_character_product_load_product_released" for product in report["runtime_character_product_load_products"])

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import platform as platform_module
@@ -31,6 +32,7 @@ MXN_VALIDATION_TOOL_UNAVAILABLE = "MXN_VALIDATION_TOOL_UNAVAILABLE"
 MXN_PATH_UNSAFE = "MXN_PATH_UNSAFE"
 MXN_APB_EXECUTION_STALLED = "MXN_APB_EXECUTION_STALLED"
 MXN_APB_PROCESS_EXIT_NONZERO = "MXN_APB_PROCESS_EXIT_NONZERO"
+PREFAB_SOURCE_GENERATION_GATE = "MAXINE_ALLOW_RUNTIME_CHARACTER_PREFAB_SOURCE_GENERATION"
 SCHEMA_PATH = REPO_ROOT / "schemas" / "maxine.asset-processor-batch-report.schema.json"
 DEFAULT_CORPUS = REPO_ROOT / "examples" / "golden-corpus"
 DEFAULT_ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "o3de-integration" / "apb"
@@ -442,6 +444,30 @@ def _execute_live_apb(
     report_path = output_dir / "asset_processor_batch_live_report.json"
     argv = list(detection["command_preview"])
     timeout_seconds = _apb_timeout_seconds(env)
+    prefab_source_staging = _stage_approved_runtime_character_prefab_source(
+        golden_project_fixture=golden_project_fixture,
+        project_path=Path(str(detection["project_path"])),
+        env=env,
+    )
+    if prefab_source_staging.get("status") == "fail":
+        stdout_path.write_text("", encoding="utf-8")
+        stderr_path.write_text("", encoding="utf-8")
+        report = _failed_prefab_source_staging_report(
+            run_id=run_id,
+            platform=platform,
+            strict_integration=strict_integration,
+            golden_project_fixture=golden_project_fixture,
+            report_path=report_path,
+            stdout_path=stdout_path,
+            stderr_path=stderr_path,
+            detection=detection,
+            staging=prefab_source_staging,
+            started_at=started_at,
+            finished_at=_utc_now(),
+            timeout_seconds=timeout_seconds,
+        )
+        report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        return report
     proc, timed_out, process_cleanup = _run_live_apb_command(
         argv,
         cwd=str(detection["project_path"]),
@@ -512,6 +538,7 @@ def _execute_live_apb(
         "timeout_seconds": timeout_seconds,
         "timed_out": timed_out,
         "process_cleanup": process_cleanup,
+        "approved_runtime_character_prefab_source_staging": prefab_source_staging,
         "stdout_log_ref": _repo_relative(stdout_path),
         "stderr_log_ref": _repo_relative(stderr_path),
         "asset_processor_log_ref": "",
@@ -541,6 +568,12 @@ def _execute_live_apb(
                 "path": _repo_relative(golden_project_fixture),
             },
             {
+                "id": "approved-runtime-character-prefab-source-staging",
+                "kind": "approved_runtime_character_prefab_source_staging",
+                "path": prefab_source_staging.get("target_ref", ""),
+                "status": prefab_source_staging.get("status", ""),
+            },
+            {
                 "id": "apb-live-report",
                 "kind": "asset_processor_batch_live_report",
                 "path": _repo_relative(report_path),
@@ -550,6 +583,253 @@ def _execute_live_apb(
     }
     report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     return report
+
+
+def _failed_prefab_source_staging_report(
+    *,
+    run_id: str,
+    platform: str,
+    strict_integration: bool,
+    golden_project_fixture: Path,
+    report_path: Path,
+    stdout_path: Path,
+    stderr_path: Path,
+    detection: Mapping[str, Any],
+    staging: Mapping[str, Any],
+    started_at: str,
+    finished_at: str,
+    timeout_seconds: int,
+) -> Dict[str, Any]:
+    message = str(staging.get("message", "Approved runtime character prefab source staging failed."))
+    return {
+        "schema_version": "1.0.0",
+        "report_type": "asset_processor_batch_golden_corpus_summary_v1",
+        "report_id": run_id,
+        "mode": "local_asset_processor_batch",
+        "status": "fail",
+        "integration_enabled": True,
+        "integration_executed": False,
+        "strict_integration": strict_integration,
+        "live_asset_processor_batch_execution": False,
+        "live_editor_execution": False,
+        "live_publication": False,
+        "runner_context": _runner_context(),
+        "golden_project_fixture_ref": _repo_relative(golden_project_fixture),
+        "command": {
+            "argv": _redacted_argv(detection.get("command_preview", [])),
+            "working_directory": detection.get("project_path", ""),
+            "exit_code": None,
+            "started_at": started_at,
+            "finished_at": finished_at,
+            "duration_seconds": 0,
+            "timeout_seconds": timeout_seconds,
+            "timed_out": False,
+            "process_cleanup": {"attempted": False, "method": "", "return_code": None},
+        },
+        "command_preview": _redacted_argv(detection.get("command_preview", [])),
+        "exit_code": None,
+        "timeout_seconds": timeout_seconds,
+        "timed_out": False,
+        "process_cleanup": {"attempted": False, "method": "", "return_code": None},
+        "approved_runtime_character_prefab_source_staging": dict(staging),
+        "stdout_log_ref": _repo_relative(stdout_path),
+        "stderr_log_ref": _repo_relative(stderr_path),
+        "asset_processor_log_ref": "",
+        "apb_report_ref": _repo_relative(report_path),
+        "logs": {
+            "stdout_log_ref": _repo_relative(stdout_path),
+            "stderr_log_ref": _repo_relative(stderr_path),
+            "asset_processor_log_ref": "",
+        },
+        "platform": platform,
+        "source_assets": [],
+        "expected_products": [],
+        "produced_products": [],
+        "pending_assets": [],
+        "missing_products": [],
+        "failed_assets": [],
+        "cache_heuristic_used": False,
+        "cases": [],
+        "errors": [MXN_PATH_UNSAFE],
+        "warnings": [],
+        "messages": [message],
+        "safety": _apb_safety_payload(),
+        "evidence_refs": [
+            {
+                "id": "golden-project-fixture",
+                "kind": "o3de_golden_project_fixture",
+                "path": _repo_relative(golden_project_fixture),
+            },
+            {
+                "id": "approved-runtime-character-prefab-source-staging",
+                "kind": "approved_runtime_character_prefab_source_staging",
+                "path": staging.get("target_ref", ""),
+                "status": staging.get("status", ""),
+            },
+            {
+                "id": "apb-live-report",
+                "kind": "asset_processor_batch_live_report",
+                "path": _repo_relative(report_path),
+            },
+        ],
+    }
+
+
+def _stage_approved_runtime_character_prefab_source(
+    *,
+    golden_project_fixture: Path,
+    project_path: Path,
+    env: Mapping[str, str],
+) -> Dict[str, Any]:
+    config = _approved_runtime_character_prefab_source_config(golden_project_fixture)
+    if not config:
+        return {
+            "status": "not_configured",
+            "gate": PREFAB_SOURCE_GENERATION_GATE,
+            "gate_enabled": False,
+            "attempted": False,
+            "project_mutation_attempted": False,
+            "project_mutation_reversible": False,
+            "source_ref": "",
+            "target_ref": "",
+            "message": "No approved runtime character prefab source is configured in the golden project fixture.",
+        }
+
+    source_ref = str(config.get("repo_source_ref", "")).strip().replace("\\", "/")
+    target_ref = str(config.get("project_target_ref", "")).strip().replace("\\", "/")
+    base = {
+        "gate": PREFAB_SOURCE_GENERATION_GATE,
+        "gate_enabled": str(env.get(PREFAB_SOURCE_GENERATION_GATE, "")).strip() == "1",
+        "attempted": False,
+        "project_mutation_attempted": False,
+        "project_mutation_reversible": False,
+        "source_ref": source_ref,
+        "target_ref": target_ref,
+        "source_hash": "",
+        "target_pre_hash": "",
+        "target_post_hash": "",
+        "created": False,
+        "overwritten": False,
+        "defaultlevel_mutation": False,
+        "production_level_mutation": False,
+        "asset_cache_deleted": False,
+        "rollback_instruction": "",
+        "message": "",
+    }
+
+    path_error = _approved_prefab_source_path_error(source_ref=source_ref, target_ref=target_ref)
+    if path_error:
+        base.update({"status": "fail", "message": path_error})
+        return base
+
+    source_path = REPO_ROOT / source_ref
+    target_path = project_path / target_ref
+    if not source_path.is_file():
+        base.update(
+            {
+                "status": "fail",
+                "message": f"Approved runtime character prefab source is missing from repo-owned path: {source_ref}",
+            }
+        )
+        return base
+
+    source_bytes = source_path.read_bytes()
+    source_hash = _sha256_bytes(source_bytes)
+    base["source_hash"] = source_hash
+    if not base["gate_enabled"]:
+        base.update(
+            {
+                "status": "skipped_gate_unset",
+                "message": f"{PREFAB_SOURCE_GENERATION_GATE}=1 is required before staging the approved prefab source into the live project scanfolder.",
+            }
+        )
+        return base
+
+    if target_path.exists():
+        target_bytes = target_path.read_bytes()
+        target_hash = _sha256_bytes(target_bytes)
+        base["target_pre_hash"] = target_hash
+        if target_hash != source_hash:
+            base.update(
+                {
+                    "status": "fail",
+                    "attempted": True,
+                    "project_mutation_attempted": False,
+                    "message": (
+                        "Approved runtime character prefab source target already exists with different content; "
+                        "refusing to overwrite live project source."
+                    ),
+                }
+            )
+            return base
+        base.update(
+            {
+                "status": "already_present",
+                "attempted": True,
+                "project_mutation_attempted": False,
+                "project_mutation_reversible": True,
+                "target_post_hash": target_hash,
+                "rollback_instruction": f"Target already matched repo source; no rollback needed for {target_ref}.",
+                "message": "Approved runtime character prefab source was already present in the live project scanfolder.",
+            }
+        )
+        return base
+
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    target_path.write_bytes(source_bytes)
+    post_hash = _sha256_bytes(target_path.read_bytes())
+    base.update(
+        {
+            "status": "copied",
+            "attempted": True,
+            "project_mutation_attempted": True,
+            "project_mutation_reversible": True,
+            "target_post_hash": post_hash,
+            "created": True,
+            "rollback_instruction": f"Remove {target_ref} from the live project only under a future explicit source-cleanup gate.",
+            "message": "Approved runtime character prefab source was copied from the repo-owned fixture source into the live project scanfolder.",
+        }
+    )
+    return base
+
+
+def _approved_runtime_character_prefab_source_config(golden_project_fixture: Path) -> Dict[str, Any]:
+    try:
+        payload = json.loads(golden_project_fixture.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    source_layout = payload.get("source_layout", {}) if isinstance(payload, Mapping) else {}
+    if not isinstance(source_layout, Mapping):
+        return {}
+    config = source_layout.get("approved_runtime_character_prefab_source", {})
+    return dict(config) if isinstance(config, Mapping) else {}
+
+
+def _approved_prefab_source_path_error(*, source_ref: str, target_ref: str) -> str:
+    for label, ref in (("repo_source_ref", source_ref), ("project_target_ref", target_ref)):
+        normalized = ref.replace("\\", "/").strip()
+        lowered = normalized.lower()
+        if not normalized:
+            return f"{label} is empty for approved runtime character prefab source staging."
+        if normalized.startswith("/") or ":" in normalized or ".." in normalized.split("/"):
+            return f"{label} must be a relative path without drive letters, absolute roots, or parent traversal: {ref}"
+        if "defaultlevel" in lowered:
+            return f"{label} cannot target defaultlevel content: {ref}"
+        if "/production/" in f"/{lowered}/" or lowered.startswith("levels/"):
+            return f"{label} cannot target production or level content: {ref}"
+        if "cache/" in lowered or lowered.startswith("cache"):
+            return f"{label} cannot target Asset Cache content: {ref}"
+    if not source_ref.lower().startswith("examples/o3de-golden-project/source/"):
+        return f"repo_source_ref must stay under examples/o3de-golden-project/source: {source_ref}"
+    if not target_ref.lower().startswith("assets/"):
+        return f"project_target_ref must stay under the project Assets scanfolder: {target_ref}"
+    if not source_ref.lower().endswith(".prefab") or not target_ref.lower().endswith(".prefab"):
+        return "Approved runtime character prefab source staging requires .prefab source and target paths."
+    return ""
+
+
+def _sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
 
 
 def _products_from_asset_database(

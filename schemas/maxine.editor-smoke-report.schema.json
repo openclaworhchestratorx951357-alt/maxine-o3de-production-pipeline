@@ -1636,6 +1636,88 @@
     "runtime_character_spawnable_surface_remaining_blocker": {
       "type": "string"
     },
+    "runtime_character_spawnable_surface_generation_completed": {
+      "type": "boolean"
+    },
+    "runtime_character_prefab_source": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_character_prefab_source_status": {
+      "type": "string"
+    },
+    "runtime_character_prefab_source_path": {
+      "type": "string"
+    },
+    "runtime_character_prefab_source_kind": {
+      "type": "string"
+    },
+    "runtime_character_prefab_source_owned_by_repo": {
+      "type": "boolean"
+    },
+    "runtime_character_prefab_source_committed": {
+      "type": "boolean"
+    },
+    "runtime_character_prefab_source_is_defaultlevel": {
+      "type": "boolean"
+    },
+    "runtime_character_prefab_source_is_production_level": {
+      "type": "boolean"
+    },
+    "runtime_character_prefab_source_is_temp": {
+      "type": "boolean"
+    },
+    "runtime_character_prefab_source_is_generic_transform_only": {
+      "type": "boolean"
+    },
+    "runtime_character_prefab_source_is_character_specific": {
+      "type": "boolean"
+    },
+    "runtime_character_prefab_source_is_approved": {
+      "type": "boolean"
+    },
+    "runtime_character_prefab_source_generation_strategy": {
+      "type": "string"
+    },
+    "runtime_character_prefab_source_generation_source_validation": {
+      "type": "string"
+    },
+    "runtime_character_prefab_source_generation_source_refs": {
+      "type": "array"
+    },
+    "runtime_character_prefab_source_manifest_refs": {
+      "type": "array"
+    },
+    "runtime_character_prefab_source_approved_product_refs": {
+      "type": "array"
+    },
+    "runtime_character_prefab_source_apb_expected_product": {
+      "type": "string"
+    },
+    "runtime_character_prefab_source_apb_product_found": {
+      "type": "boolean"
+    },
+    "runtime_character_prefab_source_apb_product_path": {
+      "type": "string"
+    },
+    "runtime_character_prefab_source_apb_product_asset_id": {
+      "type": "string"
+    },
+    "runtime_character_prefab_source_apb_product_asset_type": {
+      "type": "string"
+    },
+    "runtime_character_prefab_source_apb_product_builder": {
+      "type": "string"
+    },
+    "runtime_character_prefab_source_apb_product_status": {
+      "type": "string"
+    },
+    "runtime_character_prefab_source_generation_completed": {
+      "type": "boolean"
+    },
+    "runtime_character_prefab_source_generation_blocker": {
+      "type": "string"
+    },
     "runtime_character_product_load_contract_updated": {
       "type": "boolean"
     },

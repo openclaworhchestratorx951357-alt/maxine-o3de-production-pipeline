@@ -433,6 +433,14 @@ python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigge
 
 This mode source-validates the runtime `AzFramework::Spawnable` asset type and handler registration path plus the Prefab Builder `*.prefab` to `.spawnable` generation path. It searches trusted APB evidence and the live Asset Processor database for `.spawnable` products, rejects `Levels/defaultlevel`, production/level spawnables, temp smoke-level spawnables, and generic non-character prefabs, and records `runtime_character_spawnable_surface_candidates` with typed rejection reasons. On the current paired rig, APB has no `.spawnable` product for `Assets/Characters/MAXINE/release`; the Asset Processor database only shows level/defaultlevel/temp smoke/generic prefab spawnables. The contract therefore remains `runtime_character_spawnable_surface_generation_required` with `blocked_by_runtime_character_spawnable_generation_required`. This is not product-load, spawn, animation, full character, publication, or release proof.
 
+Approved runtime character prefab-source evidence is a source-contract layer beneath the spawnable-surface diagnostic:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-character-prefab-source --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+The repo-owned source is `examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab`. It is a reviewed `.prefab` source, not a generated `.spawnable` product, and it references the approved direct `.procprefab` product `assets/characters/maxine/release/maxine_idle_fbx.procprefab` through the source-validated Prefab Builder path. Live APB staging into `Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab` requires `MAXINE_ALLOW_RUNTIME_CHARACTER_PREFAB_SOURCE_GENERATION=1` and refuses to overwrite mismatched live project source. The diagnostic records `runtime_character_prefab_source_*` fields, rejects defaultlevel, production-level, temp-only, or generic Transform-only sources, and expects APB/AP DB evidence for `pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable`. A found generated product is still only surface generation evidence until the bounded no-defaultlevel runtime fixture loads it ready; after that fixture succeeds the updated product-load contract may be satisfied for product loading only. That still does not imply spawn/instantiation, animation, or full runtime character proof.
+
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 
 This wiring does not publish, mutate production levels, contact external services, or claim production-ready completion.
