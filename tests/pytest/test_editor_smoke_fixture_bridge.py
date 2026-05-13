@@ -1672,6 +1672,160 @@ def test_editor_python_prefab_save_update_bridge_host_source_validation_detects_
     assert result["approved_prefab_save_update_scratch_save_verified"] is False
 
 
+def test_editor_python_prefab_save_update_bridge_host_validation_does_not_require_c_src_o3de(
+    monkeypatch,
+):
+    original_exists = Path.exists
+
+    def fake_exists(path: Path) -> bool:
+        normalized = str(path).replace("\\", "/")
+        if normalized.startswith("C:/src/o3de/"):
+            return False
+        return original_exists(path)
+
+    monkeypatch.delenv("O3DE_ENGINE_ROOT", raising=False)
+    monkeypatch.setattr(Path, "exists", fake_exists)
+
+    result = editor_python_smoke._run_approved_prefab_save_update_bridge_host_checks(
+        {},
+        bridge_host_status={
+            "callable": True,
+            "status": "maxine_prefab_save_update_bridge_host_registered;save_route_exposed=false",
+        },
+        build_verified=True,
+    )
+
+    assert result["approved_prefab_save_update_bridge_host_source_validation_status"] == "pass"
+    assert result["approved_prefab_save_update_bridge_host_source_validation_verified"] is True
+    assert result["approved_prefab_save_update_bridge_host_engine_source_refs_status"] == "engine_source_refs_unavailable"
+    assert result["approved_prefab_save_update_bridge_host_callable_from_editor_python"] is True
+    assert result["approved_prefab_save_update_bridge_verified"] is False
+    assert result["approved_prefab_save_update_scratch_save_verified"] is False
+    assert result["runtime_character_animation_component_wiring_verified"] is False
+    assert result["runtime_character_animation_verified"] is False
+    assert result["runtime_character_proof_verified"] is False
+
+
+def test_editor_python_prefab_save_update_bridge_host_engine_refs_use_configured_root(
+    tmp_path,
+    monkeypatch,
+):
+    engine_root = tmp_path / "custom-o3de"
+    prefab_interface = (
+        engine_root / "Code" / "Framework" / "AzToolsFramework" / "AzToolsFramework" / "Prefab" / "PrefabPublicInterface.h"
+    )
+    prefab_handler = (
+        engine_root / "Code" / "Framework" / "AzToolsFramework" / "AzToolsFramework" / "Prefab" / "PrefabPublicHandler.cpp"
+    )
+    prefab_request_handler = (
+        engine_root
+        / "Code"
+        / "Framework"
+        / "AzToolsFramework"
+        / "AzToolsFramework"
+        / "Prefab"
+        / "PrefabPublicRequestHandler.cpp"
+    )
+    custom_asset_cmake = engine_root / "Gems" / "CustomAssetExample" / "Code" / "CMakeLists.txt"
+    archive_module = engine_root / "Gems" / "Archive" / "Code" / "Source" / "Tools" / "ArchiveEditorModule.cpp"
+    python_funcs = engine_root / "Code" / "Editor" / "PythonEditorFuncs.cpp"
+    prefab_interface.parent.mkdir(parents=True)
+    custom_asset_cmake.parent.mkdir(parents=True)
+    archive_module.parent.mkdir(parents=True)
+    python_funcs.parent.mkdir(parents=True)
+    prefab_interface.write_text(
+        "class PrefabPublicInterface { PrefabOperationResult SavePrefab(AZ::IO::Path); "
+        "void CreatePrefabAndSaveToDisk(); };\n",
+        encoding="utf-8",
+    )
+    prefab_handler.write_text(
+        "PrefabPublicHandler::CreatePrefabAndSaveToDisk filePath.IsAbsolute() CreatePrefabInMemory "
+        "SaveTemplateToFile PrefabPublicHandler::SavePrefab GetTemplateIdFromFilePath SaveTemplate\n",
+        encoding="utf-8",
+    )
+    prefab_request_handler.write_text(
+        'BehaviorContext PrefabPublicRequestBus Event("CreatePrefabInMemory" Event("InstantiatePrefab"\n',
+        encoding="utf-8",
+    )
+    custom_asset_cmake.write_text(
+        "if(PAL_TRAIT_BUILD_HOST_TOOLS)\n"
+        "ly_add_target(NAME ${gem_name}.Editor GEM_MODULE)\n"
+        "ly_create_alias(NAME ${gem_name}.Tools NAMESPACE Gem TARGETS Gem::${gem_name}.Editor)\n",
+        encoding="utf-8",
+    )
+    archive_module.write_text(
+        "class ArchiveEditorModule {};\n"
+        "AZ_DECLARE_MODULE_CLASS(AZ_JOIN(Gem_, O3DE_GEM_NAME, _Editor), Archive::ArchiveEditorModule)\n",
+        encoding="utf-8",
+    )
+    python_funcs.write_text(
+        "AZ::BehaviorContext* behaviorContext(nullptr);\n"
+        "AZ::Script::Attributes::ScopeFlags::Automation;\n"
+        "AZ::Script::Attributes::Module;\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("O3DE_ENGINE_ROOT", str(engine_root))
+
+    result = editor_python_smoke._run_approved_prefab_save_update_bridge_host_checks(
+        {},
+        bridge_host_status={
+            "callable": True,
+            "status": "maxine_prefab_save_update_bridge_host_registered;save_route_exposed=false",
+        },
+        build_verified=True,
+    )
+
+    assert result["approved_prefab_save_update_bridge_host_source_validation_status"] == "pass"
+    assert result["approved_prefab_save_update_bridge_host_engine_source_refs_status"] == "pass"
+    engine_ref_paths = {
+        str(ref.get("path", "")).replace("\\", "/")
+        for ref in result["approved_prefab_save_update_bridge_host_engine_source_refs"]
+    }
+    assert any(str(engine_root).replace("\\", "/") in path for path in engine_ref_paths)
+    assert not any(path.startswith("C:/src/o3de/") for path in engine_ref_paths)
+    assert result["approved_prefab_save_update_bridge_host_callable_from_editor_python"] is True
+
+
+def test_editor_python_prefab_save_update_bridge_host_missing_repo_owned_host_blocks(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.delenv("O3DE_ENGINE_ROOT", raising=False)
+    missing_host_source = tmp_path / "missing-host.cpp"
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_approved_prefab_save_update_bridge_host_repo_source_refs",
+        lambda: [
+            {
+                "path": str(missing_host_source),
+                "symbols": ["MaxinePrefabSaveUpdateBridgeEditorModule"],
+                "absent_symbols": [],
+            }
+        ],
+    )
+
+    result = editor_python_smoke._run_approved_prefab_save_update_bridge_host_checks(
+        {},
+        bridge_host_status={
+            "callable": True,
+            "status": "maxine_prefab_save_update_bridge_host_registered;save_route_exposed=false",
+        },
+        build_verified=True,
+    )
+
+    assert result["approved_prefab_save_update_bridge_host_source_validation_status"] == "inconclusive"
+    assert result["approved_prefab_save_update_bridge_host_source_validation_verified"] is False
+    assert result["approved_prefab_save_update_bridge_host_added"] is False
+    assert result["approved_prefab_save_update_bridge_host_registered"] is False
+    assert result["approved_prefab_save_update_bridge_host_callable_from_editor_python"] is False
+    assert (
+        result["approved_prefab_save_update_bridge_host_blocker"]
+        == "blocked_by_editor_bridge_host_requires_additional_source_validation"
+    )
+    assert result["approved_prefab_save_update_bridge_verified"] is False
+    assert result["approved_prefab_save_update_scratch_save_verified"] is False
+
+
 def test_editor_smoke_prefab_save_update_bridge_host_verified_requires_editor_python_callability():
     report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
     report.update(

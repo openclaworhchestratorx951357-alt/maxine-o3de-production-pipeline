@@ -247,6 +247,15 @@ def main() -> int:
             "approved_prefab_save_update_bridge_host_source_files": report.get(
                 "approved_prefab_save_update_bridge_host_source_files", []
             ),
+            "approved_prefab_save_update_bridge_host_engine_source_refs_status": report.get(
+                "approved_prefab_save_update_bridge_host_engine_source_refs_status", ""
+            ),
+            "approved_prefab_save_update_bridge_host_engine_source_refs_verified": report.get(
+                "approved_prefab_save_update_bridge_host_engine_source_refs_verified", False
+            ),
+            "approved_prefab_save_update_bridge_host_engine_source_refs": report.get(
+                "approved_prefab_save_update_bridge_host_engine_source_refs", []
+            ),
             "approved_prefab_save_update_bridge_host_selected_strategy": report.get(
                 "approved_prefab_save_update_bridge_host_selected_strategy", ""
             ),
@@ -4422,9 +4431,9 @@ def _approved_prefab_save_update_bridge_candidate_matrix() -> List[Dict[str, Any
     ]
 
 
-def _approved_prefab_save_update_bridge_host_source_refs() -> List[Dict[str, Any]]:
+def _approved_prefab_save_update_bridge_host_repo_source_refs() -> List[Dict[str, Any]]:
     repo_root = Path(__file__).resolve().parents[3]
-    return _approved_prefab_save_update_source_refs() + [
+    return [
         {
             "path": str(repo_root / "o3de/gems/MaxineRuntimeExitFixture/gem.json"),
             "symbols": [
@@ -4499,8 +4508,63 @@ def _approved_prefab_save_update_bridge_host_source_refs() -> List[Dict[str, Any
             ],
             "absent_symbols": [],
         },
+    ]
+
+
+def _approved_prefab_save_update_bridge_host_engine_source_refs() -> List[Dict[str, Any]]:
+    engine_root_raw = os.environ.get("O3DE_ENGINE_ROOT", "").strip()
+    if not engine_root_raw:
+        return []
+    engine_root = Path(engine_root_raw)
+    return [
         {
-            "path": "C:/src/o3de/Gems/CustomAssetExample/Code/CMakeLists.txt",
+            "path": str(
+                engine_root
+                / "Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabPublicInterface.h"
+            ),
+            "symbols": [
+                "PrefabPublicInterface",
+                "CreatePrefabAndSaveToDisk",
+                "SavePrefab",
+                "PrefabOperationResult",
+                "AZ::IO::Path",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": str(
+                engine_root
+                / "Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabPublicHandler.cpp"
+            ),
+            "symbols": [
+                "PrefabPublicHandler::CreatePrefabAndSaveToDisk",
+                "filePath.IsAbsolute()",
+                "CreatePrefabInMemory",
+                "SaveTemplateToFile",
+                "PrefabPublicHandler::SavePrefab",
+                "GetTemplateIdFromFilePath",
+                "SaveTemplate",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": str(
+                engine_root
+                / "Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabPublicRequestHandler.cpp"
+            ),
+            "symbols": [
+                "BehaviorContext",
+                "PrefabPublicRequestBus",
+                'Event("CreatePrefabInMemory"',
+                'Event("InstantiatePrefab"',
+            ],
+            "absent_symbols": [
+                'Event("CreatePrefabAndSaveToDisk"',
+                'Event("SavePrefab"',
+            ],
+        },
+        {
+            "path": str(engine_root / "Gems/CustomAssetExample/Code/CMakeLists.txt"),
             "symbols": [
                 "if(PAL_TRAIT_BUILD_HOST_TOOLS)",
                 "NAME ${gem_name}.Editor GEM_MODULE",
@@ -4509,7 +4573,7 @@ def _approved_prefab_save_update_bridge_host_source_refs() -> List[Dict[str, Any
             "absent_symbols": [],
         },
         {
-            "path": "C:/src/o3de/Gems/Archive/Code/Source/Tools/ArchiveEditorModule.cpp",
+            "path": str(engine_root / "Gems/Archive/Code/Source/Tools/ArchiveEditorModule.cpp"),
             "symbols": [
                 "AZ_DECLARE_MODULE_CLASS",
                 "O3DE_GEM_NAME",
@@ -4518,7 +4582,7 @@ def _approved_prefab_save_update_bridge_host_source_refs() -> List[Dict[str, Any
             "absent_symbols": [],
         },
         {
-            "path": "C:/src/o3de/Code/Editor/PythonEditorFuncs.cpp",
+            "path": str(engine_root / "Code/Editor/PythonEditorFuncs.cpp"),
             "symbols": [
                 "AZ::BehaviorContext",
                 "AZ::Script::Attributes::ScopeFlags::Automation",
@@ -4527,6 +4591,29 @@ def _approved_prefab_save_update_bridge_host_source_refs() -> List[Dict[str, Any
             "absent_symbols": [],
         },
     ]
+
+
+def _optional_engine_source_validation_from_refs(specs: List[Dict[str, Any]]) -> Dict[str, Any]:
+    if not specs:
+        return {
+            "status": "engine_source_refs_unavailable",
+            "verified": False,
+            "refs": [],
+        }
+    validation = _source_validation_from_refs(specs)
+    if validation["status"] == "pass":
+        return validation
+    refs = validation.get("refs", [])
+    any_exists = any(isinstance(ref, Mapping) and ref.get("exists") is True for ref in refs)
+    validation["status"] = "inconclusive" if any_exists else "engine_source_refs_not_available_in_this_environment"
+    validation["verified"] = False
+    return validation
+
+
+def _approved_prefab_save_update_bridge_host_source_refs() -> List[Dict[str, Any]]:
+    return _approved_prefab_save_update_bridge_host_repo_source_refs() + (
+        _approved_prefab_save_update_bridge_host_engine_source_refs()
+    )
 
 
 def _approved_prefab_save_update_bridge_host_candidate_matrix() -> List[Dict[str, Any]]:
@@ -4622,7 +4709,10 @@ def _run_approved_prefab_save_update_bridge_host_checks(
     bridge_host_status: Mapping[str, Any],
     build_verified: bool,
 ) -> Dict[str, Any]:
-    source_validation = _source_validation_from_refs(_approved_prefab_save_update_bridge_host_source_refs())
+    source_validation = _source_validation_from_refs(_approved_prefab_save_update_bridge_host_repo_source_refs())
+    engine_source_validation = _optional_engine_source_validation_from_refs(
+        _approved_prefab_save_update_bridge_host_engine_source_refs()
+    )
     source_verified = source_validation["verified"] is True
     callable_from_editor = bool(bridge_host_status.get("callable")) and source_verified
     host_added = source_verified
@@ -4643,6 +4733,9 @@ def _run_approved_prefab_save_update_bridge_host_checks(
         "approved_prefab_save_update_bridge_host_source_validation_status": source_validation["status"],
         "approved_prefab_save_update_bridge_host_source_validation_verified": source_validation["verified"],
         "approved_prefab_save_update_bridge_host_source_files": source_validation["refs"],
+        "approved_prefab_save_update_bridge_host_engine_source_refs_status": engine_source_validation["status"],
+        "approved_prefab_save_update_bridge_host_engine_source_refs_verified": engine_source_validation["verified"],
+        "approved_prefab_save_update_bridge_host_engine_source_refs": engine_source_validation["refs"],
         "approved_prefab_save_update_bridge_host_selected_strategy": (
             "register_editor_tools_behavior_context_host_before_save_route"
         ),
@@ -4664,6 +4757,7 @@ def _run_approved_prefab_save_update_bridge_host_checks(
             "module": "azlmbr.maxine.prefab_bridge",
             "method": "get_prefab_save_update_bridge_host_status",
             "source_api": "AzToolsFramework::Prefab::PrefabPublicInterface",
+            "engine_source_refs_status": engine_source_validation["status"],
             "save_route_exposed": False,
             "scratch_save_verified": False,
         },

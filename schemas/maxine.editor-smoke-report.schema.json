@@ -2214,6 +2214,15 @@
     "approved_prefab_save_update_bridge_host_source_files": {
       "type": "array"
     },
+    "approved_prefab_save_update_bridge_host_engine_source_refs_status": {
+      "type": "string"
+    },
+    "approved_prefab_save_update_bridge_host_engine_source_refs_verified": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_host_engine_source_refs": {
+      "type": "array"
+    },
     "approved_prefab_save_update_bridge_host_selected_strategy": {
       "type": "string"
     },
