@@ -178,6 +178,17 @@ Direct `.procprefab` product semantics evidence uses dedicated fields so source-
 - `direct_procprefab_content_assertions`: post-instantiation evidence for the direct product path, including container/entity validity, owning path match, created entity count, entity-name/child-structure summaries, component inventory, missing-asset/load-error scans, required assertion pass/fail lists, and typed unavailable informational assertions.
 - `procprefab_character_assertions`: character-specific evidence for the direct product path, including candidate component TypeId discovery, per-entity component presence checks, safe property/asset-reference readback when exposed, matched APB product evidence when available, selected-path missing actor/mesh/material/animation/load-error scans, required character assertion pass/fail lists, and typed unavailable or unsupported reasons.
 - `runtime_spawnable_proof`: runtime/spawnable/product-side surface evidence after Editor component inventory is exhausted. This records source-discovered spawnable/ProductDependency APIs, the read-only ProductDependencies query result, runtime launcher candidates if present, runtime execution attempted/verified booleans, product dependency matches to APB evidence when available, selected-path missing character/load-error scans, and typed blocked or unavailable reasons.
+
+Approved prefab save/update automation surface evidence uses a dedicated Editor diagnostic mode, `approved-prefab-save-update-automation-surface`, so save/update automation proof cannot be confused with component assignment, APB product-load, or runtime character proof. Reports may include:
+
+- `approved_prefab_save_update_automation_surface_diagnostic_attempted` / `approved_prefab_save_update_automation_surface_diagnostic_completed`
+- `approved_prefab_save_update_source_validation_status`, `approved_prefab_save_update_source_validation_verified`, and `approved_prefab_save_update_source_files`
+- `approved_prefab_save_update_api`, including the source-validated `PrefabPublicInterface::CreatePrefabAndSaveToDisk` and `PrefabPublicInterface::SavePrefab` surfaces
+- `approved_prefab_save_update_behavior_context_exposed`, `approved_prefab_save_update_bridge_added`, and `approved_prefab_save_update_bridge_verified`
+- `approved_prefab_save_update_allowed_path_policy`, `approved_prefab_save_update_rejected_defaultlevel_path`, and `approved_prefab_save_update_rejected_production_level_path`
+- `approved_prefab_save_update_scratch_save_attempted`, `approved_prefab_save_update_scratch_save_verified`, and `approved_prefab_save_update_scratch_cleanup_verified`
+
+If the only validated state is that `SavePrefab` / `CreatePrefabAndSaveToDisk` are not exposed through `PrefabPublicRequestBus`, the report must use `blocked_by_prefab_save_interface_not_available_to_automation`, keep `approved_prefab_save_update_automation_surface_verified=false`, keep `approved_runtime_animation_component_wiring_source_prefab_modified=false`, and keep runtime component wiring, runtime animation, and full runtime character proof false.
 - `source_prefab_baseline_result`: the already proven temp source-prefab create/instantiate result that remains the stable Editor smoke baseline.
 - `direct_product_instantiation_claimed`: true only when direct `.procprefab` product behavior is actually claimed.
 - `direct_product_instantiation_supported`: true only when the current binding surface supports the selected direct product path.

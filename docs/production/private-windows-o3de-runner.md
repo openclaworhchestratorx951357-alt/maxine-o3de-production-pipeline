@@ -159,6 +159,15 @@ $env:MAXINE_ENABLE_APPROVED_RUNTIME_ANIMATION_COMPONENT_WIRING_EDITOR_GENERATION
 
 The optional `MAXINE_ALLOW_APPROVED_RUNTIME_ANIMATION_COMPONENT_WIRING_EDITOR_GENERATION=1` marker may be set only for a bounded Editor-generated update path after source validation proves save semantics. The current pinned result is a typed blocker: `PrefabPublicRequestBus` exposes `CreatePrefabInMemory` and `InstantiatePrefab`, but `CreatePrefabAndSaveToDisk` and `SavePrefab` are source-valid only on `PrefabPublicInterface` and are not reflected onto the Editor Python automation bus. That means the diagnostic may probe Editor Actor + Simple Motion add/property assignment in the approved temp smoke level, but it must keep `approved_runtime_animation_component_wiring_source_prefab_modified=false`, `approved_runtime_animation_component_wiring_prefab_save_verified=false`, `runtime_character_animation_component_wiring_verified=false`, and all runtime animation/full-character proof flags false.
 
+Approved prefab save/update automation surface diagnostics require the Editor smoke gates plus an explicit save/update surface marker:
+
+```powershell
+$env:MAXINE_ENABLE_APPROVED_PREFAB_SAVE_UPDATE_AUTOMATION_SURFACE="1"
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --mode local_editor_python --enable-editor-smoke --strict-integration --diagnose-approved-prefab-save-update-automation-surface --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 180
+```
+
+The optional `MAXINE_ALLOW_APPROVED_PREFAB_SAVE_UPDATE_AUTOMATION_SURFACE=1` marker may be set only for a bounded scratch save/update fixture after source validation proves a callable save route. The current diagnostic is source-validation-only: `PrefabPublicInterface::CreatePrefabAndSaveToDisk` and `PrefabPublicInterface::SavePrefab` are available in C++, with `PrefabPublicHandler` using `CreatePrefabInMemory`, `SaveTemplateToFile`, `GetTemplateIdFromFilePath`, and `SaveTemplate`, but the Python-exposed `PrefabPublicRequestBus` does not reflect the save events. The diagnostic must report `blocked_by_prefab_save_interface_not_available_to_automation`, reject defaultlevel/production paths, leave scratch save unattempted, keep the approved source prefab unmodified, and keep runtime component wiring, runtime animation, and full runtime character proof false.
+
 Approved runtime character prefab-source generation has a narrower gate when a repo-owned source must be staged into the live project scanfolder:
 
 ```powershell
@@ -380,6 +389,15 @@ python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.p
 
 $env:MAXINE_ENABLE_APPROVED_RUNTIME_ANIMATION_COMPONENT_WIRING_EDITOR_GENERATION="1"
 python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --mode local_editor_python --enable-editor-smoke --strict-integration --diagnostic-mode approved-animation-component-wiring-generation --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 180
+```
+
+Approved prefab save/update automation surface diagnostic entry points are:
+
+```powershell
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --mode local_editor_python --enable-editor-smoke --strict-integration --diagnose-approved-prefab-save-update-automation-surface --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 180
+
+$env:MAXINE_ENABLE_APPROVED_PREFAB_SAVE_UPDATE_AUTOMATION_SURFACE="1"
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --mode local_editor_python --enable-editor-smoke --strict-integration --diagnostic-mode approved-prefab-save-update-automation-surface --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 180
 ```
 
 When the APB evidence, runtime readiness, and command pinning gates are clean, registration and enablement are run through the harness rather than by hand:
