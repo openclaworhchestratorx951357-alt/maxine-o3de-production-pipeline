@@ -115,6 +115,14 @@ $env:MAXINE_ENABLE_RUNTIME_PROCPREFAB_HANDLER_OR_SPAWNABLE_SURFACE="1"
 
 The current diagnostic is read-only source discovery. It records that direct `.procprefab` runtime AssetManager load uses the builder/tools-only `AZ::Prefab::PrefabGroupAssetHandler`, while the runtime prefab-equivalent surface is expected to be an AzFramework spawnable surface if a character spawnable product exists. That gate does not permit production/defaultlevel mutation, Asset Cache deletion, publication, packaging, spawning, animation proof, or direct `.procprefab` proof while the handler remains missing.
 
+Approved runtime character spawnable-surface probing has its own gate for any future live fixture work:
+
+```powershell
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE="1"
+```
+
+The current `--diagnose-runtime-character-spawnable-surface` mode is read-only and does not require launching runtime. It source-validates `AzFramework::Spawnable` and the Prefab Builder `*.prefab` to `.spawnable` product path, then searches APB/AP DB/AssetCatalog-style evidence for character-specific release spawnables. It must reject `Levels/defaultlevel`, production/level spawnables, temp smoke levels, and generic non-character prefabs. This gate does not permit publishing, packaging, Asset Cache deletion, defaultlevel/production mutation, spawning, animation proof, or runtime character proof.
+
 The repository now owns source for `o3de/gems/MaxineRuntimeExitFixture`, but it is disabled by default and is not runtime execution proof. Without the mutation/rebuild gates, the runner records source and rebuild-gate readiness only; it must not register the Gem, rebuild runtime targets, or launch a fixture command.
 
 ## Beginner Commands
@@ -246,6 +254,14 @@ python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigge
 ```
 
 This mode does not launch runtime. It source-validates `AZ::Prefab::ProceduralPrefabAsset`, `AZ::Prefab::PrefabGroupAssetHandler`, `PrefabBuilder.Builders/Tools`, `AzFramework::Spawnable`, `SpawnableAssetHandler`, `SpawnableSystemComponent`, and `SpawnableEntitiesInterface`. It preserves the `.procprefab` `asset_handler_missing` blocker and records whether a runtime-equivalent spawnable/prefab candidate exists; source discovery alone cannot claim product-load, spawn, animation, or runtime character proof.
+
+The approved character spawnable-surface diagnostic entry point is:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-character-spawnable-surface --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+On the current paired rig, this diagnostic records `runtime_character_spawnable_surface_generation_required`: the latest APB report has no approved character `.spawnable`, and the live AP DB spawnables are defaultlevel, temp smoke-level, or generic prefab products. That status is honest blocking evidence; it does not launch runtime or satisfy product-load proof.
 
 When the APB evidence, runtime readiness, and command pinning gates are clean, registration and enablement are run through the harness rather than by hand:
 

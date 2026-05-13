@@ -15,6 +15,7 @@ import argparse
 import json
 import os
 import re
+import sqlite3
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -87,6 +88,7 @@ RUNTIME_CHARACTER_PRODUCT_LOAD_GATE_ENV = ("MAXINE_ENABLE_RUNTIME_CHARACTER_PROD
 RUNTIME_PROCPREFAB_HANDLER_OR_SURFACE_GATE_ENV = (
     "MAXINE_ENABLE_RUNTIME_PROCPREFAB_HANDLER_OR_SPAWNABLE_SURFACE=1",
 )
+RUNTIME_CHARACTER_SPAWNABLE_SURFACE_GATE_ENV = ("MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE=1",)
 RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION=1",)
 RUNTIME_EXIT_FIXTURE_REBUILD_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD=1",)
 RUNTIME_EXIT_FIXTURE_TEMP_REGISTRY_PATCH_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH=1",)
@@ -122,6 +124,9 @@ RUNTIME_PROCPREFAB_ASSET_TYPE = "{9B7C8459-471E-4EAD-A363-7990CC4065A9}"
 RUNTIME_PROCPREFAB_ASSET_CLASS = "AZ::Prefab::ProceduralPrefabAsset"
 RUNTIME_PROCPREFAB_HANDLER_MODULE = "Gem::PrefabBuilder.Builders"
 RUNTIME_SPAWNABLE_ASSET_TYPE = "{855E3021-D305-4845-B284-20C3F7FDF16B}"
+RUNTIME_SPAWNABLE_ASSET_CLASS = "AzFramework::Spawnable"
+RUNTIME_SPAWNABLE_HANDLER = "AzFramework::SpawnableAssetHandler"
+RUNTIME_SPAWNABLE_HANDLER_MODULE = "AzFramework::SpawnableSystemComponent"
 WINDOWS_NTSTATUS_NAMES = {
     0xC0000005: "STATUS_ACCESS_VIOLATION",
 }
@@ -203,6 +208,7 @@ def run_runtime_harness(
     diagnose_runtime_character_product_load: bool = False,
     enable_runtime_character_product_load_fixture: bool = False,
     diagnose_runtime_procprefab_handler_or_spawnable_surface: bool = False,
+    diagnose_runtime_character_spawnable_surface: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -243,6 +249,7 @@ def run_runtime_harness(
         and not diagnose_runtime_character_product_load
         and not enable_runtime_character_product_load_fixture
         and not diagnose_runtime_procprefab_handler_or_spawnable_surface
+        and not diagnose_runtime_character_spawnable_surface
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -288,6 +295,7 @@ def run_runtime_harness(
             and not diagnose_runtime_character_product_load
             and not enable_runtime_character_product_load_fixture
             and not diagnose_runtime_procprefab_handler_or_spawnable_surface
+            and not diagnose_runtime_character_spawnable_surface
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -336,6 +344,8 @@ def run_runtime_harness(
             if enable_runtime_character_product_load_fixture
             else "runtime_procprefab_handler_or_surface_diagnostic"
             if diagnose_runtime_procprefab_handler_or_spawnable_surface
+            else "runtime_character_spawnable_surface_diagnostic"
+            if diagnose_runtime_character_spawnable_surface
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -432,6 +442,7 @@ def run_runtime_harness(
         and not diagnose_runtime_character_product_load
         and not enable_runtime_character_product_load_fixture
         and not diagnose_runtime_procprefab_handler_or_spawnable_surface
+        and not diagnose_runtime_character_spawnable_surface
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -575,6 +586,16 @@ def run_runtime_harness(
 
     if diagnose_runtime_procprefab_handler_or_spawnable_surface:
         return _run_runtime_procprefab_handler_or_surface_diagnostic(
+            report,
+            product_evidence=product_evidence,
+            engine_root=selected_engine,
+            project=selected_project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+
+    if diagnose_runtime_character_spawnable_surface:
+        return _run_runtime_character_spawnable_surface_diagnostic(
             report,
             product_evidence=product_evidence,
             engine_root=selected_engine,
@@ -834,6 +855,21 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
             MXN_RUNTIME_SMOKE_FAIL,
             "Runtime equivalent prefab/spawnable surface proof cannot be claimed without verified surface evidence.",
         )
+    if report.get("runtime_character_spawnable_surface_claimed") is True and report.get(
+        "runtime_character_spawnable_surface_verified"
+    ) is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "runtime_character_spawnable_surface_claimed=true requires verified approved surface.",
+        )
+    if report.get("runtime_character_spawnable_surface_verified") is True:
+        selected_surface = str(report.get("runtime_character_spawnable_surface_selected", "")).strip().lower().replace("\\", "/")
+        if not selected_surface:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_spawnable_surface_verified=true requires selected surface evidence.")
+        if selected_surface.startswith("pc/levels/") or selected_surface.startswith("levels/") or "defaultlevel" in selected_surface:
+            result.add_error(MXN_PATH_UNSAFE, "runtime_character_spawnable_surface_verified=true cannot use level/defaultlevel spawnables.")
+        if report.get("runtime_character_spawnable_surface_found") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_spawnable_surface_verified=true requires found approved character surface.")
     if report.get("runtime_character_product_load_verified") is True:
         if report.get("runtime_execution_verified") is not True:
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_product_load_verified=true requires verified command-envelope runtime execution.")
@@ -884,6 +920,17 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
             result.add_error(
                 MXN_RUNTIME_SMOKE_FAIL,
                 "runtime_character_product_load_verified=true under updated product-load contract requires verified runtime-equivalent prefab/spawnable surface.",
+            )
+        if (
+            report.get("runtime_character_product_load_contract_updated") is True
+            and report.get("runtime_character_product_load_runtime_equivalent_required") is True
+            and str(report.get("runtime_character_product_load_runtime_equivalent_surface_kind", "")).strip()
+            == "approved_character_spawnable"
+            and report.get("runtime_character_spawnable_surface_verified") is not True
+        ):
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "runtime_character_product_load_verified=true requires verified approved runtime character spawnable surface.",
             )
     if report.get("runtime_character_product_load_is_instantiation_proof") is True and report.get("runtime_character_instantiation_verified") is not True:
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime product-load proof is not runtime instantiation proof.")
@@ -1113,6 +1160,15 @@ def print_text_report(report: Mapping[str, Any]) -> None:
             "runtime_procprefab_runtime_equivalent_surface_verified: "
             f"{str(report.get('runtime_procprefab_runtime_equivalent_surface_verified', False)).lower()}"
         )
+    if report.get("runtime_character_spawnable_surface_status") not in {
+        None,
+        "",
+        "not_run",
+        "runtime_character_spawnable_surface_not_attempted",
+    }:
+        print(f"runtime_character_spawnable_surface_status: {report.get('runtime_character_spawnable_surface_status', '')}")
+        print(f"runtime_character_spawnable_surface_found: {str(report.get('runtime_character_spawnable_surface_found', False)).lower()}")
+        print(f"runtime_character_spawnable_surface_verified: {str(report.get('runtime_character_spawnable_surface_verified', False)).lower()}")
     print(f"runtime_character_proof_claimed: {str(report.get('runtime_character_proof_claimed', False)).lower()}")
     print(f"runtime_character_proof_verified: {str(report.get('runtime_character_proof_verified', False)).lower()}")
     print(f"live_runtime_execution: {str(report.get('live_runtime_execution', False)).lower()}")
@@ -1643,9 +1699,32 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_procprefab_surface_remaining_blocker": "",
         "runtime_procprefab_runtime_equivalent_surface_claimed": False,
         "runtime_procprefab_runtime_equivalent_surface_verified": False,
+        "runtime_character_spawnable_surface": {"status": "runtime_character_spawnable_surface_not_attempted"},
+        "runtime_character_spawnable_surface_status": "runtime_character_spawnable_surface_not_attempted",
+        "runtime_character_spawnable_surface_source_validation": "runtime_character_spawnable_surface_not_attempted",
+        "runtime_character_spawnable_surface_source_refs": [],
+        "runtime_character_spawnable_surface_search_status": "runtime_character_spawnable_surface_not_attempted",
+        "runtime_character_spawnable_surface_candidates": [],
+        "runtime_character_spawnable_surface_candidate_matrix_recorded": False,
+        "runtime_character_spawnable_surface_selected": "",
+        "runtime_character_spawnable_surface_selected_reason": "",
+        "runtime_character_spawnable_surface_found": False,
+        "runtime_character_spawnable_surface_claimed": False,
+        "runtime_character_spawnable_surface_verified": False,
+        "runtime_character_spawnable_surface_load_status": "runtime_character_spawnable_surface_load_not_attempted",
+        "runtime_character_spawnable_surface_load_ready": False,
+        "runtime_character_spawnable_surface_load_timeout": False,
+        "runtime_character_spawnable_surface_log_errors": [],
+        "runtime_character_spawnable_surface_missing_reason": "",
+        "runtime_character_spawnable_surface_generation_required": False,
+        "runtime_character_spawnable_surface_generation_strategy": "",
+        "runtime_character_spawnable_surface_generation_source_changes": [],
+        "runtime_character_spawnable_surface_generation_blocker": "",
+        "runtime_character_spawnable_surface_remaining_blocker": "",
         "runtime_character_product_load_contract_updated": False,
         "runtime_character_product_load_direct_procprefab_required": True,
         "runtime_character_product_load_runtime_equivalent_required": False,
+        "runtime_character_product_load_runtime_equivalent_surface_kind": "",
         "runtime_character_product_load_contract_blocker": "",
         "runtime_character_instantiation_claimed": False,
         "runtime_character_instantiation_verified": False,
@@ -6671,6 +6750,9 @@ def _runtime_procprefab_handler_or_surface_payload(
         "runtime_character_product_load_contract_updated": bool(source_validated),
         "runtime_character_product_load_direct_procprefab_required": False if source_validated else True,
         "runtime_character_product_load_runtime_equivalent_required": bool(source_validated),
+        "runtime_character_product_load_runtime_equivalent_surface_kind": "runtime_equivalent_spawnable_or_prefab_surface"
+        if source_validated
+        else "",
         "runtime_character_product_load_contract_blocker": contract_blocker,
         "runtime_character_product_load_verified": False,
         "runtime_character_product_load_claimed": False,
@@ -6887,6 +6969,370 @@ def _runtime_procprefab_handler_source_refs(engine_root: Path | None) -> List[st
 def _runtime_procprefab_spawnable_source_refs(engine_root: Path | None) -> List[str]:
     root = engine_root or Path("<engine-root>")
     return [str(path) for path in _runtime_procprefab_spawnable_source_paths(root)]
+
+
+def _run_runtime_character_spawnable_surface_diagnostic(
+    report: Dict[str, Any],
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    report.update(
+        _runtime_character_spawnable_surface_payload(
+            product_evidence=product_evidence,
+            engine_root=engine_root,
+            project=project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+    )
+    report.update(
+        {
+            "status": "pass",
+            "runtime_harness_status": report.get("runtime_character_spawnable_surface_status", ""),
+            "runtime_harness_mode": "runtime_character_spawnable_surface_diagnostic",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "runtime_character_spawnable_surface_claimed": False,
+            "runtime_character_spawnable_surface_verified": False,
+            "runtime_character_product_load_claimed": False,
+            "runtime_character_product_load_verified": False,
+            "runtime_character_instantiation_claimed": False,
+            "runtime_character_instantiation_verified": False,
+            "runtime_character_animation_claimed": False,
+            "runtime_character_animation_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "asset_cache_deleted": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_character_spawnable_surface_source_discovery",
+                "runtime_character_spawnable_surface_candidate_search_recorded",
+                "level_and_defaultlevel_spawnables_do_not_count_as_character_surface",
+                "runtime_execution_not_attempted_in_character_spawnable_surface_diagnostic_mode",
+                "runtime_character_proof_not_claimed",
+            ],
+            "runtime_harness_assertion_informational": [
+                "spawnable_surface_discovery_is_not_runtime_load_proof",
+                "spawnable_surface_load_is_not_spawn_instantiation_proof",
+                "runtime_character_product_load_remains_blocked_until_approved_spawnable_surface_is_verified",
+            ],
+        }
+    )
+    return _finalize_report(report)
+
+
+def _runtime_character_spawnable_surface_payload(
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    _ = timeout_seconds
+    _ = artifact_dir
+    source_validated = _runtime_character_spawnable_surface_source_validated(engine_root)
+    source_refs = _runtime_character_spawnable_surface_source_refs(engine_root)
+    candidates = _runtime_character_spawnable_surface_candidates(product_evidence=product_evidence, project=project, engine_root=engine_root)
+    approved_candidates = [candidate for candidate in candidates if candidate.get("is_approved") is True]
+    selected = approved_candidates[0] if approved_candidates else {}
+    found = bool(selected)
+    status = (
+        "runtime_character_spawnable_surface_found"
+        if found
+        else "runtime_character_spawnable_surface_generation_required"
+        if source_validated
+        else "runtime_character_spawnable_surface_source_discovery_inconclusive"
+    )
+    source_validation_status = (
+        "runtime_character_spawnable_surface_source_discovery_pass"
+        if source_validated
+        else "runtime_character_spawnable_surface_source_discovery_inconclusive"
+    )
+    search_status = (
+        "approved_character_runtime_spawnable_surface_found"
+        if found
+        else "approved_character_runtime_spawnable_surface_missing"
+    )
+    missing_reason = "" if found else "approved_character_runtime_spawnable_surface_missing"
+    generation_required = not found
+    generation_blocker = "blocked_by_runtime_character_spawnable_generation_required" if generation_required else ""
+    generation_strategy = (
+        "source_validate_and_add_reviewed_character_prefab_source_that_processes_through_the_Prefabs_builder"
+        if generation_required
+        else ""
+    )
+    return {
+        "runtime_character_spawnable_surface": {
+            "status": status,
+            "selected": str(selected.get("product_path", "")),
+            "candidate_count": len(candidates),
+            "approved_candidate_count": len(approved_candidates),
+        },
+        "runtime_character_spawnable_surface_status": status,
+        "runtime_character_spawnable_surface_source_validation": source_validation_status,
+        "runtime_character_spawnable_surface_source_refs": source_refs,
+        "runtime_character_spawnable_surface_search_status": search_status,
+        "runtime_character_spawnable_surface_candidates": candidates,
+        "runtime_character_spawnable_surface_candidate_matrix_recorded": True,
+        "runtime_character_spawnable_surface_selected": str(selected.get("product_path", "")),
+        "runtime_character_spawnable_surface_selected_reason": (
+            "approved_character_specific_spawnable_surface_found_in_product_evidence"
+            if found
+            else ""
+        ),
+        "runtime_character_spawnable_surface_found": found,
+        "runtime_character_spawnable_surface_claimed": False,
+        "runtime_character_spawnable_surface_verified": False,
+        "runtime_character_spawnable_surface_load_status": (
+            "runtime_character_spawnable_surface_found_load_not_attempted"
+            if found
+            else "runtime_character_spawnable_surface_load_not_attempted"
+        ),
+        "runtime_character_spawnable_surface_load_ready": False,
+        "runtime_character_spawnable_surface_load_timeout": False,
+        "runtime_character_spawnable_surface_log_errors": [],
+        "runtime_character_spawnable_surface_missing_reason": missing_reason,
+        "runtime_character_spawnable_surface_generation_required": generation_required,
+        "runtime_character_spawnable_surface_generation_strategy": generation_strategy,
+        "runtime_character_spawnable_surface_generation_source_changes": [],
+        "runtime_character_spawnable_surface_generation_blocker": generation_blocker,
+        "runtime_character_spawnable_surface_remaining_blocker": generation_blocker,
+        "runtime_character_product_load_contract_updated": True,
+        "runtime_character_product_load_direct_procprefab_required": False,
+        "runtime_character_product_load_runtime_equivalent_required": True,
+        "runtime_character_product_load_runtime_equivalent_surface_kind": "approved_character_spawnable",
+        "runtime_character_product_load_contract_blocker": generation_blocker
+        or "blocked_by_runtime_character_spawnable_load_not_attempted",
+        "runtime_character_product_load_verified": False,
+        "runtime_character_product_load_claimed": False,
+        "runtime_character_instantiation_claimed": False,
+        "runtime_character_instantiation_verified": False,
+        "runtime_character_animation_claimed": False,
+        "runtime_character_animation_verified": False,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+    }
+
+
+def _runtime_character_spawnable_surface_candidates(
+    *,
+    product_evidence: Mapping[str, Any],
+    project: Path | None,
+    engine_root: Path | None,
+) -> List[Dict[str, Any]]:
+    raw_candidates: List[Dict[str, Any]] = []
+    for product in product_evidence.get("produced_products", []):
+        if not isinstance(product, Mapping):
+            continue
+        product_type = str(product.get("product_type", "")).strip().lower()
+        product_path = _runtime_spawnable_candidate_path(product)
+        if product_type != "spawnable" and not product_path.lower().endswith(".spawnable"):
+            continue
+        raw_candidates.append(dict(product, evidence_source=str(product.get("evidence_source", "apb_report")) or "apb_report"))
+    raw_candidates.extend(_runtime_character_spawnable_surface_candidates_from_ap_db(project))
+
+    seen: set[tuple[str, str, str]] = set()
+    candidates: List[Dict[str, Any]] = []
+    for raw in raw_candidates:
+        product_path = _runtime_spawnable_candidate_path(raw)
+        key = (
+            product_path.lower(),
+            str(raw.get("source_uuid", raw.get("source_guid", ""))).lower(),
+            str(raw.get("source_sub_id", raw.get("sub_id", ""))).lower(),
+        )
+        if not product_path or key in seen:
+            continue
+        seen.add(key)
+        candidates.append(
+            _runtime_character_spawnable_surface_candidate(
+                raw,
+                index=len(candidates),
+                engine_root=engine_root,
+            )
+        )
+    return sorted(
+        candidates,
+        key=lambda candidate: (
+            candidate.get("is_approved") is not True,
+            candidate.get("is_defaultlevel") is True,
+            candidate.get("is_level") is True,
+            str(candidate.get("product_path", "")).lower(),
+        ),
+    )
+
+
+def _runtime_character_spawnable_surface_candidates_from_ap_db(project: Path | None) -> List[Dict[str, Any]]:
+    if project is None:
+        return []
+    db_path = project / "Cache" / "assetdb.sqlite"
+    if not db_path.is_file():
+        return []
+    query = """
+        SELECT
+            p.ProductName,
+            p.SubID,
+            p.AssetType,
+            j.JobKey,
+            j.BuilderGuid,
+            s.SourceName,
+            hex(s.SourceGuid) AS SourceGuid
+        FROM Products p
+        JOIN Jobs j ON j.JobID = p.JobPK
+        JOIN Sources s ON s.SourceID = j.SourcePK
+        WHERE lower(p.ProductName) LIKE '%.spawnable'
+        ORDER BY p.ProductName
+    """
+    try:
+        with sqlite3.connect(str(db_path)) as connection:
+            connection.row_factory = sqlite3.Row
+            rows = connection.execute(query).fetchall()
+    except sqlite3.Error:
+        return []
+    candidates: List[Dict[str, Any]] = []
+    for row in rows:
+        source_uuid = _normalize_guid(str(row["SourceGuid"] or ""))
+        product = {
+            "product_type": "spawnable",
+            "product_path": str(row["ProductName"] or "").replace("\\", "/"),
+            "source_path": str(row["SourceName"] or "").replace("\\", "/"),
+            "source_uuid": source_uuid.strip("{}"),
+            "source_sub_id": str(row["SubID"] or ""),
+            "asset_type_id": _normalize_guid(row["AssetType"] or "") or RUNTIME_SPAWNABLE_ASSET_TYPE,
+            "builder": str(row["JobKey"] or ""),
+            "builder_guid": str(row["BuilderGuid"] or ""),
+            "evidence_source": "asset_processor_database",
+        }
+        candidates.append(product)
+    return candidates
+
+
+def _runtime_character_spawnable_surface_candidate(
+    product: Mapping[str, Any],
+    *,
+    index: int,
+    engine_root: Path | None,
+) -> Dict[str, Any]:
+    product_path = _runtime_spawnable_candidate_path(product)
+    catalog_path = str(product.get("catalog_path", "")).strip().replace("\\", "/") or _runtime_character_product_catalog_path(product_path)
+    source_path = str(product.get("source_path", product.get("source", ""))).strip().replace("\\", "/")
+    lower_product = product_path.lower()
+    lower_catalog = catalog_path.lower()
+    lower_source = source_path.lower()
+    is_defaultlevel = "defaultlevel" in lower_product or "defaultlevel" in lower_catalog or "defaultlevel" in lower_source
+    is_level = lower_product.startswith("pc/levels/") or lower_catalog.startswith("levels/") or lower_source.startswith("levels/")
+    is_temp = "levels/_maxine_smoke" in lower_product or "levels/_maxine_smoke" in lower_catalog or "levels/_maxine_smoke" in lower_source
+    is_character_specific = any(token in lower_product or token in lower_catalog or token in lower_source for token in ("characters/maxine", "characters\\maxine"))
+    is_release_surface = "release" in lower_product or "release" in lower_catalog or "release" in lower_source
+    is_approved = is_character_specific and is_release_surface and not is_level and not is_defaultlevel and not is_temp
+    rejected_reason = ""
+    if is_defaultlevel:
+        rejected_reason = "runtime_character_spawnable_surface_candidate_rejected_defaultlevel_spawnable"
+    elif is_level:
+        rejected_reason = "runtime_character_spawnable_surface_candidate_rejected_level_spawnable"
+    elif is_temp:
+        rejected_reason = "runtime_character_spawnable_surface_candidate_rejected_unsafe"
+    elif not is_character_specific:
+        rejected_reason = "runtime_character_spawnable_surface_candidate_rejected_not_character_specific"
+    elif not is_approved:
+        rejected_reason = "runtime_character_spawnable_surface_candidate_rejected_missing_source_validation"
+
+    source_validated = _runtime_character_spawnable_surface_source_validated(engine_root)
+    source_uuid = str(product.get("source_uuid", product.get("source_guid", ""))).strip()
+    asset_type = _normalize_guid(str(product.get("asset_type_id", product.get("assetTypeId", ""))).strip()) or RUNTIME_SPAWNABLE_ASSET_TYPE
+    candidate = {
+        "id": f"runtime_character_spawnable_surface_candidate_{index}",
+        "name": product_path,
+        "kind": "runtime_character_spawnable_surface",
+        "product_path": product_path,
+        "catalog_path": catalog_path,
+        "asset_id": _runtime_product_asset_id(product),
+        "asset_type": asset_type,
+        "source_uuid": source_uuid,
+        "source_path": source_path,
+        "builder": str(product.get("builder", product.get("job_key", ""))).strip(),
+        "handler_status": "runtime_character_spawnable_asset_handler_source_validated"
+        if source_validated
+        else "runtime_character_spawnable_asset_handler_source_inconclusive",
+        "runtime_api": "AZ::Data::AssetManager::GetAsset<AzFramework::Spawnable>",
+        "is_level": is_level,
+        "is_defaultlevel": is_defaultlevel,
+        "is_character_specific": is_character_specific,
+        "is_approved": is_approved,
+        "rejected_reason": rejected_reason,
+        "source_validation": (
+            "runtime_character_spawnable_surface_candidate_source_validated"
+            if source_validated and is_approved
+            else rejected_reason
+            if rejected_reason
+            else "runtime_character_spawnable_surface_candidate_rejected_missing_source_validation"
+        ),
+        "source_refs": _runtime_character_spawnable_surface_source_refs(engine_root),
+        "attempted": False,
+        "result": "runtime_character_spawnable_surface_found_load_not_attempted"
+        if is_approved
+        else rejected_reason,
+        "blocker": ""
+        if is_approved
+        else rejected_reason,
+        "evidence_source": str(product.get("evidence_source", "")).strip(),
+    }
+    return candidate
+
+
+def _runtime_spawnable_candidate_path(product: Mapping[str, Any]) -> str:
+    return str(product.get("product_path", product.get("path", product.get("ProductName", "")))).strip().replace("\\", "/")
+
+
+def _runtime_character_spawnable_surface_source_validated(engine_root: Path | None) -> bool:
+    root = engine_root or Path("")
+    return all(path.is_file() for path in _runtime_character_spawnable_surface_source_paths(root))
+
+
+def _runtime_character_spawnable_surface_source_refs(engine_root: Path | None) -> List[str]:
+    root = engine_root or Path("<engine-root>")
+    return [str(path) for path in _runtime_character_spawnable_surface_source_paths(root)]
+
+
+def _runtime_character_spawnable_surface_source_paths(root: Path) -> List[Path]:
+    return [
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "Spawnable.h",
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableAssetHandler.h",
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableAssetHandler.cpp",
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableSystemComponent.cpp",
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableEntitiesInterface.h",
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableEntitiesManager.cpp",
+        root / "Code" / "Framework" / "AzToolsFramework" / "AzToolsFramework" / "Prefab" / "Spawnable" / "PrefabProcessor.h",
+        root
+        / "Code"
+        / "Framework"
+        / "AzToolsFramework"
+        / "AzToolsFramework"
+        / "Prefab"
+        / "Spawnable"
+        / "PrefabInMemorySpawnableConverter.cpp",
+        root / "Code" / "Framework" / "AzToolsFramework" / "AzToolsFramework" / "Prefab" / "Spawnable" / "SpawnableUtils.cpp",
+        root / "Gems" / "Prefab" / "PrefabBuilder" / "PrefabBuilderComponent.cpp",
+    ]
+
+
+def _normalize_guid(value: Any) -> str:
+    if isinstance(value, bytes):
+        try:
+            return f"{{{str(UUID(bytes=value)).upper()}}}"
+        except (TypeError, ValueError):
+            return ""
+    cleaned = str(value).strip().strip("{}")
+    if not cleaned:
+        return ""
+    try:
+        return f"{{{str(UUID(cleaned)).upper()}}}"
+    except (TypeError, ValueError):
+        return ""
 
 
 def _runtime_character_product_load_source_payload(
@@ -10395,6 +10841,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--diagnose-runtime-character-product-load", action="store_true")
     parser.add_argument("--enable-runtime-character-product-load-fixture", action="store_true")
     parser.add_argument("--diagnose-runtime-procprefab-handler-or-spawnable-surface", action="store_true")
+    parser.add_argument("--diagnose-runtime-character-spawnable-surface", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -10446,6 +10893,7 @@ def main() -> int:
         diagnose_runtime_procprefab_handler_or_spawnable_surface=(
             args.diagnose_runtime_procprefab_handler_or_spawnable_surface
         ),
+        diagnose_runtime_character_spawnable_surface=args.diagnose_runtime_character_spawnable_surface,
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
         strict_integration=args.strict_integration,

@@ -1569,6 +1569,73 @@
     "runtime_procprefab_runtime_equivalent_surface_verified": {
       "type": "boolean"
     },
+    "runtime_character_spawnable_surface": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_character_spawnable_surface_status": {
+      "type": "string"
+    },
+    "runtime_character_spawnable_surface_source_validation": {
+      "type": "string"
+    },
+    "runtime_character_spawnable_surface_source_refs": {
+      "type": "array"
+    },
+    "runtime_character_spawnable_surface_search_status": {
+      "type": "string"
+    },
+    "runtime_character_spawnable_surface_candidates": {
+      "type": "array"
+    },
+    "runtime_character_spawnable_surface_candidate_matrix_recorded": {
+      "type": "boolean"
+    },
+    "runtime_character_spawnable_surface_selected": {
+      "type": "string"
+    },
+    "runtime_character_spawnable_surface_selected_reason": {
+      "type": "string"
+    },
+    "runtime_character_spawnable_surface_found": {
+      "type": "boolean"
+    },
+    "runtime_character_spawnable_surface_claimed": {
+      "type": "boolean"
+    },
+    "runtime_character_spawnable_surface_verified": {
+      "type": "boolean"
+    },
+    "runtime_character_spawnable_surface_load_status": {
+      "type": "string"
+    },
+    "runtime_character_spawnable_surface_load_ready": {
+      "type": "boolean"
+    },
+    "runtime_character_spawnable_surface_load_timeout": {
+      "type": "boolean"
+    },
+    "runtime_character_spawnable_surface_log_errors": {
+      "type": "array"
+    },
+    "runtime_character_spawnable_surface_missing_reason": {
+      "type": "string"
+    },
+    "runtime_character_spawnable_surface_generation_required": {
+      "type": "boolean"
+    },
+    "runtime_character_spawnable_surface_generation_strategy": {
+      "type": "string"
+    },
+    "runtime_character_spawnable_surface_generation_source_changes": {
+      "type": "array"
+    },
+    "runtime_character_spawnable_surface_generation_blocker": {
+      "type": "string"
+    },
+    "runtime_character_spawnable_surface_remaining_blocker": {
+      "type": "string"
+    },
     "runtime_character_product_load_contract_updated": {
       "type": "boolean"
     },
@@ -1577,6 +1644,9 @@
     },
     "runtime_character_product_load_runtime_equivalent_required": {
       "type": "boolean"
+    },
+    "runtime_character_product_load_runtime_equivalent_surface_kind": {
+      "type": "string"
     },
     "runtime_character_product_load_contract_blocker": {
       "type": "string"
