@@ -133,6 +133,15 @@ $env:MAXINE_ALLOW_RUNTIME_CHARACTER_SPAWN_INSTANTIATION="1"
 
 These gates only permit the non-shipping fixture to instantiate the already-approved character `.spawnable` through the source-validated `AzFramework::SpawnableEntitiesInterface::SpawnAllEntities` path. The fixture must also keep the product-load gate, temp registry patch gate, project/cache-bootstrap mutation gates, no-defaultlevel strategy, AP/shader classification, and timeout/log capture in place. Spawn proof requires request, ticket, completion, positive spawned entity evidence, selected-surface log scans, cleanup/despawn status, no defaultlevel or production level loads, and clean exit. It does not permit publication, packaging, Asset Cache deletion, production/defaultlevel mutation, animation proof, or full runtime character proof.
 
+Runtime character animation playback-surface probing requires all spawn gates plus two explicit animation-surface gates:
+
+```powershell
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE="1"
+```
+
+These gates permit only a bounded inspection of the approved spawned entity/component surface and, if source validation and runtime inventory prove a playback-capable EMotionFX surface exists, a bounded playback attempt through source-validated runtime APIs. Product-load or spawn proof alone is insufficient. If the approved spawnable exposes no runtime `ActorComponent`, `AnimGraphComponent`, or `SimpleMotionComponent`, the harness must report `runtime_animation_playback_surface_missing_on_approved_spawned_character` and keep animation/full-character proof false.
+
 Approved runtime character prefab-source generation has a narrower gate when a repo-owned source must be staged into the live project scanfolder:
 
 ```powershell
@@ -303,6 +312,26 @@ $env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
 $env:MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION="1"
 $env:MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH="1"
 python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-character-spawn-instantiation-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 180
+```
+
+Runtime animation playback-surface diagnostic and fixture entry points are:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-character-animation-playback-surface --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWN_INSTANTIATION="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_SPAWN_INSTANTIATION="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-character-animation-playback-surface-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 180
 ```
 
 When the APB evidence, runtime readiness, and command pinning gates are clean, registration and enablement are run through the harness rather than by hand:

@@ -626,6 +626,12 @@
     "runtime_exit_fixture_runtime_command_uses_product_load_probe": {
       "type": "boolean"
     },
+    "runtime_exit_fixture_runtime_command_uses_spawn_instantiation_probe": {
+      "type": "boolean"
+    },
+    "runtime_exit_fixture_runtime_command_uses_animation_playback_surface_probe": {
+      "type": "boolean"
+    },
     "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": {
       "type": "boolean"
     },
@@ -1825,6 +1831,108 @@
     },
     "runtime_character_spawn_instantiation_remaining_blocker": {
       "type": "string"
+    },
+    "runtime_character_animation_playback_surface": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_character_animation_playback_surface_status": {
+      "type": "string"
+    },
+    "runtime_character_animation_playback_surface_diagnostic_attempted": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_playback_surface_diagnostic_completed": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_playback_surface_found": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_playback_surface_verified": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_playback_surface_blocker": {
+      "type": "string"
+    },
+    "runtime_character_animation_playback_candidate_matrix": {
+      "type": "array"
+    },
+    "runtime_character_animation_source_validation": {
+      "type": ["string", "object"]
+    },
+    "runtime_character_animation_source_refs": {
+      "type": "array"
+    },
+    "runtime_character_animation_component_type_map": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_character_animation_asset_type_map": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_character_animation_spawn_prerequisite_verified": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_product_load_prerequisite_verified": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_inventory": {
+      "type": "array"
+    },
+    "runtime_character_animation_actor_component_found": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_anim_graph_component_found": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_simple_motion_component_found": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_actor_instance_found": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_motion_set_found": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_anim_graph_instance_found": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_playback_attempted": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_playback_request_issued": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_playback_selected_api": {
+      "type": "string"
+    },
+    "runtime_character_animation_playback_selected_assets": {
+      "type": "array"
+    },
+    "runtime_character_animation_playback_started": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_playback_observed": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_playback_time_before": {
+      "type": ["number", "null"]
+    },
+    "runtime_character_animation_playback_time_after": {
+      "type": ["number", "null"]
+    },
+    "runtime_character_animation_playback_tick_count": {
+      "type": "integer"
+    },
+    "runtime_character_animation_playback_tick_duration_seconds": {
+      "type": "number"
+    },
+    "runtime_character_animation_playback_cleanup_complete": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_is_full_character_proof": {
+      "type": "boolean"
     },
     "runtime_character_product_load_contract_updated": {
       "type": "boolean"

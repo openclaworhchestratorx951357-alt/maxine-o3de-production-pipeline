@@ -1,8 +1,17 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Pin Runtime Approved Character Spawn Instantiation v1 is in progress on `codex/pin-runtime-approved-character-spawn-instantiation-v1`:
-  - PR #141 was merged into `main` at `5d082f027c51dfd07445f700e3d4be4471c4d20f`, and this branch was created from updated `main`
+- Pin Runtime Character Animation Playback Surface v1 is in progress on `codex/pin-runtime-character-animation-playback-surface-v1`:
+  - PR #142 was repaired, validated, and merged into `main` at `7d049998e57326b85691d24ecedc51acb8a87d2f`; this branch was created from that updated `main`
+  - this slice adds `--diagnose-runtime-character-animation-playback-surface` and `--enable-runtime-character-animation-playback-surface-fixture` to `tools/o3de/runtime_harness.py`
+  - O3DE source validation pins runtime EMotionFX surfaces without guessing: `ActorComponent` / `ActorComponentRequestBus` / `GetActorInstance`, `AnimGraphComponent` / `AnimGraphComponentRequestBus` / `StartAnimGraph` / `GetAnimGraphInstance` / `SetActiveMotionSet`, `SimpleMotionComponent` / `SimpleMotionComponentRequestBus` / `PlayMotion` / `GetPlayTime`, plus `.actor`, `.motion`, `.motionset`, and `.animgraph` asset handlers
+  - the live bounded no-defaultlevel fixture wrote `artifacts/o3de-integration/runtime-harness/runtime-character-animation-playback-surface-live-report.json`; it preserved product-load and spawn prerequisites, exited `0`, kept `runtime_default_level_autoload_detected=false`, kept `runtime_production_level_loaded=false`, and kept cleanup/despawn complete
+  - the approved spawned runtime entities still expose only `AZ::TransformComponent` (`{22B10178-39B6-4C12-BB37-77DB45FDD3B6}`): `MAXINE_Release_Rigged_Runtime_Character_Source`, `maxine_idle_fbx`, and `transform`
+  - therefore the typed blocker is `runtime_animation_playback_surface_missing_on_approved_spawned_character`; `runtime_character_animation_playback_surface_found=false`, `runtime_character_animation_playback_attempted=false`, `runtime_character_animation_claimed=false`, `runtime_character_animation_verified=false`, `runtime_character_proof_claimed=false`, and `runtime_character_proof_verified=false`
+  - the next required slice is source-validated runtime animation component/prefab wiring for the approved character source; do not hand-author unknown O3DE component JSON, and do not claim animation proof until playback starts and is observed through source-validated runtime state
+  - publication remains blocked, release packaging remains blocked, production/defaultlevel mutation remains forbidden, Asset Cache deletion remains forbidden, cache heuristic release proof remains forbidden, and no production-ready release status is claimed
+- Pin Runtime Approved Character Spawn Instantiation v1 is implemented in PR #142:
+  - PR #141 was merged into `main` at `5d082f027c51dfd07445f700e3d4be4471c4d20f`, and PR #142 was merged into `main` at `7d049998e57326b85691d24ecedc51acb8a87d2f`
   - PR #141 approved prefab-source/product-load proof is preserved: the repo-owned source `examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab` generates the approved runtime character spawnable `pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable`, and the bounded no-defaultlevel product-load fixture previously loaded the seven normal products plus that spawnable ready
   - this slice adds source-validation and report fields for runtime spawn-instantiation evidence separate from product-load, surface discovery, animation, and full character proof
   - O3DE source validation pins the selected API to `AzFramework::SpawnableEntitiesInterface::SpawnAllEntities` with `AzFramework::EntitySpawnTicket`, completion callbacks returning `SpawnableConstEntityContainerView`, `GameEntityContextRequestBus` insertion, and `DespawnAllEntities` cleanup

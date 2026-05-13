@@ -107,6 +107,10 @@ RUNTIME_CHARACTER_SPAWN_INSTANTIATION_GATE_ENV = (
     "MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWN_INSTANTIATION=1",
     "MAXINE_ALLOW_RUNTIME_CHARACTER_SPAWN_INSTANTIATION=1",
 )
+RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE_GATE_ENV = (
+    "MAXINE_ENABLE_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE=1",
+    "MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE=1",
+)
 RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION=1",)
 RUNTIME_EXIT_FIXTURE_REBUILD_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD=1",)
 RUNTIME_EXIT_FIXTURE_TEMP_REGISTRY_PATCH_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH=1",)
@@ -140,6 +144,10 @@ RUNTIME_SIGNAL_CLASSIFICATION_SELECTED = "ap_shader_no_defaultlevel_cache_bootst
 RUNTIME_CHARACTER_PRODUCT_LOAD_SELECTED = "runtime_character_product_load_generic_assetmanager_load"
 RUNTIME_PROCPREFAB_HANDLER_SURFACE_SELECTED = "runtime_procprefab_handler_surface_source_diagnostic"
 RUNTIME_CHARACTER_SPAWN_INSTANTIATION_SELECTED = "runtime_spawnable_entities_interface_spawn_all_entities_no_level_fixture"
+RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE_SELECTED = "runtime_emotionfx_animation_component_surface_on_approved_spawnable"
+RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE_MISSING_BLOCKER = (
+    "runtime_animation_playback_surface_missing_on_approved_spawned_character"
+)
 RUNTIME_PROCPREFAB_ASSET_TYPE = "{9B7C8459-471E-4EAD-A363-7990CC4065A9}"
 RUNTIME_PROCPREFAB_ASSET_CLASS = "AZ::Prefab::ProceduralPrefabAsset"
 RUNTIME_PROCPREFAB_HANDLER_MODULE = "Gem::PrefabBuilder.Builders"
@@ -147,6 +155,14 @@ RUNTIME_SPAWNABLE_ASSET_TYPE = "{855E3021-D305-4845-B284-20C3F7FDF16B}"
 RUNTIME_SPAWNABLE_ASSET_CLASS = "AzFramework::Spawnable"
 RUNTIME_SPAWNABLE_HANDLER = "AzFramework::SpawnableAssetHandler"
 RUNTIME_SPAWNABLE_HANDLER_MODULE = "AzFramework::SpawnableSystemComponent"
+RUNTIME_TRANSFORM_COMPONENT_TYPE_ID = "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}"
+RUNTIME_EMOTIONFX_ACTOR_COMPONENT_TYPE_ID = "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}"
+RUNTIME_EMOTIONFX_ANIM_GRAPH_COMPONENT_TYPE_ID = "{77624349-D5C4-4902-9F08-665814520999}"
+RUNTIME_EMOTIONFX_SIMPLE_MOTION_COMPONENT_TYPE_ID = "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}"
+RUNTIME_EMOTIONFX_ACTOR_ASSET_TYPE_ID = "{F67CC648-EA51-464C-9F5D-4A9CE41A7F86}"
+RUNTIME_EMOTIONFX_MOTION_ASSET_TYPE_ID = "{00494B8E-7578-4BA2-8B28-272E90680787}"
+RUNTIME_EMOTIONFX_MOTION_SET_ASSET_TYPE_ID = "{1DA936A0-F766-4B2F-B89C-9F4C8E1310F9}"
+RUNTIME_EMOTIONFX_ANIM_GRAPH_ASSET_TYPE_ID = "{28003359-4A29-41AE-8198-0AEFE9FF5263}"
 RUNTIME_CHARACTER_PREFAB_SOURCE_REPO_REF = (
     "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab"
 )
@@ -243,6 +259,8 @@ def run_runtime_harness(
     diagnose_runtime_character_prefab_source: bool = False,
     diagnose_runtime_character_spawn_instantiation: bool = False,
     enable_runtime_character_spawn_instantiation_fixture: bool = False,
+    diagnose_runtime_character_animation_playback_surface: bool = False,
+    enable_runtime_character_animation_playback_surface_fixture: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -287,6 +305,8 @@ def run_runtime_harness(
         and not diagnose_runtime_character_prefab_source
         and not diagnose_runtime_character_spawn_instantiation
         and not enable_runtime_character_spawn_instantiation_fixture
+        and not diagnose_runtime_character_animation_playback_surface
+        and not enable_runtime_character_animation_playback_surface_fixture
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -336,6 +356,8 @@ def run_runtime_harness(
             and not diagnose_runtime_character_prefab_source
             and not diagnose_runtime_character_spawn_instantiation
             and not enable_runtime_character_spawn_instantiation_fixture
+            and not diagnose_runtime_character_animation_playback_surface
+            and not enable_runtime_character_animation_playback_surface_fixture
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -392,6 +414,10 @@ def run_runtime_harness(
             if diagnose_runtime_character_spawn_instantiation
             else "runtime_character_spawn_instantiation_fixture_command"
             if enable_runtime_character_spawn_instantiation_fixture
+            else "runtime_character_animation_playback_surface_diagnostic"
+            if diagnose_runtime_character_animation_playback_surface
+            else "runtime_character_animation_playback_surface_fixture_command"
+            if enable_runtime_character_animation_playback_surface_fixture
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -492,6 +518,8 @@ def run_runtime_harness(
         and not diagnose_runtime_character_prefab_source
         and not diagnose_runtime_character_spawn_instantiation
         and not enable_runtime_character_spawn_instantiation_fixture
+        and not diagnose_runtime_character_animation_playback_surface
+        and not enable_runtime_character_animation_playback_surface_fixture
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -673,6 +701,16 @@ def run_runtime_harness(
             artifact_dir=artifact_dir,
         )
 
+    if diagnose_runtime_character_animation_playback_surface:
+        return _run_runtime_character_animation_playback_surface_diagnostic(
+            report,
+            product_evidence=product_evidence,
+            engine_root=selected_engine,
+            project=selected_project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+
     gate_status = _runtime_gate_status(env_map)
     if gate_status["status"] != "pass":
         report.update(
@@ -699,6 +737,7 @@ def run_runtime_harness(
         or enable_runtime_exit_fixture_ap_shader_signal_classification
         or enable_runtime_character_product_load_fixture
         or enable_runtime_character_spawn_instantiation_fixture
+        or enable_runtime_character_animation_playback_surface_fixture
     ):
         return _run_runtime_exit_fixture_command(
             report,
@@ -715,15 +754,20 @@ def run_runtime_harness(
                 or enable_runtime_exit_fixture_ap_shader_signal_classification
                 or enable_runtime_character_product_load_fixture
                 or enable_runtime_character_spawn_instantiation_fixture
+                or enable_runtime_character_animation_playback_surface_fixture
             ),
             ap_shader_signal_classification=(
                 enable_runtime_exit_fixture_ap_shader_signal_classification
                 or enable_runtime_character_product_load_fixture
                 or enable_runtime_character_spawn_instantiation_fixture
+                or enable_runtime_character_animation_playback_surface_fixture
             ),
             character_product_load=enable_runtime_character_product_load_fixture
-            or enable_runtime_character_spawn_instantiation_fixture,
-            character_spawn_instantiation=enable_runtime_character_spawn_instantiation_fixture,
+            or enable_runtime_character_spawn_instantiation_fixture
+            or enable_runtime_character_animation_playback_surface_fixture,
+            character_spawn_instantiation=enable_runtime_character_spawn_instantiation_fixture
+            or enable_runtime_character_animation_playback_surface_fixture,
+            character_animation_playback_surface=enable_runtime_character_animation_playback_surface_fixture,
             product_evidence=product_evidence,
         )
 
@@ -1083,6 +1127,48 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime character instantiation proof cannot be claimed without verified instantiation evidence.")
     if report.get("runtime_character_animation_claimed") is True and report.get("runtime_character_animation_verified") is not True:
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime character animation proof cannot be claimed without verified animation evidence.")
+    if report.get("runtime_character_animation_verified") is True:
+        if report.get("runtime_execution_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_animation_verified=true requires verified runtime execution.")
+        if report.get("runtime_character_animation_playback_surface_verified") is not True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "runtime_character_animation_verified=true requires verified runtime animation playback surface.",
+            )
+        if not report.get("runtime_character_animation_source_refs", []):
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_animation_verified=true requires source-validated animation API refs.")
+        if report.get("runtime_character_animation_spawn_prerequisite_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_animation_verified=true requires verified spawn prerequisite.")
+        if report.get("runtime_character_animation_product_load_prerequisite_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_animation_verified=true requires verified product-load prerequisite.")
+        if report.get("runtime_character_animation_actor_component_found") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_animation_verified=true requires a runtime Actor component surface.")
+        if not (
+            report.get("runtime_character_animation_anim_graph_component_found") is True
+            or report.get("runtime_character_animation_simple_motion_component_found") is True
+        ):
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "runtime_character_animation_verified=true requires Anim Graph or Simple Motion runtime component surface.",
+            )
+        if report.get("runtime_character_animation_playback_attempted") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_animation_verified=true requires playback attempt evidence.")
+        if report.get("runtime_character_animation_playback_request_issued") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_animation_verified=true requires observed playback evidence.")
+        if report.get("runtime_character_animation_playback_started") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_animation_verified=true requires observed playback evidence.")
+        if report.get("runtime_character_animation_playback_observed") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_animation_verified=true requires observed playback evidence.")
+        if _int_or_zero(report.get("runtime_character_animation_playback_tick_count", 0)) <= 0:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_animation_verified=true requires bounded tick evidence.")
+        if report.get("runtime_character_animation_playback_cleanup_complete") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_animation_verified=true requires cleanup/despawn completion.")
+        if report.get("runtime_default_level_autoload_detected") is True:
+            result.add_error(MXN_PATH_UNSAFE, "runtime_character_animation_verified=true cannot allow defaultlevel autoload.")
+        if report.get("runtime_production_level_loaded") is True:
+            result.add_error(MXN_PATH_UNSAFE, "runtime_character_animation_verified=true cannot allow production level loads.")
+        if report.get("runtime_character_animation_is_full_character_proof") is True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime animation playback proof is not full runtime character proof.")
     if (
         report.get("runtime_cache_bootstrap_candidate_attempted") is True
         and report.get("runtime_cache_bootstrap_candidate_mutates_cache") is True
@@ -1321,6 +1407,21 @@ def print_text_report(report: Mapping[str, Any]) -> None:
         print(f"runtime_character_prefab_source_status: {report.get('runtime_character_prefab_source_status', '')}")
         print(f"runtime_character_prefab_source_path: {report.get('runtime_character_prefab_source_path', '')}")
         print(f"runtime_character_prefab_source_apb_product_found: {str(report.get('runtime_character_prefab_source_apb_product_found', False)).lower()}")
+    if report.get("runtime_character_animation_playback_surface_status") not in {
+        None,
+        "",
+        "not_run",
+        "runtime_character_animation_playback_surface_not_attempted",
+    }:
+        print(
+            "runtime_character_animation_playback_surface_status: "
+            f"{report.get('runtime_character_animation_playback_surface_status', '')}"
+        )
+        print(
+            "runtime_character_animation_playback_surface_found: "
+            f"{str(report.get('runtime_character_animation_playback_surface_found', False)).lower()}"
+        )
+        print(f"runtime_character_animation_verified: {str(report.get('runtime_character_animation_verified', False)).lower()}")
     print(f"runtime_character_proof_claimed: {str(report.get('runtime_character_proof_claimed', False)).lower()}")
     print(f"runtime_character_proof_verified: {str(report.get('runtime_character_proof_verified', False)).lower()}")
     print(f"live_runtime_execution: {str(report.get('live_runtime_execution', False)).lower()}")
@@ -1544,6 +1645,8 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_exit_fixture_runtime_command_uses_cache_bootstrap_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_ap_shader_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_product_load_probe": False,
+        "runtime_exit_fixture_runtime_command_uses_spawn_instantiation_probe": False,
+        "runtime_exit_fixture_runtime_command_uses_animation_playback_surface_probe": False,
         "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
         "runtime_exit_fixture_level_load_observed": False,
         "runtime_exit_fixture_unexpected_level_load": False,
@@ -1952,6 +2055,41 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_character_spawn_instantiation_cleanup_source_refs": [],
         "runtime_character_spawn_instantiation_is_animation_proof": False,
         "runtime_character_spawn_instantiation_remaining_blocker": "",
+        "runtime_character_animation_playback_surface": {"status": "runtime_character_animation_playback_surface_not_attempted"},
+        "runtime_character_animation_playback_surface_status": "runtime_character_animation_playback_surface_not_attempted",
+        "runtime_character_animation_playback_surface_diagnostic_attempted": False,
+        "runtime_character_animation_playback_surface_diagnostic_completed": False,
+        "runtime_character_animation_playback_surface_found": False,
+        "runtime_character_animation_playback_surface_verified": False,
+        "runtime_character_animation_playback_surface_blocker": "",
+        "runtime_character_animation_playback_candidate_matrix": [],
+        "runtime_character_animation_source_validation": {
+            "status": "runtime_character_animation_playback_surface_not_attempted"
+        },
+        "runtime_character_animation_source_refs": [],
+        "runtime_character_animation_component_type_map": {},
+        "runtime_character_animation_asset_type_map": {},
+        "runtime_character_animation_spawn_prerequisite_verified": False,
+        "runtime_character_animation_product_load_prerequisite_verified": False,
+        "runtime_character_animation_component_inventory": [],
+        "runtime_character_animation_actor_component_found": False,
+        "runtime_character_animation_anim_graph_component_found": False,
+        "runtime_character_animation_simple_motion_component_found": False,
+        "runtime_character_animation_actor_instance_found": False,
+        "runtime_character_animation_motion_set_found": False,
+        "runtime_character_animation_anim_graph_instance_found": False,
+        "runtime_character_animation_playback_attempted": False,
+        "runtime_character_animation_playback_request_issued": False,
+        "runtime_character_animation_playback_selected_api": "",
+        "runtime_character_animation_playback_selected_assets": [],
+        "runtime_character_animation_playback_started": False,
+        "runtime_character_animation_playback_observed": False,
+        "runtime_character_animation_playback_time_before": None,
+        "runtime_character_animation_playback_time_after": None,
+        "runtime_character_animation_playback_tick_count": 0,
+        "runtime_character_animation_playback_tick_duration_seconds": 0,
+        "runtime_character_animation_playback_cleanup_complete": False,
+        "runtime_character_animation_is_full_character_proof": False,
         "runtime_character_product_load_contract_updated": False,
         "runtime_character_product_load_direct_procprefab_required": True,
         "runtime_character_product_load_runtime_equivalent_required": False,
@@ -3138,11 +3276,14 @@ def _run_runtime_exit_fixture_command(
     ap_shader_signal_classification: bool = False,
     character_product_load: bool = False,
     character_spawn_instantiation: bool = False,
+    character_animation_playback_surface: bool = False,
     product_evidence: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
     report["runtime_harness_mode"] = (
-        "runtime_character_spawn_instantiation_fixture_command"
+        "runtime_character_animation_playback_surface_fixture_command"
+        if character_animation_playback_surface
+        else "runtime_character_spawn_instantiation_fixture_command"
         if character_spawn_instantiation
         else "runtime_character_product_load_fixture_command"
         if character_product_load
@@ -3313,6 +3454,52 @@ def _run_runtime_exit_fixture_command(
                     "runtime_exit_fixture_execution_verified": False,
                     "live_runtime_execution": False,
                     "required_runtime_harness_assertions_failed": ["runtime_character_spawn_instantiation_gate"],
+                }
+            )
+            return _finalize_report(report)
+    if character_animation_playback_surface:
+        animation_gate = _runtime_character_animation_playback_surface_gate_status(env)
+        report["runtime_character_animation_playback_surface_gate_env"] = list(
+            tuple(RUNTIME_CHARACTER_SPAWNABLE_SURFACE_GATE_ENV)
+            + tuple(RUNTIME_CHARACTER_SPAWN_INSTANTIATION_GATE_ENV)
+            + tuple(RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE_GATE_ENV)
+        )
+        report["runtime_character_animation_playback_surface_gate_status"] = animation_gate
+        if animation_gate["status"] != "pass":
+            payload = _runtime_character_animation_playback_surface_source_payload(
+                product_evidence=product_evidence or report.get("product_evidence_summary", {}),
+                engine_root=_runtime_engine_root_from_report(report),
+                project=project,
+                timeout_seconds=timeout_seconds,
+                artifact_dir=artifact_dir,
+            )
+            payload.update(
+                {
+                    "runtime_character_animation_playback_surface_status": animation_gate["status"],
+                    "runtime_character_animation_playback_surface_blocker": animation_gate["status"],
+                    "runtime_character_animation_playback_surface_found": False,
+                    "runtime_character_animation_playback_surface_verified": False,
+                    "runtime_character_animation_claimed": False,
+                    "runtime_character_animation_verified": False,
+                }
+            )
+            report.update(payload)
+            report.update(
+                {
+                    "status": "fail",
+                    "runtime_harness_status": animation_gate["status"],
+                    "runtime_harness_blocked_reason": animation_gate["status"],
+                    "runtime_exit_fixture_status": animation_gate["status"],
+                    "runtime_exit_fixture_blocked_reason": animation_gate["status"],
+                    "runtime_execution_status": "runtime_execution_not_attempted",
+                    "runtime_execution_attempted": False,
+                    "runtime_execution_completed": False,
+                    "runtime_execution_verified": False,
+                    "runtime_exit_fixture_execution_attempted": False,
+                    "runtime_exit_fixture_execution_completed": False,
+                    "runtime_exit_fixture_execution_verified": False,
+                    "live_runtime_execution": False,
+                    "required_runtime_harness_assertions_failed": ["runtime_character_animation_playback_surface_gate"],
                 }
             )
             return _finalize_report(report)
@@ -3502,6 +3689,7 @@ def _run_runtime_exit_fixture_command(
         artifact_dir=artifact_dir,
         character_product_load=character_product_load,
         character_spawn_instantiation=character_spawn_instantiation,
+        character_animation_playback_surface=character_animation_playback_surface,
         product_evidence=product_evidence or report.get("product_evidence_summary", {}),
     )
     if not command.get("selected"):
@@ -3638,6 +3826,7 @@ def _run_runtime_exit_fixture_command(
             "runtime_exit_fixture_runtime_command_uses_ap_shader_strategy": ap_shader_signal_classification,
             "runtime_exit_fixture_runtime_command_uses_product_load_probe": character_product_load,
             "runtime_exit_fixture_runtime_command_uses_spawn_instantiation_probe": character_spawn_instantiation,
+            "runtime_exit_fixture_runtime_command_uses_animation_playback_surface_probe": character_animation_playback_surface,
             "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
             "runtime_exit_fixture_command": str(command.get("argv", [""])[0]),
             "runtime_exit_fixture_arguments": list(command.get("argv", []))[1:],
@@ -3828,6 +4017,21 @@ def _run_runtime_exit_fixture_command(
         if character_spawn_instantiation
         else {}
     )
+    character_animation_playback_surface_payload = (
+        _runtime_character_animation_playback_surface_execution_payload(
+            product_evidence=product_evidence or report.get("product_evidence_summary", {}),
+            command=command,
+            project=project,
+            actual_level_loads=level_loads,
+            launch_hygiene=launch_hygiene,
+            product_load=character_product_load_payload,
+            spawn_instantiation=character_spawn_instantiation_payload,
+            exit_code=proc.returncode,
+            marker_observed=marker_observed,
+        )
+        if character_animation_playback_surface
+        else {}
+    )
     launch_hygiene_pass = launch_hygiene.get("runtime_launch_hygiene_status") == "runtime_launch_hygiene_pass"
     character_product_load_pass = (
         character_product_load_payload.get("runtime_character_product_load_verified") is True
@@ -3839,6 +4043,14 @@ def _run_runtime_exit_fixture_command(
         if character_spawn_instantiation
         else True
     )
+    character_animation_playback_surface_pass = (
+        character_animation_playback_surface_payload.get(
+            "runtime_character_animation_playback_surface_diagnostic_completed"
+        )
+        is True
+        if character_animation_playback_surface
+        else True
+    )
     passed = (
         proc.returncode in expected_exit_codes
         and not timed_out
@@ -3848,6 +4060,7 @@ def _run_runtime_exit_fixture_command(
         and launch_hygiene_pass
         and character_product_load_pass
         and character_spawn_instantiation_pass
+        and character_animation_playback_surface_pass
     )
     if passed:
         fixture_status = "runtime_exit_fixture_verified_clean_exit"
@@ -3863,6 +4076,8 @@ def _run_runtime_exit_fixture_command(
         fixture_status = "runtime_exit_fixture_execution_failed_character_product_load"
     elif character_spawn_instantiation and not character_spawn_instantiation_pass:
         fixture_status = "runtime_exit_fixture_execution_failed_character_spawn_instantiation"
+    elif character_animation_playback_surface and not character_animation_playback_surface_pass:
+        fixture_status = "runtime_exit_fixture_execution_failed_character_animation_playback_surface"
     else:
         fixture_status = "runtime_exit_fixture_execution_failed_disqualifying_log_signal"
 
@@ -3876,6 +4091,7 @@ def _run_runtime_exit_fixture_command(
     report.update(signal_classification_payload)
     report.update(character_product_load_payload)
     report.update(character_spawn_instantiation_payload)
+    report.update(character_animation_playback_surface_payload)
     blocked_reason = _runtime_launch_hygiene_blocked_reason(launch_hygiene)
     if pre_autoexec_suppression and str(pre_autoexec_payload.get("runtime_pre_autoexec_candidate_blocker", "")).strip():
         blocked_reason = str(pre_autoexec_payload.get("runtime_pre_autoexec_candidate_blocker", "")).strip()
@@ -3894,6 +4110,12 @@ def _run_runtime_exit_fixture_command(
     ).strip():
         blocked_reason = str(
             character_spawn_instantiation_payload.get("runtime_character_spawn_instantiation_candidate_blocker", "")
+        ).strip()
+    if character_animation_playback_surface and str(
+        character_animation_playback_surface_payload.get("runtime_character_animation_playback_surface_blocker", "")
+    ).strip():
+        blocked_reason = str(
+            character_animation_playback_surface_payload.get("runtime_character_animation_playback_surface_blocker", "")
         ).strip()
     report.update(
         {
@@ -3978,6 +4200,9 @@ def _run_runtime_exit_fixture_command(
                 "runtime_character_spawn_instantiation_verified"
                 if character_spawn_instantiation
                 else "runtime_character_spawn_instantiation_not_required",
+                "runtime_character_animation_playback_surface_diagnostic_completed"
+                if character_animation_playback_surface
+                else "runtime_character_animation_playback_surface_not_required",
                 "runtime_character_proof_not_claimed",
             ]
             if passed
@@ -4804,6 +5029,7 @@ def _select_runtime_exit_fixture_command(
     artifact_dir: Path | None = None,
     character_product_load: bool = False,
     character_spawn_instantiation: bool = False,
+    character_animation_playback_surface: bool = False,
     product_evidence: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     executable = str(report.get("runtime_executable_path", "")).strip()
@@ -4861,7 +5087,9 @@ def _select_runtime_exit_fixture_command(
         *spawn_instantiation_args,
     ]
     selected_reason = (
-        "repo_owned_fixture_character_spawn_instantiation_cache_bootstrap_ap_shader_envelope"
+        "repo_owned_fixture_character_animation_playback_surface_cache_bootstrap_ap_shader_envelope"
+        if character_animation_playback_surface
+        else "repo_owned_fixture_character_spawn_instantiation_cache_bootstrap_ap_shader_envelope"
         if character_spawn_instantiation
         else "repo_owned_fixture_character_product_load_cache_bootstrap_ap_shader_envelope"
         if character_product_load
@@ -4935,6 +5163,15 @@ def _select_runtime_exit_fixture_command(
                 "spawn_instantiation_is_not_animation_proof",
             ]
         )
+    if character_animation_playback_surface:
+        safety_flags.extend(
+            [
+                "runtime_character_animation_playback_surface_probe_enabled",
+                "runtime_character_animation_playback_surface_gate_required",
+                "animation_surface_requires_spawn_prerequisite",
+                "animation_surface_diagnostic_is_not_full_character_proof",
+            ]
+        )
     return {
         "selected": True,
         "argv": argv,
@@ -4972,6 +5209,11 @@ def _select_runtime_exit_fixture_command(
             ],
             "product_load_probe": product_load_args,
             "spawn_instantiation_probe": spawn_instantiation_args,
+            "animation_playback_surface_probe": (
+                "python_report_probe_consumes_spawned_entity_component_inventory"
+                if character_animation_playback_surface
+                else ""
+            ),
         },
         "safety_profile": {
             "local": True,
@@ -4990,6 +5232,7 @@ def _select_runtime_exit_fixture_command(
             "runtime_character_product_load_proof": bool(character_product_load),
             "runtime_character_spawn_instantiation_probe": bool(character_spawn_instantiation),
             "runtime_character_instantiation_proof": bool(character_spawn_instantiation),
+            "runtime_character_animation_playback_surface_probe": bool(character_animation_playback_surface),
             "runtime_character_proof": False,
             "headless_launcher": True,
             "null_renderer_requested": True,
@@ -5020,6 +5263,8 @@ def _select_runtime_exit_fixture_command(
             if character_spawn_instantiation
             else "",
             "character_spawn_instantiation_temp_registry_patch_gate_required": bool(character_spawn_instantiation),
+            "uses_character_animation_playback_surface_probe": bool(character_animation_playback_surface),
+            "character_animation_playback_surface_probe_gate_required": bool(character_animation_playback_surface),
             "runtime_character_animation_proof": False,
             "runtime_full_character_proof": False,
         },
@@ -8076,6 +8321,623 @@ def _runtime_character_spawn_context_source_refs(engine_root: Path | None) -> Li
     ]
 
 
+def _run_runtime_character_animation_playback_surface_diagnostic(
+    report: Dict[str, Any],
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    report.update(
+        _runtime_character_animation_playback_surface_source_payload(
+            product_evidence=product_evidence,
+            engine_root=engine_root,
+            project=project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+    )
+    report.update(
+        {
+            "status": "pass",
+            "runtime_harness_status": report.get("runtime_character_animation_playback_surface_status", ""),
+            "runtime_harness_mode": "runtime_character_animation_playback_surface_diagnostic",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "runtime_character_animation_claimed": False,
+            "runtime_character_animation_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "asset_cache_deleted": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_character_animation_source_discovery",
+                "runtime_character_animation_candidate_matrix_recorded",
+                "runtime_execution_not_attempted_in_character_animation_playback_surface_diagnostic_mode",
+                "runtime_character_animation_not_claimed",
+                "runtime_character_proof_not_claimed",
+            ],
+            "runtime_harness_assertion_informational": [
+                "animation_api_source_discovery_is_not_animation_playback_proof",
+                "spawn_instantiation_proof_is_not_animation_playback_proof",
+                "runtime_character_animation_playback_requires_bounded_spawn_inventory",
+            ],
+        }
+    )
+    return _finalize_report(report)
+
+
+def _runtime_character_animation_playback_surface_source_payload(
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    del artifact_dir
+    source_validation = _runtime_character_animation_source_validation(engine_root)
+    source_refs = _runtime_character_animation_source_refs(engine_root)
+    source_validated = source_validation.get("status") == "runtime_character_animation_source_validation_pass"
+    approved = _runtime_character_spawn_instantiation_approved_spawnable(
+        product_evidence=product_evidence,
+        project=project,
+        engine_root=engine_root,
+    )
+    blocker = ""
+    if not source_validated:
+        blocker = "blocked_by_runtime_animation_source_validation"
+    elif not approved:
+        blocker = "blocked_by_missing_runtime_equivalent_spawnable_surface"
+    else:
+        blocker = "blocked_by_runtime_animation_playback_requires_bounded_spawn_fixture"
+    status = (
+        "runtime_character_animation_playback_surface_source_discovery_pass"
+        if source_validated and approved
+        else "runtime_character_animation_playback_surface_blocked"
+    )
+    return {
+        "runtime_character_animation_playback_surface": {
+            "status": status,
+            "selected": RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE_SELECTED if source_validated and approved else "",
+            "attempted": False,
+        },
+        "runtime_character_animation_playback_surface_status": status,
+        "runtime_character_animation_playback_surface_diagnostic_attempted": True,
+        "runtime_character_animation_playback_surface_diagnostic_completed": True,
+        "runtime_character_animation_playback_surface_found": False,
+        "runtime_character_animation_playback_surface_verified": False,
+        "runtime_character_animation_playback_surface_blocker": blocker,
+        "runtime_character_animation_playback_candidate_matrix": _runtime_character_animation_candidate_matrix(
+            source_validated=source_validated,
+            component_inventory=[],
+            surface_found=False,
+            blocker=blocker,
+            playback_attempted=False,
+        ),
+        "runtime_character_animation_source_validation": source_validation,
+        "runtime_character_animation_source_refs": source_refs,
+        "runtime_character_animation_component_type_map": _runtime_character_animation_component_type_map(),
+        "runtime_character_animation_asset_type_map": _runtime_character_animation_asset_type_map(),
+        "runtime_character_animation_spawn_prerequisite_verified": False,
+        "runtime_character_animation_product_load_prerequisite_verified": False,
+        "runtime_character_animation_component_inventory": [],
+        "runtime_character_animation_actor_component_found": False,
+        "runtime_character_animation_anim_graph_component_found": False,
+        "runtime_character_animation_simple_motion_component_found": False,
+        "runtime_character_animation_actor_instance_found": False,
+        "runtime_character_animation_motion_set_found": False,
+        "runtime_character_animation_anim_graph_instance_found": False,
+        "runtime_character_animation_playback_attempted": False,
+        "runtime_character_animation_playback_request_issued": False,
+        "runtime_character_animation_playback_selected_api": "",
+        "runtime_character_animation_playback_selected_assets": [],
+        "runtime_character_animation_playback_started": False,
+        "runtime_character_animation_playback_observed": False,
+        "runtime_character_animation_playback_time_before": None,
+        "runtime_character_animation_playback_time_after": None,
+        "runtime_character_animation_playback_tick_count": 0,
+        "runtime_character_animation_playback_tick_duration_seconds": 0,
+        "runtime_character_animation_playback_cleanup_complete": False,
+        "runtime_character_animation_claimed": False,
+        "runtime_character_animation_verified": False,
+        "runtime_character_animation_is_full_character_proof": False,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+    }
+
+
+def _runtime_character_animation_playback_surface_execution_payload(
+    *,
+    product_evidence: Mapping[str, Any],
+    command: Mapping[str, Any],
+    project: Path | None,
+    actual_level_loads: Sequence[str],
+    launch_hygiene: Mapping[str, Any],
+    product_load: Mapping[str, Any],
+    spawn_instantiation: Mapping[str, Any],
+    exit_code: int | None,
+    marker_observed: bool,
+) -> Dict[str, Any]:
+    source_payload = _runtime_character_animation_playback_surface_source_payload(
+        product_evidence=product_evidence,
+        engine_root=_runtime_engine_root_from_command(command),
+        project=project,
+        timeout_seconds=int(command.get("timeout_seconds", 120)),
+        artifact_dir=DEFAULT_ARTIFACT_ROOT,
+    )
+    inventory = _runtime_character_animation_component_inventory(
+        spawn_instantiation.get("runtime_character_spawn_instantiation_spawned_entity_component_inventory", [])
+    )
+    actor_found = any(
+        component.get("role") == "emotionfx_actor"
+        for entity in inventory
+        for component in entity.get("components", [])
+        if isinstance(component, Mapping)
+    )
+    anim_graph_found = any(
+        component.get("role") == "emotionfx_anim_graph"
+        for entity in inventory
+        for component in entity.get("components", [])
+        if isinstance(component, Mapping)
+    )
+    simple_motion_found = any(
+        component.get("role") == "emotionfx_simple_motion"
+        for entity in inventory
+        for component in entity.get("components", [])
+        if isinstance(component, Mapping)
+    )
+    source_validated = (
+        source_payload.get("runtime_character_animation_source_validation", {}).get("status")
+        == "runtime_character_animation_source_validation_pass"
+    )
+    product_prerequisite = product_load.get("runtime_character_product_load_verified") is True
+    spawn_prerequisite = spawn_instantiation.get("runtime_character_spawn_instantiation_verified") is True
+    launch_pass = str(launch_hygiene.get("runtime_launch_hygiene_status", "")).strip() == "runtime_launch_hygiene_pass"
+    cleanup_complete = str(
+        spawn_instantiation.get("runtime_character_spawn_instantiation_cleanup_status", "")
+    ).strip() in {
+        "runtime_character_spawn_instantiation_cleanup_complete",
+        "runtime_character_spawn_instantiation_cleanup_not_required",
+    }
+    defaultlevel = bool(launch_hygiene.get("runtime_default_level_autoload_detected"))
+    production_level = bool(actual_level_loads)
+    surface_found = bool(
+        source_validated
+        and product_prerequisite
+        and spawn_prerequisite
+        and actor_found
+        and (anim_graph_found or simple_motion_found)
+    )
+    playback_attempted = False
+    playback_request_issued = False
+    playback_started = False
+    playback_observed = False
+    blocker = ""
+    if not source_validated:
+        blocker = "blocked_by_runtime_animation_source_validation"
+    elif not product_prerequisite:
+        blocker = "blocked_by_runtime_animation_product_load_prerequisite"
+    elif not spawn_prerequisite:
+        blocker = "blocked_by_runtime_animation_spawn_prerequisite"
+    elif defaultlevel:
+        blocker = "blocked_by_default_level_autoload"
+    elif production_level:
+        blocker = "blocked_by_production_level_load"
+    elif not actor_found or not (anim_graph_found or simple_motion_found):
+        blocker = RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE_MISSING_BLOCKER
+    else:
+        blocker = "blocked_by_runtime_animation_playback_probe_requires_playback_execution_api"
+    status = (
+        "runtime_character_animation_playback_verified"
+        if playback_observed
+        else "runtime_character_animation_playback_surface_found_playback_not_verified"
+        if surface_found
+        else "runtime_character_animation_playback_surface_blocked_missing_runtime_component_surface"
+        if blocker == RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE_MISSING_BLOCKER
+        else "runtime_character_animation_playback_surface_blocked"
+    )
+    selected_assets = [
+        {
+            "product_kind": product.get("product_kind", ""),
+            "product_path": product.get("product_path", ""),
+            "catalog_path": product.get("catalog_path", ""),
+            "asset_id": product.get("asset_id", ""),
+        }
+        for product in product_load.get("runtime_character_product_load_products", [])
+        if isinstance(product, Mapping)
+        and str(product.get("product_kind", "")) in {"actor", "motion", "motionset", "animgraph"}
+    ]
+    source_payload.update(
+        {
+            "runtime_character_animation_playback_surface": {
+                "status": status,
+                "selected": RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE_SELECTED,
+                "attempted": True,
+                "surface_found": surface_found,
+                "blocker": blocker,
+            },
+            "runtime_character_animation_playback_surface_status": status,
+            "runtime_character_animation_playback_surface_diagnostic_attempted": True,
+            "runtime_character_animation_playback_surface_diagnostic_completed": True,
+            "runtime_character_animation_playback_surface_found": surface_found,
+            "runtime_character_animation_playback_surface_verified": False,
+            "runtime_character_animation_playback_surface_blocker": blocker,
+            "runtime_character_animation_playback_candidate_matrix": _runtime_character_animation_candidate_matrix(
+                source_validated=source_validated,
+                component_inventory=inventory,
+                surface_found=surface_found,
+                blocker=blocker,
+                playback_attempted=playback_attempted,
+            ),
+            "runtime_character_animation_spawn_prerequisite_verified": spawn_prerequisite,
+            "runtime_character_animation_product_load_prerequisite_verified": product_prerequisite,
+            "runtime_character_animation_component_inventory": inventory,
+            "runtime_character_animation_actor_component_found": actor_found,
+            "runtime_character_animation_anim_graph_component_found": anim_graph_found,
+            "runtime_character_animation_simple_motion_component_found": simple_motion_found,
+            "runtime_character_animation_actor_instance_found": False,
+            "runtime_character_animation_motion_set_found": False,
+            "runtime_character_animation_anim_graph_instance_found": False,
+            "runtime_character_animation_playback_attempted": playback_attempted,
+            "runtime_character_animation_playback_request_issued": playback_request_issued,
+            "runtime_character_animation_playback_selected_api": "",
+            "runtime_character_animation_playback_selected_assets": selected_assets,
+            "runtime_character_animation_playback_started": playback_started,
+            "runtime_character_animation_playback_observed": playback_observed,
+            "runtime_character_animation_playback_time_before": None,
+            "runtime_character_animation_playback_time_after": None,
+            "runtime_character_animation_playback_tick_count": 0,
+            "runtime_character_animation_playback_tick_duration_seconds": 0,
+            "runtime_character_animation_playback_cleanup_complete": cleanup_complete and exit_code == 0 and marker_observed,
+            "runtime_character_animation_claimed": False,
+            "runtime_character_animation_verified": False,
+            "runtime_character_animation_is_full_character_proof": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+        }
+    )
+    return source_payload
+
+
+def _runtime_character_animation_component_type_map() -> Dict[str, Dict[str, str]]:
+    return {
+        _runtime_type_id_key(RUNTIME_TRANSFORM_COMPONENT_TYPE_ID): {
+            "type_id": RUNTIME_TRANSFORM_COMPONENT_TYPE_ID,
+            "runtime_name": "AZ::TransformComponent",
+            "role": "transform",
+            "source": "runtime entity component inventory TypeId",
+        },
+        _runtime_type_id_key(RUNTIME_EMOTIONFX_ACTOR_COMPONENT_TYPE_ID): {
+            "type_id": RUNTIME_EMOTIONFX_ACTOR_COMPONENT_TYPE_ID,
+            "runtime_name": "EMotionFX::Integration::ActorComponent",
+            "role": "emotionfx_actor",
+            "source": "ActorComponent.h AZ_COMPONENT",
+        },
+        _runtime_type_id_key(RUNTIME_EMOTIONFX_ANIM_GRAPH_COMPONENT_TYPE_ID): {
+            "type_id": RUNTIME_EMOTIONFX_ANIM_GRAPH_COMPONENT_TYPE_ID,
+            "runtime_name": "EMotionFX::Integration::AnimGraphComponent",
+            "role": "emotionfx_anim_graph",
+            "source": "AnimGraphComponent.h AZ_COMPONENT",
+        },
+        _runtime_type_id_key(RUNTIME_EMOTIONFX_SIMPLE_MOTION_COMPONENT_TYPE_ID): {
+            "type_id": RUNTIME_EMOTIONFX_SIMPLE_MOTION_COMPONENT_TYPE_ID,
+            "runtime_name": "EMotionFX::Integration::SimpleMotionComponent",
+            "role": "emotionfx_simple_motion",
+            "source": "SimpleMotionComponent.h AZ_COMPONENT",
+        },
+    }
+
+
+def _runtime_character_animation_asset_type_map() -> Dict[str, Dict[str, str]]:
+    return {
+        "actor": {
+            "asset_type_id": RUNTIME_EMOTIONFX_ACTOR_ASSET_TYPE_ID,
+            "asset_class": "EMotionFX::Integration::ActorAsset",
+            "extension": "actor",
+        },
+        "motion": {
+            "asset_type_id": RUNTIME_EMOTIONFX_MOTION_ASSET_TYPE_ID,
+            "asset_class": "EMotionFX::Integration::MotionAsset",
+            "extension": "motion",
+        },
+        "motionset": {
+            "asset_type_id": RUNTIME_EMOTIONFX_MOTION_SET_ASSET_TYPE_ID,
+            "asset_class": "EMotionFX::Integration::MotionSetAsset",
+            "extension": "motionset",
+        },
+        "animgraph": {
+            "asset_type_id": RUNTIME_EMOTIONFX_ANIM_GRAPH_ASSET_TYPE_ID,
+            "asset_class": "EMotionFX::Integration::AnimGraphAsset",
+            "extension": "animgraph",
+        },
+    }
+
+
+def _runtime_character_animation_component_inventory(raw_inventory: Any) -> List[Dict[str, Any]]:
+    component_map = _runtime_character_animation_component_type_map()
+    inventory: List[Dict[str, Any]] = []
+    if not isinstance(raw_inventory, Sequence) or isinstance(raw_inventory, (str, bytes)):
+        return inventory
+    for raw_entity in raw_inventory:
+        if not isinstance(raw_entity, Mapping):
+            continue
+        components: List[Dict[str, str]] = []
+        for raw_component in raw_entity.get("components", []):
+            type_id = str(raw_component).strip()
+            type_key = _runtime_type_id_key(type_id)
+            known = component_map.get(type_key, {})
+            components.append(
+                {
+                    "type_id": type_id,
+                    "type_id_normalized": type_key,
+                    "runtime_name": str(known.get("runtime_name", "")),
+                    "role": str(known.get("role", "unknown")),
+                    "source_validated_name": str(known.get("source", "")),
+                }
+            )
+        inventory.append(
+            {
+                "entity_id": str(raw_entity.get("entity_id", "")),
+                "entity_name": str(raw_entity.get("entity_name", "")),
+                "component_count": _int_or_zero(raw_entity.get("component_count", len(components))),
+                "components": components,
+            }
+        )
+    return inventory
+
+
+def _runtime_character_animation_candidate_matrix(
+    *,
+    source_validated: bool,
+    component_inventory: Sequence[Mapping[str, Any]],
+    surface_found: bool,
+    blocker: str,
+    playback_attempted: bool,
+) -> List[Dict[str, Any]]:
+    has_runtime_inventory = bool(component_inventory)
+    return [
+        {
+            "id": "approved_spawnable_runtime_emotionfx_surface",
+            "candidate": "existing approved spawnable exposes runtime EMotionFX animation component surface",
+            "kind": "runtime_spawned_component_inventory",
+            "attempted": has_runtime_inventory,
+            "selected": bool(surface_found),
+            "result": "runtime_animation_playback_candidate_selected"
+            if surface_found
+            else "runtime_animation_playback_candidate_blocked_missing_runtime_component_surface"
+            if has_runtime_inventory
+            else "runtime_animation_playback_candidate_requires_spawn_inventory",
+            "blocker": "" if surface_found else blocker,
+        },
+        {
+            "id": "direct_product_load_actor_motion_motionset_animgraph",
+            "candidate": "direct product-load of actor/motion/motionset/animgraph only",
+            "kind": "runtime_asset_product_load_only",
+            "attempted": False,
+            "selected": False,
+            "result": "runtime_animation_playback_candidate_rejected_insufficient_for_playback_proof",
+            "blocker": "product_load_is_not_animation_playback_proof",
+        },
+        {
+            "id": "direct_runtime_procprefab_load",
+            "candidate": "direct runtime .procprefab load",
+            "kind": "runtime_procprefab_direct_load",
+            "attempted": False,
+            "selected": False,
+            "result": "runtime_animation_playback_candidate_rejected_builder_only_surface",
+            "blocker": "direct_procprefab_runtime_load_unsupported_builder_only",
+        },
+        {
+            "id": "editor_only_direct_procprefab_component_evidence",
+            "candidate": "Editor-only direct .procprefab component evidence",
+            "kind": "editor_component_inventory",
+            "attempted": False,
+            "selected": False,
+            "result": "runtime_animation_playback_candidate_rejected_not_runtime_playback_proof",
+            "blocker": "editor_only_evidence_is_not_runtime_animation_playback_proof",
+        },
+        {
+            "id": "defaultlevel_or_production_level_playback",
+            "candidate": "defaultlevel or production-level playback",
+            "kind": "level_runtime_playback",
+            "attempted": False,
+            "selected": False,
+            "result": "runtime_animation_playback_candidate_rejected_unsafe_scope",
+            "blocker": "defaultlevel_or_production_level_runtime_evidence_disallowed",
+        },
+        {
+            "id": "hand_authored_unknown_runtime_component_json",
+            "candidate": "hand-authored unknown runtime component JSON",
+            "kind": "unknown_component_serialization",
+            "attempted": False,
+            "selected": False,
+            "result": "runtime_animation_playback_candidate_rejected_unvalidated_serialization",
+            "blocker": "unknown_component_serialization_not_source_validated",
+        },
+        {
+            "id": "approved_source_prefab_component_wiring_required",
+            "candidate": "approved source-prefab component wiring required",
+            "kind": "typed_blocker",
+            "attempted": False,
+            "selected": False,
+            "result": "runtime_animation_playback_candidate_blocked_prefab_wiring_required"
+            if blocker == RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE_MISSING_BLOCKER
+            else "runtime_animation_playback_candidate_not_selected",
+            "blocker": blocker if blocker == RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE_MISSING_BLOCKER else "",
+        },
+        {
+            "id": "source_validated_runtime_playback_api",
+            "candidate": "source-validated Simple Motion or Anim Graph playback API",
+            "kind": "runtime_playback_api",
+            "attempted": bool(playback_attempted),
+            "selected": bool(surface_found),
+            "result": "runtime_animation_playback_candidate_not_attempted_without_component_surface"
+            if not surface_found
+            else "runtime_animation_playback_candidate_blocked_until_playback_observed",
+            "blocker": "" if surface_found else blocker,
+        },
+    ]
+
+
+def _runtime_character_animation_source_refs(engine_root: Path | None) -> List[str]:
+    return [str(spec["path"]) for spec in _runtime_character_animation_source_specs(engine_root or Path("<engine-root>"))]
+
+
+def _runtime_character_animation_source_validation(engine_root: Path | None) -> Dict[str, Any]:
+    specs = _runtime_character_animation_source_specs(engine_root or Path(""))
+    file_results = [_source_file_symbol_validation(spec["path"], spec["symbols"]) for spec in specs]
+    missing = [result for result in file_results if result["status"] != "pass"]
+    return {
+        "status": "runtime_character_animation_source_validation_pass"
+        if not missing
+        else "runtime_character_animation_source_validation_inconclusive",
+        "files": file_results,
+        "runtime_component_surfaces": {
+            "actor_component": "EMotionFX::Integration::ActorComponent",
+            "actor_component_type_id": RUNTIME_EMOTIONFX_ACTOR_COMPONENT_TYPE_ID,
+            "actor_request_bus": "EMotionFX::Integration::ActorComponentRequestBus",
+            "actor_instance_api": "ActorComponentRequests::GetActorInstance",
+            "anim_graph_component": "EMotionFX::Integration::AnimGraphComponent",
+            "anim_graph_component_type_id": RUNTIME_EMOTIONFX_ANIM_GRAPH_COMPONENT_TYPE_ID,
+            "anim_graph_request_bus": "EMotionFX::Integration::AnimGraphComponentRequestBus",
+            "anim_graph_instance_api": "AnimGraphComponentRequests::GetAnimGraphInstance",
+            "anim_graph_start_api": "AnimGraphComponentRequests::StartAnimGraph",
+            "motion_set_api": "AnimGraphComponentRequests::SetActiveMotionSet",
+            "simple_motion_component": "EMotionFX::Integration::SimpleMotionComponent",
+            "simple_motion_component_type_id": RUNTIME_EMOTIONFX_SIMPLE_MOTION_COMPONENT_TYPE_ID,
+            "simple_motion_request_bus": "EMotionFX::Integration::SimpleMotionComponentRequestBus",
+            "simple_motion_play_api": "SimpleMotionComponentRequests::PlayMotion",
+            "simple_motion_time_api": "SimpleMotionComponentRequests::GetPlayTime",
+        },
+        "runtime_asset_handlers": {
+            "actor": "ActorAssetHandler / ActorAsset .actor",
+            "motion": "MotionAssetHandler / MotionAsset .motion",
+            "motionset": "MotionSetAssetHandler / MotionSetAsset .motionset",
+            "animgraph": "AnimGraphAssetHandler / AnimGraphAsset .animgraph",
+        },
+        "component_inventory_surface": {
+            "entity_components": "AZ::Entity::GetComponents",
+            "type_ids": "AZ::Component::RTTI_GetType",
+            "fixture_marker": "MAXINE_RUNTIME_CHARACTER_SPAWN_ENTITY components=<TypeId;...>",
+        },
+        "missing": missing,
+    }
+
+
+def _runtime_character_animation_source_specs(root: Path) -> List[Dict[str, Any]]:
+    return [
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Components" / "ActorComponent.h",
+            "symbols": ["AZ_COMPONENT(ActorComponent", RUNTIME_EMOTIONFX_ACTOR_COMPONENT_TYPE_ID, "GetActorInstance"],
+        },
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Components" / "ActorComponent.cpp",
+            "symbols": ["ActorComponentRequestBus", "m_actorInstance"],
+        },
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "Include" / "Integration" / "ActorComponentBus.h",
+            "symbols": ["ActorComponentRequests", "ActorComponentRequestBus", "GetActorInstance"],
+        },
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Components" / "AnimGraphComponent.h",
+            "symbols": [
+                "AZ_COMPONENT(AnimGraphComponent",
+                RUNTIME_EMOTIONFX_ANIM_GRAPH_COMPONENT_TYPE_ID,
+                "GetAnimGraphInstance",
+                "SetActiveMotionSet",
+                "StartAnimGraph",
+            ],
+        },
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Components" / "AnimGraphComponent.cpp",
+            "symbols": ["AnimGraphComponentRequestBus", "SetAnimGraphAssetId", "SetMotionSetAssetId", "StartAnimGraph"],
+        },
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "Include" / "Integration" / "AnimGraphComponentBus.h",
+            "symbols": ["AnimGraphComponentRequests", "AnimGraphComponentRequestBus", "GetAnimGraphInstance", "StartAnimGraph"],
+        },
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Components" / "SimpleMotionComponent.h",
+            "symbols": [
+                "AZ_COMPONENT(SimpleMotionComponent",
+                RUNTIME_EMOTIONFX_SIMPLE_MOTION_COMPONENT_TYPE_ID,
+                "GetPlayTime",
+                "GetDuration",
+                "PlayMotion",
+            ],
+        },
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Components" / "SimpleMotionComponent.cpp",
+            "symbols": ["SimpleMotionComponentRequestBus", "SetMotionAssetId", "PlayMotionInternal", "GetMotionSystem()->PlayMotion"],
+        },
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "Include" / "Integration" / "SimpleMotionComponentBus.h",
+            "symbols": ["SimpleMotionComponentRequests", "SimpleMotionComponentRequestBus", "GetPlayTime", "Motion", "PlayMotion"],
+        },
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "ActorAsset.h",
+            "symbols": ["ActorAsset", RUNTIME_EMOTIONFX_ACTOR_ASSET_TYPE_ID],
+        },
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "MotionAsset.h",
+            "symbols": ["MotionAsset", RUNTIME_EMOTIONFX_MOTION_ASSET_TYPE_ID],
+        },
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "MotionSetAsset.h",
+            "symbols": ["MotionSetAsset", RUNTIME_EMOTIONFX_MOTION_SET_ASSET_TYPE_ID],
+        },
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "AnimGraphAsset.h",
+            "symbols": ["AnimGraphAsset", RUNTIME_EMOTIONFX_ANIM_GRAPH_ASSET_TYPE_ID],
+        },
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "ActorAsset.cpp",
+            "symbols": ["azrtti_typeid<ActorAsset>", "actor"],
+        },
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "MotionAsset.cpp",
+            "symbols": ["azrtti_typeid<MotionAsset>", "motion"],
+        },
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "MotionSetAsset.cpp",
+            "symbols": ["azrtti_typeid<MotionSetAsset>", "motionset"],
+        },
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "AnimGraphAsset.cpp",
+            "symbols": ["azrtti_typeid<AnimGraphAsset>", "animgraph"],
+        },
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "System" / "SystemComponent.cpp",
+            "symbols": ["ActorAssetHandler", "MotionAssetHandler", "MotionSetAssetHandler", "AnimGraphAssetHandler"],
+        },
+    ]
+
+
+def _source_file_symbol_validation(path: Path, symbols: Sequence[str]) -> Dict[str, Any]:
+    if not path.is_file():
+        return {
+            "path": str(path),
+            "status": "missing",
+            "symbols": list(symbols),
+            "missing_symbols": list(symbols),
+        }
+    text = path.read_text(encoding="utf-8", errors="replace")
+    missing = [symbol for symbol in symbols if symbol not in text]
+    return {
+        "path": str(path),
+        "status": "pass" if not missing else "missing_symbols",
+        "symbols": list(symbols),
+        "missing_symbols": missing,
+    }
+
+
+def _runtime_type_id_key(type_id: Any) -> str:
+    return str(type_id).strip().upper()
+
+
 def _run_runtime_character_prefab_source_diagnostic(
     report: Dict[str, Any],
     *,
@@ -10779,6 +11641,8 @@ def _runtime_exit_fixture_static_payload(*, timeout_seconds: int) -> Dict[str, A
         "runtime_exit_fixture_runtime_command_uses_cache_bootstrap_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_ap_shader_strategy": False,
         "runtime_exit_fixture_runtime_command_uses_product_load_probe": False,
+        "runtime_exit_fixture_runtime_command_uses_spawn_instantiation_probe": False,
+        "runtime_exit_fixture_runtime_command_uses_animation_playback_surface_probe": False,
         "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
         "runtime_exit_fixture_level_load_observed": False,
         "runtime_exit_fixture_unexpected_level_load": False,
@@ -11899,6 +12763,24 @@ def _runtime_character_spawn_instantiation_gate_status(env: Mapping[str, str]) -
     }
 
 
+def _runtime_character_animation_playback_surface_gate_status(env: Mapping[str, str]) -> Dict[str, Any]:
+    required = (
+        tuple(RUNTIME_CHARACTER_SPAWNABLE_SURFACE_GATE_ENV)
+        + tuple(RUNTIME_CHARACTER_SPAWN_INSTANTIATION_GATE_ENV)
+        + tuple(RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE_GATE_ENV)
+    )
+    missing = [
+        item.split("=", 1)[0]
+        for item in required
+        if str(env.get(item.split("=", 1)[0], "")).strip() != "1"
+    ]
+    return {
+        "status": "pass" if not missing else "blocked_by_runtime_character_animation_playback_surface_gate_missing",
+        "required": [item.split("=", 1)[0] for item in required],
+        "missing": missing,
+    }
+
+
 def _scan_runtime_output(text: str) -> Dict[str, Any]:
     lower = text.lower()
     matches: List[Dict[str, str]] = []
@@ -12335,6 +13217,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--diagnose-runtime-character-prefab-source", action="store_true")
     parser.add_argument("--diagnose-runtime-character-spawn-instantiation", action="store_true")
     parser.add_argument("--enable-runtime-character-spawn-instantiation-fixture", action="store_true")
+    parser.add_argument("--diagnose-runtime-character-animation-playback-surface", action="store_true")
+    parser.add_argument("--enable-runtime-character-animation-playback-surface-fixture", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -12390,6 +13274,12 @@ def main() -> int:
         diagnose_runtime_character_prefab_source=args.diagnose_runtime_character_prefab_source,
         diagnose_runtime_character_spawn_instantiation=args.diagnose_runtime_character_spawn_instantiation,
         enable_runtime_character_spawn_instantiation_fixture=args.enable_runtime_character_spawn_instantiation_fixture,
+        diagnose_runtime_character_animation_playback_surface=(
+            args.diagnose_runtime_character_animation_playback_surface
+        ),
+        enable_runtime_character_animation_playback_surface_fixture=(
+            args.enable_runtime_character_animation_playback_surface_fixture
+        ),
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
         strict_integration=args.strict_integration,
