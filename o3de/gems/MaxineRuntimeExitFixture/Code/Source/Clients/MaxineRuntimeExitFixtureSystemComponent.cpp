@@ -2,11 +2,17 @@
 
 #include <AzCore/Asset/AssetManager.h>
 #include <AzCore/Asset/AssetManagerBus.h>
+#include <AzCore/Component/Component.h>
+#include <AzCore/Component/Entity.h>
 #include <AzCore/Interface/Interface.h>
 #include <AzCore/Serialization/SerializeContext.h>
 #include <AzCore/Settings/SettingsRegistry.h>
+#include <AzCore/std/parallel/lock.h>
 #include <AzCore/std/string/fixed_string.h>
+#include <AzFramework/Entity/GameEntityContextBus.h>
 #include <AzFramework/API/ApplicationAPI.h>
+#include <AzFramework/Spawnable/Spawnable.h>
+#include <AzFramework/Spawnable/SpawnableEntitiesInterface.h>
 
 namespace MaxineRuntimeExitFixture
 {
@@ -25,6 +31,22 @@ namespace MaxineRuntimeExitFixture
             "/Amazon/MAXINE/RuntimeHarness/CharacterProductLoadProbe/TimeoutTicks";
         constexpr const char* CharacterProductLoadProbeRequireAllProductsReadyKey =
             "/Amazon/MAXINE/RuntimeHarness/CharacterProductLoadProbe/RequireAllProductsReady";
+        constexpr const char* EnableCharacterSpawnInstantiationProbeKey =
+            "/Amazon/MAXINE/RuntimeHarness/EnableCharacterSpawnInstantiationProbe";
+        constexpr const char* CharacterSpawnInstantiationProbeSpawnableProductPathKey =
+            "/Amazon/MAXINE/RuntimeHarness/CharacterSpawnInstantiationProbe/SpawnableProductPath";
+        constexpr const char* CharacterSpawnInstantiationProbeSpawnableCatalogPathKey =
+            "/Amazon/MAXINE/RuntimeHarness/CharacterSpawnInstantiationProbe/SpawnableCatalogPath";
+        constexpr const char* CharacterSpawnInstantiationProbeSpawnableAssetIdKey =
+            "/Amazon/MAXINE/RuntimeHarness/CharacterSpawnInstantiationProbe/SpawnableAssetId";
+        constexpr const char* CharacterSpawnInstantiationProbeSpawnableAssetTypeKey =
+            "/Amazon/MAXINE/RuntimeHarness/CharacterSpawnInstantiationProbe/SpawnableAssetType";
+        constexpr const char* CharacterSpawnInstantiationProbeTimeoutTicksKey =
+            "/Amazon/MAXINE/RuntimeHarness/CharacterSpawnInstantiationProbe/TimeoutTicks";
+        constexpr const char* CharacterSpawnInstantiationProbeRequirePositiveEntityCountKey =
+            "/Amazon/MAXINE/RuntimeHarness/CharacterSpawnInstantiationProbe/RequirePositiveEntityCount";
+        constexpr const char* CharacterSpawnInstantiationProbeCleanupSpawnedEntitiesKey =
+            "/Amazon/MAXINE/RuntimeHarness/CharacterSpawnInstantiationProbe/CleanupSpawnedEntities";
         constexpr const char* TraceWindow = "MaxineRuntimeExitFixture";
 
         AZStd::string ProductProbeKey(AZ::u64 index, const char* field)
@@ -103,6 +125,36 @@ namespace MaxineRuntimeExitFixture
             return decoded;
         }
 
+        AZStd::string SanitizeMarkerValue(AZStd::string value)
+        {
+            for (char& character : value)
+            {
+                if (character == ' ' || character == '\t' || character == '\r' || character == '\n')
+                {
+                    character = '_';
+                }
+            }
+            return value;
+        }
+
+        AZStd::string ComponentInventoryString(const AZ::Entity& entity)
+        {
+            AZStd::string components;
+            for (const AZ::Component* component : entity.GetComponents())
+            {
+                if (component == nullptr)
+                {
+                    continue;
+                }
+                if (!components.empty())
+                {
+                    components += ";";
+                }
+                components += component->GetUnderlyingComponentType().ToString<AZStd::string>();
+            }
+            return components;
+        }
+
     } // namespace
 
     AZ_COMPONENT_IMPL(
@@ -163,6 +215,7 @@ namespace MaxineRuntimeExitFixture
         m_exitAfterTicks = static_cast<AZ::u64>(exitAfterTicks);
         m_ticksObserved = 0;
         ConfigureProductLoadProbe();
+        ConfigureCharacterSpawnInstantiationProbe();
         AZ::TickBus::Handler::BusConnect();
 
         AZ_TracePrintf(
@@ -188,6 +241,31 @@ namespace MaxineRuntimeExitFixture
         m_productLoadTimeoutTicks = 0;
         m_productLoadStartTick = 0;
         m_productLoadProducts.clear();
+        ReleaseCharacterSpawnInstantiationProbe();
+        m_characterSpawnProbeEnabled = false;
+        m_characterSpawnProbeStarted = false;
+        m_characterSpawnProbeComplete = false;
+        m_characterSpawnLoadRequested = false;
+        m_characterSpawnReady = false;
+        m_characterSpawnRequestIssued = false;
+        m_characterSpawnCompletionObserved = false;
+        m_characterSpawnCleanupRequested = false;
+        m_characterSpawnCleanupComplete = false;
+        m_characterSpawnRequirePositiveEntityCount = true;
+        m_characterSpawnCleanupSpawnedEntities = true;
+        m_characterSpawnError = false;
+        m_characterSpawnTimeout = false;
+        m_characterSpawnTimeoutTicks = 0;
+        m_characterSpawnStartTick = 0;
+        m_characterSpawnProductPath.clear();
+        m_characterSpawnCatalogPath.clear();
+        m_characterSpawnExpectedAssetId.clear();
+        m_characterSpawnExpectedAssetType.clear();
+        m_characterSpawnAssetId.SetInvalid();
+        m_characterSpawnAssetType = AZ::Data::AssetType::CreateNull();
+        m_characterSpawnedEntityIds.clear();
+        m_characterSpawnedEntityNames.clear();
+        m_characterSpawnedEntityComponentInventory.clear();
     }
 
     void MaxineRuntimeExitFixtureSystemComponent::OnTick([[maybe_unused]] float deltaTime, [[maybe_unused]] AZ::ScriptTimePoint time)
@@ -206,6 +284,19 @@ namespace MaxineRuntimeExitFixture
             }
             PollProductLoadProbe();
             if (!m_productLoadProbeComplete)
+            {
+                return;
+            }
+        }
+
+        if (m_characterSpawnProbeEnabled)
+        {
+            if (!m_characterSpawnProbeStarted)
+            {
+                StartCharacterSpawnInstantiationProbe();
+            }
+            PollCharacterSpawnInstantiationProbe();
+            if (!m_characterSpawnProbeComplete)
             {
                 return;
             }
@@ -543,5 +634,376 @@ namespace MaxineRuntimeExitFixture
                 product.m_kind.c_str(),
                 product.m_productPath.c_str());
         }
+    }
+
+    void MaxineRuntimeExitFixtureSystemComponent::ConfigureCharacterSpawnInstantiationProbe()
+    {
+        m_characterSpawnProbeEnabled = false;
+        m_characterSpawnProbeStarted = false;
+        m_characterSpawnProbeComplete = false;
+        m_characterSpawnLoadRequested = false;
+        m_characterSpawnReady = false;
+        m_characterSpawnRequestIssued = false;
+        m_characterSpawnCompletionObserved = false;
+        m_characterSpawnCleanupRequested = false;
+        m_characterSpawnCleanupComplete = false;
+        m_characterSpawnError = false;
+        m_characterSpawnTimeout = false;
+        m_characterSpawnStartTick = 0;
+        m_characterSpawnAssetId.SetInvalid();
+        m_characterSpawnAssetType = AZ::Data::AssetType::CreateNull();
+        m_characterSpawnedEntityIds.clear();
+        m_characterSpawnedEntityNames.clear();
+        m_characterSpawnedEntityComponentInventory.clear();
+
+        auto* settingsRegistry = AZ::SettingsRegistry::Get();
+        if (settingsRegistry == nullptr)
+        {
+            return;
+        }
+
+        bool enableProbe = false;
+        AZ::s64 timeoutTicks = 0;
+        settingsRegistry->Get(enableProbe, EnableCharacterSpawnInstantiationProbeKey);
+        settingsRegistry->Get(timeoutTicks, CharacterSpawnInstantiationProbeTimeoutTicksKey);
+        settingsRegistry->Get(
+            m_characterSpawnRequirePositiveEntityCount,
+            CharacterSpawnInstantiationProbeRequirePositiveEntityCountKey);
+        settingsRegistry->Get(
+            m_characterSpawnCleanupSpawnedEntities,
+            CharacterSpawnInstantiationProbeCleanupSpawnedEntitiesKey);
+
+        if (!enableProbe)
+        {
+            return;
+        }
+
+        const auto ReadSpawnProbeValue = [settingsRegistry](const char* key) -> AZStd::string
+        {
+            AZ::SettingsRegistryInterface::FixedValueString value;
+            if (settingsRegistry->Get(value, key))
+            {
+                return value.c_str();
+            }
+            return {};
+        };
+
+        m_characterSpawnProductPath = ReadSpawnProbeValue(CharacterSpawnInstantiationProbeSpawnableProductPathKey);
+        m_characterSpawnCatalogPath = ReadSpawnProbeValue(CharacterSpawnInstantiationProbeSpawnableCatalogPathKey);
+        m_characterSpawnExpectedAssetId = ReadSpawnProbeValue(CharacterSpawnInstantiationProbeSpawnableAssetIdKey);
+        m_characterSpawnExpectedAssetType = ReadSpawnProbeValue(CharacterSpawnInstantiationProbeSpawnableAssetTypeKey);
+        m_characterSpawnTimeoutTicks = timeoutTicks > 0 ? static_cast<AZ::u64>(timeoutTicks) : 120;
+        m_characterSpawnProbeEnabled = true;
+    }
+
+    void MaxineRuntimeExitFixtureSystemComponent::StartCharacterSpawnInstantiationProbe()
+    {
+        m_characterSpawnProbeStarted = true;
+        m_characterSpawnStartTick = m_ticksObserved;
+
+        AZ_TracePrintf(
+            TraceWindow,
+            "MAXINE_RUNTIME_CHARACTER_SPAWN_START product_path=%s catalog_path=%s asset_id=%s asset_type=%s timeout_ticks=%llu require_positive_entity_count=%s cleanup=%s\n",
+            m_characterSpawnProductPath.c_str(),
+            m_characterSpawnCatalogPath.c_str(),
+            m_characterSpawnExpectedAssetId.c_str(),
+            m_characterSpawnExpectedAssetType.c_str(),
+            static_cast<unsigned long long>(m_characterSpawnTimeoutTicks),
+            m_characterSpawnRequirePositiveEntityCount ? "true" : "false",
+            m_characterSpawnCleanupSpawnedEntities ? "true" : "false");
+
+        AZ_TracePrintf(
+            TraceWindow,
+            "MAXINE_RUNTIME_CHARACTER_SPAWN_SOURCE_VALIDATED api=AzFramework::SpawnableEntitiesInterface::SpawnAllEntities status=pass\n");
+
+        if (!AZ::Data::AssetManager::IsReady())
+        {
+            m_characterSpawnError = true;
+            AZ_TracePrintf(TraceWindow, "MAXINE_RUNTIME_CHARACTER_SPAWN_ERROR error=asset_manager_not_ready\n");
+            CompleteCharacterSpawnInstantiationProbe("fail");
+            return;
+        }
+
+        if (AzFramework::SpawnableEntitiesInterface::Get() == nullptr)
+        {
+            m_characterSpawnError = true;
+            AZ_TracePrintf(TraceWindow, "MAXINE_RUNTIME_CHARACTER_SPAWN_ERROR error=spawnable_entities_interface_missing\n");
+            CompleteCharacterSpawnInstantiationProbe("fail");
+            return;
+        }
+
+        AzFramework::EntityContextId contextId;
+        AzFramework::GameEntityContextRequestBus::BroadcastResult(
+            contextId,
+            &AzFramework::GameEntityContextRequests::GetGameEntityContextId);
+        if (contextId.IsNull())
+        {
+            m_characterSpawnError = true;
+            AZ_TracePrintf(TraceWindow, "MAXINE_RUNTIME_CHARACTER_SPAWN_ERROR error=game_entity_context_missing\n");
+            CompleteCharacterSpawnInstantiationProbe("fail");
+            return;
+        }
+
+        AZ_TracePrintf(
+            TraceWindow,
+            "MAXINE_RUNTIME_CHARACTER_SPAWN_CONTEXT status=game_entity_context_available context_id=%s\n",
+            contextId.ToString<AZStd::string>().c_str());
+
+        AZ::Data::AssetCatalogRequestBus::BroadcastResult(
+            m_characterSpawnAssetId,
+            &AZ::Data::AssetCatalogRequests::GetAssetIdByPath,
+            m_characterSpawnCatalogPath.c_str(),
+            AZ::Data::s_invalidAssetType,
+            false);
+        if (!m_characterSpawnAssetId.IsValid() && !m_characterSpawnExpectedAssetId.empty())
+        {
+            m_characterSpawnAssetId = AZ::Data::AssetId::CreateString(m_characterSpawnExpectedAssetId);
+        }
+        if (!m_characterSpawnAssetId.IsValid())
+        {
+            m_characterSpawnError = true;
+            AZ_TracePrintf(TraceWindow, "MAXINE_RUNTIME_CHARACTER_SPAWN_ERROR error=spawnable_asset_id_resolution_failed\n");
+            CompleteCharacterSpawnInstantiationProbe("fail");
+            return;
+        }
+
+        AZ::Data::AssetInfo assetInfo;
+        AZ::Data::AssetCatalogRequestBus::BroadcastResult(
+            assetInfo,
+            &AZ::Data::AssetCatalogRequests::GetAssetInfoById,
+            m_characterSpawnAssetId);
+        m_characterSpawnAssetType = assetInfo.m_assetType;
+        if (m_characterSpawnAssetType.IsNull())
+        {
+            m_characterSpawnError = true;
+            AZ_TracePrintf(
+                TraceWindow,
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_ERROR asset_id=%s error=spawnable_asset_type_resolution_failed\n",
+                AssetIdToString(m_characterSpawnAssetId).c_str());
+            CompleteCharacterSpawnInstantiationProbe("fail");
+            return;
+        }
+
+        if (AZ::Data::AssetManager::Instance().GetHandler(m_characterSpawnAssetType) == nullptr)
+        {
+            m_characterSpawnError = true;
+            AZ_TracePrintf(
+                TraceWindow,
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_ERROR asset_id=%s asset_type=%s error=spawnable_asset_handler_missing\n",
+                AssetIdToString(m_characterSpawnAssetId).c_str(),
+                AssetTypeToString(m_characterSpawnAssetType).c_str());
+            CompleteCharacterSpawnInstantiationProbe("fail");
+            return;
+        }
+
+        m_characterSpawnAsset = AZ::Data::AssetManager::Instance().GetAsset<AzFramework::Spawnable>(
+            m_characterSpawnAssetId,
+            AZ::Data::AssetLoadBehavior::Default);
+        m_characterSpawnLoadRequested = static_cast<bool>(m_characterSpawnAsset);
+        if (!m_characterSpawnLoadRequested)
+        {
+            m_characterSpawnError = true;
+            AZ_TracePrintf(
+                TraceWindow,
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_ERROR asset_id=%s asset_type=%s error=spawnable_load_request_failed\n",
+                AssetIdToString(m_characterSpawnAssetId).c_str(),
+                AssetTypeToString(m_characterSpawnAssetType).c_str());
+            CompleteCharacterSpawnInstantiationProbe("fail");
+        }
+    }
+
+    void MaxineRuntimeExitFixtureSystemComponent::PollCharacterSpawnInstantiationProbe()
+    {
+        if (m_characterSpawnProbeComplete)
+        {
+            return;
+        }
+
+        const bool timedOut = (m_ticksObserved - m_characterSpawnStartTick) >= m_characterSpawnTimeoutTicks;
+        if (timedOut && !m_characterSpawnTimeout)
+        {
+            m_characterSpawnTimeout = true;
+            AZ_TracePrintf(
+                TraceWindow,
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_TIMEOUT ticket=%u timeout_ticks=%llu\n",
+                m_characterSpawnTicket.GetId(),
+                static_cast<unsigned long long>(m_characterSpawnTimeoutTicks));
+            CompleteCharacterSpawnInstantiationProbe("fail");
+            return;
+        }
+
+        if (!m_characterSpawnReady)
+        {
+            if (m_characterSpawnAsset.IsReady())
+            {
+                m_characterSpawnReady = true;
+            }
+            else if (m_characterSpawnAsset.IsError())
+            {
+                m_characterSpawnError = true;
+                AZ_TracePrintf(TraceWindow, "MAXINE_RUNTIME_CHARACTER_SPAWN_ERROR error=spawnable_asset_load_error\n");
+                CompleteCharacterSpawnInstantiationProbe("fail");
+                return;
+            }
+            else
+            {
+                return;
+            }
+        }
+
+        auto* spawnableInterface = AzFramework::SpawnableEntitiesInterface::Get();
+        if (spawnableInterface == nullptr)
+        {
+            m_characterSpawnError = true;
+            AZ_TracePrintf(TraceWindow, "MAXINE_RUNTIME_CHARACTER_SPAWN_ERROR error=spawnable_entities_interface_missing\n");
+            CompleteCharacterSpawnInstantiationProbe("fail");
+            return;
+        }
+
+        if (!m_characterSpawnRequestIssued)
+        {
+            m_characterSpawnTicket = AzFramework::EntitySpawnTicket(m_characterSpawnAsset);
+            if (!m_characterSpawnTicket.IsValid())
+            {
+                m_characterSpawnError = true;
+                AZ_TracePrintf(TraceWindow, "MAXINE_RUNTIME_CHARACTER_SPAWN_ERROR error=spawn_ticket_invalid\n");
+                CompleteCharacterSpawnInstantiationProbe("fail");
+                return;
+            }
+
+            AZ_TracePrintf(
+                TraceWindow,
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_TICKET ticket=%u valid=true\n",
+                m_characterSpawnTicket.GetId());
+
+            AzFramework::SpawnAllEntitiesOptionalArgs spawnArgs;
+            spawnArgs.m_completionCallback =
+                [this](AzFramework::EntitySpawnTicket::Id ticketId, AzFramework::SpawnableConstEntityContainerView view)
+            {
+                AZStd::lock_guard<AZStd::mutex> lock(m_characterSpawnMutex);
+                m_characterSpawnCompletionObserved = true;
+                m_characterSpawnedEntityIds.clear();
+                m_characterSpawnedEntityNames.clear();
+                m_characterSpawnedEntityComponentInventory.clear();
+
+                AZ_TracePrintf(
+                    TraceWindow,
+                    "MAXINE_RUNTIME_CHARACTER_SPAWN_COMPLETED ticket=%u result=completed entity_count=%zu\n",
+                    ticketId,
+                    view.size());
+
+                size_t index = 0;
+                for (const AZ::Entity* entity : view)
+                {
+                    if (entity == nullptr)
+                    {
+                        continue;
+                    }
+                    const AZStd::string entityId = entity->GetId().ToString();
+                    const AZStd::string entityName = SanitizeMarkerValue(entity->GetName());
+                    const AZStd::string components = ComponentInventoryString(*entity);
+                    m_characterSpawnedEntityIds.push_back(entityId);
+                    m_characterSpawnedEntityNames.push_back(entityName);
+                    m_characterSpawnedEntityComponentInventory.push_back(components);
+
+                    AZ_TracePrintf(
+                        TraceWindow,
+                        "MAXINE_RUNTIME_CHARACTER_SPAWN_ENTITY ticket=%u index=%zu entity_id=%s name=%s component_count=%zu components=%s\n",
+                        ticketId,
+                        index,
+                        entityId.c_str(),
+                        entityName.c_str(),
+                        entity->GetComponents().size(),
+                        components.c_str());
+                    ++index;
+                }
+            };
+            spawnableInterface->SpawnAllEntities(m_characterSpawnTicket, AZStd::move(spawnArgs));
+            m_characterSpawnRequestIssued = true;
+            AZ_TracePrintf(
+                TraceWindow,
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_REQUESTED ticket=%u api=AzFramework::SpawnableEntitiesInterface::SpawnAllEntities\n",
+                m_characterSpawnTicket.GetId());
+            return;
+        }
+
+        if (!m_characterSpawnCompletionObserved)
+        {
+            return;
+        }
+
+        const bool positiveEntityCount = !m_characterSpawnedEntityIds.empty();
+        if (m_characterSpawnRequirePositiveEntityCount && !positiveEntityCount)
+        {
+            m_characterSpawnError = true;
+            AZ_TracePrintf(
+                TraceWindow,
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_ERROR ticket=%u error=no_spawned_entities\n",
+                m_characterSpawnTicket.GetId());
+            CompleteCharacterSpawnInstantiationProbe("fail");
+            return;
+        }
+
+        if (m_characterSpawnCleanupSpawnedEntities && !m_characterSpawnCleanupRequested)
+        {
+            AzFramework::DespawnAllEntitiesOptionalArgs despawnArgs;
+            despawnArgs.m_completionCallback = [this](AzFramework::EntitySpawnTicket::Id ticketId)
+            {
+                AZStd::lock_guard<AZStd::mutex> lock(m_characterSpawnMutex);
+                m_characterSpawnCleanupComplete = true;
+                AZ_TracePrintf(
+                    TraceWindow,
+                    "MAXINE_RUNTIME_CHARACTER_SPAWN_CLEANUP ticket=%u status=complete\n",
+                    ticketId);
+            };
+            spawnableInterface->DespawnAllEntities(m_characterSpawnTicket, AZStd::move(despawnArgs));
+            m_characterSpawnCleanupRequested = true;
+            return;
+        }
+
+        if (!m_characterSpawnCleanupSpawnedEntities)
+        {
+            m_characterSpawnCleanupComplete = true;
+            AZ_TracePrintf(
+                TraceWindow,
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_CLEANUP ticket=%u status=not_required\n",
+                m_characterSpawnTicket.GetId());
+        }
+
+        if (m_characterSpawnCleanupComplete)
+        {
+            CompleteCharacterSpawnInstantiationProbe(m_characterSpawnError ? "fail" : "pass");
+        }
+    }
+
+    void MaxineRuntimeExitFixtureSystemComponent::CompleteCharacterSpawnInstantiationProbe(const char* status)
+    {
+        if (m_characterSpawnProbeComplete)
+        {
+            return;
+        }
+
+        AZStd::lock_guard<AZStd::mutex> lock(m_characterSpawnMutex);
+        const char* cleanupStatus =
+            m_characterSpawnCleanupComplete
+            ? (m_characterSpawnCleanupSpawnedEntities ? "complete" : "not_required")
+            : (m_characterSpawnCleanupSpawnedEntities ? "incomplete" : "not_required");
+
+        AZ_TracePrintf(
+            TraceWindow,
+            "MAXINE_RUNTIME_CHARACTER_SPAWN_SUMMARY status=%s requested=%u completed=%u spawned=%zu cleanup=%s timed_out=%u\n",
+            status,
+            m_characterSpawnRequestIssued ? 1 : 0,
+            m_characterSpawnCompletionObserved ? 1 : 0,
+            m_characterSpawnedEntityIds.size(),
+            cleanupStatus,
+            m_characterSpawnTimeout ? 1 : 0);
+        m_characterSpawnProbeComplete = true;
+    }
+
+    void MaxineRuntimeExitFixtureSystemComponent::ReleaseCharacterSpawnInstantiationProbe()
+    {
+        m_characterSpawnAsset.Reset();
+        m_characterSpawnTicket = AzFramework::EntitySpawnTicket();
     }
 } // namespace MaxineRuntimeExitFixture

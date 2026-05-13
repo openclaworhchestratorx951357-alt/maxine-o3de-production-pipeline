@@ -750,6 +750,23 @@ def _stage_approved_runtime_character_prefab_source(
         target_hash = _sha256_bytes(target_bytes)
         base["target_pre_hash"] = target_hash
         if target_hash != source_hash:
+            if _text_bytes_equal_with_normalized_line_endings(source_bytes, target_bytes):
+                base.update(
+                    {
+                        "status": "already_present_normalized_line_endings",
+                        "attempted": True,
+                        "project_mutation_attempted": False,
+                        "project_mutation_reversible": True,
+                        "target_post_hash": target_hash,
+                        "line_endings_normalized_match": True,
+                        "rollback_instruction": f"Target content matched repo source after line-ending normalization; no rollback needed for {target_ref}.",
+                        "message": (
+                            "Approved runtime character prefab source was already present in the live project scanfolder "
+                            "with equivalent content after line-ending normalization."
+                        ),
+                    }
+                )
+                return base
             base.update(
                 {
                     "status": "fail",
@@ -791,6 +808,15 @@ def _stage_approved_runtime_character_prefab_source(
         }
     )
     return base
+
+
+def _text_bytes_equal_with_normalized_line_endings(left: bytes, right: bytes) -> bool:
+    try:
+        left_text = left.decode("utf-8-sig")
+        right_text = right.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return False
+    return left_text.replace("\r\n", "\n") == right_text.replace("\r\n", "\n")
 
 
 def _approved_runtime_character_prefab_source_config(golden_project_fixture: Path) -> Dict[str, Any]:

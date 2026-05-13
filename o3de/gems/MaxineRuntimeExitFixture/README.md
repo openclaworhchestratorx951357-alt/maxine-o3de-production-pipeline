@@ -14,6 +14,7 @@ Runtime harness gates must remain separate from the Gem source:
 - `MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS=1`
 - `MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE=1`
 - `MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE=1` only when the optional product-load probe is intentionally enabled
+- `MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE=1`, `MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWN_INSTANTIATION=1`, and `MAXINE_ALLOW_RUNTIME_CHARACTER_SPAWN_INSTANTIATION=1` only when the optional spawn-instantiation probe is intentionally enabled
 
 The component also requires Settings Registry keys before it connects to `AZ::TickBus`:
 
@@ -48,5 +49,32 @@ The probe resolves product-relative catalog paths through `AZ::Data::AssetCatalo
 Source readiness is not runtime execution proof. Rebuild readiness is not runtime execution proof. A clean fixture exit can prove only bounded runtime command-envelope execution. A clean product-load probe can prove only runtime product resolution/load readiness for approved products; it is not runtime instantiation, spawn, animation, full character proof, or production-ready release proof.
 
 If `MAXINE_RUNTIME_PRODUCT_LOAD_ERROR` reports `error=asset_handler_missing`, the product resolved through the runtime AssetCatalog but cannot be counted as ready because no runtime `AssetManager` handler is registered for the reported asset type.
+
+The optional character spawn-instantiation probe is disabled by default. When explicitly enabled, it reads these Settings Registry keys:
+
+- `/Amazon/MAXINE/RuntimeHarness/EnableCharacterSpawnInstantiationProbe=true`
+- `/Amazon/MAXINE/RuntimeHarness/CharacterSpawnInstantiationProbe/SpawnableProductPath`
+- `/Amazon/MAXINE/RuntimeHarness/CharacterSpawnInstantiationProbe/SpawnableCatalogPath`
+- `/Amazon/MAXINE/RuntimeHarness/CharacterSpawnInstantiationProbe/SpawnableAssetId`
+- `/Amazon/MAXINE/RuntimeHarness/CharacterSpawnInstantiationProbe/SpawnableAssetType`
+- `/Amazon/MAXINE/RuntimeHarness/CharacterSpawnInstantiationProbe/TimeoutTicks=<positive integer>`
+- `/Amazon/MAXINE/RuntimeHarness/CharacterSpawnInstantiationProbe/RequirePositiveEntityCount=true`
+- `/Amazon/MAXINE/RuntimeHarness/CharacterSpawnInstantiationProbe/CleanupSpawnedEntities=true`
+
+The spawn probe resolves and loads the approved `AzFramework::Spawnable`, verifies a game entity context, creates an `AzFramework::EntitySpawnTicket`, calls `AzFramework::SpawnableEntitiesInterface::SpawnAllEntities`, records completion with spawned entity evidence, and calls `DespawnAllEntities` when cleanup is enabled. It emits stable markers:
+
+- `MAXINE_RUNTIME_CHARACTER_SPAWN_START`
+- `MAXINE_RUNTIME_CHARACTER_SPAWN_SOURCE_VALIDATED`
+- `MAXINE_RUNTIME_CHARACTER_SPAWN_CONTEXT`
+- `MAXINE_RUNTIME_CHARACTER_SPAWN_TICKET`
+- `MAXINE_RUNTIME_CHARACTER_SPAWN_REQUESTED`
+- `MAXINE_RUNTIME_CHARACTER_SPAWN_COMPLETED`
+- `MAXINE_RUNTIME_CHARACTER_SPAWN_ENTITY`
+- `MAXINE_RUNTIME_CHARACTER_SPAWN_ERROR`
+- `MAXINE_RUNTIME_CHARACTER_SPAWN_TIMEOUT`
+- `MAXINE_RUNTIME_CHARACTER_SPAWN_CLEANUP`
+- `MAXINE_RUNTIME_CHARACTER_SPAWN_SUMMARY`
+
+Spawn-instantiation proof requires positive spawned entity evidence and clean cleanup/exit. It is not animation proof, full runtime character proof, publication, packaging, or production-ready release evidence.
 
 The Gem is intended to be registered as an external subdirectory for private harness runs only. The root `CMakeLists.txt` delegates to `Code/CMakeLists.txt` so O3DE CMake can discover the Gem after project-scoped external-subdirectory registration. Registration, enablement, and rebuild require the runtime harness project-mutation and rebuild gates; build outputs and runtime binaries must not be committed.

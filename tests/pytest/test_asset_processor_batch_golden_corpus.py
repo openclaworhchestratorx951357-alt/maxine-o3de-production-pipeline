@@ -51,6 +51,36 @@ def _live_ready_env(tmp_path: Path) -> dict:
     return env
 
 
+def _normalize_line_endings_bytes(data: bytes) -> bytes:
+    return data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+
+
+def _opposite_line_ending_variant(data: bytes) -> bytes:
+    normalized = _normalize_line_endings_bytes(data)
+    if b"\r\n" in data:
+        variant = normalized
+    elif b"\n" in data:
+        variant = data.replace(b"\n", b"\r\n")
+    else:
+        raise ValueError("source bytes must contain line endings to create drift")
+    assert variant != data
+    assert _normalize_line_endings_bytes(variant) == normalized
+    return variant
+
+
+def test_opposite_line_ending_variant_changes_only_newline_style():
+    lf_source = b"{\n  \"name\": \"lf\"\n}\n"
+    crlf_source = b"{\r\n  \"name\": \"crlf\"\r\n}\r\n"
+
+    lf_variant = _opposite_line_ending_variant(lf_source)
+    crlf_variant = _opposite_line_ending_variant(crlf_source)
+
+    assert lf_variant != lf_source
+    assert crlf_variant != crlf_source
+    assert _normalize_line_endings_bytes(lf_variant) == _normalize_line_endings_bytes(lf_source)
+    assert _normalize_line_endings_bytes(crlf_variant) == _normalize_line_endings_bytes(crlf_source)
+
+
 def _write_asset_db(project_path: Path, product_names: list[str]) -> Path:
     db = project_path / "Cache" / "assetdb.sqlite"
     db.parent.mkdir(parents=True, exist_ok=True)
@@ -390,6 +420,38 @@ def test_apb_live_refuses_to_overwrite_existing_prefab_source_with_different_has
     assert staging["project_mutation_attempted"] is False
     assert "refusing to overwrite" in staging["message"]
     assert runner.calls == []
+
+
+def test_apb_live_accepts_existing_prefab_source_with_only_line_ending_drift(tmp_path):
+    env = _live_ready_env(tmp_path)
+    env["MAXINE_ALLOW_RUNTIME_CHARACTER_PREFAB_SOURCE_GENERATION"] = "1"
+    project_path = Path(env["O3DE_PROJECT_PATH"])
+    target = project_path / "Assets" / "Characters" / "MAXINE_GoldenCorpus" / "prefabs" / "release_rigged.prefab"
+    target.parent.mkdir(parents=True)
+    repo_source = REPO_ROOT / "examples" / "o3de-golden-project" / "source" / "Assets" / "Characters" / "MAXINE_GoldenCorpus" / "prefabs" / "release_rigged.prefab"
+    source_bytes = repo_source.read_bytes()
+    target_bytes = _opposite_line_ending_variant(source_bytes)
+    assert target_bytes != source_bytes
+    assert _normalize_line_endings_bytes(target_bytes) == _normalize_line_endings_bytes(source_bytes)
+    target.write_bytes(target_bytes)
+    runner = _RecordingRunner()
+
+    result = run_asset_processor_batch_corpus(
+        CORPUS,
+        enable_asset_processor_batch=True,
+        strict_integration=True,
+        golden_project_fixture=GOLDEN_PROJECT_FIXTURE,
+        command_runner=runner,
+        env=env,
+    )
+
+    staging = result["approved_runtime_character_prefab_source_staging"]
+    assert result["status"] == "pass"
+    assert staging["status"] == "already_present_normalized_line_endings"
+    assert staging["project_mutation_attempted"] is False
+    assert staging["project_mutation_reversible"] is True
+    assert staging["line_endings_normalized_match"] is True
+    assert runner.calls
 
 
 def test_apb_live_rejects_invalid_project_fixture(tmp_path):

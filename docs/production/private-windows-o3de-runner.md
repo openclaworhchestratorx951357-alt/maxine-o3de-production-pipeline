@@ -123,6 +123,16 @@ $env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE="1"
 
 The current `--diagnose-runtime-character-spawnable-surface` mode is read-only and does not require launching runtime. It source-validates `AzFramework::Spawnable` and the Prefab Builder `*.prefab` to `.spawnable` product path, then searches APB/AP DB/AssetCatalog-style evidence for character-specific release spawnables. It must reject `Levels/defaultlevel`, production/level spawnables, temp smoke levels, and generic non-character prefabs. This gate does not permit publishing, packaging, Asset Cache deletion, defaultlevel/production mutation, spawning, animation proof, or runtime character proof.
 
+Runtime character spawn-instantiation probing requires both the surface gate and two explicit spawn gates:
+
+```powershell
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWN_INSTANTIATION="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_SPAWN_INSTANTIATION="1"
+```
+
+These gates only permit the non-shipping fixture to instantiate the already-approved character `.spawnable` through the source-validated `AzFramework::SpawnableEntitiesInterface::SpawnAllEntities` path. The fixture must also keep the product-load gate, temp registry patch gate, project/cache-bootstrap mutation gates, no-defaultlevel strategy, AP/shader classification, and timeout/log capture in place. Spawn proof requires request, ticket, completion, positive spawned entity evidence, selected-surface log scans, cleanup/despawn status, no defaultlevel or production level loads, and clean exit. It does not permit publication, packaging, Asset Cache deletion, production/defaultlevel mutation, animation proof, or full runtime character proof.
+
 Approved runtime character prefab-source generation has a narrower gate when a repo-owned source must be staged into the live project scanfolder:
 
 ```powershell
@@ -275,7 +285,25 @@ The approved character spawnable-surface diagnostic entry point is:
 python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-character-spawnable-surface --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
 ```
 
-On the current paired rig, this diagnostic records `runtime_character_spawnable_surface_generation_required`: the latest APB report has no approved character `.spawnable`, and the live AP DB spawnables are defaultlevel, temp smoke-level, or generic prefab products. That status is honest blocking evidence; it does not launch runtime or satisfy product-load proof.
+Historical PR #140 evidence recorded `runtime_character_spawnable_surface_generation_required` before the approved source existed. Current PR #141 evidence expects and can verify `pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable` after APB stages the repo-owned source. The diagnostic still does not launch runtime by itself; product-load and spawn proof require their gated fixture modes.
+
+Runtime spawn-instantiation diagnostic and fixture entry points are:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-character-spawn-instantiation --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWN_INSTANTIATION="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_SPAWN_INSTANTIATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-character-spawn-instantiation-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 180
+```
 
 When the APB evidence, runtime readiness, and command pinning gates are clean, registration and enablement are run through the harness rather than by hand:
 
