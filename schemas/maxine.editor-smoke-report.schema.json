@@ -108,6 +108,7 @@
         "approved-prefab-save-update-automation-surface",
         "approved-prefab-save-update-bridge",
         "approved-prefab-save-update-bridge-host",
+        "approved-prefab-save-update-route",
         "full"
       ]
     },
@@ -2275,6 +2276,42 @@
     "approved_prefab_save_update_bridge_host_build_command": {
       "type": "string"
     },
+    "approved_prefab_save_update_route_diagnostic_attempted": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_route_diagnostic_completed": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_route_source_validation_status": {
+      "type": "string"
+    },
+    "approved_prefab_save_update_route_source_validation_verified": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_route_source_files": {
+      "type": "array"
+    },
+    "approved_prefab_save_update_route_added": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_route_behavior_context_reflected": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_route_callable_from_editor_python": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_route_blocker": {
+      "type": "string"
+    },
+    "approved_prefab_save_update_route_candidate_matrix": {
+      "type": "array"
+    },
+    "approved_prefab_save_update_route_selected_strategy": {
+      "type": "string"
+    },
+    "approved_prefab_save_update_route_api": {
+      "type": "object"
+    },
     "approved_prefab_save_update_source_validation_status": {
       "type": "string"
     },
@@ -2308,6 +2345,12 @@
       "type": "boolean"
     },
     "approved_prefab_save_update_rejected_generated_product_path": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_rejected_unapproved_absolute_path": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_rejected_path_traversal": {
       "type": "boolean"
     },
     "approved_prefab_save_update_scratch_prefab_path": {

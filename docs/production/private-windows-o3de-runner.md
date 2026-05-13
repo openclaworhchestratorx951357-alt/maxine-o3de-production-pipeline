@@ -186,6 +186,15 @@ python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.p
 
 This diagnostic is still host-readiness only. It may prove that the repo-owned `MaxineRuntimeExitFixture.Editor` target is present, has an Editor-only `AzToolsFramework` dependency, reflects `azlmbr.maxine.prefab_bridge.get_prefab_save_update_bridge_host_status`, and is callable from Editor Python. Bridge-host source validation is repo-owned; `O3DE_ENGINE_ROOT` only enables optional engine-source reference evidence, and unavailable engine refs must be reported separately instead of blocking host proof. It must not claim `approved_prefab_save_update_bridge_verified=true`, scratch save/update verification, approved source-prefab mutation, runtime component wiring, runtime animation, or full runtime character proof.
 
+Approved prefab save/update route diagnostics require the Editor smoke gates plus the explicit route marker:
+
+```powershell
+$env:MAXINE_ENABLE_APPROVED_PREFAB_SAVE_UPDATE_ROUTE="1"
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --mode local_editor_python --enable-editor-smoke --strict-integration --diagnose-approved-prefab-save-update-route --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 240
+```
+
+The optional `MAXINE_ALLOW_APPROVED_PREFAB_SAVE_UPDATE_ROUTE=1` marker is used only for bounded route fixture execution. The route is scratch-only: it calls `azlmbr.maxine.prefab_bridge.save_prefab_update_scratch_probe`, writes only under `Assets/_maxine_smoke/prefabs/`, rejects defaultlevel, production-level, generated product/cache, unapproved absolute, and traversal paths, parses the saved prefab JSON, records the after-hash, and cleans the scratch file. It must keep the approved source prefab unmodified, leave Actor + Simple Motion persistence false, skip APB/runtime mutation verification when no approved source mutation occurred, and keep runtime component wiring, runtime animation, and full runtime character proof false.
+
 Approved runtime character prefab-source generation has a narrower gate when a repo-owned source must be staged into the live project scanfolder:
 
 ```powershell
@@ -416,6 +425,15 @@ python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.p
 
 $env:MAXINE_ENABLE_APPROVED_PREFAB_SAVE_UPDATE_AUTOMATION_SURFACE="1"
 python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --mode local_editor_python --enable-editor-smoke --strict-integration --diagnostic-mode approved-prefab-save-update-automation-surface --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 180
+```
+
+Approved prefab save/update route and scratch-proof diagnostic entry points are:
+
+```powershell
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --mode local_editor_python --enable-editor-smoke --strict-integration --diagnose-approved-prefab-save-update-route --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 240
+
+$env:MAXINE_ENABLE_APPROVED_PREFAB_SAVE_UPDATE_ROUTE="1"
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --mode local_editor_python --enable-editor-smoke --strict-integration --diagnostic-mode approved-prefab-save-update-route --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 240
 ```
 
 When the APB evidence, runtime readiness, and command pinning gates are clean, registration and enablement are run through the harness rather than by hand:

@@ -62,4 +62,14 @@ Required bridge-host source validation is based on repo-owned Gem, CMake, module
 
 When the host is callable, reports may set `approved_prefab_save_update_bridge_host_callable_from_editor_python=true` while still keeping `approved_prefab_save_update_bridge_verified=false` and `approved_prefab_save_update_scratch_save_verified=false`. A later slice must expose the bounded save/update route, prove scratch save/update/parse/cleanup, and only then consider approved source-prefab mutation with APB/runtime follow-up.
 
+Approved prefab save/update route and scratch-proof diagnostic:
+
+```powershell
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --mode local_editor_python --enable-editor-smoke --strict-integration --diagnose-approved-prefab-save-update-route --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 240
+```
+
+This diagnostic proves the next bounded step through the repo-owned Editor host. It calls `azlmbr.maxine.prefab_bridge.save_prefab_update_scratch_probe`, which is reflected for Automation under `maxine.prefab_bridge` and invokes the source-validated `AzToolsFramework::Prefab::PrefabPublicInterface::CreatePrefabAndSaveToDisk` route on a scratch-only Editor entity. The route accepts only absolute `.prefab` paths under `Assets/_maxine_smoke/prefabs/`, rejects defaultlevel, production-level, generated product/cache, unapproved absolute, and traversal paths, writes a scratch prefab, verifies JSON parse/reload semantics by parsing the saved prefab, records a SHA-256 after-hash, and removes the scratch file.
+
+Route/scratch proof may set `approved_prefab_save_update_bridge_verified=true`, `approved_prefab_save_update_scratch_save_verified=true`, `approved_prefab_save_update_scratch_reload_or_parse_verified=true`, and `approved_prefab_save_update_scratch_cleanup_verified=true` only when the live route call, all path-policy rejections, parse, and cleanup evidence are present. It must keep `approved_runtime_animation_component_wiring_source_prefab_modified=false`, avoid APB/runtime mutation proof when the approved source prefab is untouched, and keep runtime component wiring, runtime animation, and full runtime character proof unclaimed.
+
 `live_editor_execution` remains false unless a future explicitly gated command actually runs O3DE Editor and parses its evidence. This bridge does not prove final runtime gameplay readiness.

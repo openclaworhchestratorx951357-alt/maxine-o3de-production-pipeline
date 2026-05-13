@@ -17,6 +17,7 @@ namespace MaxineRuntimeExitFixture
         static void GetRequiredServices(AZ::ComponentDescriptor::DependencyArrayType& required);
         static void GetDependentServices(AZ::ComponentDescriptor::DependencyArrayType& dependent);
         static AZStd::string GetPrefabSaveUpdateBridgeHostStatus();
+        static AZStd::string SavePrefabUpdateScratchProbe(const AZStd::string& absolutePrefabPath);
 
         void Activate() override;
         void Deactivate() override;

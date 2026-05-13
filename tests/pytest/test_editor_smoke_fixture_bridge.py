@@ -312,6 +312,43 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
                 "runtime_character_proof_verified": False,
             }
         )
+    if diagnostic_mode == "approved-prefab-save-update-route":
+        binding_payload.update(
+            {
+                "approved_prefab_save_update_route_diagnostic_attempted": True,
+                "approved_prefab_save_update_route_diagnostic_completed": True,
+                "approved_prefab_save_update_route_source_validation_status": "pass",
+                "approved_prefab_save_update_route_source_validation_verified": True,
+                "approved_prefab_save_update_route_added": True,
+                "approved_prefab_save_update_route_behavior_context_reflected": True,
+                "approved_prefab_save_update_route_callable_from_editor_python": True,
+                "approved_prefab_save_update_route_blocker": "",
+                "approved_prefab_save_update_bridge_host_callable_from_editor_python": True,
+                "approved_prefab_save_update_bridge_added": True,
+                "approved_prefab_save_update_bridge_verified": True,
+                "approved_prefab_save_update_bridge_callable_from_editor_python": True,
+                "approved_prefab_save_update_automation_surface_verified": True,
+                "approved_prefab_save_update_rejected_defaultlevel_path": True,
+                "approved_prefab_save_update_rejected_production_level_path": True,
+                "approved_prefab_save_update_rejected_generated_product_path": True,
+                "approved_prefab_save_update_rejected_unapproved_absolute_path": True,
+                "approved_prefab_save_update_rejected_path_traversal": True,
+                "approved_prefab_save_update_scratch_save_attempted": True,
+                "approved_prefab_save_update_scratch_save_verified": True,
+                "approved_prefab_save_update_scratch_reload_or_parse_verified": True,
+                "approved_prefab_save_update_scratch_cleanup_verified": True,
+                "approved_prefab_save_update_before_hash": "",
+                "approved_prefab_save_update_after_hash": "0" * 64,
+                "approved_prefab_save_update_generated_products_committed": False,
+                "approved_runtime_animation_component_wiring_source_prefab_modified": False,
+                "runtime_character_animation_component_wiring_claimed": False,
+                "runtime_character_animation_component_wiring_verified": False,
+                "runtime_character_animation_claimed": False,
+                "runtime_character_animation_verified": False,
+                "runtime_character_proof_claimed": False,
+                "runtime_character_proof_verified": False,
+            }
+        )
     payload.update(
         {
             "status": status,
@@ -1226,6 +1263,7 @@ def test_editor_smoke_binding_diagnostic_modes_route_to_target_scripts(tmp_path)
         "approved-prefab-save-update-automation-surface": "editor_approved_prefab_save_update_automation_surface_smoke.py",
         "approved-prefab-save-update-bridge": "editor_approved_prefab_save_update_bridge_smoke.py",
         "approved-prefab-save-update-bridge-host": "editor_approved_prefab_save_update_bridge_host_smoke.py",
+        "approved-prefab-save-update-route": "editor_approved_prefab_save_update_route_smoke.py",
     }
 
     for mode, script_name in expected_scripts.items():
@@ -1870,6 +1908,143 @@ def test_editor_smoke_prefab_save_update_bridge_host_verified_requires_editor_py
 
     assert result.status == "fail"
     assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+
+
+def _route_rejections(*, path_traversal: bool = True) -> dict:
+    return {
+        "defaultlevel": {"rejected": True, "status": "maxine_prefab_save_update_route_rejected;reason=level_or_production_path"},
+        "production_level": {
+            "rejected": True,
+            "status": "maxine_prefab_save_update_route_rejected;reason=level_or_production_path",
+        },
+        "generated_product": {
+            "rejected": True,
+            "status": "maxine_prefab_save_update_route_rejected;reason=generated_product_or_cache_path",
+        },
+        "unapproved_absolute": {
+            "rejected": True,
+            "status": "maxine_prefab_save_update_route_rejected;reason=unapproved_scratch_root",
+        },
+        "path_traversal": {
+            "rejected": path_traversal,
+            "status": (
+                "maxine_prefab_save_update_route_rejected;reason=path_traversal"
+                if path_traversal
+                else "maxine_prefab_save_update_route_saved"
+            ),
+        },
+    }
+
+
+def test_editor_python_prefab_save_update_route_verifies_scratch_parse_cleanup(tmp_path):
+    scratch = tmp_path / "MAXINE_GoldenCorpus" / "Assets" / "_maxine_smoke" / "prefabs" / "route_probe.prefab"
+    scratch.parent.mkdir(parents=True)
+    scratch.write_text('{"ContainerEntity": {}, "Entities": {}}\n', encoding="utf-8")
+
+    result = editor_python_smoke._run_approved_prefab_save_update_route_checks(
+        {},
+        bridge_host_status={"callable": True, "status": "maxine_prefab_save_update_bridge_host_registered"},
+        route_status={
+            "attempted": True,
+            "callable": True,
+            "saved": True,
+            "status": "maxine_prefab_save_update_route_saved;scratch_save_verified=true",
+        },
+        rejection_statuses=_route_rejections(),
+        scratch_prefab_path=scratch,
+    )
+
+    assert result["approved_prefab_save_update_route_source_validation_status"] == "pass"
+    assert result["approved_prefab_save_update_route_added"] is True
+    assert result["approved_prefab_save_update_route_callable_from_editor_python"] is True
+    assert result["approved_prefab_save_update_bridge_host_callable_from_editor_python"] is True
+    assert result["approved_prefab_save_update_bridge_verified"] is True
+    assert result["approved_prefab_save_update_scratch_save_attempted"] is True
+    assert result["approved_prefab_save_update_scratch_save_verified"] is True
+    assert result["approved_prefab_save_update_scratch_reload_or_parse_verified"] is True
+    assert result["approved_prefab_save_update_scratch_cleanup_verified"] is True
+    assert result["approved_prefab_save_update_after_hash"]
+    assert not scratch.exists()
+    assert result["approved_runtime_animation_component_wiring_source_prefab_modified"] is False
+    assert result["runtime_character_animation_component_wiring_claimed"] is False
+    assert result["runtime_character_animation_verified"] is False
+    assert result["runtime_character_proof_verified"] is False
+
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report.update(result)
+    report["diagnostic_mode"] = "approved-prefab-save-update-route"
+    schema_result = schema_validate(report, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(report, strict=True)
+
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+
+
+def test_editor_python_prefab_save_update_route_requires_all_path_rejections(tmp_path):
+    scratch = tmp_path / "MAXINE_GoldenCorpus" / "Assets" / "_maxine_smoke" / "prefabs" / "route_probe.prefab"
+    scratch.parent.mkdir(parents=True)
+    scratch.write_text('{"ContainerEntity": {}, "Entities": {}}\n', encoding="utf-8")
+
+    result = editor_python_smoke._run_approved_prefab_save_update_route_checks(
+        {},
+        bridge_host_status={"callable": True, "status": "maxine_prefab_save_update_bridge_host_registered"},
+        route_status={
+            "attempted": True,
+            "callable": True,
+            "saved": True,
+            "status": "maxine_prefab_save_update_route_saved;scratch_save_verified=true",
+        },
+        rejection_statuses=_route_rejections(path_traversal=False),
+        scratch_prefab_path=scratch,
+    )
+
+    assert result["approved_prefab_save_update_route_blocker"] == "blocked_by_prefab_save_update_route_path_policy"
+    assert result["approved_prefab_save_update_rejected_path_traversal"] is False
+    assert result["approved_prefab_save_update_bridge_verified"] is False
+    assert result["approved_prefab_save_update_scratch_reload_or_parse_verified"] is True
+    assert result["approved_prefab_save_update_scratch_cleanup_verified"] is True
+
+
+def test_editor_python_prefab_save_update_route_does_not_infer_callability_from_source(tmp_path):
+    scratch = tmp_path / "MAXINE_GoldenCorpus" / "Assets" / "_maxine_smoke" / "prefabs" / "route_probe.prefab"
+
+    result = editor_python_smoke._run_approved_prefab_save_update_route_checks(
+        {},
+        bridge_host_status={"callable": True, "status": "maxine_prefab_save_update_bridge_host_registered"},
+        route_status={
+            "attempted": True,
+            "callable": False,
+            "saved": False,
+            "status": "",
+            "error": "missing reflected route",
+        },
+        rejection_statuses=_route_rejections(),
+        scratch_prefab_path=scratch,
+    )
+
+    assert result["approved_prefab_save_update_route_source_validation_status"] == "pass"
+    assert result["approved_prefab_save_update_route_added"] is True
+    assert result["approved_prefab_save_update_route_behavior_context_reflected"] is True
+    assert result["approved_prefab_save_update_route_callable_from_editor_python"] is False
+    assert result["approved_prefab_save_update_route_blocker"] == "blocked_by_prefab_save_update_route_editor_call_failed"
+    assert result["approved_prefab_save_update_bridge_verified"] is False
+    assert result["approved_prefab_save_update_scratch_save_verified"] is False
+
+
+def test_editor_python_prefab_save_update_route_source_validation_detects_bounded_route():
+    result = editor_python_smoke._source_validation_from_refs(
+        editor_python_smoke._approved_prefab_save_update_route_repo_source_refs()
+    )
+
+    assert result["status"] == "pass"
+    assert result["verified"] is True
+    route_ref = [
+        ref
+        for ref in result["refs"]
+        if str(ref.get("path", "")).replace("\\", "/").endswith("PrefabSaveUpdateBridgeHostComponent.cpp")
+    ][0]
+    assert "save_prefab_update_scratch_probe" in route_ref["symbols"]
+    assert "SavePrefab(AZ::IO::Path" in route_ref["absent_symbols"]
 
 
 def test_editor_smoke_generation_verified_requires_source_prefab_and_spawnable_evidence():
