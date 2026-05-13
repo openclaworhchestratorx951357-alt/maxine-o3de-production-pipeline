@@ -4901,8 +4901,11 @@ def _approved_prefab_save_update_route_repo_source_refs() -> List[Dict[str, Any]
                 "AzToolsFramework::ToolsApplicationRequestBus",
                 "DeleteEntityById",
                 "AZ::IO::SystemFile::CreateDir",
+                "AZ::Utils::GetProjectPath",
                 "RejectReasonForScratchPath",
-                "/assets/_maxine_smoke/prefabs/",
+                "project_root_anchored_scratch_root",
+                "IsPathInsideRoot",
+                "_maxine_smoke",
                 "path_traversal",
                 "level_or_production_path",
                 "generated_product_or_cache_path",
@@ -4910,6 +4913,7 @@ def _approved_prefab_save_update_route_repo_source_refs() -> List[Dict[str, Any]
                 "scratch_save_verified=true",
             ],
             "absent_symbols": [
+                'Contains(normalized, "/assets/_maxine_smoke/prefabs/")',
                 "SavePrefab(AZ::IO::Path",
                 "approved source prefab",
             ],
@@ -4991,11 +4995,15 @@ def _approved_prefab_save_update_route_scratch_path() -> Path:
 
 def _approved_prefab_save_update_route_rejection_paths(scratch_prefab_path: Path) -> Dict[str, Path]:
     project_path = Path(os.environ.get("O3DE_PROJECT_PATH", "") or scratch_prefab_path.parents[3])
+    outside_project_substring_path = Path("D:/tmp/Assets/_maxine_smoke/prefabs/probe.prefab")
+    if project_path.drive.lower() == "d:":
+        outside_project_substring_path = Path("C:/tmp/Assets/_maxine_smoke/prefabs/probe.prefab")
     return {
         "defaultlevel": project_path / "Levels" / "defaultlevel" / "defaultlevel.prefab",
         "production_level": project_path / "Levels" / "production" / "release.prefab",
         "generated_product": project_path / "Cache" / "pc" / "assets" / "_maxine_smoke" / "prefabs" / "probe.prefab",
-        "unapproved_absolute": project_path / "Assets" / "Characters" / "MAXINE_GoldenCorpus" / "prefabs" / "probe.prefab",
+        "unapproved_absolute": outside_project_substring_path,
+        "other_project": project_path.parent / "OtherProject" / "Assets" / "_maxine_smoke" / "prefabs" / "probe.prefab",
         "path_traversal": scratch_prefab_path.parent / ".." / "escape.prefab",
     }
 
@@ -5114,6 +5122,7 @@ def _run_approved_prefab_save_update_route_checks(
     rejected_production = _route_rejection_verified(rejection_statuses, "production_level")
     rejected_generated = _route_rejection_verified(rejection_statuses, "generated_product")
     rejected_unapproved_absolute = _route_rejection_verified(rejection_statuses, "unapproved_absolute")
+    rejected_other_project = _route_rejection_verified(rejection_statuses, "other_project")
     rejected_path_traversal = _route_rejection_verified(rejection_statuses, "path_traversal")
 
     bridge_verified = (
@@ -5128,6 +5137,7 @@ def _run_approved_prefab_save_update_route_checks(
         and rejected_production
         and rejected_generated
         and rejected_unapproved_absolute
+        and rejected_other_project
         and rejected_path_traversal
     )
     blocker = ""
@@ -5141,6 +5151,7 @@ def _run_approved_prefab_save_update_route_checks(
             rejected_production,
             rejected_generated,
             rejected_unapproved_absolute,
+            rejected_other_project,
             rejected_path_traversal,
         ]
     ):
@@ -5189,6 +5200,8 @@ def _run_approved_prefab_save_update_route_checks(
             "allowed_prefab_roots": [
                 "Assets/_maxine_smoke/prefabs/",
             ],
+            "active_project_root_anchored": True,
+            "project_root_source_api": "AZ::Utils::GetProjectPath",
             "approved_source_prefab_root_deferred": (
                 "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/"
             ),
@@ -5199,6 +5212,7 @@ def _run_approved_prefab_save_update_route_checks(
             "rejects_production_level": True,
             "rejects_generated_products": True,
             "rejects_unapproved_absolute_paths": True,
+            "rejects_other_project_paths": True,
             "rejects_path_traversal": True,
         },
         "approved_prefab_save_update_rejected_defaultlevel_path": rejected_defaultlevel,

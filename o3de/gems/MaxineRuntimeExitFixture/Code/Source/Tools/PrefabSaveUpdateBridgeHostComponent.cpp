@@ -6,6 +6,7 @@
 #include <AzCore/RTTI/BehaviorContext.h>
 #include <AzCore/Serialization/SerializeContext.h>
 #include <AzCore/std/containers/vector.h>
+#include <AzCore/Utils/Utils.h>
 #include <AzToolsFramework/Prefab/PrefabPublicInterface.h>
 #include <AzToolsFramework/API/ToolsApplicationAPI.h>
 #include <AzToolsFramework/Entity/EditorEntityContextBus.h>
@@ -38,21 +39,54 @@ namespace
         return value.find(token) != AZStd::string_view::npos;
     }
 
+    bool StartsWith(AZStd::string_view value, AZStd::string_view prefix)
+    {
+        return value.size() >= prefix.size() && value.substr(0, prefix.size()) == prefix;
+    }
+
+    bool ContainsParentTraversalSegment(AZStd::string_view normalized)
+    {
+        return normalized == ".." || StartsWith(normalized, "../") || EndsWith(normalized, "/..") || Contains(normalized, "/../");
+    }
+
+    bool IsPathInsideRoot(AZStd::string_view normalizedPath, AZStd::string_view normalizedRoot)
+    {
+        if (normalizedPath.size() <= normalizedRoot.size() || !StartsWith(normalizedPath, normalizedRoot))
+        {
+            return false;
+        }
+        return normalizedPath[normalizedRoot.size()] == '/';
+    }
+
     AZStd::string RejectReasonForScratchPath(const AZ::IO::Path& path)
     {
-        const AZStd::string normalized = NormalizeForPathPolicy(path.String());
+        const AZStd::string normalizedInput = NormalizeForPathPolicy(path.String());
         if (!path.IsAbsolute())
         {
             return "path_not_absolute";
         }
-        if (!EndsWith(normalized, ".prefab"))
+        if (!EndsWith(normalizedInput, ".prefab"))
         {
             return "not_prefab_extension";
         }
-        if (Contains(normalized, ".."))
+        if (ContainsParentTraversalSegment(normalizedInput))
         {
             return "path_traversal";
         }
+
+        const AZ::IO::FixedMaxPathString projectPath = AZ::Utils::GetProjectPath();
+        if (projectPath.empty())
+        {
+            return "project_root_unavailable";
+        }
+
+        const AZ::IO::Path normalizedPrefabPath = path.LexicallyNormal();
+        const AZ::IO::Path normalizedProjectRoot = AZ::IO::Path(projectPath).LexicallyNormal();
+        const AZ::IO::Path project_root_anchored_scratch_root =
+            (normalizedProjectRoot / "Assets" / "_maxine_smoke" / "prefabs").LexicallyNormal();
+        const AZStd::string normalized = NormalizeForPathPolicy(normalizedPrefabPath.String());
+        const AZStd::string normalizedScratchRoot = NormalizeForPathPolicy(project_root_anchored_scratch_root.String());
+
         if (Contains(normalized, "/levels/") || Contains(normalized, "defaultlevel") || Contains(normalized, "/production/"))
         {
             return "level_or_production_path";
@@ -62,7 +96,7 @@ namespace
         {
             return "generated_product_or_cache_path";
         }
-        if (!Contains(normalized, "/assets/_maxine_smoke/prefabs/"))
+        if (!IsPathInsideRoot(normalized, normalizedScratchRoot))
         {
             return "unapproved_scratch_root";
         }
@@ -211,7 +245,7 @@ namespace MaxineRuntimeExitFixture
         return AZStd::string(
             "maxine_prefab_save_update_route_saved;"
             "api=AzToolsFramework::Prefab::PrefabPublicInterface::CreatePrefabAndSaveToDisk;"
-            "path_policy=assets/_maxine_smoke/prefabs;"
+            "path_policy=active_project_root/Assets/_maxine_smoke/prefabs;"
             "scratch_save_verified=true;"
             "scratch_entity_cleanup_verified=true");
     }

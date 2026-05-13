@@ -1925,6 +1925,10 @@ def _route_rejections(*, path_traversal: bool = True) -> dict:
             "rejected": True,
             "status": "maxine_prefab_save_update_route_rejected;reason=unapproved_scratch_root",
         },
+        "other_project": {
+            "rejected": True,
+            "status": "maxine_prefab_save_update_route_rejected;reason=unapproved_scratch_root",
+        },
         "path_traversal": {
             "rejected": path_traversal,
             "status": (
@@ -2045,6 +2049,38 @@ def test_editor_python_prefab_save_update_route_source_validation_detects_bounde
     ][0]
     assert "save_prefab_update_scratch_probe" in route_ref["symbols"]
     assert "SavePrefab(AZ::IO::Path" in route_ref["absent_symbols"]
+
+
+def test_editor_python_prefab_save_update_route_source_validation_requires_project_root_anchor():
+    result = editor_python_smoke._source_validation_from_refs(
+        editor_python_smoke._approved_prefab_save_update_route_repo_source_refs()
+    )
+
+    route_ref = [
+        ref
+        for ref in result["refs"]
+        if str(ref.get("path", "")).replace("\\", "/").endswith("PrefabSaveUpdateBridgeHostComponent.cpp")
+    ][0]
+
+    assert "AZ::Utils::GetProjectPath" in route_ref["symbols"]
+    assert "project_root_anchored_scratch_root" in route_ref["symbols"]
+    assert 'Contains(normalized, "/assets/_maxine_smoke/prefabs/")' in route_ref["absent_symbols"]
+
+
+def test_editor_python_prefab_save_update_route_rejection_paths_cover_outside_project_substring(tmp_path, monkeypatch):
+    project_root = tmp_path / "MAXINE_GoldenCorpus"
+    scratch = project_root / "Assets" / "_maxine_smoke" / "prefabs" / "route_probe.prefab"
+    monkeypatch.setenv("O3DE_PROJECT_PATH", str(project_root))
+
+    paths = editor_python_smoke._approved_prefab_save_update_route_rejection_paths(scratch)
+    outside_project = paths["unapproved_absolute"]
+
+    assert "Assets" in outside_project.parts
+    assert "_maxine_smoke" in outside_project.parts
+    assert "prefabs" in outside_project.parts
+    assert outside_project.suffix == ".prefab"
+    assert project_root not in outside_project.parents
+    assert project_root not in paths["other_project"].parents
 
 
 def test_editor_smoke_generation_verified_requires_source_prefab_and_spawnable_evidence():
