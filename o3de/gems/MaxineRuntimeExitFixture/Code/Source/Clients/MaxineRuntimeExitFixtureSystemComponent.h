@@ -5,6 +5,8 @@
 #include <AzCore/Asset/AssetCommon.h>
 #include <AzCore/std/string/string.h>
 #include <AzCore/std/containers/vector.h>
+#include <AzCore/std/parallel/mutex.h>
+#include <AzFramework/Spawnable/SpawnableEntitiesInterface.h>
 
 namespace MaxineRuntimeExitFixture
 {
@@ -48,6 +50,11 @@ namespace MaxineRuntimeExitFixture
         void PollProductLoadProbe();
         void CompleteProductLoadProbe(const char* status);
         void ReleaseProductLoadProbeAssets();
+        void ConfigureCharacterSpawnInstantiationProbe();
+        void StartCharacterSpawnInstantiationProbe();
+        void PollCharacterSpawnInstantiationProbe();
+        void CompleteCharacterSpawnInstantiationProbe(const char* status);
+        void ReleaseCharacterSpawnInstantiationProbe();
 
         bool m_enabled = false;
         AZ::u64 m_exitAfterTicks = 0;
@@ -59,5 +66,32 @@ namespace MaxineRuntimeExitFixture
         AZ::u64 m_productLoadTimeoutTicks = 0;
         AZ::u64 m_productLoadStartTick = 0;
         AZStd::vector<ProductLoadProbeEntry> m_productLoadProducts;
+        bool m_characterSpawnProbeEnabled = false;
+        bool m_characterSpawnProbeStarted = false;
+        bool m_characterSpawnProbeComplete = false;
+        bool m_characterSpawnLoadRequested = false;
+        bool m_characterSpawnReady = false;
+        bool m_characterSpawnRequestIssued = false;
+        bool m_characterSpawnCompletionObserved = false;
+        bool m_characterSpawnCleanupRequested = false;
+        bool m_characterSpawnCleanupComplete = false;
+        bool m_characterSpawnRequirePositiveEntityCount = true;
+        bool m_characterSpawnCleanupSpawnedEntities = true;
+        bool m_characterSpawnError = false;
+        bool m_characterSpawnTimeout = false;
+        AZ::u64 m_characterSpawnTimeoutTicks = 0;
+        AZ::u64 m_characterSpawnStartTick = 0;
+        AZStd::string m_characterSpawnProductPath;
+        AZStd::string m_characterSpawnCatalogPath;
+        AZStd::string m_characterSpawnExpectedAssetId;
+        AZStd::string m_characterSpawnExpectedAssetType;
+        AZ::Data::AssetId m_characterSpawnAssetId;
+        AZ::Data::AssetType m_characterSpawnAssetType;
+        AZ::Data::Asset<AzFramework::Spawnable> m_characterSpawnAsset;
+        AzFramework::EntitySpawnTicket m_characterSpawnTicket;
+        AZStd::vector<AZStd::string> m_characterSpawnedEntityIds;
+        AZStd::vector<AZStd::string> m_characterSpawnedEntityNames;
+        AZStd::vector<AZStd::string> m_characterSpawnedEntityComponentInventory;
+        AZStd::mutex m_characterSpawnMutex;
     };
 } // namespace MaxineRuntimeExitFixture

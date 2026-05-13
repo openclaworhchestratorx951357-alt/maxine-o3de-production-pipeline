@@ -1718,6 +1718,114 @@
     "runtime_character_prefab_source_generation_blocker": {
       "type": "string"
     },
+    "runtime_character_spawn_instantiation": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_character_spawn_instantiation_status": {
+      "type": "string"
+    },
+    "runtime_character_spawn_instantiation_claimed": {
+      "type": "boolean"
+    },
+    "runtime_character_spawn_instantiation_verified": {
+      "type": "boolean"
+    },
+    "runtime_character_spawn_instantiation_source_validation": {
+      "type": ["string", "object"]
+    },
+    "runtime_character_spawn_instantiation_source_refs": {
+      "type": "array"
+    },
+    "runtime_character_spawn_instantiation_probe_enabled": {
+      "type": "boolean"
+    },
+    "runtime_character_spawn_instantiation_probe_shipping_behavior": {
+      "type": "boolean"
+    },
+    "runtime_character_spawn_instantiation_candidate_matrix": {
+      "type": "array"
+    },
+    "runtime_character_spawn_instantiation_candidate_matrix_recorded": {
+      "type": "boolean"
+    },
+    "runtime_character_spawn_instantiation_selected_strategy": {
+      "type": "string"
+    },
+    "runtime_character_spawn_instantiation_api": {
+      "type": "string"
+    },
+    "runtime_character_spawn_instantiation_api_argument_shape": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_character_spawn_instantiation_context_status": {
+      "type": "string"
+    },
+    "runtime_character_spawn_instantiation_context_id": {
+      "type": "string"
+    },
+    "runtime_character_spawn_instantiation_spawnable_product_path": {
+      "type": "string"
+    },
+    "runtime_character_spawn_instantiation_spawnable_catalog_path": {
+      "type": "string"
+    },
+    "runtime_character_spawn_instantiation_spawnable_asset_id": {
+      "type": "string"
+    },
+    "runtime_character_spawn_instantiation_spawnable_asset_type": {
+      "type": "string"
+    },
+    "runtime_character_spawn_instantiation_spawnable_loaded_ready": {
+      "type": "boolean"
+    },
+    "runtime_character_spawn_instantiation_spawn_request_issued": {
+      "type": "boolean"
+    },
+    "runtime_character_spawn_instantiation_spawn_ticket": {
+      "type": "string"
+    },
+    "runtime_character_spawn_instantiation_spawn_completion_observed": {
+      "type": "boolean"
+    },
+    "runtime_character_spawn_instantiation_spawn_result": {
+      "type": "string"
+    },
+    "runtime_character_spawn_instantiation_spawned_entity_count": {
+      "type": "integer"
+    },
+    "runtime_character_spawn_instantiation_spawned_entity_ids": {
+      "type": "array"
+    },
+    "runtime_character_spawn_instantiation_spawned_entity_names": {
+      "type": "array"
+    },
+    "runtime_character_spawn_instantiation_spawned_entity_component_inventory": {
+      "type": "array"
+    },
+    "runtime_character_spawn_instantiation_timeout": {
+      "type": "boolean"
+    },
+    "runtime_character_spawn_instantiation_log_errors": {
+      "type": "array"
+    },
+    "runtime_character_spawn_instantiation_selected_surface_log_scan": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_character_spawn_instantiation_cleanup_attempted": {
+      "type": "boolean"
+    },
+    "runtime_character_spawn_instantiation_cleanup_status": {
+      "type": "string"
+    },
+    "runtime_character_spawn_instantiation_is_animation_proof": {
+      "type": "boolean"
+    },
+    "runtime_character_spawn_instantiation_remaining_blocker": {
+      "type": "string"
+    },
     "runtime_character_product_load_contract_updated": {
       "type": "boolean"
     },

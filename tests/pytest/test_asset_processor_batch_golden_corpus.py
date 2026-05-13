@@ -392,6 +392,34 @@ def test_apb_live_refuses_to_overwrite_existing_prefab_source_with_different_has
     assert runner.calls == []
 
 
+def test_apb_live_accepts_existing_prefab_source_with_only_line_ending_drift(tmp_path):
+    env = _live_ready_env(tmp_path)
+    env["MAXINE_ALLOW_RUNTIME_CHARACTER_PREFAB_SOURCE_GENERATION"] = "1"
+    project_path = Path(env["O3DE_PROJECT_PATH"])
+    target = project_path / "Assets" / "Characters" / "MAXINE_GoldenCorpus" / "prefabs" / "release_rigged.prefab"
+    target.parent.mkdir(parents=True)
+    repo_source = REPO_ROOT / "examples" / "o3de-golden-project" / "source" / "Assets" / "Characters" / "MAXINE_GoldenCorpus" / "prefabs" / "release_rigged.prefab"
+    target.write_text(repo_source.read_text(encoding="utf-8-sig").replace("\r\n", "\n"), encoding="utf-8", newline="\n")
+    runner = _RecordingRunner()
+
+    result = run_asset_processor_batch_corpus(
+        CORPUS,
+        enable_asset_processor_batch=True,
+        strict_integration=True,
+        golden_project_fixture=GOLDEN_PROJECT_FIXTURE,
+        command_runner=runner,
+        env=env,
+    )
+
+    staging = result["approved_runtime_character_prefab_source_staging"]
+    assert result["status"] == "pass"
+    assert staging["status"] == "already_present_normalized_line_endings"
+    assert staging["project_mutation_attempted"] is False
+    assert staging["project_mutation_reversible"] is True
+    assert staging["line_endings_normalized_match"] is True
+    assert runner.calls
+
+
 def test_apb_live_rejects_invalid_project_fixture(tmp_path):
     env = _live_ready_env(tmp_path)
     runner = _RecordingRunner()

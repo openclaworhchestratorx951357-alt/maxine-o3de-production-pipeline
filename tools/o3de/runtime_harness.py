@@ -103,6 +103,10 @@ RUNTIME_PROCPREFAB_HANDLER_OR_SURFACE_GATE_ENV = (
     "MAXINE_ENABLE_RUNTIME_PROCPREFAB_HANDLER_OR_SPAWNABLE_SURFACE=1",
 )
 RUNTIME_CHARACTER_SPAWNABLE_SURFACE_GATE_ENV = ("MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE=1",)
+RUNTIME_CHARACTER_SPAWN_INSTANTIATION_GATE_ENV = (
+    "MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWN_INSTANTIATION=1",
+    "MAXINE_ALLOW_RUNTIME_CHARACTER_SPAWN_INSTANTIATION=1",
+)
 RUNTIME_EXIT_FIXTURE_PROJECT_MUTATION_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION=1",)
 RUNTIME_EXIT_FIXTURE_REBUILD_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_REBUILD=1",)
 RUNTIME_EXIT_FIXTURE_TEMP_REGISTRY_PATCH_GATE_ENV = ("MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH=1",)
@@ -125,6 +129,7 @@ RUNTIME_LATER_REGISTRY_PATCH_SELECTED = "artifact_setreg_merge_patch_null_autoex
 RUNTIME_LATER_REGISTRY_PATCH_FAILED_JSON_PATCH_REMOVE = "artifact_setregpatch_remove_autoexec_and_deferred_loadlevel"
 RUNTIME_LATER_REGISTRY_PATCH_FILENAME = "maxine_runtime_later_precedence_loadlevel_null_remove.setreg"
 RUNTIME_CHARACTER_PRODUCT_LOAD_PATCH_FILENAME = "maxine_runtime_character_product_load_probe.setreg"
+RUNTIME_CHARACTER_SPAWN_INSTANTIATION_PATCH_FILENAME = "maxine_runtime_character_spawn_instantiation_probe.setreg"
 RUNTIME_PRE_AUTOEXEC_SUPPRESSION_SELECTED = "project_registry_load_level_setreg_temporarily_disabled_pre_autoexec"
 RUNTIME_PRE_AUTOEXEC_SUPPRESSION_DISABLED_FILENAME = "load_level.setreg.maxine_pre_autoexec_disabled"
 RUNTIME_PRE_AUTOEXEC_SUPPRESSION_BACKUP_FILENAME = "maxine_runtime_pre_autoexec_load_level_setreg_backup.txt"
@@ -134,6 +139,7 @@ RUNTIME_CACHE_BOOTSTRAP_BACKUP_DIRNAME = "maxine_runtime_cache_bootstrap_backups
 RUNTIME_SIGNAL_CLASSIFICATION_SELECTED = "ap_shader_no_defaultlevel_cache_bootstrap_fixture_rerun"
 RUNTIME_CHARACTER_PRODUCT_LOAD_SELECTED = "runtime_character_product_load_generic_assetmanager_load"
 RUNTIME_PROCPREFAB_HANDLER_SURFACE_SELECTED = "runtime_procprefab_handler_surface_source_diagnostic"
+RUNTIME_CHARACTER_SPAWN_INSTANTIATION_SELECTED = "runtime_spawnable_entities_interface_spawn_all_entities_no_level_fixture"
 RUNTIME_PROCPREFAB_ASSET_TYPE = "{9B7C8459-471E-4EAD-A363-7990CC4065A9}"
 RUNTIME_PROCPREFAB_ASSET_CLASS = "AZ::Prefab::ProceduralPrefabAsset"
 RUNTIME_PROCPREFAB_HANDLER_MODULE = "Gem::PrefabBuilder.Builders"
@@ -235,6 +241,8 @@ def run_runtime_harness(
     diagnose_runtime_procprefab_handler_or_spawnable_surface: bool = False,
     diagnose_runtime_character_spawnable_surface: bool = False,
     diagnose_runtime_character_prefab_source: bool = False,
+    diagnose_runtime_character_spawn_instantiation: bool = False,
+    enable_runtime_character_spawn_instantiation_fixture: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -277,6 +285,8 @@ def run_runtime_harness(
         and not diagnose_runtime_procprefab_handler_or_spawnable_surface
         and not diagnose_runtime_character_spawnable_surface
         and not diagnose_runtime_character_prefab_source
+        and not diagnose_runtime_character_spawn_instantiation
+        and not enable_runtime_character_spawn_instantiation_fixture
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -324,6 +334,8 @@ def run_runtime_harness(
             and not diagnose_runtime_procprefab_handler_or_spawnable_surface
             and not diagnose_runtime_character_spawnable_surface
             and not diagnose_runtime_character_prefab_source
+            and not diagnose_runtime_character_spawn_instantiation
+            and not enable_runtime_character_spawn_instantiation_fixture
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -376,6 +388,10 @@ def run_runtime_harness(
             if diagnose_runtime_character_spawnable_surface
             else "runtime_character_prefab_source_diagnostic"
             if diagnose_runtime_character_prefab_source
+            else "runtime_character_spawn_instantiation_diagnostic"
+            if diagnose_runtime_character_spawn_instantiation
+            else "runtime_character_spawn_instantiation_fixture_command"
+            if enable_runtime_character_spawn_instantiation_fixture
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -474,6 +490,8 @@ def run_runtime_harness(
         and not diagnose_runtime_procprefab_handler_or_spawnable_surface
         and not diagnose_runtime_character_spawnable_surface
         and not diagnose_runtime_character_prefab_source
+        and not diagnose_runtime_character_spawn_instantiation
+        and not enable_runtime_character_spawn_instantiation_fixture
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -645,6 +663,16 @@ def run_runtime_harness(
             artifact_dir=artifact_dir,
         )
 
+    if diagnose_runtime_character_spawn_instantiation:
+        return _run_runtime_character_spawn_instantiation_diagnostic(
+            report,
+            product_evidence=product_evidence,
+            engine_root=selected_engine,
+            project=selected_project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+
     gate_status = _runtime_gate_status(env_map)
     if gate_status["status"] != "pass":
         report.update(
@@ -670,6 +698,7 @@ def run_runtime_harness(
         or enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
         or enable_runtime_exit_fixture_ap_shader_signal_classification
         or enable_runtime_character_product_load_fixture
+        or enable_runtime_character_spawn_instantiation_fixture
     ):
         return _run_runtime_exit_fixture_command(
             report,
@@ -685,12 +714,16 @@ def run_runtime_harness(
                 enable_runtime_exit_fixture_cache_bootstrap_loadlevel_source
                 or enable_runtime_exit_fixture_ap_shader_signal_classification
                 or enable_runtime_character_product_load_fixture
+                or enable_runtime_character_spawn_instantiation_fixture
             ),
             ap_shader_signal_classification=(
                 enable_runtime_exit_fixture_ap_shader_signal_classification
                 or enable_runtime_character_product_load_fixture
+                or enable_runtime_character_spawn_instantiation_fixture
             ),
-            character_product_load=enable_runtime_character_product_load_fixture,
+            character_product_load=enable_runtime_character_product_load_fixture
+            or enable_runtime_character_spawn_instantiation_fixture,
+            character_spawn_instantiation=enable_runtime_character_spawn_instantiation_fixture,
             product_evidence=product_evidence,
         )
 
@@ -999,6 +1032,53 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime product-load proof is not runtime instantiation proof.")
     if report.get("runtime_runtime_character_product_load_is_instantiation_proof") is True and report.get("runtime_character_instantiation_verified") is not True:
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime product-load proof is not runtime instantiation proof.")
+    if report.get("runtime_character_spawn_instantiation_claimed") is True and report.get(
+        "runtime_character_spawn_instantiation_verified"
+    ) is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Runtime character spawn-instantiation proof cannot be claimed without verified spawn evidence.",
+        )
+    if report.get("runtime_character_spawn_instantiation_verified") is True:
+        if report.get("runtime_character_product_load_verified") is not True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "runtime_character_spawn_instantiation_verified=true requires verified approved spawnable product-load prerequisite.",
+            )
+        if report.get("runtime_character_spawnable_surface_verified") is not True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "runtime_character_spawn_instantiation_verified=true requires verified approved runtime character spawnable surface.",
+            )
+        if not str(report.get("runtime_character_spawn_instantiation_api", "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_spawn_instantiation_verified=true requires source-validated spawn API evidence.")
+        if not report.get("runtime_character_spawn_instantiation_source_refs", []):
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_spawn_instantiation_verified=true requires spawn API source refs.")
+        if report.get("runtime_character_spawn_instantiation_spawn_request_issued") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_spawn_instantiation_verified=true requires spawn request evidence.")
+        if report.get("runtime_character_spawn_instantiation_spawn_completion_observed") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_spawn_instantiation_verified=true requires spawn completion evidence.")
+        if _int_or_zero(report.get("runtime_character_spawn_instantiation_spawned_entity_count", 0)) <= 0:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "runtime_character_spawn_instantiation_verified=true requires positive spawned entity evidence.",
+            )
+        if report.get("runtime_character_spawn_instantiation_timeout") is True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_spawn_instantiation_verified=true cannot have spawn timeout.")
+        if report.get("runtime_character_spawn_instantiation_log_errors"):
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_spawn_instantiation_verified=true cannot have selected spawnable spawn/load errors.")
+        cleanup_status = str(report.get("runtime_character_spawn_instantiation_cleanup_status", "")).strip()
+        if cleanup_status not in {
+            "runtime_character_spawn_instantiation_cleanup_complete",
+            "runtime_character_spawn_instantiation_cleanup_not_required",
+        }:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_character_spawn_instantiation_verified=true requires cleanup/despawn completion or not-required status.")
+        if report.get("runtime_default_level_autoload_detected") is True:
+            result.add_error(MXN_PATH_UNSAFE, "runtime_character_spawn_instantiation_verified=true cannot allow defaultlevel autoload.")
+        if report.get("runtime_production_level_loaded") is True:
+            result.add_error(MXN_PATH_UNSAFE, "runtime_character_spawn_instantiation_verified=true cannot allow production level loads.")
+        if report.get("runtime_character_spawn_instantiation_is_animation_proof") is True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime spawn-instantiation proof is not runtime animation proof.")
     if report.get("runtime_character_instantiation_claimed") is True and report.get("runtime_character_instantiation_verified") is not True:
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime character instantiation proof cannot be claimed without verified instantiation evidence.")
     if report.get("runtime_character_animation_claimed") is True and report.get("runtime_character_animation_verified") is not True:
@@ -1820,6 +1900,58 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_character_prefab_source_apb_product_status": "runtime_character_prefab_source_apb_product_not_attempted",
         "runtime_character_prefab_source_generation_completed": False,
         "runtime_character_prefab_source_generation_blocker": "",
+        "runtime_character_spawn_instantiation": {"status": "runtime_character_spawn_instantiation_not_attempted"},
+        "runtime_character_spawn_instantiation_status": "runtime_character_spawn_instantiation_not_attempted",
+        "runtime_character_spawn_instantiation_claimed": False,
+        "runtime_character_spawn_instantiation_verified": False,
+        "runtime_character_spawn_instantiation_source_validation": "runtime_character_spawn_instantiation_not_attempted",
+        "runtime_character_spawn_instantiation_source_refs": [],
+        "runtime_character_spawn_instantiation_probe_enabled": False,
+        "runtime_character_spawn_instantiation_probe_shipping_behavior": False,
+        "runtime_character_spawn_instantiation_candidate_matrix": [],
+        "runtime_character_spawn_instantiation_candidate_matrix_recorded": False,
+        "runtime_character_spawn_instantiation_candidate_id": "",
+        "runtime_character_spawn_instantiation_candidate_name": "",
+        "runtime_character_spawn_instantiation_candidate_kind": "",
+        "runtime_character_spawn_instantiation_candidate_source_validation": {},
+        "runtime_character_spawn_instantiation_candidate_source_refs": [],
+        "runtime_character_spawn_instantiation_candidate_attempted": False,
+        "runtime_character_spawn_instantiation_candidate_result": "",
+        "runtime_character_spawn_instantiation_candidate_blocker": "",
+        "runtime_character_spawn_instantiation_selected_strategy": "",
+        "runtime_character_spawn_instantiation_selected_reason": "",
+        "runtime_character_spawn_instantiation_api": "",
+        "runtime_character_spawn_instantiation_api_argument_shape": {},
+        "runtime_character_spawn_instantiation_context_status": "",
+        "runtime_character_spawn_instantiation_context_id": "",
+        "runtime_character_spawn_instantiation_context_source_refs": [],
+        "runtime_character_spawn_instantiation_spawnable_product_path": "",
+        "runtime_character_spawn_instantiation_spawnable_catalog_path": "",
+        "runtime_character_spawn_instantiation_spawnable_asset_id": "",
+        "runtime_character_spawn_instantiation_spawnable_asset_type": "",
+        "runtime_character_spawn_instantiation_spawnable_loaded_ready": False,
+        "runtime_character_spawn_instantiation_spawn_request_issued": False,
+        "runtime_character_spawn_instantiation_spawn_ticket": "",
+        "runtime_character_spawn_instantiation_spawn_completion_observed": False,
+        "runtime_character_spawn_instantiation_spawn_result": "",
+        "runtime_character_spawn_instantiation_spawned_entity_count": 0,
+        "runtime_character_spawn_instantiation_spawned_entity_ids": [],
+        "runtime_character_spawn_instantiation_spawned_entity_names": [],
+        "runtime_character_spawn_instantiation_spawned_entity_component_inventory": [],
+        "runtime_character_spawn_instantiation_root_entity_count": 0,
+        "runtime_character_spawn_instantiation_container_entity": "",
+        "runtime_character_spawn_instantiation_timeout": False,
+        "runtime_character_spawn_instantiation_timeout_ticks": 0,
+        "runtime_character_spawn_instantiation_log_errors": [],
+        "runtime_character_spawn_instantiation_selected_surface_log_scan": {
+            "status": "runtime_character_spawn_instantiation_not_attempted",
+            "matches": [],
+        },
+        "runtime_character_spawn_instantiation_cleanup_attempted": False,
+        "runtime_character_spawn_instantiation_cleanup_status": "runtime_character_spawn_instantiation_cleanup_not_attempted",
+        "runtime_character_spawn_instantiation_cleanup_source_refs": [],
+        "runtime_character_spawn_instantiation_is_animation_proof": False,
+        "runtime_character_spawn_instantiation_remaining_blocker": "",
         "runtime_character_product_load_contract_updated": False,
         "runtime_character_product_load_direct_procprefab_required": True,
         "runtime_character_product_load_runtime_equivalent_required": False,
@@ -3005,11 +3137,14 @@ def _run_runtime_exit_fixture_command(
     cache_bootstrap_strategy: bool = False,
     ap_shader_signal_classification: bool = False,
     character_product_load: bool = False,
+    character_spawn_instantiation: bool = False,
     product_evidence: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
     report["runtime_harness_mode"] = (
-        "runtime_character_product_load_fixture_command"
+        "runtime_character_spawn_instantiation_fixture_command"
+        if character_spawn_instantiation
+        else "runtime_character_product_load_fixture_command"
         if character_product_load
         else "runtime_exit_fixture_ap_shader_signal_classification_command"
         if ap_shader_signal_classification
@@ -3130,6 +3265,54 @@ def _run_runtime_exit_fixture_command(
                     "runtime_exit_fixture_execution_verified": False,
                     "live_runtime_execution": False,
                     "required_runtime_harness_assertions_failed": ["runtime_character_product_load_temp_registry_patch_gate"],
+                }
+            )
+            return _finalize_report(report)
+    if character_spawn_instantiation:
+        spawn_gate = _runtime_character_spawn_instantiation_gate_status(env)
+        report["runtime_character_spawn_instantiation_gate_env"] = list(
+            tuple(RUNTIME_CHARACTER_SPAWNABLE_SURFACE_GATE_ENV)
+            + tuple(RUNTIME_CHARACTER_SPAWN_INSTANTIATION_GATE_ENV)
+        )
+        report["runtime_character_spawn_instantiation_gate_status"] = spawn_gate
+        if spawn_gate["status"] != "pass":
+            payload = _runtime_character_spawn_instantiation_source_payload(
+                product_evidence=product_evidence or report.get("product_evidence_summary", {}),
+                engine_root=_runtime_engine_root_from_report(report),
+                project=project,
+                timeout_seconds=timeout_seconds,
+                artifact_dir=artifact_dir,
+            )
+            payload.update(
+                {
+                    "runtime_character_spawn_instantiation_status": spawn_gate["status"],
+                    "runtime_character_spawn_instantiation_candidate_attempted": False,
+                    "runtime_character_spawn_instantiation_candidate_result": "runtime_character_spawn_candidate_rejected_unsafe",
+                    "runtime_character_spawn_instantiation_candidate_blocker": spawn_gate["status"],
+                    "runtime_character_spawn_instantiation_probe_enabled": False,
+                    "runtime_character_spawn_instantiation_claimed": False,
+                    "runtime_character_spawn_instantiation_verified": False,
+                    "runtime_character_instantiation_claimed": False,
+                    "runtime_character_instantiation_verified": False,
+                }
+            )
+            report.update(payload)
+            report.update(
+                {
+                    "status": "fail",
+                    "runtime_harness_status": spawn_gate["status"],
+                    "runtime_harness_blocked_reason": spawn_gate["status"],
+                    "runtime_exit_fixture_status": spawn_gate["status"],
+                    "runtime_exit_fixture_blocked_reason": spawn_gate["status"],
+                    "runtime_execution_status": "runtime_execution_not_attempted",
+                    "runtime_execution_attempted": False,
+                    "runtime_execution_completed": False,
+                    "runtime_execution_verified": False,
+                    "runtime_exit_fixture_execution_attempted": False,
+                    "runtime_exit_fixture_execution_completed": False,
+                    "runtime_exit_fixture_execution_verified": False,
+                    "live_runtime_execution": False,
+                    "required_runtime_harness_assertions_failed": ["runtime_character_spawn_instantiation_gate"],
                 }
             )
             return _finalize_report(report)
@@ -3318,6 +3501,7 @@ def _run_runtime_exit_fixture_command(
         cache_bootstrap_strategy=cache_bootstrap_strategy,
         artifact_dir=artifact_dir,
         character_product_load=character_product_load,
+        character_spawn_instantiation=character_spawn_instantiation,
         product_evidence=product_evidence or report.get("product_evidence_summary", {}),
     )
     if not command.get("selected"):
@@ -3336,6 +3520,14 @@ def _run_runtime_exit_fixture_command(
                 project=project,
                 engine_root=_runtime_engine_root_from_report(report),
             ),
+            timeout_seconds=timeout_seconds,
+        )
+    if character_spawn_instantiation:
+        _write_runtime_character_spawn_instantiation_patch(
+            _runtime_character_spawn_instantiation_patch_path(artifact_dir),
+            product_evidence=product_evidence or report.get("product_evidence_summary", {}),
+            project=project,
+            engine_root=_runtime_engine_root_from_report(report),
             timeout_seconds=timeout_seconds,
         )
     pre_autoexec_mutation = (
@@ -3445,6 +3637,7 @@ def _run_runtime_exit_fixture_command(
             "runtime_exit_fixture_runtime_command_uses_cache_bootstrap_strategy": cache_bootstrap_strategy,
             "runtime_exit_fixture_runtime_command_uses_ap_shader_strategy": ap_shader_signal_classification,
             "runtime_exit_fixture_runtime_command_uses_product_load_probe": character_product_load,
+            "runtime_exit_fixture_runtime_command_uses_spawn_instantiation_probe": character_spawn_instantiation,
             "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
             "runtime_exit_fixture_command": str(command.get("argv", [""])[0]),
             "runtime_exit_fixture_arguments": list(command.get("argv", []))[1:],
@@ -3618,10 +3811,32 @@ def _run_runtime_exit_fixture_command(
         if character_product_load
         else {}
     )
+    character_spawn_instantiation_payload = (
+        _runtime_character_spawn_instantiation_execution_payload(
+            product_evidence=product_evidence or report.get("product_evidence_summary", {}),
+            command=command,
+            project=project,
+            combined_text=combined_text,
+            actual_level_loads=level_loads,
+            launch_hygiene=launch_hygiene,
+            signal_classification=signal_classification_payload,
+            cache_bootstrap=cache_bootstrap_payload,
+            product_load=character_product_load_payload,
+            exit_code=proc.returncode,
+            marker_observed=marker_observed,
+        )
+        if character_spawn_instantiation
+        else {}
+    )
     launch_hygiene_pass = launch_hygiene.get("runtime_launch_hygiene_status") == "runtime_launch_hygiene_pass"
     character_product_load_pass = (
         character_product_load_payload.get("runtime_character_product_load_verified") is True
         if character_product_load
+        else True
+    )
+    character_spawn_instantiation_pass = (
+        character_spawn_instantiation_payload.get("runtime_character_spawn_instantiation_verified") is True
+        if character_spawn_instantiation
         else True
     )
     passed = (
@@ -3632,6 +3847,7 @@ def _run_runtime_exit_fixture_command(
         and marker_observed
         and launch_hygiene_pass
         and character_product_load_pass
+        and character_spawn_instantiation_pass
     )
     if passed:
         fixture_status = "runtime_exit_fixture_verified_clean_exit"
@@ -3645,6 +3861,8 @@ def _run_runtime_exit_fixture_command(
         fixture_status = "runtime_fixture_execution_failed_default_level_autoload"
     elif character_product_load and not character_product_load_pass:
         fixture_status = "runtime_exit_fixture_execution_failed_character_product_load"
+    elif character_spawn_instantiation and not character_spawn_instantiation_pass:
+        fixture_status = "runtime_exit_fixture_execution_failed_character_spawn_instantiation"
     else:
         fixture_status = "runtime_exit_fixture_execution_failed_disqualifying_log_signal"
 
@@ -3657,6 +3875,7 @@ def _run_runtime_exit_fixture_command(
     report.update(launch_hygiene)
     report.update(signal_classification_payload)
     report.update(character_product_load_payload)
+    report.update(character_spawn_instantiation_payload)
     blocked_reason = _runtime_launch_hygiene_blocked_reason(launch_hygiene)
     if pre_autoexec_suppression and str(pre_autoexec_payload.get("runtime_pre_autoexec_candidate_blocker", "")).strip():
         blocked_reason = str(pre_autoexec_payload.get("runtime_pre_autoexec_candidate_blocker", "")).strip()
@@ -3670,6 +3889,12 @@ def _run_runtime_exit_fixture_command(
         character_product_load_payload.get("runtime_character_product_load_candidate_blocker", "")
     ).strip():
         blocked_reason = str(character_product_load_payload.get("runtime_character_product_load_candidate_blocker", "")).strip()
+    if character_spawn_instantiation and str(
+        character_spawn_instantiation_payload.get("runtime_character_spawn_instantiation_candidate_blocker", "")
+    ).strip():
+        blocked_reason = str(
+            character_spawn_instantiation_payload.get("runtime_character_spawn_instantiation_candidate_blocker", "")
+        ).strip()
     report.update(
         {
             "status": "pass" if passed else "fail",
@@ -3750,6 +3975,9 @@ def _run_runtime_exit_fixture_command(
                 "runtime_exit_fixture_clean_exit",
                 "runtime_signal_classification_verified" if ap_shader_signal_classification else "runtime_signal_classification_not_required",
                 "runtime_character_product_load_verified" if character_product_load else "runtime_character_product_load_not_required",
+                "runtime_character_spawn_instantiation_verified"
+                if character_spawn_instantiation
+                else "runtime_character_spawn_instantiation_not_required",
                 "runtime_character_proof_not_claimed",
             ]
             if passed
@@ -4575,6 +4803,7 @@ def _select_runtime_exit_fixture_command(
     cache_bootstrap_strategy: bool = False,
     artifact_dir: Path | None = None,
     character_product_load: bool = False,
+    character_spawn_instantiation: bool = False,
     product_evidence: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     executable = str(report.get("runtime_executable_path", "")).strip()
@@ -4593,13 +4822,24 @@ def _select_runtime_exit_fixture_command(
         }
     later_patch_path = _runtime_later_registry_patch_path(artifact_dir or DEFAULT_ARTIFACT_ROOT)
     later_patch_arg = f"--regset-file={later_patch_path}"
+    project_for_products = Path(project_path) if project_path else None
     product_load_products = (
-        _runtime_character_product_load_products_from_apb(product_evidence or {})
+        _runtime_character_product_load_products_from_apb(
+            product_evidence or {},
+            project=project_for_products,
+            engine_root=engine_root,
+        )
         if character_product_load
         else []
     )
     product_load_patch_path = _runtime_character_product_load_patch_path(artifact_dir or DEFAULT_ARTIFACT_ROOT)
     product_load_args = [f"--regset-file={product_load_patch_path}"] if character_product_load else []
+    spawn_instantiation_patch_path = _runtime_character_spawn_instantiation_patch_path(
+        artifact_dir or DEFAULT_ARTIFACT_ROOT
+    )
+    spawn_instantiation_args = (
+        [f"--regset-file={spawn_instantiation_patch_path}"] if character_spawn_instantiation else []
+    )
     argv = [
         executable,
         f"--project-path={project_path}",
@@ -4618,9 +4858,12 @@ def _select_runtime_exit_fixture_command(
         "--regset=/Amazon/MAXINE/RuntimeHarness/EnableExitFixture=true",
         "--regset=/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks=5",
         *product_load_args,
+        *spawn_instantiation_args,
     ]
     selected_reason = (
-        "repo_owned_fixture_character_product_load_cache_bootstrap_ap_shader_envelope"
+        "repo_owned_fixture_character_spawn_instantiation_cache_bootstrap_ap_shader_envelope"
+        if character_spawn_instantiation
+        else "repo_owned_fixture_character_product_load_cache_bootstrap_ap_shader_envelope"
         if character_product_load
         else "repo_owned_fixture_tickbus_exit_main_loop_cache_bootstrap_loadlevel_source_envelope"
         if cache_bootstrap_strategy
@@ -4682,6 +4925,16 @@ def _select_runtime_exit_fixture_command(
                 "product_load_is_not_instantiation_proof",
             ]
         )
+    if character_spawn_instantiation:
+        safety_flags.extend(
+            [
+                "runtime_character_spawn_instantiation_probe_enabled",
+                "runtime_character_spawn_instantiation_probe_gate_required",
+                "runtime_character_spawn_instantiation_temp_registry_patch_gate_required",
+                "spawn_instantiation_requires_product_load_ready",
+                "spawn_instantiation_is_not_animation_proof",
+            ]
+        )
     return {
         "selected": True,
         "argv": argv,
@@ -4718,6 +4971,7 @@ def _select_runtime_exit_fixture_command(
                 "--regset=/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks=5",
             ],
             "product_load_probe": product_load_args,
+            "spawn_instantiation_probe": spawn_instantiation_args,
         },
         "safety_profile": {
             "local": True,
@@ -4731,9 +4985,11 @@ def _select_runtime_exit_fixture_command(
             "uses_production_level": False,
             "uses_temp_level": False,
             "uses_no_level": True,
-            "loads_character_content": bool(character_product_load),
+            "loads_character_content": bool(character_product_load or character_spawn_instantiation),
             "loads_character_products_only": bool(character_product_load),
             "runtime_character_product_load_proof": bool(character_product_load),
+            "runtime_character_spawn_instantiation_probe": bool(character_spawn_instantiation),
+            "runtime_character_instantiation_proof": bool(character_spawn_instantiation),
             "runtime_character_proof": False,
             "headless_launcher": True,
             "null_renderer_requested": True,
@@ -4746,16 +5002,26 @@ def _select_runtime_exit_fixture_command(
             "uses_pre_autoexec_suppression_strategy": pre_autoexec_suppression,
             "temp_registry_patch_path": str(later_patch_path)
             if later_registry_patch
+            else str(spawn_instantiation_patch_path)
+            if character_spawn_instantiation
             else str(product_load_patch_path)
             if character_product_load
             else "",
-            "temp_registry_patch_gate_required": later_registry_patch or character_product_load,
+            "temp_registry_patch_gate_required": later_registry_patch or character_product_load or character_spawn_instantiation,
             "project_registry_mutation_gate_required": pre_autoexec_suppression,
             "project_registry_mutation_reversible": pre_autoexec_suppression,
             "uses_character_product_load_probe": bool(character_product_load),
             "character_product_load_probe_gate_required": bool(character_product_load),
             "character_product_load_temp_registry_patch_path": str(product_load_patch_path) if character_product_load else "",
             "character_product_load_temp_registry_patch_gate_required": bool(character_product_load),
+            "uses_character_spawn_instantiation_probe": bool(character_spawn_instantiation),
+            "character_spawn_instantiation_probe_gate_required": bool(character_spawn_instantiation),
+            "character_spawn_instantiation_temp_registry_patch_path": str(spawn_instantiation_patch_path)
+            if character_spawn_instantiation
+            else "",
+            "character_spawn_instantiation_temp_registry_patch_gate_required": bool(character_spawn_instantiation),
+            "runtime_character_animation_proof": False,
+            "runtime_full_character_proof": False,
         },
         "source_evidence_refs": [
             _repo_relative(RUNTIME_EXIT_FIXTURE_COMPONENT_SOURCE),
@@ -5563,6 +5829,10 @@ def _runtime_character_product_load_patch_path(artifact_dir: Path) -> Path:
     return artifact_dir / RUNTIME_CHARACTER_PRODUCT_LOAD_PATCH_FILENAME
 
 
+def _runtime_character_spawn_instantiation_patch_path(artifact_dir: Path) -> Path:
+    return artifact_dir / RUNTIME_CHARACTER_SPAWN_INSTANTIATION_PATCH_FILENAME
+
+
 def _runtime_later_registry_patch_dir_from_command(command: Mapping[str, Any]) -> Path:
     for arg in command.get("argv", []):
         text = str(arg)
@@ -5618,6 +5888,45 @@ def _write_runtime_character_product_load_patch(
                             }
                             for index, product in enumerate(products)
                         },
+                    },
+                }
+            }
+        }
+    }
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
+def _write_runtime_character_spawn_instantiation_patch(
+    path: Path,
+    *,
+    product_evidence: Mapping[str, Any],
+    project: Path | None,
+    engine_root: Path | None,
+    timeout_seconds: int,
+) -> None:
+    selected = _runtime_character_spawn_instantiation_approved_spawnable(
+        product_evidence=product_evidence,
+        project=project,
+        engine_root=engine_root,
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "Amazon": {
+            "MAXINE": {
+                "RuntimeHarness": {
+                    "EnableCharacterSpawnInstantiationProbe": True,
+                    "CharacterSpawnInstantiationProbe": {
+                        "SpawnableProductPath": str(
+                            selected.get("product_path", RUNTIME_CHARACTER_PREFAB_EXPECTED_SPAWNABLE_PRODUCT)
+                        ),
+                        "SpawnableCatalogPath": str(
+                            selected.get("catalog_path", RUNTIME_CHARACTER_PREFAB_EXPECTED_SPAWNABLE_CATALOG)
+                        ),
+                        "SpawnableAssetId": str(selected.get("asset_id", "")),
+                        "SpawnableAssetType": str(selected.get("asset_type", RUNTIME_SPAWNABLE_ASSET_TYPE)),
+                        "TimeoutTicks": _runtime_character_product_load_timeout_ticks(timeout_seconds),
+                        "RequirePositiveEntityCount": True,
+                        "CleanupSpawnedEntities": True,
                     },
                 }
             }
@@ -7424,6 +7733,349 @@ def _runtime_character_spawnable_surface_source_paths(root: Path) -> List[Path]:
     ]
 
 
+def _run_runtime_character_spawn_instantiation_diagnostic(
+    report: Dict[str, Any],
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    report.update(
+        _runtime_character_spawn_instantiation_source_payload(
+            product_evidence=product_evidence,
+            engine_root=engine_root,
+            project=project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+    )
+    report.update(
+        {
+            "status": "pass",
+            "runtime_harness_status": report.get("runtime_character_spawn_instantiation_status", ""),
+            "runtime_harness_mode": "runtime_character_spawn_instantiation_diagnostic",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "runtime_character_spawn_instantiation_probe_enabled": False,
+            "runtime_character_spawn_instantiation_probe_shipping_behavior": False,
+            "runtime_character_spawn_instantiation_claimed": False,
+            "runtime_character_spawn_instantiation_verified": False,
+            "runtime_character_instantiation_claimed": False,
+            "runtime_character_instantiation_verified": False,
+            "runtime_character_animation_claimed": False,
+            "runtime_character_animation_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "asset_cache_deleted": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_character_spawn_source_discovery",
+                "runtime_character_spawn_candidate_matrix_recorded",
+                "runtime_execution_not_attempted_in_character_spawn_instantiation_diagnostic_mode",
+                "runtime_character_spawn_instantiation_not_claimed_without_runtime_execution",
+                "runtime_character_animation_not_claimed",
+                "runtime_character_proof_not_claimed",
+            ],
+            "runtime_harness_assertion_informational": [
+                "spawn_api_source_discovery_is_not_spawn_instantiation_proof",
+                "product_load_proof_is_not_spawn_instantiation_proof",
+                "spawn_instantiation_proof_is_not_animation_proof",
+            ],
+        }
+    )
+    return _finalize_report(report)
+
+
+def _runtime_character_spawn_instantiation_source_payload(
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    source_validated = _runtime_character_spawn_instantiation_source_validated(engine_root)
+    source_refs = _runtime_character_spawn_instantiation_source_refs(engine_root)
+    context_refs = _runtime_character_spawn_context_source_refs(engine_root)
+    approved = _runtime_character_spawn_instantiation_approved_spawnable(
+        product_evidence=product_evidence,
+        project=project,
+        engine_root=engine_root,
+    )
+    selected_product_path = str(approved.get("product_path", ""))
+    selected_catalog_path = str(approved.get("catalog_path", ""))
+    selected_asset_id = str(approved.get("asset_id", ""))
+    selected_asset_type = str(approved.get("asset_type", RUNTIME_SPAWNABLE_ASSET_TYPE)) if approved else ""
+    candidate = _runtime_character_spawn_instantiation_selected_candidate(
+        source_validated=source_validated,
+        source_refs=source_refs,
+        context_refs=context_refs,
+        approved=approved,
+        timeout_seconds=timeout_seconds,
+        attempted=False,
+    )
+    blocker = ""
+    if not source_validated:
+        blocker = "blocked_by_runtime_character_spawn_source_validation"
+    elif not approved:
+        blocker = "blocked_by_missing_runtime_equivalent_spawnable_surface"
+    status = "runtime_character_spawn_source_discovery_pass" if not blocker else "runtime_character_spawn_instantiation_blocked"
+    return {
+        "runtime_character_spawn_instantiation": {
+            "status": status,
+            "selected": RUNTIME_CHARACTER_SPAWN_INSTANTIATION_SELECTED if not blocker else "",
+            "attempted": False,
+        },
+        "runtime_character_spawn_instantiation_status": status,
+        "runtime_character_spawn_instantiation_claimed": False,
+        "runtime_character_spawn_instantiation_verified": False,
+        "runtime_character_spawn_instantiation_source_validation": (
+            "runtime_character_spawn_source_discovery_pass"
+            if source_validated
+            else "runtime_character_spawn_source_discovery_inconclusive"
+        ),
+        "runtime_character_spawn_instantiation_source_refs": source_refs,
+        "runtime_character_spawn_instantiation_probe_enabled": False,
+        "runtime_character_spawn_instantiation_probe_shipping_behavior": False,
+        "runtime_character_spawn_instantiation_candidate_matrix": _runtime_character_spawn_instantiation_candidate_matrix(
+            source_validated=source_validated,
+            source_refs=source_refs,
+            context_refs=context_refs,
+            approved=approved,
+            timeout_seconds=timeout_seconds,
+        ),
+        "runtime_character_spawn_instantiation_candidate_matrix_recorded": True,
+        "runtime_character_spawn_instantiation_candidate_id": candidate["id"],
+        "runtime_character_spawn_instantiation_candidate_name": candidate["name"],
+        "runtime_character_spawn_instantiation_candidate_kind": candidate["kind"],
+        "runtime_character_spawn_instantiation_candidate_source_validation": candidate["source_validation"],
+        "runtime_character_spawn_instantiation_candidate_source_refs": candidate["source_refs"],
+        "runtime_character_spawn_instantiation_candidate_attempted": False,
+        "runtime_character_spawn_instantiation_candidate_result": candidate["result"],
+        "runtime_character_spawn_instantiation_candidate_blocker": blocker,
+        "runtime_character_spawn_instantiation_selected_strategy": "" if blocker else RUNTIME_CHARACTER_SPAWN_INSTANTIATION_SELECTED,
+        "runtime_character_spawn_instantiation_selected_reason": (
+            "source_validated_spawnable_entities_interface_spawn_all_entities_no_level_fixture"
+            if not blocker
+            else ""
+        ),
+        "runtime_character_spawn_instantiation_api": "AzFramework::SpawnableEntitiesInterface::SpawnAllEntities",
+        "runtime_character_spawn_instantiation_api_argument_shape": _runtime_character_spawn_instantiation_argument_shape(),
+        "runtime_character_spawn_instantiation_context_status": (
+            "runtime_character_spawn_context_source_validated"
+            if source_validated
+            else "runtime_character_spawn_context_source_inconclusive"
+        ),
+        "runtime_character_spawn_instantiation_context_id": "",
+        "runtime_character_spawn_instantiation_context_source_refs": context_refs,
+        "runtime_character_spawn_instantiation_spawnable_product_path": selected_product_path,
+        "runtime_character_spawn_instantiation_spawnable_catalog_path": selected_catalog_path,
+        "runtime_character_spawn_instantiation_spawnable_asset_id": selected_asset_id,
+        "runtime_character_spawn_instantiation_spawnable_asset_type": selected_asset_type,
+        "runtime_character_spawn_instantiation_spawnable_loaded_ready": False,
+        "runtime_character_spawn_instantiation_spawn_request_issued": False,
+        "runtime_character_spawn_instantiation_spawn_ticket": "",
+        "runtime_character_spawn_instantiation_spawn_completion_observed": False,
+        "runtime_character_spawn_instantiation_spawn_result": "",
+        "runtime_character_spawn_instantiation_spawned_entity_count": 0,
+        "runtime_character_spawn_instantiation_spawned_entity_ids": [],
+        "runtime_character_spawn_instantiation_spawned_entity_names": [],
+        "runtime_character_spawn_instantiation_spawned_entity_component_inventory": [],
+        "runtime_character_spawn_instantiation_root_entity_count": 0,
+        "runtime_character_spawn_instantiation_container_entity": "",
+        "runtime_character_spawn_instantiation_timeout": False,
+        "runtime_character_spawn_instantiation_timeout_ticks": _runtime_character_product_load_timeout_ticks(timeout_seconds),
+        "runtime_character_spawn_instantiation_log_errors": [],
+        "runtime_character_spawn_instantiation_selected_surface_log_scan": {
+            "status": "runtime_execution_not_attempted",
+            "matches": [],
+        },
+        "runtime_character_spawn_instantiation_cleanup_attempted": False,
+        "runtime_character_spawn_instantiation_cleanup_status": "runtime_character_spawn_instantiation_cleanup_not_attempted",
+        "runtime_character_spawn_instantiation_cleanup_source_refs": source_refs,
+        "runtime_character_spawn_instantiation_is_animation_proof": False,
+        "runtime_character_spawn_instantiation_remaining_blocker": blocker,
+    }
+
+
+def _runtime_character_spawn_instantiation_approved_spawnable(
+    *,
+    product_evidence: Mapping[str, Any],
+    project: Path | None,
+    engine_root: Path | None,
+) -> Dict[str, Any]:
+    if project is None:
+        return {}
+    candidates = _runtime_character_spawnable_surface_candidates(
+        product_evidence=product_evidence,
+        project=project,
+        engine_root=engine_root,
+    )
+    return dict(next((candidate for candidate in candidates if candidate.get("is_approved") is True), {}))
+
+
+def _runtime_character_spawn_instantiation_argument_shape() -> Dict[str, str]:
+    return {
+        "asset_resolution": "AZ::Data::AssetCatalogRequestBus::GetAssetIdByPath(<approved spawnable catalog path>)",
+        "asset_load": "AZ::Data::AssetManager::GetAsset<AzFramework::Spawnable>(AssetId, AssetLoadBehavior::Default)",
+        "ticket": "AzFramework::EntitySpawnTicket(AZ::Data::Asset<AzFramework::Spawnable>)",
+        "spawn_request": "AzFramework::SpawnableEntitiesInterface::Get()->SpawnAllEntities(ticket, SpawnAllEntitiesOptionalArgs)",
+        "completion": "SpawnAllEntitiesOptionalArgs.m_completionCallback(ticketId, SpawnableConstEntityContainerView)",
+        "cleanup": "AzFramework::SpawnableEntitiesInterface::Get()->DespawnAllEntities(ticket, DespawnAllEntitiesOptionalArgs)",
+    }
+
+
+def _runtime_character_spawn_instantiation_selected_candidate(
+    *,
+    source_validated: bool,
+    source_refs: Sequence[str],
+    context_refs: Sequence[str],
+    approved: Mapping[str, Any],
+    timeout_seconds: int,
+    attempted: bool,
+) -> Dict[str, Any]:
+    has_surface = bool(approved)
+    result = (
+        "runtime_character_spawn_candidate_source_validated"
+        if source_validated and has_surface and not attempted
+        else "runtime_character_spawn_candidate_rejected_missing_source_validation"
+        if not source_validated
+        else "blocked_by_missing_runtime_equivalent_spawnable_surface"
+        if not has_surface
+        else "runtime_character_spawn_candidate_attempted_pass"
+    )
+    return {
+        "id": RUNTIME_CHARACTER_SPAWN_INSTANTIATION_SELECTED,
+        "name": "Spawn approved character spawnable through SpawnableEntitiesInterface",
+        "kind": "runtime_spawnable_entities_interface_spawn_all_entities",
+        "source_validation": {
+            "status": "runtime_character_spawn_candidate_source_validated"
+            if source_validated and has_surface
+            else "runtime_character_spawn_candidate_rejected_missing_source_validation",
+            "summary": (
+                "EntitySpawnTicket is constructed from the loaded AzFramework::Spawnable asset and "
+                "SpawnableEntitiesInterface::SpawnAllEntities issues the runtime spawn request. "
+                "The completion callback returns a SpawnableConstEntityContainerView for positive entity evidence."
+            ),
+        },
+        "source_refs": list(source_refs) + list(context_refs),
+        "product_path": str(approved.get("product_path", "")),
+        "catalog_path": str(approved.get("catalog_path", "")),
+        "asset_id": str(approved.get("asset_id", "")),
+        "asset_type": str(approved.get("asset_type", RUNTIME_SPAWNABLE_ASSET_TYPE)) if approved else "",
+        "runtime_api": "AzFramework::SpawnableEntitiesInterface::SpawnAllEntities",
+        "argument_shape": _runtime_character_spawn_instantiation_argument_shape(),
+        "loads_level": False,
+        "uses_defaultlevel": False,
+        "uses_production_level": False,
+        "gate_env": list(RUNTIME_CHARACTER_SPAWNABLE_SURFACE_GATE_ENV)
+        + list(RUNTIME_CHARACTER_SPAWN_INSTANTIATION_GATE_ENV),
+        "timeout_seconds": int(timeout_seconds),
+        "attempted": bool(attempted),
+        "result": result,
+        "blocker": "" if source_validated and has_surface else result,
+    }
+
+
+def _runtime_character_spawn_instantiation_candidate_matrix(
+    *,
+    source_validated: bool,
+    source_refs: Sequence[str],
+    context_refs: Sequence[str],
+    approved: Mapping[str, Any],
+    timeout_seconds: int,
+) -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "runtime_character_spawn_source_api_discovery",
+            "name": "Read-only SpawnableEntitiesInterface source discovery",
+            "kind": "read_only_source_discovery",
+            "source_validation": {
+                "status": "runtime_character_spawn_candidate_source_validated"
+                if source_validated
+                else "runtime_character_spawn_candidate_rejected_missing_source_validation",
+                "summary": "Records source refs for EntitySpawnTicket, SpawnAllEntities, completion callbacks, GameEntityContext insertion, and cleanup.",
+            },
+            "source_refs": list(source_refs) + list(context_refs),
+            "attempted": False,
+            "result": "runtime_character_spawn_source_discovery_pass"
+            if source_validated
+            else "runtime_character_spawn_source_discovery_inconclusive",
+            "blocker": "" if source_validated else "blocked_by_runtime_character_spawn_source_validation",
+        },
+        _runtime_character_spawn_instantiation_selected_candidate(
+            source_validated=source_validated,
+            source_refs=source_refs,
+            context_refs=context_refs,
+            approved=approved,
+            timeout_seconds=timeout_seconds,
+            attempted=False,
+        ),
+        {
+            "id": "runtime_character_spawn_temp_level_context",
+            "name": "Temp/sandbox level context spawn fallback",
+            "kind": "runtime_temp_level_context_spawn",
+            "source_validation": {
+                "status": "runtime_character_spawn_candidate_rejected_unsafe",
+                "summary": "A temp level fallback remains out of scope while the no-level fixture context can be source-validated.",
+            },
+            "source_refs": list(context_refs),
+            "attempted": False,
+            "result": "runtime_character_spawn_candidate_rejected_unsafe",
+            "blocker": "blocked_by_runtime_character_spawn_requires_temp_level_not_safely_scoped",
+        },
+        {
+            "id": "runtime_character_spawn_keep_blocked_without_positive_entities",
+            "name": "Keep spawn proof blocked without completion and entity evidence",
+            "kind": "typed_blocker",
+            "source_validation": {
+                "status": "runtime_character_spawn_candidate_source_validated"
+                if source_validated
+                else "runtime_character_spawn_candidate_rejected_missing_source_validation",
+                "summary": "Product-load or surface proof cannot be converted into spawn proof without request, completion, and positive entity evidence.",
+            },
+            "source_refs": list(source_refs),
+            "attempted": False,
+            "result": "blocked_by_runtime_character_spawn_no_entities",
+            "blocker": "blocked_by_runtime_character_spawn_no_entities",
+        },
+    ]
+
+
+def _runtime_character_spawn_instantiation_source_validated(engine_root: Path | None) -> bool:
+    root = engine_root or Path("")
+    return all(path.is_file() for path in _runtime_character_spawn_instantiation_source_paths(root))
+
+
+def _runtime_character_spawn_instantiation_source_refs(engine_root: Path | None) -> List[str]:
+    root = engine_root or Path("<engine-root>")
+    return [str(path) for path in _runtime_character_spawn_instantiation_source_paths(root)]
+
+
+def _runtime_character_spawn_instantiation_source_paths(root: Path) -> List[Path]:
+    return [
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "Spawnable.h",
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableEntitiesInterface.h",
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableEntitiesInterface.cpp",
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableEntitiesManager.cpp",
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableSystemComponent.cpp",
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "Script" / "SpawnableScriptMediator.cpp",
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Entity" / "GameEntityContextBus.h",
+        root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Entity" / "GameEntityContextComponent.cpp",
+    ]
+
+
+def _runtime_character_spawn_context_source_refs(engine_root: Path | None) -> List[str]:
+    root = engine_root or Path("<engine-root>")
+    return [
+        str(root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Entity" / "GameEntityContextBus.h"),
+        str(root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Entity" / "GameEntityContextComponent.cpp"),
+        str(root / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableEntitiesManager.cpp"),
+    ]
+
+
 def _run_runtime_character_prefab_source_diagnostic(
     report: Dict[str, Any],
     *,
@@ -8379,6 +9031,338 @@ def _runtime_character_product_load_execution_payload(
         }
     )
     return source_payload
+
+
+def _runtime_character_spawn_instantiation_execution_payload(
+    *,
+    product_evidence: Mapping[str, Any],
+    command: Mapping[str, Any],
+    project: Path | None,
+    combined_text: str,
+    actual_level_loads: Sequence[str],
+    launch_hygiene: Mapping[str, Any],
+    signal_classification: Mapping[str, Any],
+    cache_bootstrap: Mapping[str, Any],
+    product_load: Mapping[str, Any],
+    exit_code: int | None,
+    marker_observed: bool,
+) -> Dict[str, Any]:
+    engine_root = _runtime_engine_root_from_command(command)
+    source_payload = _runtime_character_spawn_instantiation_source_payload(
+        product_evidence=product_evidence,
+        engine_root=engine_root,
+        project=project,
+        timeout_seconds=int(command.get("timeout_seconds", 120)),
+        artifact_dir=DEFAULT_ARTIFACT_ROOT,
+    )
+    markers = _runtime_character_spawn_instantiation_parse_markers(combined_text)
+    approved = _runtime_character_spawn_instantiation_approved_spawnable(
+        product_evidence=product_evidence,
+        project=project,
+        engine_root=engine_root,
+    )
+    selected_product = {
+        "product_kind": RUNTIME_CHARACTER_PRODUCT_LOAD_APPROVED_SURFACE_KIND,
+        "product_path": str(approved.get("product_path", RUNTIME_CHARACTER_PREFAB_EXPECTED_SPAWNABLE_PRODUCT)),
+        "catalog_path": str(approved.get("catalog_path", RUNTIME_CHARACTER_PREFAB_EXPECTED_SPAWNABLE_CATALOG)),
+        "asset_id": str(approved.get("asset_id", "")),
+    }
+    selected_surface_errors = _runtime_character_product_selected_product_errors([selected_product], combined_text)
+    marker_errors = list(markers.get("errors", []))
+    log_errors = selected_surface_errors + marker_errors
+    summary = markers.get("summary", {}) if isinstance(markers.get("summary", {}), Mapping) else {}
+    product_load_ready = bool(product_load.get("runtime_character_product_load_verified"))
+    spawnable_ready = bool(product_load.get("runtime_character_spawnable_surface_verified")) and bool(
+        product_load.get("runtime_character_spawnable_surface_load_ready")
+    )
+    source_validated = (
+        str(source_payload.get("runtime_character_spawn_instantiation_source_validation", "")).strip()
+        == "runtime_character_spawn_source_discovery_pass"
+    )
+    launch_pass = str(launch_hygiene.get("runtime_launch_hygiene_status", "")).strip() == "runtime_launch_hygiene_pass"
+    signal_pass = signal_classification.get("runtime_signal_classification_verified") is True
+    cache_pass = cache_bootstrap.get("runtime_cache_bootstrap_verified") is True
+    default_level_detected = bool(launch_hygiene.get("runtime_default_level_autoload_detected"))
+    production_level_loaded = bool(actual_level_loads)
+    exit_clean = exit_code == 0
+    request_issued = bool(markers.get("request_issued"))
+    completion_observed = bool(markers.get("completion_observed"))
+    entity_count = int(markers.get("entity_count", 0) or 0)
+    timed_out = bool(markers.get("timed_out")) or str(summary.get("timed_out", "")).strip() in {"1", "true", "True"}
+    cleanup_status = str(markers.get("cleanup_status", "")).strip()
+    cleanup_ok = cleanup_status in {"runtime_character_spawn_instantiation_cleanup_complete", "runtime_character_spawn_instantiation_cleanup_not_required"}
+    summary_pass = str(summary.get("status", "")).strip() == "pass"
+    verified = (
+        bool(markers.get("markers_observed"))
+        and summary_pass
+        and product_load_ready
+        and spawnable_ready
+        and source_validated
+        and launch_pass
+        and signal_pass
+        and cache_pass
+        and not default_level_detected
+        and not production_level_loaded
+        and exit_clean
+        and marker_observed
+        and request_issued
+        and completion_observed
+        and entity_count > 0
+        and not timed_out
+        and not log_errors
+        and cleanup_ok
+    )
+    blocker = ""
+    if default_level_detected:
+        blocker = "blocked_by_default_level_autoload"
+    elif production_level_loaded:
+        blocker = "blocked_by_production_level_load"
+    elif not product_load_ready or not spawnable_ready:
+        blocker = "blocked_by_runtime_character_spawnable_load_error"
+    elif not signal_pass:
+        blocker = "blocked_by_unclassified_runtime_product_load_signal"
+    elif not cache_pass:
+        blocker = "blocked_by_cache_bootstrap_restore_failed"
+    elif not source_validated:
+        blocker = "blocked_by_runtime_character_spawn_source_validation"
+    elif timed_out:
+        blocker = "blocked_by_runtime_character_spawn_timeout"
+    elif log_errors:
+        blocker = "blocked_by_runtime_character_spawn_error"
+    elif not request_issued or not completion_observed:
+        blocker = "blocked_by_runtime_character_spawn_error"
+    elif entity_count <= 0:
+        blocker = "blocked_by_runtime_character_spawn_no_entities"
+    elif not cleanup_ok:
+        blocker = "blocked_by_runtime_character_spawn_cleanup_failed"
+    elif not markers.get("markers_observed"):
+        blocker = "blocked_by_runtime_character_spawn_error"
+
+    if verified:
+        status = "runtime_character_spawn_instantiation_verified"
+        candidate_result = "runtime_character_spawn_candidate_attempted_pass"
+    elif timed_out:
+        status = "runtime_character_spawn_candidate_attempted_failed_timeout"
+        candidate_result = status
+    elif default_level_detected:
+        status = "runtime_character_spawn_candidate_attempted_failed_defaultlevel_autoload"
+        candidate_result = status
+    elif production_level_loaded:
+        status = "runtime_character_spawn_candidate_attempted_failed_production_level_load"
+        candidate_result = status
+    elif entity_count <= 0 and completion_observed:
+        status = "runtime_character_spawn_candidate_attempted_failed_no_spawned_entities"
+        candidate_result = status
+    else:
+        status = "runtime_character_spawn_candidate_attempted_failed_spawn_error"
+        candidate_result = status
+
+    candidate = _runtime_character_spawn_instantiation_selected_candidate(
+        source_validated=source_validated,
+        source_refs=source_payload.get("runtime_character_spawn_instantiation_source_refs", []),
+        context_refs=source_payload.get("runtime_character_spawn_instantiation_context_source_refs", []),
+        approved=approved,
+        timeout_seconds=int(command.get("timeout_seconds", 120)),
+        attempted=True,
+    )
+    candidate.update(
+        {
+            "attempted": True,
+            "result": candidate_result,
+            "blocker": blocker,
+            "actual_level_loads": list(actual_level_loads),
+            "spawn_request_issued": request_issued,
+            "spawn_completion_observed": completion_observed,
+            "spawned_entity_count": entity_count,
+            "cleanup_status": cleanup_status,
+            "exit_code_decimal": exit_code,
+            "exit_code_hex": _exit_code_hex(exit_code),
+            "fixture_marker_observed": marker_observed,
+        }
+    )
+    source_payload.update(
+        {
+            "runtime_character_spawn_instantiation": {
+                "status": status,
+                "selected": RUNTIME_CHARACTER_SPAWN_INSTANTIATION_SELECTED,
+                "attempted": True,
+                "summary": dict(summary),
+            },
+            "runtime_character_spawn_instantiation_status": status,
+            "runtime_character_spawn_instantiation_claimed": bool(verified),
+            "runtime_character_spawn_instantiation_verified": bool(verified),
+            "runtime_character_spawn_instantiation_probe_enabled": True,
+            "runtime_character_spawn_instantiation_probe_shipping_behavior": False,
+            "runtime_character_spawn_instantiation_candidate_matrix": [
+                *source_payload.get("runtime_character_spawn_instantiation_candidate_matrix", []),
+                candidate,
+            ],
+            "runtime_character_spawn_instantiation_candidate_matrix_recorded": True,
+            "runtime_character_spawn_instantiation_candidate_id": candidate["id"],
+            "runtime_character_spawn_instantiation_candidate_name": candidate["name"],
+            "runtime_character_spawn_instantiation_candidate_kind": candidate["kind"],
+            "runtime_character_spawn_instantiation_candidate_source_validation": candidate["source_validation"],
+            "runtime_character_spawn_instantiation_candidate_source_refs": candidate["source_refs"],
+            "runtime_character_spawn_instantiation_candidate_attempted": True,
+            "runtime_character_spawn_instantiation_candidate_result": candidate_result,
+            "runtime_character_spawn_instantiation_candidate_blocker": blocker,
+            "runtime_character_spawn_instantiation_selected_strategy": RUNTIME_CHARACTER_SPAWN_INSTANTIATION_SELECTED,
+            "runtime_character_spawn_instantiation_selected_reason": "runtime_fixture_loaded_approved_spawnable_and_spawned_entities"
+            if verified
+            else "runtime_fixture_spawn_attempt_recorded_with_typed_blocker",
+            "runtime_character_spawn_instantiation_context_status": str(
+                markers.get("context_status", source_payload.get("runtime_character_spawn_instantiation_context_status", ""))
+            ),
+            "runtime_character_spawn_instantiation_context_id": str(markers.get("context_id", "")),
+            "runtime_character_spawn_instantiation_spawnable_product_path": str(
+                markers.get("product_path", selected_product["product_path"])
+            ),
+            "runtime_character_spawn_instantiation_spawnable_catalog_path": str(
+                markers.get("catalog_path", selected_product["catalog_path"])
+            ),
+            "runtime_character_spawn_instantiation_spawnable_asset_id": str(
+                markers.get("asset_id", selected_product["asset_id"])
+            ),
+            "runtime_character_spawn_instantiation_spawnable_asset_type": str(
+                markers.get("asset_type", approved.get("asset_type", RUNTIME_SPAWNABLE_ASSET_TYPE))
+            ),
+            "runtime_character_spawn_instantiation_spawnable_loaded_ready": bool(spawnable_ready),
+            "runtime_character_spawn_instantiation_spawn_request_issued": request_issued,
+            "runtime_character_spawn_instantiation_spawn_ticket": str(markers.get("ticket", "")),
+            "runtime_character_spawn_instantiation_spawn_completion_observed": completion_observed,
+            "runtime_character_spawn_instantiation_spawn_result": str(
+                markers.get("spawn_result", summary.get("status", ""))
+            ),
+            "runtime_character_spawn_instantiation_spawned_entity_count": entity_count,
+            "runtime_character_spawn_instantiation_spawned_entity_ids": list(markers.get("entity_ids", [])),
+            "runtime_character_spawn_instantiation_spawned_entity_names": list(markers.get("entity_names", [])),
+            "runtime_character_spawn_instantiation_spawned_entity_component_inventory": list(
+                markers.get("component_inventory", [])
+            ),
+            "runtime_character_spawn_instantiation_root_entity_count": entity_count,
+            "runtime_character_spawn_instantiation_container_entity": str(markers.get("container_entity", "")),
+            "runtime_character_spawn_instantiation_timeout": timed_out,
+            "runtime_character_spawn_instantiation_timeout_ticks": int(
+                markers.get(
+                    "timeout_ticks",
+                    _runtime_character_product_load_timeout_ticks(int(command.get("timeout_seconds", 120))),
+                )
+                or 0
+            ),
+            "runtime_character_spawn_instantiation_log_errors": log_errors,
+            "runtime_character_spawn_instantiation_selected_surface_log_scan": {
+                "status": "fail" if log_errors else "pass",
+                "matches": log_errors,
+            },
+            "runtime_character_spawn_instantiation_cleanup_attempted": bool(markers.get("cleanup_attempted")),
+            "runtime_character_spawn_instantiation_cleanup_status": cleanup_status
+            or "runtime_character_spawn_instantiation_cleanup_not_attempted",
+            "runtime_character_spawn_instantiation_is_animation_proof": False,
+            "runtime_character_spawn_instantiation_remaining_blocker": "" if verified else blocker,
+            "runtime_character_instantiation_claimed": bool(verified),
+            "runtime_character_instantiation_verified": bool(verified),
+            "runtime_character_animation_claimed": False,
+            "runtime_character_animation_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+        }
+    )
+    return source_payload
+
+
+def _runtime_character_spawn_instantiation_parse_markers(combined_text: str) -> Dict[str, Any]:
+    payload: Dict[str, Any] = {
+        "markers_observed": False,
+        "request_issued": False,
+        "completion_observed": False,
+        "entity_count": 0,
+        "entity_ids": [],
+        "entity_names": [],
+        "component_inventory": [],
+        "cleanup_attempted": False,
+        "cleanup_status": "runtime_character_spawn_instantiation_cleanup_not_attempted",
+        "errors": [],
+        "timed_out": False,
+        "summary": {},
+    }
+    for raw_line in combined_text.splitlines():
+        marker_index = raw_line.find("MAXINE_RUNTIME_CHARACTER_SPAWN_")
+        if marker_index < 0:
+            continue
+        line = raw_line[marker_index:].strip()
+        payload["markers_observed"] = True
+        fields = _runtime_marker_fields(line)
+        if line.startswith("MAXINE_RUNTIME_CHARACTER_SPAWN_START"):
+            payload["product_path"] = fields.get("product_path", "")
+            payload["catalog_path"] = fields.get("catalog_path", "")
+            payload["asset_id"] = fields.get("asset_id", "")
+            payload["asset_type"] = fields.get("asset_type", "")
+            payload["timeout_ticks"] = _int_or_zero(fields.get("timeout_ticks", 0))
+        elif line.startswith("MAXINE_RUNTIME_CHARACTER_SPAWN_CONTEXT"):
+            payload["context_status"] = fields.get("status", "")
+            payload["context_id"] = fields.get("context_id", "")
+        elif line.startswith("MAXINE_RUNTIME_CHARACTER_SPAWN_TICKET"):
+            payload["ticket"] = fields.get("ticket", "")
+        elif line.startswith("MAXINE_RUNTIME_CHARACTER_SPAWN_REQUESTED"):
+            payload["request_issued"] = True
+            payload["ticket"] = fields.get("ticket", payload.get("ticket", ""))
+        elif line.startswith("MAXINE_RUNTIME_CHARACTER_SPAWN_COMPLETED"):
+            payload["completion_observed"] = True
+            payload["ticket"] = fields.get("ticket", payload.get("ticket", ""))
+            payload["spawn_result"] = fields.get("result", "")
+            payload["entity_count"] = _int_or_zero(fields.get("entity_count", payload.get("entity_count", 0)))
+        elif line.startswith("MAXINE_RUNTIME_CHARACTER_SPAWN_ENTITY"):
+            payload["entity_ids"].append(fields.get("entity_id", ""))
+            payload["entity_names"].append(fields.get("name", ""))
+            components = [item for item in str(fields.get("components", "")).split(";") if item]
+            payload["component_inventory"].append(
+                {
+                    "entity_id": fields.get("entity_id", ""),
+                    "entity_name": fields.get("name", ""),
+                    "component_count": _int_or_zero(fields.get("component_count", len(components))),
+                    "components": components,
+                }
+            )
+            payload["entity_count"] = max(int(payload.get("entity_count", 0) or 0), len(payload["entity_ids"]))
+        elif line.startswith("MAXINE_RUNTIME_CHARACTER_SPAWN_CLEANUP"):
+            payload["cleanup_attempted"] = True
+            cleanup = fields.get("status", "")
+            payload["cleanup_status"] = (
+                "runtime_character_spawn_instantiation_cleanup_complete"
+                if cleanup == "complete"
+                else "runtime_character_spawn_instantiation_cleanup_not_required"
+                if cleanup == "not_required"
+                else "runtime_character_spawn_instantiation_cleanup_failed"
+            )
+        elif line.startswith("MAXINE_RUNTIME_CHARACTER_SPAWN_TIMEOUT"):
+            payload["timed_out"] = True
+            payload["errors"].append({"line": " ".join(line.split())[:240], "reason": "timeout"})
+        elif line.startswith("MAXINE_RUNTIME_CHARACTER_SPAWN_ERROR"):
+            payload["errors"].append({"line": " ".join(line.split())[:240], "reason": fields.get("error", "spawn_error")})
+        elif line.startswith("MAXINE_RUNTIME_CHARACTER_SPAWN_SUMMARY"):
+            payload["summary"] = dict(fields)
+            payload["timed_out"] = payload["timed_out"] or str(fields.get("timed_out", "")).strip() in {"1", "true", "True"}
+            payload["entity_count"] = max(
+                int(payload.get("entity_count", 0) or 0),
+                _int_or_zero(fields.get("spawned", payload.get("entity_count", 0))),
+            )
+            cleanup = str(fields.get("cleanup", "")).strip()
+            if cleanup and not payload.get("cleanup_attempted"):
+                payload["cleanup_status"] = (
+                    "runtime_character_spawn_instantiation_cleanup_complete"
+                    if cleanup == "complete"
+                    else "runtime_character_spawn_instantiation_cleanup_not_required"
+                    if cleanup == "not_required"
+                    else "runtime_character_spawn_instantiation_cleanup_failed"
+                )
+    return payload
+
+
+def _int_or_zero(value: Any) -> int:
+    try:
+        return int(str(value), 0)
+    except (TypeError, ValueError):
+        return 0
 
 
 def _runtime_character_product_load_parse_markers(
@@ -10899,6 +11883,22 @@ def _runtime_character_product_load_probe_gate_status(env: Mapping[str, str]) ->
     }
 
 
+def _runtime_character_spawn_instantiation_gate_status(env: Mapping[str, str]) -> Dict[str, Any]:
+    required = tuple(RUNTIME_CHARACTER_SPAWNABLE_SURFACE_GATE_ENV) + tuple(
+        RUNTIME_CHARACTER_SPAWN_INSTANTIATION_GATE_ENV
+    )
+    missing = [
+        item.split("=", 1)[0]
+        for item in required
+        if str(env.get(item.split("=", 1)[0], "")).strip() != "1"
+    ]
+    return {
+        "status": "pass" if not missing else "blocked_by_runtime_character_spawn_instantiation_gate_missing",
+        "required": [item.split("=", 1)[0] for item in required],
+        "missing": missing,
+    }
+
+
 def _scan_runtime_output(text: str) -> Dict[str, Any]:
     lower = text.lower()
     matches: List[Dict[str, str]] = []
@@ -11333,6 +12333,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--diagnose-runtime-procprefab-handler-or-spawnable-surface", action="store_true")
     parser.add_argument("--diagnose-runtime-character-spawnable-surface", action="store_true")
     parser.add_argument("--diagnose-runtime-character-prefab-source", action="store_true")
+    parser.add_argument("--diagnose-runtime-character-spawn-instantiation", action="store_true")
+    parser.add_argument("--enable-runtime-character-spawn-instantiation-fixture", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -11386,6 +12388,8 @@ def main() -> int:
         ),
         diagnose_runtime_character_spawnable_surface=args.diagnose_runtime_character_spawnable_surface,
         diagnose_runtime_character_prefab_source=args.diagnose_runtime_character_prefab_source,
+        diagnose_runtime_character_spawn_instantiation=args.diagnose_runtime_character_spawn_instantiation,
+        enable_runtime_character_spawn_instantiation_fixture=args.enable_runtime_character_spawn_instantiation_fixture,
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
         strict_integration=args.strict_integration,

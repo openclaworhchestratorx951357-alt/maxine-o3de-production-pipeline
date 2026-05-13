@@ -47,10 +47,14 @@ def _engine(root: Path, *, launcher: bool = True) -> Path:
         engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableAssetHandler.h",
         engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableAssetHandler.cpp",
         engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableEntitiesInterface.h",
+        engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableEntitiesInterface.cpp",
         engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableEntitiesManager.cpp",
         engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableSystemComponent.cpp",
         engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "SpawnableSystemComponent.h",
         engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "Spawnable.h",
+        engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Entity" / "GameEntityContextBus.h",
+        engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Entity" / "GameEntityContextComponent.cpp",
+        engine / "Code" / "Framework" / "AzFramework" / "AzFramework" / "Spawnable" / "Script" / "SpawnableScriptMediator.cpp",
         engine / "Code" / "Framework" / "AzToolsFramework" / "AzToolsFramework" / "Prefab" / "Spawnable" / "PrefabInMemorySpawnableConverter.cpp",
         engine / "Code" / "Framework" / "AzToolsFramework" / "AzToolsFramework" / "Prefab" / "Spawnable" / "PrefabProcessor.h",
         engine / "Code" / "Framework" / "AzToolsFramework" / "AzToolsFramework" / "Prefab" / "Spawnable" / "PrefabProcessorContext.cpp",
@@ -3187,6 +3191,31 @@ def test_runtime_fixture_product_load_registry_reads_do_not_accumulate_values() 
     assert 'entry.m_expectedCategory = ReadProductProbeValue("ExpectedCategory");' in source
 
 
+def test_runtime_fixture_spawn_instantiation_probe_is_gated_and_uses_spawnable_entities_interface() -> None:
+    source = (
+        Path("o3de/gems/MaxineRuntimeExitFixture/Code/Source/Clients/MaxineRuntimeExitFixtureSystemComponent.cpp")
+        .read_text(encoding="utf-8")
+    )
+    header = (
+        Path("o3de/gems/MaxineRuntimeExitFixture/Code/Source/Clients/MaxineRuntimeExitFixtureSystemComponent.h")
+        .read_text(encoding="utf-8")
+    )
+
+    assert "EnableCharacterSpawnInstantiationProbeKey" in source
+    assert "CharacterSpawnInstantiationProbeSpawnableCatalogPathKey" in source
+    assert "AzFramework::SpawnableEntitiesInterface::Get()" in source
+    assert "SpawnAllEntities(m_characterSpawnTicket" in source
+    assert "DespawnAllEntities" in source
+    assert "GameEntityContextRequestBus::BroadcastResult" in source
+    assert "MAXINE_RUNTIME_CHARACTER_SPAWN_REQUESTED" in source
+    assert "MAXINE_RUNTIME_CHARACTER_SPAWN_COMPLETED" in source
+    assert "MAXINE_RUNTIME_CHARACTER_SPAWN_ENTITY" in source
+    assert "MAXINE_RUNTIME_CHARACTER_SPAWN_CLEANUP" in source
+    assert "MAXINE_RUNTIME_CHARACTER_SPAWN_SUMMARY" in source
+    assert "m_characterSpawnProbeEnabled = false" in header
+    assert "m_characterSpawnTicket" in header
+
+
 def test_runtime_harness_character_product_load_fixture_requires_probe_gate(tmp_path: Path) -> None:
     env, engine, project, apb = _runtime_env(tmp_path, gates=True)
     env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
@@ -3380,6 +3409,271 @@ def test_runtime_harness_character_product_load_fixture_records_all_products_rea
     assert report["asset_cache_deleted"] is False
 
 
+def test_runtime_harness_character_spawn_instantiation_diagnostic_records_source_validation_without_claim(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _append_apb_products(
+        apb,
+        [
+            {
+                "product_type": "spawnable",
+                "product_path": "pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable",
+                "source_path": "Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+                "source_uuid": "55555555555545558555555555555555",
+                "source_sub_id": "0xf6ec8847",
+                "asset_id": "{CFCA52C7-573E-579E-97E0-707122217DA0}:f6ec8847",
+                "asset_type_id": "{855E3021-D305-4845-B284-20C3F7FDF16B}",
+                "builder": "Prefabs",
+                "status": "ready",
+            }
+        ],
+    )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_character_spawn_instantiation=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_character_spawn_instantiation_diagnostic"
+    assert report["runtime_character_spawn_instantiation_status"] == "runtime_character_spawn_source_discovery_pass"
+    assert report["runtime_character_spawn_instantiation_source_validation"] == "runtime_character_spawn_source_discovery_pass"
+    source_refs = " ".join(report["runtime_character_spawn_instantiation_source_refs"])
+    assert "SpawnableEntitiesInterface.h" in source_refs
+    assert "SpawnableEntitiesManager.cpp" in source_refs
+    assert "GameEntityContextBus.h" in source_refs
+    assert "SpawnableScriptMediator.cpp" in source_refs
+    assert report["runtime_character_spawn_instantiation_api"] == "AzFramework::SpawnableEntitiesInterface::SpawnAllEntities"
+    assert report["runtime_character_spawn_instantiation_api_argument_shape"]["ticket"] == (
+        "AzFramework::EntitySpawnTicket(AZ::Data::Asset<AzFramework::Spawnable>)"
+    )
+    assert report["runtime_character_spawn_instantiation_context_status"] == "runtime_character_spawn_context_source_validated"
+    assert report["runtime_character_spawn_instantiation_spawnable_product_path"] == (
+        "pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable"
+    )
+    assert report["runtime_character_spawn_instantiation_spawnable_loaded_ready"] is False
+    assert report["runtime_character_spawn_instantiation_candidate_matrix_recorded"] is True
+    assert report["runtime_character_spawn_instantiation_spawn_request_issued"] is False
+    assert report["runtime_character_spawn_instantiation_spawn_completion_observed"] is False
+    assert report["runtime_character_spawn_instantiation_spawned_entity_count"] == 0
+    assert report["runtime_character_spawn_instantiation_claimed"] is False
+    assert report["runtime_character_spawn_instantiation_verified"] is False
+    assert report["runtime_character_instantiation_claimed"] is False
+    assert report["runtime_character_instantiation_verified"] is False
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_claimed"] is False
+
+
+def test_runtime_harness_character_spawn_instantiation_fixture_requires_spawn_gate(tmp_path: Path) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    env["MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE"] = "1"
+    env["MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH"] = "1"
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_apb_products(
+        apb,
+        [
+            {
+                "product_type": "spawnable",
+                "product_path": "pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable",
+                "source_path": "Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+                "source_uuid": "55555555555545558555555555555555",
+                "source_sub_id": "0xf6ec8847",
+                "asset_id": "{CFCA52C7-573E-579E-97E0-707122217DA0}:f6ec8847",
+                "asset_type_id": "{855E3021-D305-4845-B284-20C3F7FDF16B}",
+                "builder": "Prefabs",
+                "status": "ready",
+            }
+        ],
+    )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_character_spawn_instantiation_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_harness_status"] == "blocked_by_runtime_character_spawn_instantiation_gate_missing"
+    assert report["runtime_character_spawn_instantiation_status"] == (
+        "blocked_by_runtime_character_spawn_instantiation_gate_missing"
+    )
+    assert report["runtime_character_spawn_instantiation_probe_enabled"] is False
+    assert report["runtime_exit_fixture_execution_attempted"] is False
+    assert report["runtime_character_spawn_instantiation_claimed"] is False
+    assert report["runtime_character_instantiation_claimed"] is False
+
+
+def test_runtime_harness_character_spawn_instantiation_fixture_records_spawned_entities_without_animation_proof(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    env["MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE"] = "1"
+    env["MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE"] = "1"
+    env["MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE"] = "1"
+    env["MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWN_INSTANTIATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_CHARACTER_SPAWN_INSTANTIATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH"] = "1"
+    _enable_fixture_gem(project)
+    source, bootstrap, original_source, original_bootstrap = _write_defaultlevel_bootstrap(project)
+    _append_apb_products(
+        apb,
+        [
+            {
+                "product_type": "spawnable",
+                "product_path": "pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable",
+                "source_path": "Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+                "source_uuid": "55555555555545558555555555555555",
+                "source_sub_id": "0xf6ec8847",
+                "asset_id": "{CFCA52C7-573E-579E-97E0-707122217DA0}:f6ec8847",
+                "asset_type_id": "{855E3021-D305-4845-B284-20C3F7FDF16B}",
+                "builder": "Prefabs",
+                "status": "ready",
+            }
+        ],
+    )
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+
+    def runner(argv, **kwargs):
+        marker_lines = ["MAXINE_RUNTIME_PRODUCT_LOAD_START count=8 timeout_ticks=120 require_all=true"]
+        for index, product in enumerate(products):
+            marker_lines.extend(
+                [
+                    (
+                        f"MAXINE_RUNTIME_PRODUCT_LOAD_RESOLVED index={index} kind={product['product_kind']} "
+                        f"path={product['product_path']} catalog_path={product['catalog_path']} "
+                        f"asset_id={{11111111-1111-4111-8111-111111111111}}:{index + 1} "
+                        f"asset_type={{22222222-2222-4222-8222-222222222222}} asset_type_name=runtime_catalog_asset_type"
+                    ),
+                    f"MAXINE_RUNTIME_PRODUCT_LOAD_READY index={index} kind={product['product_kind']} path={product['product_path']} status=ready",
+                    f"MAXINE_RUNTIME_PRODUCT_LOAD_RELEASED index={index} kind={product['product_kind']} path={product['product_path']} status=released",
+                ]
+            )
+        marker_lines.extend(
+            [
+                "MAXINE_RUNTIME_PRODUCT_LOAD_SUMMARY status=pass required=8 ready=8 failed=0 timed_out=0",
+                (
+                    "MAXINE_RUNTIME_CHARACTER_SPAWN_START "
+                    "product_path=pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable "
+                    "catalog_path=assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable "
+                    "asset_id={CFCA52C7-573E-579E-97E0-707122217DA0}:f6ec8847 "
+                    "asset_type={855E3021-D305-4845-B284-20C3F7FDF16B} timeout_ticks=3600 "
+                    "require_positive_entity_count=true cleanup=true"
+                ),
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_SOURCE_VALIDATED api=AzFramework::SpawnableEntitiesInterface::SpawnAllEntities status=pass",
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_CONTEXT status=game_entity_context_available context_id={33333333-3333-4333-8333-333333333333}",
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_TICKET ticket=7 valid=true",
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_REQUESTED ticket=7 api=AzFramework::SpawnableEntitiesInterface::SpawnAllEntities",
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_COMPLETED ticket=7 result=completed entity_count=1",
+                (
+                    "MAXINE_RUNTIME_CHARACTER_SPAWN_ENTITY ticket=7 index=0 "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "name=MAXINE_RuntimeApprovedCharacter component_count=3 "
+                    "components={A863EE1B-8CFD-4EDD-BA0D-1CEC2879AD44};{5B9F6A67-5D5B-4C0D-8E8B-ABEF3F1F7D7D};{27F1CAA5-7E06-4D3D-BC50-6611D13F161B}"
+                ),
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_CLEANUP ticket=7 status=complete",
+                "MAXINE_RUNTIME_CHARACTER_SPAWN_SUMMARY status=pass requested=1 completed=1 spawned=1 cleanup=complete timed_out=0",
+            ]
+        )
+        prefixed_marker_lines = [
+            f"<12:38:04> (MaxineRuntimeExitFixture) - {line}" for line in marker_lines
+        ]
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            stdout=(
+                "Launcher: Connecting to Asset Processor...\n"
+                "AssetProcessorConnection::ConnectThread: Network connection attempt failure, negotiation with 127.0.0.1:45643 failed.\n"
+                "GAME: Negotiation with asset processor failed\n"
+                "<12:38:04> [Error] (Serialize) - Element 'NULL'(0x41405e39) with class ID "
+                "'{1BAEE536-96CA-4AEB-BA73-D5D72EE35B45}' found in 'AZStd::intrusive_ptr<ShaderStageFunction>' "
+                "is not registered with the serializer!\n"
+                + "\n".join(prefixed_marker_lines)
+                + "\nMAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=9\n"
+            ),
+            stderr="",
+        )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_character_spawn_instantiation_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=runner,
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_character_spawn_instantiation_fixture_command"
+    assert report["runtime_exit_fixture_runtime_command_uses_product_load_probe"] is True
+    assert report["runtime_exit_fixture_runtime_command_uses_spawn_instantiation_probe"] is True
+    command_text = " ".join(report["runtime_exit_fixture_runtime_command"])
+    assert f"--regset-file={tmp_path / 'artifacts' / runtime_harness.RUNTIME_CHARACTER_PRODUCT_LOAD_PATCH_FILENAME}" in command_text
+    assert f"--regset-file={tmp_path / 'artifacts' / runtime_harness.RUNTIME_CHARACTER_SPAWN_INSTANTIATION_PATCH_FILENAME}" in command_text
+    patch = json.loads(
+        (tmp_path / "artifacts" / runtime_harness.RUNTIME_CHARACTER_SPAWN_INSTANTIATION_PATCH_FILENAME).read_text(
+            encoding="utf-8"
+        )
+    )
+    probe = patch["Amazon"]["MAXINE"]["RuntimeHarness"]["CharacterSpawnInstantiationProbe"]
+    assert probe["SpawnableProductPath"] == "pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable"
+    assert probe["SpawnableCatalogPath"] == "assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable"
+    assert probe["RequirePositiveEntityCount"] is True
+    assert report["runtime_character_product_load_verified"] is True
+    assert report["runtime_character_spawnable_surface_verified"] is True
+    assert report["runtime_character_spawn_instantiation_status"] == "runtime_character_spawn_instantiation_verified"
+    assert report["runtime_character_spawn_instantiation_spawn_request_issued"] is True
+    assert report["runtime_character_spawn_instantiation_spawn_ticket"] == "7"
+    assert report["runtime_character_spawn_instantiation_spawn_completion_observed"] is True
+    assert report["runtime_character_spawn_instantiation_spawned_entity_count"] == 1
+    assert report["runtime_character_spawn_instantiation_spawned_entity_names"] == ["MAXINE_RuntimeApprovedCharacter"]
+    assert report["runtime_character_spawn_instantiation_cleanup_status"] == "runtime_character_spawn_instantiation_cleanup_complete"
+    assert report["runtime_character_spawn_instantiation_claimed"] is True
+    assert report["runtime_character_spawn_instantiation_verified"] is True
+    assert report["runtime_character_instantiation_claimed"] is True
+    assert report["runtime_character_instantiation_verified"] is True
+    assert report["runtime_character_spawn_instantiation_is_animation_proof"] is False
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+    assert report["runtime_default_level_autoload_detected"] is False
+    assert report["runtime_production_level_loaded"] is False
+    assert source.exists()
+    assert source.read_text(encoding="utf-8") == original_source
+    assert bootstrap.read_text(encoding="utf-8") == original_bootstrap
+    assert report["asset_cache_deleted"] is False
+
+
 def test_runtime_harness_validation_rejects_product_load_verified_without_ready_products() -> None:
     report = runtime_harness.fixture_runtime_harness_report()
     report.update(
@@ -3412,6 +3706,83 @@ def test_runtime_harness_validation_rejects_product_load_verified_without_ready_
 
     assert not result.ok
     assert any("runtime_character_product_load_verified=true requires every required selected product ready" in message for message in result.messages)
+
+
+def test_runtime_harness_validation_rejects_spawn_claim_without_positive_entity_evidence() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_character_product_load_verified": True,
+            "runtime_character_product_load_claimed": True,
+            "runtime_character_product_load_selected_strategy": "runtime_character_product_load_generic_assetmanager_load",
+            "runtime_character_product_load_source_refs": ["C:/src/o3de/Code/Framework/AzCore/AzCore/Asset/AssetManager.h"],
+            "runtime_character_product_load_required_products_complete": True,
+            "runtime_character_product_load_all_required_ready": True,
+            "runtime_character_product_load_missing_products": [],
+            "runtime_character_product_load_timed_out_products": [],
+            "runtime_character_product_load_failed_products": [],
+            "runtime_character_product_load_products": [
+                {
+                    "product_kind": "approved_character_spawnable",
+                    "product_path": "pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable",
+                    "catalog_path": "assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable",
+                    "asset_id": "{CFCA52C7-573E-579E-97E0-707122217DA0}:f6ec8847",
+                    "resolution_status": "runtime_character_product_load_product_resolved",
+                    "load_status": "runtime_character_product_load_product_ready",
+                    "ready": True,
+                }
+            ],
+            "runtime_character_product_load_contract_updated": True,
+            "runtime_character_product_load_runtime_equivalent_required": True,
+            "runtime_character_product_load_runtime_equivalent_surface_kind": "approved_character_spawnable",
+            "runtime_procprefab_runtime_equivalent_surface_verified": True,
+            "runtime_character_spawnable_surface_found": True,
+            "runtime_character_spawnable_surface_claimed": True,
+            "runtime_character_spawnable_surface_verified": True,
+            "runtime_character_spawnable_surface_selected": "pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable",
+            "runtime_character_spawn_instantiation_claimed": True,
+            "runtime_character_spawn_instantiation_verified": True,
+            "runtime_character_instantiation_claimed": True,
+            "runtime_character_instantiation_verified": True,
+            "runtime_character_spawn_instantiation_source_refs": [
+                "C:/src/o3de/Code/Framework/AzFramework/AzFramework/Spawnable/SpawnableEntitiesInterface.h"
+            ],
+            "runtime_character_spawn_instantiation_api": "AzFramework::SpawnableEntitiesInterface::SpawnAllEntities",
+            "runtime_character_spawn_instantiation_spawn_request_issued": True,
+            "runtime_character_spawn_instantiation_spawn_completion_observed": True,
+            "runtime_character_spawn_instantiation_spawned_entity_count": 0,
+            "runtime_character_spawn_instantiation_spawned_entity_ids": [],
+            "runtime_character_spawn_instantiation_timeout": False,
+            "runtime_character_spawn_instantiation_log_errors": [],
+            "runtime_character_spawn_instantiation_cleanup_status": "runtime_character_spawn_instantiation_cleanup_complete",
+            "runtime_execution_attempted": True,
+            "runtime_execution_completed": True,
+            "runtime_execution_status": "runtime_execution_pass",
+            "runtime_execution_verified": True,
+            "runtime_exit_fixture_execution_attempted": True,
+            "runtime_exit_fixture_execution_completed": True,
+            "runtime_exit_fixture_execution_verified": True,
+            "runtime_exit_fixture_status": "runtime_exit_fixture_verified_clean_exit",
+            "runtime_exit_fixture_exit_code_decimal": 0,
+            "runtime_launch_hygiene_status": "runtime_launch_hygiene_pass",
+            "runtime_signal_classification_verified": True,
+            "runtime_signal_classification_selected": "ap_shader_no_defaultlevel_cache_bootstrap_fixture_rerun",
+            "runtime_asset_processor_negotiation_source_refs": ["C:/src/o3de/Code/Framework/AzFramework/AzFramework/Asset/AssetSystemComponent.cpp"],
+            "runtime_shader_serializer_source_refs": ["C:/src/o3de/Gems/Atom/RHI/Null/Code/Source/RHI.Reflect/ReflectSystemComponent.cpp"],
+            "runtime_cache_bootstrap_verified": True,
+            "runtime_cache_bootstrap_selected": "cache_bootstrap_setreg_temporarily_neutralized_with_project_source_suppression",
+            "runtime_cache_bootstrap_candidate_reversible": True,
+            "runtime_cache_bootstrap_candidate_restore_status": "runtime_cache_bootstrap_restore_pass",
+            "runtime_cache_bootstrap_candidate_hash_verified": True,
+            "runtime_default_level_autoload_detected": False,
+            "runtime_production_level_loaded": False,
+        }
+    )
+
+    result = runtime_harness.validate_runtime_harness_report(report)
+
+    assert not result.ok
+    assert any("runtime_character_spawn_instantiation_verified=true requires positive spawned entity evidence" in message for message in result.messages)
 
 
 def test_runtime_character_product_load_selected_errors_match_asset_id_no_handler() -> None:
