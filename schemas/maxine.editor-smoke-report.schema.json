@@ -106,6 +106,7 @@
         "runtime-spawnable-proof-surface",
         "approved-animation-component-wiring-generation",
         "approved-prefab-save-update-automation-surface",
+        "approved-prefab-save-update-bridge",
         "full"
       ]
     },
@@ -2157,6 +2158,46 @@
     "approved_prefab_save_update_automation_selected_strategy": {
       "type": "string"
     },
+    "approved_prefab_save_update_bridge_diagnostic_attempted": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_diagnostic_completed": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_source_validation_status": {
+      "type": "string"
+    },
+    "approved_prefab_save_update_bridge_source_validation_verified": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_source_files": {
+      "type": "array"
+    },
+    "approved_prefab_save_update_bridge_added": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_verified": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_blocker": {
+      "type": "string"
+    },
+    "approved_prefab_save_update_bridge_candidate_matrix": {
+      "type": "array"
+    },
+    "approved_prefab_save_update_bridge_selected_strategy": {
+      "type": "string"
+    },
+    "approved_prefab_save_update_bridge_api": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "approved_prefab_save_update_bridge_behavior_context_reflected": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_callable_from_editor_python": {
+      "type": "boolean"
+    },
     "approved_prefab_save_update_source_validation_status": {
       "type": "string"
     },
@@ -2179,12 +2220,6 @@
     "approved_prefab_save_update_behavior_context_missing_events": {
       "type": "array"
     },
-    "approved_prefab_save_update_bridge_added": {
-      "type": "boolean"
-    },
-    "approved_prefab_save_update_bridge_verified": {
-      "type": "boolean"
-    },
     "approved_prefab_save_update_allowed_path_policy": {
       "type": "object",
       "additionalProperties": true
@@ -2193,6 +2228,9 @@
       "type": "boolean"
     },
     "approved_prefab_save_update_rejected_production_level_path": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_rejected_generated_product_path": {
       "type": "boolean"
     },
     "approved_prefab_save_update_scratch_prefab_path": {
@@ -2204,6 +2242,9 @@
     "approved_prefab_save_update_scratch_save_verified": {
       "type": "boolean"
     },
+    "approved_prefab_save_update_scratch_reload_or_parse_verified": {
+      "type": "boolean"
+    },
     "approved_prefab_save_update_scratch_cleanup_verified": {
       "type": "boolean"
     },
@@ -2212,6 +2253,9 @@
     },
     "approved_prefab_save_update_after_hash": {
       "type": "string"
+    },
+    "approved_prefab_save_update_generated_products_committed": {
+      "type": "boolean"
     },
     "runtime_character_product_load_contract_updated": {
       "type": "boolean"
