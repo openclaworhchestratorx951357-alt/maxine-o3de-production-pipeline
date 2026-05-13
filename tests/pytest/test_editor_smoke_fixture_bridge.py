@@ -277,6 +277,41 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
                 "runtime_character_proof_verified": False,
             }
         )
+    if diagnostic_mode == "approved-prefab-save-update-bridge-host":
+        binding_payload.update(
+            {
+                "approved_prefab_save_update_bridge_host_diagnostic_attempted": True,
+                "approved_prefab_save_update_bridge_host_diagnostic_completed": True,
+                "approved_prefab_save_update_bridge_host_source_validation_status": "pass",
+                "approved_prefab_save_update_bridge_host_source_validation_verified": True,
+                "approved_prefab_save_update_bridge_host_added": True,
+                "approved_prefab_save_update_bridge_host_registered": True,
+                "approved_prefab_save_update_bridge_host_build_required": True,
+                "approved_prefab_save_update_bridge_host_build_verified": True,
+                "approved_prefab_save_update_bridge_host_target_name": "MaxineRuntimeExitFixture.Editor",
+                "approved_prefab_save_update_bridge_host_module_name": "Gem_MaxineRuntimeExitFixture_Editor",
+                "approved_prefab_save_update_bridge_host_aztoolsframework_dependency_present": True,
+                "approved_prefab_save_update_bridge_host_behavior_context_reflected": True,
+                "approved_prefab_save_update_bridge_host_callable_from_editor_python": True,
+                "approved_prefab_save_update_bridge_host_runtime_excluded": True,
+                "approved_prefab_save_update_bridge_host_blocker": "",
+                "approved_prefab_save_update_bridge_added": True,
+                "approved_prefab_save_update_bridge_verified": False,
+                "approved_prefab_save_update_bridge_callable_from_editor_python": False,
+                "approved_prefab_save_update_automation_surface_verified": False,
+                "approved_prefab_save_update_scratch_save_attempted": False,
+                "approved_prefab_save_update_scratch_save_verified": False,
+                "approved_prefab_save_update_scratch_reload_or_parse_verified": False,
+                "approved_prefab_save_update_scratch_cleanup_verified": True,
+                "approved_runtime_animation_component_wiring_source_prefab_modified": False,
+                "runtime_character_animation_component_wiring_claimed": False,
+                "runtime_character_animation_component_wiring_verified": False,
+                "runtime_character_animation_claimed": False,
+                "runtime_character_animation_verified": False,
+                "runtime_character_proof_claimed": False,
+                "runtime_character_proof_verified": False,
+            }
+        )
     payload.update(
         {
             "status": status,
@@ -1190,6 +1225,7 @@ def test_editor_smoke_binding_diagnostic_modes_route_to_target_scripts(tmp_path)
         "approved-animation-component-wiring-generation": "editor_approved_animation_component_wiring_generation_smoke.py",
         "approved-prefab-save-update-automation-surface": "editor_approved_prefab_save_update_automation_surface_smoke.py",
         "approved-prefab-save-update-bridge": "editor_approved_prefab_save_update_bridge_smoke.py",
+        "approved-prefab-save-update-bridge-host": "editor_approved_prefab_save_update_bridge_host_smoke.py",
     }
 
     for mode, script_name in expected_scripts.items():
@@ -1556,6 +1592,116 @@ def test_editor_smoke_prefab_save_update_bridge_verified_requires_scratch_parse_
             "approved_prefab_save_update_scratch_reload_or_parse_verified": False,
             "approved_prefab_save_update_scratch_cleanup_verified": True,
             "approved_prefab_save_update_generated_products_committed": False,
+            "approved_runtime_animation_component_wiring_source_prefab_modified": False,
+            "runtime_character_animation_component_wiring_claimed": False,
+            "runtime_character_animation_component_wiring_verified": False,
+            "runtime_character_animation_claimed": False,
+            "runtime_character_animation_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+
+
+def test_editor_smoke_prefab_save_update_bridge_host_records_registered_callable_host(tmp_path):
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        assert "editor_approved_prefab_save_update_bridge_host_smoke.py" in argv[-1].replace("\\", "/")
+        assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == "approved-prefab-save-update-bridge-host"
+        return _write_in_editor_report(env)
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=_live_env(tmp_path / "save-update-bridge-host"),
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "save-update-bridge-host" / "editor-smoke-artifacts",
+        diagnostic_mode="approved-prefab-save-update-bridge-host",
+    )
+
+    schema_result = schema_validate(result, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(result, strict=True)
+
+    assert result["status"] == "pass"
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+    assert result["approved_prefab_save_update_bridge_host_diagnostic_attempted"] is True
+    assert result["approved_prefab_save_update_bridge_host_diagnostic_completed"] is True
+    assert result["approved_prefab_save_update_bridge_host_source_validation_status"] == "pass"
+    assert result["approved_prefab_save_update_bridge_host_source_validation_verified"] is True
+    assert result["approved_prefab_save_update_bridge_host_added"] is True
+    assert result["approved_prefab_save_update_bridge_host_registered"] is True
+    assert result["approved_prefab_save_update_bridge_host_build_verified"] is True
+    assert result["approved_prefab_save_update_bridge_host_target_name"] == "MaxineRuntimeExitFixture.Editor"
+    assert result["approved_prefab_save_update_bridge_host_module_name"] == "Gem_MaxineRuntimeExitFixture_Editor"
+    assert result["approved_prefab_save_update_bridge_host_aztoolsframework_dependency_present"] is True
+    assert result["approved_prefab_save_update_bridge_host_behavior_context_reflected"] is True
+    assert result["approved_prefab_save_update_bridge_host_callable_from_editor_python"] is True
+    assert result["approved_prefab_save_update_bridge_host_runtime_excluded"] is True
+    assert result["approved_prefab_save_update_bridge_verified"] is False
+    assert result["approved_prefab_save_update_scratch_save_attempted"] is False
+    assert result["approved_runtime_animation_component_wiring_source_prefab_modified"] is False
+    assert result["runtime_character_animation_component_wiring_verified"] is False
+    assert result["runtime_character_animation_verified"] is False
+    assert result["runtime_character_proof_verified"] is False
+
+
+def test_editor_python_prefab_save_update_bridge_host_source_validation_detects_editor_module_shape():
+    result = editor_python_smoke._run_approved_prefab_save_update_bridge_host_checks(
+        {},
+        bridge_host_status={"callable": False, "status": ""},
+        build_verified=False,
+    )
+
+    assert result["approved_prefab_save_update_bridge_host_source_validation_status"] == "pass"
+    assert result["approved_prefab_save_update_bridge_host_source_validation_verified"] is True
+    assert result["approved_prefab_save_update_bridge_host_added"] is True
+    assert result["approved_prefab_save_update_bridge_host_registered"] is True
+    assert result["approved_prefab_save_update_bridge_host_target_name"] == "MaxineRuntimeExitFixture.Editor"
+    assert result["approved_prefab_save_update_bridge_host_module_name"] == "Gem_MaxineRuntimeExitFixture_Editor"
+    assert result["approved_prefab_save_update_bridge_host_aztoolsframework_dependency_present"] is True
+    assert result["approved_prefab_save_update_bridge_host_behavior_context_reflected"] is True
+    assert result["approved_prefab_save_update_bridge_host_callable_from_editor_python"] is False
+    assert result["approved_prefab_save_update_bridge_host_blocker"] == "blocked_by_editor_bridge_host_not_loaded_in_editor"
+    assert result["approved_prefab_save_update_bridge_verified"] is False
+    assert result["approved_prefab_save_update_scratch_save_verified"] is False
+
+
+def test_editor_smoke_prefab_save_update_bridge_host_verified_requires_editor_python_callability():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "diagnostic_mode": "approved-prefab-save-update-bridge-host",
+            "live_editor_execution": True,
+            "no_fake_success": True,
+            "approved_prefab_save_update_bridge_host_diagnostic_attempted": True,
+            "approved_prefab_save_update_bridge_host_diagnostic_completed": True,
+            "approved_prefab_save_update_bridge_host_source_validation_status": "pass",
+            "approved_prefab_save_update_bridge_host_source_validation_verified": True,
+            "approved_prefab_save_update_bridge_host_added": True,
+            "approved_prefab_save_update_bridge_host_registered": True,
+            "approved_prefab_save_update_bridge_host_build_required": True,
+            "approved_prefab_save_update_bridge_host_build_verified": True,
+            "approved_prefab_save_update_bridge_host_target_name": "MaxineRuntimeExitFixture.Editor",
+            "approved_prefab_save_update_bridge_host_module_name": "Gem_MaxineRuntimeExitFixture_Editor",
+            "approved_prefab_save_update_bridge_host_aztoolsframework_dependency_present": True,
+            "approved_prefab_save_update_bridge_host_behavior_context_reflected": True,
+            "approved_prefab_save_update_bridge_host_callable_from_editor_python": False,
+            "approved_prefab_save_update_bridge_host_runtime_excluded": True,
+            "approved_prefab_save_update_bridge_host_blocker": "",
+            "approved_prefab_save_update_bridge_added": True,
+            "approved_prefab_save_update_bridge_verified": False,
+            "approved_prefab_save_update_scratch_save_attempted": False,
+            "approved_prefab_save_update_scratch_save_verified": False,
+            "approved_prefab_save_update_scratch_reload_or_parse_verified": False,
+            "approved_prefab_save_update_scratch_cleanup_verified": True,
             "approved_runtime_animation_component_wiring_source_prefab_modified": False,
             "runtime_character_animation_component_wiring_claimed": False,
             "runtime_character_animation_component_wiring_verified": False,

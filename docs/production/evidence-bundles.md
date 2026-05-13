@@ -200,6 +200,16 @@ Approved prefab save/update bridge evidence uses the dedicated Editor diagnostic
 - `approved_prefab_save_update_scratch_save_attempted`, `approved_prefab_save_update_scratch_save_verified`, `approved_prefab_save_update_scratch_reload_or_parse_verified`, and `approved_prefab_save_update_scratch_cleanup_verified`
 
 If the only validated state is that the repo-owned Gem/tooling layout lacks an Editor-capable bridge host, the report must use `blocked_by_prefab_save_bridge_requires_editor_gem_registration`, keep `approved_prefab_save_update_bridge_verified=false`, keep scratch save/update false, keep `approved_runtime_animation_component_wiring_source_prefab_modified=false`, and keep runtime component wiring, runtime animation, and full runtime character proof false.
+
+Approved prefab save/update bridge-host evidence uses the dedicated Editor diagnostic mode `approved-prefab-save-update-bridge-host`. Reports may include:
+
+- `approved_prefab_save_update_bridge_host_diagnostic_attempted` / `approved_prefab_save_update_bridge_host_diagnostic_completed`
+- `approved_prefab_save_update_bridge_host_source_validation_status`, `approved_prefab_save_update_bridge_host_source_validation_verified`, and `approved_prefab_save_update_bridge_host_source_files`
+- `approved_prefab_save_update_bridge_host_added`, `approved_prefab_save_update_bridge_host_registered`, `approved_prefab_save_update_bridge_host_target_name`, and `approved_prefab_save_update_bridge_host_module_name`
+- `approved_prefab_save_update_bridge_host_aztoolsframework_dependency_present`, `approved_prefab_save_update_bridge_host_behavior_context_reflected`, `approved_prefab_save_update_bridge_host_build_verified`, and `approved_prefab_save_update_bridge_host_callable_from_editor_python`
+- `approved_prefab_save_update_bridge_host_status_call_result`, `approved_prefab_save_update_bridge_host_status_call_error`, and `approved_prefab_save_update_bridge_host_blocker`
+
+Bridge-host evidence proves only registration/load/callability readiness. It must keep `approved_prefab_save_update_bridge_verified=false`, keep scratch save/update fields false unless a scratch save is actually attempted, keep `approved_runtime_animation_component_wiring_source_prefab_modified=false`, and keep runtime component wiring, runtime animation, and full runtime character proof false.
 - `source_prefab_baseline_result`: the already proven temp source-prefab create/instantiate result that remains the stable Editor smoke baseline.
 - `direct_product_instantiation_claimed`: true only when direct `.procprefab` product behavior is actually claimed.
 - `direct_product_instantiation_supported`: true only when the current binding surface supports the selected direct product path.

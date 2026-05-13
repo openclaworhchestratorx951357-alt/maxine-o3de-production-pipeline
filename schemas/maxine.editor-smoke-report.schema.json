@@ -107,6 +107,7 @@
         "approved-animation-component-wiring-generation",
         "approved-prefab-save-update-automation-surface",
         "approved-prefab-save-update-bridge",
+        "approved-prefab-save-update-bridge-host",
         "full"
       ]
     },
@@ -2197,6 +2198,73 @@
     },
     "approved_prefab_save_update_bridge_callable_from_editor_python": {
       "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_host_diagnostic_attempted": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_host_diagnostic_completed": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_host_source_validation_status": {
+      "type": "string"
+    },
+    "approved_prefab_save_update_bridge_host_source_validation_verified": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_host_source_files": {
+      "type": "array"
+    },
+    "approved_prefab_save_update_bridge_host_selected_strategy": {
+      "type": "string"
+    },
+    "approved_prefab_save_update_bridge_host_candidate_matrix": {
+      "type": "array"
+    },
+    "approved_prefab_save_update_bridge_host_added": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_host_registered": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_host_build_required": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_host_build_verified": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_host_target_name": {
+      "type": "string"
+    },
+    "approved_prefab_save_update_bridge_host_module_name": {
+      "type": "string"
+    },
+    "approved_prefab_save_update_bridge_host_aztoolsframework_dependency_present": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_host_behavior_context_reflected": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_host_callable_from_editor_python": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_host_runtime_excluded": {
+      "type": "boolean"
+    },
+    "approved_prefab_save_update_bridge_host_blocker": {
+      "type": "string"
+    },
+    "approved_prefab_save_update_bridge_host_api": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "approved_prefab_save_update_bridge_host_status_call_result": {
+      "type": "string"
+    },
+    "approved_prefab_save_update_bridge_host_status_call_error": {
+      "type": "string"
+    },
+    "approved_prefab_save_update_bridge_host_build_command": {
+      "type": "string"
     },
     "approved_prefab_save_update_source_validation_status": {
       "type": "string"

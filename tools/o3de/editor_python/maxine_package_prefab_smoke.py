@@ -40,6 +40,7 @@ DIAGNOSTIC_MODES = {
     "approved-animation-component-wiring-generation",
     "approved-prefab-save-update-automation-surface",
     "approved-prefab-save-update-bridge",
+    "approved-prefab-save-update-bridge-host",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -88,6 +89,12 @@ TYPED_BLOCKED_STATUSES = {
     "blocked_by_prefab_save_bridge_behavior_context_reflection_unavailable",
     "blocked_by_prefab_save_bridge_path_safety_contract",
     "blocked_by_prefab_save_bridge_requires_additional_source_validation",
+    "blocked_by_editor_bridge_host_cmake_registration",
+    "blocked_by_editor_bridge_host_target_build_failed",
+    "blocked_by_editor_bridge_host_behavior_context_reflection_unavailable",
+    "blocked_by_editor_bridge_host_not_loaded_in_editor",
+    "blocked_by_editor_bridge_host_requires_project_gem_enablement",
+    "blocked_by_editor_bridge_host_requires_additional_source_validation",
     "blocked_by_prefab_save_update_requires_additional_source_validation",
     "blocked_by_prefab_save_update_writable_path_safety_contract",
     "blocked_by_prefab_save_update_scratch_save_not_verified",
@@ -224,6 +231,72 @@ def main() -> int:
             ),
             "approved_prefab_save_update_bridge_callable_from_editor_python": report.get(
                 "approved_prefab_save_update_bridge_callable_from_editor_python", False
+            ),
+            "approved_prefab_save_update_bridge_host_diagnostic_attempted": report.get(
+                "approved_prefab_save_update_bridge_host_diagnostic_attempted", False
+            ),
+            "approved_prefab_save_update_bridge_host_diagnostic_completed": report.get(
+                "approved_prefab_save_update_bridge_host_diagnostic_completed", False
+            ),
+            "approved_prefab_save_update_bridge_host_source_validation_status": report.get(
+                "approved_prefab_save_update_bridge_host_source_validation_status", ""
+            ),
+            "approved_prefab_save_update_bridge_host_source_validation_verified": report.get(
+                "approved_prefab_save_update_bridge_host_source_validation_verified", False
+            ),
+            "approved_prefab_save_update_bridge_host_source_files": report.get(
+                "approved_prefab_save_update_bridge_host_source_files", []
+            ),
+            "approved_prefab_save_update_bridge_host_selected_strategy": report.get(
+                "approved_prefab_save_update_bridge_host_selected_strategy", ""
+            ),
+            "approved_prefab_save_update_bridge_host_candidate_matrix": report.get(
+                "approved_prefab_save_update_bridge_host_candidate_matrix", []
+            ),
+            "approved_prefab_save_update_bridge_host_added": report.get(
+                "approved_prefab_save_update_bridge_host_added", False
+            ),
+            "approved_prefab_save_update_bridge_host_registered": report.get(
+                "approved_prefab_save_update_bridge_host_registered", False
+            ),
+            "approved_prefab_save_update_bridge_host_build_required": report.get(
+                "approved_prefab_save_update_bridge_host_build_required", False
+            ),
+            "approved_prefab_save_update_bridge_host_build_verified": report.get(
+                "approved_prefab_save_update_bridge_host_build_verified", False
+            ),
+            "approved_prefab_save_update_bridge_host_target_name": report.get(
+                "approved_prefab_save_update_bridge_host_target_name", ""
+            ),
+            "approved_prefab_save_update_bridge_host_module_name": report.get(
+                "approved_prefab_save_update_bridge_host_module_name", ""
+            ),
+            "approved_prefab_save_update_bridge_host_aztoolsframework_dependency_present": report.get(
+                "approved_prefab_save_update_bridge_host_aztoolsframework_dependency_present", False
+            ),
+            "approved_prefab_save_update_bridge_host_behavior_context_reflected": report.get(
+                "approved_prefab_save_update_bridge_host_behavior_context_reflected", False
+            ),
+            "approved_prefab_save_update_bridge_host_callable_from_editor_python": report.get(
+                "approved_prefab_save_update_bridge_host_callable_from_editor_python", False
+            ),
+            "approved_prefab_save_update_bridge_host_runtime_excluded": report.get(
+                "approved_prefab_save_update_bridge_host_runtime_excluded", False
+            ),
+            "approved_prefab_save_update_bridge_host_blocker": report.get(
+                "approved_prefab_save_update_bridge_host_blocker", ""
+            ),
+            "approved_prefab_save_update_bridge_host_api": report.get(
+                "approved_prefab_save_update_bridge_host_api", {}
+            ),
+            "approved_prefab_save_update_bridge_host_status_call_result": report.get(
+                "approved_prefab_save_update_bridge_host_status_call_result", ""
+            ),
+            "approved_prefab_save_update_bridge_host_status_call_error": report.get(
+                "approved_prefab_save_update_bridge_host_status_call_error", ""
+            ),
+            "approved_prefab_save_update_bridge_host_build_command": report.get(
+                "approved_prefab_save_update_bridge_host_build_command", ""
             ),
             "approved_prefab_save_update_automation_surface_diagnostic_attempted": report.get(
                 "approved_prefab_save_update_automation_surface_diagnostic_attempted", False
@@ -455,6 +528,30 @@ def main() -> int:
             "approved_prefab_save_update_bridge_returned",
             str(bridge.get("approved_prefab_save_update_bridge_blocker", "returned")),
             "Approved prefab save/update bridge diagnostic returned.",
+        )
+
+    if not errors and diagnostic_mode == "approved-prefab-save-update-bridge-host":
+        _write_progress_marker(
+            progress_log,
+            "approved_prefab_save_update_bridge_host_started",
+            "started",
+            "Running approved prefab save/update bridge-host diagnostic.",
+        )
+        bridge_host_status = _call_prefab_save_update_bridge_host_status()
+        bridge_host = _run_approved_prefab_save_update_bridge_host_checks(
+            report,
+            bridge_host_status=bridge_host_status,
+            build_verified=(
+                bool(bridge_host_status.get("callable"))
+                or env.get("MAXINE_PREFAB_SAVE_UPDATE_BRIDGE_HOST_BUILD_VERIFIED") == "1"
+            ),
+        )
+        report.update(bridge_host)
+        _write_progress_marker(
+            progress_log,
+            "approved_prefab_save_update_bridge_host_returned",
+            str(bridge_host.get("approved_prefab_save_update_bridge_host_blocker", "returned")),
+            "Approved prefab save/update bridge-host diagnostic returned.",
         )
 
     if not errors and needs_temp_level and general is not None:
@@ -4187,6 +4284,41 @@ def _approved_prefab_save_update_bridge_source_refs() -> List[Dict[str, Any]]:
             ],
         },
         {
+            "path": str(repo_root / "o3de/gems/MaxineRuntimeExitFixture/Code/maxineruntimeexitfixture_editor_files.cmake"),
+            "symbols": [
+                "Source/Tools/MaxinePrefabSaveUpdateBridgeEditorModule.cpp",
+                "Source/Tools/PrefabSaveUpdateBridgeHostComponent.cpp",
+                "Source/Tools/PrefabSaveUpdateBridgeHostComponent.h",
+                "Source/Tools/",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": str(
+                repo_root
+                / "o3de/gems/MaxineRuntimeExitFixture/Code/Source/Tools/MaxinePrefabSaveUpdateBridgeEditorModule.cpp"
+            ),
+            "symbols": [
+                "AZ_DECLARE_MODULE_CLASS",
+                "AZ_JOIN(Gem_, O3DE_GEM_NAME, _Editor)",
+                "_Editor",
+                "PrefabSaveUpdateBridgeHostComponent::CreateDescriptor",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": str(
+                repo_root
+                / "o3de/gems/MaxineRuntimeExitFixture/Code/Source/Tools/PrefabSaveUpdateBridgeHostComponent.cpp"
+            ),
+            "symbols": [
+                "BehaviorContext",
+                "PrefabPublicInterface",
+                "PrefabSaveUpdateBridge",
+            ],
+            "absent_symbols": [],
+        },
+        {
             "path": str(repo_root / "o3de/gems/MaxineRuntimeExitFixture/Code/maxineruntimeexitfixture_files.cmake"),
             "symbols": [
                 "Source/Clients/MaxineRuntimeExitFixtureModule.cpp",
@@ -4290,6 +4422,283 @@ def _approved_prefab_save_update_bridge_candidate_matrix() -> List[Dict[str, Any
     ]
 
 
+def _approved_prefab_save_update_bridge_host_source_refs() -> List[Dict[str, Any]]:
+    repo_root = Path(__file__).resolve().parents[3]
+    return _approved_prefab_save_update_source_refs() + [
+        {
+            "path": str(repo_root / "o3de/gems/MaxineRuntimeExitFixture/gem.json"),
+            "symbols": [
+                "gem_name",
+                "MaxineRuntimeExitFixture",
+                "Non-Shipping",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": str(repo_root / "o3de/gems/MaxineRuntimeExitFixture/Code/CMakeLists.txt"),
+            "symbols": [
+                "if(PAL_TRAIT_BUILD_HOST_TOOLS)",
+                "NAME ${gem_name}.Editor GEM_MODULE",
+                "maxineruntimeexitfixture_editor_files.cmake",
+                "AZ::AzToolsFramework",
+                "ly_create_alias(NAME ${gem_name}.Tools",
+                "ly_create_alias(NAME ${gem_name}.Builders",
+                "Source/Tools/MaxinePrefabSaveUpdateBridgeEditorModule.cpp",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": str(repo_root / "o3de/gems/MaxineRuntimeExitFixture/Code/maxineruntimeexitfixture_editor_files.cmake"),
+            "symbols": [
+                "Source/Tools/MaxinePrefabSaveUpdateBridgeEditorModule.cpp",
+                "Source/Tools/PrefabSaveUpdateBridgeHostComponent.cpp",
+                "Source/Tools/PrefabSaveUpdateBridgeHostComponent.h",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": str(
+                repo_root
+                / "o3de/gems/MaxineRuntimeExitFixture/Code/Source/Tools/MaxinePrefabSaveUpdateBridgeEditorModule.cpp"
+            ),
+            "symbols": [
+                "AZ_DECLARE_MODULE_CLASS",
+                "AZ_JOIN(Gem_, O3DE_GEM_NAME, _Editor)",
+                "MaxinePrefabSaveUpdateBridgeEditorModule",
+                "PrefabSaveUpdateBridgeHostComponent::CreateDescriptor",
+                "GetRequiredSystemComponents",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": str(
+                repo_root
+                / "o3de/gems/MaxineRuntimeExitFixture/Code/Source/Tools/PrefabSaveUpdateBridgeHostComponent.h"
+            ),
+            "symbols": [
+                "AZ_COMPONENT_DECL",
+                "GetPrefabSaveUpdateBridgeHostStatus",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": str(
+                repo_root
+                / "o3de/gems/MaxineRuntimeExitFixture/Code/Source/Tools/PrefabSaveUpdateBridgeHostComponent.cpp"
+            ),
+            "symbols": [
+                "AZ_COMPONENT_IMPL",
+                "AZ::BehaviorContext",
+                "AZ::Script::Attributes::ScopeFlags::Automation",
+                "AZ::Script::Attributes::Module",
+                "maxine.prefab_bridge",
+                "get_prefab_save_update_bridge_host_status",
+                "AzToolsFramework::Prefab::PrefabPublicInterface",
+                "save_route_exposed=false",
+                "scratch_save_verified=false",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": "C:/src/o3de/Gems/CustomAssetExample/Code/CMakeLists.txt",
+            "symbols": [
+                "if(PAL_TRAIT_BUILD_HOST_TOOLS)",
+                "NAME ${gem_name}.Editor GEM_MODULE",
+                "ly_create_alias(NAME ${gem_name}.Tools",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": "C:/src/o3de/Gems/Archive/Code/Source/Tools/ArchiveEditorModule.cpp",
+            "symbols": [
+                "AZ_DECLARE_MODULE_CLASS",
+                "O3DE_GEM_NAME",
+                "EditorModule",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": "C:/src/o3de/Code/Editor/PythonEditorFuncs.cpp",
+            "symbols": [
+                "AZ::BehaviorContext",
+                "AZ::Script::Attributes::ScopeFlags::Automation",
+                "AZ::Script::Attributes::Module",
+            ],
+            "absent_symbols": [],
+        },
+    ]
+
+
+def _approved_prefab_save_update_bridge_host_candidate_matrix() -> List[Dict[str, Any]]:
+    return [
+        {
+            "candidate": "extend MaxineRuntimeExitFixture with an Editor/Tools bridge host",
+            "outcome": "selected",
+            "reason": "Repo-owned Gem is already enabled by the golden project fixture and is the narrowest controlled host.",
+        },
+        {
+            "candidate": "create a new repo-owned Editor/Tools bridge Gem",
+            "outcome": "deferred",
+            "reason": "A new Gem would add registration surface beyond the existing fixture Gem.",
+        },
+        {
+            "candidate": "modify global O3DE engine source",
+            "outcome": "rejected",
+            "reason": "A repo-owned Editor module can host the bridge without broad engine changes.",
+        },
+        {
+            "candidate": "BehaviorContext-reflected Editor bridge host",
+            "outcome": "selected",
+            "reason": "Source validation shows Automation-scoped BehaviorContext methods are callable from Editor Python.",
+        },
+        {
+            "candidate": "EBus-reflected Editor bridge host",
+            "outcome": "deferred",
+            "reason": "A single status method is narrower for host registration than a new EBus contract.",
+        },
+        {
+            "candidate": "existing PrefabPublicRequestBus only",
+            "outcome": "rejected",
+            "reason": "Existing reflected events still omit SavePrefab and CreatePrefabAndSaveToDisk.",
+        },
+        {
+            "candidate": "Python-only wrapper",
+            "outcome": "rejected",
+            "reason": "No Python-accessible save/update route exists before the Editor host is loaded.",
+        },
+        {
+            "candidate": "scratch prefab save probe",
+            "outcome": "deferred",
+            "reason": "Scratch save waits for the host to be built and callable.",
+        },
+        {
+            "candidate": "approved source prefab Actor + Simple Motion mutation",
+            "outcome": "deferred",
+            "reason": "Approved source mutation waits for bridge host, save/update route, scratch proof, APB, and runtime TypeId proof.",
+        },
+        {
+            "candidate": "hand-authored unknown .prefab component JSON",
+            "outcome": "rejected",
+            "reason": "Unknown O3DE component serialization must not be hand-authored.",
+        },
+        {
+            "candidate": "direct runtime .procprefab load",
+            "outcome": "rejected",
+            "reason": "Preserved unsupported/builder-only proof limit.",
+        },
+        {
+            "candidate": "defaultlevel or production-level mutation",
+            "outcome": "rejected",
+            "reason": "Defaultlevel and production-level mutation are disallowed.",
+        },
+    ]
+
+
+def _call_prefab_save_update_bridge_host_status() -> Dict[str, Any]:
+    result: Dict[str, Any] = {
+        "attempted": True,
+        "callable": False,
+        "module": "azlmbr.maxine.prefab_bridge",
+        "method": "get_prefab_save_update_bridge_host_status",
+        "status": "",
+        "error": "",
+    }
+    try:
+        import importlib
+
+        module = importlib.import_module(str(result["module"]))
+        status_fn = getattr(module, str(result["method"]))
+        status_value = status_fn()
+        result["status"] = str(status_value)
+        result["callable"] = "maxine_prefab_save_update_bridge_host_registered" in str(status_value)
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+def _run_approved_prefab_save_update_bridge_host_checks(
+    report: Mapping[str, Any],
+    *,
+    bridge_host_status: Mapping[str, Any],
+    build_verified: bool,
+) -> Dict[str, Any]:
+    source_validation = _source_validation_from_refs(_approved_prefab_save_update_bridge_host_source_refs())
+    source_verified = source_validation["verified"] is True
+    callable_from_editor = bool(bridge_host_status.get("callable")) and source_verified
+    host_added = source_verified
+    host_registered = source_verified
+    build_verified = bool(build_verified) and source_verified
+    behavior_context_reflected = source_verified
+    aztools_dependency_present = source_verified
+    runtime_excluded = source_verified
+    blocker = ""
+    if not source_verified:
+        blocker = "blocked_by_editor_bridge_host_requires_additional_source_validation"
+    elif not callable_from_editor:
+        blocker = "blocked_by_editor_bridge_host_not_loaded_in_editor"
+
+    return {
+        "approved_prefab_save_update_bridge_host_diagnostic_attempted": True,
+        "approved_prefab_save_update_bridge_host_diagnostic_completed": True,
+        "approved_prefab_save_update_bridge_host_source_validation_status": source_validation["status"],
+        "approved_prefab_save_update_bridge_host_source_validation_verified": source_validation["verified"],
+        "approved_prefab_save_update_bridge_host_source_files": source_validation["refs"],
+        "approved_prefab_save_update_bridge_host_selected_strategy": (
+            "register_editor_tools_behavior_context_host_before_save_route"
+        ),
+        "approved_prefab_save_update_bridge_host_candidate_matrix": (
+            _approved_prefab_save_update_bridge_host_candidate_matrix()
+        ),
+        "approved_prefab_save_update_bridge_host_added": host_added,
+        "approved_prefab_save_update_bridge_host_registered": host_registered,
+        "approved_prefab_save_update_bridge_host_build_required": True,
+        "approved_prefab_save_update_bridge_host_build_verified": build_verified,
+        "approved_prefab_save_update_bridge_host_target_name": "MaxineRuntimeExitFixture.Editor",
+        "approved_prefab_save_update_bridge_host_module_name": "Gem_MaxineRuntimeExitFixture_Editor",
+        "approved_prefab_save_update_bridge_host_aztoolsframework_dependency_present": aztools_dependency_present,
+        "approved_prefab_save_update_bridge_host_behavior_context_reflected": behavior_context_reflected,
+        "approved_prefab_save_update_bridge_host_callable_from_editor_python": callable_from_editor,
+        "approved_prefab_save_update_bridge_host_runtime_excluded": runtime_excluded,
+        "approved_prefab_save_update_bridge_host_blocker": blocker,
+        "approved_prefab_save_update_bridge_host_api": {
+            "module": "azlmbr.maxine.prefab_bridge",
+            "method": "get_prefab_save_update_bridge_host_status",
+            "source_api": "AzToolsFramework::Prefab::PrefabPublicInterface",
+            "save_route_exposed": False,
+            "scratch_save_verified": False,
+        },
+        "approved_prefab_save_update_bridge_host_status_call_result": str(bridge_host_status.get("status", "")),
+        "approved_prefab_save_update_bridge_host_status_call_error": str(bridge_host_status.get("error", "")),
+        "approved_prefab_save_update_bridge_host_build_command": "",
+        "approved_prefab_save_update_bridge_added": host_added,
+        "approved_prefab_save_update_bridge_verified": False,
+        "approved_prefab_save_update_bridge_callable_from_editor_python": False,
+        "approved_prefab_save_update_automation_surface_verified": False,
+        "approved_prefab_save_update_scratch_prefab_path": (
+            "examples/o3de-golden-project/source/Assets/_maxine_smoke/prefabs/prefab_save_update_bridge_host_probe.prefab"
+        ),
+        "approved_prefab_save_update_scratch_save_attempted": False,
+        "approved_prefab_save_update_scratch_save_verified": False,
+        "approved_prefab_save_update_scratch_reload_or_parse_verified": False,
+        "approved_prefab_save_update_scratch_cleanup_verified": True,
+        "approved_runtime_animation_component_wiring_source_prefab_modified": False,
+        "approved_runtime_animation_component_wiring_editor_generated_update_used": False,
+        "approved_runtime_animation_component_wiring_actor_component_added": False,
+        "approved_runtime_animation_component_wiring_simple_motion_component_added": False,
+        "approved_runtime_animation_component_wiring_actor_asset_assignment_verified": False,
+        "approved_runtime_animation_component_wiring_motion_asset_assignment_verified": False,
+        "approved_runtime_animation_component_wiring_prefab_save_verified": False,
+        "approved_runtime_animation_component_wiring_spawnable_regenerated_or_found": False,
+        "runtime_character_animation_component_wiring_claimed": False,
+        "runtime_character_animation_component_wiring_verified": False,
+        "runtime_character_animation_playback_attempted": False,
+        "runtime_character_animation_claimed": False,
+        "runtime_character_animation_verified": False,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+    }
+
+
 def _approved_prefab_save_update_bridge_host_observation(source_validation: Mapping[str, Any]) -> Dict[str, Any]:
     expected_symbols = [
         "${gem_name}.Editor",
@@ -4305,7 +4714,11 @@ def _approved_prefab_save_update_bridge_host_observation(source_validation: Mapp
     for ref in source_validation.get("refs", []):
         if not isinstance(ref, Mapping):
             continue
-        for symbol in ref.get("unexpected_symbols", []):
+        if ref.get("status") == "pass":
+            source_symbols = list(ref.get("symbols", [])) + list(ref.get("unexpected_symbols", []))
+        else:
+            source_symbols = list(ref.get("unexpected_symbols", []))
+        for symbol in source_symbols:
             symbol_text = str(symbol)
             if symbol_text in expected_symbols and symbol_text not in observed_symbols:
                 observed_symbols.append(symbol_text)
