@@ -142,6 +142,15 @@ $env:MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE="1"
 
 These gates permit only a bounded inspection of the approved spawned entity/component surface and, if source validation and runtime inventory prove a playback-capable EMotionFX surface exists, a bounded playback attempt through source-validated runtime APIs. Product-load or spawn proof alone is insufficient. If the approved spawnable exposes no runtime `ActorComponent`, `AnimGraphComponent`, or `SimpleMotionComponent`, the harness must report `runtime_animation_playback_surface_missing_on_approved_spawned_character` and keep animation/full-character proof false.
 
+Runtime character animation component-wiring surface probing requires all playback-surface gates plus two explicit wiring-surface gates:
+
+```powershell
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE="1"
+```
+
+These gates permit only a bounded, source-backed check of the approved prefab/component wiring path. The diagnostic source-validates EMotionFX Editor `Actor`, `Simple Motion`, and `Anim Graph` components, `EditorComponentAPIBus` add/property APIs, `PrefabPublicRequestBus` prefab APIs, and prefab-to-spawnable conversion surfaces. It does not hand-author unknown O3DE component JSON and does not mutate defaultlevel or production content. Until an Editor-generated approved prefab update is safely proven and the regenerated approved spawnable exposes runtime EMotionFX component TypeIds after spawn, the harness must keep `runtime_character_animation_component_wiring_claimed=false`, `runtime_character_animation_component_wiring_verified=false`, `runtime_character_animation_claimed=false`, and `runtime_character_proof_verified=false`.
+
 Approved runtime character prefab-source generation has a narrower gate when a repo-owned source must be staged into the live project scanfolder:
 
 ```powershell
@@ -332,6 +341,28 @@ $env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
 $env:MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION="1"
 $env:MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH="1"
 python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-character-animation-playback-surface-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 180
+```
+
+Runtime animation component-wiring surface diagnostic and fixture entry points are:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-character-animation-component-wiring-surface --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWN_INSTANTIATION="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_SPAWN_INSTANTIATION="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-character-animation-component-wiring-surface-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 180
 ```
 
 When the APB evidence, runtime readiness, and command pinning gates are clean, registration and enablement are run through the harness rather than by hand:
