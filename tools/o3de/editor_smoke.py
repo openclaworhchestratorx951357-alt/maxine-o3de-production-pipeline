@@ -89,6 +89,11 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_approved_prefab_save_update_bridge_host_smoke.py",
+    "approved-prefab-save-update-route": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_approved_prefab_save_update_route_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -206,6 +211,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_approved_prefab_save_update_bridge(report, result)
         if diagnostic_mode == "approved-prefab-save-update-bridge-host":
             _validate_approved_prefab_save_update_bridge_host(report, result)
+        if diagnostic_mode == "approved-prefab-save-update-route":
+            _validate_approved_prefab_save_update_route(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -667,6 +674,87 @@ def _validate_approved_prefab_save_update_bridge_host(
             result.add_error(
                 MXN_RUNTIME_SMOKE_FAIL,
                 f"{field}=true is not supported by prefab save/update bridge-host evidence alone.",
+            )
+
+
+def _validate_approved_prefab_save_update_route(
+    report: Mapping[str, Any],
+    result: ValidationResult,
+) -> None:
+    attempted = report.get("approved_prefab_save_update_route_diagnostic_attempted") is True
+    completed = report.get("approved_prefab_save_update_route_diagnostic_completed") is True
+    source_status = str(report.get("approved_prefab_save_update_route_source_validation_status", "")).strip()
+    source_verified = report.get("approved_prefab_save_update_route_source_validation_verified") is True
+    route_callable = report.get("approved_prefab_save_update_route_callable_from_editor_python") is True
+    bridge_verified = report.get("approved_prefab_save_update_bridge_verified") is True
+    scratch_saved = report.get("approved_prefab_save_update_scratch_save_verified") is True
+    scratch_parsed = report.get("approved_prefab_save_update_scratch_reload_or_parse_verified") is True
+    scratch_cleaned = report.get("approved_prefab_save_update_scratch_cleanup_verified") is True
+    blocker = str(report.get("approved_prefab_save_update_route_blocker", "")).strip()
+
+    if str(report.get("status", "")).strip() == "pass" and (not attempted or not completed):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Approved prefab save/update route diagnostic cannot pass without attempted/completed evidence.",
+        )
+    if source_status != "pass" or not source_verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Approved prefab save/update route diagnostic requires positive repo-owned route source validation.",
+        )
+    if bridge_verified:
+        required_true = {
+            "approved_prefab_save_update_route_added": "route source addition",
+            "approved_prefab_save_update_route_behavior_context_reflected": "route BehaviorContext reflection",
+            "approved_prefab_save_update_route_callable_from_editor_python": "route Editor Python callability",
+            "approved_prefab_save_update_bridge_host_callable_from_editor_python": "bridge-host callability",
+            "approved_prefab_save_update_scratch_save_attempted": "scratch save attempt",
+            "approved_prefab_save_update_scratch_save_verified": "scratch save verification",
+            "approved_prefab_save_update_scratch_reload_or_parse_verified": "scratch parse/reload verification",
+            "approved_prefab_save_update_scratch_cleanup_verified": "scratch cleanup verification",
+            "approved_prefab_save_update_rejected_defaultlevel_path": "defaultlevel rejection",
+            "approved_prefab_save_update_rejected_production_level_path": "production-level rejection",
+            "approved_prefab_save_update_rejected_generated_product_path": "generated-product rejection",
+            "approved_prefab_save_update_rejected_unapproved_absolute_path": "unapproved absolute path rejection",
+            "approved_prefab_save_update_rejected_path_traversal": "path traversal rejection",
+        }
+        for field, label in required_true.items():
+            if report.get(field) is not True:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Prefab save/update bridge verified=true requires {label}.")
+        if blocker:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Verified prefab save/update route cannot also report a route blocker.")
+        for hash_field in ("approved_prefab_save_update_after_hash",):
+            if not str(report.get(hash_field, "")).strip():
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Verified prefab save/update route requires {hash_field}.")
+    elif str(report.get("status", "")).strip() == "pass" and route_callable and scratch_saved and scratch_parsed and scratch_cleaned:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Route callability and scratch save evidence require approved_prefab_save_update_bridge_verified=true.",
+        )
+
+    if scratch_saved and not scratch_parsed:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Scratch save proof requires prefab JSON parse/reload proof.")
+    if scratch_saved and not scratch_cleaned:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Scratch save proof requires cleanup verification.")
+    if report.get("approved_runtime_animation_component_wiring_source_prefab_modified") is True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Route scratch proof must not mutate the approved runtime animation source prefab.",
+        )
+
+    false_until_runtime_component_proof = (
+        "runtime_character_animation_component_wiring_claimed",
+        "runtime_character_animation_component_wiring_verified",
+        "runtime_character_animation_claimed",
+        "runtime_character_animation_verified",
+        "runtime_character_proof_claimed",
+        "runtime_character_proof_verified",
+    )
+    for field in false_until_runtime_component_proof:
+        if report.get(field) is True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                f"{field}=true is not supported by prefab save/update route scratch proof alone.",
             )
 
 
@@ -2488,6 +2576,16 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Set the explicit gated enablement marker for approved prefab save/update bridge-host fixture proof.",
     )
+    parser.add_argument(
+        "--diagnose-approved-prefab-save-update-route",
+        action="store_true",
+        help="Run the approved prefab save/update route and scratch-proof diagnostic.",
+    )
+    parser.add_argument(
+        "--enable-approved-prefab-save-update-route-fixture",
+        action="store_true",
+        help="Set the explicit gated enablement marker for approved prefab save/update route scratch proof.",
+    )
     parser.add_argument("--timeout-seconds", type=int, help="Bounded live Editor smoke timeout in seconds.")
     parser.add_argument("--progress-log", help="Optional JSONL progress log path for live Editor smoke diagnostics.")
     parser.add_argument("--apb-report", help="Explicit APB baseline report path for live Editor smoke product evidence.")
@@ -2553,6 +2651,11 @@ def main() -> int:
         env_map["MAXINE_ENABLE_APPROVED_PREFAB_SAVE_UPDATE_BRIDGE_HOST"] = "1"
     if args.enable_approved_prefab_save_update_bridge_host_fixture:
         env_map["MAXINE_ALLOW_APPROVED_PREFAB_SAVE_UPDATE_BRIDGE_HOST"] = "1"
+    if args.diagnose_approved_prefab_save_update_route or args.enable_approved_prefab_save_update_route_fixture:
+        diagnostic_mode = "approved-prefab-save-update-route"
+        env_map["MAXINE_ENABLE_APPROVED_PREFAB_SAVE_UPDATE_ROUTE"] = "1"
+    if args.enable_approved_prefab_save_update_route_fixture:
+        env_map["MAXINE_ALLOW_APPROVED_PREFAB_SAVE_UPDATE_ROUTE"] = "1"
     result = run_editor_smoke_corpus(
         args.corpus,
         mode=args.mode,

@@ -211,6 +211,18 @@ Approved prefab save/update bridge-host evidence uses the dedicated Editor diagn
 - `approved_prefab_save_update_bridge_host_status_call_result`, `approved_prefab_save_update_bridge_host_status_call_error`, and `approved_prefab_save_update_bridge_host_blocker`
 
 Bridge-host evidence proves only registration/load/callability readiness. Required source validation must come from repo-owned host files; optional local O3DE engine source references are reported separately and may be unavailable without blocking host proof. It must keep `approved_prefab_save_update_bridge_verified=false`, keep scratch save/update fields false unless a scratch save is actually attempted, keep `approved_runtime_animation_component_wiring_source_prefab_modified=false`, and keep runtime component wiring, runtime animation, and full runtime character proof false.
+
+Approved prefab save/update route evidence uses the dedicated Editor diagnostic mode `approved-prefab-save-update-route`. Reports may include:
+
+- `approved_prefab_save_update_route_diagnostic_attempted` / `approved_prefab_save_update_route_diagnostic_completed`
+- `approved_prefab_save_update_route_source_validation_status`, `approved_prefab_save_update_route_source_validation_verified`, and `approved_prefab_save_update_route_source_files`
+- `approved_prefab_save_update_route_added`, `approved_prefab_save_update_route_behavior_context_reflected`, and `approved_prefab_save_update_route_callable_from_editor_python`
+- `approved_prefab_save_update_route_api`, including `azlmbr.maxine.prefab_bridge.save_prefab_update_scratch_probe` and the source-backed `PrefabPublicInterface::CreatePrefabAndSaveToDisk` call
+- `approved_prefab_save_update_bridge_host_callable_from_editor_python`, `approved_prefab_save_update_bridge_added`, `approved_prefab_save_update_bridge_verified`, and `approved_prefab_save_update_bridge_callable_from_editor_python`
+- `approved_prefab_save_update_rejected_defaultlevel_path`, `approved_prefab_save_update_rejected_production_level_path`, `approved_prefab_save_update_rejected_generated_product_path`, `approved_prefab_save_update_rejected_unapproved_absolute_path`, and `approved_prefab_save_update_rejected_path_traversal`
+- `approved_prefab_save_update_scratch_prefab_path`, `approved_prefab_save_update_scratch_save_attempted`, `approved_prefab_save_update_scratch_save_verified`, `approved_prefab_save_update_scratch_reload_or_parse_verified`, `approved_prefab_save_update_scratch_cleanup_verified`, and `approved_prefab_save_update_after_hash`
+
+Route evidence proves only a bounded scratch save/update route when the route is callable, the allowed scratch root is anchored to the active project root, all path-policy rejections are observed, the scratch prefab is written, parsed, hashed, and cleaned up. It must keep `approved_runtime_animation_component_wiring_source_prefab_modified=false`, keep Actor + Simple Motion persistence false, skip APB/runtime mutation verification when no approved source prefab mutation occurred, and keep runtime component wiring, runtime animation, and full runtime character proof false.
 - `source_prefab_baseline_result`: the already proven temp source-prefab create/instantiate result that remains the stable Editor smoke baseline.
 - `direct_product_instantiation_claimed`: true only when direct `.procprefab` product behavior is actually claimed.
 - `direct_product_instantiation_supported`: true only when the current binding surface supports the selected direct product path.
