@@ -123,6 +123,20 @@ $env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE="1"
 
 The current `--diagnose-runtime-character-spawnable-surface` mode is read-only and does not require launching runtime. It source-validates `AzFramework::Spawnable` and the Prefab Builder `*.prefab` to `.spawnable` product path, then searches APB/AP DB/AssetCatalog-style evidence for character-specific release spawnables. It must reject `Levels/defaultlevel`, production/level spawnables, temp smoke levels, and generic non-character prefabs. This gate does not permit publishing, packaging, Asset Cache deletion, defaultlevel/production mutation, spawning, animation proof, or runtime character proof.
 
+Approved runtime character prefab-source generation has a narrower gate when a repo-owned source must be staged into the live project scanfolder:
+
+```powershell
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_PREFAB_SOURCE_GENERATION="1"
+```
+
+The committed source contract lives at `examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab` and targets the project-relative scanfolder path `Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab`. The APB harness stages that source into the live project scanfolder only when the gate above is set, refuses to overwrite mismatched existing source, and records `approved_runtime_character_prefab_source_staging` evidence in the APB report. It is source input only; never commit generated `.spawnable` products, Asset Cache files, or live private project content. The read-only diagnostic entry point is:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-character-prefab-source --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+```
+
+That diagnostic records whether the repo-owned `.prefab` is approved, non-defaultlevel, non-production, non-temp, and character-specific by referencing the approved release `.procprefab`. It then checks whether APB/AP DB evidence contains `pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable`. Finding that product is not product-load proof until a bounded runtime fixture safely loads it ready with no defaultlevel or production-level side effects.
+
 The repository now owns source for `o3de/gems/MaxineRuntimeExitFixture`, but it is disabled by default and is not runtime execution proof. Without the mutation/rebuild gates, the runner records source and rebuild-gate readiness only; it must not register the Gem, rebuild runtime targets, or launch a fixture command.
 
 ## Beginner Commands

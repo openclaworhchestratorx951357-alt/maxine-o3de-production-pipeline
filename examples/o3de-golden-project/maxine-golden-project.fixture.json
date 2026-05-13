@@ -54,7 +54,21 @@
     "motion_root": "Assets/Characters/MAXINE_GoldenCorpus/motions",
     "material_root": "Assets/Characters/MAXINE_GoldenCorpus/materials",
     "collider_root": "Assets/Characters/MAXINE_GoldenCorpus/colliders",
-    "temporary_root": "Assets/_maxine_smoke"
+    "temporary_root": "Assets/_maxine_smoke",
+    "approved_runtime_character_prefab_source": {
+      "repo_source_ref": "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+      "project_target_ref": "Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+      "approved_dependency_ref": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+      "expected_spawnable_product": "pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable",
+      "expected_spawnable_catalog_path": "assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable",
+      "builder": "Prefabs",
+      "asset_type": "{855E3021-D305-4845-B284-20C3F7FDF16B}",
+      "defaultlevel": false,
+      "production_level": false,
+      "temp_only": false,
+      "character_specific": true,
+      "approved": true
+    }
   },
   "temp_level_policy": {
     "enabled": true,

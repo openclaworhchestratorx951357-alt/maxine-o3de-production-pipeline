@@ -1,10 +1,10 @@
 # O3DE Golden Project Fixture
 
-This directory contains JSON-only fixtures for the future private-runner O3DE golden project.
+This directory contains fixtures and reviewed source inputs for the future private-runner O3DE golden project.
 
 The fixture contract defines safe project-relative roots, temporary smoke-test level policy, expected artifact retention paths, product expectations by lane, and evidence links between manifests, product resolution, Asset Processor Batch proof, Editor smoke, QC, and evidence bundles.
 
-These files do not create an O3DE project, do not contain model assets, and do not run O3DE. They are intended for default offline validation and for future private Windows runner readiness checks.
+Most files do not create an O3DE project, do not contain model assets, and do not run O3DE. The `source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab` file is a repo-owned reviewed source prefab intended to be staged into the live project scanfolder under an explicit gate so APB can produce a character-specific `.spawnable`. It is source input only; generated `.spawnable` products and Asset Cache files must not be committed.
 
 Useful commands:
 

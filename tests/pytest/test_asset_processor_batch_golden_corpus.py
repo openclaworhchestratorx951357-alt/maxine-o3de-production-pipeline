@@ -124,6 +124,7 @@ def test_asset_processor_batch_report_schema_supports_live_fields():
         "command",
         "logs",
         "safety",
+        "approved_runtime_character_prefab_source_staging",
     ]:
         assert field in schema["properties"]
 
@@ -335,6 +336,60 @@ def test_apb_live_uses_golden_project_fixture(tmp_path):
 
     assert result["golden_project_fixture_ref"].endswith("examples/o3de-golden-project/maxine-golden-project.fixture.json")
     assert any(ref.get("kind") == "o3de_golden_project_fixture" for ref in result["evidence_refs"])
+
+
+def test_apb_live_stages_approved_runtime_character_prefab_source_when_gate_set(tmp_path):
+    env = _live_ready_env(tmp_path)
+    env["MAXINE_ALLOW_RUNTIME_CHARACTER_PREFAB_SOURCE_GENERATION"] = "1"
+    project_path = Path(env["O3DE_PROJECT_PATH"])
+    target = project_path / "Assets" / "Characters" / "MAXINE_GoldenCorpus" / "prefabs" / "release_rigged.prefab"
+    runner = _RecordingRunner()
+
+    result = run_asset_processor_batch_corpus(
+        CORPUS,
+        enable_asset_processor_batch=True,
+        strict_integration=True,
+        golden_project_fixture=GOLDEN_PROJECT_FIXTURE,
+        command_runner=runner,
+        env=env,
+    )
+
+    staging = result["approved_runtime_character_prefab_source_staging"]
+    assert result["status"] == "pass"
+    assert staging["status"] == "copied"
+    assert staging["project_mutation_attempted"] is True
+    assert staging["project_mutation_reversible"] is True
+    assert staging["defaultlevel_mutation"] is False
+    assert staging["production_level_mutation"] is False
+    assert target.is_file()
+    assert runner.calls
+
+
+def test_apb_live_refuses_to_overwrite_existing_prefab_source_with_different_hash(tmp_path):
+    env = _live_ready_env(tmp_path)
+    env["MAXINE_ALLOW_RUNTIME_CHARACTER_PREFAB_SOURCE_GENERATION"] = "1"
+    project_path = Path(env["O3DE_PROJECT_PATH"])
+    target = project_path / "Assets" / "Characters" / "MAXINE_GoldenCorpus" / "prefabs" / "release_rigged.prefab"
+    target.parent.mkdir(parents=True)
+    target.write_text("{\"different\": true}\n", encoding="utf-8")
+    runner = _RecordingRunner()
+
+    result = run_asset_processor_batch_corpus(
+        CORPUS,
+        enable_asset_processor_batch=True,
+        strict_integration=True,
+        golden_project_fixture=GOLDEN_PROJECT_FIXTURE,
+        command_runner=runner,
+        env=env,
+    )
+
+    staging = result["approved_runtime_character_prefab_source_staging"]
+    assert result["status"] == "fail"
+    assert result["live_asset_processor_batch_execution"] is False
+    assert staging["status"] == "fail"
+    assert staging["project_mutation_attempted"] is False
+    assert "refusing to overwrite" in staging["message"]
+    assert runner.calls == []
 
 
 def test_apb_live_rejects_invalid_project_fixture(tmp_path):

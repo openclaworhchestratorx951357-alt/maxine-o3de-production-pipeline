@@ -1,0 +1,64 @@
+{
+    "ContainerEntity": {
+        "Id": "Entity_[140000000001]",
+        "Name": "MAXINE Release Rigged Runtime Character Source",
+        "Components": {
+            "EditorDisabledCompositionComponent": {
+                "$type": "EditorDisabledCompositionComponent",
+                "Id": 140000000010
+            },
+            "EditorEntityIconComponent": {
+                "$type": "EditorEntityIconComponent",
+                "Id": 140000000011
+            },
+            "EditorEntitySortComponent": {
+                "$type": "EditorEntitySortComponent",
+                "Id": 140000000012,
+                "Child Entity Order": [
+                    "Instance_[140000000101]/ContainerEntity"
+                ]
+            },
+            "EditorInspectorComponent": {
+                "$type": "EditorInspectorComponent",
+                "Id": 140000000013
+            },
+            "EditorLockComponent": {
+                "$type": "EditorLockComponent",
+                "Id": 140000000014
+            },
+            "EditorOnlyEntityComponent": {
+                "$type": "EditorOnlyEntityComponent",
+                "Id": 140000000015
+            },
+            "EditorPendingCompositionComponent": {
+                "$type": "EditorPendingCompositionComponent",
+                "Id": 140000000016
+            },
+            "EditorPrefabComponent": {
+                "$type": "EditorPrefabComponent",
+                "Id": 140000000017
+            },
+            "EditorVisibilityComponent": {
+                "$type": "EditorVisibilityComponent",
+                "Id": 140000000018
+            },
+            "TransformComponent": {
+                "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                "Id": 140000000019,
+                "Parent Entity": ""
+            }
+        }
+    },
+    "Instances": {
+        "Instance_[140000000101]": {
+            "Source": "assets/characters/maxine/release/maxine_idle_fbx.procprefab",
+            "Patches": [
+                {
+                    "op": "replace",
+                    "path": "/ContainerEntity/Components/TransformComponent/Parent Entity",
+                    "value": "../Entity_[140000000001]"
+                }
+            ]
+        }
+    }
+}
