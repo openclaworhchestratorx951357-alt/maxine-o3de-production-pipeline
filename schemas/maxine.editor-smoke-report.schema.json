@@ -1934,6 +1934,126 @@
     "runtime_character_animation_is_full_character_proof": {
       "type": "boolean"
     },
+    "runtime_character_animation_component_wiring_surface": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_character_animation_component_wiring_surface_status": {
+      "type": "string"
+    },
+    "runtime_character_animation_component_wiring_surface_diagnostic_attempted": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_surface_diagnostic_completed": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_source_validation": {
+      "type": ["string", "object"]
+    },
+    "runtime_character_animation_component_wiring_source_validation_status": {
+      "type": "string"
+    },
+    "runtime_character_animation_component_wiring_source_validation_verified": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_source_refs": {
+      "type": "array"
+    },
+    "runtime_character_animation_component_wiring_surface_found": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_surface_verified": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_surface_blocker": {
+      "type": "string"
+    },
+    "runtime_character_animation_component_wiring_candidate_matrix": {
+      "type": "array"
+    },
+    "runtime_character_animation_component_wiring_selected_strategy": {
+      "type": "string"
+    },
+    "runtime_character_animation_component_wiring_editor_api": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_character_animation_component_wiring_prefab_api": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtime_character_animation_component_wiring_source_prefab_path": {
+      "type": "string"
+    },
+    "runtime_character_animation_component_wiring_source_prefab_modified": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_uses_hand_authored_unknown_serialization": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_actor_component_type_id": {
+      "type": "string"
+    },
+    "runtime_character_animation_component_wiring_simple_motion_component_type_id": {
+      "type": "string"
+    },
+    "runtime_character_animation_component_wiring_anim_graph_component_type_id": {
+      "type": "string"
+    },
+    "runtime_character_animation_component_wiring_actor_asset_assignment_verified": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_motion_asset_assignment_verified": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_motion_set_asset_assignment_verified": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_anim_graph_asset_assignment_verified": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_spawnable_regenerated_or_found": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_spawn_prerequisite_verified": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_product_load_prerequisite_verified": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_surface_before_component_inventory": {
+      "type": "array"
+    },
+    "runtime_character_animation_component_wiring_surface_before_actor_component_found": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_surface_before_anim_graph_component_found": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_surface_before_simple_motion_component_found": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_surface_before_blocker": {
+      "type": "string"
+    },
+    "runtime_character_animation_component_wiring_runtime_component_inventory": {
+      "type": "array"
+    },
+    "runtime_character_animation_component_wiring_runtime_actor_component_found": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_runtime_simple_motion_component_found": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_runtime_anim_graph_component_found": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_claimed": {
+      "type": "boolean"
+    },
+    "runtime_character_animation_component_wiring_verified": {
+      "type": "boolean"
+    },
     "runtime_character_product_load_contract_updated": {
       "type": "boolean"
     },
