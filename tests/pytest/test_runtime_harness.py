@@ -600,6 +600,94 @@ def test_runtime_harness_command_pinning_mode_pins_console_quit_envelope_without
     assert report["runtime_command_safety_profile"]["uses_no_level"] is True
 
 
+def test_runtime_harness_after_apb_diagnostic_bypasses_command_pinning_fast_path(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=False)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _append_approved_character_spawnable_product(apb)
+
+    def _runner(**_kwargs: object) -> subprocess.CompletedProcess[str]:
+        raise AssertionError("after-APB diagnostic mode must not execute command pinning")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        pin_runtime_command=True,
+        diagnose_runtime_actor_simple_motion_component_wiring_after_apb=True,
+        strict=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_runner,
+        artifact_root=tmp_path / "runtime-artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == (
+        "runtime_actor_simple_motion_component_wiring_after_apb_diagnostic"
+    )
+    assert report["runtime_harness_status"] == (
+        "runtime_actor_simple_motion_component_wiring_after_apb_source_discovery"
+    )
+    assert report["runtime_command_pinning_status"] != "runtime_command_pinning_pass"
+    assert report["runtime_execution_attempted"] is False
+    assert report["runtime_actor_simple_motion_component_wiring_after_apb_attempted"] is True
+    assert report["runtime_actor_simple_motion_component_wiring_after_apb_verified"] is False
+    assert report["runtime_character_animation_component_wiring_claimed"] is False
+    assert report["runtime_character_animation_component_wiring_verified"] is False
+
+
+def test_runtime_harness_after_apb_fixture_bypasses_command_pinning_fast_path(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _enable_runtime_actor_simple_motion_after_apb_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        pin_runtime_command=True,
+        enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+            ],
+            actor_asset_id="{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+            motion_asset_id="{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0",
+        ),
+        artifact_root=tmp_path / "runtime-artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["runtime_harness_mode"] == (
+        "runtime_actor_simple_motion_component_wiring_after_apb_fixture_command"
+    )
+    assert report["runtime_harness_status"] != "runtime_command_pinning_pass"
+    assert report["runtime_command_pinning_status"] == "runtime_command_pinning_pass"
+    assert report["runtime_execution_attempted"] is True
+    assert report["runtime_actor_simple_motion_component_wiring_after_apb_attempted"] is True
+    assert report["runtime_actor_simple_motion_component_wiring_after_apb_completed"] is True
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_proof_claimed"] is False
+
+
 def test_runtime_harness_live_mode_executes_pinned_command_with_gates(tmp_path: Path) -> None:
     env, engine, project, apb = _runtime_env(tmp_path, gates=True)
     log_dir = project / "user" / "log"

@@ -576,6 +576,8 @@ def run_runtime_harness(
         and not enable_runtime_character_animation_playback_surface_fixture
         and not diagnose_runtime_character_animation_component_wiring_surface
         and not enable_runtime_character_animation_component_wiring_surface_fixture
+        and not diagnose_runtime_actor_simple_motion_component_wiring_after_apb
+        and not enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
