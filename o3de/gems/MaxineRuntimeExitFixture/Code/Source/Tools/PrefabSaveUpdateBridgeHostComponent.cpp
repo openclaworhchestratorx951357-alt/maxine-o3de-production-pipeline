@@ -9,10 +9,16 @@
 #include <AzCore/Serialization/SerializeContext.h>
 #include <AzCore/std/containers/vector.h>
 #include <AzCore/Utils/Utils.h>
+#include <AzToolsFramework/Prefab/Instance/Instance.h>
+#include <AzToolsFramework/Prefab/Instance/InstanceEntityMapperInterface.h>
+#include <AzToolsFramework/Prefab/Instance/InstanceToTemplateInterface.h>
 #include <AzToolsFramework/Prefab/Overrides/PrefabOverridePublicInterface.h>
+#include <AzToolsFramework/Prefab/PrefabDomUtils.h>
 #include <AzToolsFramework/Prefab/PrefabFocusPublicInterface.h>
+#include <AzToolsFramework/Prefab/PrefabIdTypes.h>
 #include <AzToolsFramework/Prefab/PrefabLoaderInterface.h>
 #include <AzToolsFramework/Prefab/PrefabPublicInterface.h>
+#include <AzToolsFramework/Prefab/PrefabSystemComponentInterface.h>
 #include <AzToolsFramework/API/ToolsApplicationAPI.h>
 #include <AzToolsFramework/Entity/EditorEntityContextBus.h>
 
@@ -230,6 +236,37 @@ namespace
                 componentOwnershipVerified)
                 .c_str());
     }
+
+    AZStd::string TemplateUpdateBlockedResult(
+        AZStd::string_view reason,
+        AZStd::string_view owningPrefabPath,
+        bool entityOwnershipVerified,
+        bool owningPrefabMatchesRequestedPath,
+        bool componentOwnershipChecked,
+        bool componentOwnershipVerified)
+    {
+        return AZStd::string::format(
+            "maxine_prefab_save_update_route_approved_source_template_update_failed;"
+            "reason=%.*s;"
+            "%s"
+            "source_backed_template_update_route_used=false;"
+            "template_dom_initial_entity_found=false;"
+            "serialized_entity_dom_generated=false;"
+            "entity_patch_generated=false;"
+            "entity_patch_operation_count=0;"
+            "patch_entity_in_template_attempted=false;"
+            "patch_entity_in_template_verified=false;"
+            "template_dom_updated=false;"
+            "approved_source_save_verified=false",
+            AZ_STRING_ARG(reason),
+            ParentLinkOwnershipFields(
+                owningPrefabPath,
+                entityOwnershipVerified,
+                owningPrefabMatchesRequestedPath,
+                componentOwnershipChecked,
+                componentOwnershipVerified)
+                .c_str());
+    }
 } // namespace
 
 namespace MaxineRuntimeExitFixture
@@ -281,6 +318,15 @@ namespace MaxineRuntimeExitFixture
                     &PrefabSaveUpdateBridgeHostComponent::ApplyApprovedSourcePrefabParentLinkComponentOverrides,
                     nullptr,
                     "Focuses the approved prefab parent/link context and applies generated Actor and Simple Motion component overrides.")
+                ->Attribute(AZ::Script::Attributes::Scope, AZ::Script::Attributes::ScopeFlags::Automation)
+                ->Attribute(AZ::Script::Attributes::Category, "MAXINE/PrefabSaveUpdateBridge")
+                ->Attribute(AZ::Script::Attributes::Module, "maxine.prefab_bridge");
+            behaviorContext
+                ->Method(
+                    "apply_approved_source_prefab_override_path_generation_template_update",
+                    &PrefabSaveUpdateBridgeHostComponent::ApplyApprovedSourcePrefabOverridePathGenerationTemplateUpdate,
+                    nullptr,
+                    "Serializes an approved source-prefab entity, generates a source-backed patch, updates its template, and saves it.")
                 ->Attribute(AZ::Script::Attributes::Scope, AZ::Script::Attributes::ScopeFlags::Automation)
                 ->Attribute(AZ::Script::Attributes::Category, "MAXINE/PrefabSaveUpdateBridge")
                 ->Attribute(AZ::Script::Attributes::Module, "maxine.prefab_bridge");
@@ -708,6 +754,326 @@ namespace MaxineRuntimeExitFixture
             "push_overrides_to_prefab_attempted=true;"
             "push_overrides_to_prefab_verified=true",
             ownershipFields.c_str());
+    }
+
+    AZStd::string PrefabSaveUpdateBridgeHostComponent::ApplyApprovedSourcePrefabOverridePathGenerationTemplateUpdate(
+        const AZStd::string& absolutePrefabPath,
+        AZ::EntityId entityId,
+        const AZ::EntityComponentIdPair& actorComponent,
+        const AZ::EntityComponentIdPair& simpleMotionComponent)
+    {
+        const AZ::IO::Path prefabPath(absolutePrefabPath);
+        const AZStd::string rejectionReason = RejectReasonForApprovedSourcePrefabPath(prefabPath);
+        if (!rejectionReason.empty())
+        {
+            return RouteResult("approved_source_template_update_rejected", rejectionReason);
+        }
+        if (!entityId.IsValid())
+        {
+            return RouteResult("approved_source_template_update_failed", "entity_id_invalid");
+        }
+
+        auto* prefabPublicInterface = AZ::Interface<AzToolsFramework::Prefab::PrefabPublicInterface>::Get();
+        if (!prefabPublicInterface)
+        {
+            return RouteResult("approved_source_template_update_failed", "prefab_public_interface_unavailable");
+        }
+
+        auto* prefabLoaderInterface = AZ::Interface<AzToolsFramework::Prefab::PrefabLoaderInterface>::Get();
+        if (!prefabLoaderInterface)
+        {
+            return RouteResult("approved_source_template_update_failed", "prefab_loader_interface_unavailable");
+        }
+
+        const AZ::IO::Path owningPrefabPath = prefabPublicInterface->GetOwningInstancePrefabPath(entityId);
+        if (owningPrefabPath.String().empty())
+        {
+            return TemplateUpdateBlockedResult(
+                "entity_owning_prefab_unavailable",
+                "",
+                false,
+                false,
+                false,
+                false);
+        }
+
+        const AZStd::string normalizedOwningPrefabPath = NormalizedFullPrefabPath(owningPrefabPath, *prefabLoaderInterface);
+        const AZStd::string normalizedRequestedPrefabPath = NormalizedFullPrefabPath(prefabPath, *prefabLoaderInterface);
+        if (normalizedOwningPrefabPath != normalizedRequestedPrefabPath)
+        {
+            return TemplateUpdateBlockedResult(
+                "entity_not_owned_by_approved_source_prefab",
+                normalizedOwningPrefabPath,
+                false,
+                false,
+                false,
+                false);
+        }
+
+        AZ::Entity* entity = nullptr;
+        AZ::ComponentApplicationBus::BroadcastResult(entity, &AZ::ComponentApplicationRequests::FindEntity, entityId);
+        const bool actorComponentOwnedByEntity =
+            actorComponent.GetEntityId() == entityId &&
+            actorComponent.GetComponentId() != AZ::InvalidComponentId &&
+            entity != nullptr &&
+            entity->FindComponent(actorComponent.GetComponentId()) != nullptr;
+        const bool simpleMotionComponentOwnedByEntity =
+            simpleMotionComponent.GetEntityId() == entityId &&
+            simpleMotionComponent.GetComponentId() != AZ::InvalidComponentId &&
+            entity != nullptr &&
+            entity->FindComponent(simpleMotionComponent.GetComponentId()) != nullptr;
+        if (!actorComponentOwnedByEntity || !simpleMotionComponentOwnedByEntity)
+        {
+            return TemplateUpdateBlockedResult(
+                "component_not_owned_by_approved_source_prefab_entity",
+                normalizedOwningPrefabPath,
+                true,
+                true,
+                true,
+                false);
+        }
+
+        const AZStd::string ownershipFields = ParentLinkOwnershipFields(
+            normalizedOwningPrefabPath,
+            true,
+            true,
+            true,
+            true);
+
+        auto* instanceEntityMapperInterface = AZ::Interface<AzToolsFramework::Prefab::InstanceEntityMapperInterface>::Get();
+        if (!instanceEntityMapperInterface)
+        {
+            return AZStd::string::format(
+                "maxine_prefab_save_update_route_approved_source_template_update_failed;"
+                "reason=instance_entity_mapper_interface_unavailable;"
+                "%s"
+                "source_backed_template_update_route_used=false;"
+                "template_dom_updated=false;"
+                "approved_source_save_verified=false",
+                ownershipFields.c_str());
+        }
+
+        auto* instanceToTemplateInterface = AZ::Interface<AzToolsFramework::Prefab::InstanceToTemplateInterface>::Get();
+        if (!instanceToTemplateInterface)
+        {
+            return AZStd::string::format(
+                "maxine_prefab_save_update_route_approved_source_template_update_failed;"
+                "reason=instance_to_template_interface_unavailable;"
+                "%s"
+                "source_backed_template_update_route_used=false;"
+                "template_dom_updated=false;"
+                "approved_source_save_verified=false",
+                ownershipFields.c_str());
+        }
+
+        auto* prefabSystemComponentInterface = AZ::Interface<AzToolsFramework::Prefab::PrefabSystemComponentInterface>::Get();
+        if (!prefabSystemComponentInterface)
+        {
+            return AZStd::string::format(
+                "maxine_prefab_save_update_route_approved_source_template_update_failed;"
+                "reason=prefab_system_component_interface_unavailable;"
+                "%s"
+                "source_backed_template_update_route_used=false;"
+                "template_dom_updated=false;"
+                "approved_source_save_verified=false",
+                ownershipFields.c_str());
+        }
+
+        AzToolsFramework::Prefab::InstanceOptionalReference owningInstance =
+            instanceEntityMapperInterface->FindOwningInstance(entityId);
+        if (!owningInstance.has_value())
+        {
+            return TemplateUpdateBlockedResult(
+                "entity_owning_prefab_unavailable",
+                normalizedOwningPrefabPath,
+                true,
+                true,
+                true,
+                true);
+        }
+
+        const AzToolsFramework::Prefab::TemplateId templateId = owningInstance->get().GetTemplateId();
+        if (templateId == AzToolsFramework::Prefab::InvalidTemplateId)
+        {
+            return AZStd::string::format(
+                "maxine_prefab_save_update_route_approved_source_template_update_failed;"
+                "reason=template_id_unavailable;"
+                "%s"
+                "source_backed_template_update_route_used=true;"
+                "template_dom_updated=false;"
+                "approved_source_save_verified=false",
+                ownershipFields.c_str());
+        }
+
+        AzToolsFramework::Prefab::EntityAliasOptionalReference entityAliasRef = owningInstance->get().GetEntityAlias(entityId);
+        if (!entityAliasRef.has_value() || entityAliasRef->get().empty())
+        {
+            return AZStd::string::format(
+                "maxine_prefab_save_update_route_approved_source_template_update_failed;"
+                "reason=entity_alias_unavailable;"
+                "%s"
+                "source_backed_template_update_route_used=true;"
+                "template_dom_updated=false;"
+                "approved_source_save_verified=false",
+                ownershipFields.c_str());
+        }
+
+        AzToolsFramework::Prefab::PrefabDom& templateDom = prefabSystemComponentInterface->FindTemplateDom(templateId);
+        AzToolsFramework::Prefab::PrefabDomValue* initialEntityDomValue = nullptr;
+        const bool isContainerEntity = entityId == owningInstance->get().GetContainerEntityId();
+        if (isContainerEntity)
+        {
+            auto containerIt = templateDom.FindMember(AzToolsFramework::Prefab::PrefabDomUtils::ContainerEntityName);
+            if (containerIt != templateDom.MemberEnd() && containerIt->value.IsObject())
+            {
+                initialEntityDomValue = &containerIt->value;
+            }
+        }
+        else
+        {
+            auto entitiesIt = templateDom.FindMember(AzToolsFramework::Prefab::PrefabDomUtils::EntitiesName);
+            if (entitiesIt == templateDom.MemberEnd() || !entitiesIt->value.IsObject())
+            {
+                return AZStd::string::format(
+                    "maxine_prefab_save_update_route_approved_source_template_update_failed;"
+                    "reason=template_dom_entities_unavailable;"
+                    "%s"
+                    "source_backed_template_update_route_used=true;"
+                    "template_dom_initial_entity_found=false;"
+                    "template_dom_updated=false;"
+                    "approved_source_save_verified=false",
+                    ownershipFields.c_str());
+            }
+
+            const AZStd::string& entityAlias = entityAliasRef->get();
+            auto entityIt = entitiesIt->value.FindMember(entityAlias.c_str());
+            if (entityIt != entitiesIt->value.MemberEnd() && entityIt->value.IsObject())
+            {
+                initialEntityDomValue = &entityIt->value;
+            }
+        }
+
+        if (initialEntityDomValue == nullptr)
+        {
+            return AZStd::string::format(
+                "maxine_prefab_save_update_route_approved_source_template_update_failed;"
+                "reason=template_dom_initial_entity_unavailable;"
+                "%s"
+                "source_backed_template_update_route_used=true;"
+                "template_dom_initial_entity_found=false;"
+                "template_dom_updated=false;"
+                "approved_source_save_verified=false",
+                ownershipFields.c_str());
+        }
+
+        AzToolsFramework::Prefab::PrefabDom initialEntityDom;
+        initialEntityDom.CopyFrom(*initialEntityDomValue, initialEntityDom.GetAllocator());
+
+        AzToolsFramework::Prefab::PrefabDom modifiedEntityDom;
+        const bool serializedEntityDomGenerated = instanceToTemplateInterface->GenerateEntityDomBySerializing(modifiedEntityDom, *entity);
+        if (!serializedEntityDomGenerated)
+        {
+            return AZStd::string::format(
+                "maxine_prefab_save_update_route_approved_source_template_update_failed;"
+                "reason=serialized_entity_dom_generation_failed;"
+                "%s"
+                "source_backed_template_update_route_used=true;"
+                "template_dom_initial_entity_found=true;"
+                "serialized_entity_dom_generated=false;"
+                "entity_patch_generated=false;"
+                "entity_patch_operation_count=0;"
+                "patch_entity_in_template_attempted=false;"
+                "patch_entity_in_template_verified=false;"
+                "template_dom_updated=false;"
+                "approved_source_save_verified=false",
+                ownershipFields.c_str());
+        }
+
+        AzToolsFramework::Prefab::PrefabDom entityPatch;
+        const bool entityPatchGenerated = instanceToTemplateInterface->GeneratePatch(entityPatch, initialEntityDom, modifiedEntityDom);
+        const bool entityPatchHasOperations = entityPatch.IsArray() && !entityPatch.GetArray().Empty();
+        const rapidjson::SizeType entityPatchOperationCount = entityPatch.IsArray() ? entityPatch.Size() : 0;
+        if (!entityPatchGenerated || !entityPatchHasOperations)
+        {
+            return AZStd::string::format(
+                "maxine_prefab_save_update_route_approved_source_template_update_failed;"
+                "reason=%s;"
+                "%s"
+                "source_backed_template_update_route_used=true;"
+                "template_dom_initial_entity_found=true;"
+                "serialized_entity_dom_generated=true;"
+                "entity_patch_generated=%s;"
+                "entity_patch_operation_count=%u;"
+                "patch_entity_in_template_attempted=false;"
+                "patch_entity_in_template_verified=false;"
+                "template_dom_updated=false;"
+                "approved_source_save_verified=false",
+                entityPatchGenerated ? "source_backed_entity_patch_empty" : "source_backed_entity_patch_generation_failed",
+                ownershipFields.c_str(),
+                entityPatchGenerated ? "true" : "false",
+                entityPatchOperationCount);
+        }
+
+        const bool patchEntityInTemplateVerified = instanceToTemplateInterface->PatchEntityInTemplate(entityPatch, entityId);
+        if (!patchEntityInTemplateVerified)
+        {
+            return AZStd::string::format(
+                "maxine_prefab_save_update_route_approved_source_template_update_failed;"
+                "reason=patch_entity_in_template_failed;"
+                "%s"
+                "source_backed_template_update_route_used=true;"
+                "template_dom_initial_entity_found=true;"
+                "serialized_entity_dom_generated=true;"
+                "entity_patch_generated=true;"
+                "entity_patch_operation_count=%u;"
+                "patch_entity_in_template_attempted=true;"
+                "patch_entity_in_template_verified=false;"
+                "template_dom_updated=false;"
+                "approved_source_save_verified=false",
+                ownershipFields.c_str(),
+                entityPatchOperationCount);
+        }
+
+        const AZ::IO::Path relativePath = prefabLoaderInterface->GenerateRelativePath(prefabPath);
+        const auto saveResult = prefabPublicInterface->SavePrefab(relativePath);
+        if (!saveResult.IsSuccess())
+        {
+            return AZStd::string::format(
+                "maxine_prefab_save_update_route_approved_source_template_update_failed;"
+                "reason=save_prefab_failed_after_template_update;"
+                "%s"
+                "source_backed_template_update_route_used=true;"
+                "template_dom_initial_entity_found=true;"
+                "serialized_entity_dom_generated=true;"
+                "entity_patch_generated=true;"
+                "entity_patch_operation_count=%u;"
+                "patch_entity_in_template_attempted=true;"
+                "patch_entity_in_template_verified=true;"
+                "template_dom_updated=true;"
+                "approved_source_save_verified=false",
+                ownershipFields.c_str(),
+                entityPatchOperationCount);
+        }
+
+        return AZStd::string::format(
+            "maxine_prefab_save_update_route_approved_source_template_update_applied;"
+            "%s"
+            "api=AzToolsFramework::Prefab::InstanceToTemplateInterface::GenerateEntityDomBySerializing+GeneratePatch+PatchEntityInTemplate;"
+            "save_api=AzToolsFramework::Prefab::PrefabPublicInterface::SavePrefab;"
+            "relative_path_backend=AzToolsFramework::Prefab::PrefabLoaderInterface::GenerateRelativePath;"
+            "path_policy=active_project_root/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab;"
+            "source_backed_template_update_route_used=true;"
+            "template_dom_initial_entity_found=true;"
+            "serialized_entity_dom_generated=true;"
+            "entity_patch_generated=true;"
+            "entity_patch_operation_count=%u;"
+            "component_override_paths_detected=true;"
+            "patch_entity_in_template_attempted=true;"
+            "patch_entity_in_template_verified=true;"
+            "template_dom_updated=true;"
+            "approved_source_save_verified=true",
+            ownershipFields.c_str(),
+            entityPatchOperationCount);
     }
 
     AZStd::string PrefabSaveUpdateBridgeHostComponent::CommitApprovedSourcePrefabEntityChanges(

@@ -3,6 +3,18 @@
         "Id": "Entity_[140000000001]",
         "Name": "MAXINE Release Rigged Runtime Character Source",
         "Components": {
+            "EditorActorComponent": {
+                "$type": "EditorActorComponent",
+                "Id": 4861308560150659743,
+                "ActorAsset": {
+                    "assetId": {
+                        "guid": "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}",
+                        "subId": 2437880247
+                    },
+                    "assetHint": "assets/characters/maxine/release/jack.actor"
+                },
+                "AttachmentTarget": ""
+            },
             "EditorDisabledCompositionComponent": {
                 "$type": "EditorDisabledCompositionComponent",
                 "Id": 140000000010
@@ -37,6 +49,19 @@
             "EditorPrefabComponent": {
                 "$type": "EditorPrefabComponent",
                 "Id": 140000000017
+            },
+            "EditorSimpleMotionComponent": {
+                "$type": "EditorSimpleMotionComponent",
+                "Id": 11138354059145320928,
+                "Configuration": {
+                    "MotionAsset": {
+                        "assetId": {
+                            "guid": "{794D1588-3C41-5795-8A9A-EEBD6A663A60}",
+                            "subId": 14535648
+                        },
+                        "assetHint": "assets/characters/maxine/release/jack_death_fall_back_zup.motion"
+                    }
+                }
             },
             "EditorVisibilityComponent": {
                 "$type": "EditorVisibilityComponent",
