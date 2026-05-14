@@ -6852,6 +6852,7 @@ def _approved_source_prefab_override_path_generation_template_update_report_from
     source_prefab_changed_this_run: bool = False,
     before_hash: str = "",
     after_hash: str = "",
+    template_update_route_rejection_probes_verified: bool = False,
 ) -> Dict[str, Any]:
     status_text = str(route_status.get("status", ""))
     status_values = _status_key_values(status_text)
@@ -6910,6 +6911,7 @@ def _approved_source_prefab_override_path_generation_template_update_report_from
         and route_template_dom_updated
         and route_save_verified
         and template_dom_updated
+        and template_update_route_rejection_probes_verified
     )
     blocker = ""
     if not route_verified:
@@ -6942,6 +6944,8 @@ def _approved_source_prefab_override_path_generation_template_update_report_from
             blocker = "blocked_by_prefab_override_push_to_template_failed"
         elif not route_save_verified:
             blocker = "blocked_by_approved_source_prefab_save_policy"
+        elif not template_update_route_rejection_probes_verified:
+            blocker = "blocked_by_template_update_route_rejection_probes_unverified"
         else:
             blocker = "blocked_by_prefab_template_dom_update_unavailable"
 
@@ -6951,6 +6955,9 @@ def _approved_source_prefab_override_path_generation_template_update_report_from
         "approved_source_prefab_override_path_generation_template_update_verified": route_verified,
         "approved_source_prefab_override_path_generation_template_update_blocker": blocker,
         "approved_source_prefab_override_path_generation_template_update_route_status": dict(route_status),
+        "approved_source_prefab_template_update_route_rejection_probes_verified": (
+            template_update_route_rejection_probes_verified
+        ),
         "approved_source_prefab_entity_ownership_checked": entity_ownership_checked,
         "approved_source_prefab_entity_ownership_verified": entity_ownership_verified,
         "approved_source_prefab_entity_owning_prefab_path": entity_owning_prefab_path,
@@ -7110,6 +7117,8 @@ def _call_approved_source_prefab_wiring_rejection_probes(project_source_path: Pa
             "attempted": True,
             "callable": False,
             "rejected": False,
+            "route": "legacy_save_approved_source_prefab_wiring",
+            "method": "save_approved_source_prefab_wiring",
             "status": "",
             "error": "",
         }
@@ -7126,6 +7135,162 @@ def _call_approved_source_prefab_wiring_rejection_probes(project_source_path: Pa
             result["error"] = str(exc)
         results[label] = result
     return results
+
+
+def _approved_source_prefab_template_update_route_rejection_paths(project_source_path: Path) -> Dict[str, Path]:
+    paths = dict(_approved_source_prefab_wiring_rejection_paths(project_source_path))
+    project_path = project_source_path.parents[4]
+    paths["cache_path"] = project_path / "Cache" / "pc" / "anything.prefab"
+    return paths
+
+
+def _invalid_editor_entity_id_for_template_update_probe() -> Any:
+    try:
+        import azlmbr.entity as entity  # type: ignore
+
+        return entity.EntityId()
+    except Exception:
+        return None
+
+
+def _template_update_route_rejection_verified(status_text: str) -> bool:
+    text = str(status_text)
+    if "maxine_prefab_save_update_route_approved_source_template_update_rejected" in text:
+        return True
+    status_values = _status_key_values(text)
+    reason = str(status_values.get("reason", "")).strip()
+    return reason in {
+        "entity_id_invalid",
+        "entity_owning_prefab_unavailable",
+        "entity_not_owned_by_approved_source_prefab",
+        "component_not_owned_by_approved_source_prefab_entity",
+    }
+
+
+def _call_approved_source_prefab_template_update_route_rejection_probes(
+    project_source_path: Path,
+    *,
+    entity_id: Any,
+    actor_component_ref: Any,
+    simple_motion_component_ref: Any,
+) -> Dict[str, Dict[str, Any]]:
+    results: Dict[str, Dict[str, Any]] = {}
+    route_name = "apply_approved_source_prefab_override_path_generation_template_update"
+
+    def _new_result() -> Dict[str, Any]:
+        return {
+            "attempted": True,
+            "callable": False,
+            "rejected": False,
+            "route": "template_update_route",
+            "method": route_name,
+            "status": "",
+            "error": "",
+        }
+
+    for label, path in _approved_source_prefab_template_update_route_rejection_paths(project_source_path).items():
+        result = _new_result()
+        try:
+            import importlib
+
+            module = importlib.import_module("azlmbr.maxine.prefab_bridge")
+            route_fn = getattr(module, route_name)
+            status_text = str(route_fn(str(path), entity_id, actor_component_ref, simple_motion_component_ref))
+            result["status"] = status_text
+            result["callable"] = True
+            result["rejected"] = _template_update_route_rejection_verified(status_text)
+        except Exception as exc:
+            result["error"] = str(exc)
+        results[label] = result
+
+    wrong_entity_result = _new_result()
+    wrong_entity_id = _invalid_editor_entity_id_for_template_update_probe()
+    if wrong_entity_id is None and isinstance(entity_id, str):
+        wrong_entity_id = "__maxine_wrong_entity_owner_probe__"
+    if wrong_entity_id is None:
+        wrong_entity_result["attempted"] = False
+        wrong_entity_result["error"] = "invalid_entity_probe_unavailable"
+    else:
+        try:
+            import importlib
+
+            module = importlib.import_module("azlmbr.maxine.prefab_bridge")
+            route_fn = getattr(module, route_name)
+            status_text = str(
+                route_fn(str(project_source_path), wrong_entity_id, actor_component_ref, simple_motion_component_ref)
+            )
+            wrong_entity_result["status"] = status_text
+            wrong_entity_result["callable"] = True
+            wrong_entity_result["rejected"] = _template_update_route_rejection_verified(status_text)
+        except Exception as exc:
+            wrong_entity_result["error"] = str(exc)
+    results["wrong_entity_owner"] = wrong_entity_result
+    return results
+
+
+def _approved_source_prefab_template_update_route_rejection_probe_summary(
+    rejection_statuses: Mapping[str, Mapping[str, Any]],
+) -> Dict[str, Any]:
+    required_labels = (
+        "defaultlevel",
+        "production_level",
+        "generated_product",
+        "cache_path",
+        "unapproved_absolute",
+        "other_project",
+        "path_traversal",
+        "non_prefab",
+        "wrong_entity_owner",
+    )
+    attempted = all(isinstance(rejection_statuses.get(label), Mapping) for label in required_labels)
+    verified = attempted and all(_route_rejection_verified(rejection_statuses, label) for label in required_labels)
+    return {
+        "approved_source_prefab_template_update_route_rejection_probes_attempted": attempted,
+        "approved_source_prefab_template_update_route_rejection_probes_verified": verified,
+        "approved_source_prefab_template_update_route_rejected_defaultlevel_path": _route_rejection_verified(
+            rejection_statuses, "defaultlevel"
+        ),
+        "approved_source_prefab_template_update_route_rejected_production_level_path": _route_rejection_verified(
+            rejection_statuses, "production_level"
+        ),
+        "approved_source_prefab_template_update_route_rejected_generated_product_path": _route_rejection_verified(
+            rejection_statuses, "generated_product"
+        ),
+        "approved_source_prefab_template_update_route_rejected_cache_path": _route_rejection_verified(
+            rejection_statuses, "cache_path"
+        ),
+        "approved_source_prefab_template_update_route_rejected_unapproved_absolute_path": _route_rejection_verified(
+            rejection_statuses, "unapproved_absolute"
+        ),
+        "approved_source_prefab_template_update_route_rejected_other_project_path": _route_rejection_verified(
+            rejection_statuses, "other_project"
+        ),
+        "approved_source_prefab_template_update_route_rejected_path_traversal": _route_rejection_verified(
+            rejection_statuses, "path_traversal"
+        ),
+        "approved_source_prefab_template_update_route_rejected_non_prefab_path": _route_rejection_verified(
+            rejection_statuses, "non_prefab"
+        ),
+        "approved_source_prefab_template_update_route_rejected_wrong_entity_owner": _route_rejection_verified(
+            rejection_statuses, "wrong_entity_owner"
+        ),
+        "approved_source_prefab_template_update_route_rejection_probe_route": (
+            "azlmbr.maxine.prefab_bridge.apply_approved_source_prefab_override_path_generation_template_update"
+        ),
+        "approved_source_prefab_template_update_route_rejection_probe_results": dict(rejection_statuses),
+    }
+
+
+def _approved_source_prefab_legacy_wiring_route_rejection_probe_summary(
+    rejection_statuses: Mapping[str, Mapping[str, Any]],
+) -> Dict[str, Any]:
+    return {
+        "approved_source_prefab_legacy_wiring_route_rejection_probes_preserved": bool(rejection_statuses),
+        "approved_source_prefab_legacy_wiring_route_rejection_probe_route": (
+            "azlmbr.maxine.prefab_bridge.save_approved_source_prefab_wiring"
+        ),
+        "approved_source_prefab_legacy_wiring_route_rejection_probe_results": dict(rejection_statuses),
+    }
 
 
 def _instantiate_approved_source_prefab(project_source_path: Path, safe_call_results: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -7768,6 +7933,22 @@ def _run_approved_source_prefab_override_path_generation_template_update_checks(
         "approved_prefab_save_update_rejected_generated_product_path": False,
         "approved_prefab_save_update_rejected_unapproved_absolute_path": False,
         "approved_prefab_save_update_rejected_path_traversal": False,
+        "approved_source_prefab_template_update_route_rejection_probes_attempted": False,
+        "approved_source_prefab_template_update_route_rejection_probes_verified": False,
+        "approved_source_prefab_template_update_route_rejected_defaultlevel_path": False,
+        "approved_source_prefab_template_update_route_rejected_production_level_path": False,
+        "approved_source_prefab_template_update_route_rejected_generated_product_path": False,
+        "approved_source_prefab_template_update_route_rejected_cache_path": False,
+        "approved_source_prefab_template_update_route_rejected_unapproved_absolute_path": False,
+        "approved_source_prefab_template_update_route_rejected_other_project_path": False,
+        "approved_source_prefab_template_update_route_rejected_path_traversal": False,
+        "approved_source_prefab_template_update_route_rejected_non_prefab_path": False,
+        "approved_source_prefab_template_update_route_rejected_wrong_entity_owner": False,
+        "approved_source_prefab_template_update_route_rejection_probe_route": "",
+        "approved_source_prefab_template_update_route_rejection_probe_results": {},
+        "approved_source_prefab_legacy_wiring_route_rejection_probes_preserved": False,
+        "approved_source_prefab_legacy_wiring_route_rejection_probe_route": "",
+        "approved_source_prefab_legacy_wiring_route_rejection_probe_results": {},
         "approved_prefab_save_update_bridge_verified": False,
         "approved_prefab_save_update_bridge_callable_from_editor_python": False,
         "approved_runtime_animation_component_wiring_editor_generation_attempted": True,
@@ -7906,27 +8087,38 @@ def _run_approved_source_prefab_override_path_generation_template_update_checks(
         result["approved_source_prefab_cleanup"] = _delete_editor_entity(entity_id, safe_call_results)
         return _block(str(result["approved_source_prefab_override_path_generation_template_update_blocker"]))
 
-    rejection_statuses = _call_approved_source_prefab_wiring_rejection_probes(project_source_path)
+    legacy_rejection_statuses = _call_approved_source_prefab_wiring_rejection_probes(project_source_path)
+    template_update_rejection_statuses = _call_approved_source_prefab_template_update_route_rejection_probes(
+        project_source_path,
+        entity_id=entity_id,
+        actor_component_ref=override_refs.get("actor_component_ref"),
+        simple_motion_component_ref=override_refs.get("simple_motion_component_ref"),
+    )
+    template_update_rejection_summary = _approved_source_prefab_template_update_route_rejection_probe_summary(
+        template_update_rejection_statuses
+    )
     project_after_hash = _sha256_file(project_source_path) if project_source_path.exists() else ""
     marker_evidence = _source_prefab_wiring_marker_evidence(project_source_path)
-    result["approved_source_prefab_path_policy_rejections"] = rejection_statuses
+    result["approved_source_prefab_path_policy_rejections"] = template_update_rejection_statuses
+    result.update(template_update_rejection_summary)
+    result.update(_approved_source_prefab_legacy_wiring_route_rejection_probe_summary(legacy_rejection_statuses))
     result["approved_source_prefab_project_after_hash"] = project_after_hash
     result["approved_source_prefab_project_marker_evidence"] = marker_evidence
     result["approved_prefab_save_update_bridge_callable_from_editor_python"] = bool(template_update_status.get("callable"))
     result["approved_prefab_save_update_rejected_defaultlevel_path"] = _route_rejection_verified(
-        rejection_statuses, "defaultlevel"
+        template_update_rejection_statuses, "defaultlevel"
     )
     result["approved_prefab_save_update_rejected_production_level_path"] = _route_rejection_verified(
-        rejection_statuses, "production_level"
+        template_update_rejection_statuses, "production_level"
     )
     result["approved_prefab_save_update_rejected_generated_product_path"] = _route_rejection_verified(
-        rejection_statuses, "generated_product"
+        template_update_rejection_statuses, "generated_product"
     )
     result["approved_prefab_save_update_rejected_unapproved_absolute_path"] = _route_rejection_verified(
-        rejection_statuses, "unapproved_absolute"
+        template_update_rejection_statuses, "unapproved_absolute"
     )
     result["approved_prefab_save_update_rejected_path_traversal"] = _route_rejection_verified(
-        rejection_statuses, "path_traversal"
+        template_update_rejection_statuses, "path_traversal"
     )
 
     result["approved_source_prefab_project_persisted_wiring_markers_verified"] = marker_evidence.get("both") is True
@@ -7940,8 +8132,22 @@ def _run_approved_source_prefab_override_path_generation_template_update_checks(
             source_prefab_changed_this_run=result["approved_source_prefab_project_changed_this_run"],
             before_hash=project_before_hash,
             after_hash=project_after_hash,
+            template_update_route_rejection_probes_verified=template_update_rejection_summary[
+                "approved_source_prefab_template_update_route_rejection_probes_verified"
+            ],
         )
     )
+    if result["approved_source_prefab_template_update_route_rejection_probes_verified"] is not True:
+        if project_before_bytes and project_after_hash and project_after_hash != project_before_hash:
+            try:
+                project_source_path.write_bytes(project_before_bytes)
+                result["approved_source_prefab_restored_after_failed_verification"] = True
+                result["approved_source_prefab_project_after_restore_hash"] = _sha256_file(project_source_path)
+            except Exception as exc:
+                result["approved_source_prefab_restored_after_failed_verification"] = False
+                result["approved_source_prefab_restore_error"] = str(exc)
+        result["approved_source_prefab_cleanup"] = _delete_editor_entity(entity_id, safe_call_results)
+        return _block("blocked_by_template_update_route_rejection_probes_unverified")
     if marker_evidence.get("both") is not True:
         if project_before_bytes and project_after_hash and project_after_hash != project_before_hash:
             try:
@@ -7976,6 +8182,9 @@ def _run_approved_source_prefab_override_path_generation_template_update_checks(
             source_prefab_changed_this_run=result["approved_source_prefab_changed_this_run"],
             before_hash=repo_before_hash,
             after_hash=repo_after_hash,
+            template_update_route_rejection_probes_verified=template_update_rejection_summary[
+                "approved_source_prefab_template_update_route_rejection_probes_verified"
+            ],
         )
     )
     repo_marker_persistence_verified = (

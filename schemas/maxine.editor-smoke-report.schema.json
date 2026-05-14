@@ -2284,6 +2284,54 @@
     "approved_source_prefab_override_path_generation_template_update_selected_strategy": {
       "type": "string"
     },
+    "approved_source_prefab_template_update_route_rejection_probes_attempted": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_template_update_route_rejection_probes_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_template_update_route_rejected_defaultlevel_path": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_template_update_route_rejected_production_level_path": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_template_update_route_rejected_generated_product_path": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_template_update_route_rejected_cache_path": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_template_update_route_rejected_unapproved_absolute_path": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_template_update_route_rejected_other_project_path": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_template_update_route_rejected_path_traversal": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_template_update_route_rejected_non_prefab_path": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_template_update_route_rejected_wrong_entity_owner": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_template_update_route_rejection_probe_route": {
+      "type": "string"
+    },
+    "approved_source_prefab_template_update_route_rejection_probe_results": {
+      "type": "object"
+    },
+    "approved_source_prefab_legacy_wiring_route_rejection_probes_preserved": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_legacy_wiring_route_rejection_probe_route": {
+      "type": "string"
+    },
+    "approved_source_prefab_legacy_wiring_route_rejection_probe_results": {
+      "type": "object"
+    },
     "approved_source_prefab_entity_ownership_checked": {
       "type": "boolean"
     },
