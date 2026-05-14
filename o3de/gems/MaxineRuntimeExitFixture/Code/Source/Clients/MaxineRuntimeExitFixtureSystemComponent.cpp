@@ -14,7 +14,9 @@
 #include <AzFramework/API/ApplicationAPI.h>
 #include <AzFramework/Spawnable/Spawnable.h>
 #include <AzFramework/Spawnable/SpawnableEntitiesInterface.h>
+#include <EMotionFX/Source/ActorInstance.h>
 #include <EMotionFX/Source/MotionInstance.h>
+#include <Integration/Assets/MotionAsset.h>
 #include <Integration/Components/ActorComponent.h>
 #include <Integration/Components/SimpleMotionComponent.h>
 #include <Integration/SimpleMotionComponentBus.h>
@@ -203,6 +205,33 @@ namespace MaxineRuntimeExitFixture
                 }
             }
             return nullptr;
+        }
+
+        EMotionFX::Integration::ActorComponent* RuntimeActorComponent(AZ::Entity& entity)
+        {
+            for (AZ::Component* component : entity.GetComponents())
+            {
+                auto* actorComponent = azrtti_cast<EMotionFX::Integration::ActorComponent*>(component);
+                if (actorComponent != nullptr)
+                {
+                    return actorComponent;
+                }
+            }
+            return nullptr;
+        }
+
+        bool RuntimeMotionAssetReady(const AZ::Data::AssetId& motionAssetId)
+        {
+            if (!motionAssetId.IsValid() || !AZ::Data::AssetManager::IsReady())
+            {
+                return false;
+            }
+
+            AZ::Data::Asset<EMotionFX::Integration::MotionAsset> motionAsset =
+                AZ::Data::AssetManager::Instance().FindAsset<EMotionFX::Integration::MotionAsset>(
+                    motionAssetId,
+                    AZ::Data::AssetLoadBehavior::NoLoad);
+            return motionAsset.IsReady();
         }
 
         AZ::Entity* RuntimeEntityById(const AZ::EntityId& entityId)
@@ -771,6 +800,7 @@ namespace MaxineRuntimeExitFixture
         m_characterAnimationPlaybackActiveStateObserved = false;
         m_characterAnimationPlaybackProbeComplete = false;
         m_characterAnimationPlaybackError = false;
+        m_characterAnimationPlaybackReadinessStartTick = 0;
         m_characterAnimationPlaybackStartTick = 0;
         m_characterAnimationPlaybackObservationTicks = 8;
         m_characterAnimationPlaybackTimeBefore = 0.0f;
@@ -1193,9 +1223,84 @@ namespace MaxineRuntimeExitFixture
                 selectedEntity->GetId(),
                 &EMotionFX::Integration::SimpleMotionComponentRequestBus::Events::GetDuration);
 
+            EMotionFX::Integration::ActorComponent* actorComponent = RuntimeActorComponent(*selectedEntity);
+            EMotionFX::ActorInstance* actorInstance = actorComponent != nullptr ? actorComponent->GetActorInstance() : nullptr;
+            const bool actorInstanceAvailable = actorInstance != nullptr;
+            const bool actorMotionSystemAvailable =
+                actorInstanceAvailable && actorInstance->GetMotionSystem() != nullptr;
+            const bool motionAssetReady = RuntimeMotionAssetReady(motionAssetId);
+            const bool motionInstanceAvailableBefore = simpleMotionComponent->GetMotionInstance() != nullptr;
+            if (m_characterAnimationPlaybackReadinessStartTick == 0)
+            {
+                m_characterAnimationPlaybackReadinessStartTick = m_ticksObserved;
+            }
+            const AZ::u64 readinessTicks = m_ticksObserved >= m_characterAnimationPlaybackReadinessStartTick
+                ? (m_ticksObserved - m_characterAnimationPlaybackReadinessStartTick)
+                : 0;
+
+            AZ_TracePrintf(
+                TraceWindow,
+                "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_PREFLIGHT entity_id=%s actor_instance_available=%u actor_motion_system_available=%u motion_asset_ready=%u motion_instance_available_before=%u motion_asset_assignment_verified=1 readiness_tick_count=%llu status=%s blocker=%s\n",
+                m_characterAnimationPlaybackEntityId.c_str(),
+                actorInstanceAvailable ? 1 : 0,
+                actorMotionSystemAvailable ? 1 : 0,
+                motionAssetReady ? 1 : 0,
+                motionInstanceAvailableBefore ? 1 : 0,
+                static_cast<unsigned long long>(readinessTicks),
+                (actorInstanceAvailable && actorMotionSystemAvailable && motionAssetReady) ? "pass" : "pending",
+                (!actorInstanceAvailable)
+                    ? "blocked_by_runtime_actor_instance_unavailable_for_playback"
+                    : (!actorMotionSystemAvailable)
+                    ? "blocked_by_runtime_actor_motion_system_unavailable_for_playback"
+                    : (!motionAssetReady)
+                    ? "blocked_by_runtime_motion_asset_not_ready_for_playback"
+                    : "");
+
+            if (!actorInstanceAvailable || !actorMotionSystemAvailable || !motionAssetReady)
+            {
+                if (readinessTicks < m_characterAnimationPlaybackObservationTicks)
+                {
+                    return false;
+                }
+
+                m_characterAnimationPlaybackError = true;
+                m_characterAnimationPlaybackProbeComplete = true;
+                m_characterAnimationPlaybackBlocker =
+                    !actorInstanceAvailable
+                    ? "blocked_by_runtime_actor_instance_unavailable_for_playback"
+                    : (!actorMotionSystemAvailable)
+                    ? "blocked_by_runtime_actor_motion_system_unavailable_for_playback"
+                    : "blocked_by_runtime_motion_asset_not_ready_for_playback";
+                AZ_TracePrintf(
+                    TraceWindow,
+                    "MAXINE_RUNTIME_ANIMATION_PLAYBACK_OBSERVE entity_id=%s actor_instance_available=%u actor_motion_system_available=%u motion_asset_ready=%u play_time_before=%f play_time_after=%f time_advanced=0 active_state_observed=0 started=0 observed=0 tick_count=%llu status=fail blocker=%s\n",
+                    m_characterAnimationPlaybackEntityId.c_str(),
+                    actorInstanceAvailable ? 1 : 0,
+                    actorMotionSystemAvailable ? 1 : 0,
+                    motionAssetReady ? 1 : 0,
+                    static_cast<double>(m_characterAnimationPlaybackTimeBefore),
+                    static_cast<double>(m_characterAnimationPlaybackTimeBefore),
+                    static_cast<unsigned long long>(readinessTicks),
+                    m_characterAnimationPlaybackBlocker.c_str());
+                AZ_TracePrintf(
+                    TraceWindow,
+                    "MAXINE_RUNTIME_ANIMATION_PLAYBACK_SUMMARY status=fail requested=0 request_succeeded=0 started=0 observed=0 time_advanced=0 active_state_observed=0 tick_count=%llu cleanup=deferred_until_spawn_cleanup actor_instance_available=%u actor_motion_system_available=%u motion_asset_ready=%u blocker=%s\n",
+                    static_cast<unsigned long long>(readinessTicks),
+                    actorInstanceAvailable ? 1 : 0,
+                    actorMotionSystemAvailable ? 1 : 0,
+                    motionAssetReady ? 1 : 0,
+                    m_characterAnimationPlaybackBlocker.c_str());
+                return true;
+            }
+
             AZ_TracePrintf(
                 TraceWindow,
                 "MAXINE_RUNTIME_ANIMATION_PLAYBACK_SOURCE_VALIDATED api=EMotionFX::Integration::SimpleMotionComponentRequestBus::PlayMotion observe=EMotionFX::Integration::SimpleMotionComponentRequestBus::GetPlayTime motion_instance=EMotionFX::Integration::SimpleMotionComponent::GetMotionInstance status=pass\n");
+
+            AZ_TracePrintf(
+                TraceWindow,
+                "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_CALL entity_id=%s phase=before api=SimpleMotionComponentRequestBus::PlayMotion call_reached=1\n",
+                m_characterAnimationPlaybackEntityId.c_str());
 
             EMotionFX::Integration::SimpleMotionComponentRequestBus::Event(
                 selectedEntity->GetId(),
@@ -1209,20 +1314,41 @@ namespace MaxineRuntimeExitFixture
                 motionInstance != nullptr && motionInstance->GetIsPlaying();
             m_characterAnimationPlaybackStartTick = m_ticksObserved;
 
+            const bool motionInstanceAvailableAfter = motionInstance != nullptr;
+            const char* requestStatus = m_characterAnimationPlaybackRequestSucceeded ? "pass" : "fail";
+            const char* requestBlocker =
+                m_characterAnimationPlaybackRequestSucceeded
+                    ? ""
+                    : "blocked_by_runtime_simple_motion_motion_instance_null";
+
             AZ_TracePrintf(
                 TraceWindow,
-                "MAXINE_RUNTIME_ANIMATION_PLAYBACK_REQUEST entity_id=%s motion_asset_id=%s api=SimpleMotionComponentRequestBus::PlayMotion play_time_before=%f duration=%f request_succeeded=%u status=issued\n",
+                "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_CALL entity_id=%s phase=after api=SimpleMotionComponentRequestBus::PlayMotion call_returned=1 motion_instance_available_after=%u request_succeeded=%u status=%s blocker=%s\n",
+                m_characterAnimationPlaybackEntityId.c_str(),
+                motionInstanceAvailableAfter ? 1 : 0,
+                m_characterAnimationPlaybackRequestSucceeded ? 1 : 0,
+                requestStatus,
+                requestBlocker);
+
+            AZ_TracePrintf(
+                TraceWindow,
+                "MAXINE_RUNTIME_ANIMATION_PLAYBACK_REQUEST entity_id=%s motion_asset_id=%s api=SimpleMotionComponentRequestBus::PlayMotion play_time_before=%f duration=%f actor_instance_available=%u actor_motion_system_available=%u motion_asset_ready=%u motion_instance_available_before=%u motion_instance_available_after=%u request_succeeded=%u status=issued\n",
                 m_characterAnimationPlaybackEntityId.c_str(),
                 m_characterAnimationPlaybackMotionAssetId.c_str(),
                 static_cast<double>(m_characterAnimationPlaybackTimeBefore),
                 static_cast<double>(m_characterAnimationPlaybackDuration),
+                actorInstanceAvailable ? 1 : 0,
+                actorMotionSystemAvailable ? 1 : 0,
+                motionAssetReady ? 1 : 0,
+                motionInstanceAvailableBefore ? 1 : 0,
+                motionInstanceAvailableAfter ? 1 : 0,
                 m_characterAnimationPlaybackRequestSucceeded ? 1 : 0);
 
             if (!m_characterAnimationPlaybackRequestSucceeded)
             {
                 m_characterAnimationPlaybackError = true;
                 m_characterAnimationPlaybackProbeComplete = true;
-                m_characterAnimationPlaybackBlocker = "blocked_by_runtime_animation_playback_request_failed";
+                m_characterAnimationPlaybackBlocker = requestBlocker;
                 AZ_TracePrintf(
                     TraceWindow,
                     "MAXINE_RUNTIME_ANIMATION_PLAYBACK_OBSERVE entity_id=%s play_time_before=%f play_time_after=%f time_advanced=0 active_state_observed=0 started=0 observed=0 tick_count=0 status=fail blocker=%s\n",

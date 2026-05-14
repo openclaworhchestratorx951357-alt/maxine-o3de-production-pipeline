@@ -105,6 +105,7 @@ namespace MaxineRuntimeExitFixture
         bool m_characterAnimationPlaybackActiveStateObserved = false;
         bool m_characterAnimationPlaybackProbeComplete = false;
         bool m_characterAnimationPlaybackError = false;
+        AZ::u64 m_characterAnimationPlaybackReadinessStartTick = 0;
         AZ::u64 m_characterAnimationPlaybackStartTick = 0;
         AZ::u64 m_characterAnimationPlaybackObservationTicks = 8;
         float m_characterAnimationPlaybackTimeBefore = 0.0f;
