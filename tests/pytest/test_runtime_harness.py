@@ -5770,6 +5770,181 @@ def test_runtime_harness_animation_playback_execution_modes_bypass_command_pinni
     assert report["runtime_execution_attempted"] is False
 
 
+def test_runtime_harness_animation_product_load_prerequisite_diagnostic_records_source_validation(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=False)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _append_approved_character_spawnable_product(apb)
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_animation_product_load_prerequisite=True,
+        strict=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "runtime-artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_animation_product_load_prerequisite_diagnostic"
+    assert report["runtime_animation_product_load_prerequisite_diagnostic_attempted"] is True
+    assert report["runtime_animation_product_load_prerequisite_diagnostic_completed"] is True
+    assert report["runtime_animation_product_load_prerequisite_source_validation_verified"] is True
+    assert report["runtime_animation_product_load_prerequisite_verified"] is False
+    assert report["runtime_animation_product_load_prerequisite_access_violation_like_exit"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_animation_product_load_prerequisite_fixture_records_request_reached_without_access_violation(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _enable_runtime_animation_playback_execution_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_animation_product_load_prerequisite_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+            ],
+            actor_asset_id="{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+            motion_asset_id="{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0",
+            playback_markers=True,
+            playback_request_succeeded=False,
+            playback_started=False,
+            playback_observed=False,
+            playback_time_advanced=False,
+            playback_active_state_observed=False,
+            playback_blocker="blocked_by_runtime_animation_playback_request_failed",
+        ),
+        artifact_root=tmp_path / "runtime-artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_harness_mode"] == "runtime_animation_product_load_prerequisite_fixture_command"
+    assert report["runtime_animation_product_load_prerequisite_diagnostic_attempted"] is True
+    assert report["runtime_animation_product_load_prerequisite_diagnostic_completed"] is True
+    assert report["runtime_animation_product_load_prerequisite_verified"] is True
+    assert report["runtime_animation_product_load_prerequisite_access_violation_like_exit"] is False
+    assert report["runtime_animation_product_load_prerequisite_runtime_exit_code_hex"] == "0x00000000"
+    assert report["runtime_animation_product_load_prerequisite_spawn_reached"] is True
+    assert report["runtime_animation_product_load_prerequisite_assignment_readback_reached"] is True
+    assert report["runtime_animation_product_load_prerequisite_playback_request_reached"] is True
+    assert report["runtime_animation_product_load_prerequisite_cleanup_reached"] is True
+    assert report["runtime_animation_playback_request_attempted"] is True
+    assert report["runtime_animation_playback_request_succeeded"] is False
+    assert report["runtime_animation_playback_execution_api_blocker"] == (
+        "blocked_by_runtime_animation_playback_request_failed"
+    )
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_animation_product_load_prerequisite_fixture_blocks_access_violation(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _enable_runtime_animation_playback_execution_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+
+    def _runner(**kwargs: object) -> subprocess.CompletedProcess[str]:
+        result = _animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+            ],
+            actor_asset_id="{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+            motion_asset_id="{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0",
+        )(**kwargs)
+        return subprocess.CompletedProcess(result.args, 3221225477, stdout=result.stdout, stderr=result.stderr)
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_animation_product_load_prerequisite_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_runner,
+        artifact_root=tmp_path / "runtime-artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_animation_product_load_prerequisite_verified"] is False
+    assert report["runtime_animation_product_load_prerequisite_access_violation_like_exit"] is True
+    assert report["runtime_animation_product_load_prerequisite_runtime_exit_code_hex"] == "0xC0000005"
+    assert report["runtime_animation_product_load_prerequisite_blocker"] == (
+        "blocked_by_runtime_animation_product_load_access_violation"
+    )
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_animation_product_load_prerequisite_modes_bypass_command_pinning(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=False)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _append_approved_character_spawnable_product(apb)
+
+    def _runner(**_kwargs: object) -> subprocess.CompletedProcess[str]:
+        raise AssertionError("product-load prerequisite diagnostic must not execute command pinning")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        pin_runtime_command=True,
+        diagnose_runtime_animation_product_load_prerequisite=True,
+        strict=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_runner,
+        artifact_root=tmp_path / "runtime-artifacts",
+    )
+
+    assert report["runtime_harness_mode"] == "runtime_animation_product_load_prerequisite_diagnostic"
+    assert report["runtime_command_pinning_status"] != "runtime_command_pinning_pass"
+    assert report["runtime_execution_attempted"] is False
+
+
 def test_runtime_harness_actor_simple_motion_after_apb_blocks_typeids_without_runtime_assignments(
     tmp_path: Path,
 ) -> None:

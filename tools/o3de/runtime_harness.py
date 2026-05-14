@@ -328,6 +328,8 @@ def run_runtime_harness(
     enable_runtime_poolallocator_signal_classification_fixture: bool = False,
     diagnose_runtime_animation_playback_execution_api: bool = False,
     enable_runtime_animation_playback_execution_fixture: bool = False,
+    diagnose_runtime_animation_product_load_prerequisite: bool = False,
+    enable_runtime_animation_product_load_prerequisite_fixture: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -383,6 +385,8 @@ def run_runtime_harness(
         and not enable_runtime_poolallocator_signal_classification_fixture
         and not diagnose_runtime_animation_playback_execution_api
         and not enable_runtime_animation_playback_execution_fixture
+        and not diagnose_runtime_animation_product_load_prerequisite
+        and not enable_runtime_animation_product_load_prerequisite_fixture
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -443,6 +447,8 @@ def run_runtime_harness(
             and not enable_runtime_poolallocator_signal_classification_fixture
             and not diagnose_runtime_animation_playback_execution_api
             and not enable_runtime_animation_playback_execution_fixture
+            and not diagnose_runtime_animation_product_load_prerequisite
+            and not enable_runtime_animation_product_load_prerequisite_fixture
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -521,6 +527,10 @@ def run_runtime_harness(
             if diagnose_runtime_animation_playback_execution_api
             else "runtime_animation_playback_execution_fixture_command"
             if enable_runtime_animation_playback_execution_fixture
+            else "runtime_animation_product_load_prerequisite_diagnostic"
+            if diagnose_runtime_animation_product_load_prerequisite
+            else "runtime_animation_product_load_prerequisite_fixture_command"
+            if enable_runtime_animation_product_load_prerequisite_fixture
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -632,6 +642,8 @@ def run_runtime_harness(
         and not enable_runtime_poolallocator_signal_classification_fixture
         and not diagnose_runtime_animation_playback_execution_api
         and not enable_runtime_animation_playback_execution_fixture
+        and not diagnose_runtime_animation_product_load_prerequisite
+        and not enable_runtime_animation_product_load_prerequisite_fixture
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -869,6 +881,16 @@ def run_runtime_harness(
             artifact_dir=artifact_dir,
         )
 
+    if diagnose_runtime_animation_product_load_prerequisite:
+        return _run_runtime_animation_product_load_prerequisite_diagnostic(
+            report,
+            product_evidence=product_evidence,
+            engine_root=selected_engine,
+            project=selected_project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+
     gate_status = _runtime_gate_status(env_map)
     if gate_status["status"] != "pass":
         report.update(
@@ -900,6 +922,7 @@ def run_runtime_harness(
         or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
         or enable_runtime_poolallocator_signal_classification_fixture
         or enable_runtime_animation_playback_execution_fixture
+        or enable_runtime_animation_product_load_prerequisite_fixture
     ):
         return _run_runtime_exit_fixture_command(
             report,
@@ -921,6 +944,7 @@ def run_runtime_harness(
                 or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
                 or enable_runtime_poolallocator_signal_classification_fixture
                 or enable_runtime_animation_playback_execution_fixture
+                or enable_runtime_animation_product_load_prerequisite_fixture
             ),
             ap_shader_signal_classification=(
                 enable_runtime_exit_fixture_ap_shader_signal_classification
@@ -931,6 +955,7 @@ def run_runtime_harness(
                 or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
                 or enable_runtime_poolallocator_signal_classification_fixture
                 or enable_runtime_animation_playback_execution_fixture
+                or enable_runtime_animation_product_load_prerequisite_fixture
             ),
             character_product_load=enable_runtime_character_product_load_fixture
             or enable_runtime_character_spawn_instantiation_fixture
@@ -938,27 +963,34 @@ def run_runtime_harness(
             or enable_runtime_character_animation_component_wiring_surface_fixture
             or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
             or enable_runtime_poolallocator_signal_classification_fixture
-            or enable_runtime_animation_playback_execution_fixture,
+            or enable_runtime_animation_playback_execution_fixture
+            or enable_runtime_animation_product_load_prerequisite_fixture,
             character_spawn_instantiation=enable_runtime_character_spawn_instantiation_fixture
             or enable_runtime_character_animation_playback_surface_fixture
             or enable_runtime_character_animation_component_wiring_surface_fixture
             or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
             or enable_runtime_poolallocator_signal_classification_fixture
-            or enable_runtime_animation_playback_execution_fixture,
+            or enable_runtime_animation_playback_execution_fixture
+            or enable_runtime_animation_product_load_prerequisite_fixture,
             character_animation_playback_surface=enable_runtime_character_animation_playback_surface_fixture
             or enable_runtime_character_animation_component_wiring_surface_fixture
             or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
             or enable_runtime_poolallocator_signal_classification_fixture
-            or enable_runtime_animation_playback_execution_fixture,
+            or enable_runtime_animation_playback_execution_fixture
+            or enable_runtime_animation_product_load_prerequisite_fixture,
             character_animation_component_wiring_surface=enable_runtime_character_animation_component_wiring_surface_fixture
             or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
             or enable_runtime_poolallocator_signal_classification_fixture
-            or enable_runtime_animation_playback_execution_fixture,
+            or enable_runtime_animation_playback_execution_fixture
+            or enable_runtime_animation_product_load_prerequisite_fixture,
             actor_simple_motion_component_wiring_after_apb=enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
             or enable_runtime_poolallocator_signal_classification_fixture
-            or enable_runtime_animation_playback_execution_fixture,
+            or enable_runtime_animation_playback_execution_fixture
+            or enable_runtime_animation_product_load_prerequisite_fixture,
             poolallocator_signal_classification=enable_runtime_poolallocator_signal_classification_fixture,
-            animation_playback_execution=enable_runtime_animation_playback_execution_fixture,
+            animation_playback_execution=enable_runtime_animation_playback_execution_fixture
+            or enable_runtime_animation_product_load_prerequisite_fixture,
+            animation_product_load_prerequisite=enable_runtime_animation_product_load_prerequisite_fixture,
             product_evidence=product_evidence,
         )
 
@@ -3768,11 +3800,14 @@ def _run_runtime_exit_fixture_command(
     actor_simple_motion_component_wiring_after_apb: bool = False,
     poolallocator_signal_classification: bool = False,
     animation_playback_execution: bool = False,
+    animation_product_load_prerequisite: bool = False,
     product_evidence: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
     report["runtime_harness_mode"] = (
-        "runtime_animation_playback_execution_fixture_command"
+        "runtime_animation_product_load_prerequisite_fixture_command"
+        if animation_product_load_prerequisite
+        else "runtime_animation_playback_execution_fixture_command"
         if animation_playback_execution
         else "runtime_poolallocator_signal_classification_fixture_command"
         if poolallocator_signal_classification
@@ -4005,7 +4040,7 @@ def _run_runtime_exit_fixture_command(
     if character_animation_component_wiring_surface:
         wiring_gate = (
             _runtime_animation_playback_execution_gate_status(env)
-            if animation_playback_execution
+            if animation_playback_execution or animation_product_load_prerequisite
             else _runtime_actor_simple_motion_component_wiring_after_apb_gate_status(env)
             if actor_simple_motion_component_wiring_after_apb
             else _runtime_character_animation_component_wiring_surface_gate_status(env)
@@ -4022,7 +4057,7 @@ def _run_runtime_exit_fixture_command(
             )
             + (
                 tuple(RUNTIME_ANIMATION_PLAYBACK_EXECUTION_GATE_ENV)
-                if animation_playback_execution
+                if animation_playback_execution or animation_product_load_prerequisite
                 else tuple()
             )
         )
@@ -4652,6 +4687,21 @@ def _run_runtime_exit_fixture_command(
         if animation_playback_execution
         else {}
     )
+    runtime_animation_product_load_prerequisite_payload = (
+        _runtime_animation_product_load_prerequisite_execution_payload(
+            product_evidence=product_evidence or report.get("product_evidence_summary", {}),
+            command=command,
+            project=project,
+            combined_text=combined_text,
+            product_load=character_product_load_payload,
+            spawn_instantiation=character_spawn_instantiation_payload,
+            component_wiring=character_animation_component_wiring_surface_payload,
+            playback_execution=runtime_animation_playback_execution_payload,
+            exit_code=proc.returncode,
+        )
+        if animation_product_load_prerequisite
+        else {}
+    )
     launch_hygiene_pass = launch_hygiene.get("runtime_launch_hygiene_status") == "runtime_launch_hygiene_pass"
     character_product_load_pass = (
         character_product_load_payload.get("runtime_character_product_load_verified") is True
@@ -4740,6 +4790,7 @@ def _run_runtime_exit_fixture_command(
     report.update(character_animation_playback_surface_payload)
     report.update(character_animation_component_wiring_surface_payload)
     report.update(runtime_animation_playback_execution_payload)
+    report.update(runtime_animation_product_load_prerequisite_payload)
     blocked_reason = _runtime_launch_hygiene_blocked_reason(launch_hygiene)
     if pre_autoexec_suppression and str(pre_autoexec_payload.get("runtime_pre_autoexec_candidate_blocker", "")).strip():
         blocked_reason = str(pre_autoexec_payload.get("runtime_pre_autoexec_candidate_blocker", "")).strip()
@@ -4780,6 +4831,16 @@ def _run_runtime_exit_fixture_command(
     ).strip():
         blocked_reason = str(
             runtime_animation_playback_execution_payload.get("runtime_animation_playback_execution_api_blocker", "")
+        ).strip()
+    if animation_product_load_prerequisite and str(
+        runtime_animation_product_load_prerequisite_payload.get(
+            "runtime_animation_product_load_prerequisite_blocker", ""
+        )
+    ).strip():
+        blocked_reason = str(
+            runtime_animation_product_load_prerequisite_payload.get(
+                "runtime_animation_product_load_prerequisite_blocker", ""
+            )
         ).strip()
     if poolallocator_signal_classification and str(
         poolallocator_payload.get("runtime_shutdown_poolallocator_signal_blocker", "")
@@ -10870,6 +10931,311 @@ def _runtime_animation_playback_execution_payload(
     return source_payload
 
 
+def _runtime_animation_product_load_prerequisite_marker_sequence(combined_text: str) -> List[str]:
+    markers: List[str] = []
+    prefixes = (
+        "MAXINE_RUNTIME_PRODUCT_LOAD_",
+        "MAXINE_RUNTIME_CHARACTER_SPAWN_",
+        "MAXINE_RUNTIME_ANIMATION_PLAYBACK_",
+    )
+    for raw_line in combined_text.splitlines():
+        for prefix in prefixes:
+            marker_index = raw_line.find(prefix)
+            if marker_index < 0:
+                continue
+            markers.append(raw_line[marker_index:].strip().split()[0])
+            break
+    return markers
+
+
+def _runtime_animation_product_load_prerequisite_candidate_matrix(
+    *,
+    source_validated: bool,
+    access_violation_like_exit: bool,
+    product_verified: bool,
+    spawn_reached: bool,
+    assignment_readback_reached: bool,
+    playback_request_reached: bool,
+    cleanup_reached: bool,
+) -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "playback_fixture_sequence_matches_component_wiring_fixture",
+            "name": "Playback fixture sequencing diverges from stable component-wiring fixture",
+            "kind": "source_validated_fixture_sequence",
+            "selected": bool(source_validated and product_verified and spawn_reached),
+            "result": "selected_no_access_violation_request_reached"
+            if playback_request_reached and not access_violation_like_exit
+            else "blocked_before_playback_request",
+        },
+        {
+            "id": "simple_motion_motion_instance_null",
+            "name": "Simple Motion component or motion instance null during playback request",
+            "kind": "runtime_playback_setup_blocker",
+            "selected": bool(playback_request_reached and not access_violation_like_exit),
+            "result": "blocked_by_runtime_animation_playback_request_failed"
+            if playback_request_reached
+            else "not_reached",
+        },
+        {
+            "id": "actor_instance_unavailable_before_play_motion",
+            "name": "Actor instance unavailable before PlayMotion",
+            "kind": "runtime_playback_setup_blocker",
+            "selected": False,
+            "result": "not_selected_without_actor_instance_specific_marker",
+        },
+        {
+            "id": "motion_asset_ready_but_not_playable",
+            "name": "Motion asset ready/read back but not playable at request time",
+            "kind": "runtime_motion_asset_readiness",
+            "selected": bool(assignment_readback_reached and playback_request_reached),
+            "result": "candidate_for_next_slice_if_request_failure_persists"
+            if assignment_readback_reached and playback_request_reached
+            else "not_reached",
+        },
+        {
+            "id": "cleanup_or_shutdown_access_violation",
+            "name": "Cleanup/despawn/shutdown access violation",
+            "kind": "runtime_shutdown_crash",
+            "selected": bool(access_violation_like_exit),
+            "result": "blocked_by_runtime_animation_product_load_access_violation"
+            if access_violation_like_exit
+            else "rejected_access_violation_not_reproduced",
+        },
+        {
+            "id": "infer_playback_from_component_wiring",
+            "name": "Infer playback from component wiring",
+            "kind": "rejected_insufficient_evidence",
+            "selected": False,
+            "result": "rejected_component_wiring_is_not_playback_proof",
+        },
+        {
+            "id": "infer_playback_from_motion_assignment",
+            "name": "Infer playback from motion assignment readback",
+            "kind": "rejected_insufficient_evidence",
+            "selected": False,
+            "result": "rejected_motion_assignment_is_not_playback_proof",
+        },
+        {
+            "id": "defaultlevel_or_production_level_playback",
+            "name": "Defaultlevel or production-level playback proof",
+            "kind": "rejected_unsafe_scope",
+            "selected": False,
+            "result": "rejected_defaultlevel_and_production_levels_out_of_scope",
+        },
+    ]
+
+
+def _runtime_animation_product_load_prerequisite_source_payload(
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    playback_source = _runtime_animation_playback_execution_source_payload(
+        product_evidence=product_evidence,
+        engine_root=engine_root,
+        project=project,
+        timeout_seconds=timeout_seconds,
+        artifact_dir=artifact_dir,
+    )
+    source_validated = playback_source.get("runtime_animation_playback_execution_api_source_validation_verified") is True
+    return {
+        "runtime_animation_product_load_prerequisite_diagnostic_attempted": True,
+        "runtime_animation_product_load_prerequisite_diagnostic_completed": True,
+        "runtime_animation_product_load_prerequisite_source_validation_status": "runtime_animation_product_load_prerequisite_source_validation_pass"
+        if source_validated
+        else "runtime_animation_product_load_prerequisite_source_validation_inconclusive",
+        "runtime_animation_product_load_prerequisite_source_validation_verified": source_validated,
+        "runtime_animation_product_load_prerequisite_source_files": playback_source.get(
+            "runtime_animation_playback_execution_api_source_files", []
+        ),
+        "runtime_animation_product_load_prerequisite_source_validation": playback_source.get(
+            "runtime_animation_playback_execution_api_source_validation", {}
+        ),
+        "runtime_animation_product_load_prerequisite_verified": False,
+        "runtime_animation_product_load_prerequisite_blocker": ""
+        if source_validated
+        else "blocked_by_runtime_animation_playback_requires_additional_source_validation",
+        "runtime_animation_product_load_prerequisite_candidate_matrix": _runtime_animation_product_load_prerequisite_candidate_matrix(
+            source_validated=source_validated,
+            access_violation_like_exit=False,
+            product_verified=False,
+            spawn_reached=False,
+            assignment_readback_reached=False,
+            playback_request_reached=False,
+            cleanup_reached=False,
+        ),
+        "runtime_animation_product_load_prerequisite_selected_strategy": (
+            "runtime_playback_fixture_product_load_prerequisite_marker_sequence"
+            if source_validated
+            else ""
+        ),
+        "runtime_animation_product_load_prerequisite_runtime_exit_code": None,
+        "runtime_animation_product_load_prerequisite_runtime_exit_code_hex": "",
+        "runtime_animation_product_load_prerequisite_access_violation_like_exit": False,
+        "runtime_animation_product_load_prerequisite_marker_sequence": [],
+        "runtime_animation_product_load_prerequisite_spawn_reached": False,
+        "runtime_animation_product_load_prerequisite_assignment_readback_reached": False,
+        "runtime_animation_product_load_prerequisite_playback_request_reached": False,
+        "runtime_animation_product_load_prerequisite_cleanup_reached": False,
+    }
+
+
+def _run_runtime_animation_product_load_prerequisite_diagnostic(
+    report: Dict[str, Any],
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    payload = _runtime_animation_product_load_prerequisite_source_payload(
+        product_evidence=product_evidence,
+        engine_root=engine_root,
+        project=project,
+        timeout_seconds=timeout_seconds,
+        artifact_dir=artifact_dir,
+    )
+    source_validated = payload.get("runtime_animation_product_load_prerequisite_source_validation_verified") is True
+    report.update(payload)
+    report.update(
+        {
+            "status": "pass" if source_validated else "fail",
+            "runtime_harness_status": "runtime_animation_product_load_prerequisite_source_discovery"
+            if source_validated
+            else "blocked_by_runtime_animation_product_load_prerequisite_source_validation",
+            "runtime_harness_mode": "runtime_animation_product_load_prerequisite_diagnostic",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "runtime_character_animation_claimed": False,
+            "runtime_character_animation_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_animation_product_load_prerequisite_source_validation"
+            ]
+            if source_validated
+            else [],
+            "required_runtime_harness_assertions_failed": []
+            if source_validated
+            else ["runtime_animation_product_load_prerequisite_source_validation"],
+        }
+    )
+    return _finalize_report(report)
+
+
+def _runtime_animation_product_load_prerequisite_execution_payload(
+    *,
+    product_evidence: Mapping[str, Any],
+    command: Mapping[str, Any],
+    project: Path | None,
+    combined_text: str,
+    product_load: Mapping[str, Any],
+    spawn_instantiation: Mapping[str, Any],
+    component_wiring: Mapping[str, Any],
+    playback_execution: Mapping[str, Any],
+    exit_code: int | None,
+) -> Dict[str, Any]:
+    payload = _runtime_animation_product_load_prerequisite_source_payload(
+        product_evidence=product_evidence,
+        engine_root=_runtime_engine_root_from_command(command),
+        project=project,
+        timeout_seconds=int(command.get("timeout_seconds", 120)),
+        artifact_dir=DEFAULT_ARTIFACT_ROOT,
+    )
+    source_validated = payload.get("runtime_animation_product_load_prerequisite_source_validation_verified") is True
+    marker_sequence = _runtime_animation_product_load_prerequisite_marker_sequence(combined_text)
+    exit_hex = _exit_code_hex(exit_code)
+    access_violation_like_exit = exit_hex == "0xC0000005"
+    product_verified = product_load.get("runtime_character_product_load_verified") is True
+    spawn_reached = bool(
+        spawn_instantiation.get("runtime_character_spawn_instantiation_spawn_request_issued")
+        or spawn_instantiation.get("runtime_character_spawn_instantiation_spawn_completion_observed")
+        or _int_or_zero(spawn_instantiation.get("runtime_character_spawn_instantiation_spawned_entity_count", 0)) > 0
+    )
+    assignment_readback_reached = bool(
+        component_wiring.get("runtime_character_animation_component_wiring_runtime_actor_asset_assignment_verified")
+        and component_wiring.get("runtime_character_animation_component_wiring_runtime_motion_asset_assignment_verified")
+    )
+    playback_request_reached = playback_execution.get("runtime_animation_playback_request_attempted") is True
+    cleanup_reached = str(
+        spawn_instantiation.get("runtime_character_spawn_instantiation_cleanup_status", "")
+    ).strip() in {
+        "runtime_character_spawn_instantiation_cleanup_complete",
+        "runtime_character_spawn_instantiation_cleanup_not_required",
+    }
+    verified = bool(
+        source_validated
+        and product_verified
+        and spawn_reached
+        and assignment_readback_reached
+        and playback_request_reached
+        and cleanup_reached
+        and not access_violation_like_exit
+        and exit_code == 0
+    )
+    blocker = ""
+    if access_violation_like_exit:
+        blocker = "blocked_by_runtime_animation_product_load_access_violation"
+    elif not source_validated:
+        blocker = "blocked_by_runtime_animation_product_load_prerequisite_source_validation"
+    elif not product_verified:
+        blocker = "blocked_by_runtime_animation_product_load_prerequisite"
+    elif not spawn_reached:
+        blocker = "blocked_by_runtime_animation_product_load_spawn_not_reached"
+    elif not assignment_readback_reached:
+        blocker = "blocked_by_runtime_animation_product_load_assignment_readback_not_reached"
+    elif not playback_request_reached:
+        blocker = "blocked_by_runtime_animation_product_load_playback_request_not_reached"
+    elif not cleanup_reached:
+        blocker = "blocked_by_runtime_playback_cleanup_incomplete"
+    elif exit_code != 0:
+        blocker = "blocked_by_runtime_animation_product_load_nonzero_exit"
+    payload.update(
+        {
+            "runtime_animation_product_load_prerequisite_verified": verified,
+            "runtime_animation_product_load_prerequisite_blocker": "" if verified else blocker,
+            "runtime_animation_product_load_prerequisite_candidate_matrix": _runtime_animation_product_load_prerequisite_candidate_matrix(
+                source_validated=source_validated,
+                access_violation_like_exit=access_violation_like_exit,
+                product_verified=product_verified,
+                spawn_reached=spawn_reached,
+                assignment_readback_reached=assignment_readback_reached,
+                playback_request_reached=playback_request_reached,
+                cleanup_reached=cleanup_reached,
+            ),
+            "runtime_animation_product_load_prerequisite_selected_strategy": (
+                "runtime_playback_fixture_product_load_prerequisite_marker_sequence"
+                if source_validated
+                else ""
+            ),
+            "runtime_animation_product_load_prerequisite_runtime_exit_code": exit_code,
+            "runtime_animation_product_load_prerequisite_runtime_exit_code_hex": exit_hex,
+            "runtime_animation_product_load_prerequisite_access_violation_like_exit": access_violation_like_exit,
+            "runtime_animation_product_load_prerequisite_marker_sequence": marker_sequence,
+            "runtime_animation_product_load_prerequisite_spawn_reached": spawn_reached,
+            "runtime_animation_product_load_prerequisite_assignment_readback_reached": assignment_readback_reached,
+            "runtime_animation_product_load_prerequisite_playback_request_reached": playback_request_reached,
+            "runtime_animation_product_load_prerequisite_cleanup_reached": cleanup_reached,
+            "runtime_animation_product_load_prerequisite_playback_blocker_after_prerequisite": str(
+                playback_execution.get("runtime_animation_playback_execution_api_blocker", "")
+            ),
+            "runtime_animation_playback_execution_api_source_validation_verified": playback_execution.get(
+                "runtime_animation_playback_execution_api_source_validation_verified", False
+            ),
+            "runtime_animation_playback_execution_api_found": playback_execution.get(
+                "runtime_animation_playback_execution_api_found", False
+            ),
+        }
+    )
+    return payload
+
+
 def _runtime_animation_playback_execution_fixture_passed(report: Mapping[str, Any]) -> bool:
     return (
         _runtime_animation_playback_execution_source_validated(report)
@@ -16350,6 +16716,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--enable-runtime-poolallocator-signal-classification-fixture", action="store_true")
     parser.add_argument("--diagnose-runtime-animation-playback-execution-api", action="store_true")
     parser.add_argument("--enable-runtime-animation-playback-execution-fixture", action="store_true")
+    parser.add_argument("--diagnose-runtime-animation-product-load-prerequisite", action="store_true")
+    parser.add_argument("--enable-runtime-animation-product-load-prerequisite-fixture", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -16435,6 +16803,12 @@ def main() -> int:
         ),
         enable_runtime_animation_playback_execution_fixture=(
             args.enable_runtime_animation_playback_execution_fixture
+        ),
+        diagnose_runtime_animation_product_load_prerequisite=(
+            args.diagnose_runtime_animation_product_load_prerequisite
+        ),
+        enable_runtime_animation_product_load_prerequisite_fixture=(
+            args.enable_runtime_animation_product_load_prerequisite_fixture
         ),
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,

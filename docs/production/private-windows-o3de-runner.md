@@ -206,6 +206,34 @@ python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigge
 
 The source pin is `EMotionFX::Integration::SimpleMotionComponentRequestBus::PlayMotion`, `GetPlayTime`, `GetDuration`, and `GetMotion`, plus `SimpleMotionComponent::GetMotionInstance`, `MotionInstance::GetIsPlaying`, and `MotionSystem::PlayMotion` / update surfaces. The fixture may claim runtime animation playback only when APB/spawnable proof, runtime Actor and Simple Motion TypeIds, runtime actor/motion assignment readback, the PR #155 motion-handler classification, the PR #157 PoolAllocator selected-log policy, playback request success, bounded tick/time-advance observation, cleanup/despawn, and no-defaultlevel/no-production gates all pass. Motion assignment, TypeIds, product-load evidence, or playback markers alone are not full proof. Full runtime character behavior remains a later gate even if playback is observed.
 
+Runtime animation product-load prerequisite diagnostics isolate access-violation-like failures before any playback claim:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-animation-product-load-prerequisite --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWN_INSTANTIATION="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_SPAWN_INSTANTIATION="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE="1"
+$env:MAXINE_ENABLE_RUNTIME_ACTOR_SIMPLE_MOTION_COMPONENT_WIRING_AFTER_APB="1"
+$env:MAXINE_ALLOW_RUNTIME_ACTOR_SIMPLE_MOTION_COMPONENT_WIRING_AFTER_APB="1"
+$env:MAXINE_ENABLE_RUNTIME_ANIMATION_PLAYBACK_EXECUTION="1"
+$env:MAXINE_ALLOW_RUNTIME_ANIMATION_PLAYBACK_EXECUTION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-animation-product-load-prerequisite-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 240
+```
+
+This diagnostic records `runtime_animation_product_load_prerequisite_marker_sequence`, `runtime_animation_product_load_prerequisite_spawn_reached`, `runtime_animation_product_load_prerequisite_assignment_readback_reached`, `runtime_animation_product_load_prerequisite_playback_request_reached`, `runtime_animation_product_load_prerequisite_cleanup_reached`, and the runtime exit code. A `0xC0000005` exit remains `blocked_by_runtime_animation_product_load_access_violation`; it is not softened by earlier product-load, spawn, assignment, or playback request markers. If the access violation is absent and the marker sequence reaches the playback request, the product-load prerequisite can be recorded separately from the next playback blocker. Animation proof still requires request success plus bounded observation/time advance.
+
 Approved Editor-generated runtime animation component wiring diagnostics require the Editor smoke gates plus an explicit generation marker:
 
 ```powershell
