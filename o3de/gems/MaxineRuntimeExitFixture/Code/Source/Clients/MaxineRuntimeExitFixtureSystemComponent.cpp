@@ -1149,7 +1149,11 @@ namespace MaxineRuntimeExitFixture
                 m_characterAnimationPlaybackBlocker = "blocked_by_runtime_simple_motion_component_missing_for_playback";
                 AZ_TracePrintf(
                     TraceWindow,
-                    "MAXINE_RUNTIME_ANIMATION_PLAYBACK_SUMMARY status=fail requested=0 request_succeeded=0 started=0 observed=0 time_advanced=0 active_state_observed=0 tick_count=0 cleanup=not_started blocker=%s\n",
+                    "MAXINE_RUNTIME_ANIMATION_PLAYBACK_OBSERVE entity_id=none simple_motion_component_found=0 play_time_before=0.000000 play_time_after=0.000000 time_advanced=0 active_state_observed=0 started=0 observed=0 tick_count=0 status=fail blocker=%s\n",
+                    m_characterAnimationPlaybackBlocker.c_str());
+                AZ_TracePrintf(
+                    TraceWindow,
+                    "MAXINE_RUNTIME_ANIMATION_PLAYBACK_SUMMARY status=fail requested=0 request_succeeded=0 started=0 observed=0 time_advanced=0 active_state_observed=0 tick_count=0 cleanup=not_started simple_motion_component_found=0 blocker=%s\n",
                     m_characterAnimationPlaybackBlocker.c_str());
                 return true;
             }
@@ -1170,7 +1174,12 @@ namespace MaxineRuntimeExitFixture
                 m_characterAnimationPlaybackBlocker = "blocked_by_runtime_motion_asset_assignment_unverified";
                 AZ_TracePrintf(
                     TraceWindow,
-                    "MAXINE_RUNTIME_ANIMATION_PLAYBACK_SUMMARY status=fail requested=0 request_succeeded=0 started=0 observed=0 time_advanced=0 active_state_observed=0 tick_count=0 cleanup=not_started blocker=%s\n",
+                    "MAXINE_RUNTIME_ANIMATION_PLAYBACK_OBSERVE entity_id=%s simple_motion_component_found=1 motion_asset_assignment_verified=0 play_time_before=0.000000 play_time_after=0.000000 time_advanced=0 active_state_observed=0 started=0 observed=0 tick_count=0 status=fail blocker=%s\n",
+                    m_characterAnimationPlaybackEntityId.c_str(),
+                    m_characterAnimationPlaybackBlocker.c_str());
+                AZ_TracePrintf(
+                    TraceWindow,
+                    "MAXINE_RUNTIME_ANIMATION_PLAYBACK_SUMMARY status=fail requested=0 request_succeeded=0 started=0 observed=0 time_advanced=0 active_state_observed=0 tick_count=0 cleanup=not_started simple_motion_component_found=1 motion_asset_assignment_verified=0 blocker=%s\n",
                     m_characterAnimationPlaybackBlocker.c_str());
                 return true;
             }
@@ -1237,9 +1246,31 @@ namespace MaxineRuntimeExitFixture
             entity != nullptr ? RuntimeSimpleMotionComponent(*entity) : nullptr;
         if (simpleMotionComponent == nullptr)
         {
+            const AZ::u64 observedTicks = m_ticksObserved >= m_characterAnimationPlaybackStartTick
+                ? (m_ticksObserved - m_characterAnimationPlaybackStartTick)
+                : 0;
             m_characterAnimationPlaybackError = true;
             m_characterAnimationPlaybackProbeComplete = true;
             m_characterAnimationPlaybackBlocker = "blocked_by_runtime_simple_motion_component_missing_for_playback";
+            AZ_TracePrintf(
+                TraceWindow,
+                "MAXINE_RUNTIME_ANIMATION_PLAYBACK_OBSERVE entity_id=%s simple_motion_component_found=0 play_time_before=%f play_time_after=%f time_advanced=0 active_state_observed=%u started=%u observed=0 tick_count=%llu status=fail blocker=%s\n",
+                m_characterAnimationPlaybackEntityId.c_str(),
+                static_cast<double>(m_characterAnimationPlaybackTimeBefore),
+                static_cast<double>(m_characterAnimationPlaybackTimeAfter),
+                m_characterAnimationPlaybackActiveStateObserved ? 1 : 0,
+                m_characterAnimationPlaybackStarted ? 1 : 0,
+                static_cast<unsigned long long>(observedTicks),
+                m_characterAnimationPlaybackBlocker.c_str());
+            AZ_TracePrintf(
+                TraceWindow,
+                "MAXINE_RUNTIME_ANIMATION_PLAYBACK_SUMMARY status=fail requested=%u request_succeeded=%u started=%u observed=0 time_advanced=0 active_state_observed=%u tick_count=%llu cleanup=deferred_until_spawn_cleanup simple_motion_component_found=0 blocker=%s\n",
+                m_characterAnimationPlaybackRequestAttempted ? 1 : 0,
+                m_characterAnimationPlaybackRequestSucceeded ? 1 : 0,
+                m_characterAnimationPlaybackStarted ? 1 : 0,
+                m_characterAnimationPlaybackActiveStateObserved ? 1 : 0,
+                static_cast<unsigned long long>(observedTicks),
+                m_characterAnimationPlaybackBlocker.c_str());
             return true;
         }
 

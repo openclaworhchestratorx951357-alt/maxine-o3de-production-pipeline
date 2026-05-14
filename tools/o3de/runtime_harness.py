@@ -10573,6 +10573,8 @@ def _runtime_animation_playback_parse_markers(combined_text: str) -> Dict[str, A
         "motion_asset_id": "",
         "selected_api": "",
         "blocker": "",
+        "actor_component_found": None,
+        "simple_motion_component_found": None,
         "summary": {},
     }
     for raw_line in combined_text.splitlines():
@@ -10606,6 +10608,20 @@ def _runtime_animation_playback_parse_markers(combined_text: str) -> Dict[str, A
                 "true",
                 "True",
             }
+            if "actor_component_found" in fields:
+                payload["actor_component_found"] = str(fields.get("actor_component_found", "")).strip() in {
+                    "1",
+                    "true",
+                    "True",
+                }
+            if "simple_motion_component_found" in fields:
+                payload["simple_motion_component_found"] = str(
+                    fields.get("simple_motion_component_found", "")
+                ).strip() in {
+                    "1",
+                    "true",
+                    "True",
+                }
             payload["tick_count"] = _int_or_zero(fields.get("tick_count", 0))
             if str(fields.get("blocker", "")).strip():
                 payload["blocker"] = str(fields.get("blocker", "")).strip()
@@ -10621,6 +10637,20 @@ def _runtime_animation_playback_parse_markers(combined_text: str) -> Dict[str, A
             payload["active_state_observed"] = payload["active_state_observed"] or str(
                 fields.get("active_state_observed", "")
             ).strip() in {"1", "true", "True"}
+            if "actor_component_found" in fields:
+                payload["actor_component_found"] = str(fields.get("actor_component_found", "")).strip() in {
+                    "1",
+                    "true",
+                    "True",
+                }
+            if "simple_motion_component_found" in fields:
+                payload["simple_motion_component_found"] = str(
+                    fields.get("simple_motion_component_found", "")
+                ).strip() in {
+                    "1",
+                    "true",
+                    "True",
+                }
             payload["tick_count"] = max(
                 _int_or_zero(payload.get("tick_count", 0)),
                 _int_or_zero(fields.get("tick_count", 0)),
@@ -10667,9 +10697,18 @@ def _runtime_animation_playback_execution_payload(
         "runtime_character_spawn_instantiation_cleanup_complete",
         "runtime_character_spawn_instantiation_cleanup_not_required",
     }
-    actor_found = component_wiring.get("runtime_character_animation_component_wiring_runtime_actor_component_found") is True
+    marker_actor_found = markers.get("actor_component_found")
+    marker_simple_motion_found = markers.get("simple_motion_component_found")
+    actor_found = (
+        bool(marker_actor_found)
+        if marker_actor_found is not None
+        else component_wiring.get("runtime_character_animation_component_wiring_runtime_actor_component_found") is True
+    )
     simple_motion_found = (
-        component_wiring.get("runtime_character_animation_component_wiring_runtime_simple_motion_component_found") is True
+        bool(marker_simple_motion_found)
+        if marker_simple_motion_found is not None
+        else component_wiring.get("runtime_character_animation_component_wiring_runtime_simple_motion_component_found")
+        is True
     )
     actor_assignment_verified = (
         component_wiring.get("runtime_character_animation_component_wiring_runtime_actor_asset_assignment_verified") is True
@@ -10691,6 +10730,7 @@ def _runtime_animation_playback_execution_payload(
     time_advanced = bool(markers.get("time_advanced"))
     active_state_observed = bool(markers.get("active_state_observed"))
     tick_count = _int_or_zero(markers.get("tick_count", 0))
+    marker_blocker = str(markers.get("blocker", "")).strip()
     preconditions_verified = bool(
         source_validated
         and product_prerequisite
@@ -10729,23 +10769,27 @@ def _runtime_animation_playback_execution_payload(
     elif selected_log_blocks_playback:
         blocker = RUNTIME_SHUTDOWN_POOLALLOCATOR_SIGNAL_BLOCKER
     elif not product_prerequisite:
-        blocker = "blocked_by_runtime_animation_product_load_prerequisite"
+        blocker = marker_blocker or "blocked_by_runtime_animation_product_load_prerequisite"
     elif not spawn_prerequisite:
-        blocker = "blocked_by_runtime_animation_spawn_prerequisite"
+        blocker = marker_blocker or "blocked_by_runtime_animation_spawn_prerequisite"
     elif not component_wiring_verified:
-        blocker = "blocked_by_runtime_animation_component_wiring_prerequisite_unverified"
+        blocker = marker_blocker or "blocked_by_runtime_animation_component_wiring_prerequisite_unverified"
+    elif not actor_found:
+        blocker = marker_blocker or "blocked_by_runtime_actor_component_missing_for_playback"
+    elif not simple_motion_found:
+        blocker = marker_blocker or "blocked_by_runtime_simple_motion_component_missing_for_playback"
     elif not motion_assignment_verified or not motion_asset_matches:
-        blocker = "blocked_by_runtime_motion_asset_assignment_unverified"
+        blocker = marker_blocker or "blocked_by_runtime_motion_asset_assignment_unverified"
     elif not request_attempted:
-        blocker = RUNTIME_ANIMATION_PLAYBACK_EXECUTION_OBSERVATION_BLOCKER
+        blocker = marker_blocker or RUNTIME_ANIMATION_PLAYBACK_EXECUTION_OBSERVATION_BLOCKER
     elif not request_succeeded:
-        blocker = "blocked_by_runtime_animation_playback_request_failed"
+        blocker = marker_blocker or "blocked_by_runtime_animation_playback_request_failed"
     elif not playback_started:
-        blocker = "blocked_by_runtime_simple_motion_active_state_unobserved"
+        blocker = marker_blocker or "blocked_by_runtime_simple_motion_active_state_unobserved"
     elif not playback_observed:
-        blocker = str(markers.get("blocker", "")) or "blocked_by_runtime_animation_playback_observation_unavailable"
+        blocker = marker_blocker or "blocked_by_runtime_animation_playback_observation_unavailable"
     elif not time_advanced:
-        blocker = str(markers.get("blocker", "")) or RUNTIME_ANIMATION_PLAYBACK_TIME_NOT_ADVANCED_BLOCKER
+        blocker = marker_blocker or RUNTIME_ANIMATION_PLAYBACK_TIME_NOT_ADVANCED_BLOCKER
     elif not cleanup_complete:
         blocker = "blocked_by_runtime_character_spawn_cleanup_failed"
     source_payload.update(
