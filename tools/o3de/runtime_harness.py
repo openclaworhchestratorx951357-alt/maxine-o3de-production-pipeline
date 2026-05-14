@@ -158,6 +158,21 @@ RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE_SELECTED = (
 RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE_BLOCKER = (
     "blocked_by_approved_prefab_animation_component_wiring_requires_source_validated_editor_generation"
 )
+RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_ASSET_ASSIGNMENT_BLOCKER = (
+    "blocked_by_runtime_animation_component_asset_assignment_unverified"
+)
+RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_ACTOR_ASSET_BLOCKER = (
+    "blocked_by_runtime_actor_asset_assignment_unverified"
+)
+RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_MOTION_ASSET_BLOCKER = (
+    "blocked_by_runtime_motion_asset_assignment_unverified"
+)
+RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_ANIM_GRAPH_ASSET_BLOCKER = (
+    "blocked_by_runtime_anim_graph_asset_assignment_unverified"
+)
+RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_MOTION_SET_ASSET_BLOCKER = (
+    "blocked_by_runtime_motion_set_asset_assignment_unverified"
+)
 RUNTIME_PROCPREFAB_ASSET_TYPE = "{9B7C8459-471E-4EAD-A363-7990CC4065A9}"
 RUNTIME_PROCPREFAB_ASSET_CLASS = "AZ::Prefab::ProceduralPrefabAsset"
 RUNTIME_PROCPREFAB_HANDLER_MODULE = "Gem::PrefabBuilder.Builders"
@@ -1265,6 +1280,51 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
                 MXN_RUNTIME_SMOKE_FAIL,
                 "runtime_character_animation_component_wiring_verified=true requires runtime Actor plus Simple Motion or Anim Graph components.",
             )
+        actor_asset_assignment_verified = (
+            report.get("runtime_character_animation_component_wiring_actor_asset_assignment_verified") is True
+        )
+        motion_asset_assignment_verified = (
+            report.get("runtime_character_animation_component_wiring_motion_asset_assignment_verified") is True
+        )
+        anim_graph_asset_assignment_verified = (
+            report.get("runtime_character_animation_component_wiring_anim_graph_asset_assignment_verified") is True
+        )
+        motion_set_asset_assignment_verified = (
+            report.get("runtime_character_animation_component_wiring_motion_set_asset_assignment_verified") is True
+        )
+        has_simple_motion = report.get("runtime_character_animation_component_wiring_runtime_simple_motion_component_found") is True
+        has_anim_graph = report.get("runtime_character_animation_component_wiring_runtime_anim_graph_component_found") is True
+        simple_motion_wiring_ready = bool(
+            has_actor and has_simple_motion and actor_asset_assignment_verified and motion_asset_assignment_verified
+        )
+        anim_graph_wiring_ready = bool(
+            has_actor
+            and has_anim_graph
+            and actor_asset_assignment_verified
+            and anim_graph_asset_assignment_verified
+            and motion_set_asset_assignment_verified
+        )
+        if has_actor and has_playback_component and not (simple_motion_wiring_ready or anim_graph_wiring_ready):
+            if not actor_asset_assignment_verified:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    "runtime_character_animation_component_wiring_verified=true requires runtime Actor asset assignment evidence.",
+                )
+            if has_simple_motion and not motion_asset_assignment_verified:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    "runtime_character_animation_component_wiring_verified=true requires runtime Motion asset assignment evidence.",
+                )
+            if has_anim_graph and not anim_graph_asset_assignment_verified:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    "runtime_character_animation_component_wiring_verified=true requires runtime Anim Graph asset assignment evidence.",
+                )
+            if has_anim_graph and not motion_set_asset_assignment_verified:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    "runtime_character_animation_component_wiring_verified=true requires runtime Motion Set asset assignment evidence.",
+                )
         if report.get("production_level_mutation") is True or report.get("defaultlevel_mutation") is True:
             result.add_error(
                 MXN_PATH_UNSAFE,
@@ -2207,6 +2267,7 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_character_animation_component_wiring_surface_found": False,
         "runtime_character_animation_component_wiring_surface_verified": False,
         "runtime_character_animation_component_wiring_surface_blocker": "",
+        "runtime_character_animation_component_wiring_blocker": "",
         "runtime_character_animation_component_wiring_candidate_matrix": [],
         "runtime_character_animation_component_wiring_selected_strategy": "",
         "runtime_character_animation_component_wiring_editor_api": {},
@@ -9054,11 +9115,16 @@ def _runtime_character_animation_component_wiring_surface_source_payload(
         "runtime_character_animation_component_wiring_surface_found": False,
         "runtime_character_animation_component_wiring_surface_verified": False,
         "runtime_character_animation_component_wiring_surface_blocker": blocker,
+        "runtime_character_animation_component_wiring_blocker": blocker,
         "runtime_character_animation_component_wiring_candidate_matrix": _runtime_character_animation_component_wiring_candidate_matrix(
             source_validated=source_validated,
             product_found=product_found,
             runtime_inventory=[],
+            runtime_actor_found=False,
+            runtime_simple_motion_found=False,
+            runtime_anim_graph_found=False,
             runtime_surface_found=False,
+            runtime_wiring_verified=False,
             blocker=blocker,
         ),
         "runtime_character_animation_component_wiring_selected_strategy": (
@@ -9113,6 +9179,39 @@ def _runtime_character_animation_component_wiring_surface_source_payload(
     }
 
 
+def _runtime_character_animation_component_wiring_assignment_blocker(
+    *,
+    actor_found: bool,
+    simple_motion_found: bool,
+    anim_graph_found: bool,
+    actor_asset_assignment_verified: bool,
+    motion_asset_assignment_verified: bool,
+    anim_graph_asset_assignment_verified: bool,
+    motion_set_asset_assignment_verified: bool,
+) -> str:
+    if not actor_found or not (simple_motion_found or anim_graph_found):
+        return ""
+    simple_motion_ready = bool(actor_found and simple_motion_found and actor_asset_assignment_verified and motion_asset_assignment_verified)
+    anim_graph_ready = bool(
+        actor_found
+        and anim_graph_found
+        and actor_asset_assignment_verified
+        and anim_graph_asset_assignment_verified
+        and motion_set_asset_assignment_verified
+    )
+    if simple_motion_ready or anim_graph_ready:
+        return ""
+    if not actor_asset_assignment_verified:
+        return RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_ACTOR_ASSET_BLOCKER
+    if simple_motion_found and not motion_asset_assignment_verified:
+        return RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_MOTION_ASSET_BLOCKER
+    if anim_graph_found and not anim_graph_asset_assignment_verified:
+        return RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_ANIM_GRAPH_ASSET_BLOCKER
+    if anim_graph_found and not motion_set_asset_assignment_verified:
+        return RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_MOTION_SET_ASSET_BLOCKER
+    return RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_ASSET_ASSIGNMENT_BLOCKER
+
+
 def _runtime_character_animation_component_wiring_surface_execution_payload(
     *,
     product_evidence: Mapping[str, Any],
@@ -9140,7 +9239,7 @@ def _runtime_character_animation_component_wiring_surface_execution_payload(
     product_prerequisite = product_load.get("runtime_character_product_load_verified") is True
     spawn_prerequisite = spawn_instantiation.get("runtime_character_spawn_instantiation_verified") is True
     runtime_surface_found = bool(actor_found and (simple_motion_found or anim_graph_found))
-    blocker = (
+    surface_blocker = (
         "blocked_by_runtime_animation_component_wiring_source_validation"
         if not source_validated
         else "blocked_by_runtime_animation_component_wiring_product_load_prerequisite"
@@ -9149,11 +9248,41 @@ def _runtime_character_animation_component_wiring_surface_execution_payload(
         if not spawn_prerequisite
         else RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE_BLOCKER
         if not runtime_surface_found
-        else "blocked_by_runtime_animation_component_wiring_asset_assignment_verification"
+        else ""
     )
+    actor_asset_assignment_verified = (
+        animation_playback_surface.get("runtime_character_animation_component_wiring_actor_asset_assignment_verified") is True
+    )
+    motion_asset_assignment_verified = (
+        animation_playback_surface.get("runtime_character_animation_component_wiring_motion_asset_assignment_verified") is True
+    )
+    anim_graph_asset_assignment_verified = (
+        animation_playback_surface.get("runtime_character_animation_component_wiring_anim_graph_asset_assignment_verified") is True
+    )
+    motion_set_asset_assignment_verified = (
+        animation_playback_surface.get("runtime_character_animation_component_wiring_motion_set_asset_assignment_verified") is True
+    )
+    assignment_blocker = (
+        _runtime_character_animation_component_wiring_assignment_blocker(
+            actor_found=actor_found,
+            simple_motion_found=simple_motion_found,
+            anim_graph_found=anim_graph_found,
+            actor_asset_assignment_verified=actor_asset_assignment_verified,
+            motion_asset_assignment_verified=motion_asset_assignment_verified,
+            anim_graph_asset_assignment_verified=anim_graph_asset_assignment_verified,
+            motion_set_asset_assignment_verified=motion_set_asset_assignment_verified,
+        )
+        if not surface_blocker and runtime_surface_found
+        else ""
+    )
+    wiring_blocker = surface_blocker or assignment_blocker
+    runtime_wiring_verified = bool(runtime_surface_found and not wiring_blocker)
     status = (
+        "runtime_character_animation_component_wiring_surface_verified"
+        if not surface_blocker and runtime_surface_found
+        else
         "runtime_character_animation_component_wiring_surface_blocked_missing_runtime_components"
-        if blocker == RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE_BLOCKER
+        if surface_blocker == RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE_BLOCKER
         else "runtime_character_animation_component_wiring_surface_blocked"
     )
     source_payload.update(
@@ -9163,21 +9292,27 @@ def _runtime_character_animation_component_wiring_surface_execution_payload(
                 "selected": RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE_SELECTED,
                 "attempted": True,
                 "surface_found": runtime_surface_found,
-                "blocker": blocker,
+                "blocker": surface_blocker,
+                "wiring_blocker": wiring_blocker,
             },
             "runtime_character_animation_component_wiring_surface_status": status,
             "runtime_character_animation_component_wiring_surface_diagnostic_attempted": True,
             "runtime_character_animation_component_wiring_surface_diagnostic_completed": True,
             "runtime_character_animation_component_wiring_surface_found": runtime_surface_found,
-            "runtime_character_animation_component_wiring_surface_verified": False,
-            "runtime_character_animation_component_wiring_surface_blocker": blocker,
+            "runtime_character_animation_component_wiring_surface_verified": not surface_blocker and runtime_surface_found,
+            "runtime_character_animation_component_wiring_surface_blocker": surface_blocker,
+            "runtime_character_animation_component_wiring_blocker": wiring_blocker,
             "runtime_character_animation_component_wiring_candidate_matrix": _runtime_character_animation_component_wiring_candidate_matrix(
                 source_validated=source_validated,
                 product_found=source_payload.get("runtime_character_animation_component_wiring_spawnable_regenerated_or_found")
                 is True,
                 runtime_inventory=inventory,
+                runtime_actor_found=actor_found,
+                runtime_simple_motion_found=simple_motion_found,
+                runtime_anim_graph_found=anim_graph_found,
                 runtime_surface_found=runtime_surface_found,
-                blocker=blocker,
+                runtime_wiring_verified=runtime_wiring_verified,
+                blocker=wiring_blocker,
             ),
             "runtime_character_animation_component_wiring_product_load_prerequisite_verified": product_prerequisite,
             "runtime_character_animation_component_wiring_spawn_prerequisite_verified": spawn_prerequisite,
@@ -9192,12 +9327,12 @@ def _runtime_character_animation_component_wiring_surface_execution_payload(
             "runtime_character_animation_component_wiring_runtime_actor_component_found": actor_found,
             "runtime_character_animation_component_wiring_runtime_simple_motion_component_found": simple_motion_found,
             "runtime_character_animation_component_wiring_runtime_anim_graph_component_found": anim_graph_found,
-            "runtime_character_animation_component_wiring_actor_asset_assignment_verified": False,
-            "runtime_character_animation_component_wiring_motion_asset_assignment_verified": False,
-            "runtime_character_animation_component_wiring_motion_set_asset_assignment_verified": False,
-            "runtime_character_animation_component_wiring_anim_graph_asset_assignment_verified": False,
-            "runtime_character_animation_component_wiring_claimed": False,
-            "runtime_character_animation_component_wiring_verified": False,
+            "runtime_character_animation_component_wiring_actor_asset_assignment_verified": actor_asset_assignment_verified,
+            "runtime_character_animation_component_wiring_motion_asset_assignment_verified": motion_asset_assignment_verified,
+            "runtime_character_animation_component_wiring_motion_set_asset_assignment_verified": motion_set_asset_assignment_verified,
+            "runtime_character_animation_component_wiring_anim_graph_asset_assignment_verified": anim_graph_asset_assignment_verified,
+            "runtime_character_animation_component_wiring_claimed": runtime_wiring_verified,
+            "runtime_character_animation_component_wiring_verified": runtime_wiring_verified,
             "runtime_character_animation_playback_attempted": False,
             "runtime_character_animation_playback_started": False,
             "runtime_character_animation_playback_observed": False,
@@ -9283,6 +9418,28 @@ def _runtime_character_animation_component_wiring_surface_fixture_passed(report:
             and report.get("runtime_character_proof_claimed") is False
             and report.get("runtime_character_proof_verified") is False
         )
+    assignment_blocked = str(report.get("runtime_character_animation_component_wiring_blocker", "")).strip() in {
+        RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_ASSET_ASSIGNMENT_BLOCKER,
+        RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_ACTOR_ASSET_BLOCKER,
+        RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_MOTION_ASSET_BLOCKER,
+        RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_ANIM_GRAPH_ASSET_BLOCKER,
+        RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_MOTION_SET_ASSET_BLOCKER,
+    }
+    if assignment_blocked:
+        return (
+            report.get("runtime_character_animation_component_wiring_product_load_prerequisite_verified") is True
+            and report.get("runtime_character_animation_component_wiring_spawn_prerequisite_verified") is True
+            and report.get("runtime_character_animation_component_wiring_spawnable_regenerated_or_found") is True
+            and bool(report.get("runtime_character_animation_component_wiring_runtime_component_inventory", []))
+            and report.get("runtime_character_animation_component_wiring_surface_found") is True
+            and report.get("runtime_character_animation_component_wiring_surface_verified") is True
+            and report.get("runtime_character_animation_component_wiring_claimed") is False
+            and report.get("runtime_character_animation_component_wiring_verified") is False
+            and report.get("runtime_character_animation_claimed") is False
+            and report.get("runtime_character_animation_verified") is False
+            and report.get("runtime_character_proof_claimed") is False
+            and report.get("runtime_character_proof_verified") is False
+        )
     return report.get("runtime_character_animation_component_wiring_verified") is True
 
 
@@ -9291,7 +9448,11 @@ def _runtime_character_animation_component_wiring_candidate_matrix(
     source_validated: bool,
     product_found: bool,
     runtime_inventory: Sequence[Mapping[str, Any]],
+    runtime_actor_found: bool,
+    runtime_simple_motion_found: bool,
+    runtime_anim_graph_found: bool,
     runtime_surface_found: bool,
+    runtime_wiring_verified: bool,
     blocker: str,
 ) -> List[Dict[str, Any]]:
     has_inventory = bool(runtime_inventory)
@@ -9306,9 +9467,11 @@ def _runtime_character_animation_component_wiring_candidate_matrix(
             "candidate": "update approved repo-owned source prefab through source-backed Editor/prefab APIs",
             "kind": "editor_prefab_api_wiring",
             "attempted": False,
-            "selected": bool(source_validated and product_found),
+            "selected": False,
             "source_validation": {"status": source_status},
-            "result": "runtime_animation_component_wiring_candidate_blocked_requires_editor_generated_prefab_update"
+            "result": "runtime_animation_component_wiring_candidate_not_attempted_runtime_inventory_only"
+            if runtime_surface_found
+            else "runtime_animation_component_wiring_candidate_blocked_requires_editor_generated_prefab_update"
             if source_validated and product_found
             else "runtime_animation_component_wiring_candidate_rejected_missing_source_validation",
             "blocker": blocker,
@@ -9317,21 +9480,25 @@ def _runtime_character_animation_component_wiring_candidate_matrix(
             "id": "actor_plus_simple_motion_component_surface",
             "candidate": "add Actor + Simple Motion component surface",
             "kind": "minimal_runtime_playback_capable_editor_components",
-            "attempted": False,
-            "selected": False,
+            "attempted": bool(runtime_actor_found and runtime_simple_motion_found),
+            "selected": bool(runtime_actor_found and runtime_simple_motion_found),
             "source_validation": {"status": source_status},
-            "result": "runtime_animation_component_wiring_candidate_preferred_minimal_surface_deferred",
+            "result": "runtime_animation_component_wiring_candidate_verified_runtime_typeids"
+            if runtime_actor_found and runtime_simple_motion_found
+            else "runtime_animation_component_wiring_candidate_preferred_minimal_surface_deferred",
             "blocker": blocker,
         },
         {
             "id": "actor_plus_anim_graph_motion_set_component_surface",
             "candidate": "add Actor + Anim Graph + Motion Set component surface",
             "kind": "animgraph_runtime_component_surface",
-            "attempted": False,
-            "selected": False,
+            "attempted": bool(runtime_actor_found and runtime_anim_graph_found),
+            "selected": bool(runtime_actor_found and runtime_anim_graph_found),
             "source_validation": {"status": source_status},
-            "result": "runtime_animation_component_wiring_candidate_deferred_until_asset_assignment_surface_is_live_discovered",
-            "blocker": "animgraph_motion_set_wiring_deferred_for_smaller_safe_slice",
+            "result": "runtime_animation_component_wiring_candidate_verified_runtime_typeids"
+            if runtime_actor_found and runtime_anim_graph_found
+            else "runtime_animation_component_wiring_candidate_deferred_until_asset_assignment_surface_is_live_discovered",
+            "blocker": blocker if runtime_actor_found and runtime_anim_graph_found else "animgraph_motion_set_wiring_deferred_for_smaller_safe_slice",
         },
         {
             "id": "hand_author_unknown_component_json",
@@ -9390,6 +9557,22 @@ def _runtime_character_animation_component_wiring_candidate_matrix(
             if has_inventory
             else "runtime_animation_component_wiring_candidate_requires_runtime_spawn_inventory",
             "blocker": "" if runtime_surface_found else blocker,
+        },
+        {
+            "id": "runtime_typeids_and_asset_assignments",
+            "candidate": "runtime TypeIds plus source-validated asset-assignment evidence",
+            "kind": "runtime_wiring_verification",
+            "attempted": has_inventory,
+            "selected": runtime_surface_found,
+            "source_validation": {"status": source_status},
+            "result": "runtime_animation_component_wiring_candidate_verified_runtime_typeids_and_asset_assignments"
+            if runtime_wiring_verified
+            else "runtime_animation_component_wiring_candidate_blocked_asset_assignment_unverified"
+            if runtime_surface_found
+            else "runtime_animation_component_wiring_candidate_blocked_missing_runtime_components"
+            if has_inventory
+            else "runtime_animation_component_wiring_candidate_requires_runtime_spawn_inventory",
+            "blocker": "" if runtime_wiring_verified else blocker,
         },
     ]
 

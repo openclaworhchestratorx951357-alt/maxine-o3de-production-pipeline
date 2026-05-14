@@ -109,6 +109,7 @@
         "approved-prefab-save-update-bridge",
         "approved-prefab-save-update-bridge-host",
         "approved-prefab-save-update-route",
+        "approved-source-prefab-actor-simple-motion-wiring",
         "full"
       ]
     },
@@ -1976,6 +1977,9 @@
     "runtime_character_animation_component_wiring_surface_blocker": {
       "type": "string"
     },
+    "runtime_character_animation_component_wiring_blocker": {
+      "type": "string"
+    },
     "runtime_character_animation_component_wiring_candidate_matrix": {
       "type": "array"
     },
@@ -2138,6 +2142,126 @@
     "approved_runtime_animation_component_wiring_prefab_api": {
       "type": "object",
       "additionalProperties": true
+    },
+    "approved_source_prefab_actor_simple_motion_wiring_attempted": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_actor_simple_motion_wiring_completed": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_actor_simple_motion_wiring_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_actor_simple_motion_wiring_blocker": {
+      "type": "string"
+    },
+    "approved_source_prefab_actor_simple_motion_wiring_source_validation_status": {
+      "type": "string"
+    },
+    "approved_source_prefab_actor_simple_motion_wiring_source_validation_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_actor_simple_motion_wiring_source_refs": {
+      "type": "array"
+    },
+    "approved_source_prefab_actor_simple_motion_wiring_candidate_matrix": {
+      "type": "array"
+    },
+    "approved_source_prefab_actor_simple_motion_wiring_selected_strategy": {
+      "type": "string"
+    },
+    "approved_source_prefab_path": {
+      "type": "string"
+    },
+    "approved_source_prefab_project_path_redacted": {
+      "type": "string"
+    },
+    "approved_source_prefab_before_hash": {
+      "type": "string"
+    },
+    "approved_source_prefab_after_hash": {
+      "type": "string"
+    },
+    "approved_source_prefab_project_before_hash": {
+      "type": "string"
+    },
+    "approved_source_prefab_project_after_hash": {
+      "type": "string"
+    },
+    "approved_source_prefab_modified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_changed_this_run": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_persisted_wiring_markers_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_project_persisted_wiring_markers_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_component_overrides_applied": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_component_override_refs": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "approved_source_prefab_component_override_apply_status": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "approved_source_prefab_entity_changes_committed": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_entity_change_commit_status": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "approved_source_prefab_update_route_used": {
+      "type": "string"
+    },
+    "approved_source_prefab_save_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_actor_component_added": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_simple_motion_component_added": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_actor_asset_assignment_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_motion_asset_assignment_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_actor_asset_id": {
+      "type": "string"
+    },
+    "approved_source_prefab_motion_asset_id": {
+      "type": "string"
+    },
+    "approved_source_prefab_property_readback_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_defaultlevel_mutation": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_production_level_mutation": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_hand_authored_unknown_json_used": {
+      "type": "boolean"
+    },
+    "approved_spawnable_regenerated_or_found": {
+      "type": "boolean"
+    },
+    "approved_spawnable_asset_id": {
+      "type": "string"
+    },
+    "approved_spawnable_asset_type": {
+      "type": "string"
     },
     "approved_prefab_save_update_automation_surface_diagnostic_attempted": {
       "type": "boolean"

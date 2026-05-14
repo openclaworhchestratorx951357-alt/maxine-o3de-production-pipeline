@@ -94,6 +94,11 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_approved_prefab_save_update_route_smoke.py",
+    "approved-source-prefab-actor-simple-motion-wiring": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_approved_source_prefab_actor_simple_motion_wiring_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -213,6 +218,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_approved_prefab_save_update_bridge_host(report, result)
         if diagnostic_mode == "approved-prefab-save-update-route":
             _validate_approved_prefab_save_update_route(report, result)
+        if diagnostic_mode == "approved-source-prefab-actor-simple-motion-wiring":
+            _validate_approved_source_prefab_actor_simple_motion_wiring(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -755,6 +762,105 @@ def _validate_approved_prefab_save_update_route(
             result.add_error(
                 MXN_RUNTIME_SMOKE_FAIL,
                 f"{field}=true is not supported by prefab save/update route scratch proof alone.",
+            )
+
+
+def _validate_approved_source_prefab_actor_simple_motion_wiring(
+    report: Mapping[str, Any],
+    result: ValidationResult,
+) -> None:
+    attempted = report.get("approved_source_prefab_actor_simple_motion_wiring_attempted") is True
+    completed = report.get("approved_source_prefab_actor_simple_motion_wiring_completed") is True
+    verified = report.get("approved_source_prefab_actor_simple_motion_wiring_verified") is True
+    blocker = str(report.get("approved_source_prefab_actor_simple_motion_wiring_blocker", "")).strip()
+    source_status = str(
+        report.get("approved_source_prefab_actor_simple_motion_wiring_source_validation_status", "")
+    ).strip()
+    source_verified = report.get("approved_source_prefab_actor_simple_motion_wiring_source_validation_verified") is True
+
+    if str(report.get("status", "")).strip() == "pass" and (not attempted or not completed):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Approved source-prefab Actor + Simple Motion wiring diagnostic cannot pass without attempted/completed evidence.",
+        )
+    if source_status != "pass" or not source_verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Approved source-prefab Actor + Simple Motion wiring requires positive source validation.",
+        )
+    if report.get("approved_source_prefab_hand_authored_unknown_json_used") is not False:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Approved source-prefab wiring must preserve hand_authored_unknown_json_used=false.",
+        )
+    if report.get("approved_source_prefab_defaultlevel_mutation") is not False:
+        result.add_error(MXN_PATH_UNSAFE, "Approved source-prefab wiring must not mutate defaultlevel content.")
+    if report.get("approved_source_prefab_production_level_mutation") is not False:
+        result.add_error(MXN_PATH_UNSAFE, "Approved source-prefab wiring must not mutate production-level content.")
+
+    if verified:
+        required_true = {
+            "approved_source_prefab_modified": "approved source-prefab modification",
+            "approved_source_prefab_persisted_wiring_markers_verified": "persisted ActorAsset/MotionAsset prefab markers",
+            "approved_source_prefab_save_verified": "approved source-prefab save",
+            "approved_source_prefab_actor_component_added": "Actor component add",
+            "approved_source_prefab_simple_motion_component_added": "Simple Motion component add",
+            "approved_source_prefab_actor_asset_assignment_verified": "Actor asset assignment",
+            "approved_source_prefab_motion_asset_assignment_verified": "Motion asset assignment",
+            "approved_source_prefab_property_readback_verified": "property readback",
+            "approved_runtime_animation_component_wiring_source_prefab_modified": "preserved runtime wiring source-prefab modified flag",
+            "approved_runtime_animation_component_wiring_editor_generated_update_used": "Editor-generated update flag",
+            "approved_runtime_animation_component_wiring_prefab_save_verified": "runtime wiring prefab save flag",
+        }
+        for field, label in required_true.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"Approved source-prefab wiring verified=true requires {label}.",
+                )
+        if not (
+            report.get("approved_source_prefab_entity_changes_committed") is True
+            or report.get("approved_source_prefab_component_overrides_applied") is True
+        ):
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Approved source-prefab wiring verified=true requires a source-backed entity change commit or component override apply route.",
+            )
+        if blocker:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Approved source-prefab wiring verified=true cannot also report a blocker.",
+            )
+        for hash_field in (
+            "approved_source_prefab_before_hash",
+            "approved_source_prefab_after_hash",
+            "approved_source_prefab_project_after_hash",
+        ):
+            if not str(report.get(hash_field, "")).strip():
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Approved source-prefab wiring requires {hash_field}.")
+        if not str(report.get("approved_source_prefab_actor_asset_id", "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Approved source-prefab wiring requires Actor asset id evidence.")
+        if not str(report.get("approved_source_prefab_motion_asset_id", "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Approved source-prefab wiring requires Motion asset id evidence.")
+    elif str(report.get("status", "")).strip() == "pass" and not blocker:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Approved source-prefab wiring diagnostic pass without verification requires a typed blocker.",
+        )
+
+    false_until_runtime = (
+        "runtime_character_animation_component_wiring_claimed",
+        "runtime_character_animation_component_wiring_verified",
+        "runtime_character_animation_claimed",
+        "runtime_character_animation_verified",
+        "runtime_character_proof_claimed",
+        "runtime_character_proof_verified",
+    )
+    for field in false_until_runtime:
+        if report.get(field) is True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                f"{field}=true must come from APB/runtime diagnostics, not the Editor source-prefab wiring report alone.",
             )
 
 
@@ -2586,6 +2692,16 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Set the explicit gated enablement marker for approved prefab save/update route scratch proof.",
     )
+    parser.add_argument(
+        "--diagnose-approved-source-prefab-actor-simple-motion-wiring",
+        action="store_true",
+        help="Run the approved source-prefab Actor + Simple Motion wiring diagnostic.",
+    )
+    parser.add_argument(
+        "--enable-approved-source-prefab-actor-simple-motion-wiring-fixture",
+        action="store_true",
+        help="Set the explicit gated enablement marker for approved source-prefab Actor + Simple Motion wiring.",
+    )
     parser.add_argument("--timeout-seconds", type=int, help="Bounded live Editor smoke timeout in seconds.")
     parser.add_argument("--progress-log", help="Optional JSONL progress log path for live Editor smoke diagnostics.")
     parser.add_argument("--apb-report", help="Explicit APB baseline report path for live Editor smoke product evidence.")
@@ -2656,6 +2772,14 @@ def main() -> int:
         env_map["MAXINE_ENABLE_APPROVED_PREFAB_SAVE_UPDATE_ROUTE"] = "1"
     if args.enable_approved_prefab_save_update_route_fixture:
         env_map["MAXINE_ALLOW_APPROVED_PREFAB_SAVE_UPDATE_ROUTE"] = "1"
+    if (
+        args.diagnose_approved_source_prefab_actor_simple_motion_wiring
+        or args.enable_approved_source_prefab_actor_simple_motion_wiring_fixture
+    ):
+        diagnostic_mode = "approved-source-prefab-actor-simple-motion-wiring"
+        env_map["MAXINE_ENABLE_APPROVED_SOURCE_PREFAB_ACTOR_SIMPLE_MOTION_WIRING"] = "1"
+    if args.enable_approved_source_prefab_actor_simple_motion_wiring_fixture:
+        env_map["MAXINE_ALLOW_APPROVED_SOURCE_PREFAB_ACTOR_SIMPLE_MOTION_WIRING"] = "1"
     result = run_editor_smoke_corpus(
         args.corpus,
         mode=args.mode,
