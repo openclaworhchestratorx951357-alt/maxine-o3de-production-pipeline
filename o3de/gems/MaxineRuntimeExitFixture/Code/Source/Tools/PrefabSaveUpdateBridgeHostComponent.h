@@ -23,6 +23,11 @@ namespace MaxineRuntimeExitFixture
             const AZStd::string& absolutePrefabPath,
             const AZ::EntityComponentIdPair& actorComponent,
             const AZ::EntityComponentIdPair& simpleMotionComponent);
+        static AZStd::string ApplyApprovedSourcePrefabParentLinkComponentOverrides(
+            const AZStd::string& absolutePrefabPath,
+            AZ::EntityId entityId,
+            const AZ::EntityComponentIdPair& actorComponent,
+            const AZ::EntityComponentIdPair& simpleMotionComponent);
         static AZStd::string CommitApprovedSourcePrefabEntityChanges(
             const AZStd::string& absolutePrefabPath,
             AZ::EntityId entityId);
