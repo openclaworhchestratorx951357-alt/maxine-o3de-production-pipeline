@@ -53,6 +53,9 @@ namespace MaxineRuntimeExitFixture
         void ConfigureCharacterSpawnInstantiationProbe();
         void StartCharacterSpawnInstantiationProbe();
         void PollCharacterSpawnInstantiationProbe();
+        bool PollCharacterAnimationPlaybackExecutionProbe();
+        void ConfigureCharacterAnimationPlaybackExecutionProbe();
+        void ResetCharacterAnimationPlaybackExecutionProbe();
         void CompleteCharacterSpawnInstantiationProbe(const char* status);
         void ReleaseCharacterSpawnInstantiationProbe();
 
@@ -89,9 +92,29 @@ namespace MaxineRuntimeExitFixture
         AZ::Data::AssetType m_characterSpawnAssetType;
         AZ::Data::Asset<AzFramework::Spawnable> m_characterSpawnAsset;
         AzFramework::EntitySpawnTicket m_characterSpawnTicket;
+        AZStd::vector<AZ::EntityId> m_characterSpawnedRawEntityIds;
         AZStd::vector<AZStd::string> m_characterSpawnedEntityIds;
         AZStd::vector<AZStd::string> m_characterSpawnedEntityNames;
         AZStd::vector<AZStd::string> m_characterSpawnedEntityComponentInventory;
+        bool m_characterAnimationPlaybackProbeEnabled = false;
+        bool m_characterAnimationPlaybackRequestAttempted = false;
+        bool m_characterAnimationPlaybackRequestSucceeded = false;
+        bool m_characterAnimationPlaybackStarted = false;
+        bool m_characterAnimationPlaybackObserved = false;
+        bool m_characterAnimationPlaybackTimeAdvanced = false;
+        bool m_characterAnimationPlaybackActiveStateObserved = false;
+        bool m_characterAnimationPlaybackProbeComplete = false;
+        bool m_characterAnimationPlaybackError = false;
+        AZ::u64 m_characterAnimationPlaybackStartTick = 0;
+        AZ::u64 m_characterAnimationPlaybackObservationTicks = 8;
+        float m_characterAnimationPlaybackTimeBefore = 0.0f;
+        float m_characterAnimationPlaybackTimeAfter = 0.0f;
+        float m_characterAnimationPlaybackDuration = 0.0f;
+        AZ::EntityId m_characterAnimationPlaybackEntityRawId;
+        AZStd::string m_characterAnimationPlaybackExpectedMotionAssetId;
+        AZStd::string m_characterAnimationPlaybackEntityId;
+        AZStd::string m_characterAnimationPlaybackMotionAssetId;
+        AZStd::string m_characterAnimationPlaybackBlocker;
         AZStd::mutex m_characterSpawnMutex;
     };
 } // namespace MaxineRuntimeExitFixture

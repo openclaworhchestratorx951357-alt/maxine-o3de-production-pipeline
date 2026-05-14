@@ -3,6 +3,7 @@
 #include <AzCore/Asset/AssetManager.h>
 #include <AzCore/Asset/AssetManagerBus.h>
 #include <AzCore/Component/Component.h>
+#include <AzCore/Component/ComponentApplicationBus.h>
 #include <AzCore/Component/Entity.h>
 #include <AzCore/Interface/Interface.h>
 #include <AzCore/Serialization/SerializeContext.h>
@@ -13,8 +14,10 @@
 #include <AzFramework/API/ApplicationAPI.h>
 #include <AzFramework/Spawnable/Spawnable.h>
 #include <AzFramework/Spawnable/SpawnableEntitiesInterface.h>
+#include <EMotionFX/Source/MotionInstance.h>
 #include <Integration/Components/ActorComponent.h>
 #include <Integration/Components/SimpleMotionComponent.h>
+#include <Integration/SimpleMotionComponentBus.h>
 
 namespace MaxineRuntimeExitFixture
 {
@@ -49,6 +52,12 @@ namespace MaxineRuntimeExitFixture
             "/Amazon/MAXINE/RuntimeHarness/CharacterSpawnInstantiationProbe/RequirePositiveEntityCount";
         constexpr const char* CharacterSpawnInstantiationProbeCleanupSpawnedEntitiesKey =
             "/Amazon/MAXINE/RuntimeHarness/CharacterSpawnInstantiationProbe/CleanupSpawnedEntities";
+        constexpr const char* EnableCharacterAnimationPlaybackExecutionProbeKey =
+            "/Amazon/MAXINE/RuntimeHarness/EnableCharacterAnimationPlaybackExecutionProbe";
+        constexpr const char* CharacterAnimationPlaybackExecutionProbeObservationTicksKey =
+            "/Amazon/MAXINE/RuntimeHarness/CharacterAnimationPlaybackExecutionProbe/ObservationTicks";
+        constexpr const char* CharacterAnimationPlaybackExecutionProbeExpectedMotionAssetIdKey =
+            "/Amazon/MAXINE/RuntimeHarness/CharacterAnimationPlaybackExecutionProbe/ExpectedMotionAssetId";
         constexpr const char* TraceWindow = "MaxineRuntimeExitFixture";
 
         AZStd::string ProductProbeKey(AZ::u64 index, const char* field)
@@ -183,6 +192,29 @@ namespace MaxineRuntimeExitFixture
             return {};
         }
 
+        EMotionFX::Integration::SimpleMotionComponent* RuntimeSimpleMotionComponent(AZ::Entity& entity)
+        {
+            for (AZ::Component* component : entity.GetComponents())
+            {
+                auto* simpleMotionComponent = azrtti_cast<EMotionFX::Integration::SimpleMotionComponent*>(component);
+                if (simpleMotionComponent != nullptr)
+                {
+                    return simpleMotionComponent;
+                }
+            }
+            return nullptr;
+        }
+
+        AZ::Entity* RuntimeEntityById(const AZ::EntityId& entityId)
+        {
+            AZ::Entity* entity = nullptr;
+            AZ::ComponentApplicationBus::BroadcastResult(
+                entity,
+                &AZ::ComponentApplicationRequests::FindEntity,
+                entityId);
+            return entity;
+        }
+
     } // namespace
 
     AZ_COMPONENT_IMPL(
@@ -244,6 +276,7 @@ namespace MaxineRuntimeExitFixture
         m_ticksObserved = 0;
         ConfigureProductLoadProbe();
         ConfigureCharacterSpawnInstantiationProbe();
+        ConfigureCharacterAnimationPlaybackExecutionProbe();
         AZ::TickBus::Handler::BusConnect();
 
         AZ_TracePrintf(
@@ -291,9 +324,11 @@ namespace MaxineRuntimeExitFixture
         m_characterSpawnExpectedAssetType.clear();
         m_characterSpawnAssetId.SetInvalid();
         m_characterSpawnAssetType = AZ::Data::AssetType::CreateNull();
+        m_characterSpawnedRawEntityIds.clear();
         m_characterSpawnedEntityIds.clear();
         m_characterSpawnedEntityNames.clear();
         m_characterSpawnedEntityComponentInventory.clear();
+        ResetCharacterAnimationPlaybackExecutionProbe();
     }
 
     void MaxineRuntimeExitFixtureSystemComponent::OnTick([[maybe_unused]] float deltaTime, [[maybe_unused]] AZ::ScriptTimePoint time)
@@ -680,6 +715,7 @@ namespace MaxineRuntimeExitFixture
         m_characterSpawnStartTick = 0;
         m_characterSpawnAssetId.SetInvalid();
         m_characterSpawnAssetType = AZ::Data::AssetType::CreateNull();
+        m_characterSpawnedRawEntityIds.clear();
         m_characterSpawnedEntityIds.clear();
         m_characterSpawnedEntityNames.clear();
         m_characterSpawnedEntityComponentInventory.clear();
@@ -722,6 +758,57 @@ namespace MaxineRuntimeExitFixture
         m_characterSpawnExpectedAssetType = ReadSpawnProbeValue(CharacterSpawnInstantiationProbeSpawnableAssetTypeKey);
         m_characterSpawnTimeoutTicks = timeoutTicks > 0 ? static_cast<AZ::u64>(timeoutTicks) : 120;
         m_characterSpawnProbeEnabled = true;
+    }
+
+    void MaxineRuntimeExitFixtureSystemComponent::ResetCharacterAnimationPlaybackExecutionProbe()
+    {
+        m_characterAnimationPlaybackProbeEnabled = false;
+        m_characterAnimationPlaybackRequestAttempted = false;
+        m_characterAnimationPlaybackRequestSucceeded = false;
+        m_characterAnimationPlaybackStarted = false;
+        m_characterAnimationPlaybackObserved = false;
+        m_characterAnimationPlaybackTimeAdvanced = false;
+        m_characterAnimationPlaybackActiveStateObserved = false;
+        m_characterAnimationPlaybackProbeComplete = false;
+        m_characterAnimationPlaybackError = false;
+        m_characterAnimationPlaybackStartTick = 0;
+        m_characterAnimationPlaybackObservationTicks = 8;
+        m_characterAnimationPlaybackTimeBefore = 0.0f;
+        m_characterAnimationPlaybackTimeAfter = 0.0f;
+        m_characterAnimationPlaybackDuration = 0.0f;
+        m_characterAnimationPlaybackEntityRawId.SetInvalid();
+        m_characterAnimationPlaybackExpectedMotionAssetId.clear();
+        m_characterAnimationPlaybackEntityId.clear();
+        m_characterAnimationPlaybackMotionAssetId.clear();
+        m_characterAnimationPlaybackBlocker.clear();
+    }
+
+    void MaxineRuntimeExitFixtureSystemComponent::ConfigureCharacterAnimationPlaybackExecutionProbe()
+    {
+        ResetCharacterAnimationPlaybackExecutionProbe();
+        auto* settingsRegistry = AZ::SettingsRegistry::Get();
+        if (settingsRegistry == nullptr)
+        {
+            return;
+        }
+
+        bool enableProbe = false;
+        AZ::s64 observationTicks = 0;
+        settingsRegistry->Get(enableProbe, EnableCharacterAnimationPlaybackExecutionProbeKey);
+        settingsRegistry->Get(observationTicks, CharacterAnimationPlaybackExecutionProbeObservationTicksKey);
+        AZ::SettingsRegistryInterface::FixedValueString expectedMotionAssetId;
+        if (settingsRegistry->Get(expectedMotionAssetId, CharacterAnimationPlaybackExecutionProbeExpectedMotionAssetIdKey))
+        {
+            m_characterAnimationPlaybackExpectedMotionAssetId = expectedMotionAssetId.c_str();
+        }
+        if (!enableProbe)
+        {
+            return;
+        }
+
+        m_characterAnimationPlaybackObservationTicks =
+            observationTicks > 0 ? static_cast<AZ::u64>(observationTicks) : 8;
+        m_characterAnimationPlaybackProbeEnabled = true;
     }
 
     void MaxineRuntimeExitFixtureSystemComponent::StartCharacterSpawnInstantiationProbe()
@@ -910,6 +997,7 @@ namespace MaxineRuntimeExitFixture
             {
                 AZStd::lock_guard<AZStd::mutex> lock(m_characterSpawnMutex);
                 m_characterSpawnCompletionObserved = true;
+                m_characterSpawnedRawEntityIds.clear();
                 m_characterSpawnedEntityIds.clear();
                 m_characterSpawnedEntityNames.clear();
                 m_characterSpawnedEntityComponentInventory.clear();
@@ -932,6 +1020,7 @@ namespace MaxineRuntimeExitFixture
                     const AZStd::string components = ComponentInventoryString(*entity);
                     const AZStd::string actorAssetId = RuntimeActorAssetIdString(*entity);
                     const AZStd::string motionAssetId = RuntimeSimpleMotionAssetIdString(*entity);
+                    m_characterSpawnedRawEntityIds.push_back(entity->GetId());
                     m_characterSpawnedEntityIds.push_back(entityId);
                     m_characterSpawnedEntityNames.push_back(entityName);
                     m_characterSpawnedEntityComponentInventory.push_back(components);
@@ -976,6 +1065,18 @@ namespace MaxineRuntimeExitFixture
             return;
         }
 
+        if (m_characterAnimationPlaybackProbeEnabled && !m_characterAnimationPlaybackProbeComplete)
+        {
+            if (!PollCharacterAnimationPlaybackExecutionProbe())
+            {
+                return;
+            }
+            if (m_characterAnimationPlaybackError)
+            {
+                m_characterSpawnError = true;
+            }
+        }
+
         if (m_characterSpawnCleanupSpawnedEntities && !m_characterSpawnCleanupRequested)
         {
             AzFramework::DespawnAllEntitiesOptionalArgs despawnArgs;
@@ -1006,6 +1107,229 @@ namespace MaxineRuntimeExitFixture
         {
             CompleteCharacterSpawnInstantiationProbe(m_characterSpawnError ? "fail" : "pass");
         }
+    }
+
+    bool MaxineRuntimeExitFixtureSystemComponent::PollCharacterAnimationPlaybackExecutionProbe()
+    {
+        if (!m_characterAnimationPlaybackProbeEnabled)
+        {
+            m_characterAnimationPlaybackProbeComplete = true;
+            return true;
+        }
+
+        if (!m_characterAnimationPlaybackRequestAttempted)
+        {
+            AZStd::vector<AZ::EntityId> entityIds;
+            {
+                AZStd::lock_guard<AZStd::mutex> lock(m_characterSpawnMutex);
+                entityIds = m_characterSpawnedRawEntityIds;
+            }
+
+            AZ::Entity* selectedEntity = nullptr;
+            EMotionFX::Integration::SimpleMotionComponent* simpleMotionComponent = nullptr;
+            for (const AZ::EntityId& entityId : entityIds)
+            {
+                AZ::Entity* entity = RuntimeEntityById(entityId);
+                if (entity == nullptr)
+                {
+                    continue;
+                }
+                simpleMotionComponent = RuntimeSimpleMotionComponent(*entity);
+                if (simpleMotionComponent != nullptr)
+                {
+                    selectedEntity = entity;
+                    break;
+                }
+            }
+
+            if (selectedEntity == nullptr || simpleMotionComponent == nullptr)
+            {
+                m_characterAnimationPlaybackError = true;
+                m_characterAnimationPlaybackProbeComplete = true;
+                m_characterAnimationPlaybackBlocker = "blocked_by_runtime_simple_motion_component_missing_for_playback";
+                AZ_TracePrintf(
+                    TraceWindow,
+                    "MAXINE_RUNTIME_ANIMATION_PLAYBACK_OBSERVE entity_id=none simple_motion_component_found=0 play_time_before=0.000000 play_time_after=0.000000 time_advanced=0 active_state_observed=0 started=0 observed=0 tick_count=0 status=fail blocker=%s\n",
+                    m_characterAnimationPlaybackBlocker.c_str());
+                AZ_TracePrintf(
+                    TraceWindow,
+                    "MAXINE_RUNTIME_ANIMATION_PLAYBACK_SUMMARY status=fail requested=0 request_succeeded=0 started=0 observed=0 time_advanced=0 active_state_observed=0 tick_count=0 cleanup=not_started simple_motion_component_found=0 blocker=%s\n",
+                    m_characterAnimationPlaybackBlocker.c_str());
+                return true;
+            }
+
+            m_characterAnimationPlaybackEntityRawId = selectedEntity->GetId();
+            m_characterAnimationPlaybackEntityId = selectedEntity->GetId().ToString().c_str();
+            AZ::Data::AssetId motionAssetId;
+            EMotionFX::Integration::SimpleMotionComponentRequestBus::EventResult(
+                motionAssetId,
+                selectedEntity->GetId(),
+                &EMotionFX::Integration::SimpleMotionComponentRequestBus::Events::GetMotion);
+            m_characterAnimationPlaybackMotionAssetId = AssetIdToString(motionAssetId);
+            if (!m_characterAnimationPlaybackExpectedMotionAssetId.empty() &&
+                m_characterAnimationPlaybackMotionAssetId != m_characterAnimationPlaybackExpectedMotionAssetId)
+            {
+                m_characterAnimationPlaybackError = true;
+                m_characterAnimationPlaybackProbeComplete = true;
+                m_characterAnimationPlaybackBlocker = "blocked_by_runtime_motion_asset_assignment_unverified";
+                AZ_TracePrintf(
+                    TraceWindow,
+                    "MAXINE_RUNTIME_ANIMATION_PLAYBACK_OBSERVE entity_id=%s simple_motion_component_found=1 motion_asset_assignment_verified=0 play_time_before=0.000000 play_time_after=0.000000 time_advanced=0 active_state_observed=0 started=0 observed=0 tick_count=0 status=fail blocker=%s\n",
+                    m_characterAnimationPlaybackEntityId.c_str(),
+                    m_characterAnimationPlaybackBlocker.c_str());
+                AZ_TracePrintf(
+                    TraceWindow,
+                    "MAXINE_RUNTIME_ANIMATION_PLAYBACK_SUMMARY status=fail requested=0 request_succeeded=0 started=0 observed=0 time_advanced=0 active_state_observed=0 tick_count=0 cleanup=not_started simple_motion_component_found=1 motion_asset_assignment_verified=0 blocker=%s\n",
+                    m_characterAnimationPlaybackBlocker.c_str());
+                return true;
+            }
+
+            EMotionFX::Integration::SimpleMotionComponentRequestBus::EventResult(
+                m_characterAnimationPlaybackTimeBefore,
+                selectedEntity->GetId(),
+                &EMotionFX::Integration::SimpleMotionComponentRequestBus::Events::GetPlayTime);
+            EMotionFX::Integration::SimpleMotionComponentRequestBus::EventResult(
+                m_characterAnimationPlaybackDuration,
+                selectedEntity->GetId(),
+                &EMotionFX::Integration::SimpleMotionComponentRequestBus::Events::GetDuration);
+
+            AZ_TracePrintf(
+                TraceWindow,
+                "MAXINE_RUNTIME_ANIMATION_PLAYBACK_SOURCE_VALIDATED api=EMotionFX::Integration::SimpleMotionComponentRequestBus::PlayMotion observe=EMotionFX::Integration::SimpleMotionComponentRequestBus::GetPlayTime motion_instance=EMotionFX::Integration::SimpleMotionComponent::GetMotionInstance status=pass\n");
+
+            EMotionFX::Integration::SimpleMotionComponentRequestBus::Event(
+                selectedEntity->GetId(),
+                &EMotionFX::Integration::SimpleMotionComponentRequestBus::Events::PlayMotion);
+
+            const EMotionFX::MotionInstance* motionInstance = simpleMotionComponent->GetMotionInstance();
+            m_characterAnimationPlaybackRequestAttempted = true;
+            m_characterAnimationPlaybackRequestSucceeded = motionInstance != nullptr;
+            m_characterAnimationPlaybackStarted = motionInstance != nullptr;
+            m_characterAnimationPlaybackActiveStateObserved =
+                motionInstance != nullptr && motionInstance->GetIsPlaying();
+            m_characterAnimationPlaybackStartTick = m_ticksObserved;
+
+            AZ_TracePrintf(
+                TraceWindow,
+                "MAXINE_RUNTIME_ANIMATION_PLAYBACK_REQUEST entity_id=%s motion_asset_id=%s api=SimpleMotionComponentRequestBus::PlayMotion play_time_before=%f duration=%f request_succeeded=%u status=issued\n",
+                m_characterAnimationPlaybackEntityId.c_str(),
+                m_characterAnimationPlaybackMotionAssetId.c_str(),
+                static_cast<double>(m_characterAnimationPlaybackTimeBefore),
+                static_cast<double>(m_characterAnimationPlaybackDuration),
+                m_characterAnimationPlaybackRequestSucceeded ? 1 : 0);
+
+            if (!m_characterAnimationPlaybackRequestSucceeded)
+            {
+                m_characterAnimationPlaybackError = true;
+                m_characterAnimationPlaybackProbeComplete = true;
+                m_characterAnimationPlaybackBlocker = "blocked_by_runtime_animation_playback_request_failed";
+                AZ_TracePrintf(
+                    TraceWindow,
+                    "MAXINE_RUNTIME_ANIMATION_PLAYBACK_OBSERVE entity_id=%s play_time_before=%f play_time_after=%f time_advanced=0 active_state_observed=0 started=0 observed=0 tick_count=0 status=fail blocker=%s\n",
+                    m_characterAnimationPlaybackEntityId.c_str(),
+                    static_cast<double>(m_characterAnimationPlaybackTimeBefore),
+                    static_cast<double>(m_characterAnimationPlaybackTimeBefore),
+                    m_characterAnimationPlaybackBlocker.c_str());
+                AZ_TracePrintf(
+                    TraceWindow,
+                    "MAXINE_RUNTIME_ANIMATION_PLAYBACK_SUMMARY status=fail requested=1 request_succeeded=0 started=0 observed=0 time_advanced=0 active_state_observed=0 tick_count=0 cleanup=deferred_until_spawn_cleanup blocker=%s\n",
+                    m_characterAnimationPlaybackBlocker.c_str());
+                return true;
+            }
+
+            return false;
+        }
+
+        const AZ::EntityId entityId = m_characterAnimationPlaybackEntityRawId;
+        AZ::Entity* entity = RuntimeEntityById(entityId);
+        EMotionFX::Integration::SimpleMotionComponent* simpleMotionComponent =
+            entity != nullptr ? RuntimeSimpleMotionComponent(*entity) : nullptr;
+        if (simpleMotionComponent == nullptr)
+        {
+            const AZ::u64 observedTicks = m_ticksObserved >= m_characterAnimationPlaybackStartTick
+                ? (m_ticksObserved - m_characterAnimationPlaybackStartTick)
+                : 0;
+            m_characterAnimationPlaybackError = true;
+            m_characterAnimationPlaybackProbeComplete = true;
+            m_characterAnimationPlaybackBlocker = "blocked_by_runtime_simple_motion_component_missing_for_playback";
+            AZ_TracePrintf(
+                TraceWindow,
+                "MAXINE_RUNTIME_ANIMATION_PLAYBACK_OBSERVE entity_id=%s simple_motion_component_found=0 play_time_before=%f play_time_after=%f time_advanced=0 active_state_observed=%u started=%u observed=0 tick_count=%llu status=fail blocker=%s\n",
+                m_characterAnimationPlaybackEntityId.c_str(),
+                static_cast<double>(m_characterAnimationPlaybackTimeBefore),
+                static_cast<double>(m_characterAnimationPlaybackTimeAfter),
+                m_characterAnimationPlaybackActiveStateObserved ? 1 : 0,
+                m_characterAnimationPlaybackStarted ? 1 : 0,
+                static_cast<unsigned long long>(observedTicks),
+                m_characterAnimationPlaybackBlocker.c_str());
+            AZ_TracePrintf(
+                TraceWindow,
+                "MAXINE_RUNTIME_ANIMATION_PLAYBACK_SUMMARY status=fail requested=%u request_succeeded=%u started=%u observed=0 time_advanced=0 active_state_observed=%u tick_count=%llu cleanup=deferred_until_spawn_cleanup simple_motion_component_found=0 blocker=%s\n",
+                m_characterAnimationPlaybackRequestAttempted ? 1 : 0,
+                m_characterAnimationPlaybackRequestSucceeded ? 1 : 0,
+                m_characterAnimationPlaybackStarted ? 1 : 0,
+                m_characterAnimationPlaybackActiveStateObserved ? 1 : 0,
+                static_cast<unsigned long long>(observedTicks),
+                m_characterAnimationPlaybackBlocker.c_str());
+            return true;
+        }
+
+        EMotionFX::Integration::SimpleMotionComponentRequestBus::EventResult(
+            m_characterAnimationPlaybackTimeAfter,
+            entityId,
+            &EMotionFX::Integration::SimpleMotionComponentRequestBus::Events::GetPlayTime);
+        const EMotionFX::MotionInstance* motionInstance = simpleMotionComponent->GetMotionInstance();
+        m_characterAnimationPlaybackStarted = m_characterAnimationPlaybackStarted || motionInstance != nullptr;
+        m_characterAnimationPlaybackActiveStateObserved =
+            m_characterAnimationPlaybackActiveStateObserved || (motionInstance != nullptr && motionInstance->GetIsPlaying());
+        m_characterAnimationPlaybackTimeAdvanced =
+            m_characterAnimationPlaybackTimeAfter > (m_characterAnimationPlaybackTimeBefore + 0.0001f);
+
+        const AZ::u64 observedTicks = m_ticksObserved - m_characterAnimationPlaybackStartTick;
+        if (observedTicks < m_characterAnimationPlaybackObservationTicks)
+        {
+            return false;
+        }
+
+        m_characterAnimationPlaybackObserved =
+            m_characterAnimationPlaybackStarted && m_characterAnimationPlaybackTimeAdvanced;
+        if (!m_characterAnimationPlaybackObserved)
+        {
+            m_characterAnimationPlaybackError = true;
+            m_characterAnimationPlaybackBlocker =
+                m_characterAnimationPlaybackTimeAdvanced
+                    ? "blocked_by_runtime_simple_motion_active_state_unobserved"
+                    : "blocked_by_runtime_motion_playback_time_not_advanced";
+        }
+
+        AZ_TracePrintf(
+            TraceWindow,
+            "MAXINE_RUNTIME_ANIMATION_PLAYBACK_OBSERVE entity_id=%s play_time_before=%f play_time_after=%f time_advanced=%u active_state_observed=%u started=%u observed=%u tick_count=%llu status=%s blocker=%s\n",
+            m_characterAnimationPlaybackEntityId.c_str(),
+            static_cast<double>(m_characterAnimationPlaybackTimeBefore),
+            static_cast<double>(m_characterAnimationPlaybackTimeAfter),
+            m_characterAnimationPlaybackTimeAdvanced ? 1 : 0,
+            m_characterAnimationPlaybackActiveStateObserved ? 1 : 0,
+            m_characterAnimationPlaybackStarted ? 1 : 0,
+            m_characterAnimationPlaybackObserved ? 1 : 0,
+            static_cast<unsigned long long>(observedTicks),
+            m_characterAnimationPlaybackObserved ? "pass" : "fail",
+            m_characterAnimationPlaybackBlocker.c_str());
+        AZ_TracePrintf(
+            TraceWindow,
+            "MAXINE_RUNTIME_ANIMATION_PLAYBACK_SUMMARY status=%s requested=%u request_succeeded=%u started=%u observed=%u time_advanced=%u active_state_observed=%u tick_count=%llu cleanup=deferred_until_spawn_cleanup blocker=%s\n",
+            m_characterAnimationPlaybackObserved ? "pass" : "fail",
+            m_characterAnimationPlaybackRequestAttempted ? 1 : 0,
+            m_characterAnimationPlaybackRequestSucceeded ? 1 : 0,
+            m_characterAnimationPlaybackStarted ? 1 : 0,
+            m_characterAnimationPlaybackObserved ? 1 : 0,
+            m_characterAnimationPlaybackTimeAdvanced ? 1 : 0,
+            m_characterAnimationPlaybackActiveStateObserved ? 1 : 0,
+            static_cast<unsigned long long>(observedTicks),
+            m_characterAnimationPlaybackBlocker.c_str());
+
+        m_characterAnimationPlaybackProbeComplete = true;
+        return true;
     }
 
     void MaxineRuntimeExitFixtureSystemComponent::CompleteCharacterSpawnInstantiationProbe(const char* status)

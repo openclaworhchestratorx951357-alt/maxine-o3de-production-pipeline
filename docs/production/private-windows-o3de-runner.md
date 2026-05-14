@@ -178,6 +178,34 @@ python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigge
 
 The source pin is `AzCore/AzCore/Memory/PoolAllocator.cpp`: `PoolAllocation<Allocator>::~PoolAllocation()` asserts `bucket.m_pages.empty()` at line 470 before `GarbageCollect()`. A selected `PoolAllocator.cpp:470` / `PoolAllocator.cpp(470)` `Found page for bucket` line therefore remains a real runtime shutdown allocator blocker (`blocked_by_runtime_shutdown_poolallocator_assertion`) and is not classified harmless. Runtime TypeIds and assignment readback are still preserved as surface evidence, but formal component wiring must remain false when this selected shutdown assertion is present. Non-matching memory/assertion lines remain blocking under the normal selected log/error scan.
 
+Bounded runtime animation playback execution diagnostics pin the Simple Motion runtime playback API and keep the proof separate from component wiring:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-animation-playback-execution-api --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWN_INSTANTIATION="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_SPAWN_INSTANTIATION="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE="1"
+$env:MAXINE_ENABLE_RUNTIME_ACTOR_SIMPLE_MOTION_COMPONENT_WIRING_AFTER_APB="1"
+$env:MAXINE_ALLOW_RUNTIME_ACTOR_SIMPLE_MOTION_COMPONENT_WIRING_AFTER_APB="1"
+$env:MAXINE_ENABLE_RUNTIME_ANIMATION_PLAYBACK_EXECUTION="1"
+$env:MAXINE_ALLOW_RUNTIME_ANIMATION_PLAYBACK_EXECUTION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-animation-playback-execution-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 240
+```
+
+The source pin is `EMotionFX::Integration::SimpleMotionComponentRequestBus::PlayMotion`, `GetPlayTime`, `GetDuration`, and `GetMotion`, plus `SimpleMotionComponent::GetMotionInstance`, `MotionInstance::GetIsPlaying`, and `MotionSystem::PlayMotion` / update surfaces. The fixture may claim runtime animation playback only when APB/spawnable proof, runtime Actor and Simple Motion TypeIds, runtime actor/motion assignment readback, the PR #155 motion-handler classification, the PR #157 PoolAllocator selected-log policy, playback request success, bounded tick/time-advance observation, cleanup/despawn, and no-defaultlevel/no-production gates all pass. Motion assignment, TypeIds, product-load evidence, or playback markers alone are not full proof. Full runtime character behavior remains a later gate even if playback is observed.
+
 Approved Editor-generated runtime animation component wiring diagnostics require the Editor smoke gates plus an explicit generation marker:
 
 ```powershell

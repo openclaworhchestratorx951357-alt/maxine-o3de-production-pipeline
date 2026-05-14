@@ -177,6 +177,19 @@ RUNTIME_ACTOR_SIMPLE_MOTION_AFTER_APB_GATE_ENV = (
     "MAXINE_ENABLE_RUNTIME_ACTOR_SIMPLE_MOTION_COMPONENT_WIRING_AFTER_APB=1",
     "MAXINE_ALLOW_RUNTIME_ACTOR_SIMPLE_MOTION_COMPONENT_WIRING_AFTER_APB=1",
 )
+RUNTIME_ANIMATION_PLAYBACK_EXECUTION_GATE_ENV = (
+    "MAXINE_ENABLE_RUNTIME_ANIMATION_PLAYBACK_EXECUTION=1",
+    "MAXINE_ALLOW_RUNTIME_ANIMATION_PLAYBACK_EXECUTION=1",
+)
+RUNTIME_ANIMATION_PLAYBACK_EXECUTION_SELECTED = (
+    "runtime_simple_motion_request_bus_play_motion_and_get_play_time"
+)
+RUNTIME_ANIMATION_PLAYBACK_EXECUTION_OBSERVATION_BLOCKER = (
+    "blocked_by_runtime_animation_playback_observation_unavailable"
+)
+RUNTIME_ANIMATION_PLAYBACK_TIME_NOT_ADVANCED_BLOCKER = (
+    "blocked_by_runtime_motion_playback_time_not_advanced"
+)
 RUNTIME_PROCPREFAB_ASSET_TYPE = "{9B7C8459-471E-4EAD-A363-7990CC4065A9}"
 RUNTIME_PROCPREFAB_ASSET_CLASS = "AZ::Prefab::ProceduralPrefabAsset"
 RUNTIME_PROCPREFAB_HANDLER_MODULE = "Gem::PrefabBuilder.Builders"
@@ -313,6 +326,8 @@ def run_runtime_harness(
     diagnose_approved_motion_product_handler_unregistered_signal: bool = False,
     diagnose_runtime_shutdown_poolallocator_assertions: bool = False,
     enable_runtime_poolallocator_signal_classification_fixture: bool = False,
+    diagnose_runtime_animation_playback_execution_api: bool = False,
+    enable_runtime_animation_playback_execution_fixture: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -366,6 +381,8 @@ def run_runtime_harness(
         and not diagnose_approved_motion_product_handler_unregistered_signal
         and not diagnose_runtime_shutdown_poolallocator_assertions
         and not enable_runtime_poolallocator_signal_classification_fixture
+        and not diagnose_runtime_animation_playback_execution_api
+        and not enable_runtime_animation_playback_execution_fixture
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -424,6 +441,8 @@ def run_runtime_harness(
             and not diagnose_approved_motion_product_handler_unregistered_signal
             and not diagnose_runtime_shutdown_poolallocator_assertions
             and not enable_runtime_poolallocator_signal_classification_fixture
+            and not diagnose_runtime_animation_playback_execution_api
+            and not enable_runtime_animation_playback_execution_fixture
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -498,6 +517,10 @@ def run_runtime_harness(
             if diagnose_runtime_shutdown_poolallocator_assertions
             else "runtime_poolallocator_signal_classification_fixture_command"
             if enable_runtime_poolallocator_signal_classification_fixture
+            else "runtime_animation_playback_execution_api_diagnostic"
+            if diagnose_runtime_animation_playback_execution_api
+            else "runtime_animation_playback_execution_fixture_command"
+            if enable_runtime_animation_playback_execution_fixture
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -607,6 +630,8 @@ def run_runtime_harness(
         and not diagnose_approved_motion_product_handler_unregistered_signal
         and not diagnose_runtime_shutdown_poolallocator_assertions
         and not enable_runtime_poolallocator_signal_classification_fixture
+        and not diagnose_runtime_animation_playback_execution_api
+        and not enable_runtime_animation_playback_execution_fixture
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -834,6 +859,16 @@ def run_runtime_harness(
             artifact_dir=artifact_dir,
         )
 
+    if diagnose_runtime_animation_playback_execution_api:
+        return _run_runtime_animation_playback_execution_api_diagnostic(
+            report,
+            product_evidence=product_evidence,
+            engine_root=selected_engine,
+            project=selected_project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+
     gate_status = _runtime_gate_status(env_map)
     if gate_status["status"] != "pass":
         report.update(
@@ -864,6 +899,7 @@ def run_runtime_harness(
         or enable_runtime_character_animation_component_wiring_surface_fixture
         or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
         or enable_runtime_poolallocator_signal_classification_fixture
+        or enable_runtime_animation_playback_execution_fixture
     ):
         return _run_runtime_exit_fixture_command(
             report,
@@ -884,6 +920,7 @@ def run_runtime_harness(
                 or enable_runtime_character_animation_component_wiring_surface_fixture
                 or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
                 or enable_runtime_poolallocator_signal_classification_fixture
+                or enable_runtime_animation_playback_execution_fixture
             ),
             ap_shader_signal_classification=(
                 enable_runtime_exit_fixture_ap_shader_signal_classification
@@ -893,28 +930,35 @@ def run_runtime_harness(
                 or enable_runtime_character_animation_component_wiring_surface_fixture
                 or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
                 or enable_runtime_poolallocator_signal_classification_fixture
+                or enable_runtime_animation_playback_execution_fixture
             ),
             character_product_load=enable_runtime_character_product_load_fixture
             or enable_runtime_character_spawn_instantiation_fixture
             or enable_runtime_character_animation_playback_surface_fixture
             or enable_runtime_character_animation_component_wiring_surface_fixture
             or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
-            or enable_runtime_poolallocator_signal_classification_fixture,
+            or enable_runtime_poolallocator_signal_classification_fixture
+            or enable_runtime_animation_playback_execution_fixture,
             character_spawn_instantiation=enable_runtime_character_spawn_instantiation_fixture
             or enable_runtime_character_animation_playback_surface_fixture
             or enable_runtime_character_animation_component_wiring_surface_fixture
             or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
-            or enable_runtime_poolallocator_signal_classification_fixture,
+            or enable_runtime_poolallocator_signal_classification_fixture
+            or enable_runtime_animation_playback_execution_fixture,
             character_animation_playback_surface=enable_runtime_character_animation_playback_surface_fixture
             or enable_runtime_character_animation_component_wiring_surface_fixture
             or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
-            or enable_runtime_poolallocator_signal_classification_fixture,
+            or enable_runtime_poolallocator_signal_classification_fixture
+            or enable_runtime_animation_playback_execution_fixture,
             character_animation_component_wiring_surface=enable_runtime_character_animation_component_wiring_surface_fixture
             or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
-            or enable_runtime_poolallocator_signal_classification_fixture,
+            or enable_runtime_poolallocator_signal_classification_fixture
+            or enable_runtime_animation_playback_execution_fixture,
             actor_simple_motion_component_wiring_after_apb=enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
-            or enable_runtime_poolallocator_signal_classification_fixture,
+            or enable_runtime_poolallocator_signal_classification_fixture
+            or enable_runtime_animation_playback_execution_fixture,
             poolallocator_signal_classification=enable_runtime_poolallocator_signal_classification_fixture,
+            animation_playback_execution=enable_runtime_animation_playback_execution_fixture,
             product_evidence=product_evidence,
         )
 
@@ -1476,10 +1520,15 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
                 MXN_RUNTIME_SMOKE_FAIL,
                 "runtime_actor_simple_motion_component_wiring_after_apb_verified=true requires runtime Motion asset assignment evidence.",
             )
-        if report.get("runtime_character_animation_verified") is True or report.get("runtime_character_proof_verified") is True:
+        if report.get("runtime_character_animation_verified") is True and not _runtime_animation_playback_execution_fixture_passed(report):
             result.add_error(
                 MXN_RUNTIME_SMOKE_FAIL,
-                "runtime Actor + Simple Motion component wiring after APB is not animation playback or full character proof.",
+                "runtime Actor + Simple Motion component wiring after APB is not animation playback without bounded playback execution proof.",
+            )
+        if report.get("runtime_character_proof_verified") is True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "runtime Actor + Simple Motion component wiring after APB is not full character proof.",
             )
     if (
         report.get("runtime_cache_bootstrap_candidate_attempted") is True
@@ -2398,13 +2447,43 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_character_animation_playback_observed": False,
         "runtime_character_animation_playback_time_before": None,
         "runtime_character_animation_playback_time_after": None,
+        "runtime_character_animation_playback_time_advanced": False,
+        "runtime_character_animation_playback_active_state_observed": False,
         "runtime_character_animation_playback_tick_count": 0,
         "runtime_character_animation_playback_tick_duration_seconds": 0,
         "runtime_character_animation_playback_cleanup_complete": False,
         "runtime_character_animation_is_full_character_proof": False,
+        "runtime_animation_playback_execution_api_diagnostic_attempted": False,
+        "runtime_animation_playback_execution_api_diagnostic_completed": False,
+        "runtime_animation_playback_execution_api_source_validation_status": "",
+        "runtime_animation_playback_execution_api_source_validation_verified": False,
+        "runtime_animation_playback_execution_api_found": False,
+        "runtime_animation_playback_execution_api_selected": "",
+        "runtime_animation_playback_execution_api_blocker": "",
+        "runtime_animation_playback_execution_candidate_matrix": [],
+        "runtime_animation_playback_execution_selected_strategy": "",
+        "runtime_animation_playback_preconditions_verified": False,
+        "runtime_animation_playback_component_wiring_verified_prerequisite": False,
+        "runtime_animation_playback_actor_component_found": False,
+        "runtime_animation_playback_simple_motion_component_found": False,
+        "runtime_animation_playback_actor_asset_assignment_verified": False,
+        "runtime_animation_playback_motion_asset_assignment_verified": False,
+        "runtime_animation_playback_motion_asset_id": "",
+        "runtime_animation_playback_request_attempted": False,
+        "runtime_animation_playback_request_succeeded": False,
+        "runtime_animation_playback_started": False,
+        "runtime_animation_playback_observed": False,
+        "runtime_animation_playback_time_before": None,
+        "runtime_animation_playback_time_after": None,
+        "runtime_animation_playback_time_advanced": False,
+        "runtime_animation_playback_active_state_observed": False,
+        "runtime_animation_playback_tick_count": 0,
+        "runtime_animation_playback_cleanup_verified": False,
+        "runtime_animation_playback_execution_verified": False,
+        "runtime_animation_playback_selected_log_blocking_matches": [],
         "runtime_character_animation_component_wiring_surface": {
-            "status": "runtime_character_animation_component_wiring_surface_not_attempted"
-        },
+                "status": "runtime_character_animation_component_wiring_surface_not_attempted"
+            },
         "runtime_character_animation_component_wiring_surface_status": "runtime_character_animation_component_wiring_surface_not_attempted",
         "runtime_character_animation_component_wiring_surface_diagnostic_attempted": False,
         "runtime_character_animation_component_wiring_surface_diagnostic_completed": False,
@@ -3688,11 +3767,14 @@ def _run_runtime_exit_fixture_command(
     character_animation_component_wiring_surface: bool = False,
     actor_simple_motion_component_wiring_after_apb: bool = False,
     poolallocator_signal_classification: bool = False,
+    animation_playback_execution: bool = False,
     product_evidence: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
     report["runtime_harness_mode"] = (
-        "runtime_poolallocator_signal_classification_fixture_command"
+        "runtime_animation_playback_execution_fixture_command"
+        if animation_playback_execution
+        else "runtime_poolallocator_signal_classification_fixture_command"
         if poolallocator_signal_classification
         else "runtime_actor_simple_motion_component_wiring_after_apb_fixture_command"
         if actor_simple_motion_component_wiring_after_apb
@@ -3922,7 +4004,9 @@ def _run_runtime_exit_fixture_command(
             return _finalize_report(report)
     if character_animation_component_wiring_surface:
         wiring_gate = (
-            _runtime_actor_simple_motion_component_wiring_after_apb_gate_status(env)
+            _runtime_animation_playback_execution_gate_status(env)
+            if animation_playback_execution
+            else _runtime_actor_simple_motion_component_wiring_after_apb_gate_status(env)
             if actor_simple_motion_component_wiring_after_apb
             else _runtime_character_animation_component_wiring_surface_gate_status(env)
         )
@@ -3934,6 +4018,11 @@ def _run_runtime_exit_fixture_command(
             + (
                 tuple(RUNTIME_ACTOR_SIMPLE_MOTION_AFTER_APB_GATE_ENV)
                 if actor_simple_motion_component_wiring_after_apb
+                else tuple()
+            )
+            + (
+                tuple(RUNTIME_ANIMATION_PLAYBACK_EXECUTION_GATE_ENV)
+                if animation_playback_execution
                 else tuple()
             )
         )
@@ -4166,6 +4255,7 @@ def _run_runtime_exit_fixture_command(
         character_spawn_instantiation=character_spawn_instantiation,
         character_animation_playback_surface=character_animation_playback_surface,
         character_animation_component_wiring_surface=character_animation_component_wiring_surface,
+        animation_playback_execution=animation_playback_execution,
         product_evidence=product_evidence or report.get("product_evidence_summary", {}),
     )
     if not command.get("selected"):
@@ -4306,6 +4396,7 @@ def _run_runtime_exit_fixture_command(
             "runtime_exit_fixture_runtime_command_uses_animation_component_wiring_surface_probe": character_animation_component_wiring_surface,
             "runtime_exit_fixture_runtime_command_uses_actor_simple_motion_component_wiring_after_apb_probe": actor_simple_motion_component_wiring_after_apb,
             "runtime_exit_fixture_runtime_command_uses_poolallocator_signal_classification_probe": poolallocator_signal_classification,
+            "runtime_exit_fixture_runtime_command_uses_animation_playback_execution_probe": animation_playback_execution,
             "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
             "runtime_exit_fixture_command": str(command.get("argv", [""])[0]),
             "runtime_exit_fixture_arguments": list(command.get("argv", []))[1:],
@@ -4543,6 +4634,24 @@ def _run_runtime_exit_fixture_command(
         if character_animation_component_wiring_surface
         else {}
     )
+    runtime_animation_playback_execution_payload = (
+        _runtime_animation_playback_execution_payload(
+            product_evidence=product_evidence or report.get("product_evidence_summary", {}),
+            command=command,
+            project=project,
+            actual_level_loads=level_loads,
+            launch_hygiene=launch_hygiene,
+            product_load=character_product_load_payload,
+            spawn_instantiation=character_spawn_instantiation_payload,
+            animation_playback_surface=character_animation_playback_surface_payload,
+            component_wiring=character_animation_component_wiring_surface_payload,
+            exit_code=proc.returncode,
+            marker_observed=marker_observed,
+            combined_text=combined_text,
+        )
+        if animation_playback_execution
+        else {}
+    )
     launch_hygiene_pass = launch_hygiene.get("runtime_launch_hygiene_status") == "runtime_launch_hygiene_pass"
     character_product_load_pass = (
         character_product_load_payload.get("runtime_character_product_load_verified") is True
@@ -4555,6 +4664,9 @@ def _run_runtime_exit_fixture_command(
         else True
     )
     character_animation_playback_surface_pass = (
+        True
+        if animation_playback_execution
+        else
         _runtime_character_animation_playback_surface_fixture_passed(
             character_animation_playback_surface_payload
         )
@@ -4568,6 +4680,11 @@ def _run_runtime_exit_fixture_command(
         if character_animation_component_wiring_surface
         else True
     )
+    runtime_animation_playback_execution_pass = (
+        _runtime_animation_playback_execution_fixture_passed(runtime_animation_playback_execution_payload)
+        if animation_playback_execution
+        else True
+    )
     passed = (
         proc.returncode in expected_exit_codes
         and not timed_out
@@ -4579,6 +4696,7 @@ def _run_runtime_exit_fixture_command(
         and character_spawn_instantiation_pass
         and character_animation_playback_surface_pass
         and character_animation_component_wiring_surface_pass
+        and runtime_animation_playback_execution_pass
     )
     if passed:
         fixture_status = "runtime_exit_fixture_verified_clean_exit"
@@ -4603,6 +4721,8 @@ def _run_runtime_exit_fixture_command(
         fixture_status = "runtime_exit_fixture_execution_failed_character_animation_playback_surface"
     elif character_animation_component_wiring_surface and not character_animation_component_wiring_surface_pass:
         fixture_status = "runtime_exit_fixture_execution_failed_character_animation_component_wiring_surface"
+    elif animation_playback_execution and not runtime_animation_playback_execution_pass:
+        fixture_status = "runtime_exit_fixture_execution_failed_runtime_animation_playback_execution"
     else:
         fixture_status = "runtime_exit_fixture_execution_failed_disqualifying_log_signal"
 
@@ -4619,6 +4739,7 @@ def _run_runtime_exit_fixture_command(
     report.update(character_spawn_instantiation_payload)
     report.update(character_animation_playback_surface_payload)
     report.update(character_animation_component_wiring_surface_payload)
+    report.update(runtime_animation_playback_execution_payload)
     blocked_reason = _runtime_launch_hygiene_blocked_reason(launch_hygiene)
     if pre_autoexec_suppression and str(pre_autoexec_payload.get("runtime_pre_autoexec_candidate_blocker", "")).strip():
         blocked_reason = str(pre_autoexec_payload.get("runtime_pre_autoexec_candidate_blocker", "")).strip()
@@ -4653,6 +4774,12 @@ def _run_runtime_exit_fixture_command(
             character_animation_component_wiring_surface_payload.get(
                 "runtime_character_animation_component_wiring_surface_blocker", ""
             )
+        ).strip()
+    if animation_playback_execution and str(
+        runtime_animation_playback_execution_payload.get("runtime_animation_playback_execution_api_blocker", "")
+    ).strip():
+        blocked_reason = str(
+            runtime_animation_playback_execution_payload.get("runtime_animation_playback_execution_api_blocker", "")
         ).strip()
     if poolallocator_signal_classification and str(
         poolallocator_payload.get("runtime_shutdown_poolallocator_signal_blocker", "")
@@ -4750,6 +4877,9 @@ def _run_runtime_exit_fixture_command(
                 "runtime_character_animation_component_wiring_surface_diagnostic_completed"
                 if character_animation_component_wiring_surface
                 else "runtime_character_animation_component_wiring_surface_not_required",
+                "runtime_animation_playback_execution_verified"
+                if animation_playback_execution
+                else "runtime_animation_playback_execution_not_required",
                 "runtime_character_proof_not_claimed",
             ]
             if passed
@@ -5578,6 +5708,7 @@ def _select_runtime_exit_fixture_command(
     character_spawn_instantiation: bool = False,
     character_animation_playback_surface: bool = False,
     character_animation_component_wiring_surface: bool = False,
+    animation_playback_execution: bool = False,
     product_evidence: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     executable = str(report.get("runtime_executable_path", "")).strip()
@@ -5614,6 +5745,15 @@ def _select_runtime_exit_fixture_command(
     spawn_instantiation_args = (
         [f"--regset-file={spawn_instantiation_patch_path}"] if character_spawn_instantiation else []
     )
+    animation_playback_execution_args = (
+        [
+            "--regset=/Amazon/MAXINE/RuntimeHarness/EnableCharacterAnimationPlaybackExecutionProbe=true",
+            "--regset=/Amazon/MAXINE/RuntimeHarness/CharacterAnimationPlaybackExecutionProbe/ObservationTicks=8",
+            f"--regset=/Amazon/MAXINE/RuntimeHarness/CharacterAnimationPlaybackExecutionProbe/ExpectedMotionAssetId={RUNTIME_CHARACTER_APPROVED_MOTION_ASSET_ID}",
+        ]
+        if animation_playback_execution
+        else []
+    )
     argv = [
         executable,
         f"--project-path={project_path}",
@@ -5633,9 +5773,12 @@ def _select_runtime_exit_fixture_command(
         "--regset=/Amazon/MAXINE/RuntimeHarness/ExitAfterTicks=5",
         *product_load_args,
         *spawn_instantiation_args,
+        *animation_playback_execution_args,
     ]
     selected_reason = (
-        "repo_owned_fixture_character_animation_component_wiring_surface_cache_bootstrap_ap_shader_envelope"
+        "repo_owned_fixture_runtime_animation_playback_execution_cache_bootstrap_ap_shader_envelope"
+        if animation_playback_execution
+        else "repo_owned_fixture_character_animation_component_wiring_surface_cache_bootstrap_ap_shader_envelope"
         if character_animation_component_wiring_surface
         else "repo_owned_fixture_character_animation_playback_surface_cache_bootstrap_ap_shader_envelope"
         if character_animation_playback_surface
@@ -5731,6 +5874,15 @@ def _select_runtime_exit_fixture_command(
                 "component_wiring_surface_diagnostic_is_not_full_character_proof",
             ]
         )
+    if animation_playback_execution:
+        safety_flags.extend(
+            [
+                "runtime_animation_playback_execution_probe_enabled",
+                "runtime_animation_playback_execution_gate_required",
+                "playback_execution_requires_verified_runtime_component_wiring",
+                "playback_execution_is_not_full_character_proof",
+            ]
+        )
     return {
         "selected": True,
         "argv": argv,
@@ -5778,6 +5930,7 @@ def _select_runtime_exit_fixture_command(
                 if character_animation_component_wiring_surface
                 else ""
             ),
+            "animation_playback_execution_probe": animation_playback_execution_args,
         },
         "safety_profile": {
             "local": True,
@@ -5800,6 +5953,7 @@ def _select_runtime_exit_fixture_command(
             "runtime_character_animation_component_wiring_surface_probe": bool(
                 character_animation_component_wiring_surface
             ),
+            "runtime_character_animation_playback_execution_probe": bool(animation_playback_execution),
             "runtime_character_proof": False,
             "headless_launcher": True,
             "null_renderer_requested": True,
@@ -5835,9 +5989,11 @@ def _select_runtime_exit_fixture_command(
             "uses_character_animation_component_wiring_surface_probe": bool(
                 character_animation_component_wiring_surface
             ),
+            "uses_character_animation_playback_execution_probe": bool(animation_playback_execution),
             "character_animation_component_wiring_surface_probe_gate_required": bool(
                 character_animation_component_wiring_surface
             ),
+            "character_animation_playback_execution_probe_gate_required": bool(animation_playback_execution),
             "runtime_character_animation_proof": False,
             "runtime_full_character_proof": False,
         },
@@ -10094,6 +10250,645 @@ def _runtime_character_animation_component_wiring_surface_fixture_passed(report:
     return report.get("runtime_character_animation_component_wiring_verified") is True
 
 
+def _runtime_animation_playback_execution_source_specs(root: Path) -> List[Dict[str, Any]]:
+    return _runtime_character_animation_source_specs(root) + [
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "EMotionFX" / "Source" / "MotionInstance.h",
+            "symbols": ["GetCurrentTime", "GetDuration", "GetIsPlaying", "GetActorInstance"],
+        },
+        {
+            "path": root / "Gems" / "EMotionFX" / "Code" / "EMotionFX" / "Source" / "MotionSystem.h",
+            "symbols": ["PlayMotion", "Update", "UpdateMotionInstances"],
+        },
+        {
+            "path": RUNTIME_EXIT_FIXTURE_COMPONENT_SOURCE,
+            "symbols": [
+                "MAXINE_RUNTIME_ANIMATION_PLAYBACK_SOURCE_VALIDATED",
+                "MAXINE_RUNTIME_ANIMATION_PLAYBACK_REQUEST",
+                "MAXINE_RUNTIME_ANIMATION_PLAYBACK_OBSERVE",
+                "MAXINE_RUNTIME_ANIMATION_PLAYBACK_SUMMARY",
+                "SimpleMotionComponentRequestBus::Event",
+                "SimpleMotionComponentRequestBus::EventResult",
+                "PlayMotion",
+                "GetPlayTime",
+                "GetMotionInstance",
+                "GetIsPlaying",
+            ],
+        },
+    ]
+
+
+def _runtime_animation_playback_execution_source_refs(engine_root: Path | None) -> List[str]:
+    root = engine_root or Path("<engine-root>")
+    return [str(spec["path"]) for spec in _runtime_animation_playback_execution_source_specs(root)]
+
+
+def _runtime_animation_playback_execution_source_validation(engine_root: Path | None) -> Dict[str, Any]:
+    specs = _runtime_animation_playback_execution_source_specs(engine_root or Path(""))
+    file_results = [_source_file_symbol_validation(spec["path"], spec["symbols"]) for spec in specs]
+    missing = [result for result in file_results if result["status"] != "pass"]
+    return {
+        "status": "runtime_animation_playback_execution_api_source_validation_pass"
+        if not missing
+        else "runtime_animation_playback_execution_api_source_validation_inconclusive",
+        "files": file_results,
+        "runtime_playback_surfaces": {
+            "simple_motion_request_bus": "EMotionFX::Integration::SimpleMotionComponentRequestBus",
+            "simple_motion_play_api": "SimpleMotionComponentRequests::PlayMotion",
+            "simple_motion_time_api": "SimpleMotionComponentRequests::GetPlayTime",
+            "simple_motion_duration_api": "SimpleMotionComponentRequests::GetDuration",
+            "simple_motion_motion_asset_api": "SimpleMotionComponentRequests::GetMotion",
+            "simple_motion_motion_instance_api": "EMotionFX::Integration::SimpleMotionComponent::GetMotionInstance",
+            "motion_instance_time_api": "EMotionFX::MotionInstance::GetCurrentTime",
+            "motion_instance_playing_api": "EMotionFX::MotionInstance::GetIsPlaying",
+            "motion_system_play_api": "EMotionFX::MotionSystem::PlayMotion",
+            "fixture_marker_surface": "MAXINE_RUNTIME_ANIMATION_PLAYBACK_*",
+        },
+        "approved_motion_asset_id": RUNTIME_CHARACTER_APPROVED_MOTION_ASSET_ID,
+        "missing": missing,
+    }
+
+
+def _runtime_animation_playback_execution_source_validated(report: Mapping[str, Any]) -> bool:
+    return (
+        str(report.get("runtime_animation_playback_execution_api_source_validation_status", "")).strip()
+        == "runtime_animation_playback_execution_api_source_validation_pass"
+        and report.get("runtime_animation_playback_execution_api_source_validation_verified") is True
+        and bool(report.get("runtime_animation_playback_execution_api_source_files", []))
+    )
+
+
+def _runtime_animation_playback_execution_candidate_matrix(
+    *,
+    source_validated: bool,
+    component_wiring_verified: bool,
+    request_attempted: bool,
+    request_succeeded: bool,
+    playback_observed: bool,
+    time_advanced: bool,
+    blocker: str,
+) -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "simple_motion_request_bus_play_motion",
+            "candidate": "Simple Motion runtime request bus or equivalent explicit PlayMotion API",
+            "kind": "runtime_playback_api",
+            "attempted": request_attempted,
+            "selected": bool(source_validated),
+            "result": "runtime_animation_playback_execution_candidate_verified"
+            if playback_observed and time_advanced
+            else "runtime_animation_playback_execution_candidate_request_issued_observation_blocked"
+            if request_succeeded
+            else "runtime_animation_playback_execution_candidate_source_validated"
+            if source_validated and not request_attempted
+            else "runtime_animation_playback_execution_candidate_blocked_source_validation",
+            "blocker": "" if playback_observed and time_advanced else blocker,
+        },
+        {
+            "id": "simple_motion_component_auto_start_on_activation",
+            "candidate": "Simple Motion component auto-start on activation",
+            "kind": "runtime_component_activation_behavior",
+            "attempted": False,
+            "selected": False,
+            "result": "runtime_animation_playback_execution_candidate_deferred_explicit_request_selected",
+            "blocker": "explicit_request_bus_playback_path_selected",
+        },
+        {
+            "id": "actor_motion_instance_active_state",
+            "candidate": "Actor instance / motion instance active playback state",
+            "kind": "runtime_motion_instance_observation",
+            "attempted": request_attempted,
+            "selected": bool(source_validated and request_attempted),
+            "result": "runtime_animation_playback_execution_candidate_observed"
+            if playback_observed
+            else "runtime_animation_playback_execution_candidate_blocked_observation",
+            "blocker": "" if playback_observed else blocker,
+        },
+        {
+            "id": "motion_asset_assignment_readback_only",
+            "candidate": "motion AssetId assignment readback only",
+            "kind": "runtime_assignment_reference",
+            "attempted": component_wiring_verified,
+            "selected": False,
+            "result": "runtime_animation_playback_execution_candidate_rejected_assignment_only_insufficient",
+            "blocker": "motion_assignment_is_not_playback_proof",
+        },
+        {
+            "id": "runtime_actor_simple_motion_typeids_only",
+            "candidate": "runtime Actor + Simple Motion TypeIds only",
+            "kind": "runtime_component_inventory",
+            "attempted": component_wiring_verified,
+            "selected": False,
+            "result": "runtime_animation_playback_execution_candidate_rejected_typeids_only_insufficient",
+            "blocker": "runtime_typeids_are_not_playback_proof",
+        },
+        {
+            "id": "product_load_apb_only",
+            "candidate": "product-load/APB evidence only",
+            "kind": "product_evidence",
+            "attempted": False,
+            "selected": False,
+            "result": "runtime_animation_playback_execution_candidate_rejected_product_load_only_insufficient",
+            "blocker": "product_load_is_not_animation_playback_proof",
+        },
+        {
+            "id": "animation_graph_playback",
+            "candidate": "animation graph playback",
+            "kind": "runtime_anim_graph_playback",
+            "attempted": False,
+            "selected": False,
+            "result": "runtime_animation_playback_execution_candidate_deferred_simple_motion_path_selected",
+            "blocker": "anim_graph_playback_deferred_until_simple_motion_path_exhausted",
+        },
+        {
+            "id": "defaultlevel_or_production_level_playback",
+            "candidate": "defaultlevel or production-level playback proof",
+            "kind": "unsafe_runtime_scope",
+            "attempted": False,
+            "selected": False,
+            "result": "runtime_animation_playback_execution_candidate_rejected_unsafe_scope",
+            "blocker": "defaultlevel_or_production_level_runtime_evidence_disallowed",
+        },
+    ]
+
+
+def _runtime_animation_playback_execution_source_payload(
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    del timeout_seconds
+    del artifact_dir
+    source_validation = _runtime_animation_playback_execution_source_validation(engine_root)
+    source_refs = _runtime_animation_playback_execution_source_refs(engine_root)
+    source_validated = (
+        source_validation.get("status")
+        == "runtime_animation_playback_execution_api_source_validation_pass"
+    )
+    approved = _runtime_character_spawn_instantiation_approved_spawnable(
+        product_evidence=product_evidence,
+        project=project,
+        engine_root=engine_root,
+    )
+    blocker = ""
+    if not source_validated:
+        blocker = "blocked_by_runtime_animation_playback_requires_additional_source_validation"
+    elif not approved:
+        blocker = "blocked_by_missing_runtime_equivalent_spawnable_surface"
+    return {
+        "runtime_animation_playback_execution_api_diagnostic_attempted": True,
+        "runtime_animation_playback_execution_api_diagnostic_completed": True,
+        "runtime_animation_playback_execution_api_source_validation_status": source_validation.get("status", ""),
+        "runtime_animation_playback_execution_api_source_validation_verified": source_validated,
+        "runtime_animation_playback_execution_api_found": source_validated,
+        "runtime_animation_playback_execution_api_selected": (
+            "EMotionFX::Integration::SimpleMotionComponentRequestBus::PlayMotion"
+            if source_validated
+            else ""
+        ),
+        "runtime_animation_playback_execution_api_blocker": blocker,
+        "runtime_animation_playback_execution_api_source_validation": source_validation,
+        "runtime_animation_playback_execution_api_source_files": source_refs,
+        "runtime_animation_playback_execution_candidate_matrix": _runtime_animation_playback_execution_candidate_matrix(
+            source_validated=source_validated,
+            component_wiring_verified=False,
+            request_attempted=False,
+            request_succeeded=False,
+            playback_observed=False,
+            time_advanced=False,
+            blocker=blocker,
+        ),
+        "runtime_animation_playback_execution_selected_strategy": (
+            RUNTIME_ANIMATION_PLAYBACK_EXECUTION_SELECTED if source_validated else ""
+        ),
+        "runtime_animation_playback_preconditions_verified": False,
+        "runtime_animation_playback_component_wiring_verified_prerequisite": False,
+        "runtime_animation_playback_actor_component_found": False,
+        "runtime_animation_playback_simple_motion_component_found": False,
+        "runtime_animation_playback_actor_asset_assignment_verified": False,
+        "runtime_animation_playback_motion_asset_assignment_verified": False,
+        "runtime_animation_playback_motion_asset_id": "",
+        "runtime_animation_playback_request_attempted": False,
+        "runtime_animation_playback_request_succeeded": False,
+        "runtime_animation_playback_started": False,
+        "runtime_animation_playback_observed": False,
+        "runtime_animation_playback_time_before": None,
+        "runtime_animation_playback_time_after": None,
+        "runtime_animation_playback_time_advanced": False,
+        "runtime_animation_playback_active_state_observed": False,
+        "runtime_animation_playback_tick_count": 0,
+        "runtime_animation_playback_cleanup_verified": False,
+        "runtime_character_animation_playback_attempted": False,
+        "runtime_character_animation_playback_request_issued": False,
+        "runtime_character_animation_playback_selected_api": "",
+        "runtime_character_animation_playback_started": False,
+        "runtime_character_animation_playback_observed": False,
+        "runtime_character_animation_playback_time_before": None,
+        "runtime_character_animation_playback_time_after": None,
+        "runtime_character_animation_playback_time_advanced": False,
+        "runtime_character_animation_playback_active_state_observed": False,
+        "runtime_character_animation_playback_tick_count": 0,
+        "runtime_character_animation_playback_cleanup_complete": False,
+        "runtime_character_animation_claimed": False,
+        "runtime_character_animation_verified": False,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+    }
+
+
+def _run_runtime_animation_playback_execution_api_diagnostic(
+    report: Dict[str, Any],
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    report.update(
+        _runtime_animation_playback_execution_source_payload(
+            product_evidence=product_evidence,
+            engine_root=engine_root,
+            project=project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+    )
+    source_validated = report.get("runtime_animation_playback_execution_api_source_validation_verified") is True
+    report.update(
+        {
+            "status": "pass",
+            "runtime_harness_status": "runtime_animation_playback_execution_api_source_discovery"
+            if source_validated
+            else "blocked_by_runtime_animation_playback_requires_additional_source_validation",
+            "runtime_harness_mode": "runtime_animation_playback_execution_api_diagnostic",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "runtime_character_animation_playback_attempted": False,
+            "runtime_character_animation_playback_started": False,
+            "runtime_character_animation_playback_observed": False,
+            "runtime_character_animation_claimed": False,
+            "runtime_character_animation_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "asset_cache_deleted": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_animation_playback_execution_api_source_discovery",
+                "runtime_execution_not_attempted_in_animation_playback_execution_api_diagnostic_mode",
+                "runtime_animation_playback_not_claimed_without_live_fixture",
+                "runtime_character_proof_not_claimed",
+            ]
+            if source_validated
+            else [],
+            "required_runtime_harness_assertions_failed": []
+            if source_validated
+            else ["runtime_animation_playback_execution_api_source_validation"],
+            "runtime_harness_assertion_informational": [
+                "playback_api_source_discovery_is_not_runtime_animation_playback_proof",
+                "runtime_component_wiring_is_not_animation_playback_proof",
+                "full_runtime_character_proof_remains_out_of_scope",
+            ],
+        }
+    )
+    return _finalize_report(report)
+
+
+def _runtime_animation_playback_parse_markers(combined_text: str) -> Dict[str, Any]:
+    payload: Dict[str, Any] = {
+        "source_validated_marker": False,
+        "request_attempted": False,
+        "request_succeeded": False,
+        "started": False,
+        "observed": False,
+        "time_before": None,
+        "time_after": None,
+        "duration": None,
+        "time_advanced": False,
+        "active_state_observed": False,
+        "tick_count": 0,
+        "motion_asset_id": "",
+        "selected_api": "",
+        "blocker": "",
+        "actor_component_found": None,
+        "simple_motion_component_found": None,
+        "summary": {},
+    }
+    for raw_line in combined_text.splitlines():
+        marker_index = raw_line.find("MAXINE_RUNTIME_ANIMATION_PLAYBACK_")
+        if marker_index < 0:
+            continue
+        line = raw_line[marker_index:].strip()
+        fields = _runtime_marker_fields(line)
+        if line.startswith("MAXINE_RUNTIME_ANIMATION_PLAYBACK_SOURCE_VALIDATED"):
+            payload["source_validated_marker"] = str(fields.get("status", "")).strip() == "pass"
+        elif line.startswith("MAXINE_RUNTIME_ANIMATION_PLAYBACK_REQUEST"):
+            payload["request_attempted"] = True
+            payload["request_succeeded"] = str(fields.get("request_succeeded", "1")).strip() in {
+                "1",
+                "true",
+                "True",
+                "pass",
+            }
+            payload["selected_api"] = fields.get("api", "")
+            payload["motion_asset_id"] = fields.get("motion_asset_id", "")
+            payload["time_before"] = _float_or_none(fields.get("play_time_before"))
+            payload["duration"] = _float_or_none(fields.get("duration"))
+        elif line.startswith("MAXINE_RUNTIME_ANIMATION_PLAYBACK_OBSERVE"):
+            payload["started"] = str(fields.get("started", "0")).strip() in {"1", "true", "True"}
+            payload["observed"] = str(fields.get("observed", "0")).strip() in {"1", "true", "True"}
+            payload["time_before"] = _float_or_none(fields.get("play_time_before", payload.get("time_before")))
+            payload["time_after"] = _float_or_none(fields.get("play_time_after"))
+            payload["time_advanced"] = str(fields.get("time_advanced", "0")).strip() in {"1", "true", "True"}
+            payload["active_state_observed"] = str(fields.get("active_state_observed", "0")).strip() in {
+                "1",
+                "true",
+                "True",
+            }
+            if "actor_component_found" in fields:
+                payload["actor_component_found"] = str(fields.get("actor_component_found", "")).strip() in {
+                    "1",
+                    "true",
+                    "True",
+                }
+            if "simple_motion_component_found" in fields:
+                payload["simple_motion_component_found"] = str(
+                    fields.get("simple_motion_component_found", "")
+                ).strip() in {
+                    "1",
+                    "true",
+                    "True",
+                }
+            payload["tick_count"] = _int_or_zero(fields.get("tick_count", 0))
+            if str(fields.get("blocker", "")).strip():
+                payload["blocker"] = str(fields.get("blocker", "")).strip()
+        elif line.startswith("MAXINE_RUNTIME_ANIMATION_PLAYBACK_SUMMARY"):
+            payload["summary"] = dict(fields)
+            payload["started"] = payload["started"] or str(fields.get("started", "")).strip() in {"1", "true", "True"}
+            payload["observed"] = payload["observed"] or str(fields.get("observed", "")).strip() in {"1", "true", "True"}
+            payload["time_advanced"] = payload["time_advanced"] or str(fields.get("time_advanced", "")).strip() in {
+                "1",
+                "true",
+                "True",
+            }
+            payload["active_state_observed"] = payload["active_state_observed"] or str(
+                fields.get("active_state_observed", "")
+            ).strip() in {"1", "true", "True"}
+            if "actor_component_found" in fields:
+                payload["actor_component_found"] = str(fields.get("actor_component_found", "")).strip() in {
+                    "1",
+                    "true",
+                    "True",
+                }
+            if "simple_motion_component_found" in fields:
+                payload["simple_motion_component_found"] = str(
+                    fields.get("simple_motion_component_found", "")
+                ).strip() in {
+                    "1",
+                    "true",
+                    "True",
+                }
+            payload["tick_count"] = max(
+                _int_or_zero(payload.get("tick_count", 0)),
+                _int_or_zero(fields.get("tick_count", 0)),
+            )
+            if str(fields.get("blocker", "")).strip():
+                payload["blocker"] = str(fields.get("blocker", "")).strip()
+    return payload
+
+
+def _runtime_animation_playback_execution_payload(
+    *,
+    product_evidence: Mapping[str, Any],
+    command: Mapping[str, Any],
+    project: Path | None,
+    actual_level_loads: Sequence[str],
+    launch_hygiene: Mapping[str, Any],
+    product_load: Mapping[str, Any],
+    spawn_instantiation: Mapping[str, Any],
+    animation_playback_surface: Mapping[str, Any],
+    component_wiring: Mapping[str, Any],
+    exit_code: int | None,
+    marker_observed: bool,
+    combined_text: str,
+) -> Dict[str, Any]:
+    del animation_playback_surface
+    source_payload = _runtime_animation_playback_execution_source_payload(
+        product_evidence=product_evidence,
+        engine_root=_runtime_engine_root_from_command(command),
+        project=project,
+        timeout_seconds=int(command.get("timeout_seconds", 120)),
+        artifact_dir=DEFAULT_ARTIFACT_ROOT,
+    )
+    markers = _runtime_animation_playback_parse_markers(combined_text)
+    source_validated = source_payload.get("runtime_animation_playback_execution_api_source_validation_verified") is True
+    product_prerequisite = product_load.get("runtime_character_product_load_verified") is True
+    spawn_prerequisite = spawn_instantiation.get("runtime_character_spawn_instantiation_verified") is True
+    component_wiring_verified = component_wiring.get("runtime_character_animation_component_wiring_verified") is True
+    launch_pass = str(launch_hygiene.get("runtime_launch_hygiene_status", "")).strip() == "runtime_launch_hygiene_pass"
+    defaultlevel = bool(launch_hygiene.get("runtime_default_level_autoload_detected"))
+    production_level = bool(actual_level_loads)
+    cleanup_complete = str(
+        spawn_instantiation.get("runtime_character_spawn_instantiation_cleanup_status", "")
+    ).strip() in {
+        "runtime_character_spawn_instantiation_cleanup_complete",
+        "runtime_character_spawn_instantiation_cleanup_not_required",
+    }
+    marker_actor_found = markers.get("actor_component_found")
+    marker_simple_motion_found = markers.get("simple_motion_component_found")
+    actor_found = (
+        bool(marker_actor_found)
+        if marker_actor_found is not None
+        else component_wiring.get("runtime_character_animation_component_wiring_runtime_actor_component_found") is True
+    )
+    simple_motion_found = (
+        bool(marker_simple_motion_found)
+        if marker_simple_motion_found is not None
+        else component_wiring.get("runtime_character_animation_component_wiring_runtime_simple_motion_component_found")
+        is True
+    )
+    actor_assignment_verified = (
+        component_wiring.get("runtime_character_animation_component_wiring_runtime_actor_asset_assignment_verified") is True
+    )
+    motion_assignment_verified = (
+        component_wiring.get("runtime_character_animation_component_wiring_runtime_motion_asset_assignment_verified") is True
+    )
+    motion_asset_id = str(
+        markers.get("motion_asset_id")
+        or component_wiring.get("runtime_character_animation_component_wiring_runtime_motion_asset_id", "")
+    )
+    motion_asset_matches = _runtime_asset_id_matches(motion_asset_id, RUNTIME_CHARACTER_APPROVED_MOTION_ASSET_ID)
+    poolallocator_blocking_lines = _runtime_shutdown_poolallocator_signal_lines(combined_text)
+    selected_log_blocks_playback = bool(poolallocator_blocking_lines)
+    request_attempted = bool(markers.get("request_attempted"))
+    request_succeeded = bool(markers.get("request_succeeded"))
+    playback_started = bool(markers.get("started"))
+    playback_observed = bool(markers.get("observed"))
+    time_advanced = bool(markers.get("time_advanced"))
+    active_state_observed = bool(markers.get("active_state_observed"))
+    tick_count = _int_or_zero(markers.get("tick_count", 0))
+    marker_blocker = str(markers.get("blocker", "")).strip()
+    preconditions_verified = bool(
+        source_validated
+        and product_prerequisite
+        and spawn_prerequisite
+        and component_wiring_verified
+        and actor_found
+        and simple_motion_found
+        and actor_assignment_verified
+        and motion_assignment_verified
+        and motion_asset_matches
+        and launch_pass
+        and not selected_log_blocks_playback
+        and not defaultlevel
+        and not production_level
+    )
+    playback_verified = bool(
+        preconditions_verified
+        and bool(markers.get("source_validated_marker"))
+        and request_attempted
+        and request_succeeded
+        and playback_started
+        and playback_observed
+        and time_advanced
+        and tick_count > 0
+        and cleanup_complete
+        and exit_code == 0
+        and marker_observed
+    )
+    blocker = ""
+    if defaultlevel:
+        blocker = "blocked_by_default_level_autoload"
+    elif production_level:
+        blocker = "blocked_by_production_level_load"
+    elif not source_validated:
+        blocker = "blocked_by_runtime_animation_playback_requires_additional_source_validation"
+    elif selected_log_blocks_playback:
+        blocker = RUNTIME_SHUTDOWN_POOLALLOCATOR_SIGNAL_BLOCKER
+    elif not product_prerequisite:
+        blocker = marker_blocker or "blocked_by_runtime_animation_product_load_prerequisite"
+    elif not spawn_prerequisite:
+        blocker = marker_blocker or "blocked_by_runtime_animation_spawn_prerequisite"
+    elif not component_wiring_verified:
+        blocker = marker_blocker or "blocked_by_runtime_animation_component_wiring_prerequisite_unverified"
+    elif not actor_found:
+        blocker = marker_blocker or "blocked_by_runtime_actor_component_missing_for_playback"
+    elif not simple_motion_found:
+        blocker = marker_blocker or "blocked_by_runtime_simple_motion_component_missing_for_playback"
+    elif not motion_assignment_verified or not motion_asset_matches:
+        blocker = marker_blocker or "blocked_by_runtime_motion_asset_assignment_unverified"
+    elif not request_attempted:
+        blocker = marker_blocker or RUNTIME_ANIMATION_PLAYBACK_EXECUTION_OBSERVATION_BLOCKER
+    elif not request_succeeded:
+        blocker = marker_blocker or "blocked_by_runtime_animation_playback_request_failed"
+    elif not playback_started:
+        blocker = marker_blocker or "blocked_by_runtime_simple_motion_active_state_unobserved"
+    elif not playback_observed:
+        blocker = marker_blocker or "blocked_by_runtime_animation_playback_observation_unavailable"
+    elif not time_advanced:
+        blocker = marker_blocker or RUNTIME_ANIMATION_PLAYBACK_TIME_NOT_ADVANCED_BLOCKER
+    elif not cleanup_complete:
+        blocker = "blocked_by_runtime_character_spawn_cleanup_failed"
+    source_payload.update(
+        {
+            "runtime_animation_playback_execution_api_blocker": "" if playback_verified else blocker,
+            "runtime_animation_playback_execution_verified": playback_verified,
+            "runtime_animation_playback_execution_candidate_matrix": _runtime_animation_playback_execution_candidate_matrix(
+                source_validated=source_validated,
+                component_wiring_verified=component_wiring_verified,
+                request_attempted=request_attempted,
+                request_succeeded=request_succeeded,
+                playback_observed=playback_observed,
+                time_advanced=time_advanced,
+                blocker=blocker,
+            ),
+            "runtime_animation_playback_execution_selected_strategy": (
+                RUNTIME_ANIMATION_PLAYBACK_EXECUTION_SELECTED if source_validated else ""
+            ),
+            "runtime_animation_playback_preconditions_verified": preconditions_verified,
+            "runtime_animation_playback_component_wiring_verified_prerequisite": component_wiring_verified,
+            "runtime_animation_playback_actor_component_found": actor_found,
+            "runtime_animation_playback_simple_motion_component_found": simple_motion_found,
+            "runtime_animation_playback_actor_asset_assignment_verified": actor_assignment_verified,
+            "runtime_animation_playback_motion_asset_assignment_verified": motion_assignment_verified,
+            "runtime_animation_playback_motion_asset_id": motion_asset_id,
+            "runtime_animation_playback_request_attempted": request_attempted,
+            "runtime_animation_playback_request_succeeded": request_succeeded,
+            "runtime_animation_playback_started": playback_started,
+            "runtime_animation_playback_observed": playback_observed,
+            "runtime_animation_playback_time_before": markers.get("time_before"),
+            "runtime_animation_playback_time_after": markers.get("time_after"),
+            "runtime_animation_playback_time_advanced": time_advanced,
+            "runtime_animation_playback_active_state_observed": active_state_observed,
+            "runtime_animation_playback_tick_count": tick_count,
+            "runtime_animation_playback_cleanup_verified": cleanup_complete,
+            "runtime_animation_playback_selected_log_blocking_matches": poolallocator_blocking_lines,
+            "runtime_character_animation_playback_surface": {
+                "status": "runtime_character_animation_playback_execution_verified"
+                if playback_verified
+                else "runtime_character_animation_playback_execution_blocked",
+                "selected_strategy": RUNTIME_ANIMATION_PLAYBACK_EXECUTION_SELECTED if source_validated else "",
+                "playback_request_attempted": request_attempted,
+                "playback_request_succeeded": request_succeeded,
+                "playback_started": playback_started,
+                "playback_observed": playback_observed,
+                "playback_time_advanced": time_advanced,
+                "blocker": "" if playback_verified else blocker,
+            },
+            "runtime_character_animation_playback_surface_status": "runtime_character_animation_playback_execution_verified"
+            if playback_verified
+            else "runtime_character_animation_playback_execution_blocked",
+            "runtime_character_animation_playback_surface_found": actor_found and simple_motion_found,
+            "runtime_character_animation_playback_surface_verified": playback_verified,
+            "runtime_character_animation_playback_surface_blocker": "" if playback_verified else blocker,
+            "runtime_character_animation_playback_attempted": request_attempted,
+            "runtime_character_animation_playback_request_issued": request_attempted,
+            "runtime_character_animation_playback_selected_api": (
+                "EMotionFX::Integration::SimpleMotionComponentRequestBus::PlayMotion"
+                if source_validated
+                else ""
+            ),
+            "runtime_character_animation_playback_started": playback_started,
+            "runtime_character_animation_playback_observed": playback_observed,
+            "runtime_character_animation_playback_time_before": markers.get("time_before"),
+            "runtime_character_animation_playback_time_after": markers.get("time_after"),
+            "runtime_character_animation_playback_time_advanced": time_advanced,
+            "runtime_character_animation_playback_active_state_observed": active_state_observed,
+            "runtime_character_animation_playback_tick_count": tick_count,
+            "runtime_character_animation_playback_tick_duration_seconds": 0,
+            "runtime_character_animation_playback_cleanup_complete": cleanup_complete,
+            "runtime_character_animation_claimed": playback_verified,
+            "runtime_character_animation_verified": playback_verified,
+            "runtime_character_animation_is_full_character_proof": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+        }
+    )
+    return source_payload
+
+
+def _runtime_animation_playback_execution_fixture_passed(report: Mapping[str, Any]) -> bool:
+    return (
+        _runtime_animation_playback_execution_source_validated(report)
+        and report.get("runtime_animation_playback_preconditions_verified") is True
+        and report.get("runtime_animation_playback_component_wiring_verified_prerequisite") is True
+        and report.get("runtime_animation_playback_request_attempted") is True
+        and report.get("runtime_animation_playback_request_succeeded") is True
+        and report.get("runtime_character_animation_playback_started") is True
+        and report.get("runtime_character_animation_playback_observed") is True
+        and report.get("runtime_animation_playback_time_advanced") is True
+        and _int_or_zero(report.get("runtime_character_animation_playback_tick_count", 0)) > 0
+        and report.get("runtime_animation_playback_cleanup_verified") is True
+        and report.get("runtime_character_animation_claimed") is True
+        and report.get("runtime_character_animation_verified") is True
+        and report.get("runtime_character_proof_claimed") is False
+        and report.get("runtime_character_proof_verified") is False
+    )
+
+
 def _runtime_character_animation_component_wiring_candidate_matrix(
     *,
     source_validated: bool,
@@ -12485,6 +13280,13 @@ def _int_or_zero(value: Any) -> int:
         return int(str(value), 0)
     except (TypeError, ValueError):
         return 0
+
+
+def _float_or_none(value: Any) -> float | None:
+    try:
+        return float(str(value))
+    except (TypeError, ValueError):
+        return None
 
 
 def _runtime_character_product_load_parse_markers(
@@ -15080,6 +15882,27 @@ def _runtime_actor_simple_motion_component_wiring_after_apb_gate_status(env: Map
     }
 
 
+def _runtime_animation_playback_execution_gate_status(env: Mapping[str, str]) -> Dict[str, Any]:
+    required = (
+        tuple(RUNTIME_CHARACTER_SPAWNABLE_SURFACE_GATE_ENV)
+        + tuple(RUNTIME_CHARACTER_SPAWN_INSTANTIATION_GATE_ENV)
+        + tuple(RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE_GATE_ENV)
+        + tuple(RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE_GATE_ENV)
+        + tuple(RUNTIME_ACTOR_SIMPLE_MOTION_AFTER_APB_GATE_ENV)
+        + tuple(RUNTIME_ANIMATION_PLAYBACK_EXECUTION_GATE_ENV)
+    )
+    missing = [
+        item.split("=", 1)[0]
+        for item in required
+        if str(env.get(item.split("=", 1)[0], "")).strip() != "1"
+    ]
+    return {
+        "status": "pass" if not missing else "blocked_by_runtime_animation_playback_execution_gate_missing",
+        "required": [item.split("=", 1)[0] for item in required],
+        "missing": missing,
+    }
+
+
 def _scan_runtime_output(text: str) -> Dict[str, Any]:
     lower = text.lower()
     matches: List[Dict[str, str]] = []
@@ -15525,6 +16348,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--diagnose-approved-motion-product-handler-unregistered-signal", action="store_true")
     parser.add_argument("--diagnose-runtime-shutdown-poolallocator-assertions", action="store_true")
     parser.add_argument("--enable-runtime-poolallocator-signal-classification-fixture", action="store_true")
+    parser.add_argument("--diagnose-runtime-animation-playback-execution-api", action="store_true")
+    parser.add_argument("--enable-runtime-animation-playback-execution-fixture", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -15604,6 +16429,12 @@ def main() -> int:
         diagnose_runtime_shutdown_poolallocator_assertions=args.diagnose_runtime_shutdown_poolallocator_assertions,
         enable_runtime_poolallocator_signal_classification_fixture=(
             args.enable_runtime_poolallocator_signal_classification_fixture
+        ),
+        diagnose_runtime_animation_playback_execution_api=(
+            args.diagnose_runtime_animation_playback_execution_api
+        ),
+        enable_runtime_animation_playback_execution_fixture=(
+            args.enable_runtime_animation_playback_execution_fixture
         ),
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
