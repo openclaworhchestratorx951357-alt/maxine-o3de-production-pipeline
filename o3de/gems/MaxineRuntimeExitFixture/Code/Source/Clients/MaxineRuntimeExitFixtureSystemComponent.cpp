@@ -13,6 +13,8 @@
 #include <AzFramework/API/ApplicationAPI.h>
 #include <AzFramework/Spawnable/Spawnable.h>
 #include <AzFramework/Spawnable/SpawnableEntitiesInterface.h>
+#include <Integration/Components/ActorComponent.h>
+#include <Integration/Components/SimpleMotionComponent.h>
 
 namespace MaxineRuntimeExitFixture
 {
@@ -153,6 +155,32 @@ namespace MaxineRuntimeExitFixture
                 components += component->GetUnderlyingComponentType().ToString<AZStd::string>();
             }
             return components;
+        }
+
+        AZStd::string RuntimeActorAssetIdString(const AZ::Entity& entity)
+        {
+            for (const AZ::Component* component : entity.GetComponents())
+            {
+                const auto* actorComponent = azrtti_cast<const EMotionFX::Integration::ActorComponent*>(component);
+                if (actorComponent != nullptr)
+                {
+                    return AssetIdToString(actorComponent->GetActorAsset().GetId());
+                }
+            }
+            return {};
+        }
+
+        AZStd::string RuntimeSimpleMotionAssetIdString(const AZ::Entity& entity)
+        {
+            for (const AZ::Component* component : entity.GetComponents())
+            {
+                const auto* simpleMotionComponent = azrtti_cast<const EMotionFX::Integration::SimpleMotionComponent*>(component);
+                if (simpleMotionComponent != nullptr)
+                {
+                    return AssetIdToString(simpleMotionComponent->GetMotion());
+                }
+            }
+            return {};
         }
 
     } // namespace
@@ -902,19 +930,23 @@ namespace MaxineRuntimeExitFixture
                     const AZStd::string entityId = entity->GetId().ToString();
                     const AZStd::string entityName = SanitizeMarkerValue(entity->GetName());
                     const AZStd::string components = ComponentInventoryString(*entity);
+                    const AZStd::string actorAssetId = RuntimeActorAssetIdString(*entity);
+                    const AZStd::string motionAssetId = RuntimeSimpleMotionAssetIdString(*entity);
                     m_characterSpawnedEntityIds.push_back(entityId);
                     m_characterSpawnedEntityNames.push_back(entityName);
                     m_characterSpawnedEntityComponentInventory.push_back(components);
 
                     AZ_TracePrintf(
                         TraceWindow,
-                        "MAXINE_RUNTIME_CHARACTER_SPAWN_ENTITY ticket=%u index=%zu entity_id=%s name=%s component_count=%zu components=%s\n",
+                        "MAXINE_RUNTIME_CHARACTER_SPAWN_ENTITY ticket=%u index=%zu entity_id=%s name=%s component_count=%zu components=%s actor_asset_id=%s motion_asset_id=%s\n",
                         ticketId,
                         index,
                         entityId.c_str(),
                         entityName.c_str(),
                         entity->GetComponents().size(),
-                        components.c_str());
+                        components.c_str(),
+                        actorAssetId.c_str(),
+                        motionAssetId.c_str());
                     ++index;
                 }
             };

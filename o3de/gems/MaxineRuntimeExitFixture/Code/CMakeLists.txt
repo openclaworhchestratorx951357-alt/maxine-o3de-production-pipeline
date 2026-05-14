@@ -10,6 +10,7 @@ ly_add_target(
         PRIVATE
             AZ::AzCore
             AZ::AzFramework
+            Gem::EMotionFXStaticLib
 )
 
 ly_add_source_properties(

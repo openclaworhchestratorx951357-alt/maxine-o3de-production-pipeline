@@ -62,3 +62,12 @@ $env:MAXINE_ALLOW_LIVE_O3DE_COMMANDS = "1"
 When APB actually executes, stdout/stderr and the APB live report are written under `artifacts/o3de-integration/apb/`, which is gitignored. `live_asset_processor_batch_execution` is true only after a command actually runs. `live_editor_execution` and live publication remain false.
 
 Live APB success is not production publication and is not Editor/runtime smoke.
+
+For post-source-prefab-mutation runtime wiring slices, APB must also prove the approved character spawnable can be found after the modified approved source prefab is staged into the live project scanfolder:
+
+```text
+pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable
+assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable
+```
+
+The APB report remains product evidence only. Runtime component wiring still requires a separate no-defaultlevel runtime fixture to spawn the approved spawnable, inspect runtime Actor/Simple Motion TypeIds, verify runtime actor/motion assignment IDs, complete cleanup/despawn, and pass selected log/error scans.
