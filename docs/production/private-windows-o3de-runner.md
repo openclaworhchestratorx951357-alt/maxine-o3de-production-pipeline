@@ -262,6 +262,36 @@ python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigge
 
 The source pin is `SimpleMotionComponentRequestBus::PlayMotion` and `SimpleMotionComponent::PlayMotionInternal`, which require a non-null `ActorInstance`, a ready `MotionAsset`, and an actor motion system before a `MotionInstance` can be created. The fixture records `MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_PREFLIGHT` and `MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_CALL` markers for ActorInstance availability, actor MotionSystem availability, MotionAsset readiness through `AssetManager::FindAsset<MotionAsset>(..., AssetLoadBehavior::NoLoad).IsReady()`, MotionInstance availability before and after the call, and whether the `PlayMotion` call was reached and returned. Playback may be claimed only when those request preconditions pass, the request succeeds, playback is observed through source-validated runtime state, play time advances across bounded ticks, cleanup/despawn completes, and selected log/error scans remain clean. If a `0xC0000005` exit, PoolAllocator shutdown assertion, selected product-load error, defaultlevel/production-level load, missing ActorInstance, missing MotionAsset readiness, or missing MotionInstance remains, the typed blocker must be preserved and animation proof stays false.
 
+Runtime character behavior smoke diagnostics build on bounded Simple Motion playback without claiming full runtime character proof:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-character-behavior-smoke-gate --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWN_INSTANTIATION="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_SPAWN_INSTANTIATION="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE="1"
+$env:MAXINE_ENABLE_RUNTIME_ACTOR_SIMPLE_MOTION_COMPONENT_WIRING_AFTER_APB="1"
+$env:MAXINE_ALLOW_RUNTIME_ACTOR_SIMPLE_MOTION_COMPONENT_WIRING_AFTER_APB="1"
+$env:MAXINE_ENABLE_RUNTIME_ANIMATION_PLAYBACK_EXECUTION="1"
+$env:MAXINE_ALLOW_RUNTIME_ANIMATION_PLAYBACK_EXECUTION="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_BEHAVIOR_SMOKE="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-character-behavior-smoke-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 240
+```
+
+The source pin adds `AZ::Entity::GetState` / `GetComponents`, `AZ::TransformBus::HasHandlers`, `AZ::TransformBus::Events::GetWorldTM`, and `AZ::Transform::IsFinite` to the existing Actor/Simple Motion playback surface. The live fixture records `MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_OBSERVE` and `MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SUMMARY` markers for actual pre-observation entity state, post-observation entity state, remained-valid status, component inventory stability, ActorInstance and MotionInstance availability before/after the observation window, transform readback validity, monotonic playback time, cleanup/despawn, clean exit, and selected log scan status. The smoke gate may claim only `runtime_character_behavior_smoke_verified=true` when APB/spawnable proof, component wiring, playback request/observation/time advance, repeated bounded ticks, sampled entity state before and after observation, entity/component/transform state, cleanup, clean exit, and selected log/error scans all pass. It must keep `runtime_character_proof_claimed=false` and `runtime_character_proof_verified=false`; visual behavior, locomotion/controller behavior, material/render validation, physics/collision behavior, publication, release packaging, and production-ready release status remain later gates.
+
 Approved Editor-generated runtime animation component wiring diagnostics require the Editor smoke gates plus an explicit generation marker:
 
 ```powershell
