@@ -4318,8 +4318,28 @@ def test_runtime_harness_character_animation_component_wiring_surface_fixture_de
     assert report["runtime_character_animation_component_wiring_runtime_actor_component_found"] is True
     assert report["runtime_character_animation_component_wiring_runtime_simple_motion_component_found"] is True
     assert report["runtime_character_animation_component_wiring_runtime_anim_graph_component_found"] is False
-    assert report["runtime_character_animation_component_wiring_claimed"] is True
-    assert report["runtime_character_animation_component_wiring_verified"] is True
+    assert report["runtime_character_animation_component_wiring_actor_asset_assignment_verified"] is False
+    assert report["runtime_character_animation_component_wiring_motion_asset_assignment_verified"] is False
+    assert report["runtime_character_animation_component_wiring_blocker"] in {
+        "blocked_by_runtime_actor_asset_assignment_unverified",
+        "blocked_by_runtime_motion_asset_assignment_unverified",
+        "blocked_by_runtime_animation_component_asset_assignment_unverified",
+    }
+    assert report["runtime_character_animation_component_wiring_claimed"] is False
+    assert report["runtime_character_animation_component_wiring_verified"] is False
+    candidate_by_id = {
+        candidate["id"]: candidate for candidate in report["runtime_character_animation_component_wiring_candidate_matrix"]
+    }
+    editor_candidate = candidate_by_id["update_approved_source_prefab_through_editor_prefab_api"]
+    assert editor_candidate["attempted"] is False
+    assert editor_candidate["selected"] is False
+    assert editor_candidate["result"] == "runtime_animation_component_wiring_candidate_not_attempted_runtime_inventory_only"
+    runtime_candidate = candidate_by_id["current_approved_spawned_runtime_inventory"]
+    assert runtime_candidate["attempted"] is True
+    assert runtime_candidate["result"] == "runtime_animation_component_wiring_candidate_runtime_surface_found"
+    wiring_candidate = candidate_by_id["runtime_typeids_and_asset_assignments"]
+    assert wiring_candidate["attempted"] is True
+    assert wiring_candidate["result"] == "runtime_animation_component_wiring_candidate_blocked_asset_assignment_unverified"
     assert report["runtime_character_animation_playback_attempted"] is False
     assert report["runtime_character_animation_playback_observed"] is False
     assert report["runtime_character_animation_claimed"] is False
@@ -4372,8 +4392,24 @@ def test_runtime_harness_character_animation_component_wiring_surface_fixture_de
     assert report["runtime_character_animation_component_wiring_runtime_actor_component_found"] is True
     assert report["runtime_character_animation_component_wiring_runtime_simple_motion_component_found"] is False
     assert report["runtime_character_animation_component_wiring_runtime_anim_graph_component_found"] is True
-    assert report["runtime_character_animation_component_wiring_claimed"] is True
-    assert report["runtime_character_animation_component_wiring_verified"] is True
+    assert report["runtime_character_animation_component_wiring_actor_asset_assignment_verified"] is False
+    assert report["runtime_character_animation_component_wiring_anim_graph_asset_assignment_verified"] is False
+    assert report["runtime_character_animation_component_wiring_motion_set_asset_assignment_verified"] is False
+    assert report["runtime_character_animation_component_wiring_blocker"] in {
+        "blocked_by_runtime_actor_asset_assignment_unverified",
+        "blocked_by_runtime_anim_graph_asset_assignment_unverified",
+        "blocked_by_runtime_motion_set_asset_assignment_unverified",
+        "blocked_by_runtime_animation_component_asset_assignment_unverified",
+    }
+    assert report["runtime_character_animation_component_wiring_claimed"] is False
+    assert report["runtime_character_animation_component_wiring_verified"] is False
+    candidate_by_id = {
+        candidate["id"]: candidate for candidate in report["runtime_character_animation_component_wiring_candidate_matrix"]
+    }
+    assert candidate_by_id["update_approved_source_prefab_through_editor_prefab_api"]["attempted"] is False
+    assert candidate_by_id["runtime_typeids_and_asset_assignments"]["result"] == (
+        "runtime_animation_component_wiring_candidate_blocked_asset_assignment_unverified"
+    )
     assert report["runtime_character_animation_playback_attempted"] is False
     assert report["runtime_character_animation_playback_observed"] is False
     assert report["runtime_character_animation_claimed"] is False
@@ -4519,6 +4555,86 @@ def test_runtime_harness_validation_rejects_component_wiring_verified_without_ru
         in message
         for message in result.messages
     )
+
+
+def test_runtime_harness_validation_rejects_component_wiring_verified_without_asset_assignments() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_character_animation_component_wiring_claimed": True,
+            "runtime_character_animation_component_wiring_verified": True,
+            "runtime_character_animation_component_wiring_source_validation_verified": True,
+            "runtime_character_animation_component_wiring_product_load_prerequisite_verified": True,
+            "runtime_character_animation_component_wiring_spawn_prerequisite_verified": True,
+            "runtime_character_animation_component_wiring_runtime_actor_component_found": True,
+            "runtime_character_animation_component_wiring_runtime_simple_motion_component_found": True,
+            "runtime_character_animation_component_wiring_runtime_anim_graph_component_found": False,
+            "runtime_character_animation_component_wiring_runtime_component_inventory": [
+                {
+                    "entity_name": "MAXINE_Release_Rigged_Runtime_Character_Source",
+                    "components": [
+                        {"type_id": "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}"},
+                        {"type_id": "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}"},
+                    ],
+                }
+            ],
+            "runtime_character_animation_component_wiring_actor_asset_assignment_verified": False,
+            "runtime_character_animation_component_wiring_motion_asset_assignment_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+        }
+    )
+
+    result = runtime_harness.validate_runtime_harness_report(report)
+
+    assert not result.ok
+    assert any(
+        "runtime_character_animation_component_wiring_verified=true requires runtime Actor asset assignment evidence"
+        in message
+        for message in result.messages
+    )
+    assert any(
+        "runtime_character_animation_component_wiring_verified=true requires runtime Motion asset assignment evidence"
+        in message
+        for message in result.messages
+    )
+
+
+def test_runtime_harness_validation_accepts_component_wiring_verified_with_runtime_assignments() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "runtime_character_animation_component_wiring_claimed": True,
+            "runtime_character_animation_component_wiring_verified": True,
+            "runtime_character_animation_component_wiring_source_validation_verified": True,
+            "runtime_character_animation_component_wiring_product_load_prerequisite_verified": True,
+            "runtime_character_animation_component_wiring_spawn_prerequisite_verified": True,
+            "runtime_character_animation_component_wiring_runtime_actor_component_found": True,
+            "runtime_character_animation_component_wiring_runtime_simple_motion_component_found": True,
+            "runtime_character_animation_component_wiring_runtime_anim_graph_component_found": False,
+            "runtime_character_animation_component_wiring_runtime_component_inventory": [
+                {
+                    "entity_name": "MAXINE_Release_Rigged_Runtime_Character_Source",
+                    "components": [
+                        {"type_id": "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}"},
+                        {"type_id": "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}"},
+                    ],
+                }
+            ],
+            "runtime_character_animation_component_wiring_actor_asset_assignment_verified": True,
+            "runtime_character_animation_component_wiring_motion_asset_assignment_verified": True,
+            "runtime_character_animation_component_wiring_motion_set_asset_assignment_verified": False,
+            "runtime_character_animation_component_wiring_anim_graph_asset_assignment_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "production_level_mutation": False,
+            "defaultlevel_mutation": False,
+        }
+    )
+
+    result = runtime_harness.validate_runtime_harness_report(report)
+
+    assert result.ok
 
 
 def test_runtime_harness_validation_rejects_product_load_verified_without_ready_products() -> None:

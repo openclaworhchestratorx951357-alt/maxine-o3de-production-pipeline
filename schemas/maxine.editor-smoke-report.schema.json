@@ -1977,6 +1977,9 @@
     "runtime_character_animation_component_wiring_surface_blocker": {
       "type": "string"
     },
+    "runtime_character_animation_component_wiring_blocker": {
+      "type": "string"
+    },
     "runtime_character_animation_component_wiring_candidate_matrix": {
       "type": "array"
     },
