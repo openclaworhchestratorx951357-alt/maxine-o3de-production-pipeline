@@ -217,6 +217,8 @@ APPROVED_MOTION_PRODUCT_HANDLER_SIGNAL_BLOCKER = (
 APPROVED_MOTION_PRODUCT_HANDLER_SIGNAL_READBACK_BLOCKER = (
     "blocked_by_runtime_motion_assignment_readback_unverified"
 )
+RUNTIME_SHUTDOWN_POOLALLOCATOR_SIGNAL_CLASSIFICATION = "real_runtime_shutdown_poolallocator_assertion"
+RUNTIME_SHUTDOWN_POOLALLOCATOR_SIGNAL_BLOCKER = "blocked_by_runtime_shutdown_poolallocator_assertion"
 WINDOWS_NTSTATUS_NAMES = {
     0xC0000005: "STATUS_ACCESS_VIOLATION",
 }
@@ -309,6 +311,8 @@ def run_runtime_harness(
     diagnose_runtime_actor_simple_motion_component_wiring_after_apb: bool = False,
     enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture: bool = False,
     diagnose_approved_motion_product_handler_unregistered_signal: bool = False,
+    diagnose_runtime_shutdown_poolallocator_assertions: bool = False,
+    enable_runtime_poolallocator_signal_classification_fixture: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -360,6 +364,8 @@ def run_runtime_harness(
         and not diagnose_runtime_actor_simple_motion_component_wiring_after_apb
         and not enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
         and not diagnose_approved_motion_product_handler_unregistered_signal
+        and not diagnose_runtime_shutdown_poolallocator_assertions
+        and not enable_runtime_poolallocator_signal_classification_fixture
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -416,6 +422,8 @@ def run_runtime_harness(
             and not diagnose_runtime_actor_simple_motion_component_wiring_after_apb
             and not enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
             and not diagnose_approved_motion_product_handler_unregistered_signal
+            and not diagnose_runtime_shutdown_poolallocator_assertions
+            and not enable_runtime_poolallocator_signal_classification_fixture
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -486,6 +494,10 @@ def run_runtime_harness(
             if enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
             else "approved_motion_product_handler_unregistered_signal_diagnostic"
             if diagnose_approved_motion_product_handler_unregistered_signal
+            else "runtime_shutdown_poolallocator_assertions_diagnostic"
+            if diagnose_runtime_shutdown_poolallocator_assertions
+            else "runtime_poolallocator_signal_classification_fixture_command"
+            if enable_runtime_poolallocator_signal_classification_fixture
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -593,6 +605,8 @@ def run_runtime_harness(
         and not diagnose_runtime_actor_simple_motion_component_wiring_after_apb
         and not enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
         and not diagnose_approved_motion_product_handler_unregistered_signal
+        and not diagnose_runtime_shutdown_poolallocator_assertions
+        and not enable_runtime_poolallocator_signal_classification_fixture
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -812,6 +826,14 @@ def run_runtime_harness(
             artifact_dir=artifact_dir,
         )
 
+    if diagnose_runtime_shutdown_poolallocator_assertions:
+        return _run_runtime_shutdown_poolallocator_signal_diagnostic(
+            report,
+            engine_root=selected_engine,
+            project=selected_project,
+            artifact_dir=artifact_dir,
+        )
+
     gate_status = _runtime_gate_status(env_map)
     if gate_status["status"] != "pass":
         report.update(
@@ -841,6 +863,7 @@ def run_runtime_harness(
         or enable_runtime_character_animation_playback_surface_fixture
         or enable_runtime_character_animation_component_wiring_surface_fixture
         or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
+        or enable_runtime_poolallocator_signal_classification_fixture
     ):
         return _run_runtime_exit_fixture_command(
             report,
@@ -860,6 +883,7 @@ def run_runtime_harness(
                 or enable_runtime_character_animation_playback_surface_fixture
                 or enable_runtime_character_animation_component_wiring_surface_fixture
                 or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
+                or enable_runtime_poolallocator_signal_classification_fixture
             ),
             ap_shader_signal_classification=(
                 enable_runtime_exit_fixture_ap_shader_signal_classification
@@ -868,22 +892,29 @@ def run_runtime_harness(
                 or enable_runtime_character_animation_playback_surface_fixture
                 or enable_runtime_character_animation_component_wiring_surface_fixture
                 or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
+                or enable_runtime_poolallocator_signal_classification_fixture
             ),
             character_product_load=enable_runtime_character_product_load_fixture
             or enable_runtime_character_spawn_instantiation_fixture
             or enable_runtime_character_animation_playback_surface_fixture
             or enable_runtime_character_animation_component_wiring_surface_fixture
-            or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture,
+            or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
+            or enable_runtime_poolallocator_signal_classification_fixture,
             character_spawn_instantiation=enable_runtime_character_spawn_instantiation_fixture
             or enable_runtime_character_animation_playback_surface_fixture
             or enable_runtime_character_animation_component_wiring_surface_fixture
-            or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture,
+            or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
+            or enable_runtime_poolallocator_signal_classification_fixture,
             character_animation_playback_surface=enable_runtime_character_animation_playback_surface_fixture
             or enable_runtime_character_animation_component_wiring_surface_fixture
-            or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture,
+            or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
+            or enable_runtime_poolallocator_signal_classification_fixture,
             character_animation_component_wiring_surface=enable_runtime_character_animation_component_wiring_surface_fixture
-            or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture,
-            actor_simple_motion_component_wiring_after_apb=enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture,
+            or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
+            or enable_runtime_poolallocator_signal_classification_fixture,
+            actor_simple_motion_component_wiring_after_apb=enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
+            or enable_runtime_poolallocator_signal_classification_fixture,
+            poolallocator_signal_classification=enable_runtime_poolallocator_signal_classification_fixture,
             product_evidence=product_evidence,
         )
 
@@ -2447,6 +2478,24 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "approved_motion_product_handler_signal_selected_strategy": "",
         "approved_motion_product_handler_registered_in_runtime": False,
         "approved_motion_product_handler_expected_runtime_registration": False,
+        "runtime_shutdown_poolallocator_signal_diagnostic_attempted": False,
+        "runtime_shutdown_poolallocator_signal_diagnostic_completed": False,
+        "runtime_shutdown_poolallocator_signal_source_validation_status": "",
+        "runtime_shutdown_poolallocator_signal_source_validation_verified": False,
+        "runtime_shutdown_poolallocator_signal_found": False,
+        "runtime_shutdown_poolallocator_signal_line": "",
+        "runtime_shutdown_poolallocator_signal_classification": "",
+        "runtime_shutdown_poolallocator_signal_classification_verified": False,
+        "runtime_shutdown_poolallocator_signal_harmless_under_strict_fixture": False,
+        "runtime_shutdown_poolallocator_signal_blocker": "",
+        "runtime_shutdown_poolallocator_signal_source_files": [],
+        "runtime_shutdown_poolallocator_signal_candidate_matrix": [],
+        "runtime_shutdown_poolallocator_signal_after_fixture_marker": False,
+        "runtime_shutdown_poolallocator_signal_after_cleanup": False,
+        "runtime_shutdown_poolallocator_signal_invalidates_wiring": False,
+        "runtime_shutdown_poolallocator_signal_invalidates_playback": False,
+        "runtime_selected_log_scan_blocking_matches": [],
+        "runtime_selected_log_scan_classified_harmless_matches": [],
         "runtime_motion_assignment_id_readback_verified": False,
         "runtime_motion_assignment_load_verified": False,
         "runtime_character_product_load_contract_updated": False,
@@ -3638,11 +3687,14 @@ def _run_runtime_exit_fixture_command(
     character_animation_playback_surface: bool = False,
     character_animation_component_wiring_surface: bool = False,
     actor_simple_motion_component_wiring_after_apb: bool = False,
+    poolallocator_signal_classification: bool = False,
     product_evidence: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
     report["runtime_harness_mode"] = (
-        "runtime_actor_simple_motion_component_wiring_after_apb_fixture_command"
+        "runtime_poolallocator_signal_classification_fixture_command"
+        if poolallocator_signal_classification
+        else "runtime_actor_simple_motion_component_wiring_after_apb_fixture_command"
         if actor_simple_motion_component_wiring_after_apb
         else "runtime_character_animation_component_wiring_surface_fixture_command"
         if character_animation_component_wiring_surface
@@ -4253,6 +4305,7 @@ def _run_runtime_exit_fixture_command(
             "runtime_exit_fixture_runtime_command_uses_animation_playback_surface_probe": character_animation_playback_surface,
             "runtime_exit_fixture_runtime_command_uses_animation_component_wiring_surface_probe": character_animation_component_wiring_surface,
             "runtime_exit_fixture_runtime_command_uses_actor_simple_motion_component_wiring_after_apb_probe": actor_simple_motion_component_wiring_after_apb,
+            "runtime_exit_fixture_runtime_command_uses_poolallocator_signal_classification_probe": poolallocator_signal_classification,
             "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
             "runtime_exit_fixture_command": str(command.get("argv", [""])[0]),
             "runtime_exit_fixture_arguments": list(command.get("argv", []))[1:],
@@ -4317,6 +4370,10 @@ def _run_runtime_exit_fixture_command(
         log_text=log_text,
         log_refs=log_refs,
     )
+    poolallocator_payload = _runtime_shutdown_poolallocator_signal_payload(
+        combined_text,
+        _runtime_engine_root_from_command(command),
+    )
     level_loads = _runtime_level_load_events(combined_text)
     level_load_observed = bool(level_loads)
     disqualifying = _runtime_exit_fixture_disqualifying_signals(
@@ -4346,6 +4403,14 @@ def _run_runtime_exit_fixture_command(
         if ap_shader_signal_classification
         else [dict(item) for item in disqualifying if isinstance(item, Mapping)]
     )
+    if poolallocator_payload.get("runtime_shutdown_poolallocator_signal_invalidates_wiring") is True:
+        effective_disqualifying.append(
+            {
+                "signal": "runtime_shutdown_poolallocator_assertion",
+                "status": RUNTIME_SHUTDOWN_POOLALLOCATOR_SIGNAL_BLOCKER,
+                "detail": str(poolallocator_payload.get("runtime_shutdown_poolallocator_signal_line", "")),
+            }
+        )
     launch_hygiene = _runtime_launch_hygiene_execution_payload(
         project=project,
         command=command,
@@ -4512,6 +4577,8 @@ def _run_runtime_exit_fixture_command(
         fixture_status = "runtime_exit_fixture_verified_clean_exit"
     elif timed_out:
         fixture_status = "runtime_exit_fixture_execution_failed_timeout"
+    elif poolallocator_payload.get("runtime_shutdown_poolallocator_signal_invalidates_wiring") is True:
+        fixture_status = "runtime_exit_fixture_execution_failed_runtime_shutdown_poolallocator_assertion"
     elif diagnostics.get("runtime_exit_is_crash_like") is True:
         fixture_status = "runtime_exit_fixture_execution_failed_access_violation_like_exit"
     elif proc.returncode not in expected_exit_codes:
@@ -4530,6 +4597,7 @@ def _run_runtime_exit_fixture_command(
         fixture_status = "runtime_exit_fixture_execution_failed_disqualifying_log_signal"
 
     report.update(diagnostics)
+    report.update(poolallocator_payload)
     report.update(_runtime_signal_fields(scan))
     report.update(loadlevel_override_payload)
     report.update(later_registry_patch_payload)
@@ -4576,6 +4644,8 @@ def _run_runtime_exit_fixture_command(
                 "runtime_character_animation_component_wiring_surface_blocker", ""
             )
         ).strip()
+    if str(poolallocator_payload.get("runtime_shutdown_poolallocator_signal_blocker", "")).strip():
+        blocked_reason = str(poolallocator_payload.get("runtime_shutdown_poolallocator_signal_blocker", "")).strip()
     report.update(
         {
             "status": "pass" if passed else "fail",
@@ -9342,6 +9412,53 @@ def _run_approved_motion_product_handler_signal_diagnostic(
     return _finalize_report(report)
 
 
+def _run_runtime_shutdown_poolallocator_signal_diagnostic(
+    report: Dict[str, Any],
+    *,
+    engine_root: Path | None,
+    project: Path | None,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    del project, artifact_dir
+    payload = _runtime_shutdown_poolallocator_signal_payload("", engine_root)
+    source_validated = payload.get("runtime_shutdown_poolallocator_signal_source_validation_verified") is True
+    report.update(payload)
+    report.update(
+        {
+            "status": "pass" if source_validated else "fail",
+            "runtime_harness_status": (
+                "runtime_shutdown_poolallocator_signal_source_discovery"
+                if source_validated
+                else "blocked_by_runtime_shutdown_poolallocator_signal_source_validation"
+            ),
+            "runtime_harness_mode": "runtime_shutdown_poolallocator_assertions_diagnostic",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "runtime_character_animation_component_wiring_claimed": False,
+            "runtime_character_animation_component_wiring_verified": False,
+            "runtime_character_animation_playback_attempted": False,
+            "runtime_character_animation_claimed": False,
+            "runtime_character_animation_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "asset_cache_deleted": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_shutdown_poolallocator_signal_source_discovery",
+                "runtime_execution_not_attempted_in_poolallocator_signal_diagnostic_mode",
+                "runtime_component_wiring_not_claimed_without_live_after_apb_fixture",
+                "runtime_animation_not_claimed",
+                "runtime_character_proof_not_claimed",
+            ],
+            "runtime_harness_assertion_informational": [
+                "poolallocator_signal_source_diagnostic_is_not_runtime_wiring_proof",
+                "poolallocator_signal_is_real_blocker_if_observed_in_selected_runtime_output",
+            ],
+        }
+    )
+    return _finalize_report(report)
+
+
 def _runtime_character_animation_component_wiring_surface_source_payload(
     *,
     product_evidence: Mapping[str, Any],
@@ -11597,6 +11714,199 @@ def _runtime_motion_assignment_readback_verified_from_combined_text(combined_tex
         assignment_ids.get("motion_asset_id", ""),
         RUNTIME_CHARACTER_APPROVED_MOTION_ASSET_ID,
     )
+
+
+def _runtime_shutdown_poolallocator_signal_source_paths(engine_root: Path | None) -> List[Path]:
+    root = engine_root or Path("")
+    return [
+        root / "Code" / "Framework" / "AzCore" / "AzCore" / "Memory" / "PoolAllocator.cpp",
+        root / "Code" / "Framework" / "AzCore" / "AzCore" / "Memory" / "PoolAllocator.h",
+        REPO_ROOT
+        / "o3de"
+        / "gems"
+        / "MaxineRuntimeExitFixture"
+        / "Code"
+        / "Source"
+        / "Clients"
+        / "MaxineRuntimeExitFixtureSystemComponent.cpp",
+    ]
+
+
+def _runtime_shutdown_poolallocator_signal_source_refs(engine_root: Path | None) -> List[str]:
+    return [str(path).replace("\\", "/") for path in _runtime_shutdown_poolallocator_signal_source_paths(engine_root)]
+
+
+def _runtime_shutdown_poolallocator_signal_source_validated(engine_root: Path | None) -> bool:
+    paths = _runtime_shutdown_poolallocator_signal_source_paths(engine_root)
+    if not all(path.is_file() for path in paths):
+        return False
+    try:
+        pool_text = paths[0].read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    required_tokens = (
+        "PoolAllocation<Allocator>::~PoolAllocation()",
+        "AZ_Assert(bucket.m_pages.empty()",
+        "Found page for bucket %p",
+        "GarbageCollect();",
+    )
+    return all(token in pool_text for token in required_tokens)
+
+
+def _runtime_shutdown_poolallocator_signal_lines(combined_text: str) -> List[str]:
+    matches: List[str] = []
+    for line in combined_text.splitlines():
+        normalized = " ".join(line.strip().split())
+        lowered = normalized.lower()
+        if (
+            "poolallocator.cpp" in lowered
+            and ("poolallocator.cpp(470)" in lowered or "poolallocator.cpp:470" in lowered)
+            and "found page for bucket" in lowered
+        ):
+            matches.append(normalized[:240])
+        if len(matches) >= 8:
+            break
+    return matches
+
+
+def _runtime_shutdown_poolallocator_signal_after_marker(
+    combined_text: str,
+    signal_line: str,
+    marker: str,
+) -> bool:
+    if not signal_line:
+        return False
+    lowered = combined_text.lower()
+    signal_index = lowered.find(signal_line.lower())
+    marker_index = lowered.rfind(marker.lower())
+    return signal_index >= 0 and marker_index >= 0 and signal_index > marker_index
+
+
+def _runtime_shutdown_poolallocator_signal_candidate_matrix(
+    *,
+    source_validated: bool,
+    signal_found: bool,
+    classification_verified: bool,
+    blocker: str,
+) -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "classify_poolallocator_470_harmless_under_strict_fixture",
+            "candidate": "classify PoolAllocator.cpp:470 as harmless shutdown assertion under strict after-APB runtime fixture",
+            "kind": "runtime_shutdown_signal_classification",
+            "attempted": bool(signal_found),
+            "selected": False,
+            "result": "runtime_shutdown_poolallocator_candidate_rejected_real_assertion",
+            "blocker": "PoolAllocation teardown asserts bucket pages are empty; matching line-470 signals are not harmless.",
+        },
+        {
+            "id": "treat_poolallocator_470_as_real_runtime_cleanup_blocker",
+            "candidate": "treat PoolAllocator.cpp:470 as real runtime cleanup/memory blocker",
+            "kind": "runtime_shutdown_memory_blocker",
+            "attempted": bool(signal_found),
+            "selected": bool(classification_verified),
+            "result": (
+                "runtime_shutdown_poolallocator_candidate_selected_real_blocker"
+                if classification_verified
+                else "runtime_shutdown_poolallocator_candidate_waiting_for_runtime_signal"
+                if source_validated and not signal_found
+                else "runtime_shutdown_poolallocator_candidate_blocked_source_validation"
+            ),
+            "blocker": blocker if signal_found else "",
+        },
+        {
+            "id": "runtime_typeids_and_assignment_ids_only",
+            "candidate": "runtime TypeIds plus runtime asset assignment IDs only",
+            "kind": "insufficient_runtime_reference_evidence",
+            "attempted": False,
+            "selected": False,
+            "result": "runtime_shutdown_poolallocator_candidate_rejected_selected_log_scan_unclassified",
+            "blocker": "runtime_typeids_and_assignment_ids_are_insufficient_without_selected_log_scan_classification",
+        },
+        {
+            "id": "product_load_only",
+            "candidate": "product-load only",
+            "kind": "insufficient_product_evidence",
+            "attempted": False,
+            "selected": False,
+            "result": "runtime_shutdown_poolallocator_candidate_rejected_runtime_wiring_requires_component_evidence",
+            "blocker": "product_load_only_is_not_runtime_component_wiring_proof",
+        },
+        {
+            "id": "animation_playback",
+            "candidate": "animation playback",
+            "kind": "runtime_animation_playback",
+            "attempted": False,
+            "selected": False,
+            "result": "runtime_shutdown_poolallocator_candidate_deferred",
+            "blocker": "animation_playback_deferred_for_later_bounded_slice",
+        },
+        {
+            "id": "defaultlevel_or_production_level_validation",
+            "candidate": "defaultlevel or production-level validation",
+            "kind": "unsafe_level_runtime_context",
+            "attempted": False,
+            "selected": False,
+            "result": "runtime_shutdown_poolallocator_candidate_rejected_unsafe_scope",
+            "blocker": "defaultlevel_or_production_level_evidence_disallowed",
+        },
+    ]
+
+
+def _runtime_shutdown_poolallocator_signal_payload(
+    combined_text: str,
+    engine_root: Path | None,
+) -> Dict[str, Any]:
+    source_validated = _runtime_shutdown_poolallocator_signal_source_validated(engine_root)
+    source_refs = _runtime_shutdown_poolallocator_signal_source_refs(engine_root)
+    signal_lines = _runtime_shutdown_poolallocator_signal_lines(combined_text)
+    signal_found = bool(signal_lines)
+    first_line = signal_lines[0] if signal_lines else ""
+    classification_verified = bool(source_validated and signal_found)
+    blocker = RUNTIME_SHUTDOWN_POOLALLOCATOR_SIGNAL_BLOCKER if classification_verified else ""
+    return {
+        "runtime_shutdown_poolallocator_signal_diagnostic_attempted": True,
+        "runtime_shutdown_poolallocator_signal_diagnostic_completed": True,
+        "runtime_shutdown_poolallocator_signal_source_validation_status": (
+            "runtime_shutdown_poolallocator_signal_source_validation_pass"
+            if source_validated
+            else "runtime_shutdown_poolallocator_signal_source_validation_inconclusive"
+        ),
+        "runtime_shutdown_poolallocator_signal_source_validation_verified": source_validated,
+        "runtime_shutdown_poolallocator_signal_found": signal_found,
+        "runtime_shutdown_poolallocator_signal_line": first_line,
+        "runtime_shutdown_poolallocator_signal_classification": (
+            RUNTIME_SHUTDOWN_POOLALLOCATOR_SIGNAL_CLASSIFICATION
+            if classification_verified
+            else "runtime_shutdown_poolallocator_signal_not_observed"
+            if source_validated and not signal_found
+            else "runtime_shutdown_poolallocator_signal_source_validation_inconclusive"
+        ),
+        "runtime_shutdown_poolallocator_signal_classification_verified": classification_verified,
+        "runtime_shutdown_poolallocator_signal_harmless_under_strict_fixture": False,
+        "runtime_shutdown_poolallocator_signal_blocker": blocker,
+        "runtime_shutdown_poolallocator_signal_source_files": source_refs,
+        "runtime_shutdown_poolallocator_signal_candidate_matrix": _runtime_shutdown_poolallocator_signal_candidate_matrix(
+            source_validated=source_validated,
+            signal_found=signal_found,
+            classification_verified=classification_verified,
+            blocker=blocker,
+        ),
+        "runtime_shutdown_poolallocator_signal_after_fixture_marker": _runtime_shutdown_poolallocator_signal_after_marker(
+            combined_text,
+            first_line,
+            "MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT",
+        ),
+        "runtime_shutdown_poolallocator_signal_after_cleanup": _runtime_shutdown_poolallocator_signal_after_marker(
+            combined_text,
+            first_line,
+            "MAXINE_RUNTIME_CHARACTER_SPAWN_CLEANUP",
+        ),
+        "runtime_shutdown_poolallocator_signal_invalidates_wiring": classification_verified,
+        "runtime_shutdown_poolallocator_signal_invalidates_playback": classification_verified,
+        "runtime_selected_log_scan_blocking_matches": signal_lines if classification_verified else [],
+        "runtime_selected_log_scan_classified_harmless_matches": [],
+    }
 
 
 def _runtime_character_product_load_execution_payload(
@@ -15201,6 +15511,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--diagnose-runtime-actor-simple-motion-component-wiring-after-apb", action="store_true")
     parser.add_argument("--enable-runtime-actor-simple-motion-component-wiring-after-apb-fixture", action="store_true")
     parser.add_argument("--diagnose-approved-motion-product-handler-unregistered-signal", action="store_true")
+    parser.add_argument("--diagnose-runtime-shutdown-poolallocator-assertions", action="store_true")
+    parser.add_argument("--enable-runtime-poolallocator-signal-classification-fixture", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -15276,6 +15588,10 @@ def main() -> int:
         ),
         diagnose_approved_motion_product_handler_unregistered_signal=(
             args.diagnose_approved_motion_product_handler_unregistered_signal
+        ),
+        diagnose_runtime_shutdown_poolallocator_assertions=args.diagnose_runtime_shutdown_poolallocator_assertions,
+        enable_runtime_poolallocator_signal_classification_fixture=(
+            args.enable_runtime_poolallocator_signal_classification_fixture
         ),
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
