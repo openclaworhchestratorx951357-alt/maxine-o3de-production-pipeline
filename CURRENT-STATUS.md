@@ -1,7 +1,18 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Resolve Runtime Simple Motion Playback Request Failure v1 is implemented on `codex/resolve-runtime-simple-motion-playback-request-failure-v1` and pending review:
+- Pin Broader Runtime Character Behavior Gate v1 is implemented on `codex/pin-broader-runtime-character-behavior-gate-v1` and pending review:
+  - PR #160 was green, review-clear, and merged into `main` at `92bc7e9f3462506ff205da13b04228d3adcc544e`; this branch was created from that updated `main`
+  - this slice adds `--diagnose-runtime-character-behavior-smoke-gate` and `--enable-runtime-character-behavior-smoke-fixture` to source-validate and run a broader no-defaultlevel runtime character behavior smoke gate on top of the PR #160 Simple Motion playback proof
+  - source validation pins `AZ::Entity::GetState` / `GetComponents`, `AZ::TransformBus::HasHandlers`, `AZ::TransformBus::Events::GetWorldTM`, `AZ::Transform::IsFinite`, the existing EMotionFX Actor/Simple Motion playback APIs, and the repo-owned runtime fixture marker path
+  - the runtime fixture now emits `MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_OBSERVE` and `MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SUMMARY` markers for entity validity, Actor/Simple Motion component presence, ActorInstance and MotionInstance availability before/after the bounded window, transform readback validity, monotonic playback time, tick count, and behavior-smoke blocker provenance
+  - the source-only diagnostic passed and wrote `artifacts/o3de-integration/runtime-harness/runtime-character-behavior-smoke-gate-source-report.json`
+  - the rebuild gate passed and the narrow C++ build passed: `cmake --build C:/src/o3de/build/windows --target MAXINE_GoldenCorpus.HeadlessServerLauncher --config profile --parallel 1 -- /m:1 /nodeReuse:false /v:m`
+  - the live behavior-smoke fixture passed and wrote `artifacts/o3de-integration/runtime-harness/runtime-character-behavior-smoke-live-report.json`; it preserved APB/product-load, spawn, Actor + Simple Motion component wiring, request preconditions, and bounded playback proof, then observed 8 smoke ticks with play time advancing from `0.0` to `0.369464`
+  - `runtime_character_behavior_smoke_claimed=true` and `runtime_character_behavior_smoke_verified=true`; bounded runtime animation remains verified, but this is still a behavior smoke proof only, with `runtime_character_proof_claimed=false` and `runtime_character_proof_verified=false`
+  - PoolAllocator, access-violation, product-load, defaultlevel, production-level, cleanup, selected log/error, entity, component, transform, ActorInstance, MotionInstance, or playback-regression blockers still keep the behavior smoke proof false when observed
+  - publication remains blocked, release packaging remains blocked, production/defaultlevel mutation remains forbidden, Asset Cache deletion remains forbidden, cache heuristic release proof remains forbidden, and no production-ready release status is claimed
+- Resolve Runtime Simple Motion Playback Request Failure v1 was merged through PR #160:
   - PR #159 was green, review-clear, and merged into `main` at `f306c1b3fc1ead88e9c0b2a128e455fa079de3c4`; this branch was created from that updated `main`
   - this slice adds `--diagnose-runtime-simple-motion-playback-request-failure` and `--enable-runtime-simple-motion-playback-request-failure-fixture` to source-validate and report the Simple Motion request preconditions that sit between the PR #159 playback-request marker and any animation playback claim
   - source validation pins `EMotionFX::Integration::SimpleMotionComponentRequestBus::PlayMotion`, `SimpleMotionComponent::PlayMotionInternal`, `GetPlayTime`, `GetDuration`, `GetMotion`, and `GetMotionInstance`; `ActorComponentRequestBus::GetActorInstance`; `ActorInstance::GetMotionSystem`; and `AZ::Data::AssetManager::FindAsset<MotionAsset>(AssetId, AssetLoadBehavior::NoLoad).IsReady()`

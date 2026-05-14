@@ -176,6 +176,12 @@ def _enable_runtime_animation_playback_execution_fixture_env(env: dict) -> None:
     env["MAXINE_ALLOW_RUNTIME_ANIMATION_PLAYBACK_EXECUTION"] = "1"
 
 
+def _enable_runtime_character_behavior_smoke_fixture_env(env: dict) -> None:
+    _enable_runtime_animation_playback_execution_fixture_env(env)
+    env["MAXINE_ENABLE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE"] = "1"
+    env["MAXINE_ALLOW_RUNTIME_CHARACTER_BEHAVIOR_SMOKE"] = "1"
+
+
 def _write_animation_source_validation_files(engine: Path) -> None:
     source_files = {
         "Code/Framework/AzCore/AzCore/Asset/AssetManager.h": (
@@ -185,6 +191,26 @@ def _write_animation_source_validation_files(engine: Path) -> None:
         "Code/Framework/AzCore/AzCore/Asset/AssetCommon.h": (
             "AssetLoadBehavior::NoLoad\n"
             "bool IsReady() const;\n"
+        ),
+        "Code/Framework/AzCore/AzCore/Component/Entity.h": (
+            "enum class State\n"
+            "State GetState() const;\n"
+            "const ComponentArrayType& GetComponents() const;\n"
+        ),
+        "Code/Framework/AzCore/AzCore/Component/TransformBus.h": (
+            "class TransformInterface\n"
+            "virtual const Transform& GetWorldTM() = 0;\n"
+            "using TransformBus = AZ::EBus<TransformInterface>;\n"
+        ),
+        "Code/Framework/AzCore/AzCore/EBus/EBus.h": (
+            "class EBus\n"
+            "static bool HasHandlers(const BusIdType& id);\n"
+        ),
+        "Code/Framework/AzCore/AzCore/Math/Transform.h": (
+            "class Transform\n"
+            "static Transform CreateIdentity();\n"
+            "bool IsFinite() const;\n"
+            "const Vector3& GetTranslation() const;\n"
         ),
         "Gems/EMotionFX/Code/Source/Integration/Components/ActorComponent.h": (
             'AZ_COMPONENT(ActorComponent, "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}")\n'
@@ -311,6 +337,11 @@ def _write_animation_source_validation_files(engine: Path) -> None:
             "GetPlayTime\n"
             "GetMotionInstance\n"
             "GetIsPlaying\n"
+            "MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_OBSERVE\n"
+            "MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SUMMARY\n"
+            "AZ::TransformBus::EventResult\n"
+            "AZ::TransformBus::Events::GetWorldTM\n"
+            "IsFinite\n"
         ),
     }
     for relative, content in source_files.items():
@@ -6315,6 +6346,313 @@ def test_runtime_harness_simple_motion_request_failure_fixture_passes_when_playb
     assert report["runtime_animation_playback_request_succeeded"] is True
     assert report["runtime_character_animation_claimed"] is True
     assert report["runtime_character_animation_verified"] is True
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_character_behavior_smoke_diagnostic_records_source_validation(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _append_approved_character_spawnable_product(apb)
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_character_behavior_smoke_gate=True,
+        strict=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "runtime-artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_character_behavior_smoke_gate_diagnostic"
+    assert report["runtime_character_behavior_smoke_source_validation_verified"] is True
+    assert report["runtime_character_behavior_smoke_attempted"] is False
+    assert report["runtime_character_behavior_smoke_verified"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_character_behavior_smoke_fixture_passes_with_stable_playback_window(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _enable_runtime_character_behavior_smoke_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_character_behavior_smoke_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+            ],
+            actor_asset_id="{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+            motion_asset_id="{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0",
+            playback_markers=True,
+            playback_time_before="0.000000",
+            playback_time_after="0.250000",
+            playback_tick_count=12,
+            extra_stdout_lines=[
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_PREFLIGHT "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "actor_instance_available=1 actor_motion_system_available=1 "
+                    "motion_asset_ready=1 motion_instance_available_before=0 "
+                    "motion_asset_assignment_verified=1 status=pass"
+                ),
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_CALL "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "phase=before api=SimpleMotionComponentRequestBus::PlayMotion call_reached=1"
+                ),
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_CALL "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "phase=after api=SimpleMotionComponentRequestBus::PlayMotion "
+                    "call_returned=1 motion_instance_available_after=1 request_succeeded=1 status=pass"
+                ),
+                (
+                    "MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_OBSERVE "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "entity_valid_before=1 entity_valid_after=1 component_inventory_stable=1 "
+                    "actor_component_found=1 simple_motion_component_found=1 "
+                    "actor_instance_available_before=1 actor_instance_available_after=1 "
+                    "motion_instance_available_before=0 motion_instance_available_after=1 "
+                    "transform_readback_attempted=1 transform_valid=1 playback_time_monotonic=1 "
+                    "playback_time_before=0.000000 playback_time_after=0.250000 "
+                    "tick_count=12 duration_seconds=0.200000 status=pass blocker="
+                ),
+                (
+                    "MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SUMMARY "
+                    "status=pass attempted=1 completed=1 claimed=1 verified=1 "
+                    "tick_count=12 cleanup=deferred_until_spawn_cleanup "
+                    "exit=deferred_until_runtime_exit blocker="
+                ),
+            ],
+        ),
+        artifact_root=tmp_path / "runtime-artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_character_behavior_smoke_fixture_command"
+    assert report["runtime_character_behavior_smoke_attempted"] is True
+    assert report["runtime_character_behavior_smoke_completed"] is True
+    assert report["runtime_character_behavior_smoke_claimed"] is True
+    assert report["runtime_character_behavior_smoke_verified"] is True
+    assert report["runtime_character_behavior_smoke_actor_instance_available_before"] is True
+    assert report["runtime_character_behavior_smoke_actor_instance_available_after"] is True
+    assert report["runtime_character_behavior_smoke_motion_instance_available_after"] is True
+    assert report["runtime_character_behavior_smoke_entity_valid_after"] is True
+    assert report["runtime_character_behavior_smoke_component_inventory_stable"] is True
+    assert report["runtime_character_behavior_smoke_transform_valid"] is True
+    assert report["runtime_character_behavior_smoke_cleanup_verified"] is True
+    assert report["runtime_character_behavior_smoke_exit_code_hex"] == "0x00000000"
+    assert report["runtime_character_behavior_smoke_selected_log_scan_passed"] is True
+    assert report["runtime_character_animation_verified"] is True
+    assert report["runtime_character_animation_component_wiring_verified"] is True
+    assert len(report["runtime_animation_playback_observation_samples"]) >= 2
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_character_behavior_smoke_blocks_when_motion_instance_lost(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _enable_runtime_character_behavior_smoke_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_character_behavior_smoke_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+            ],
+            actor_asset_id="{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+            motion_asset_id="{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0",
+            playback_markers=True,
+            playback_time_before="0.000000",
+            playback_time_after="0.250000",
+            playback_tick_count=12,
+            extra_stdout_lines=[
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_PREFLIGHT "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "actor_instance_available=1 actor_motion_system_available=1 "
+                    "motion_asset_ready=1 motion_instance_available_before=0 "
+                    "motion_asset_assignment_verified=1 status=pass"
+                ),
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_CALL "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "phase=before api=SimpleMotionComponentRequestBus::PlayMotion call_reached=1"
+                ),
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_CALL "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "phase=after api=SimpleMotionComponentRequestBus::PlayMotion "
+                    "call_returned=1 motion_instance_available_after=1 request_succeeded=1 status=pass"
+                ),
+                (
+                    "MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_OBSERVE "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "entity_valid_before=1 entity_valid_after=1 component_inventory_stable=1 "
+                    "actor_component_found=1 simple_motion_component_found=1 "
+                    "actor_instance_available_before=1 actor_instance_available_after=1 "
+                    "motion_instance_available_before=1 motion_instance_available_after=0 "
+                    "transform_readback_attempted=1 transform_valid=1 playback_time_monotonic=1 "
+                    "playback_time_before=0.000000 playback_time_after=0.250000 "
+                    "tick_count=12 duration_seconds=0.200000 status=fail "
+                    "blocker=blocked_by_runtime_character_behavior_smoke_motion_instance_lost"
+                ),
+                (
+                    "MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SUMMARY "
+                    "status=fail attempted=1 completed=1 claimed=0 verified=0 tick_count=12 "
+                    "cleanup=deferred_until_spawn_cleanup "
+                    "blocker=blocked_by_runtime_character_behavior_smoke_motion_instance_lost"
+                ),
+            ],
+        ),
+        artifact_root=tmp_path / "runtime-artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_character_behavior_smoke_attempted"] is True
+    assert report["runtime_character_behavior_smoke_completed"] is True
+    assert report["runtime_character_behavior_smoke_verified"] is False
+    assert report["runtime_character_behavior_smoke_motion_instance_available_after"] is False
+    assert report["runtime_character_behavior_smoke_blocker"] == (
+        "blocked_by_runtime_character_behavior_smoke_motion_instance_lost"
+    )
+    assert report["runtime_character_animation_verified"] is True
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_character_behavior_smoke_preserves_selected_log_blocker(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _enable_runtime_character_behavior_smoke_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+    poolallocator_line = "PoolAllocator.cpp:470 'Found page for bucket 13 during allocator teardown'"
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_character_behavior_smoke_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+            ],
+            actor_asset_id="{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+            motion_asset_id="{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0",
+            playback_markers=True,
+            extra_stdout_lines=[
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_PREFLIGHT "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "actor_instance_available=1 actor_motion_system_available=1 "
+                    "motion_asset_ready=1 motion_instance_available_before=0 "
+                    "motion_asset_assignment_verified=1 status=pass"
+                ),
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_CALL "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "phase=before api=SimpleMotionComponentRequestBus::PlayMotion call_reached=1"
+                ),
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_CALL "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "phase=after api=SimpleMotionComponentRequestBus::PlayMotion "
+                    "call_returned=1 motion_instance_available_after=1 request_succeeded=1 status=pass"
+                ),
+                (
+                    "MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_OBSERVE "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "entity_valid_before=1 entity_valid_after=1 component_inventory_stable=1 "
+                    "actor_component_found=1 simple_motion_component_found=1 "
+                    "actor_instance_available_before=1 actor_instance_available_after=1 "
+                    "motion_instance_available_before=0 motion_instance_available_after=1 "
+                    "transform_readback_attempted=1 transform_valid=1 playback_time_monotonic=1 "
+                    "playback_time_before=0.000000 playback_time_after=0.125000 "
+                    "tick_count=8 duration_seconds=0.133333 status=pass blocker="
+                ),
+                "MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SUMMARY status=pass attempted=1 completed=1 claimed=1 verified=1 tick_count=8 blocker=",
+                poolallocator_line,
+            ],
+        ),
+        artifact_root=tmp_path / "runtime-artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_character_behavior_smoke_selected_log_scan_passed"] is False
+    assert report["runtime_character_behavior_smoke_verified"] is False
+    assert report["runtime_character_behavior_smoke_blocker"] == (
+        "blocked_by_runtime_character_behavior_smoke_selected_log_signal"
+    )
+    assert (
+        report["runtime_exit_fixture_status"]
+        == "runtime_exit_fixture_execution_failed_runtime_character_behavior_smoke"
+    )
+    assert report["runtime_animation_playback_selected_log_blocking_matches"] == [poolallocator_line]
     assert report["runtime_character_proof_claimed"] is False
     assert report["runtime_character_proof_verified"] is False
 

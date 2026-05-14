@@ -5,7 +5,9 @@
 #include <AzCore/Component/Component.h>
 #include <AzCore/Component/ComponentApplicationBus.h>
 #include <AzCore/Component/Entity.h>
+#include <AzCore/Component/TransformBus.h>
 #include <AzCore/Interface/Interface.h>
+#include <AzCore/Math/Transform.h>
 #include <AzCore/Serialization/SerializeContext.h>
 #include <AzCore/Settings/SettingsRegistry.h>
 #include <AzCore/std/parallel/lock.h>
@@ -798,6 +800,9 @@ namespace MaxineRuntimeExitFixture
         m_characterAnimationPlaybackObserved = false;
         m_characterAnimationPlaybackTimeAdvanced = false;
         m_characterAnimationPlaybackActiveStateObserved = false;
+        m_characterAnimationPlaybackActorInstanceAvailableBefore = false;
+        m_characterAnimationPlaybackMotionInstanceAvailableBefore = false;
+        m_characterAnimationPlaybackMotionInstanceAvailableAfter = false;
         m_characterAnimationPlaybackProbeComplete = false;
         m_characterAnimationPlaybackError = false;
         m_characterAnimationPlaybackReadinessStartTick = 0;
@@ -1230,6 +1235,8 @@ namespace MaxineRuntimeExitFixture
                 actorInstanceAvailable && actorInstance->GetMotionSystem() != nullptr;
             const bool motionAssetReady = RuntimeMotionAssetReady(motionAssetId);
             const bool motionInstanceAvailableBefore = simpleMotionComponent->GetMotionInstance() != nullptr;
+            m_characterAnimationPlaybackActorInstanceAvailableBefore = actorInstanceAvailable;
+            m_characterAnimationPlaybackMotionInstanceAvailableBefore = motionInstanceAvailableBefore;
             if (m_characterAnimationPlaybackReadinessStartTick == 0)
             {
                 m_characterAnimationPlaybackReadinessStartTick = m_ticksObserved;
@@ -1315,6 +1322,7 @@ namespace MaxineRuntimeExitFixture
             m_characterAnimationPlaybackStartTick = m_ticksObserved;
 
             const bool motionInstanceAvailableAfter = motionInstance != nullptr;
+            m_characterAnimationPlaybackMotionInstanceAvailableAfter = motionInstanceAvailableAfter;
             const char* requestStatus = m_characterAnimationPlaybackRequestSucceeded ? "pass" : "fail";
             const char* requestBlocker =
                 m_characterAnimationPlaybackRequestSucceeded
@@ -1453,6 +1461,79 @@ namespace MaxineRuntimeExitFixture
             m_characterAnimationPlaybackActiveStateObserved ? 1 : 0,
             static_cast<unsigned long long>(observedTicks),
             m_characterAnimationPlaybackBlocker.c_str());
+
+        EMotionFX::Integration::ActorComponent* actorComponentAfter = RuntimeActorComponent(*entity);
+        EMotionFX::ActorInstance* actorInstanceAfter =
+            actorComponentAfter != nullptr ? actorComponentAfter->GetActorInstance() : nullptr;
+        EMotionFX::Integration::SimpleMotionComponent* simpleMotionComponentAfter = RuntimeSimpleMotionComponent(*entity);
+        const EMotionFX::MotionInstance* motionInstanceAfter =
+            simpleMotionComponentAfter != nullptr ? simpleMotionComponentAfter->GetMotionInstance() : nullptr;
+        const bool entityValidAfter = entity->GetState() == AZ::Entity::State::Active;
+        const bool actorComponentFound = actorComponentAfter != nullptr;
+        const bool simpleMotionComponentFound = simpleMotionComponentAfter != nullptr;
+        const bool componentInventoryStable = actorComponentFound && simpleMotionComponentFound;
+        const bool actorInstanceAvailableAfter = actorInstanceAfter != nullptr;
+        const bool motionInstanceAvailableAfter = motionInstanceAfter != nullptr;
+        const bool transformReadbackAttempted = AZ::TransformBus::HasHandlers(entityId);
+        AZ::Transform worldTransform = AZ::Transform::CreateIdentity();
+        if (transformReadbackAttempted)
+        {
+            AZ::TransformBus::EventResult(worldTransform, entityId, &AZ::TransformBus::Events::GetWorldTM);
+        }
+        const bool transformValid = transformReadbackAttempted && worldTransform.IsFinite();
+        const bool playbackTimeMonotonic = m_characterAnimationPlaybackTimeAfter >= m_characterAnimationPlaybackTimeBefore;
+        const bool behaviorSmokeObserved =
+            m_characterAnimationPlaybackObserved
+            && m_characterAnimationPlaybackActorInstanceAvailableBefore
+            && actorInstanceAvailableAfter
+            && motionInstanceAvailableAfter
+            && entityValidAfter
+            && componentInventoryStable
+            && transformValid
+            && playbackTimeMonotonic;
+        const char* behaviorBlocker =
+            behaviorSmokeObserved
+                ? ""
+                : (!actorInstanceAvailableAfter)
+                ? "blocked_by_runtime_character_behavior_smoke_actor_instance_lost"
+                : (!motionInstanceAvailableAfter)
+                ? "blocked_by_runtime_character_behavior_smoke_motion_instance_lost"
+                : (!entityValidAfter)
+                ? "blocked_by_runtime_character_behavior_smoke_entity_invalid"
+                : (!transformValid)
+                ? "blocked_by_runtime_character_behavior_smoke_transform_invalid"
+                : (!playbackTimeMonotonic)
+                ? "blocked_by_runtime_character_behavior_smoke_tick_stability"
+                : m_characterAnimationPlaybackBlocker.c_str();
+        AZ_TracePrintf(
+            TraceWindow,
+            "MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_OBSERVE entity_id=%s entity_valid_before=1 entity_valid_after=%u component_inventory_stable=%u actor_component_found=%u simple_motion_component_found=%u actor_instance_available_before=%u actor_instance_available_after=%u motion_instance_available_before=%u motion_instance_available_after=%u transform_readback_attempted=%u transform_valid=%u playback_time_monotonic=%u playback_time_before=%f playback_time_after=%f tick_count=%llu duration_seconds=%f status=%s blocker=%s\n",
+            m_characterAnimationPlaybackEntityId.c_str(),
+            entityValidAfter ? 1 : 0,
+            componentInventoryStable ? 1 : 0,
+            actorComponentFound ? 1 : 0,
+            simpleMotionComponentFound ? 1 : 0,
+            m_characterAnimationPlaybackActorInstanceAvailableBefore ? 1 : 0,
+            actorInstanceAvailableAfter ? 1 : 0,
+            m_characterAnimationPlaybackMotionInstanceAvailableBefore ? 1 : 0,
+            motionInstanceAvailableAfter ? 1 : 0,
+            transformReadbackAttempted ? 1 : 0,
+            transformValid ? 1 : 0,
+            playbackTimeMonotonic ? 1 : 0,
+            static_cast<double>(m_characterAnimationPlaybackTimeBefore),
+            static_cast<double>(m_characterAnimationPlaybackTimeAfter),
+            static_cast<unsigned long long>(observedTicks),
+            static_cast<double>(observedTicks) / 60.0,
+            behaviorSmokeObserved ? "pass" : "fail",
+            behaviorBlocker);
+        AZ_TracePrintf(
+            TraceWindow,
+            "MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SUMMARY status=%s attempted=1 completed=1 claimed=%u verified=%u tick_count=%llu cleanup=deferred_until_spawn_cleanup exit=deferred_until_runtime_exit blocker=%s\n",
+            behaviorSmokeObserved ? "pass" : "fail",
+            behaviorSmokeObserved ? 1 : 0,
+            behaviorSmokeObserved ? 1 : 0,
+            static_cast<unsigned long long>(observedTicks),
+            behaviorBlocker);
 
         m_characterAnimationPlaybackProbeComplete = true;
         return true;

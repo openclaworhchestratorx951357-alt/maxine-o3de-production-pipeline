@@ -181,6 +181,10 @@ RUNTIME_ANIMATION_PLAYBACK_EXECUTION_GATE_ENV = (
     "MAXINE_ENABLE_RUNTIME_ANIMATION_PLAYBACK_EXECUTION=1",
     "MAXINE_ALLOW_RUNTIME_ANIMATION_PLAYBACK_EXECUTION=1",
 )
+RUNTIME_CHARACTER_BEHAVIOR_SMOKE_GATE_ENV = (
+    "MAXINE_ENABLE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE=1",
+    "MAXINE_ALLOW_RUNTIME_CHARACTER_BEHAVIOR_SMOKE=1",
+)
 RUNTIME_ANIMATION_PLAYBACK_EXECUTION_SELECTED = (
     "runtime_simple_motion_request_bus_play_motion_and_get_play_time"
 )
@@ -198,6 +202,12 @@ RUNTIME_SIMPLE_MOTION_MOTION_INSTANCE_NULL_BLOCKER = (
 )
 RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_FAILED_BLOCKER = (
     "blocked_by_runtime_animation_playback_request_failed"
+)
+RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SELECTED = (
+    "runtime_simple_motion_playback_sustained_behavior_smoke"
+)
+RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SELECTED_LOG_BLOCKER = (
+    "blocked_by_runtime_character_behavior_smoke_selected_log_signal"
 )
 RUNTIME_PROCPREFAB_ASSET_TYPE = "{9B7C8459-471E-4EAD-A363-7990CC4065A9}"
 RUNTIME_PROCPREFAB_ASSET_CLASS = "AZ::Prefab::ProceduralPrefabAsset"
@@ -341,6 +351,8 @@ def run_runtime_harness(
     enable_runtime_animation_product_load_prerequisite_fixture: bool = False,
     diagnose_runtime_simple_motion_playback_request_failure: bool = False,
     enable_runtime_simple_motion_playback_request_failure_fixture: bool = False,
+    diagnose_runtime_character_behavior_smoke_gate: bool = False,
+    enable_runtime_character_behavior_smoke_fixture: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -400,6 +412,8 @@ def run_runtime_harness(
         and not enable_runtime_animation_product_load_prerequisite_fixture
         and not diagnose_runtime_simple_motion_playback_request_failure
         and not enable_runtime_simple_motion_playback_request_failure_fixture
+        and not diagnose_runtime_character_behavior_smoke_gate
+        and not enable_runtime_character_behavior_smoke_fixture
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -464,6 +478,8 @@ def run_runtime_harness(
             and not enable_runtime_animation_product_load_prerequisite_fixture
             and not diagnose_runtime_simple_motion_playback_request_failure
             and not enable_runtime_simple_motion_playback_request_failure_fixture
+            and not diagnose_runtime_character_behavior_smoke_gate
+            and not enable_runtime_character_behavior_smoke_fixture
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -550,6 +566,10 @@ def run_runtime_harness(
             if diagnose_runtime_simple_motion_playback_request_failure
             else "runtime_simple_motion_playback_request_failure_fixture_command"
             if enable_runtime_simple_motion_playback_request_failure_fixture
+            else "runtime_character_behavior_smoke_gate_diagnostic"
+            if diagnose_runtime_character_behavior_smoke_gate
+            else "runtime_character_behavior_smoke_fixture_command"
+            if enable_runtime_character_behavior_smoke_fixture
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -665,6 +685,8 @@ def run_runtime_harness(
         and not enable_runtime_animation_product_load_prerequisite_fixture
         and not diagnose_runtime_simple_motion_playback_request_failure
         and not enable_runtime_simple_motion_playback_request_failure_fixture
+        and not diagnose_runtime_character_behavior_smoke_gate
+        and not enable_runtime_character_behavior_smoke_fixture
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -922,6 +944,16 @@ def run_runtime_harness(
             artifact_dir=artifact_dir,
         )
 
+    if diagnose_runtime_character_behavior_smoke_gate:
+        return _run_runtime_character_behavior_smoke_gate_diagnostic(
+            report,
+            product_evidence=product_evidence,
+            engine_root=selected_engine,
+            project=selected_project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+
     gate_status = _runtime_gate_status(env_map)
     if gate_status["status"] != "pass":
         report.update(
@@ -955,6 +987,7 @@ def run_runtime_harness(
         or enable_runtime_animation_playback_execution_fixture
         or enable_runtime_animation_product_load_prerequisite_fixture
         or enable_runtime_simple_motion_playback_request_failure_fixture
+        or enable_runtime_character_behavior_smoke_fixture
     ):
         return _run_runtime_exit_fixture_command(
             report,
@@ -978,6 +1011,7 @@ def run_runtime_harness(
                 or enable_runtime_animation_playback_execution_fixture
                 or enable_runtime_animation_product_load_prerequisite_fixture
                 or enable_runtime_simple_motion_playback_request_failure_fixture
+                or enable_runtime_character_behavior_smoke_fixture
             ),
             ap_shader_signal_classification=(
                 enable_runtime_exit_fixture_ap_shader_signal_classification
@@ -990,6 +1024,7 @@ def run_runtime_harness(
                 or enable_runtime_animation_playback_execution_fixture
                 or enable_runtime_animation_product_load_prerequisite_fixture
                 or enable_runtime_simple_motion_playback_request_failure_fixture
+                or enable_runtime_character_behavior_smoke_fixture
             ),
             character_product_load=enable_runtime_character_product_load_fixture
             or enable_runtime_character_spawn_instantiation_fixture
@@ -999,7 +1034,8 @@ def run_runtime_harness(
             or enable_runtime_poolallocator_signal_classification_fixture
             or enable_runtime_animation_playback_execution_fixture
             or enable_runtime_animation_product_load_prerequisite_fixture
-            or enable_runtime_simple_motion_playback_request_failure_fixture,
+            or enable_runtime_simple_motion_playback_request_failure_fixture
+            or enable_runtime_character_behavior_smoke_fixture,
             character_spawn_instantiation=enable_runtime_character_spawn_instantiation_fixture
             or enable_runtime_character_animation_playback_surface_fixture
             or enable_runtime_character_animation_component_wiring_surface_fixture
@@ -1007,32 +1043,40 @@ def run_runtime_harness(
             or enable_runtime_poolallocator_signal_classification_fixture
             or enable_runtime_animation_playback_execution_fixture
             or enable_runtime_animation_product_load_prerequisite_fixture
-            or enable_runtime_simple_motion_playback_request_failure_fixture,
+            or enable_runtime_simple_motion_playback_request_failure_fixture
+            or enable_runtime_character_behavior_smoke_fixture,
             character_animation_playback_surface=enable_runtime_character_animation_playback_surface_fixture
             or enable_runtime_character_animation_component_wiring_surface_fixture
             or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
             or enable_runtime_poolallocator_signal_classification_fixture
             or enable_runtime_animation_playback_execution_fixture
             or enable_runtime_animation_product_load_prerequisite_fixture
-            or enable_runtime_simple_motion_playback_request_failure_fixture,
+            or enable_runtime_simple_motion_playback_request_failure_fixture
+            or enable_runtime_character_behavior_smoke_fixture,
             character_animation_component_wiring_surface=enable_runtime_character_animation_component_wiring_surface_fixture
             or enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
             or enable_runtime_poolallocator_signal_classification_fixture
             or enable_runtime_animation_playback_execution_fixture
             or enable_runtime_animation_product_load_prerequisite_fixture
-            or enable_runtime_simple_motion_playback_request_failure_fixture,
+            or enable_runtime_simple_motion_playback_request_failure_fixture
+            or enable_runtime_character_behavior_smoke_fixture,
             actor_simple_motion_component_wiring_after_apb=enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
             or enable_runtime_poolallocator_signal_classification_fixture
             or enable_runtime_animation_playback_execution_fixture
             or enable_runtime_animation_product_load_prerequisite_fixture
-            or enable_runtime_simple_motion_playback_request_failure_fixture,
+            or enable_runtime_simple_motion_playback_request_failure_fixture
+            or enable_runtime_character_behavior_smoke_fixture,
             poolallocator_signal_classification=enable_runtime_poolallocator_signal_classification_fixture,
             animation_playback_execution=enable_runtime_animation_playback_execution_fixture
             or enable_runtime_animation_product_load_prerequisite_fixture
-            or enable_runtime_simple_motion_playback_request_failure_fixture,
+            or enable_runtime_simple_motion_playback_request_failure_fixture
+            or enable_runtime_character_behavior_smoke_fixture,
             animation_product_load_prerequisite=enable_runtime_animation_product_load_prerequisite_fixture
-            or enable_runtime_simple_motion_playback_request_failure_fixture,
-            simple_motion_playback_request_failure=enable_runtime_simple_motion_playback_request_failure_fixture,
+            or enable_runtime_simple_motion_playback_request_failure_fixture
+            or enable_runtime_character_behavior_smoke_fixture,
+            simple_motion_playback_request_failure=enable_runtime_simple_motion_playback_request_failure_fixture
+            or enable_runtime_character_behavior_smoke_fixture,
+            character_behavior_smoke=enable_runtime_character_behavior_smoke_fixture,
             product_evidence=product_evidence,
         )
 
@@ -2573,6 +2617,33 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_simple_motion_playmotion_call_returned": False,
         "runtime_simple_motion_playmotion_request_marker_before": "",
         "runtime_simple_motion_playmotion_request_marker_after": "",
+        "runtime_character_behavior_smoke_attempted": False,
+        "runtime_character_behavior_smoke_completed": False,
+        "runtime_character_behavior_smoke_claimed": False,
+        "runtime_character_behavior_smoke_verified": False,
+        "runtime_character_behavior_smoke_blocker": "",
+        "runtime_character_behavior_smoke_source_validation_status": "",
+        "runtime_character_behavior_smoke_source_validation_verified": False,
+        "runtime_character_behavior_smoke_candidate_matrix": [],
+        "runtime_character_behavior_smoke_selected_strategy": "",
+        "runtime_character_behavior_smoke_observation_tick_count": 0,
+        "runtime_character_behavior_smoke_observation_duration_seconds": None,
+        "runtime_character_behavior_smoke_entity_valid_before": False,
+        "runtime_character_behavior_smoke_entity_valid_after": False,
+        "runtime_character_behavior_smoke_component_inventory_stable": False,
+        "runtime_character_behavior_smoke_actor_component_found": False,
+        "runtime_character_behavior_smoke_simple_motion_component_found": False,
+        "runtime_character_behavior_smoke_actor_instance_available_before": False,
+        "runtime_character_behavior_smoke_actor_instance_available_after": False,
+        "runtime_character_behavior_smoke_motion_instance_available_before": False,
+        "runtime_character_behavior_smoke_motion_instance_available_after": False,
+        "runtime_character_behavior_smoke_transform_readback_attempted": False,
+        "runtime_character_behavior_smoke_transform_valid": False,
+        "runtime_character_behavior_smoke_cleanup_verified": False,
+        "runtime_character_behavior_smoke_exit_code": None,
+        "runtime_character_behavior_smoke_exit_code_hex": "",
+        "runtime_character_behavior_smoke_selected_log_scan_passed": False,
+        "runtime_animation_playback_observation_samples": [],
         "runtime_character_animation_component_wiring_surface": {
                 "status": "runtime_character_animation_component_wiring_surface_not_attempted"
             },
@@ -3862,11 +3933,14 @@ def _run_runtime_exit_fixture_command(
     animation_playback_execution: bool = False,
     animation_product_load_prerequisite: bool = False,
     simple_motion_playback_request_failure: bool = False,
+    character_behavior_smoke: bool = False,
     product_evidence: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     report.update(_runtime_exit_fixture_source_ready_payload(timeout_seconds=timeout_seconds))
     report["runtime_harness_mode"] = (
-        "runtime_simple_motion_playback_request_failure_fixture_command"
+        "runtime_character_behavior_smoke_fixture_command"
+        if character_behavior_smoke
+        else "runtime_simple_motion_playback_request_failure_fixture_command"
         if simple_motion_playback_request_failure
         else "runtime_animation_product_load_prerequisite_fixture_command"
         if animation_product_load_prerequisite
@@ -4162,6 +4236,53 @@ def _run_runtime_exit_fixture_command(
                     "required_runtime_harness_assertions_failed": [
                         "runtime_character_animation_component_wiring_surface_gate"
                     ],
+                }
+            )
+            return _finalize_report(report)
+    if character_behavior_smoke:
+        behavior_gate = _runtime_character_behavior_smoke_gate_status(env)
+        report["runtime_character_behavior_smoke_gate_env"] = list(
+            tuple(RUNTIME_CHARACTER_SPAWNABLE_SURFACE_GATE_ENV)
+            + tuple(RUNTIME_CHARACTER_SPAWN_INSTANTIATION_GATE_ENV)
+            + tuple(RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE_GATE_ENV)
+            + tuple(RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE_GATE_ENV)
+            + tuple(RUNTIME_ACTOR_SIMPLE_MOTION_AFTER_APB_GATE_ENV)
+            + tuple(RUNTIME_ANIMATION_PLAYBACK_EXECUTION_GATE_ENV)
+            + tuple(RUNTIME_CHARACTER_BEHAVIOR_SMOKE_GATE_ENV)
+        )
+        report["runtime_character_behavior_smoke_gate_status"] = behavior_gate
+        if behavior_gate["status"] != "pass":
+            payload = _runtime_character_behavior_smoke_source_payload(
+                product_evidence=product_evidence or report.get("product_evidence_summary", {}),
+                engine_root=_runtime_engine_root_from_report(report),
+                project=project,
+                timeout_seconds=timeout_seconds,
+                artifact_dir=artifact_dir,
+            )
+            payload.update(
+                {
+                    "runtime_character_behavior_smoke_blocker": behavior_gate["status"],
+                    "runtime_character_behavior_smoke_verified": False,
+                    "runtime_character_behavior_smoke_claimed": False,
+                }
+            )
+            report.update(payload)
+            report.update(
+                {
+                    "status": "fail",
+                    "runtime_harness_status": behavior_gate["status"],
+                    "runtime_harness_blocked_reason": behavior_gate["status"],
+                    "runtime_exit_fixture_status": behavior_gate["status"],
+                    "runtime_exit_fixture_blocked_reason": behavior_gate["status"],
+                    "runtime_execution_status": "runtime_execution_not_attempted",
+                    "runtime_execution_attempted": False,
+                    "runtime_execution_completed": False,
+                    "runtime_execution_verified": False,
+                    "runtime_exit_fixture_execution_attempted": False,
+                    "runtime_exit_fixture_execution_completed": False,
+                    "runtime_exit_fixture_execution_verified": False,
+                    "live_runtime_execution": False,
+                    "required_runtime_harness_assertions_failed": ["runtime_character_behavior_smoke_gate"],
                 }
             )
             return _finalize_report(report)
@@ -4495,6 +4616,7 @@ def _run_runtime_exit_fixture_command(
             "runtime_exit_fixture_runtime_command_uses_actor_simple_motion_component_wiring_after_apb_probe": actor_simple_motion_component_wiring_after_apb,
             "runtime_exit_fixture_runtime_command_uses_poolallocator_signal_classification_probe": poolallocator_signal_classification,
             "runtime_exit_fixture_runtime_command_uses_animation_playback_execution_probe": animation_playback_execution,
+            "runtime_exit_fixture_runtime_command_uses_character_behavior_smoke_probe": character_behavior_smoke,
             "runtime_exit_fixture_runtime_command_uses_temp_or_sandbox_level": False,
             "runtime_exit_fixture_command": str(command.get("argv", [""])[0]),
             "runtime_exit_fixture_arguments": list(command.get("argv", []))[1:],
@@ -4778,6 +4900,23 @@ def _run_runtime_exit_fixture_command(
         if simple_motion_playback_request_failure
         else {}
     )
+    runtime_character_behavior_smoke_payload = (
+        _runtime_character_behavior_smoke_execution_payload(
+            product_evidence=product_evidence or report.get("product_evidence_summary", {}),
+            command=command,
+            project=project,
+            combined_text=combined_text,
+            playback_execution=runtime_animation_playback_execution_payload,
+            simple_motion_request_failure=runtime_simple_motion_playback_request_failure_payload,
+            spawn_instantiation=character_spawn_instantiation_payload,
+            component_wiring=character_animation_component_wiring_surface_payload,
+            launch_hygiene=launch_hygiene,
+            effective_disqualifying=effective_disqualifying,
+            exit_code=proc.returncode,
+        )
+        if character_behavior_smoke
+        else {}
+    )
     launch_hygiene_pass = launch_hygiene.get("runtime_launch_hygiene_status") == "runtime_launch_hygiene_pass"
     character_product_load_pass = (
         character_product_load_payload.get("runtime_character_product_load_verified") is True
@@ -4818,6 +4957,11 @@ def _run_runtime_exit_fixture_command(
         if simple_motion_playback_request_failure
         else True
     )
+    runtime_character_behavior_smoke_pass = (
+        _runtime_character_behavior_smoke_fixture_passed(runtime_character_behavior_smoke_payload)
+        if character_behavior_smoke
+        else True
+    )
     passed = (
         proc.returncode in expected_exit_codes
         and not timed_out
@@ -4831,6 +4975,7 @@ def _run_runtime_exit_fixture_command(
         and character_animation_component_wiring_surface_pass
         and runtime_animation_playback_execution_pass
         and runtime_simple_motion_playback_request_failure_pass
+        and runtime_character_behavior_smoke_pass
     )
     if passed:
         fixture_status = "runtime_exit_fixture_verified_clean_exit"
@@ -4847,6 +4992,8 @@ def _run_runtime_exit_fixture_command(
         fixture_status = "runtime_exit_fixture_execution_failed_nonzero_exit"
     elif launch_hygiene.get("runtime_default_level_autoload_detected") is True:
         fixture_status = "runtime_fixture_execution_failed_default_level_autoload"
+    elif character_behavior_smoke and not runtime_character_behavior_smoke_pass:
+        fixture_status = "runtime_exit_fixture_execution_failed_runtime_character_behavior_smoke"
     elif simple_motion_playback_request_failure and not runtime_simple_motion_playback_request_failure_pass:
         fixture_status = "runtime_exit_fixture_execution_failed_runtime_simple_motion_playback_request_failure"
     elif character_product_load and not character_product_load_pass:
@@ -4878,6 +5025,7 @@ def _run_runtime_exit_fixture_command(
     report.update(runtime_animation_playback_execution_payload)
     report.update(runtime_animation_product_load_prerequisite_payload)
     report.update(runtime_simple_motion_playback_request_failure_payload)
+    report.update(runtime_character_behavior_smoke_payload)
     blocked_reason = _runtime_launch_hygiene_blocked_reason(launch_hygiene)
     if pre_autoexec_suppression and str(pre_autoexec_payload.get("runtime_pre_autoexec_candidate_blocker", "")).strip():
         blocked_reason = str(pre_autoexec_payload.get("runtime_pre_autoexec_candidate_blocker", "")).strip()
@@ -4938,6 +5086,12 @@ def _run_runtime_exit_fixture_command(
             runtime_simple_motion_playback_request_failure_payload.get(
                 "runtime_simple_motion_playback_request_failure_blocker", ""
             )
+        ).strip()
+    if character_behavior_smoke and str(
+        runtime_character_behavior_smoke_payload.get("runtime_character_behavior_smoke_blocker", "")
+    ).strip():
+        blocked_reason = str(
+            runtime_character_behavior_smoke_payload.get("runtime_character_behavior_smoke_blocker", "")
         ).strip()
     if poolallocator_signal_classification and str(
         poolallocator_payload.get("runtime_shutdown_poolallocator_signal_blocker", "")
@@ -10639,6 +10793,7 @@ def _runtime_animation_playback_execution_source_payload(
         "runtime_animation_playback_active_state_observed": False,
         "runtime_animation_playback_tick_count": 0,
         "runtime_animation_playback_cleanup_verified": False,
+        "runtime_animation_playback_observation_samples": [],
         "runtime_character_animation_playback_attempted": False,
         "runtime_character_animation_playback_request_issued": False,
         "runtime_character_animation_playback_selected_api": "",
@@ -10733,6 +10888,7 @@ def _runtime_animation_playback_parse_markers(combined_text: str) -> Dict[str, A
         "blocker": "",
         "actor_component_found": None,
         "simple_motion_component_found": None,
+        "observation_samples": [],
         "summary": {},
     }
     for raw_line in combined_text.splitlines():
@@ -10779,8 +10935,18 @@ def _runtime_animation_playback_parse_markers(combined_text: str) -> Dict[str, A
                     "1",
                     "true",
                     "True",
-                }
+            }
             payload["tick_count"] = _int_or_zero(fields.get("tick_count", 0))
+            samples: List[Dict[str, Any]] = []
+            time_before = _float_or_none(fields.get("play_time_before"))
+            time_after = _float_or_none(fields.get("play_time_after"))
+            tick_count = _int_or_zero(fields.get("tick_count", 0))
+            if time_before is not None:
+                samples.append({"tick": 0, "play_time": time_before})
+            if time_after is not None:
+                samples.append({"tick": tick_count, "play_time": time_after})
+            if samples:
+                payload["observation_samples"] = samples
             if str(fields.get("blocker", "")).strip():
                 payload["blocker"] = str(fields.get("blocker", "")).strip()
         elif line.startswith("MAXINE_RUNTIME_ANIMATION_PLAYBACK_SUMMARY"):
@@ -10983,6 +11149,7 @@ def _runtime_animation_playback_execution_payload(
             "runtime_animation_playback_active_state_observed": active_state_observed,
             "runtime_animation_playback_tick_count": tick_count,
             "runtime_animation_playback_cleanup_verified": cleanup_complete,
+            "runtime_animation_playback_observation_samples": list(markers.get("observation_samples", [])),
             "runtime_animation_playback_selected_log_blocking_matches": poolallocator_blocking_lines,
             "runtime_character_animation_playback_surface": {
                 "status": "runtime_character_animation_playback_execution_verified"
@@ -11790,6 +11957,531 @@ def _runtime_simple_motion_playback_request_failure_fixture_passed(report: Mappi
         and report.get("runtime_animation_playback_request_succeeded") is True
         and report.get("runtime_character_animation_claimed") is True
         and report.get("runtime_character_animation_verified") is True
+        and report.get("runtime_character_proof_claimed") is False
+        and report.get("runtime_character_proof_verified") is False
+    )
+
+
+def _runtime_character_behavior_smoke_source_specs(root: Path) -> List[Dict[str, Any]]:
+    return _runtime_simple_motion_playback_request_failure_source_specs(root) + [
+        {
+            "path": root / "Code" / "Framework" / "AzCore" / "AzCore" / "Component" / "Entity.h",
+            "symbols": ["State", "GetState", "GetComponents"],
+        },
+        {
+            "path": root / "Code" / "Framework" / "AzCore" / "AzCore" / "Component" / "TransformBus.h",
+            "symbols": ["TransformBus", "TransformInterface", "GetWorldTM"],
+        },
+        {
+            "path": root / "Code" / "Framework" / "AzCore" / "AzCore" / "EBus" / "EBus.h",
+            "symbols": ["EBus", "HasHandlers"],
+        },
+        {
+            "path": root / "Code" / "Framework" / "AzCore" / "AzCore" / "Math" / "Transform.h",
+            "symbols": ["Transform", "CreateIdentity", "IsFinite"],
+        },
+        {
+            "path": RUNTIME_EXIT_FIXTURE_COMPONENT_SOURCE,
+            "symbols": [
+                "MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_OBSERVE",
+                "MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SUMMARY",
+                "AZ::TransformBus::EventResult",
+                "AZ::TransformBus::Events::GetWorldTM",
+                "IsFinite",
+            ],
+        },
+    ]
+
+
+def _runtime_character_behavior_smoke_source_refs(engine_root: Path | None) -> List[str]:
+    root = engine_root or Path("<engine-root>")
+    return [str(spec["path"]) for spec in _runtime_character_behavior_smoke_source_specs(root)]
+
+
+def _runtime_character_behavior_smoke_source_validation(engine_root: Path | None) -> Dict[str, Any]:
+    specs = _runtime_character_behavior_smoke_source_specs(engine_root or Path(""))
+    file_results = [_source_file_symbol_validation(spec["path"], spec["symbols"]) for spec in specs]
+    missing = [result for result in file_results if result["status"] != "pass"]
+    return {
+        "status": "runtime_character_behavior_smoke_source_validation_pass"
+        if not missing
+        else "runtime_character_behavior_smoke_source_validation_inconclusive",
+        "files": file_results,
+        "runtime_behavior_smoke_surfaces": {
+            "entity_state": "AZ::Entity::GetState",
+            "component_inventory": "AZ::Entity::GetComponents",
+            "transform_bus_handler_check": "AZ::TransformBus::HasHandlers",
+            "transform_readback": "AZ::TransformBus::Events::GetWorldTM",
+            "transform_validity": "AZ::Transform::IsFinite",
+            "actor_instance_api": "EMotionFX::Integration::ActorComponentRequestBus::GetActorInstance",
+            "motion_instance_api": "EMotionFX::Integration::SimpleMotionComponent::GetMotionInstance",
+            "playback_time_api": "EMotionFX::Integration::SimpleMotionComponentRequestBus::GetPlayTime",
+            "fixture_marker_surface": "MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_*",
+        },
+        "approved_motion_asset_id": RUNTIME_CHARACTER_APPROVED_MOTION_ASSET_ID,
+        "missing": missing,
+    }
+
+
+def _runtime_character_behavior_smoke_candidate_matrix(
+    *,
+    source_validated: bool,
+    playback_verified: bool,
+    actor_instance_stable: bool,
+    motion_instance_stable: bool,
+    entity_stable: bool,
+    transform_valid: bool,
+    cleanup_verified: bool,
+    selected_log_scan_passed: bool,
+    verified: bool,
+    blocker: str,
+) -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "sustained_simple_motion_playback_over_bounded_ticks",
+            "candidate": "Sustained Simple Motion playback over bounded ticks",
+            "selected": bool(source_validated and playback_verified),
+            "result": "selected" if playback_verified else "blocked_by_runtime_simple_motion_playback_regression",
+        },
+        {
+            "id": "actor_and_motion_instance_lifetime_stability",
+            "candidate": "ActorInstance and MotionInstance lifetime stability",
+            "selected": bool(actor_instance_stable and motion_instance_stable),
+            "result": "selected"
+            if actor_instance_stable and motion_instance_stable
+            else "blocked_by_runtime_character_behavior_smoke_instance_lifetime",
+        },
+        {
+            "id": "runtime_entity_component_inventory_stability",
+            "candidate": "Runtime entity/component inventory stability during playback",
+            "selected": bool(entity_stable),
+            "result": "selected" if entity_stable else "blocked_by_runtime_character_behavior_smoke_entity_invalid",
+        },
+        {
+            "id": "transform_validity_during_smoke",
+            "candidate": "Transform validity during behavior smoke",
+            "selected": bool(transform_valid),
+            "result": "selected" if transform_valid else "blocked_by_runtime_character_behavior_smoke_transform_invalid",
+        },
+        {
+            "id": "cleanup_despawn_after_playback_behavior_smoke",
+            "candidate": "Cleanup/despawn after playback behavior smoke",
+            "selected": bool(cleanup_verified),
+            "result": "selected" if cleanup_verified else "blocked_by_runtime_character_behavior_smoke_cleanup_failed",
+        },
+        {
+            "id": "selected_log_scan_behavior_gate",
+            "candidate": "Selected log scan as behavior gate",
+            "selected": bool(selected_log_scan_passed),
+            "result": "selected" if selected_log_scan_passed else RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SELECTED_LOG_BLOCKER,
+        },
+        {
+            "id": "broader_behavior_smoke_claim",
+            "candidate": "Broader runtime character behavior smoke proof",
+            "selected": bool(verified),
+            "result": "runtime_character_behavior_smoke_verified" if verified else blocker,
+        },
+        {
+            "id": "full_runtime_character_proof",
+            "candidate": "Full runtime character proof",
+            "selected": False,
+            "result": "deferred_full_character_contract_out_of_scope",
+        },
+        {
+            "id": "infer_behavior_from_component_wiring_only",
+            "candidate": "Infer behavior from component wiring only",
+            "selected": False,
+            "result": "rejected_component_wiring_is_not_behavior_smoke_proof",
+        },
+        {
+            "id": "infer_behavior_from_motion_assignment_readback_only",
+            "candidate": "Infer behavior from motion assignment readback only",
+            "selected": False,
+            "result": "rejected_motion_assignment_is_not_behavior_smoke_proof",
+        },
+        {
+            "id": "single_playback_start_marker_only",
+            "candidate": "Infer behavior from a single playback-start marker only",
+            "selected": False,
+            "result": "rejected_single_start_marker_insufficient_for_behavior_smoke",
+        },
+        {
+            "id": "defaultlevel_or_production_level_behavior_proof",
+            "candidate": "Defaultlevel or production-level behavior proof",
+            "selected": False,
+            "result": "rejected_defaultlevel_and_production_levels_out_of_scope",
+        },
+    ]
+
+
+def _runtime_character_behavior_smoke_source_payload(
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    del timeout_seconds
+    del artifact_dir
+    playback_request_payload = _runtime_simple_motion_playback_request_failure_source_payload(
+        product_evidence=product_evidence,
+        engine_root=engine_root,
+        project=project,
+        timeout_seconds=120,
+        artifact_dir=DEFAULT_ARTIFACT_ROOT,
+    )
+    source_validation = _runtime_character_behavior_smoke_source_validation(engine_root)
+    source_validated = (
+        playback_request_payload.get("runtime_simple_motion_playback_request_failure_source_validation_verified")
+        is True
+        and source_validation.get("status") == "runtime_character_behavior_smoke_source_validation_pass"
+    )
+    blocker = "" if source_validated else "blocked_by_runtime_character_behavior_smoke_source_validation"
+    return {
+        "runtime_character_behavior_smoke_attempted": False,
+        "runtime_character_behavior_smoke_completed": False,
+        "runtime_character_behavior_smoke_claimed": False,
+        "runtime_character_behavior_smoke_verified": False,
+        "runtime_character_behavior_smoke_blocker": blocker,
+        "runtime_character_behavior_smoke_source_validation_status": source_validation.get("status", ""),
+        "runtime_character_behavior_smoke_source_validation_verified": source_validated,
+        "runtime_character_behavior_smoke_source_validation": source_validation,
+        "runtime_character_behavior_smoke_source_files": _runtime_character_behavior_smoke_source_refs(engine_root),
+        "runtime_character_behavior_smoke_candidate_matrix": _runtime_character_behavior_smoke_candidate_matrix(
+            source_validated=source_validated,
+            playback_verified=False,
+            actor_instance_stable=False,
+            motion_instance_stable=False,
+            entity_stable=False,
+            transform_valid=False,
+            cleanup_verified=False,
+            selected_log_scan_passed=False,
+            verified=False,
+            blocker=blocker,
+        ),
+        "runtime_character_behavior_smoke_selected_strategy": (
+            RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SELECTED if source_validated else ""
+        ),
+    }
+
+
+def _run_runtime_character_behavior_smoke_gate_diagnostic(
+    report: Dict[str, Any],
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    payload = _runtime_character_behavior_smoke_source_payload(
+        product_evidence=product_evidence,
+        engine_root=engine_root,
+        project=project,
+        timeout_seconds=timeout_seconds,
+        artifact_dir=artifact_dir,
+    )
+    source_validated = payload.get("runtime_character_behavior_smoke_source_validation_verified") is True
+    report.update(payload)
+    report.update(
+        {
+            "status": "pass" if source_validated else "fail",
+            "runtime_harness_status": "runtime_character_behavior_smoke_source_discovery"
+            if source_validated
+            else "blocked_by_runtime_character_behavior_smoke_source_validation",
+            "runtime_harness_mode": "runtime_character_behavior_smoke_gate_diagnostic",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "runtime_character_animation_claimed": False,
+            "runtime_character_animation_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "required_runtime_harness_assertions_passed": [
+                "runtime_character_behavior_smoke_source_validation"
+            ]
+            if source_validated
+            else [],
+            "required_runtime_harness_assertions_failed": []
+            if source_validated
+            else ["runtime_character_behavior_smoke_source_validation"],
+            "runtime_harness_assertion_informational": [
+                "behavior_smoke_source_discovery_is_not_live_runtime_proof",
+                "bounded_behavior_smoke_is_not_full_runtime_character_proof",
+            ],
+        }
+    )
+    return _finalize_report(report)
+
+
+def _runtime_character_behavior_smoke_parse_markers(combined_text: str) -> Dict[str, Any]:
+    payload: Dict[str, Any] = {
+        "attempted": False,
+        "completed": False,
+        "claimed": False,
+        "verified": False,
+        "blocker": "",
+        "observation_tick_count": 0,
+        "observation_duration_seconds": None,
+        "entity_valid_before": False,
+        "entity_valid_after": False,
+        "component_inventory_stable": False,
+        "actor_component_found": False,
+        "simple_motion_component_found": False,
+        "actor_instance_available_before": False,
+        "actor_instance_available_after": False,
+        "motion_instance_available_before": False,
+        "motion_instance_available_after": False,
+        "transform_readback_attempted": False,
+        "transform_valid": False,
+        "playback_time_monotonic": False,
+        "summary": {},
+    }
+    for raw_line in combined_text.splitlines():
+        marker_index = raw_line.find("MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_")
+        if marker_index < 0:
+            continue
+        line = raw_line[marker_index:].strip()
+        fields = _runtime_marker_fields(line)
+        if line.startswith("MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_OBSERVE"):
+            payload["attempted"] = True
+            payload["entity_valid_before"] = _runtime_simple_motion_request_bool(fields.get("entity_valid_before"))
+            payload["entity_valid_after"] = _runtime_simple_motion_request_bool(fields.get("entity_valid_after"))
+            payload["component_inventory_stable"] = _runtime_simple_motion_request_bool(
+                fields.get("component_inventory_stable")
+            )
+            payload["actor_component_found"] = _runtime_simple_motion_request_bool(fields.get("actor_component_found"))
+            payload["simple_motion_component_found"] = _runtime_simple_motion_request_bool(
+                fields.get("simple_motion_component_found")
+            )
+            payload["actor_instance_available_before"] = _runtime_simple_motion_request_bool(
+                fields.get("actor_instance_available_before")
+            )
+            payload["actor_instance_available_after"] = _runtime_simple_motion_request_bool(
+                fields.get("actor_instance_available_after")
+            )
+            payload["motion_instance_available_before"] = _runtime_simple_motion_request_bool(
+                fields.get("motion_instance_available_before")
+            )
+            payload["motion_instance_available_after"] = _runtime_simple_motion_request_bool(
+                fields.get("motion_instance_available_after")
+            )
+            payload["transform_readback_attempted"] = _runtime_simple_motion_request_bool(
+                fields.get("transform_readback_attempted")
+            )
+            payload["transform_valid"] = _runtime_simple_motion_request_bool(fields.get("transform_valid"))
+            payload["playback_time_monotonic"] = _runtime_simple_motion_request_bool(
+                fields.get("playback_time_monotonic")
+            )
+            payload["observation_tick_count"] = _int_or_zero(fields.get("tick_count", 0))
+            payload["observation_duration_seconds"] = _float_or_none(fields.get("duration_seconds"))
+            if str(fields.get("blocker", "")).strip():
+                payload["blocker"] = str(fields.get("blocker", "")).strip()
+        elif line.startswith("MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SUMMARY"):
+            payload["summary"] = dict(fields)
+            payload["attempted"] = payload["attempted"] or _runtime_simple_motion_request_bool(
+                fields.get("attempted")
+            )
+            payload["completed"] = _runtime_simple_motion_request_bool(fields.get("completed")) or str(
+                fields.get("status", "")
+            ).strip() in {"pass", "fail"}
+            payload["claimed"] = _runtime_simple_motion_request_bool(fields.get("claimed"))
+            payload["verified"] = _runtime_simple_motion_request_bool(fields.get("verified")) or str(
+                fields.get("status", "")
+            ).strip() == "pass"
+            payload["observation_tick_count"] = max(
+                _int_or_zero(payload.get("observation_tick_count", 0)),
+                _int_or_zero(fields.get("tick_count", 0)),
+            )
+            if str(fields.get("blocker", "")).strip():
+                payload["blocker"] = str(fields.get("blocker", "")).strip()
+    return payload
+
+
+def _runtime_character_behavior_smoke_execution_payload(
+    *,
+    product_evidence: Mapping[str, Any],
+    command: Mapping[str, Any],
+    project: Path | None,
+    combined_text: str,
+    playback_execution: Mapping[str, Any],
+    simple_motion_request_failure: Mapping[str, Any],
+    spawn_instantiation: Mapping[str, Any],
+    component_wiring: Mapping[str, Any],
+    launch_hygiene: Mapping[str, Any],
+    effective_disqualifying: Sequence[Mapping[str, Any]],
+    exit_code: int | None,
+) -> Dict[str, Any]:
+    payload = _runtime_character_behavior_smoke_source_payload(
+        product_evidence=product_evidence,
+        engine_root=_runtime_engine_root_from_command(command),
+        project=project,
+        timeout_seconds=int(command.get("timeout_seconds", 120)),
+        artifact_dir=DEFAULT_ARTIFACT_ROOT,
+    )
+    markers = _runtime_character_behavior_smoke_parse_markers(combined_text)
+    source_validated = payload.get("runtime_character_behavior_smoke_source_validation_verified") is True
+    playback_verified = playback_execution.get("runtime_character_animation_verified") is True
+    component_wiring_verified = component_wiring.get("runtime_character_animation_component_wiring_verified") is True
+    request_failure_verified = (
+        simple_motion_request_failure.get("runtime_simple_motion_playback_request_failure_verified") is True
+    )
+    selected_log_matches = list(playback_execution.get("runtime_animation_playback_selected_log_blocking_matches", []))
+    selected_log_scan_passed = not selected_log_matches and not effective_disqualifying
+    cleanup_verified = str(
+        spawn_instantiation.get("runtime_character_spawn_instantiation_cleanup_status", "")
+    ).strip() in {
+        "runtime_character_spawn_instantiation_cleanup_complete",
+        "runtime_character_spawn_instantiation_cleanup_not_required",
+    }
+    exit_hex = _exit_code_hex(exit_code)
+    exit_clean = exit_code == 0
+    actor_instance_stable = bool(
+        markers.get("actor_instance_available_before") and markers.get("actor_instance_available_after")
+    )
+    motion_instance_stable = bool(markers.get("motion_instance_available_after"))
+    entity_stable = bool(
+        markers.get("entity_valid_before")
+        and markers.get("entity_valid_after")
+        and markers.get("component_inventory_stable")
+        and markers.get("actor_component_found")
+        and markers.get("simple_motion_component_found")
+    )
+    transform_valid = bool(markers.get("transform_readback_attempted") and markers.get("transform_valid"))
+    tick_count = _int_or_zero(markers.get("observation_tick_count", 0))
+    time_advanced = playback_execution.get("runtime_animation_playback_time_advanced") is True
+    active_state = playback_execution.get("runtime_animation_playback_active_state_observed") is True
+    defaultlevel = bool(launch_hygiene.get("runtime_default_level_autoload_detected"))
+    production_level = bool(launch_hygiene.get("runtime_production_level_loaded"))
+    verified = bool(
+        source_validated
+        and playback_verified
+        and component_wiring_verified
+        and request_failure_verified
+        and markers.get("attempted")
+        and markers.get("completed")
+        and actor_instance_stable
+        and motion_instance_stable
+        and entity_stable
+        and transform_valid
+        and bool(markers.get("playback_time_monotonic"))
+        and time_advanced
+        and active_state
+        and tick_count >= 2
+        and cleanup_verified
+        and exit_clean
+        and selected_log_scan_passed
+        and not defaultlevel
+        and not production_level
+    )
+    marker_blocker = str(markers.get("blocker", "")).strip()
+    blocker = ""
+    if selected_log_matches or effective_disqualifying:
+        blocker = RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SELECTED_LOG_BLOCKER
+    elif defaultlevel:
+        blocker = "blocked_by_default_level_autoload"
+    elif production_level:
+        blocker = "blocked_by_production_level_load"
+    elif not source_validated:
+        blocker = "blocked_by_runtime_character_behavior_smoke_source_validation"
+    elif not component_wiring_verified:
+        blocker = "blocked_by_runtime_character_behavior_smoke_component_wiring_prerequisite"
+    elif not playback_verified or not request_failure_verified:
+        blocker = str(playback_execution.get("runtime_animation_playback_execution_api_blocker", "")).strip() or (
+            "blocked_by_runtime_simple_motion_playback_regression"
+        )
+    elif not markers.get("attempted") or not markers.get("completed"):
+        blocker = marker_blocker or "blocked_by_runtime_character_behavior_smoke_observation_unavailable"
+    elif not actor_instance_stable:
+        blocker = marker_blocker or "blocked_by_runtime_character_behavior_smoke_actor_instance_lost"
+    elif not motion_instance_stable:
+        blocker = marker_blocker or "blocked_by_runtime_character_behavior_smoke_motion_instance_lost"
+    elif not entity_stable:
+        blocker = marker_blocker or "blocked_by_runtime_character_behavior_smoke_entity_invalid"
+    elif not transform_valid:
+        blocker = marker_blocker or "blocked_by_runtime_character_behavior_smoke_transform_invalid"
+    elif not bool(markers.get("playback_time_monotonic")) or not time_advanced:
+        blocker = marker_blocker or "blocked_by_runtime_character_behavior_smoke_tick_stability"
+    elif not cleanup_verified:
+        blocker = "blocked_by_runtime_character_behavior_smoke_cleanup_failed"
+    elif not exit_clean:
+        blocker = "blocked_by_runtime_character_behavior_smoke_exit_nonzero"
+    payload.update(
+        {
+            "runtime_character_behavior_smoke_attempted": bool(markers.get("attempted")),
+            "runtime_character_behavior_smoke_completed": bool(markers.get("completed")),
+            "runtime_character_behavior_smoke_claimed": verified,
+            "runtime_character_behavior_smoke_verified": verified,
+            "runtime_character_behavior_smoke_blocker": "" if verified else blocker,
+            "runtime_character_behavior_smoke_candidate_matrix": _runtime_character_behavior_smoke_candidate_matrix(
+                source_validated=source_validated,
+                playback_verified=playback_verified,
+                actor_instance_stable=actor_instance_stable,
+                motion_instance_stable=motion_instance_stable,
+                entity_stable=entity_stable,
+                transform_valid=transform_valid,
+                cleanup_verified=cleanup_verified,
+                selected_log_scan_passed=selected_log_scan_passed,
+                verified=verified,
+                blocker=blocker,
+            ),
+            "runtime_character_behavior_smoke_selected_strategy": (
+                RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SELECTED if source_validated else ""
+            ),
+            "runtime_character_behavior_smoke_observation_tick_count": tick_count,
+            "runtime_character_behavior_smoke_observation_duration_seconds": markers.get("observation_duration_seconds"),
+            "runtime_character_behavior_smoke_entity_valid_before": bool(markers.get("entity_valid_before")),
+            "runtime_character_behavior_smoke_entity_valid_after": bool(markers.get("entity_valid_after")),
+            "runtime_character_behavior_smoke_component_inventory_stable": bool(
+                markers.get("component_inventory_stable")
+            ),
+            "runtime_character_behavior_smoke_actor_component_found": bool(markers.get("actor_component_found")),
+            "runtime_character_behavior_smoke_simple_motion_component_found": bool(
+                markers.get("simple_motion_component_found")
+            ),
+            "runtime_character_behavior_smoke_actor_instance_available_before": bool(
+                markers.get("actor_instance_available_before")
+            ),
+            "runtime_character_behavior_smoke_actor_instance_available_after": bool(
+                markers.get("actor_instance_available_after")
+            ),
+            "runtime_character_behavior_smoke_motion_instance_available_before": bool(
+                markers.get("motion_instance_available_before")
+            ),
+            "runtime_character_behavior_smoke_motion_instance_available_after": bool(
+                markers.get("motion_instance_available_after")
+            ),
+            "runtime_character_behavior_smoke_transform_readback_attempted": bool(
+                markers.get("transform_readback_attempted")
+            ),
+            "runtime_character_behavior_smoke_transform_valid": bool(markers.get("transform_valid")),
+            "runtime_character_behavior_smoke_cleanup_verified": cleanup_verified,
+            "runtime_character_behavior_smoke_exit_code": exit_code,
+            "runtime_character_behavior_smoke_exit_code_hex": exit_hex,
+            "runtime_character_behavior_smoke_selected_log_scan_passed": selected_log_scan_passed,
+            "runtime_character_animation_component_wiring_claimed": component_wiring.get(
+                "runtime_character_animation_component_wiring_claimed", False
+            ),
+            "runtime_character_animation_component_wiring_verified": component_wiring_verified,
+            "runtime_character_animation_claimed": playback_verified,
+            "runtime_character_animation_verified": playback_verified,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+        }
+    )
+    return payload
+
+
+def _runtime_character_behavior_smoke_fixture_passed(report: Mapping[str, Any]) -> bool:
+    return (
+        report.get("runtime_character_behavior_smoke_verified") is True
+        and report.get("runtime_character_behavior_smoke_claimed") is True
+        and report.get("runtime_character_animation_verified") is True
+        and report.get("runtime_character_animation_component_wiring_verified") is True
+        and report.get("runtime_character_behavior_smoke_cleanup_verified") is True
+        and report.get("runtime_character_behavior_smoke_exit_code_hex") == "0x00000000"
+        and report.get("runtime_character_behavior_smoke_selected_log_scan_passed") is True
         and report.get("runtime_character_proof_claimed") is False
         and report.get("runtime_character_proof_verified") is False
     )
@@ -16828,6 +17520,28 @@ def _runtime_animation_playback_execution_gate_status(env: Mapping[str, str]) ->
     }
 
 
+def _runtime_character_behavior_smoke_gate_status(env: Mapping[str, str]) -> Dict[str, Any]:
+    required = (
+        tuple(RUNTIME_CHARACTER_SPAWNABLE_SURFACE_GATE_ENV)
+        + tuple(RUNTIME_CHARACTER_SPAWN_INSTANTIATION_GATE_ENV)
+        + tuple(RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE_GATE_ENV)
+        + tuple(RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE_GATE_ENV)
+        + tuple(RUNTIME_ACTOR_SIMPLE_MOTION_AFTER_APB_GATE_ENV)
+        + tuple(RUNTIME_ANIMATION_PLAYBACK_EXECUTION_GATE_ENV)
+        + tuple(RUNTIME_CHARACTER_BEHAVIOR_SMOKE_GATE_ENV)
+    )
+    missing = [
+        item.split("=", 1)[0]
+        for item in required
+        if str(env.get(item.split("=", 1)[0], "")).strip() != "1"
+    ]
+    return {
+        "status": "pass" if not missing else "blocked_by_runtime_character_behavior_smoke_gate_missing",
+        "required": [item.split("=", 1)[0] for item in required],
+        "missing": missing,
+    }
+
+
 def _scan_runtime_output(text: str) -> Dict[str, Any]:
     lower = text.lower()
     matches: List[Dict[str, str]] = []
@@ -17279,6 +17993,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--enable-runtime-animation-product-load-prerequisite-fixture", action="store_true")
     parser.add_argument("--diagnose-runtime-simple-motion-playback-request-failure", action="store_true")
     parser.add_argument("--enable-runtime-simple-motion-playback-request-failure-fixture", action="store_true")
+    parser.add_argument("--diagnose-runtime-character-behavior-smoke-gate", action="store_true")
+    parser.add_argument("--enable-runtime-character-behavior-smoke-fixture", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -17376,6 +18092,12 @@ def main() -> int:
         ),
         enable_runtime_simple_motion_playback_request_failure_fixture=(
             args.enable_runtime_simple_motion_playback_request_failure_fixture
+        ),
+        diagnose_runtime_character_behavior_smoke_gate=(
+            args.diagnose_runtime_character_behavior_smoke_gate
+        ),
+        enable_runtime_character_behavior_smoke_fixture=(
+            args.enable_runtime_character_behavior_smoke_fixture
         ),
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
