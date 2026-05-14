@@ -6352,6 +6352,153 @@ def test_runtime_harness_simple_motion_request_failure_fixture_passes_when_playb
     assert report["runtime_character_proof_verified"] is False
 
 
+def _write_behavior_smoke_contract_report(path: Path, *, behavior_smoke_verified: bool = True) -> Path:
+    payload = {
+        "status": "pass" if behavior_smoke_verified else "fail",
+        "runtime_character_spawn_instantiation_verified": behavior_smoke_verified,
+        "runtime_character_animation_component_wiring_verified": behavior_smoke_verified,
+        "runtime_character_animation_verified": behavior_smoke_verified,
+        "runtime_character_behavior_smoke_verified": behavior_smoke_verified,
+        "runtime_character_behavior_smoke_cleanup_verified": behavior_smoke_verified,
+        "runtime_character_behavior_smoke_selected_log_scan_passed": behavior_smoke_verified,
+        "runtime_character_behavior_smoke_exit_code_hex": "0x00000000" if behavior_smoke_verified else "0x00000001",
+        "runtime_selected_log_scan_blocking_matches": [],
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+        "live_publication": False,
+        "release_packaging": False,
+        "production_level_mutation": False,
+        "defaultlevel_mutation": False,
+        "asset_cache_deleted": False,
+        "cache_heuristic_used": False,
+        "fake_success": False,
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    return path
+
+
+def test_runtime_harness_full_runtime_character_contract_pins_boundaries(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _append_approved_character_spawnable_product(apb)
+    behavior_report = _write_behavior_smoke_contract_report(tmp_path / "behavior-smoke-report.json")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_full_runtime_character_proof_contract=True,
+        strict=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        runtime_character_behavior_smoke_report=behavior_report,
+        env=env,
+        artifact_root=tmp_path / "runtime-artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "full_runtime_character_proof_contract_diagnostic"
+    assert report["full_runtime_character_proof_contract_source_validation_verified"] is True
+    assert report["full_runtime_character_proof_contract_pinned"] is True
+    assert report["full_runtime_character_proof_contract_verified"] is True
+    assert report["full_runtime_character_spawn_instantiation_gate_verified"] is True
+    assert report["full_runtime_character_component_wiring_gate_verified"] is True
+    assert report["full_runtime_character_simple_motion_playback_gate_verified"] is True
+    assert report["full_runtime_character_behavior_smoke_gate_verified"] is True
+    assert report["full_runtime_character_selected_log_scan_gate_verified"] is True
+    assert report["full_runtime_character_visual_material_gate_verified"] is False
+    assert report["full_runtime_character_locomotion_controller_gate_verified"] is False
+    assert report["full_runtime_character_collision_physics_gate_verified"] is False
+    assert report["runtime_character_behavior_smoke_verified"] is True
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_animation_component_wiring_verified"] is False
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+    satisfied = {gate["id"] for gate in report["full_runtime_character_proof_satisfied_gates"]}
+    unsatisfied = {gate["id"] for gate in report["full_runtime_character_proof_unsatisfied_gates"]}
+    deferred = {gate["id"] for gate in report["full_runtime_character_proof_deferred_gates"]}
+    not_applicable = {gate["id"] for gate in report["full_runtime_character_proof_not_applicable_gates"]}
+    assert {
+        "spawn_instantiation",
+        "component_wiring",
+        "simple_motion_playback",
+        "behavior_smoke",
+        "selected_log_scan",
+    }.issubset(satisfied)
+    assert "visual_material" in unsatisfied
+    assert "repeated_behavior_scenario" in deferred
+    assert {"locomotion_controller", "collision_physics"}.issubset(not_applicable)
+
+    matrix = {candidate["id"]: candidate for candidate in report["full_runtime_character_proof_contract_candidate_matrix"]}
+    assert matrix["treat_behavior_smoke_as_full_runtime_character_proof"]["selected"] is False
+    assert matrix["define_explicit_full_runtime_character_proof_contract"]["selected"] is True
+    assert matrix["use_understand_anything_graph_as_o3de_runtime_proof"]["selected"] is False
+
+
+def test_runtime_harness_full_runtime_character_contract_blocks_without_behavior_evidence(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _append_approved_character_spawnable_product(apb)
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_full_runtime_character_proof_contract=True,
+        strict=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "runtime-artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "pass"
+    assert report["full_runtime_character_proof_contract_pinned"] is True
+    assert report["full_runtime_character_behavior_smoke_gate_verified"] is False
+    assert report["runtime_character_behavior_smoke_verified"] is False
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+    unsatisfied = {gate["id"]: gate for gate in report["full_runtime_character_proof_unsatisfied_gates"]}
+    assert unsatisfied["behavior_smoke"]["blocker"] == (
+        "blocked_by_full_runtime_character_behavior_smoke_gate_unverified"
+    )
+
+
+def test_runtime_harness_full_runtime_character_contract_never_claims_full_proof_from_smoke(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _append_approved_character_spawnable_product(apb)
+    behavior_report = _write_behavior_smoke_contract_report(tmp_path / "behavior-smoke-report.json")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_full_runtime_character_proof_contract=True,
+        strict=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        runtime_character_behavior_smoke_report=behavior_report,
+        env=env,
+        artifact_root=tmp_path / "runtime-artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["runtime_character_behavior_smoke_verified"] is True
+    assert report["full_runtime_character_visual_material_gate_verified"] is False
+    assert report["full_runtime_character_proof_contract_blocker"] == (
+        "blocked_by_full_runtime_character_visual_material_gate_unverified"
+    )
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
 def test_runtime_harness_character_behavior_smoke_diagnostic_records_source_validation(
     tmp_path: Path,
 ) -> None:

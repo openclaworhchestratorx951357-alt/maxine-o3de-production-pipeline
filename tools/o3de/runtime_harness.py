@@ -209,6 +209,9 @@ RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SELECTED = (
 RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SELECTED_LOG_BLOCKER = (
     "blocked_by_runtime_character_behavior_smoke_selected_log_signal"
 )
+FULL_RUNTIME_CHARACTER_PROOF_CONTRACT_SELECTED = (
+    "explicit_full_runtime_character_proof_contract_with_deferred_unmet_gates"
+)
 RUNTIME_PROCPREFAB_ASSET_TYPE = "{9B7C8459-471E-4EAD-A363-7990CC4065A9}"
 RUNTIME_PROCPREFAB_ASSET_CLASS = "AZ::Prefab::ProceduralPrefabAsset"
 RUNTIME_PROCPREFAB_HANDLER_MODULE = "Gem::PrefabBuilder.Builders"
@@ -353,12 +356,14 @@ def run_runtime_harness(
     enable_runtime_simple_motion_playback_request_failure_fixture: bool = False,
     diagnose_runtime_character_behavior_smoke_gate: bool = False,
     enable_runtime_character_behavior_smoke_fixture: bool = False,
+    diagnose_full_runtime_character_proof_contract: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
     engine_root: Path | str | None = None,
     project: Path | str | None = None,
     apb_report: Path | str | None = None,
+    runtime_character_behavior_smoke_report: Path | str | None = None,
     timeout_seconds: int = 120,
     env: Mapping[str, str] | None = None,
     command_runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
@@ -414,6 +419,7 @@ def run_runtime_harness(
         and not enable_runtime_simple_motion_playback_request_failure_fixture
         and not diagnose_runtime_character_behavior_smoke_gate
         and not enable_runtime_character_behavior_smoke_fixture
+        and not diagnose_full_runtime_character_proof_contract
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -480,6 +486,7 @@ def run_runtime_harness(
             and not enable_runtime_simple_motion_playback_request_failure_fixture
             and not diagnose_runtime_character_behavior_smoke_gate
             and not enable_runtime_character_behavior_smoke_fixture
+            and not diagnose_full_runtime_character_proof_contract
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -570,6 +577,8 @@ def run_runtime_harness(
             if diagnose_runtime_character_behavior_smoke_gate
             else "runtime_character_behavior_smoke_fixture_command"
             if enable_runtime_character_behavior_smoke_fixture
+            else "full_runtime_character_proof_contract_diagnostic"
+            if diagnose_full_runtime_character_proof_contract
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -687,6 +696,7 @@ def run_runtime_harness(
         and not enable_runtime_simple_motion_playback_request_failure_fixture
         and not diagnose_runtime_character_behavior_smoke_gate
         and not enable_runtime_character_behavior_smoke_fixture
+        and not diagnose_full_runtime_character_proof_contract
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -952,6 +962,17 @@ def run_runtime_harness(
             project=selected_project,
             timeout_seconds=timeout_seconds,
             artifact_dir=artifact_dir,
+        )
+
+    if diagnose_full_runtime_character_proof_contract:
+        return _run_full_runtime_character_proof_contract_diagnostic(
+            report,
+            product_evidence=product_evidence,
+            engine_root=selected_engine,
+            project=selected_project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+            behavior_smoke_report_path=_resolve_optional_path(runtime_character_behavior_smoke_report),
         )
 
     gate_status = _runtime_gate_status(env_map)
@@ -2649,6 +2670,32 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_character_behavior_smoke_exit_code": None,
         "runtime_character_behavior_smoke_exit_code_hex": "",
         "runtime_character_behavior_smoke_selected_log_scan_passed": False,
+        "full_runtime_character_proof_contract_attempted": False,
+        "full_runtime_character_proof_contract_completed": False,
+        "full_runtime_character_proof_contract_source_validation_status": "",
+        "full_runtime_character_proof_contract_source_validation_verified": False,
+        "full_runtime_character_proof_contract_source_validation": {},
+        "full_runtime_character_proof_contract_source_files": [],
+        "full_runtime_character_proof_contract_pinned": False,
+        "full_runtime_character_proof_contract_verified": False,
+        "full_runtime_character_proof_contract_blocker": "",
+        "full_runtime_character_proof_contract_candidate_matrix": [],
+        "full_runtime_character_proof_contract_selected_strategy": "",
+        "full_runtime_character_proof_contract_evidence_refs": {},
+        "full_runtime_character_proof_required_gates": [],
+        "full_runtime_character_proof_satisfied_gates": [],
+        "full_runtime_character_proof_unsatisfied_gates": [],
+        "full_runtime_character_proof_deferred_gates": [],
+        "full_runtime_character_proof_not_applicable_gates": [],
+        "full_runtime_character_spawn_instantiation_gate_verified": False,
+        "full_runtime_character_component_wiring_gate_verified": False,
+        "full_runtime_character_simple_motion_playback_gate_verified": False,
+        "full_runtime_character_behavior_smoke_gate_verified": False,
+        "full_runtime_character_visual_material_gate_verified": False,
+        "full_runtime_character_locomotion_controller_gate_verified": False,
+        "full_runtime_character_collision_physics_gate_verified": False,
+        "full_runtime_character_cleanup_recovery_gate_verified": False,
+        "full_runtime_character_selected_log_scan_gate_verified": False,
         "runtime_animation_playback_observation_samples": [],
         "runtime_character_animation_component_wiring_surface": {
                 "status": "runtime_character_animation_component_wiring_surface_not_attempted"
@@ -12562,6 +12609,384 @@ def _runtime_character_behavior_smoke_fixture_passed(report: Mapping[str, Any]) 
     )
 
 
+def _load_optional_json_report(path: Path | None) -> Dict[str, Any]:
+    if path is None or not path.exists() or not path.is_file():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    except Exception:
+        return {}
+    return dict(payload) if isinstance(payload, Mapping) else {}
+
+
+def _full_runtime_character_proof_contract_source_specs(root: Path) -> List[Dict[str, Any]]:
+    return _runtime_character_behavior_smoke_source_specs(root) + [
+        {
+            "path": Path(__file__),
+            "symbols": [
+                "full_runtime_character_proof_contract",
+                "runtime_character_behavior_smoke_verified",
+                "runtime_character_animation_verified",
+                "runtime_character_animation_component_wiring_verified",
+                "runtime_character_proof_claimed",
+                "runtime_character_proof_verified",
+            ],
+        },
+        {
+            "path": REPO_ROOT / "docs" / "production" / "private-windows-o3de-runner.md",
+            "symbols": [
+                "Runtime character behavior smoke diagnostics build on bounded Simple Motion playback",
+                "without claiming full runtime character proof",
+                "visual behavior, locomotion/controller behavior, material/render validation",
+            ],
+        },
+        {
+            "path": REPO_ROOT / "CURRENT-STATUS.md",
+            "symbols": [
+                "runtime_character_behavior_smoke_verified=true",
+                "runtime_character_proof_claimed=false",
+                "runtime_character_proof_verified=false",
+            ],
+        },
+    ]
+
+
+def _full_runtime_character_proof_contract_source_refs(engine_root: Path | None) -> List[str]:
+    root = engine_root or Path("<engine-root>")
+    return [str(spec["path"]) for spec in _full_runtime_character_proof_contract_source_specs(root)]
+
+
+def _full_runtime_character_proof_contract_source_validation(engine_root: Path | None) -> Dict[str, Any]:
+    specs = _full_runtime_character_proof_contract_source_specs(engine_root or Path(""))
+    file_results = [_source_file_symbol_validation(spec["path"], spec["symbols"]) for spec in specs]
+    missing = [result for result in file_results if result["status"] != "pass"]
+    return {
+        "status": "full_runtime_character_proof_contract_source_validation_pass"
+        if not missing
+        else "full_runtime_character_proof_contract_source_validation_inconclusive",
+        "files": file_results,
+        "full_runtime_character_contract_surfaces": {
+            "spawn_instantiation_gate": "runtime_character_spawn_instantiation_verified",
+            "component_wiring_gate": "runtime_character_animation_component_wiring_verified",
+            "simple_motion_playback_gate": "runtime_character_animation_verified",
+            "behavior_smoke_gate": "runtime_character_behavior_smoke_verified",
+            "selected_log_scan_gate": "runtime_character_behavior_smoke_selected_log_scan_passed",
+            "visual_material_gate": "deferred; NullRenderer no-defaultlevel fixture has no source-validated visual capture path",
+            "locomotion_controller_gate": "not_applicable_without_current controller or locomotion claim",
+            "collision_physics_gate": "not_applicable_without current runtime collision or physics behavior claim",
+            "proof_boundary": "runtime_character_proof_claimed and runtime_character_proof_verified remain false",
+        },
+        "missing": missing,
+    }
+
+
+def _full_runtime_character_proof_contract_candidate_matrix(*, source_validated: bool) -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "treat_behavior_smoke_as_full_runtime_character_proof",
+            "candidate": "Treat behavior smoke as full runtime character proof",
+            "selected": False,
+            "result": "rejected_behavior_smoke_is_not_full_runtime_character_proof",
+        },
+        {
+            "id": "define_explicit_full_runtime_character_proof_contract",
+            "candidate": "Define full runtime character proof contract with explicit satisfied and unsatisfied gates",
+            "selected": bool(source_validated),
+            "result": "selected" if source_validated else "blocked_by_contract_source_validation",
+        },
+        {
+            "id": "visual_material_validation_required_gate",
+            "candidate": "Add visual/material validation as required full-character gate",
+            "selected": bool(source_validated),
+            "result": "deferred_no_source_validated_null_renderer_capture_path",
+        },
+        {
+            "id": "locomotion_controller_validation_gate",
+            "candidate": "Add locomotion/controller validation as required full-character gate",
+            "selected": False,
+            "result": "not_applicable_no_current_locomotion_or_controller_claim",
+        },
+        {
+            "id": "collision_physics_validation_gate",
+            "candidate": "Add collision/physics validation as required full-character gate",
+            "selected": False,
+            "result": "not_applicable_no_current_runtime_collision_or_physics_behavior_claim",
+        },
+        {
+            "id": "repeated_spawn_playback_cleanup_stability",
+            "candidate": "Repeated spawn/playback/cleanup stability",
+            "selected": False,
+            "result": "deferred_future_full_character_gate",
+        },
+        {
+            "id": "publication_release_packaging",
+            "candidate": "Publication/release packaging",
+            "selected": False,
+            "result": "rejected_not_authorized_for_this_slice",
+        },
+        {
+            "id": "use_understand_anything_graph_as_o3de_runtime_proof",
+            "candidate": "Use Understand-Anything graph as proof",
+            "selected": False,
+            "result": "rejected_developer_comprehension_only_not_o3de_runtime_evidence",
+        },
+    ]
+
+
+def _full_character_gate(
+    gate_id: str,
+    name: str,
+    verified: bool,
+    blocker: str,
+    evidence: str,
+) -> Dict[str, Any]:
+    return {
+        "id": gate_id,
+        "name": name,
+        "verified": bool(verified),
+        "blocker": "" if verified else blocker,
+        "evidence": evidence,
+    }
+
+
+def _full_runtime_character_proof_contract_payload(
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+    behavior_smoke_report_path: Path | None,
+) -> Dict[str, Any]:
+    del product_evidence
+    del project
+    del timeout_seconds
+    del artifact_dir
+    source_validation = _full_runtime_character_proof_contract_source_validation(engine_root)
+    source_validated = (
+        source_validation.get("status") == "full_runtime_character_proof_contract_source_validation_pass"
+    )
+    behavior_report = _load_optional_json_report(behavior_smoke_report_path)
+    behavior_ref = _repo_relative(behavior_smoke_report_path) if behavior_smoke_report_path else ""
+    spawn_verified = behavior_report.get("runtime_character_spawn_instantiation_verified") is True
+    component_verified = behavior_report.get("runtime_character_animation_component_wiring_verified") is True
+    playback_verified = behavior_report.get("runtime_character_animation_verified") is True
+    behavior_verified = behavior_report.get("runtime_character_behavior_smoke_verified") is True
+    cleanup_smoke_verified = behavior_report.get("runtime_character_behavior_smoke_cleanup_verified") is True
+    exit_clean = str(behavior_report.get("runtime_character_behavior_smoke_exit_code_hex", "")).strip() in {
+        "0x00000000",
+        "0",
+    }
+    selected_log_scan_verified = (
+        behavior_report.get("runtime_character_behavior_smoke_selected_log_scan_passed") is True
+        and not behavior_report.get("runtime_selected_log_scan_blocking_matches", [])
+    )
+    safety_preserved = not any(
+        behavior_report.get(key) is True
+        for key in (
+            "live_publication",
+            "release_packaging",
+            "production_level_mutation",
+            "defaultlevel_mutation",
+            "asset_cache_deleted",
+            "cache_heuristic_used",
+            "fake_success",
+        )
+    )
+    gates = [
+        _full_character_gate(
+            "spawn_instantiation",
+            "Runtime spawn/instantiation",
+            spawn_verified,
+            "blocked_by_full_runtime_character_spawn_instantiation_gate_unverified",
+            behavior_ref,
+        ),
+        _full_character_gate(
+            "component_wiring",
+            "Runtime Actor + Simple Motion component wiring",
+            component_verified,
+            "blocked_by_full_runtime_character_component_wiring_gate_unverified",
+            behavior_ref,
+        ),
+        _full_character_gate(
+            "simple_motion_playback",
+            "Bounded Simple Motion playback",
+            playback_verified,
+            "blocked_by_full_runtime_character_simple_motion_playback_gate_unverified",
+            behavior_ref,
+        ),
+        _full_character_gate(
+            "behavior_smoke",
+            "Broader runtime character behavior smoke",
+            behavior_verified,
+            "blocked_by_full_runtime_character_behavior_smoke_gate_unverified",
+            behavior_ref,
+        ),
+        _full_character_gate(
+            "selected_log_scan",
+            "Selected runtime log/error scan",
+            selected_log_scan_verified,
+            "blocked_by_full_runtime_character_selected_log_scan_gate_unverified",
+            behavior_ref,
+        ),
+        _full_character_gate(
+            "cleanup_recovery",
+            "Cleanup/despawn smoke recovery",
+            bool(cleanup_smoke_verified and exit_clean and safety_preserved),
+            "blocked_by_full_runtime_character_cleanup_recovery_gate_unverified",
+            behavior_ref,
+        ),
+        _full_character_gate(
+            "visual_material",
+            "Visual/render/material validation",
+            False,
+            "blocked_by_full_runtime_character_visual_material_gate_unverified",
+            "deferred_no_source_validated_null_renderer_capture_path",
+        ),
+    ]
+    deferred_gates = [
+        {
+            "id": "repeated_behavior_scenario",
+            "name": "Repeated behavior scenario stability",
+            "verified": False,
+            "blocker": "blocked_by_full_runtime_character_repeated_behavior_scenario_unverified",
+            "evidence": "future repeated spawn/playback/cleanup window",
+        },
+        {
+            "id": "visual_capture_surface",
+            "name": "Renderer or screenshot capture surface",
+            "verified": False,
+            "blocker": "blocked_by_full_runtime_character_visual_proof_surface_unavailable",
+            "evidence": "current no-defaultlevel runtime fixture uses NullRenderer/headless path",
+        },
+    ]
+    not_applicable_gates = [
+        {
+            "id": "locomotion_controller",
+            "name": "Locomotion/controller behavior",
+            "verified": False,
+            "blocker": "not_applicable_no_current_locomotion_or_controller_claim",
+            "evidence": "approved fixture proves Simple Motion playback only",
+        },
+        {
+            "id": "collision_physics",
+            "name": "Collision/physics runtime behavior",
+            "verified": False,
+            "blocker": "not_applicable_no_current_runtime_collision_or_physics_behavior_claim",
+            "evidence": "current runtime proof has no physics/collision behavior claim",
+        },
+    ]
+    satisfied_gates = [gate for gate in gates if gate["verified"]]
+    unsatisfied_gates = [gate for gate in gates if not gate["verified"]]
+    blocker = ""
+    if not source_validated:
+        blocker = "blocked_by_full_runtime_character_proof_contract_requires_additional_source_validation"
+    elif unsatisfied_gates:
+        blocker = str(unsatisfied_gates[0].get("blocker", ""))
+    elif deferred_gates:
+        blocker = str(deferred_gates[0].get("blocker", ""))
+    return {
+        "full_runtime_character_proof_contract_attempted": True,
+        "full_runtime_character_proof_contract_completed": True,
+        "full_runtime_character_proof_contract_source_validation_status": source_validation.get("status", ""),
+        "full_runtime_character_proof_contract_source_validation_verified": source_validated,
+        "full_runtime_character_proof_contract_source_validation": source_validation,
+        "full_runtime_character_proof_contract_source_files": _full_runtime_character_proof_contract_source_refs(engine_root),
+        "full_runtime_character_proof_contract_pinned": source_validated,
+        "full_runtime_character_proof_contract_verified": source_validated,
+        "full_runtime_character_proof_contract_blocker": blocker,
+        "full_runtime_character_proof_contract_candidate_matrix": _full_runtime_character_proof_contract_candidate_matrix(
+            source_validated=source_validated
+        ),
+        "full_runtime_character_proof_contract_selected_strategy": (
+            FULL_RUNTIME_CHARACTER_PROOF_CONTRACT_SELECTED if source_validated else ""
+        ),
+        "full_runtime_character_proof_contract_evidence_refs": {
+            "behavior_smoke_report": behavior_ref,
+            "behavior_smoke_report_loaded": bool(behavior_report),
+        },
+        "full_runtime_character_proof_required_gates": gates + deferred_gates + not_applicable_gates,
+        "full_runtime_character_proof_satisfied_gates": satisfied_gates,
+        "full_runtime_character_proof_unsatisfied_gates": unsatisfied_gates,
+        "full_runtime_character_proof_deferred_gates": deferred_gates,
+        "full_runtime_character_proof_not_applicable_gates": not_applicable_gates,
+        "full_runtime_character_spawn_instantiation_gate_verified": spawn_verified,
+        "full_runtime_character_component_wiring_gate_verified": component_verified,
+        "full_runtime_character_simple_motion_playback_gate_verified": playback_verified,
+        "full_runtime_character_behavior_smoke_gate_verified": behavior_verified,
+        "full_runtime_character_visual_material_gate_verified": False,
+        "full_runtime_character_locomotion_controller_gate_verified": False,
+        "full_runtime_character_collision_physics_gate_verified": False,
+        "full_runtime_character_cleanup_recovery_gate_verified": bool(
+            cleanup_smoke_verified and exit_clean and safety_preserved
+        ),
+        "full_runtime_character_selected_log_scan_gate_verified": selected_log_scan_verified,
+        "runtime_character_behavior_smoke_verified": behavior_verified,
+        "runtime_character_animation_verified": False,
+        "runtime_character_animation_component_wiring_verified": False,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+        "live_publication": False,
+        "release_packaging": False,
+        "production_level_mutation": False,
+        "defaultlevel_mutation": False,
+        "asset_cache_deleted": False,
+        "cache_heuristic_used": False,
+        "fake_success": False,
+    }
+
+
+def _run_full_runtime_character_proof_contract_diagnostic(
+    report: Dict[str, Any],
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+    behavior_smoke_report_path: Path | None,
+) -> Dict[str, Any]:
+    payload = _full_runtime_character_proof_contract_payload(
+        product_evidence=product_evidence,
+        engine_root=engine_root,
+        project=project,
+        timeout_seconds=timeout_seconds,
+        artifact_dir=artifact_dir,
+        behavior_smoke_report_path=behavior_smoke_report_path,
+    )
+    source_validated = payload.get("full_runtime_character_proof_contract_source_validation_verified") is True
+    report.update(payload)
+    report.update(
+        {
+            "status": "pass" if source_validated else "fail",
+            "runtime_harness_status": "full_runtime_character_proof_contract_pinned"
+            if source_validated
+            else "blocked_by_full_runtime_character_proof_contract_source_validation",
+            "runtime_harness_mode": "full_runtime_character_proof_contract_diagnostic",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "runtime_harness_proof_is_character_proof": False,
+            "required_runtime_harness_assertions_passed": [
+                "full_runtime_character_proof_contract_source_validation",
+                "full_runtime_character_proof_contract_pinned",
+                "runtime_character_proof_not_claimed",
+            ]
+            if source_validated
+            else [],
+            "required_runtime_harness_assertions_failed": []
+            if source_validated
+            else ["full_runtime_character_proof_contract_source_validation"],
+            "runtime_harness_assertion_informational": [
+                "behavior_smoke_is_not_full_runtime_character_proof",
+                "full_runtime_character_contract_verification_is_not_character_verification",
+                "visual_material_and_repeated_behavior_gates_remain_unmet",
+            ],
+        }
+    )
+    return _finalize_report(report)
+
+
 def _runtime_animation_playback_execution_fixture_passed(report: Mapping[str, Any]) -> bool:
     return (
         _runtime_animation_playback_execution_source_validated(report)
@@ -18070,12 +18495,14 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--enable-runtime-simple-motion-playback-request-failure-fixture", action="store_true")
     parser.add_argument("--diagnose-runtime-character-behavior-smoke-gate", action="store_true")
     parser.add_argument("--enable-runtime-character-behavior-smoke-fixture", action="store_true")
+    parser.add_argument("--diagnose-full-runtime-character-proof-contract", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
     parser.add_argument("--engine-root", help="O3DE engine root.")
     parser.add_argument("--project", help="O3DE project path.")
     parser.add_argument("--apb-report", help="Trusted APB product evidence report.")
+    parser.add_argument("--runtime-character-behavior-smoke-report", help="Trusted PR #161 behavior-smoke report.")
     parser.add_argument("--timeout-seconds", type=int, default=120)
     parser.add_argument("--output", help="Optional report output path.")
     parser.add_argument("--json", action="store_true", help="Emit JSON only.")
@@ -18174,12 +18601,16 @@ def main() -> int:
         enable_runtime_character_behavior_smoke_fixture=(
             args.enable_runtime_character_behavior_smoke_fixture
         ),
+        diagnose_full_runtime_character_proof_contract=(
+            args.diagnose_full_runtime_character_proof_contract
+        ),
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
         strict_integration=args.strict_integration,
         engine_root=args.engine_root,
         project=args.project,
         apb_report=args.apb_report,
+        runtime_character_behavior_smoke_report=args.runtime_character_behavior_smoke_report,
         timeout_seconds=args.timeout_seconds,
     )
     if args.output:

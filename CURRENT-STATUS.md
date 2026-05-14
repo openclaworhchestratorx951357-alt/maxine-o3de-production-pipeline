@@ -1,7 +1,15 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Pin Broader Runtime Character Behavior Gate v1 is implemented on `codex/pin-broader-runtime-character-behavior-gate-v1` and pending review:
+- Pin Full Runtime Character Proof Contract v1 is implemented on `codex/pin-full-runtime-character-proof-contract-v1` and pending review:
+  - PR #161 was repaired, its behavior-smoke pre-observation entity-state review gate `PRRT_kwDOSS7l-86CNDjs` was resolved after validation, and PR #161 was merged into `main` at `5c60123c6f2ef06188557d60579d3c1b2c176262`; this branch was created from that updated `main`
+  - this slice adds `--diagnose-full-runtime-character-proof-contract` to source-validate and pin the machine-readable contract that governs when `runtime_character_proof_claimed=true` or `runtime_character_proof_verified=true` may ever be set
+  - the contract maps the already verified proof taxonomy into explicit gates: runtime spawn/instantiation, Actor + Simple Motion component wiring, bounded Simple Motion playback, broader runtime character behavior smoke, selected log/error scanning, cleanup/despawn smoke recovery, visual/render/material validation, locomotion/controller validation, collision/physics validation, and repeated behavior stability
+  - current PR #137-#161 evidence satisfies the spawn, component-wiring, Simple Motion playback, behavior-smoke, selected-log-scan, and smoke cleanup/despawn gates when the PR #161 behavior-smoke evidence report is supplied
+  - full-character proof remains blocked by missing visual/render/material validation and deferred repeated behavior scenario stability; locomotion/controller and collision/physics runtime gates are recorded as not applicable until the approved character has source-validated claims in those categories
+  - `full_runtime_character_proof_contract_pinned=true` and `full_runtime_character_proof_contract_verified=true` mean the contract/report is source-validated; they do not mean the character has full runtime proof
+  - `runtime_character_proof_claimed=false` and `runtime_character_proof_verified=false`; publication remains blocked, release packaging remains blocked, production/defaultlevel mutation remains forbidden, Asset Cache deletion remains forbidden, cache heuristic release proof remains forbidden, and no production-ready release status is claimed
+- Pin Broader Runtime Character Behavior Gate v1 was merged through PR #161:
   - PR #160 was green, review-clear, and merged into `main` at `92bc7e9f3462506ff205da13b04228d3adcc544e`; this branch was created from that updated `main`
   - this slice adds `--diagnose-runtime-character-behavior-smoke-gate` and `--enable-runtime-character-behavior-smoke-fixture` to source-validate and run a broader no-defaultlevel runtime character behavior smoke gate on top of the PR #160 Simple Motion playback proof
   - source validation pins `AZ::Entity::GetState` / `GetComponents`, `AZ::TransformBus::HasHandlers`, `AZ::TransformBus::Events::GetWorldTM`, `AZ::Transform::IsFinite`, the existing EMotionFX Actor/Simple Motion playback APIs, and the repo-owned runtime fixture marker path
