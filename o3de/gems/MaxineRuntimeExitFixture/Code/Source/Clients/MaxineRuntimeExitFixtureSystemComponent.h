@@ -106,6 +106,9 @@ namespace MaxineRuntimeExitFixture
         bool m_characterAnimationPlaybackActorInstanceAvailableBefore = false;
         bool m_characterAnimationPlaybackMotionInstanceAvailableBefore = false;
         bool m_characterAnimationPlaybackMotionInstanceAvailableAfter = false;
+        AZStd::string m_characterAnimationPlaybackEntityStateBeforeObservation;
+        bool m_characterAnimationPlaybackEntityActiveBeforeObservation = false;
+        bool m_characterAnimationPlaybackEntityValidBeforeObservation = false;
         bool m_characterAnimationPlaybackProbeComplete = false;
         bool m_characterAnimationPlaybackError = false;
         AZ::u64 m_characterAnimationPlaybackReadinessStartTick = 0;

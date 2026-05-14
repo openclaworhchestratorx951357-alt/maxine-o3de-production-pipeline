@@ -2628,8 +2628,14 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_character_behavior_smoke_selected_strategy": "",
         "runtime_character_behavior_smoke_observation_tick_count": 0,
         "runtime_character_behavior_smoke_observation_duration_seconds": None,
+        "runtime_character_behavior_smoke_entity_state_before_observation": "",
+        "runtime_character_behavior_smoke_entity_active_before_observation": False,
         "runtime_character_behavior_smoke_entity_valid_before": False,
+        "runtime_character_behavior_smoke_entity_state_after_observation": "",
+        "runtime_character_behavior_smoke_entity_active_after_observation": False,
         "runtime_character_behavior_smoke_entity_valid_after": False,
+        "runtime_character_behavior_smoke_entity_remained_valid_during_observation": False,
+        "runtime_character_behavior_smoke_entity_validity_blocker": "",
         "runtime_character_behavior_smoke_component_inventory_stable": False,
         "runtime_character_behavior_smoke_actor_component_found": False,
         "runtime_character_behavior_smoke_simple_motion_component_found": False,
@@ -11985,6 +11991,8 @@ def _runtime_character_behavior_smoke_source_specs(root: Path) -> List[Dict[str,
             "symbols": [
                 "MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_OBSERVE",
                 "MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SUMMARY",
+                "entity_state_before_observation",
+                "entity_remained_valid_during_observation",
                 "AZ::TransformBus::EventResult",
                 "AZ::TransformBus::Events::GetWorldTM",
                 "IsFinite",
@@ -12224,8 +12232,14 @@ def _runtime_character_behavior_smoke_parse_markers(combined_text: str) -> Dict[
         "blocker": "",
         "observation_tick_count": 0,
         "observation_duration_seconds": None,
+        "entity_state_before_observation": "",
+        "entity_active_before_observation": False,
         "entity_valid_before": False,
+        "entity_state_after_observation": "",
+        "entity_active_after_observation": False,
         "entity_valid_after": False,
+        "entity_remained_valid_during_observation": False,
+        "entity_validity_blocker": "",
         "component_inventory_stable": False,
         "actor_component_found": False,
         "simple_motion_component_found": False,
@@ -12246,8 +12260,24 @@ def _runtime_character_behavior_smoke_parse_markers(combined_text: str) -> Dict[
         fields = _runtime_marker_fields(line)
         if line.startswith("MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_OBSERVE"):
             payload["attempted"] = True
+            payload["entity_state_before_observation"] = str(
+                fields.get("entity_state_before_observation", "")
+            ).strip()
+            payload["entity_active_before_observation"] = _runtime_simple_motion_request_bool(
+                fields.get("entity_active_before_observation")
+            )
             payload["entity_valid_before"] = _runtime_simple_motion_request_bool(fields.get("entity_valid_before"))
+            payload["entity_state_after_observation"] = str(
+                fields.get("entity_state_after_observation", "")
+            ).strip()
+            payload["entity_active_after_observation"] = _runtime_simple_motion_request_bool(
+                fields.get("entity_active_after_observation")
+            )
             payload["entity_valid_after"] = _runtime_simple_motion_request_bool(fields.get("entity_valid_after"))
+            payload["entity_remained_valid_during_observation"] = _runtime_simple_motion_request_bool(
+                fields.get("entity_remained_valid_during_observation")
+            )
+            payload["entity_validity_blocker"] = str(fields.get("entity_validity_blocker", "")).strip()
             payload["component_inventory_stable"] = _runtime_simple_motion_request_bool(
                 fields.get("component_inventory_stable")
             )
@@ -12341,9 +12371,40 @@ def _runtime_character_behavior_smoke_execution_payload(
         markers.get("actor_instance_available_before") and markers.get("actor_instance_available_after")
     )
     motion_instance_stable = bool(markers.get("motion_instance_available_after"))
-    entity_stable = bool(
-        markers.get("entity_valid_before")
+    entity_state_before_sampled = bool(str(markers.get("entity_state_before_observation", "")).strip())
+    entity_state_after_sampled = bool(str(markers.get("entity_state_after_observation", "")).strip())
+    entity_valid_before = bool(
+        entity_state_before_sampled
+        and markers.get("entity_active_before_observation")
+        and markers.get("entity_valid_before")
+    )
+    entity_valid_after = bool(
+        entity_state_after_sampled
+        and markers.get("entity_active_after_observation")
         and markers.get("entity_valid_after")
+    )
+    entity_remained_valid = bool(
+        entity_valid_before
+        and entity_valid_after
+        and markers.get("entity_remained_valid_during_observation")
+    )
+    entity_validity_blocker = str(markers.get("entity_validity_blocker", "")).strip()
+    if not entity_state_before_sampled:
+        entity_validity_blocker = "blocked_by_runtime_character_behavior_smoke_entity_state_unavailable"
+    elif not entity_valid_before:
+        entity_validity_blocker = (
+            "blocked_by_runtime_character_behavior_smoke_entity_inactive_before_observation"
+            if str(markers.get("entity_state_before_observation", "")).strip().lower() in {"inactive", "activating"}
+            else "blocked_by_runtime_character_behavior_smoke_entity_invalid_before_observation"
+        )
+    elif not entity_state_after_sampled:
+        entity_validity_blocker = "blocked_by_runtime_character_behavior_smoke_entity_state_unavailable"
+    elif not entity_valid_after:
+        entity_validity_blocker = "blocked_by_runtime_character_behavior_smoke_entity_invalid_after_observation"
+    elif not entity_remained_valid:
+        entity_validity_blocker = "blocked_by_runtime_character_behavior_smoke_entity_invalid_after_observation"
+    entity_stable = bool(
+        entity_remained_valid
         and markers.get("component_inventory_stable")
         and markers.get("actor_component_found")
         and markers.get("simple_motion_component_found")
@@ -12398,7 +12459,7 @@ def _runtime_character_behavior_smoke_execution_payload(
     elif not motion_instance_stable:
         blocker = marker_blocker or "blocked_by_runtime_character_behavior_smoke_motion_instance_lost"
     elif not entity_stable:
-        blocker = marker_blocker or "blocked_by_runtime_character_behavior_smoke_entity_invalid"
+        blocker = marker_blocker or entity_validity_blocker or "blocked_by_runtime_character_behavior_smoke_entity_invalid"
     elif not transform_valid:
         blocker = marker_blocker or "blocked_by_runtime_character_behavior_smoke_transform_invalid"
     elif not bool(markers.get("playback_time_monotonic")) or not time_advanced:
@@ -12431,8 +12492,22 @@ def _runtime_character_behavior_smoke_execution_payload(
             ),
             "runtime_character_behavior_smoke_observation_tick_count": tick_count,
             "runtime_character_behavior_smoke_observation_duration_seconds": markers.get("observation_duration_seconds"),
-            "runtime_character_behavior_smoke_entity_valid_before": bool(markers.get("entity_valid_before")),
-            "runtime_character_behavior_smoke_entity_valid_after": bool(markers.get("entity_valid_after")),
+            "runtime_character_behavior_smoke_entity_state_before_observation": str(
+                markers.get("entity_state_before_observation", "")
+            ).strip(),
+            "runtime_character_behavior_smoke_entity_active_before_observation": bool(
+                markers.get("entity_active_before_observation")
+            ),
+            "runtime_character_behavior_smoke_entity_valid_before": entity_valid_before,
+            "runtime_character_behavior_smoke_entity_state_after_observation": str(
+                markers.get("entity_state_after_observation", "")
+            ).strip(),
+            "runtime_character_behavior_smoke_entity_active_after_observation": bool(
+                markers.get("entity_active_after_observation")
+            ),
+            "runtime_character_behavior_smoke_entity_valid_after": entity_valid_after,
+            "runtime_character_behavior_smoke_entity_remained_valid_during_observation": entity_remained_valid,
+            "runtime_character_behavior_smoke_entity_validity_blocker": "" if entity_remained_valid else entity_validity_blocker,
             "runtime_character_behavior_smoke_component_inventory_stable": bool(
                 markers.get("component_inventory_stable")
             ),

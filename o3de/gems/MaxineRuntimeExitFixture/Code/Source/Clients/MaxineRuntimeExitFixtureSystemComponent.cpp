@@ -82,6 +82,30 @@ namespace MaxineRuntimeExitFixture
             return assetType.ToString<AZStd::string>();
         }
 
+        const char* EntityStateName(AZ::Entity::State state)
+        {
+            switch (state)
+            {
+            case AZ::Entity::State::Constructed:
+                return "constructed";
+            case AZ::Entity::State::Initializing:
+                return "initializing";
+            case AZ::Entity::State::Init:
+                return "init";
+            case AZ::Entity::State::Activating:
+                return "activating";
+            case AZ::Entity::State::Active:
+                return "active";
+            case AZ::Entity::State::Deactivating:
+                return "deactivating";
+            case AZ::Entity::State::Destroying:
+                return "destroying";
+            case AZ::Entity::State::Destroyed:
+                return "destroyed";
+            }
+            return "unknown";
+        }
+
         AZStd::vector<AZStd::string> SplitProductLoadSpec(const AZStd::string& value, char delimiter)
         {
             AZStd::vector<AZStd::string> parts;
@@ -803,6 +827,9 @@ namespace MaxineRuntimeExitFixture
         m_characterAnimationPlaybackActorInstanceAvailableBefore = false;
         m_characterAnimationPlaybackMotionInstanceAvailableBefore = false;
         m_characterAnimationPlaybackMotionInstanceAvailableAfter = false;
+        m_characterAnimationPlaybackEntityStateBeforeObservation.clear();
+        m_characterAnimationPlaybackEntityActiveBeforeObservation = false;
+        m_characterAnimationPlaybackEntityValidBeforeObservation = false;
         m_characterAnimationPlaybackProbeComplete = false;
         m_characterAnimationPlaybackError = false;
         m_characterAnimationPlaybackReadinessStartTick = 0;
@@ -1323,6 +1350,12 @@ namespace MaxineRuntimeExitFixture
 
             const bool motionInstanceAvailableAfter = motionInstance != nullptr;
             m_characterAnimationPlaybackMotionInstanceAvailableAfter = motionInstanceAvailableAfter;
+            const AZ::Entity::State entityStateBeforeObservation = selectedEntity->GetState();
+            m_characterAnimationPlaybackEntityStateBeforeObservation = EntityStateName(entityStateBeforeObservation);
+            m_characterAnimationPlaybackEntityActiveBeforeObservation =
+                entityStateBeforeObservation == AZ::Entity::State::Active;
+            m_characterAnimationPlaybackEntityValidBeforeObservation =
+                m_characterAnimationPlaybackEntityActiveBeforeObservation;
             const char* requestStatus = m_characterAnimationPlaybackRequestSucceeded ? "pass" : "fail";
             const char* requestBlocker =
                 m_characterAnimationPlaybackRequestSucceeded
@@ -1468,7 +1501,12 @@ namespace MaxineRuntimeExitFixture
         EMotionFX::Integration::SimpleMotionComponent* simpleMotionComponentAfter = RuntimeSimpleMotionComponent(*entity);
         const EMotionFX::MotionInstance* motionInstanceAfter =
             simpleMotionComponentAfter != nullptr ? simpleMotionComponentAfter->GetMotionInstance() : nullptr;
-        const bool entityValidAfter = entity->GetState() == AZ::Entity::State::Active;
+        const AZ::Entity::State entityStateAfterObservation = entity->GetState();
+        const AZStd::string entityStateAfterObservationName = EntityStateName(entityStateAfterObservation);
+        const bool entityActiveAfterObservation = entityStateAfterObservation == AZ::Entity::State::Active;
+        const bool entityValidAfter = entityActiveAfterObservation;
+        const bool entityRemainedValidDuringObservation =
+            m_characterAnimationPlaybackEntityValidBeforeObservation && entityValidAfter;
         const bool actorComponentFound = actorComponentAfter != nullptr;
         const bool simpleMotionComponentFound = simpleMotionComponentAfter != nullptr;
         const bool componentInventoryStable = actorComponentFound && simpleMotionComponentFound;
@@ -1482,8 +1520,16 @@ namespace MaxineRuntimeExitFixture
         }
         const bool transformValid = transformReadbackAttempted && worldTransform.IsFinite();
         const bool playbackTimeMonotonic = m_characterAnimationPlaybackTimeAfter >= m_characterAnimationPlaybackTimeBefore;
+        const char* entityValidityBlocker =
+            entityRemainedValidDuringObservation
+                ? ""
+                : (!m_characterAnimationPlaybackEntityValidBeforeObservation)
+                ? "blocked_by_runtime_character_behavior_smoke_entity_inactive_before_observation"
+                : "blocked_by_runtime_character_behavior_smoke_entity_invalid_after_observation";
         const bool behaviorSmokeObserved =
             m_characterAnimationPlaybackObserved
+            && m_characterAnimationPlaybackEntityValidBeforeObservation
+            && entityRemainedValidDuringObservation
             && m_characterAnimationPlaybackActorInstanceAvailableBefore
             && actorInstanceAvailableAfter
             && motionInstanceAvailableAfter
@@ -1494,12 +1540,14 @@ namespace MaxineRuntimeExitFixture
         const char* behaviorBlocker =
             behaviorSmokeObserved
                 ? ""
+                : (!m_characterAnimationPlaybackEntityValidBeforeObservation)
+                ? entityValidityBlocker
+                : (!entityValidAfter)
+                ? entityValidityBlocker
                 : (!actorInstanceAvailableAfter)
                 ? "blocked_by_runtime_character_behavior_smoke_actor_instance_lost"
                 : (!motionInstanceAvailableAfter)
                 ? "blocked_by_runtime_character_behavior_smoke_motion_instance_lost"
-                : (!entityValidAfter)
-                ? "blocked_by_runtime_character_behavior_smoke_entity_invalid"
                 : (!transformValid)
                 ? "blocked_by_runtime_character_behavior_smoke_transform_invalid"
                 : (!playbackTimeMonotonic)
@@ -1507,9 +1555,16 @@ namespace MaxineRuntimeExitFixture
                 : m_characterAnimationPlaybackBlocker.c_str();
         AZ_TracePrintf(
             TraceWindow,
-            "MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_OBSERVE entity_id=%s entity_valid_before=1 entity_valid_after=%u component_inventory_stable=%u actor_component_found=%u simple_motion_component_found=%u actor_instance_available_before=%u actor_instance_available_after=%u motion_instance_available_before=%u motion_instance_available_after=%u transform_readback_attempted=%u transform_valid=%u playback_time_monotonic=%u playback_time_before=%f playback_time_after=%f tick_count=%llu duration_seconds=%f status=%s blocker=%s\n",
+            "MAXINE_RUNTIME_CHARACTER_BEHAVIOR_SMOKE_OBSERVE entity_id=%s entity_state_before_observation=%s entity_active_before_observation=%u entity_valid_before=%u entity_state_after_observation=%s entity_active_after_observation=%u entity_valid_after=%u entity_remained_valid_during_observation=%u entity_validity_blocker=%s component_inventory_stable=%u actor_component_found=%u simple_motion_component_found=%u actor_instance_available_before=%u actor_instance_available_after=%u motion_instance_available_before=%u motion_instance_available_after=%u transform_readback_attempted=%u transform_valid=%u playback_time_monotonic=%u playback_time_before=%f playback_time_after=%f tick_count=%llu duration_seconds=%f status=%s blocker=%s\n",
             m_characterAnimationPlaybackEntityId.c_str(),
+            m_characterAnimationPlaybackEntityStateBeforeObservation.c_str(),
+            m_characterAnimationPlaybackEntityActiveBeforeObservation ? 1 : 0,
+            m_characterAnimationPlaybackEntityValidBeforeObservation ? 1 : 0,
+            entityStateAfterObservationName.c_str(),
+            entityActiveAfterObservation ? 1 : 0,
             entityValidAfter ? 1 : 0,
+            entityRemainedValidDuringObservation ? 1 : 0,
+            entityValidityBlocker,
             componentInventoryStable ? 1 : 0,
             actorComponentFound ? 1 : 0,
             simpleMotionComponentFound ? 1 : 0,
