@@ -109,6 +109,11 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_approved_source_prefab_parent_link_override_apply_route_smoke.py",
+    "approved-source-prefab-override-path-generation-template-update": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_approved_source_prefab_override_path_generation_template_update_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -234,6 +239,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_approved_source_prefab_propagation_apply_step(report, result)
         if diagnostic_mode == "approved-source-prefab-parent-link-override-apply-route":
             _validate_approved_source_prefab_parent_link_override_apply_route(report, result)
+        if diagnostic_mode == "approved-source-prefab-override-path-generation-template-update":
+            _validate_approved_source_prefab_override_path_generation_template_update(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -1096,6 +1103,147 @@ def _validate_approved_source_prefab_parent_link_override_apply_route(
             result.add_error(
                 MXN_RUNTIME_SMOKE_FAIL,
                 f"{field}=true must come from APB/runtime diagnostics, not source-template parent-link override apply alone.",
+            )
+
+
+def _validate_approved_source_prefab_override_path_generation_template_update(
+    report: Mapping[str, Any],
+    result: ValidationResult,
+) -> None:
+    attempted = report.get("approved_source_prefab_override_path_generation_template_update_attempted") is True
+    completed = report.get("approved_source_prefab_override_path_generation_template_update_completed") is True
+    verified = report.get("approved_source_prefab_override_path_generation_template_update_verified") is True
+    blocker = str(report.get("approved_source_prefab_override_path_generation_template_update_blocker", "")).strip()
+    source_status = str(
+        report.get("approved_source_prefab_override_path_generation_template_update_source_validation_status", "")
+    ).strip()
+    source_verified = (
+        report.get("approved_source_prefab_override_path_generation_template_update_source_validation_verified") is True
+    )
+
+    if str(report.get("status", "")).strip() == "pass" and (not attempted or not completed):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Approved source-prefab override-path/template-update route cannot pass without attempted/completed evidence.",
+        )
+    if source_status != "pass" or not source_verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Approved source-prefab override-path/template-update route requires positive repo-owned source validation.",
+        )
+    if report.get("approved_source_prefab_hand_authored_unknown_json_used") is not False:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Approved source-prefab override-path/template-update route must preserve hand_authored_unknown_json_used=false.",
+        )
+    if report.get("approved_source_prefab_defaultlevel_mutation") is not False:
+        result.add_error(
+            MXN_PATH_UNSAFE,
+            "Approved source-prefab override-path/template-update route must not mutate defaultlevel content.",
+        )
+    if report.get("approved_source_prefab_production_level_mutation") is not False:
+        result.add_error(
+            MXN_PATH_UNSAFE,
+            "Approved source-prefab override-path/template-update route must not mutate production-level content.",
+        )
+
+    if verified:
+        required_true = {
+            "approved_source_prefab_entity_ownership_checked": "approved prefab entity ownership check",
+            "approved_source_prefab_entity_ownership_verified": "approved prefab entity ownership verification",
+            "approved_source_prefab_entity_owning_prefab_matches_requested_path": "approved prefab entity owning path match",
+            "approved_source_prefab_component_ownership_checked": "approved prefab component ownership check",
+            "approved_source_prefab_component_ownership_verified": "approved prefab component ownership verification",
+            "approved_source_prefab_template_dom_update_route_used": "source-backed template update route",
+            "approved_source_prefab_template_dom_initial_entity_found": "initial source-template entity DOM",
+            "approved_source_prefab_serialized_entity_dom_generated": "serialized live entity DOM",
+            "approved_source_prefab_entity_patch_generated": "entity patch generation",
+            "approved_source_prefab_patch_entity_in_template_attempted": "PatchEntityInTemplate attempt",
+            "approved_source_prefab_patch_entity_in_template_verified": "PatchEntityInTemplate verification",
+            "approved_source_prefab_push_overrides_to_template_attempted": "template patch attempt",
+            "approved_source_prefab_push_overrides_to_template_verified": "template patch verification",
+            "approved_source_prefab_template_dom_updated": "source-template DOM update",
+            "approved_source_prefab_modified": "approved source-prefab modification",
+            "approved_source_prefab_changed_this_run": "fresh source-prefab hash change",
+            "approved_source_prefab_marker_presence_verified": "ActorAsset/MotionAsset marker presence",
+            "approved_source_prefab_marker_persistence_verified_this_run": "fresh ActorAsset/MotionAsset marker persistence",
+            "approved_source_prefab_save_verified": "approved source-prefab save",
+            "approved_source_prefab_actor_component_added": "Actor component add",
+            "approved_source_prefab_simple_motion_component_added": "Simple Motion component add",
+            "approved_source_prefab_actor_asset_assignment_verified": "Actor asset assignment",
+            "approved_source_prefab_motion_asset_assignment_verified": "Motion asset assignment",
+            "approved_source_prefab_property_readback_verified": "property readback",
+            "approved_source_prefab_persisted_actor_asset_marker_verified": "persisted ActorAsset marker",
+            "approved_source_prefab_persisted_motion_asset_marker_verified": "persisted MotionAsset marker",
+            "approved_source_prefab_persisted_wiring_markers_verified": "persisted wiring marker pair",
+            "approved_source_prefab_template_update_route_rejection_probes_attempted": "template-update route rejection probes",
+            "approved_source_prefab_template_update_route_rejection_probes_verified": "template-update route rejection probe verification",
+            "approved_source_prefab_template_update_route_rejected_defaultlevel_path": "template-update defaultlevel rejection",
+            "approved_source_prefab_template_update_route_rejected_production_level_path": "template-update production-level rejection",
+            "approved_source_prefab_template_update_route_rejected_generated_product_path": "template-update generated-product rejection",
+            "approved_source_prefab_template_update_route_rejected_cache_path": "template-update cache rejection",
+            "approved_source_prefab_template_update_route_rejected_unapproved_absolute_path": "template-update unapproved absolute-path rejection",
+            "approved_source_prefab_template_update_route_rejected_other_project_path": "template-update other-project rejection",
+            "approved_source_prefab_template_update_route_rejected_path_traversal": "template-update traversal rejection",
+            "approved_source_prefab_template_update_route_rejected_non_prefab_path": "template-update non-prefab rejection",
+            "approved_source_prefab_template_update_route_rejected_wrong_entity_owner": "template-update wrong-entity ownership rejection",
+            "approved_source_prefab_propagation_apply_step_verified": "propagation/apply step verification",
+            "approved_source_prefab_actor_simple_motion_wiring_verified": "Actor + Simple Motion wiring verification",
+        }
+        for field, label in required_true.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"Approved source-prefab override-path/template-update verified=true requires {label}.",
+                )
+        if int(report.get("approved_source_prefab_entity_patch_operation_count", 0) or 0) <= 0:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Approved source-prefab override-path/template-update verified=true requires a non-empty entity patch.",
+            )
+        if blocker:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Approved source-prefab override-path/template-update verified=true cannot also report a blocker.",
+            )
+        if str(report.get("approved_source_prefab_marker_persistence_blocker", "")).strip():
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Approved source-prefab override-path/template-update verified=true cannot report a marker persistence blocker.",
+            )
+        before_hash = str(report.get("approved_source_prefab_before_hash", "")).strip()
+        after_hash = str(report.get("approved_source_prefab_after_hash", "")).strip()
+        if not before_hash or not after_hash or before_hash == after_hash:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Approved source-prefab override-path/template-update verified=true requires changed before/after hashes.",
+            )
+        for asset_field in ("approved_source_prefab_actor_asset_id", "approved_source_prefab_motion_asset_id"):
+            if not str(report.get(asset_field, "")).strip():
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"Approved source-prefab override-path/template-update verified=true requires {asset_field}.",
+                )
+    elif str(report.get("status", "")).strip() == "pass" and not blocker:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Approved source-prefab override-path/template-update route pass without verification requires a typed blocker.",
+        )
+
+    false_until_downstream_runtime = (
+        "approved_spawnable_regenerated_or_found",
+        "runtime_character_animation_component_wiring_claimed",
+        "runtime_character_animation_component_wiring_verified",
+        "runtime_character_animation_claimed",
+        "runtime_character_animation_verified",
+        "runtime_character_proof_claimed",
+        "runtime_character_proof_verified",
+    )
+    for field in false_until_downstream_runtime:
+        if report.get(field) is True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                f"{field}=true must come from APB/runtime diagnostics, not source-template override-path/template update alone.",
             )
 
 
@@ -2957,6 +3105,16 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Set the explicit gated enablement marker for approved source-prefab parent-link override apply proof.",
     )
+    parser.add_argument(
+        "--diagnose-approved-source-prefab-override-path-generation-template-update",
+        action="store_true",
+        help="Run the approved source-prefab source-backed override-path/template-update diagnostic.",
+    )
+    parser.add_argument(
+        "--enable-approved-source-prefab-override-path-generation-template-update-fixture",
+        action="store_true",
+        help="Set the explicit gated enablement marker for approved source-prefab override-path/template-update proof.",
+    )
     parser.add_argument("--timeout-seconds", type=int, help="Bounded live Editor smoke timeout in seconds.")
     parser.add_argument("--progress-log", help="Optional JSONL progress log path for live Editor smoke diagnostics.")
     parser.add_argument("--apb-report", help="Explicit APB baseline report path for live Editor smoke product evidence.")
@@ -3051,6 +3209,14 @@ def main() -> int:
         env_map["MAXINE_ENABLE_APPROVED_SOURCE_PREFAB_PARENT_LINK_OVERRIDE_APPLY_ROUTE"] = "1"
     if args.enable_approved_source_prefab_parent_link_override_apply_route_fixture:
         env_map["MAXINE_ALLOW_APPROVED_SOURCE_PREFAB_PARENT_LINK_OVERRIDE_APPLY_ROUTE"] = "1"
+    if (
+        args.diagnose_approved_source_prefab_override_path_generation_template_update
+        or args.enable_approved_source_prefab_override_path_generation_template_update_fixture
+    ):
+        diagnostic_mode = "approved-source-prefab-override-path-generation-template-update"
+        env_map["MAXINE_ENABLE_APPROVED_SOURCE_PREFAB_OVERRIDE_PATH_GENERATION_TEMPLATE_UPDATE"] = "1"
+    if args.enable_approved_source_prefab_override_path_generation_template_update_fixture:
+        env_map["MAXINE_ALLOW_APPROVED_SOURCE_PREFAB_OVERRIDE_PATH_GENERATION_TEMPLATE_UPDATE"] = "1"
     result = run_editor_smoke_corpus(
         args.corpus,
         mode=args.mode,

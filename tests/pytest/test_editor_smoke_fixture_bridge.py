@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import sys
+import types
 from pathlib import Path
 from typing import Mapping
 
@@ -521,6 +522,89 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
                 "approved_source_prefab_marker_presence_verified": True,
                 "approved_source_prefab_marker_persistence_verified_this_run": True,
                 "approved_source_prefab_marker_persistence_blocker": "",
+                "approved_source_prefab_defaultlevel_mutation": False,
+                "approved_source_prefab_production_level_mutation": False,
+                "approved_source_prefab_hand_authored_unknown_json_used": False,
+                "approved_spawnable_regenerated_or_found": False,
+                "runtime_character_animation_component_wiring_claimed": False,
+                "runtime_character_animation_component_wiring_verified": False,
+                "runtime_character_animation_claimed": False,
+                "runtime_character_animation_verified": False,
+                "runtime_character_proof_claimed": False,
+                "runtime_character_proof_verified": False,
+            }
+        )
+    if diagnostic_mode == "approved-source-prefab-override-path-generation-template-update":
+        binding_payload.update(
+            {
+                "approved_source_prefab_override_path_generation_template_update_attempted": True,
+                "approved_source_prefab_override_path_generation_template_update_completed": True,
+                "approved_source_prefab_override_path_generation_template_update_verified": True,
+                "approved_source_prefab_override_path_generation_template_update_blocker": "",
+                "approved_source_prefab_override_path_generation_template_update_source_validation_status": "pass",
+                "approved_source_prefab_override_path_generation_template_update_source_validation_verified": True,
+                "approved_source_prefab_override_path_generation_template_update_candidate_matrix": [],
+                "approved_source_prefab_override_path_generation_template_update_selected_strategy": "source_backed_serialized_entity_patch_entity_in_template",
+                "approved_source_prefab_entity_ownership_checked": True,
+                "approved_source_prefab_entity_ownership_verified": True,
+                "approved_source_prefab_entity_owning_prefab_path": "C:/Users/example/O3DE/Projects/MAXINE_GoldenCorpus/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+                "approved_source_prefab_entity_owning_prefab_matches_requested_path": True,
+                "approved_source_prefab_component_ownership_checked": True,
+                "approved_source_prefab_component_ownership_verified": True,
+                "approved_source_prefab_entity_ownership_blocker": "",
+                "approved_source_prefab_template_dom_update_route_used": True,
+                "approved_source_prefab_template_dom_initial_entity_found": True,
+                "approved_source_prefab_serialized_entity_dom_generated": True,
+                "approved_source_prefab_entity_patch_generated": True,
+                "approved_source_prefab_entity_patch_operation_count": 3,
+                "approved_source_prefab_component_override_paths_detected": True,
+                "approved_source_prefab_component_override_paths": ["/Entities/MAXINE/Components/ActorAsset"],
+                "approved_source_prefab_apply_link_overrides_attempted": False,
+                "approved_source_prefab_apply_link_overrides_verified": False,
+                "approved_source_prefab_push_overrides_to_template_attempted": True,
+                "approved_source_prefab_push_overrides_to_template_verified": True,
+                "approved_source_prefab_patch_entity_in_template_attempted": True,
+                "approved_source_prefab_patch_entity_in_template_verified": True,
+                "approved_source_prefab_template_dom_updated": True,
+                "approved_source_prefab_propagation_apply_step_attempted": True,
+                "approved_source_prefab_propagation_apply_step_completed": True,
+                "approved_source_prefab_propagation_apply_step_verified": True,
+                "approved_source_prefab_propagation_apply_step_blocker": "",
+                "approved_source_prefab_actor_simple_motion_wiring_attempted": True,
+                "approved_source_prefab_actor_simple_motion_wiring_completed": True,
+                "approved_source_prefab_actor_simple_motion_wiring_verified": True,
+                "approved_source_prefab_actor_simple_motion_wiring_blocker": "",
+                "approved_source_prefab_path": "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+                "approved_source_prefab_before_hash": "1" * 64,
+                "approved_source_prefab_after_hash": "2" * 64,
+                "approved_source_prefab_modified": True,
+                "approved_source_prefab_changed_this_run": True,
+                "approved_source_prefab_update_route_used": "azlmbr.maxine.prefab_bridge.apply_approved_source_prefab_override_path_generation_template_update",
+                "approved_source_prefab_save_verified": True,
+                "approved_source_prefab_actor_component_added": True,
+                "approved_source_prefab_simple_motion_component_added": True,
+                "approved_source_prefab_actor_asset_assignment_verified": True,
+                "approved_source_prefab_motion_asset_assignment_verified": True,
+                "approved_source_prefab_actor_asset_id": "{11111111-1111-1111-1111-111111111111}:00000001",
+                "approved_source_prefab_motion_asset_id": "{22222222-2222-2222-2222-222222222222}:00000002",
+                "approved_source_prefab_property_readback_verified": True,
+                "approved_source_prefab_persisted_actor_asset_marker_verified": True,
+                "approved_source_prefab_persisted_motion_asset_marker_verified": True,
+                "approved_source_prefab_persisted_wiring_markers_verified": True,
+                "approved_source_prefab_marker_presence_verified": True,
+                "approved_source_prefab_marker_persistence_verified_this_run": True,
+                "approved_source_prefab_marker_persistence_blocker": "",
+                "approved_source_prefab_template_update_route_rejection_probes_attempted": True,
+                "approved_source_prefab_template_update_route_rejection_probes_verified": True,
+                "approved_source_prefab_template_update_route_rejected_defaultlevel_path": True,
+                "approved_source_prefab_template_update_route_rejected_production_level_path": True,
+                "approved_source_prefab_template_update_route_rejected_generated_product_path": True,
+                "approved_source_prefab_template_update_route_rejected_cache_path": True,
+                "approved_source_prefab_template_update_route_rejected_unapproved_absolute_path": True,
+                "approved_source_prefab_template_update_route_rejected_other_project_path": True,
+                "approved_source_prefab_template_update_route_rejected_path_traversal": True,
+                "approved_source_prefab_template_update_route_rejected_non_prefab_path": True,
+                "approved_source_prefab_template_update_route_rejected_wrong_entity_owner": True,
                 "approved_source_prefab_defaultlevel_mutation": False,
                 "approved_source_prefab_production_level_mutation": False,
                 "approved_source_prefab_hand_authored_unknown_json_used": False,
@@ -1452,6 +1536,9 @@ def test_editor_smoke_binding_diagnostic_modes_route_to_target_scripts(tmp_path)
         "approved-source-prefab-propagation-apply-step": "editor_approved_source_prefab_propagation_apply_step_smoke.py",
         "approved-source-prefab-parent-link-override-apply-route": (
             "editor_approved_source_prefab_parent_link_override_apply_route_smoke.py"
+        ),
+        "approved-source-prefab-override-path-generation-template-update": (
+            "editor_approved_source_prefab_override_path_generation_template_update_smoke.py"
         ),
     }
 
@@ -2903,6 +2990,383 @@ def test_editor_smoke_parent_link_override_apply_route_rejects_marker_overclaim(
             "runtime_character_proof_verified": False,
         }
     )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+
+
+def test_editor_python_override_path_template_update_source_validation_detects_source_backed_route():
+    result = editor_python_smoke._source_validation_from_refs(
+        editor_python_smoke._approved_source_prefab_override_path_generation_template_update_repo_source_refs()
+    )
+
+    assert result["status"] == "pass"
+    assert result["verified"] is True
+    route_ref = [
+        ref
+        for ref in result["refs"]
+        if str(ref.get("path", "")).replace("\\", "/").endswith("PrefabSaveUpdateBridgeHostComponent.cpp")
+    ][0]
+    assert "apply_approved_source_prefab_override_path_generation_template_update" in route_ref["symbols"]
+    assert "ApplyApprovedSourcePrefabOverridePathGenerationTemplateUpdate" in route_ref["symbols"]
+    assert "InstanceEntityMapperInterface" in route_ref["symbols"]
+    assert "InstanceToTemplateInterface" in route_ref["symbols"]
+    assert "GenerateEntityDomBySerializing" in route_ref["symbols"]
+    assert "GeneratePatch" in route_ref["symbols"]
+    assert "PatchEntityInTemplate" in route_ref["symbols"]
+    assert "FindTemplateDom" in route_ref["symbols"]
+    assert "entity_ownership_checked=true" in route_ref["symbols"]
+    assert "component_ownership_checked=" in route_ref["symbols"]
+    assert "hand_authored_unknown_json" in route_ref["absent_symbols"]
+
+
+def _template_update_status(*, reason: str = "", applied: bool = True) -> str:
+    prefix = (
+        "maxine_prefab_save_update_route_approved_source_template_update_applied;"
+        if applied
+        else "maxine_prefab_save_update_route_approved_source_template_update_failed;"
+    )
+    reason_text = f"reason={reason};" if reason else ""
+    return (
+        prefix
+        + reason_text
+        + "entity_ownership_checked=true;"
+        "entity_ownership_verified=true;"
+        "entity_owning_prefab_path=C:/Users/example/O3DE/Projects/MAXINE_GoldenCorpus/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab;"
+        "entity_owning_prefab_matches_requested_path=true;"
+        "component_ownership_checked=true;"
+        "component_ownership_verified=true;"
+        "source_backed_template_update_route_used=true;"
+        "template_dom_initial_entity_found=true;"
+        "serialized_entity_dom_generated=true;"
+        "entity_patch_generated=true;"
+        "entity_patch_operation_count=3;"
+        "patch_entity_in_template_attempted=true;"
+        "patch_entity_in_template_verified=true;"
+        "template_dom_updated=true;"
+        "approved_source_save_verified=true"
+    )
+
+
+def test_editor_python_override_path_template_update_requires_fresh_markers():
+    result = editor_python_smoke._approved_source_prefab_override_path_generation_template_update_report_from_route_status(
+        {"attempted": True, "callable": True, "applied": True, "status": _template_update_status()},
+        persisted_markers={"actor": False, "motion": False, "both": False},
+        source_prefab_changed_this_run=True,
+        before_hash="1" * 64,
+        after_hash="2" * 64,
+        template_update_route_rejection_probes_verified=True,
+    )
+
+    assert result["approved_source_prefab_override_path_generation_template_update_attempted"] is True
+    assert result["approved_source_prefab_override_path_generation_template_update_completed"] is True
+    assert result["approved_source_prefab_override_path_generation_template_update_verified"] is False
+    assert result["approved_source_prefab_entity_ownership_verified"] is True
+    assert result["approved_source_prefab_component_ownership_verified"] is True
+    assert result["approved_source_prefab_template_dom_update_route_used"] is True
+    assert result["approved_source_prefab_serialized_entity_dom_generated"] is True
+    assert result["approved_source_prefab_entity_patch_generated"] is True
+    assert result["approved_source_prefab_patch_entity_in_template_verified"] is True
+    assert result["approved_source_prefab_template_dom_updated"] is False
+    assert (
+        result["approved_source_prefab_override_path_generation_template_update_blocker"]
+        == "blocked_by_prefab_template_dom_update_unavailable"
+    )
+    assert result["runtime_character_animation_component_wiring_verified"] is False
+
+
+def test_editor_python_override_path_template_update_verifies_only_with_fresh_hash_and_markers():
+    result = editor_python_smoke._approved_source_prefab_override_path_generation_template_update_report_from_route_status(
+        {"attempted": True, "callable": True, "applied": True, "status": _template_update_status()},
+        persisted_markers={"actor": True, "motion": True, "both": True},
+        source_prefab_changed_this_run=True,
+        before_hash="1" * 64,
+        after_hash="2" * 64,
+        template_update_route_rejection_probes_verified=True,
+    )
+
+    assert result["approved_source_prefab_override_path_generation_template_update_verified"] is True
+    assert result["approved_source_prefab_propagation_apply_step_verified"] is True
+    assert result["approved_source_prefab_actor_simple_motion_wiring_verified"] is True
+    assert result["approved_source_prefab_modified"] is True
+    assert result["approved_source_prefab_changed_this_run"] is True
+    assert result["approved_source_prefab_marker_persistence_verified_this_run"] is True
+    assert result["approved_source_prefab_persisted_actor_asset_marker_verified"] is True
+    assert result["approved_source_prefab_persisted_motion_asset_marker_verified"] is True
+    assert result["approved_spawnable_regenerated_or_found"] is False
+    assert result["runtime_character_animation_component_wiring_claimed"] is False
+    assert result["runtime_character_animation_component_wiring_verified"] is False
+    assert result["runtime_character_animation_verified"] is False
+    assert result["runtime_character_proof_verified"] is False
+
+
+def test_editor_python_override_path_template_update_rejects_stale_markers_without_hash_change():
+    result = editor_python_smoke._approved_source_prefab_override_path_generation_template_update_report_from_route_status(
+        {"attempted": True, "callable": True, "applied": True, "status": _template_update_status()},
+        persisted_markers={"actor": True, "motion": True, "both": True},
+        source_prefab_changed_this_run=False,
+        before_hash="1" * 64,
+        after_hash="1" * 64,
+    )
+
+    assert result["approved_source_prefab_marker_presence_verified"] is True
+    assert result["approved_source_prefab_marker_persistence_verified_this_run"] is False
+    assert result["approved_source_prefab_override_path_generation_template_update_verified"] is False
+    assert result["approved_source_prefab_propagation_apply_step_verified"] is False
+    assert result["approved_source_prefab_actor_simple_motion_wiring_verified"] is False
+    assert (
+        result["approved_source_prefab_override_path_generation_template_update_blocker"]
+        == "blocked_by_source_prefab_markers_preexisting_without_this_run_change"
+    )
+    assert result["approved_source_prefab_modified"] is False
+    assert result["runtime_character_animation_component_wiring_verified"] is False
+
+
+def test_editor_python_template_update_rejection_probes_call_new_route(tmp_path, monkeypatch):
+    project_root = tmp_path / "MAXINE_GoldenCorpus"
+    source = (
+        project_root
+        / "Assets"
+        / "Characters"
+        / "MAXINE_GoldenCorpus"
+        / "prefabs"
+        / "release_rigged.prefab"
+    )
+    monkeypatch.setenv("O3DE_PROJECT_PATH", str(project_root))
+    calls = []
+    bridge = types.ModuleType("azlmbr.maxine.prefab_bridge")
+
+    def apply_template_update(path, entity_id, actor_component_ref, simple_motion_component_ref):
+        calls.append(("new", path, entity_id, actor_component_ref, simple_motion_component_ref))
+        if str(path) == str(source):
+            return (
+                "maxine_prefab_save_update_route_approved_source_template_update_failed;"
+                "reason=entity_not_owned_by_approved_source_prefab;"
+                "entity_ownership_checked=true;"
+                "entity_ownership_verified=false;"
+                "entity_owning_prefab_path=C:/OtherProject/Assets/other.prefab;"
+                "entity_owning_prefab_matches_requested_path=false;"
+                "component_ownership_checked=false;"
+                "component_ownership_verified=false"
+            )
+        return "maxine_prefab_save_update_route_approved_source_template_update_rejected;reason=path_policy_probe"
+
+    def legacy_save(path):
+        calls.append(("legacy", path))
+        return "maxine_prefab_save_update_route_approved_source_rejected;reason=path_policy_probe"
+
+    bridge.apply_approved_source_prefab_override_path_generation_template_update = apply_template_update
+    bridge.save_approved_source_prefab_wiring = legacy_save
+    monkeypatch.setitem(sys.modules, "azlmbr", types.ModuleType("azlmbr"))
+    monkeypatch.setitem(sys.modules, "azlmbr.maxine", types.ModuleType("azlmbr.maxine"))
+    monkeypatch.setitem(sys.modules, "azlmbr.maxine.prefab_bridge", bridge)
+
+    results = editor_python_smoke._call_approved_source_prefab_template_update_route_rejection_probes(
+        source,
+        entity_id="approved-entity",
+        actor_component_ref="actor-component",
+        simple_motion_component_ref="simple-motion-component",
+    )
+
+    assert results["defaultlevel"]["method"] == "apply_approved_source_prefab_override_path_generation_template_update"
+    assert results["wrong_entity_owner"]["rejected"] is True
+    assert all(call[0] == "new" for call in calls)
+    assert not any(call[0] == "legacy" for call in calls)
+
+
+def test_editor_python_template_update_legacy_rejection_probes_are_separate(tmp_path, monkeypatch):
+    project_root = tmp_path / "MAXINE_GoldenCorpus"
+    source = (
+        project_root
+        / "Assets"
+        / "Characters"
+        / "MAXINE_GoldenCorpus"
+        / "prefabs"
+        / "release_rigged.prefab"
+    )
+    monkeypatch.setenv("O3DE_PROJECT_PATH", str(project_root))
+    calls = []
+    bridge = types.ModuleType("azlmbr.maxine.prefab_bridge")
+
+    def apply_template_update(path, entity_id, actor_component_ref, simple_motion_component_ref):
+        calls.append(("new", path))
+        return "maxine_prefab_save_update_route_approved_source_template_update_rejected;reason=path_policy_probe"
+
+    def legacy_save(path):
+        calls.append(("legacy", path))
+        return "maxine_prefab_save_update_route_approved_source_rejected;reason=path_policy_probe"
+
+    bridge.apply_approved_source_prefab_override_path_generation_template_update = apply_template_update
+    bridge.save_approved_source_prefab_wiring = legacy_save
+    monkeypatch.setitem(sys.modules, "azlmbr", types.ModuleType("azlmbr"))
+    monkeypatch.setitem(sys.modules, "azlmbr.maxine", types.ModuleType("azlmbr.maxine"))
+    monkeypatch.setitem(sys.modules, "azlmbr.maxine.prefab_bridge", bridge)
+
+    legacy = editor_python_smoke._call_approved_source_prefab_wiring_rejection_probes(source)
+    result = editor_python_smoke._approved_source_prefab_override_path_generation_template_update_report_from_route_status(
+        {"attempted": True, "callable": True, "applied": True, "status": _template_update_status()},
+        persisted_markers={"actor": True, "motion": True, "both": True},
+        source_prefab_changed_this_run=True,
+        before_hash="1" * 64,
+        after_hash="2" * 64,
+        template_update_route_rejection_probes_verified=False,
+    )
+
+    assert editor_python_smoke._route_rejection_verified(legacy, "defaultlevel") is True
+    assert any(call[0] == "legacy" for call in calls)
+    assert not any(call[0] == "new" for call in calls)
+    assert result["approved_source_prefab_template_update_route_rejection_probes_verified"] is False
+    assert result["approved_source_prefab_override_path_generation_template_update_verified"] is False
+    assert (
+        result["approved_source_prefab_override_path_generation_template_update_blocker"]
+        == "blocked_by_template_update_route_rejection_probes_unverified"
+    )
+
+
+def test_editor_python_template_update_rejection_probe_summary_requires_new_route_results():
+    results = {
+        "defaultlevel": {"rejected": True},
+        "production_level": {"rejected": True},
+        "generated_product": {"rejected": True},
+        "cache_path": {"rejected": True},
+        "unapproved_absolute": {"rejected": True},
+        "other_project": {"rejected": True},
+        "path_traversal": {"rejected": True},
+        "non_prefab": {"rejected": True},
+        "wrong_entity_owner": {"rejected": True},
+    }
+
+    summary = editor_python_smoke._approved_source_prefab_template_update_route_rejection_probe_summary(results)
+
+    assert summary["approved_source_prefab_template_update_route_rejection_probes_attempted"] is True
+    assert summary["approved_source_prefab_template_update_route_rejection_probes_verified"] is True
+    assert summary["approved_source_prefab_template_update_route_rejected_defaultlevel_path"] is True
+    assert summary["approved_source_prefab_template_update_route_rejected_production_level_path"] is True
+    assert summary["approved_source_prefab_template_update_route_rejected_generated_product_path"] is True
+    assert summary["approved_source_prefab_template_update_route_rejected_cache_path"] is True
+    assert summary["approved_source_prefab_template_update_route_rejected_unapproved_absolute_path"] is True
+    assert summary["approved_source_prefab_template_update_route_rejected_other_project_path"] is True
+    assert summary["approved_source_prefab_template_update_route_rejected_path_traversal"] is True
+    assert summary["approved_source_prefab_template_update_route_rejected_non_prefab_path"] is True
+    assert summary["approved_source_prefab_template_update_route_rejected_wrong_entity_owner"] is True
+
+
+def test_editor_python_override_path_template_update_requires_new_route_safety_probes():
+    result = editor_python_smoke._approved_source_prefab_override_path_generation_template_update_report_from_route_status(
+        {"attempted": True, "callable": True, "applied": True, "status": _template_update_status()},
+        persisted_markers={"actor": True, "motion": True, "both": True},
+        source_prefab_changed_this_run=True,
+        before_hash="1" * 64,
+        after_hash="2" * 64,
+        template_update_route_rejection_probes_verified=False,
+    )
+
+    assert result["approved_source_prefab_marker_persistence_verified_this_run"] is True
+    assert result["approved_source_prefab_override_path_generation_template_update_verified"] is False
+    assert (
+        result["approved_source_prefab_override_path_generation_template_update_blocker"]
+        == "blocked_by_template_update_route_rejection_probes_unverified"
+    )
+    assert result["approved_source_prefab_modified"] is False
+
+
+def test_editor_smoke_override_path_template_update_schema_and_semantics_validate():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report.update(
+        editor_python_smoke._approved_source_prefab_override_path_generation_template_update_report_from_route_status(
+            {"attempted": True, "callable": True, "applied": True, "status": _template_update_status()},
+            persisted_markers={"actor": True, "motion": True, "both": True},
+            source_prefab_changed_this_run=True,
+            before_hash="1" * 64,
+            after_hash="2" * 64,
+            template_update_route_rejection_probes_verified=True,
+        )
+    )
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "diagnostic_mode": "approved-source-prefab-override-path-generation-template-update",
+            "live_editor_execution": True,
+            "no_fake_success": True,
+            "approved_source_prefab_override_path_generation_template_update_source_validation_status": "pass",
+            "approved_source_prefab_override_path_generation_template_update_source_validation_verified": True,
+            "approved_source_prefab_save_verified": True,
+            "approved_source_prefab_actor_component_added": True,
+            "approved_source_prefab_simple_motion_component_added": True,
+            "approved_source_prefab_actor_asset_assignment_verified": True,
+            "approved_source_prefab_motion_asset_assignment_verified": True,
+            "approved_source_prefab_property_readback_verified": True,
+            "approved_source_prefab_before_hash": "1" * 64,
+            "approved_source_prefab_after_hash": "2" * 64,
+            "approved_source_prefab_actor_asset_id": "{11111111-1111-1111-1111-111111111111}:00000001",
+            "approved_source_prefab_motion_asset_id": "{22222222-2222-2222-2222-222222222222}:00000002",
+            "approved_source_prefab_defaultlevel_mutation": False,
+            "approved_source_prefab_production_level_mutation": False,
+            "approved_source_prefab_hand_authored_unknown_json_used": False,
+            "approved_source_prefab_template_update_route_rejection_probes_attempted": True,
+            "approved_source_prefab_template_update_route_rejection_probes_verified": True,
+            "approved_source_prefab_template_update_route_rejected_defaultlevel_path": True,
+            "approved_source_prefab_template_update_route_rejected_production_level_path": True,
+            "approved_source_prefab_template_update_route_rejected_generated_product_path": True,
+            "approved_source_prefab_template_update_route_rejected_cache_path": True,
+            "approved_source_prefab_template_update_route_rejected_unapproved_absolute_path": True,
+            "approved_source_prefab_template_update_route_rejected_other_project_path": True,
+            "approved_source_prefab_template_update_route_rejected_path_traversal": True,
+            "approved_source_prefab_template_update_route_rejected_non_prefab_path": True,
+            "approved_source_prefab_template_update_route_rejected_wrong_entity_owner": True,
+        }
+    )
+
+    schema_result = schema_validate(report, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(report, strict=True)
+
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+
+
+def test_editor_smoke_override_path_template_update_rejects_runtime_overclaim():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report.update(
+        editor_python_smoke._approved_source_prefab_override_path_generation_template_update_report_from_route_status(
+            {"attempted": True, "callable": True, "applied": True, "status": _template_update_status()},
+            persisted_markers={"actor": True, "motion": True, "both": True},
+        source_prefab_changed_this_run=True,
+        before_hash="1" * 64,
+        after_hash="2" * 64,
+        template_update_route_rejection_probes_verified=True,
+    )
+    )
+    report["mode"] = "local_editor_python"
+    report["status"] = "pass"
+    report["diagnostic_mode"] = "approved-source-prefab-override-path-generation-template-update"
+    report["approved_source_prefab_override_path_generation_template_update_source_validation_status"] = "pass"
+    report["approved_source_prefab_override_path_generation_template_update_source_validation_verified"] = True
+    report["approved_source_prefab_save_verified"] = True
+    report["approved_source_prefab_actor_component_added"] = True
+    report["approved_source_prefab_simple_motion_component_added"] = True
+    report["approved_source_prefab_actor_asset_assignment_verified"] = True
+    report["approved_source_prefab_motion_asset_assignment_verified"] = True
+    report["approved_source_prefab_property_readback_verified"] = True
+    report["approved_source_prefab_actor_asset_id"] = "{11111111-1111-1111-1111-111111111111}:00000001"
+    report["approved_source_prefab_motion_asset_id"] = "{22222222-2222-2222-2222-222222222222}:00000002"
+    report["approved_source_prefab_defaultlevel_mutation"] = False
+    report["approved_source_prefab_production_level_mutation"] = False
+    report["approved_source_prefab_hand_authored_unknown_json_used"] = False
+    report["approved_source_prefab_template_update_route_rejection_probes_attempted"] = True
+    report["approved_source_prefab_template_update_route_rejection_probes_verified"] = True
+    report["approved_source_prefab_template_update_route_rejected_defaultlevel_path"] = True
+    report["approved_source_prefab_template_update_route_rejected_production_level_path"] = True
+    report["approved_source_prefab_template_update_route_rejected_generated_product_path"] = True
+    report["approved_source_prefab_template_update_route_rejected_cache_path"] = True
+    report["approved_source_prefab_template_update_route_rejected_unapproved_absolute_path"] = True
+    report["approved_source_prefab_template_update_route_rejected_other_project_path"] = True
+    report["approved_source_prefab_template_update_route_rejected_path_traversal"] = True
+    report["approved_source_prefab_template_update_route_rejected_non_prefab_path"] = True
+    report["approved_source_prefab_template_update_route_rejected_wrong_entity_owner"] = True
+    report["runtime_character_animation_component_wiring_verified"] = True
 
     result = validate_editor_smoke_report(report, strict=True)
 

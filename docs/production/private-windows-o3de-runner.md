@@ -204,6 +204,15 @@ python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.p
 
 This diagnostic may mutate only the approved source prefab path through source-backed Editor/prefab APIs. It first verifies that the entity and Actor/Simple Motion component IDs belong to the approved source prefab, then focuses the owning prefab, switches to the parent focus/link context, applies Actor + Simple Motion component overrides, restores focus, saves the approved source prefab, and claims success only if the source prefab changed in this run and parsed source-template marker evidence finds both `ActorAsset` and `MotionAsset`. It must not hand-author unknown JSON, run APB/runtime proof without fresh persisted markers, claim runtime component wiring from Editor-only evidence, or claim animation/full-character proof.
 
+Approved source-prefab source-backed override-path/template-update diagnostics use the same live Editor gates plus the explicit template-update marker:
+
+```powershell
+$env:MAXINE_ENABLE_APPROVED_SOURCE_PREFAB_OVERRIDE_PATH_GENERATION_TEMPLATE_UPDATE="1"
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --mode local_editor_python --enable-editor-smoke --strict-integration --diagnose-approved-source-prefab-override-path-generation-template-update --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 900
+```
+
+This diagnostic selects the source-backed `InstanceToTemplateInterface::GenerateEntityDomBySerializing` + `GeneratePatch` + `PatchEntityInTemplate` route when the parent-link override path is unavailable. It may claim source-template persistence only when the saved approved source prefab changes in the current run, parsed marker evidence finds both `ActorAsset` and `MotionAsset`, and route-specific rejection probes call `apply_approved_source_prefab_override_path_generation_template_update` directly. Legacy `save_approved_source_prefab_wiring` rejection probes are preserved separately and do not verify the new route safety contract. A positive source-template result still does not claim APB regeneration, runtime Actor/Simple Motion TypeIds, runtime asset assignments, animation playback, full runtime character behavior, publication, or release packaging.
+
 Approved runtime character prefab-source generation has a narrower gate when a repo-owned source must be staged into the live project scanfolder:
 
 ```powershell
