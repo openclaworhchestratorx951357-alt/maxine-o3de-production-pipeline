@@ -420,6 +420,48 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
                 "runtime_character_proof_verified": False,
             }
         )
+    if diagnostic_mode == "approved-source-prefab-propagation-apply-step":
+        binding_payload.update(
+            {
+                "approved_source_prefab_propagation_apply_step_attempted": True,
+                "approved_source_prefab_propagation_apply_step_completed": True,
+                "approved_source_prefab_propagation_apply_step_verified": False,
+                "approved_source_prefab_propagation_apply_step_blocker": "blocked_by_prefab_instance_to_template_propagation_requires_parent_link_context",
+                "approved_source_prefab_propagation_apply_step_source_validation_status": "pass",
+                "approved_source_prefab_propagation_apply_step_source_validation_verified": True,
+                "approved_source_prefab_propagation_apply_step_candidate_matrix": [],
+                "approved_source_prefab_propagation_apply_step_selected_strategy": "pin_parent_focus_link_override_apply_requirement",
+                "approved_source_prefab_propagation_api_used": "source_validation_only",
+                "approved_source_prefab_component_overrides_detected": False,
+                "approved_source_prefab_component_overrides_applied": False,
+                "approved_source_prefab_entity_changes_committed": False,
+                "approved_source_prefab_template_dom_updated": False,
+                "approved_source_prefab_path": "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+                "approved_source_prefab_before_hash": "1" * 64,
+                "approved_source_prefab_after_hash": "1" * 64,
+                "approved_source_prefab_modified": False,
+                "approved_source_prefab_update_route_used": "not_run_source_validation_only",
+                "approved_source_prefab_save_verified": False,
+                "approved_source_prefab_actor_component_added": False,
+                "approved_source_prefab_simple_motion_component_added": False,
+                "approved_source_prefab_actor_asset_assignment_verified": False,
+                "approved_source_prefab_motion_asset_assignment_verified": False,
+                "approved_source_prefab_property_readback_verified": False,
+                "approved_source_prefab_persisted_actor_asset_marker_verified": False,
+                "approved_source_prefab_persisted_motion_asset_marker_verified": False,
+                "approved_source_prefab_persisted_wiring_markers_verified": False,
+                "approved_source_prefab_defaultlevel_mutation": False,
+                "approved_source_prefab_production_level_mutation": False,
+                "approved_source_prefab_hand_authored_unknown_json_used": False,
+                "approved_spawnable_regenerated_or_found": False,
+                "runtime_character_animation_component_wiring_claimed": False,
+                "runtime_character_animation_component_wiring_verified": False,
+                "runtime_character_animation_claimed": False,
+                "runtime_character_animation_verified": False,
+                "runtime_character_proof_claimed": False,
+                "runtime_character_proof_verified": False,
+            }
+        )
     payload.update(
         {
             "status": status,
@@ -1336,6 +1378,7 @@ def test_editor_smoke_binding_diagnostic_modes_route_to_target_scripts(tmp_path)
         "approved-prefab-save-update-bridge-host": "editor_approved_prefab_save_update_bridge_host_smoke.py",
         "approved-prefab-save-update-route": "editor_approved_prefab_save_update_route_smoke.py",
         "approved-source-prefab-actor-simple-motion-wiring": "editor_approved_source_prefab_actor_simple_motion_wiring_smoke.py",
+        "approved-source-prefab-propagation-apply-step": "editor_approved_source_prefab_propagation_apply_step_smoke.py",
     }
 
     for mode, script_name in expected_scripts.items():
@@ -2292,6 +2335,83 @@ def test_editor_smoke_approved_source_prefab_wiring_rejects_hand_authored_unknow
             "runtime_character_animation_component_wiring_verified": False,
         }
     )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+
+
+def test_editor_python_source_prefab_propagation_apply_step_pins_parent_link_context():
+    result = editor_python_smoke._run_approved_source_prefab_propagation_apply_step_checks({})
+
+    assert result["approved_source_prefab_propagation_apply_step_attempted"] is True
+    assert result["approved_source_prefab_propagation_apply_step_completed"] is True
+    assert result["approved_source_prefab_propagation_apply_step_source_validation_status"] == "pass"
+    assert result["approved_source_prefab_propagation_apply_step_source_validation_verified"] is True
+    assert result["approved_source_prefab_propagation_apply_step_verified"] is False
+    assert (
+        result["approved_source_prefab_propagation_apply_step_blocker"]
+        == "blocked_by_prefab_instance_to_template_propagation_requires_parent_link_context"
+    )
+    assert result["approved_source_prefab_component_overrides_detected"] is False
+    assert result["approved_source_prefab_component_overrides_applied"] is False
+    assert result["approved_source_prefab_template_dom_updated"] is False
+    assert result["approved_source_prefab_modified"] is False
+    assert result["approved_source_prefab_persisted_actor_asset_marker_verified"] is False
+    assert result["approved_source_prefab_persisted_motion_asset_marker_verified"] is False
+    assert result["runtime_character_animation_component_wiring_claimed"] is False
+    assert result["runtime_character_animation_verified"] is False
+    assert result["runtime_character_proof_verified"] is False
+
+
+def test_editor_python_source_prefab_propagation_apply_step_records_engine_refs_separately(monkeypatch, tmp_path):
+    monkeypatch.setenv("O3DE_ENGINE_ROOT", str(tmp_path / "missing_engine"))
+
+    result = editor_python_smoke._run_approved_source_prefab_propagation_apply_step_checks({})
+
+    assert result["approved_source_prefab_propagation_apply_step_source_validation_status"] == "pass"
+    assert result["approved_source_prefab_propagation_apply_step_source_validation_verified"] is True
+    assert result["approved_source_prefab_propagation_apply_step_engine_source_refs_status"] in {
+        "engine_source_refs_unavailable",
+        "engine_source_refs_not_available_in_this_environment",
+    }
+    assert result["approved_source_prefab_propagation_apply_step_verified"] is False
+
+
+def test_editor_python_source_prefab_propagation_apply_step_candidate_matrix_rejects_unknown_json():
+    matrix = editor_python_smoke._approved_source_prefab_propagation_apply_step_candidate_matrix()
+    by_candidate = {item["candidate"]: item for item in matrix}
+
+    assert by_candidate["GenerateUndoNodesForEntityChangeAndUpdateCache"]["outcome"] == "attempted_preserved_blocked"
+    assert by_candidate["PrefabOverridePublicInterface::ApplyComponentOverrides"]["outcome"] == "source_validated_blocked"
+    assert by_candidate["direct hand-authored .prefab JSON edit"]["outcome"] == "rejected"
+    assert by_candidate["scratch-only route proof"]["outcome"] == "preserved_not_sufficient"
+
+
+def test_editor_smoke_source_prefab_propagation_apply_step_schema_and_semantics_validate():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report.update(editor_python_smoke._run_approved_source_prefab_propagation_apply_step_checks({}))
+    report["mode"] = "local_editor_python"
+    report["status"] = "pass"
+    report["diagnostic_mode"] = "approved-source-prefab-propagation-apply-step"
+    report["live_editor_execution"] = True
+    report["no_fake_success"] = True
+
+    schema_result = schema_validate(report, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(report, strict=True)
+
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+
+
+def test_editor_smoke_source_prefab_propagation_apply_step_rejects_runtime_overclaim():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report.update(editor_python_smoke._run_approved_source_prefab_propagation_apply_step_checks({}))
+    report["mode"] = "local_editor_python"
+    report["status"] = "pass"
+    report["diagnostic_mode"] = "approved-source-prefab-propagation-apply-step"
+    report["runtime_character_animation_component_wiring_verified"] = True
 
     result = validate_editor_smoke_report(report, strict=True)
 
