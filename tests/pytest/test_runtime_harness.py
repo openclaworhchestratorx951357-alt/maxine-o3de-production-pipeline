@@ -178,6 +178,14 @@ def _enable_runtime_animation_playback_execution_fixture_env(env: dict) -> None:
 
 def _write_animation_source_validation_files(engine: Path) -> None:
     source_files = {
+        "Code/Framework/AzCore/AzCore/Asset/AssetManager.h": (
+            "static bool IsReady();\n"
+            "template<class AssetClass> Asset<AssetClass> FindAsset(const AssetId& id, AssetLoadBehavior assetReferenceLoadBehavior);\n"
+        ),
+        "Code/Framework/AzCore/AzCore/Asset/AssetCommon.h": (
+            "AssetLoadBehavior::NoLoad\n"
+            "bool IsReady() const;\n"
+        ),
         "Gems/EMotionFX/Code/Source/Integration/Components/ActorComponent.h": (
             'AZ_COMPONENT(ActorComponent, "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}")\n'
             "EMotionFX::ActorInstance* GetActorInstance();\n"
@@ -225,6 +233,9 @@ def _write_animation_source_validation_files(engine: Path) -> None:
             '->DataElement(AZ::Edit::UIHandlers::Default, &Configuration::m_motionAsset, "Motion", "EMotion FX motion to be loaded for this actor")\n'
             "SetMotionAssetId(motionAssetId);\n"
             "PlayMotionInternal();\n"
+            "if (!actorInstance || !cfg.m_motionAsset.IsReady())\n"
+            "if (!actorInstance->GetMotionSystem())\n"
+            "GetMotionInstance();\n"
             "actorInstance->GetMotionSystem()->PlayMotion(m_motionAsset.Get()->GetMotion(), &playInfo);\n"
         ),
         "Gems/EMotionFX/Code/Include/Integration/SimpleMotionComponentBus.h": (
@@ -5943,6 +5954,369 @@ def test_runtime_harness_animation_product_load_prerequisite_modes_bypass_comman
     assert report["runtime_harness_mode"] == "runtime_animation_product_load_prerequisite_diagnostic"
     assert report["runtime_command_pinning_status"] != "runtime_command_pinning_pass"
     assert report["runtime_execution_attempted"] is False
+
+
+def test_runtime_harness_simple_motion_playback_request_failure_diagnostic_records_source_validation(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=False)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _append_approved_character_spawnable_product(apb)
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_simple_motion_playback_request_failure=True,
+        strict=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "runtime-artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_simple_motion_playback_request_failure_diagnostic"
+    assert report["runtime_simple_motion_playback_request_failure_diagnostic_attempted"] is True
+    assert report["runtime_simple_motion_playback_request_failure_diagnostic_completed"] is True
+    assert report["runtime_simple_motion_playback_request_failure_source_validation_verified"] is True
+    assert report["runtime_simple_motion_playback_request_failure_verified"] is False
+    assert report["runtime_simple_motion_playmotion_call_reached"] is False
+    assert report["runtime_simple_motion_playmotion_call_returned"] is False
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_simple_motion_playback_request_failure_fixture_records_motion_instance_null(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _enable_runtime_animation_playback_execution_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+    blocker = "blocked_by_runtime_simple_motion_motion_instance_null"
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_simple_motion_playback_request_failure_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+            ],
+            actor_asset_id="{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+            motion_asset_id="{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0",
+            playback_markers=True,
+            playback_request_succeeded=False,
+            playback_started=False,
+            playback_observed=False,
+            playback_time_advanced=False,
+            playback_active_state_observed=False,
+            playback_blocker=blocker,
+            extra_stdout_lines=[
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_PREFLIGHT "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "actor_instance_available=1 actor_motion_system_available=1 "
+                    "motion_asset_ready=1 motion_instance_available_before=0 "
+                    "motion_asset_assignment_verified=1 status=pass"
+                ),
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_CALL "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "phase=before api=SimpleMotionComponentRequestBus::PlayMotion call_reached=1"
+                ),
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_CALL "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "phase=after api=SimpleMotionComponentRequestBus::PlayMotion "
+                    "call_returned=1 motion_instance_available_after=0 request_succeeded=0 "
+                    f"status=fail blocker={blocker}"
+                ),
+            ],
+        ),
+        artifact_root=tmp_path / "runtime-artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_harness_mode"] == "runtime_simple_motion_playback_request_failure_fixture_command"
+    assert report["runtime_simple_motion_playback_request_failure_diagnostic_attempted"] is True
+    assert report["runtime_simple_motion_playback_request_failure_diagnostic_completed"] is True
+    assert report["runtime_simple_motion_playback_request_failure_source_validation_verified"] is True
+    assert report["runtime_simple_motion_actor_instance_available_before_request"] is True
+    assert report["runtime_simple_motion_motion_asset_ready_before_request"] is True
+    assert report["runtime_simple_motion_motion_instance_available_before_request"] is False
+    assert report["runtime_simple_motion_playmotion_call_reached"] is True
+    assert report["runtime_simple_motion_playmotion_call_returned"] is True
+    assert report["runtime_animation_playback_request_attempted"] is True
+    assert report["runtime_animation_playback_request_succeeded"] is False
+    assert report["runtime_simple_motion_playback_request_failure_blocker"] == blocker
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_simple_motion_request_failure_keeps_access_violation_blocking(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _enable_runtime_animation_playback_execution_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+
+    def _runner(**kwargs: object) -> subprocess.CompletedProcess[str]:
+        result = _animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+            ],
+            actor_asset_id="{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+            motion_asset_id="{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0",
+            playback_markers=True,
+            playback_request_succeeded=False,
+            playback_started=False,
+            playback_observed=False,
+            playback_time_advanced=False,
+            playback_active_state_observed=False,
+            playback_blocker="blocked_by_runtime_animation_playback_request_failed",
+            extra_stdout_lines=[
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_PREFLIGHT "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "actor_instance_available=1 actor_motion_system_available=1 "
+                    "motion_asset_ready=1 motion_instance_available_before=0 "
+                    "motion_asset_assignment_verified=1 status=pass"
+                ),
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_CALL "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "phase=before api=SimpleMotionComponentRequestBus::PlayMotion call_reached=1"
+                ),
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_CALL "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "phase=after api=SimpleMotionComponentRequestBus::PlayMotion "
+                    "call_returned=1 motion_instance_available_after=0 request_succeeded=0 "
+                    "status=fail blocker=blocked_by_runtime_animation_playback_request_failed"
+                ),
+            ],
+        )(**kwargs)
+        return subprocess.CompletedProcess(result.args, 3221225477, stdout=result.stdout, stderr=result.stderr)
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_simple_motion_playback_request_failure_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_runner,
+        artifact_root=tmp_path / "runtime-artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_exit_code_hex"] == "0xC0000005"
+    assert report["runtime_animation_product_load_prerequisite_access_violation_like_exit"] is True
+    assert report["runtime_simple_motion_playmotion_call_reached"] is True
+    assert report["runtime_simple_motion_playmotion_call_returned"] is True
+    assert report["runtime_simple_motion_playback_request_failure_blocker"] == (
+        "blocked_by_runtime_animation_product_load_access_violation"
+    )
+    assert report["runtime_simple_motion_playback_request_failure_playback_blocker_after_request"] == (
+        "blocked_by_runtime_animation_playback_request_failed"
+    )
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_simple_motion_request_failure_keeps_poolallocator_blocking_after_request(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _enable_runtime_animation_playback_execution_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+    poolallocator_line = (
+        "Assert: C:\\src\\o3de\\Code\\Framework\\AzCore\\AzCore\\Memory\\PoolAllocator.cpp:470 "
+        "(__cdecl AZ::PoolAllocation<class AZ::ThreadPoolSchemaImpl>::~PoolAllocation(void)): "
+        "Found page for bucket 0000024DD6731950"
+    )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_simple_motion_playback_request_failure_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+            ],
+            actor_asset_id="{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+            motion_asset_id="{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0",
+            playback_markers=True,
+            playback_time_before="0.000000",
+            playback_time_after="0.125000",
+            playback_tick_count=8,
+            extra_stdout_lines=[
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_PREFLIGHT "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "actor_instance_available=1 actor_motion_system_available=1 "
+                    "motion_asset_ready=1 motion_instance_available_before=0 "
+                    "motion_asset_assignment_verified=1 status=pass"
+                ),
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_CALL "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "phase=before api=SimpleMotionComponentRequestBus::PlayMotion call_reached=1"
+                ),
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_CALL "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "phase=after api=SimpleMotionComponentRequestBus::PlayMotion "
+                    "call_returned=1 motion_instance_available_after=1 request_succeeded=1 status=pass"
+                ),
+                poolallocator_line,
+            ],
+        ),
+        artifact_root=tmp_path / "runtime-artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "fail"
+    assert report["runtime_exit_fixture_status"] == (
+        "runtime_exit_fixture_execution_failed_runtime_simple_motion_playback_request_failure"
+    )
+    assert report["runtime_harness_status"] == "blocked_by_runtime_shutdown_poolallocator_assertion"
+    assert report["runtime_simple_motion_playmotion_call_reached"] is True
+    assert report["runtime_simple_motion_playmotion_call_returned"] is True
+    assert report["runtime_animation_playback_request_attempted"] is True
+    assert report["runtime_animation_playback_request_succeeded"] is True
+    assert report["runtime_animation_playback_started"] is True
+    assert report["runtime_animation_playback_observed"] is True
+    assert report["runtime_animation_playback_time_advanced"] is True
+    assert report["runtime_simple_motion_playback_request_failure_blocker"] == (
+        "blocked_by_runtime_shutdown_poolallocator_assertion"
+    )
+    assert report["runtime_simple_motion_playback_request_failure_playback_blocker_after_request"] == (
+        "blocked_by_runtime_shutdown_poolallocator_assertion"
+    )
+    assert report["runtime_animation_playback_selected_log_blocking_matches"] == [poolallocator_line]
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_simple_motion_request_failure_fixture_passes_when_playback_observed(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _enable_runtime_animation_playback_execution_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_simple_motion_playback_request_failure_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+            ],
+            actor_asset_id="{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+            motion_asset_id="{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0",
+            playback_markers=True,
+            playback_time_before="0.000000",
+            playback_time_after="0.125000",
+            playback_tick_count=8,
+            extra_stdout_lines=[
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_PREFLIGHT "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "actor_instance_available=1 actor_motion_system_available=1 "
+                    "motion_asset_ready=1 motion_instance_available_before=0 "
+                    "motion_asset_assignment_verified=1 status=pass"
+                ),
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_CALL "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "phase=before api=SimpleMotionComponentRequestBus::PlayMotion call_reached=1"
+                ),
+                (
+                    "MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_CALL "
+                    "entity_id={44444444-4444-4444-8444-444444444444} "
+                    "phase=after api=SimpleMotionComponentRequestBus::PlayMotion "
+                    "call_returned=1 motion_instance_available_after=1 request_succeeded=1 status=pass"
+                ),
+            ],
+        ),
+        artifact_root=tmp_path / "runtime-artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_simple_motion_playback_request_failure_verified"] is True
+    assert report["runtime_simple_motion_playmotion_call_reached"] is True
+    assert report["runtime_simple_motion_playmotion_call_returned"] is True
+    assert report["runtime_animation_playback_request_succeeded"] is True
+    assert report["runtime_character_animation_claimed"] is True
+    assert report["runtime_character_animation_verified"] is True
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
 
 
 def test_runtime_harness_actor_simple_motion_after_apb_blocks_typeids_without_runtime_assignments(

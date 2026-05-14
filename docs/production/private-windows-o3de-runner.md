@@ -234,6 +234,34 @@ python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigge
 
 This diagnostic records `runtime_animation_product_load_prerequisite_marker_sequence`, `runtime_animation_product_load_prerequisite_spawn_reached`, `runtime_animation_product_load_prerequisite_assignment_readback_reached`, `runtime_animation_product_load_prerequisite_playback_request_reached`, `runtime_animation_product_load_prerequisite_cleanup_reached`, and the runtime exit code. A `0xC0000005` exit remains `blocked_by_runtime_animation_product_load_access_violation`; it is not softened by earlier product-load, spawn, assignment, or playback request markers. If the access violation is absent and the marker sequence reaches the playback request, the product-load prerequisite can be recorded separately from the next playback blocker. Animation proof still requires request success plus bounded observation/time advance.
 
+Runtime Simple Motion playback request-failure diagnostics pin the request preconditions before a playback claim:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-simple-motion-playback-request-failure --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+
+$env:MAXINE_ENABLE_O3DE_RUNTIME_HARNESS="1"
+$env:MAXINE_ALLOW_LIVE_RUNTIME_COMMANDS="1"
+$env:MAXINE_ENABLE_RUNTIME_EXIT_FIXTURE="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_TEMP_REGISTRY_PATCH="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_PROJECT_MUTATION="1"
+$env:MAXINE_ALLOW_RUNTIME_FIXTURE_CACHE_BOOTSTRAP_MUTATION="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_PRODUCT_LOAD_PROBE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWNABLE_SURFACE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_SPAWN_INSTANTIATION="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_SPAWN_INSTANTIATION="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_PLAYBACK_SURFACE="1"
+$env:MAXINE_ENABLE_RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE="1"
+$env:MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE="1"
+$env:MAXINE_ENABLE_RUNTIME_ACTOR_SIMPLE_MOTION_COMPONENT_WIRING_AFTER_APB="1"
+$env:MAXINE_ALLOW_RUNTIME_ACTOR_SIMPLE_MOTION_COMPONENT_WIRING_AFTER_APB="1"
+$env:MAXINE_ENABLE_RUNTIME_ANIMATION_PLAYBACK_EXECUTION="1"
+$env:MAXINE_ALLOW_RUNTIME_ANIMATION_PLAYBACK_EXECUTION="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-simple-motion-playback-request-failure-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 240
+```
+
+The source pin is `SimpleMotionComponentRequestBus::PlayMotion` and `SimpleMotionComponent::PlayMotionInternal`, which require a non-null `ActorInstance`, a ready `MotionAsset`, and an actor motion system before a `MotionInstance` can be created. The fixture records `MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_PREFLIGHT` and `MAXINE_RUNTIME_SIMPLE_MOTION_PLAYBACK_REQUEST_CALL` markers for ActorInstance availability, actor MotionSystem availability, MotionAsset readiness through `AssetManager::FindAsset<MotionAsset>(..., AssetLoadBehavior::NoLoad).IsReady()`, MotionInstance availability before and after the call, and whether the `PlayMotion` call was reached and returned. Playback may be claimed only when those request preconditions pass, the request succeeds, playback is observed through source-validated runtime state, play time advances across bounded ticks, cleanup/despawn completes, and selected log/error scans remain clean. If a `0xC0000005` exit, PoolAllocator shutdown assertion, selected product-load error, defaultlevel/production-level load, missing ActorInstance, missing MotionAsset readiness, or missing MotionInstance remains, the typed blocker must be preserved and animation proof stays false.
+
 Approved Editor-generated runtime animation component wiring diagnostics require the Editor smoke gates plus an explicit generation marker:
 
 ```powershell
