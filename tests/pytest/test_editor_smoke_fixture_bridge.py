@@ -473,6 +473,13 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
                 "approved_source_prefab_parent_link_override_apply_source_validation_verified": True,
                 "approved_source_prefab_parent_link_override_apply_candidate_matrix": [],
                 "approved_source_prefab_parent_link_override_apply_selected_strategy": "approved_source_prefab_parent_focus_link_context_component_override_apply",
+                "approved_source_prefab_entity_ownership_checked": True,
+                "approved_source_prefab_entity_ownership_verified": True,
+                "approved_source_prefab_entity_owning_prefab_path": "C:/Users/example/O3DE/Projects/MAXINE_GoldenCorpus/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+                "approved_source_prefab_entity_owning_prefab_matches_requested_path": True,
+                "approved_source_prefab_component_ownership_checked": True,
+                "approved_source_prefab_component_ownership_verified": True,
+                "approved_source_prefab_entity_ownership_blocker": "",
                 "approved_source_prefab_parent_focus_context_required": True,
                 "approved_source_prefab_parent_focus_context_available": True,
                 "approved_source_prefab_parent_focus_context_applied": True,
@@ -498,6 +505,7 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
                 "approved_source_prefab_before_hash": "1" * 64,
                 "approved_source_prefab_after_hash": "2" * 64,
                 "approved_source_prefab_modified": True,
+                "approved_source_prefab_changed_this_run": True,
                 "approved_source_prefab_update_route_used": "azlmbr.maxine.prefab_bridge.apply_approved_source_prefab_parent_link_component_overrides",
                 "approved_source_prefab_save_verified": True,
                 "approved_source_prefab_actor_component_added": True,
@@ -510,6 +518,9 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
                 "approved_source_prefab_persisted_actor_asset_marker_verified": True,
                 "approved_source_prefab_persisted_motion_asset_marker_verified": True,
                 "approved_source_prefab_persisted_wiring_markers_verified": True,
+                "approved_source_prefab_marker_presence_verified": True,
+                "approved_source_prefab_marker_persistence_verified_this_run": True,
+                "approved_source_prefab_marker_persistence_blocker": "",
                 "approved_source_prefab_defaultlevel_mutation": False,
                 "approved_source_prefab_production_level_mutation": False,
                 "approved_source_prefab_hand_authored_unknown_json_used": False,
@@ -2498,16 +2509,40 @@ def test_editor_python_parent_link_override_apply_route_source_validation_detect
     assert "FocusOnOwningPrefab" in route_ref["symbols"]
     assert "FocusOnParentOfFocusedPrefab" in route_ref["symbols"]
     assert "GetPrefabFocusPathLength" in route_ref["symbols"]
+    assert "GetOwningInstancePrefabPath" in route_ref["symbols"]
+    assert "GetFullPath" in route_ref["symbols"]
+    assert "ComponentApplicationRequests::FindEntity" in route_ref["symbols"]
+    assert "FindComponent" in route_ref["symbols"]
+    assert "entity_ownership_checked=true" in route_ref["symbols"]
+    assert "component_ownership_checked=" in route_ref["symbols"]
     assert "parent_focus_context_applied=true" in route_ref["symbols"]
     assert "parent_focus_context_restored=true" in route_ref["symbols"]
     assert "PushOverridesToPrefab" in route_ref["symbols"]
     assert "hand_authored_unknown_json" in route_ref["absent_symbols"]
 
 
-def test_editor_python_parent_link_override_apply_status_parser_requires_markers():
-    status = (
+def _parent_link_override_status(*, reason: str = "", applied: bool = True, ownership: bool = True) -> str:
+    prefix = (
         "maxine_prefab_save_update_route_approved_source_parent_link_override_applied;"
-        "parent_focus_context_required=true;"
+        if applied
+        else "maxine_prefab_save_update_route_approved_source_parent_link_override_failed;"
+    )
+    reason_text = f"reason={reason};" if reason else ""
+    ownership_text = (
+        "entity_ownership_checked=true;"
+        "entity_ownership_verified=true;"
+        "entity_owning_prefab_path=C:/Users/example/O3DE/Projects/MAXINE_GoldenCorpus/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab;"
+        "entity_owning_prefab_matches_requested_path=true;"
+        "component_ownership_checked=true;"
+        "component_ownership_verified=true;"
+        if ownership
+        else ""
+    )
+    return (
+        prefix
+        + reason_text
+        + ownership_text
+        + "parent_focus_context_required=true;"
         "parent_focus_context_available=true;"
         "parent_focus_context_applied=true;"
         "parent_focus_context_restored=true;"
@@ -2522,14 +2557,24 @@ def test_editor_python_parent_link_override_apply_status_parser_requires_markers
         "push_overrides_to_prefab_verified=true"
     )
 
+
+def test_editor_python_parent_link_override_apply_status_parser_requires_markers():
     result = editor_python_smoke._approved_source_prefab_parent_link_override_apply_report_from_route_status(
-        {"attempted": True, "callable": True, "applied": True, "status": status},
+        {"attempted": True, "callable": True, "applied": True, "status": _parent_link_override_status()},
         persisted_markers={"actor": False, "motion": False, "both": False},
+        source_prefab_changed_this_run=True,
+        before_hash="1" * 64,
+        after_hash="2" * 64,
     )
 
     assert result["approved_source_prefab_parent_link_override_apply_route_attempted"] is True
     assert result["approved_source_prefab_parent_link_override_apply_route_completed"] is True
     assert result["approved_source_prefab_parent_link_override_apply_route_verified"] is False
+    assert result["approved_source_prefab_entity_ownership_checked"] is True
+    assert result["approved_source_prefab_entity_ownership_verified"] is True
+    assert result["approved_source_prefab_entity_owning_prefab_matches_requested_path"] is True
+    assert result["approved_source_prefab_component_ownership_checked"] is True
+    assert result["approved_source_prefab_component_ownership_verified"] is True
     assert result["approved_source_prefab_parent_focus_context_required"] is True
     assert result["approved_source_prefab_parent_focus_context_available"] is True
     assert result["approved_source_prefab_parent_focus_context_applied"] is True
@@ -2550,32 +2595,22 @@ def test_editor_python_parent_link_override_apply_status_parser_requires_markers
 
 
 def test_editor_python_parent_link_override_apply_status_parser_verifies_only_with_markers():
-    status = (
-        "maxine_prefab_save_update_route_approved_source_parent_link_override_applied;"
-        "parent_focus_context_required=true;"
-        "parent_focus_context_available=true;"
-        "parent_focus_context_applied=true;"
-        "parent_focus_context_restored=true;"
-        "link_context_required=true;"
-        "link_context_available=true;"
-        "component_override_paths_detected=true;"
-        "actor_component_override_present=true;"
-        "simple_motion_component_override_present=true;"
-        "actor_component_override_applied=true;"
-        "simple_motion_component_override_applied=true;"
-        "push_overrides_to_prefab_attempted=true;"
-        "push_overrides_to_prefab_verified=true"
-    )
-
     result = editor_python_smoke._approved_source_prefab_parent_link_override_apply_report_from_route_status(
-        {"attempted": True, "callable": True, "applied": True, "status": status},
+        {"attempted": True, "callable": True, "applied": True, "status": _parent_link_override_status()},
         persisted_markers={"actor": True, "motion": True, "both": True},
+        source_prefab_changed_this_run=True,
+        before_hash="1" * 64,
+        after_hash="2" * 64,
     )
 
     assert result["approved_source_prefab_parent_link_override_apply_route_verified"] is True
     assert result["approved_source_prefab_propagation_apply_step_verified"] is True
     assert result["approved_source_prefab_actor_simple_motion_wiring_verified"] is True
     assert result["approved_source_prefab_template_dom_updated"] is True
+    assert result["approved_source_prefab_changed_this_run"] is True
+    assert result["approved_source_prefab_marker_presence_verified"] is True
+    assert result["approved_source_prefab_marker_persistence_verified_this_run"] is True
+    assert result["approved_source_prefab_marker_persistence_blocker"] == ""
     assert result["approved_source_prefab_persisted_actor_asset_marker_verified"] is True
     assert result["approved_source_prefab_persisted_motion_asset_marker_verified"] is True
     assert result["approved_source_prefab_persisted_wiring_markers_verified"] is True
@@ -2586,6 +2621,124 @@ def test_editor_python_parent_link_override_apply_status_parser_verifies_only_wi
     assert result["runtime_character_proof_verified"] is False
 
 
+def test_editor_python_parent_link_override_apply_rejects_wrong_prefab_entity():
+    status = (
+        "maxine_prefab_save_update_route_approved_source_parent_link_override_failed;"
+        "reason=entity_not_owned_by_approved_source_prefab;"
+        "entity_ownership_checked=true;"
+        "entity_ownership_verified=false;"
+        "entity_owning_prefab_path=C:/Users/example/O3DE/Projects/OtherProject/Assets/_maxine_smoke/prefabs/other.prefab;"
+        "entity_owning_prefab_matches_requested_path=false;"
+        "component_ownership_checked=false;"
+        "component_ownership_verified=false"
+    )
+
+    result = editor_python_smoke._approved_source_prefab_parent_link_override_apply_report_from_route_status(
+        {"attempted": True, "callable": True, "applied": False, "status": status},
+        persisted_markers={"actor": False, "motion": False, "both": False},
+        source_prefab_changed_this_run=False,
+        before_hash="1" * 64,
+        after_hash="1" * 64,
+    )
+
+    assert result["approved_source_prefab_entity_ownership_checked"] is True
+    assert result["approved_source_prefab_entity_ownership_verified"] is False
+    assert result["approved_source_prefab_entity_owning_prefab_matches_requested_path"] is False
+    assert result["approved_source_prefab_component_ownership_checked"] is False
+    assert result["approved_source_prefab_parent_focus_context_applied"] is False
+    assert result["approved_source_prefab_component_overrides_applied"] is False
+    assert (
+        result["approved_source_prefab_parent_link_override_apply_route_blocker"]
+        == "blocked_by_entity_not_owned_by_approved_source_prefab"
+    )
+    assert result["approved_source_prefab_modified"] is False
+    assert result["runtime_character_animation_component_wiring_verified"] is False
+
+
+def test_editor_python_parent_link_override_apply_blocks_when_ownership_unavailable():
+    status = (
+        "maxine_prefab_save_update_route_approved_source_parent_link_override_failed;"
+        "reason=entity_owning_prefab_unavailable;"
+        "entity_ownership_checked=true;"
+        "entity_ownership_verified=false;"
+        "entity_owning_prefab_path=;"
+        "entity_owning_prefab_matches_requested_path=false;"
+        "component_ownership_checked=false;"
+        "component_ownership_verified=false"
+    )
+
+    result = editor_python_smoke._approved_source_prefab_parent_link_override_apply_report_from_route_status(
+        {"attempted": True, "callable": True, "applied": False, "status": status},
+        persisted_markers={"actor": False, "motion": False, "both": False},
+        source_prefab_changed_this_run=False,
+        before_hash="1" * 64,
+        after_hash="1" * 64,
+    )
+
+    assert result["approved_source_prefab_entity_ownership_checked"] is True
+    assert result["approved_source_prefab_entity_ownership_verified"] is False
+    assert (
+        result["approved_source_prefab_parent_link_override_apply_route_blocker"]
+        == "blocked_by_entity_owning_prefab_unavailable"
+    )
+
+
+def test_editor_python_parent_link_override_apply_rejects_component_mismatch():
+    status = (
+        "maxine_prefab_save_update_route_approved_source_parent_link_override_failed;"
+        "reason=component_not_owned_by_approved_source_prefab_entity;"
+        "entity_ownership_checked=true;"
+        "entity_ownership_verified=true;"
+        "entity_owning_prefab_path=C:/Users/example/O3DE/Projects/MAXINE_GoldenCorpus/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab;"
+        "entity_owning_prefab_matches_requested_path=true;"
+        "component_ownership_checked=true;"
+        "component_ownership_verified=false"
+    )
+
+    result = editor_python_smoke._approved_source_prefab_parent_link_override_apply_report_from_route_status(
+        {"attempted": True, "callable": True, "applied": False, "status": status},
+        persisted_markers={"actor": False, "motion": False, "both": False},
+        source_prefab_changed_this_run=False,
+        before_hash="1" * 64,
+        after_hash="1" * 64,
+    )
+
+    assert result["approved_source_prefab_entity_ownership_verified"] is True
+    assert result["approved_source_prefab_component_ownership_checked"] is True
+    assert result["approved_source_prefab_component_ownership_verified"] is False
+    assert (
+        result["approved_source_prefab_parent_link_override_apply_route_blocker"]
+        == "blocked_by_component_not_owned_by_approved_source_prefab_entity"
+    )
+
+
+def test_editor_python_parent_link_override_apply_rejects_stale_markers_without_hash_change():
+    result = editor_python_smoke._approved_source_prefab_parent_link_override_apply_report_from_route_status(
+        {"attempted": True, "callable": True, "applied": True, "status": _parent_link_override_status()},
+        persisted_markers={"actor": True, "motion": True, "both": True},
+        source_prefab_changed_this_run=False,
+        before_hash="1" * 64,
+        after_hash="1" * 64,
+    )
+
+    assert result["approved_source_prefab_marker_presence_verified"] is True
+    assert result["approved_source_prefab_marker_persistence_verified_this_run"] is False
+    assert result["approved_source_prefab_parent_link_override_apply_route_verified"] is False
+    assert result["approved_source_prefab_propagation_apply_step_verified"] is False
+    assert result["approved_source_prefab_actor_simple_motion_wiring_verified"] is False
+    assert result["approved_source_prefab_template_dom_updated"] is False
+    assert (
+        result["approved_source_prefab_marker_persistence_blocker"]
+        == "blocked_by_source_prefab_markers_preexisting_without_this_run_change"
+    )
+    assert (
+        result["approved_source_prefab_parent_link_override_apply_route_blocker"]
+        == "blocked_by_source_prefab_markers_preexisting_without_this_run_change"
+    )
+    assert result["approved_spawnable_regenerated_or_found"] is False
+    assert result["runtime_character_animation_component_wiring_verified"] is False
+
+
 def test_editor_smoke_parent_link_override_apply_route_schema_and_semantics_validate():
     report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
     report.update(
@@ -2594,24 +2747,12 @@ def test_editor_smoke_parent_link_override_apply_route_schema_and_semantics_vali
                 "attempted": True,
                 "callable": True,
                 "applied": True,
-                "status": (
-                    "maxine_prefab_save_update_route_approved_source_parent_link_override_applied;"
-                    "parent_focus_context_required=true;"
-                    "parent_focus_context_available=true;"
-                    "parent_focus_context_applied=true;"
-                    "parent_focus_context_restored=true;"
-                    "link_context_required=true;"
-                    "link_context_available=true;"
-                    "component_override_paths_detected=true;"
-                    "actor_component_override_present=true;"
-                    "simple_motion_component_override_present=true;"
-                    "actor_component_override_applied=true;"
-                    "simple_motion_component_override_applied=true;"
-                    "push_overrides_to_prefab_attempted=true;"
-                    "push_overrides_to_prefab_verified=true"
-                ),
+                "status": _parent_link_override_status(),
             },
             persisted_markers={"actor": True, "motion": True, "both": True},
+            source_prefab_changed_this_run=True,
+            before_hash="1" * 64,
+            after_hash="2" * 64,
         )
     )
     report.update(
@@ -2624,6 +2765,7 @@ def test_editor_smoke_parent_link_override_apply_route_schema_and_semantics_vali
             "approved_source_prefab_parent_link_override_apply_source_validation_status": "pass",
             "approved_source_prefab_parent_link_override_apply_source_validation_verified": True,
             "approved_source_prefab_modified": True,
+            "approved_source_prefab_changed_this_run": True,
             "approved_source_prefab_save_verified": True,
             "approved_source_prefab_actor_component_added": True,
             "approved_source_prefab_simple_motion_component_added": True,
@@ -2645,6 +2787,73 @@ def test_editor_smoke_parent_link_override_apply_route_schema_and_semantics_vali
 
     assert schema_result.status == "pass", schema_result.messages
     assert semantic_result.status == "pass", semantic_result.messages
+
+
+def test_editor_smoke_parent_link_override_apply_route_rejects_stale_marker_hash_overclaim():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "diagnostic_mode": "approved-source-prefab-parent-link-override-apply-route",
+            "live_editor_execution": True,
+            "no_fake_success": True,
+            "approved_source_prefab_parent_link_override_apply_route_attempted": True,
+            "approved_source_prefab_parent_link_override_apply_route_completed": True,
+            "approved_source_prefab_parent_link_override_apply_route_verified": True,
+            "approved_source_prefab_parent_link_override_apply_route_blocker": "",
+            "approved_source_prefab_parent_link_override_apply_source_validation_status": "pass",
+            "approved_source_prefab_parent_link_override_apply_source_validation_verified": True,
+            "approved_source_prefab_entity_ownership_checked": True,
+            "approved_source_prefab_entity_ownership_verified": True,
+            "approved_source_prefab_entity_owning_prefab_matches_requested_path": True,
+            "approved_source_prefab_component_ownership_checked": True,
+            "approved_source_prefab_component_ownership_verified": True,
+            "approved_source_prefab_parent_focus_context_required": True,
+            "approved_source_prefab_parent_focus_context_available": True,
+            "approved_source_prefab_parent_focus_context_applied": True,
+            "approved_source_prefab_parent_focus_context_restored": True,
+            "approved_source_prefab_link_context_required": True,
+            "approved_source_prefab_link_context_available": True,
+            "approved_source_prefab_component_override_paths_detected": True,
+            "approved_source_prefab_component_overrides_detected": True,
+            "approved_source_prefab_component_overrides_applied": True,
+            "approved_source_prefab_push_overrides_to_prefab_attempted": True,
+            "approved_source_prefab_push_overrides_to_prefab_verified": True,
+            "approved_source_prefab_template_dom_updated": True,
+            "approved_source_prefab_modified": True,
+            "approved_source_prefab_changed_this_run": False,
+            "approved_source_prefab_marker_presence_verified": True,
+            "approved_source_prefab_marker_persistence_verified_this_run": False,
+            "approved_source_prefab_marker_persistence_blocker": (
+                "blocked_by_source_prefab_markers_preexisting_without_this_run_change"
+            ),
+            "approved_source_prefab_save_verified": True,
+            "approved_source_prefab_actor_component_added": True,
+            "approved_source_prefab_simple_motion_component_added": True,
+            "approved_source_prefab_actor_asset_assignment_verified": True,
+            "approved_source_prefab_motion_asset_assignment_verified": True,
+            "approved_source_prefab_property_readback_verified": True,
+            "approved_source_prefab_before_hash": "1" * 64,
+            "approved_source_prefab_after_hash": "1" * 64,
+            "approved_source_prefab_persisted_actor_asset_marker_verified": True,
+            "approved_source_prefab_persisted_motion_asset_marker_verified": True,
+            "approved_source_prefab_persisted_wiring_markers_verified": True,
+            "approved_source_prefab_defaultlevel_mutation": False,
+            "approved_source_prefab_production_level_mutation": False,
+            "approved_source_prefab_hand_authored_unknown_json_used": False,
+            "approved_spawnable_regenerated_or_found": False,
+            "runtime_character_animation_component_wiring_claimed": False,
+            "runtime_character_animation_component_wiring_verified": False,
+            "runtime_character_animation_verified": False,
+            "runtime_character_proof_verified": False,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
 
 
 def test_editor_smoke_parent_link_override_apply_route_rejects_marker_overclaim():

@@ -1014,6 +1014,11 @@ def _validate_approved_source_prefab_parent_link_override_apply_route(
 
     if verified:
         required_true = {
+            "approved_source_prefab_entity_ownership_checked": "approved prefab entity ownership check",
+            "approved_source_prefab_entity_ownership_verified": "approved prefab entity ownership verification",
+            "approved_source_prefab_entity_owning_prefab_matches_requested_path": "approved prefab entity owning path match",
+            "approved_source_prefab_component_ownership_checked": "approved prefab component ownership check",
+            "approved_source_prefab_component_ownership_verified": "approved prefab component ownership verification",
             "approved_source_prefab_parent_focus_context_required": "parent focus requirement",
             "approved_source_prefab_parent_focus_context_available": "parent focus availability",
             "approved_source_prefab_parent_focus_context_applied": "parent focus application",
@@ -1027,6 +1032,9 @@ def _validate_approved_source_prefab_parent_link_override_apply_route(
             "approved_source_prefab_push_overrides_to_prefab_verified": "PushOverridesToPrefab verification",
             "approved_source_prefab_template_dom_updated": "source-template DOM update",
             "approved_source_prefab_modified": "approved source-prefab modification",
+            "approved_source_prefab_changed_this_run": "fresh source-prefab hash change",
+            "approved_source_prefab_marker_presence_verified": "ActorAsset/MotionAsset marker presence",
+            "approved_source_prefab_marker_persistence_verified_this_run": "fresh ActorAsset/MotionAsset marker persistence",
             "approved_source_prefab_save_verified": "approved source-prefab save",
             "approved_source_prefab_actor_component_added": "Actor component add",
             "approved_source_prefab_simple_motion_component_added": "Simple Motion component add",
@@ -1049,6 +1057,11 @@ def _validate_approved_source_prefab_parent_link_override_apply_route(
             result.add_error(
                 MXN_RUNTIME_SMOKE_FAIL,
                 "Approved source-prefab parent-link override apply verified=true cannot also report a blocker.",
+            )
+        if str(report.get("approved_source_prefab_marker_persistence_blocker", "")).strip():
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Approved source-prefab parent-link override apply verified=true cannot report a marker persistence blocker.",
             )
         before_hash = str(report.get("approved_source_prefab_before_hash", "")).strip()
         after_hash = str(report.get("approved_source_prefab_after_hash", "")).strip()

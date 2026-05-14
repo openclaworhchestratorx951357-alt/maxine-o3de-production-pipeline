@@ -538,6 +538,27 @@ def main() -> int:
             "approved_source_prefab_parent_link_override_apply_selected_strategy": report.get(
                 "approved_source_prefab_parent_link_override_apply_selected_strategy", ""
             ),
+            "approved_source_prefab_entity_ownership_checked": report.get(
+                "approved_source_prefab_entity_ownership_checked", False
+            ),
+            "approved_source_prefab_entity_ownership_verified": report.get(
+                "approved_source_prefab_entity_ownership_verified", False
+            ),
+            "approved_source_prefab_entity_owning_prefab_path": report.get(
+                "approved_source_prefab_entity_owning_prefab_path", ""
+            ),
+            "approved_source_prefab_entity_owning_prefab_matches_requested_path": report.get(
+                "approved_source_prefab_entity_owning_prefab_matches_requested_path", False
+            ),
+            "approved_source_prefab_component_ownership_checked": report.get(
+                "approved_source_prefab_component_ownership_checked", False
+            ),
+            "approved_source_prefab_component_ownership_verified": report.get(
+                "approved_source_prefab_component_ownership_verified", False
+            ),
+            "approved_source_prefab_entity_ownership_blocker": report.get(
+                "approved_source_prefab_entity_ownership_blocker", ""
+            ),
             "approved_source_prefab_parent_focus_context_required": report.get(
                 "approved_source_prefab_parent_focus_context_required", False
             ),
@@ -586,6 +607,15 @@ def main() -> int:
             ),
             "approved_source_prefab_modified": report.get("approved_source_prefab_modified", False),
             "approved_source_prefab_changed_this_run": report.get("approved_source_prefab_changed_this_run", False),
+            "approved_source_prefab_marker_presence_verified": report.get(
+                "approved_source_prefab_marker_presence_verified", False
+            ),
+            "approved_source_prefab_marker_persistence_verified_this_run": report.get(
+                "approved_source_prefab_marker_persistence_verified_this_run", False
+            ),
+            "approved_source_prefab_marker_persistence_blocker": report.get(
+                "approved_source_prefab_marker_persistence_blocker", ""
+            ),
             "approved_source_prefab_persisted_wiring_markers_verified": report.get(
                 "approved_source_prefab_persisted_wiring_markers_verified", False
             ),
@@ -5976,10 +6006,16 @@ def _approved_source_prefab_parent_link_override_apply_repo_source_refs() -> Lis
                 "FocusOnOwningPrefab",
                 "FocusOnParentOfFocusedPrefab",
                 "GetPrefabFocusPathLength",
+                "GetOwningInstancePrefabPath",
+                "GetFullPath",
+                "ComponentApplicationRequests::FindEntity",
+                "FindComponent",
                 "AzToolsFramework::Prefab::PrefabOverridePublicInterface",
                 "AreComponentOverridesPresent",
                 "ApplyComponentOverrides",
                 "PushOverridesToPrefab",
+                "entity_ownership_checked=true",
+                "component_ownership_checked=",
                 "parent_focus_context_required=true",
                 "parent_focus_context_available=true",
                 "parent_focus_context_applied=true",
@@ -6005,6 +6041,9 @@ def _approved_source_prefab_parent_link_override_apply_repo_source_refs() -> Lis
                 "approved-source-prefab-parent-link-override-apply-route",
                 "ActorAsset",
                 "MotionAsset",
+                "approved_source_prefab_changed_this_run",
+                "approved_source_prefab_marker_persistence_verified_this_run",
+                "blocked_by_source_prefab_markers_preexisting_without_this_run_change",
                 "blocked_by_prefab_instance_to_template_propagation_requires_parent_link_context",
                 "blocked_by_prefab_template_dom_update_unavailable",
             ],
@@ -6288,12 +6327,23 @@ def _approved_source_prefab_parent_link_override_apply_report_from_route_status(
     route_status: Mapping[str, Any],
     *,
     persisted_markers: Mapping[str, Any],
+    source_prefab_changed_this_run: bool = False,
+    before_hash: str = "",
+    after_hash: str = "",
 ) -> Dict[str, Any]:
     status_text = str(route_status.get("status", ""))
     status_values = _status_key_values(status_text)
     route_attempted = route_status.get("attempted") is True
     route_callable = route_status.get("callable") is True
     route_applied = route_status.get("applied") is True
+    entity_ownership_checked = _status_flag(status_values, "entity_ownership_checked")
+    entity_ownership_verified = _status_flag(status_values, "entity_ownership_verified")
+    entity_owning_prefab_path = str(status_values.get("entity_owning_prefab_path", ""))
+    entity_owning_prefab_matches_requested_path = _status_flag(
+        status_values, "entity_owning_prefab_matches_requested_path"
+    )
+    component_ownership_checked = _status_flag(status_values, "component_ownership_checked")
+    component_ownership_verified = _status_flag(status_values, "component_ownership_verified")
     parent_required = _status_flag(status_values, "parent_focus_context_required") or route_attempted
     parent_available = _status_flag(status_values, "parent_focus_context_available")
     parent_applied = _status_flag(status_values, "parent_focus_context_applied")
@@ -6312,11 +6362,24 @@ def _approved_source_prefab_parent_link_override_apply_report_from_route_status(
     marker_actor = persisted_markers.get("actor") is True
     marker_motion = persisted_markers.get("motion") is True
     marker_pair = persisted_markers.get("both") is True
-    template_updated = bool(route_applied and push_verified and marker_pair)
+    hash_changed_this_run = bool(
+        source_prefab_changed_this_run or (before_hash and after_hash and before_hash != after_hash)
+    )
+    marker_presence_verified = bool(marker_actor and marker_motion and marker_pair)
+    marker_persistence_verified_this_run = bool(marker_presence_verified and hash_changed_this_run)
+    marker_persistence_blocker = ""
+    if marker_presence_verified and not marker_persistence_verified_this_run:
+        marker_persistence_blocker = "blocked_by_source_prefab_markers_preexisting_without_this_run_change"
+    template_updated = bool(route_applied and push_verified and marker_persistence_verified_this_run)
     route_verified = bool(
         route_attempted
         and route_callable
         and route_applied
+        and entity_ownership_checked
+        and entity_ownership_verified
+        and entity_owning_prefab_matches_requested_path
+        and component_ownership_checked
+        and component_ownership_verified
         and parent_required
         and parent_available
         and parent_applied
@@ -6332,7 +6395,19 @@ def _approved_source_prefab_parent_link_override_apply_report_from_route_status(
     blocker = ""
     if not route_verified:
         reason = str(status_values.get("reason", "")).strip()
-        if not route_callable:
+        if reason == "entity_owning_prefab_unavailable" or (
+            entity_ownership_checked and not entity_ownership_verified and not entity_owning_prefab_path
+        ):
+            blocker = "blocked_by_entity_owning_prefab_unavailable"
+        elif reason == "entity_not_owned_by_approved_source_prefab" or (
+            entity_ownership_checked and not entity_owning_prefab_matches_requested_path
+        ):
+            blocker = "blocked_by_entity_not_owned_by_approved_source_prefab"
+        elif reason == "component_not_owned_by_approved_source_prefab_entity" or (
+            component_ownership_checked and not component_ownership_verified
+        ):
+            blocker = "blocked_by_component_not_owned_by_approved_source_prefab_entity"
+        elif not route_callable:
             blocker = "blocked_by_prefab_parent_focus_context_unavailable"
         elif not parent_available or reason in {"parent_focus_context_unavailable", "focus_on_parent_prefab_failed"}:
             blocker = "blocked_by_prefab_parent_focus_context_unavailable"
@@ -6342,6 +6417,8 @@ def _approved_source_prefab_parent_link_override_apply_report_from_route_status(
             blocker = "blocked_by_prefab_component_override_detection_missing"
         elif not component_overrides_applied or not push_verified:
             blocker = "blocked_by_prefab_override_push_to_template_failed"
+        elif marker_persistence_blocker:
+            blocker = marker_persistence_blocker
         elif not template_updated:
             blocker = "blocked_by_prefab_template_dom_update_unavailable"
         else:
@@ -6353,6 +6430,22 @@ def _approved_source_prefab_parent_link_override_apply_report_from_route_status(
         "approved_source_prefab_parent_link_override_apply_route_verified": route_verified,
         "approved_source_prefab_parent_link_override_apply_route_blocker": blocker,
         "approved_source_prefab_parent_link_override_apply_route_status": dict(route_status),
+        "approved_source_prefab_entity_ownership_checked": entity_ownership_checked,
+        "approved_source_prefab_entity_ownership_verified": entity_ownership_verified,
+        "approved_source_prefab_entity_owning_prefab_path": entity_owning_prefab_path,
+        "approved_source_prefab_entity_owning_prefab_matches_requested_path": (
+            entity_owning_prefab_matches_requested_path
+        ),
+        "approved_source_prefab_component_ownership_checked": component_ownership_checked,
+        "approved_source_prefab_component_ownership_verified": component_ownership_verified,
+        "approved_source_prefab_entity_ownership_blocker": blocker
+        if blocker
+        in {
+            "blocked_by_entity_owning_prefab_unavailable",
+            "blocked_by_entity_not_owned_by_approved_source_prefab",
+            "blocked_by_component_not_owned_by_approved_source_prefab_entity",
+        }
+        else "",
         "approved_source_prefab_parent_focus_context_required": parent_required,
         "approved_source_prefab_parent_focus_context_available": parent_available,
         "approved_source_prefab_parent_focus_context_applied": parent_applied,
@@ -6367,6 +6460,13 @@ def _approved_source_prefab_parent_link_override_apply_report_from_route_status(
         "approved_source_prefab_push_overrides_to_prefab_attempted": push_attempted,
         "approved_source_prefab_push_overrides_to_prefab_verified": push_verified,
         "approved_source_prefab_template_dom_updated": template_updated,
+        "approved_source_prefab_before_hash": before_hash,
+        "approved_source_prefab_after_hash": after_hash,
+        "approved_source_prefab_changed_this_run": hash_changed_this_run,
+        "approved_source_prefab_marker_presence_verified": marker_presence_verified,
+        "approved_source_prefab_marker_persistence_verified_this_run": marker_persistence_verified_this_run,
+        "approved_source_prefab_marker_persistence_blocker": marker_persistence_blocker,
+        "approved_source_prefab_modified": route_verified,
         "approved_source_prefab_propagation_apply_step_attempted": route_attempted,
         "approved_source_prefab_propagation_apply_step_completed": route_attempted,
         "approved_source_prefab_propagation_apply_step_verified": route_verified,
@@ -6745,6 +6845,13 @@ def _run_approved_source_prefab_parent_link_override_apply_route_checks(
         "approved_source_prefab_actor_asset_id": "",
         "approved_source_prefab_motion_asset_id": "",
         "approved_source_prefab_property_readback_verified": False,
+        "approved_source_prefab_entity_ownership_checked": False,
+        "approved_source_prefab_entity_ownership_verified": False,
+        "approved_source_prefab_entity_owning_prefab_path": "",
+        "approved_source_prefab_entity_owning_prefab_matches_requested_path": False,
+        "approved_source_prefab_component_ownership_checked": False,
+        "approved_source_prefab_component_ownership_verified": False,
+        "approved_source_prefab_entity_ownership_blocker": "",
         "approved_source_prefab_parent_focus_context_required": True,
         "approved_source_prefab_parent_focus_context_available": False,
         "approved_source_prefab_parent_focus_context_applied": False,
@@ -6762,6 +6869,9 @@ def _run_approved_source_prefab_parent_link_override_apply_route_checks(
         "approved_source_prefab_persisted_actor_asset_marker_verified": False,
         "approved_source_prefab_persisted_motion_asset_marker_verified": False,
         "approved_source_prefab_persisted_wiring_markers_verified": False,
+        "approved_source_prefab_marker_presence_verified": False,
+        "approved_source_prefab_marker_persistence_verified_this_run": False,
+        "approved_source_prefab_marker_persistence_blocker": "",
         "approved_source_prefab_project_persisted_wiring_markers_verified": False,
         "approved_source_prefab_defaultlevel_mutation": False,
         "approved_source_prefab_production_level_mutation": False,
@@ -6907,6 +7017,9 @@ def _run_approved_source_prefab_parent_link_override_apply_route_checks(
         _approved_source_prefab_parent_link_override_apply_report_from_route_status(
             override_status,
             persisted_markers={"actor": False, "motion": False, "both": False},
+            source_prefab_changed_this_run=False,
+            before_hash=repo_before_hash,
+            after_hash=repo_before_hash,
         )
     )
     if not result["approved_source_prefab_component_overrides_applied"]:
@@ -6952,6 +7065,9 @@ def _run_approved_source_prefab_parent_link_override_apply_route_checks(
         _approved_source_prefab_parent_link_override_apply_report_from_route_status(
             override_status,
             persisted_markers=marker_evidence,
+            source_prefab_changed_this_run=result["approved_source_prefab_project_changed_this_run"],
+            before_hash=project_before_hash,
+            after_hash=project_after_hash,
         )
     )
     if marker_evidence.get("both") is not True:
@@ -6965,6 +7081,9 @@ def _run_approved_source_prefab_parent_link_override_apply_route_checks(
                 result["approved_source_prefab_restore_error"] = str(exc)
         result["approved_source_prefab_cleanup"] = _delete_editor_entity(entity_id, safe_call_results)
         return _block("blocked_by_prefab_template_dom_update_unavailable")
+    if result["approved_source_prefab_project_changed_this_run"] is not True:
+        result["approved_source_prefab_cleanup"] = _delete_editor_entity(entity_id, safe_call_results)
+        return _block("blocked_by_source_prefab_markers_preexisting_without_this_run_change")
 
     try:
         repo_source_path.write_bytes(project_source_path.read_bytes())
@@ -6982,24 +7101,36 @@ def _run_approved_source_prefab_parent_link_override_apply_route_checks(
         _approved_source_prefab_parent_link_override_apply_report_from_route_status(
             override_status,
             persisted_markers=repo_marker_evidence,
+            source_prefab_changed_this_run=result["approved_source_prefab_changed_this_run"],
+            before_hash=repo_before_hash,
+            after_hash=repo_after_hash,
         )
     )
-    result["approved_source_prefab_modified"] = repo_marker_evidence.get("both") is True
-    result["approved_runtime_animation_component_wiring_editor_generation_verified"] = repo_marker_evidence.get("both") is True
+    repo_marker_persistence_verified = (
+        repo_marker_evidence.get("both") is True and result["approved_source_prefab_changed_this_run"] is True
+    )
+    result["approved_source_prefab_modified"] = repo_marker_persistence_verified
+    result["approved_runtime_animation_component_wiring_editor_generation_verified"] = repo_marker_persistence_verified
     result["approved_runtime_animation_component_wiring_editor_generation_blocker"] = (
-        "" if repo_marker_evidence.get("both") is True else "blocked_by_prefab_template_dom_update_unavailable"
+        ""
+        if repo_marker_persistence_verified
+        else (
+            "blocked_by_source_prefab_markers_preexisting_without_this_run_change"
+            if repo_marker_evidence.get("both") is True
+            else "blocked_by_prefab_template_dom_update_unavailable"
+        )
     )
     result["approved_runtime_animation_component_wiring_source_prefab_modified"] = result[
         "approved_source_prefab_modified"
     ]
     result["approved_runtime_animation_component_wiring_editor_generated_update_used"] = True
     result["approved_runtime_animation_component_wiring_prefab_save_verified"] = result["approved_source_prefab_save_verified"]
-    if repo_marker_evidence.get("both") is not True:
+    if not repo_marker_persistence_verified:
         if repo_before_bytes:
             repo_source_path.write_bytes(repo_before_bytes)
             result["approved_source_prefab_repo_restored_after_failed_verification"] = True
         result["approved_source_prefab_cleanup"] = _delete_editor_entity(entity_id, safe_call_results)
-        return _block("blocked_by_prefab_template_dom_update_unavailable")
+        return _block(str(result["approved_runtime_animation_component_wiring_editor_generation_blocker"]))
 
     result["approved_source_prefab_parent_link_override_apply_route_verified"] = True
     result["approved_source_prefab_parent_link_override_apply_route_blocker"] = ""

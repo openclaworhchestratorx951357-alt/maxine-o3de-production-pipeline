@@ -2247,6 +2247,27 @@
     "approved_source_prefab_parent_link_override_apply_selected_strategy": {
       "type": "string"
     },
+    "approved_source_prefab_entity_ownership_checked": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_entity_ownership_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_entity_owning_prefab_path": {
+      "type": "string"
+    },
+    "approved_source_prefab_entity_owning_prefab_matches_requested_path": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_component_ownership_checked": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_component_ownership_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_entity_ownership_blocker": {
+      "type": "string"
+    },
     "approved_source_prefab_parent_focus_context_required": {
       "type": "boolean"
     },
@@ -2309,6 +2330,15 @@
     },
     "approved_source_prefab_changed_this_run": {
       "type": "boolean"
+    },
+    "approved_source_prefab_marker_presence_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_marker_persistence_verified_this_run": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_marker_persistence_blocker": {
+      "type": "string"
     },
     "approved_source_prefab_persisted_wiring_markers_verified": {
       "type": "boolean"
