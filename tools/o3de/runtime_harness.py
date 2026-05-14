@@ -214,6 +214,9 @@ APPROVED_MOTION_PRODUCT_HANDLER_SIGNAL_CLASSIFICATION = (
 APPROVED_MOTION_PRODUCT_HANDLER_SIGNAL_BLOCKER = (
     "blocked_by_runtime_motion_product_load_handler_unregistered"
 )
+APPROVED_MOTION_PRODUCT_HANDLER_SIGNAL_READBACK_BLOCKER = (
+    "blocked_by_runtime_motion_assignment_readback_unverified"
+)
 WINDOWS_NTSTATUS_NAMES = {
     0xC0000005: "STATUS_ACCESS_VIOLATION",
 }
@@ -11481,6 +11484,7 @@ def _approved_motion_product_handler_signal_payload(
     selected_product_errors: Sequence[Mapping[str, str]],
     combined_text: str,
     engine_root: Path | None,
+    motion_assignment_readback_verified: bool,
 ) -> Dict[str, Any]:
     payload = _approved_motion_product_handler_signal_base_payload(engine_root)
     handler_errors = [
@@ -11538,6 +11542,23 @@ def _approved_motion_product_handler_signal_payload(
         and product_ready
         and product_released
         and unregister_after_load
+        and motion_assignment_readback_verified
+    )
+    missing_readback_gate = bool(
+        source_validated
+        and approved_asset
+        and approved_type
+        and product_ready
+        and product_released
+        and unregister_after_load
+        and not motion_assignment_readback_verified
+    )
+    blocker = (
+        ""
+        if harmless
+        else APPROVED_MOTION_PRODUCT_HANDLER_SIGNAL_READBACK_BLOCKER
+        if missing_readback_gate
+        else APPROVED_MOTION_PRODUCT_HANDLER_SIGNAL_BLOCKER
     )
     payload.update(
         {
@@ -11548,24 +11569,34 @@ def _approved_motion_product_handler_signal_payload(
             ),
             "approved_motion_product_handler_signal_classification_verified": harmless,
             "approved_motion_product_handler_signal_harmless_under_strict_fixture": harmless,
-            "approved_motion_product_handler_signal_blocker": ""
-            if harmless
-            else APPROVED_MOTION_PRODUCT_HANDLER_SIGNAL_BLOCKER,
+            "approved_motion_product_handler_signal_blocker": blocker,
             "approved_motion_product_handler_signal_candidate_matrix": _approved_motion_product_handler_signal_candidate_matrix(
                 source_validated=source_validated,
                 signal_found=True,
                 classification_verified=harmless,
-                blocker="" if harmless else APPROVED_MOTION_PRODUCT_HANDLER_SIGNAL_BLOCKER,
+                blocker=blocker,
             ),
             "approved_motion_product_handler_signal_selected_strategy": (
                 "classify_handler_unregistered_motion_signal_harmless_under_strict_fixture"
                 if harmless
+                else "wait_for_runtime_motion_assignment_readback_before_handler_signal_classification"
+                if missing_readback_gate
                 else "treat_signal_as_real_runtime_motion_asset_handler_blocker"
             ),
             "approved_motion_product_handler_signal_classified_log_lines": signal_lines if harmless else [],
         }
     )
     return payload
+
+
+def _runtime_motion_assignment_readback_verified_from_combined_text(combined_text: str) -> bool:
+    spawn_markers = _runtime_character_spawn_instantiation_parse_markers(combined_text)
+    inventory = _runtime_character_animation_component_inventory(spawn_markers.get("component_inventory", []))
+    assignment_ids = _runtime_character_animation_component_wiring_runtime_assignment_ids(inventory)
+    return _runtime_asset_id_matches(
+        assignment_ids.get("motion_asset_id", ""),
+        RUNTIME_CHARACTER_APPROVED_MOTION_ASSET_ID,
+    )
 
 
 def _runtime_character_product_load_execution_payload(
@@ -11596,11 +11627,13 @@ def _runtime_character_product_load_execution_payload(
         combined_text=combined_text,
     )
     selected_product_errors = _runtime_character_product_selected_product_errors(marker_products, combined_text)
+    motion_assignment_readback_verified = _runtime_motion_assignment_readback_verified_from_combined_text(combined_text)
     motion_handler_signal = _approved_motion_product_handler_signal_payload(
         products=marker_products,
         selected_product_errors=selected_product_errors,
         combined_text=combined_text,
         engine_root=engine_root,
+        motion_assignment_readback_verified=motion_assignment_readback_verified,
     )
     classified_lines = {
         str(line)

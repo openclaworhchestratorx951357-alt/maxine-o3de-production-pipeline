@@ -161,7 +161,7 @@ python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigge
 
 This proof is allowed only after live APB verifies the approved spawnable from the modified source prefab. The runtime fixture records Actor/Simple Motion assignment evidence in `MAXINE_RUNTIME_CHARACTER_SPAWN_ENTITY` markers with `actor_asset_id` and `motion_asset_id`, source-validated against `EMotionFX::Integration::ActorComponent::GetActorAsset` and `EMotionFX::Integration::SimpleMotionComponent::GetMotion`. Runtime TypeIds alone are insufficient; the harness may claim `runtime_character_animation_component_wiring_verified=true` only when APB/spawnable proof, runtime Actor and Simple Motion TypeIds, runtime Actor and Motion assignment IDs, cleanup/despawn, and selected log/error scans all pass. If a selected product log scan fails, the result must stay blocked even when TypeIds and assignment IDs are visible.
 
-The approved motion product handler-unregistered diagnostic is source-only unless combined with the strict after-APB fixture:
+The approved motion product handler-unregistered diagnostic is source-only unless combined with the strict after-APB fixture. The selected approved motion handler line may be classified harmless only after the spawned runtime Simple Motion component readback verifies the approved motion AssetId; APB product readiness, TypeIds, or handler teardown text alone are not enough:
 
 ```powershell
 python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-approved-motion-product-handler-unregistered-signal --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
