@@ -208,6 +208,12 @@ RUNTIME_CHARACTER_PREFAB_EXPECTED_SPAWNABLE_CATALOG = (
 )
 RUNTIME_CHARACTER_APPROVED_ACTOR_ASSET_ID = "{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7"
 RUNTIME_CHARACTER_APPROVED_MOTION_ASSET_ID = "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0"
+APPROVED_MOTION_PRODUCT_HANDLER_SIGNAL_CLASSIFICATION = (
+    "harmless_shutdown_handler_unregister_after_verified_motion_load"
+)
+APPROVED_MOTION_PRODUCT_HANDLER_SIGNAL_BLOCKER = (
+    "blocked_by_runtime_motion_product_load_handler_unregistered"
+)
 WINDOWS_NTSTATUS_NAMES = {
     0xC0000005: "STATUS_ACCESS_VIOLATION",
 }
@@ -299,6 +305,7 @@ def run_runtime_harness(
     enable_runtime_character_animation_component_wiring_surface_fixture: bool = False,
     diagnose_runtime_actor_simple_motion_component_wiring_after_apb: bool = False,
     enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture: bool = False,
+    diagnose_approved_motion_product_handler_unregistered_signal: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -349,6 +356,7 @@ def run_runtime_harness(
         and not enable_runtime_character_animation_component_wiring_surface_fixture
         and not diagnose_runtime_actor_simple_motion_component_wiring_after_apb
         and not enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
+        and not diagnose_approved_motion_product_handler_unregistered_signal
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -404,6 +412,7 @@ def run_runtime_harness(
             and not enable_runtime_character_animation_component_wiring_surface_fixture
             and not diagnose_runtime_actor_simple_motion_component_wiring_after_apb
             and not enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
+            and not diagnose_approved_motion_product_handler_unregistered_signal
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -472,6 +481,8 @@ def run_runtime_harness(
             if diagnose_runtime_actor_simple_motion_component_wiring_after_apb
             else "runtime_actor_simple_motion_component_wiring_after_apb_fixture_command"
             if enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
+            else "approved_motion_product_handler_unregistered_signal_diagnostic"
+            if diagnose_approved_motion_product_handler_unregistered_signal
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -578,6 +589,7 @@ def run_runtime_harness(
         and not enable_runtime_character_animation_component_wiring_surface_fixture
         and not diagnose_runtime_actor_simple_motion_component_wiring_after_apb
         and not enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
+        and not diagnose_approved_motion_product_handler_unregistered_signal
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -786,6 +798,14 @@ def run_runtime_harness(
             engine_root=selected_engine,
             project=selected_project,
             timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+        )
+
+    if diagnose_approved_motion_product_handler_unregistered_signal:
+        return _run_approved_motion_product_handler_signal_diagnostic(
+            report,
+            engine_root=selected_engine,
+            project=selected_project,
             artifact_dir=artifact_dir,
         )
 
@@ -2408,6 +2428,24 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "runtime_actor_simple_motion_component_wiring_after_apb_blocker": "",
         "runtime_actor_simple_motion_component_wiring_candidate_matrix": [],
         "runtime_actor_simple_motion_component_wiring_selected_strategy": "",
+        "approved_motion_product_handler_signal_diagnostic_attempted": False,
+        "approved_motion_product_handler_signal_diagnostic_completed": False,
+        "approved_motion_product_handler_signal_source_validation_status": "",
+        "approved_motion_product_handler_signal_source_validation_verified": False,
+        "approved_motion_product_handler_signal_found": False,
+        "approved_motion_product_handler_signal_asset_type": "",
+        "approved_motion_product_handler_signal_asset_id": "",
+        "approved_motion_product_handler_signal_classification": "",
+        "approved_motion_product_handler_signal_classification_verified": False,
+        "approved_motion_product_handler_signal_harmless_under_strict_fixture": False,
+        "approved_motion_product_handler_signal_blocker": "",
+        "approved_motion_product_handler_signal_source_files": [],
+        "approved_motion_product_handler_signal_candidate_matrix": [],
+        "approved_motion_product_handler_signal_selected_strategy": "",
+        "approved_motion_product_handler_registered_in_runtime": False,
+        "approved_motion_product_handler_expected_runtime_registration": False,
+        "runtime_motion_assignment_id_readback_verified": False,
+        "runtime_motion_assignment_load_verified": False,
         "runtime_character_product_load_contract_updated": False,
         "runtime_character_product_load_direct_procprefab_required": True,
         "runtime_character_product_load_runtime_equivalent_required": False,
@@ -9254,6 +9292,53 @@ def _run_runtime_actor_simple_motion_component_wiring_after_apb_diagnostic(
     return _finalize_report(report)
 
 
+def _run_approved_motion_product_handler_signal_diagnostic(
+    report: Dict[str, Any],
+    *,
+    engine_root: Path | None,
+    project: Path | None,
+    artifact_dir: Path,
+) -> Dict[str, Any]:
+    del project, artifact_dir
+    payload = _approved_motion_product_handler_signal_base_payload(engine_root)
+    source_validated = payload.get("approved_motion_product_handler_signal_source_validation_verified") is True
+    report.update(payload)
+    report.update(
+        {
+            "status": "pass" if source_validated else "fail",
+            "runtime_harness_status": (
+                "approved_motion_product_handler_signal_source_discovery"
+                if source_validated
+                else "blocked_by_approved_motion_product_handler_signal_source_validation"
+            ),
+            "runtime_harness_mode": "approved_motion_product_handler_unregistered_signal_diagnostic",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "runtime_character_animation_component_wiring_claimed": False,
+            "runtime_character_animation_component_wiring_verified": False,
+            "runtime_character_animation_playback_attempted": False,
+            "runtime_character_animation_claimed": False,
+            "runtime_character_animation_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "asset_cache_deleted": False,
+            "required_runtime_harness_assertions_passed": [
+                "approved_motion_product_handler_signal_source_discovery",
+                "runtime_execution_not_attempted_in_motion_handler_signal_diagnostic_mode",
+                "runtime_component_wiring_not_claimed_without_live_after_apb_fixture",
+                "runtime_animation_not_claimed",
+                "runtime_character_proof_not_claimed",
+            ],
+            "runtime_harness_assertion_informational": [
+                "motion_handler_signal_source_diagnostic_is_not_runtime_wiring_proof",
+                "motion_handler_signal_classification_requires_live_after_apb_fixture_evidence",
+            ],
+        }
+    )
+    return _finalize_report(report)
+
+
 def _runtime_character_animation_component_wiring_surface_source_payload(
     *,
     product_evidence: Mapping[str, Any],
@@ -9747,6 +9832,10 @@ def _runtime_character_animation_component_wiring_surface_execution_payload(
             "runtime_character_animation_component_wiring_runtime_motion_asset_assignment_verified": motion_asset_assignment_verified,
             "runtime_character_animation_component_wiring_runtime_actor_asset_id": runtime_actor_asset_id,
             "runtime_character_animation_component_wiring_runtime_motion_asset_id": runtime_motion_asset_id,
+            "runtime_motion_assignment_id_readback_verified": motion_asset_assignment_verified,
+            "runtime_motion_assignment_load_verified": bool(
+                motion_asset_assignment_verified and product_prerequisite
+            ),
             "runtime_character_animation_component_wiring_claimed": runtime_wiring_verified,
             "runtime_character_animation_component_wiring_verified": runtime_wiring_verified,
             "runtime_character_animation_playback_attempted": False,
@@ -11238,6 +11327,247 @@ def _runtime_character_product_load_source_refs(engine_root: Path | None) -> Lis
     ]
 
 
+def _approved_motion_product_handler_signal_source_paths(engine_root: Path | None) -> List[Path]:
+    root = engine_root or Path("")
+    return [
+        root / "Code" / "Framework" / "AzCore" / "AzCore" / "Asset" / "AssetManager.cpp",
+        root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "AssetCommon.h",
+        root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "MotionAsset.h",
+        root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Assets" / "MotionAsset.cpp",
+        root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "System" / "SystemComponent.cpp",
+        root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "System" / "AnimationModule.cpp",
+        root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Components" / "SimpleMotionComponent.h",
+        root / "Gems" / "EMotionFX" / "Code" / "Source" / "Integration" / "Components" / "SimpleMotionComponent.cpp",
+    ]
+
+
+def _approved_motion_product_handler_signal_source_refs(engine_root: Path | None) -> List[str]:
+    root = engine_root or Path("<engine-root>")
+    return [str(path).replace("\\", "/") for path in _approved_motion_product_handler_signal_source_paths(root)]
+
+
+def _approved_motion_product_handler_signal_source_validated(engine_root: Path | None) -> bool:
+    return all(path.is_file() for path in _approved_motion_product_handler_signal_source_paths(engine_root))
+
+
+def _approved_motion_product_handler_signal_candidate_matrix(
+    *,
+    source_validated: bool,
+    signal_found: bool,
+    classification_verified: bool,
+    blocker: str,
+) -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "classify_handler_unregistered_motion_signal_harmless_under_strict_fixture",
+            "candidate": "classify handler-unregistered motion signal as harmless warning under strict after-APB runtime fixture",
+            "kind": "runtime_motion_signal_classification",
+            "attempted": bool(signal_found),
+            "selected": bool(classification_verified),
+            "result": (
+                "approved_motion_product_handler_signal_classified_harmless"
+                if classification_verified
+                else "approved_motion_product_handler_signal_candidate_source_validated_waiting_for_runtime_signal"
+                if source_validated and not signal_found
+                else "approved_motion_product_handler_signal_candidate_blocked"
+            ),
+            "blocker": "" if classification_verified or (source_validated and not signal_found) else blocker,
+        },
+        {
+            "id": "treat_signal_as_real_runtime_motion_asset_handler_blocker",
+            "candidate": "treat signal as real runtime motion asset handler blocker",
+            "kind": "runtime_motion_asset_handler_blocker",
+            "attempted": bool(signal_found),
+            "selected": bool(signal_found and not classification_verified),
+            "result": (
+                "approved_motion_product_handler_signal_candidate_selected_blocker"
+                if signal_found and not classification_verified
+                else "approved_motion_product_handler_signal_candidate_not_selected"
+            ),
+            "blocker": blocker if signal_found and not classification_verified else "",
+        },
+        {
+            "id": "runtime_typeids_and_assignment_ids_only",
+            "candidate": "runtime TypeIds plus runtime asset assignment IDs only",
+            "kind": "insufficient_runtime_reference_evidence",
+            "attempted": False,
+            "selected": False,
+            "result": "approved_motion_product_handler_signal_candidate_rejected_log_scan_unclassified",
+            "blocker": "runtime_typeids_and_assignment_ids_are_insufficient_without_handler_signal_classification",
+        },
+        {
+            "id": "product_load_only",
+            "candidate": "product-load only",
+            "kind": "insufficient_product_evidence",
+            "attempted": False,
+            "selected": False,
+            "result": "approved_motion_product_handler_signal_candidate_rejected_runtime_wiring_requires_component_evidence",
+            "blocker": "product_load_only_is_not_runtime_component_wiring_proof",
+        },
+        {
+            "id": "animation_playback",
+            "candidate": "animation playback",
+            "kind": "runtime_animation_playback",
+            "attempted": False,
+            "selected": False,
+            "result": "approved_motion_product_handler_signal_candidate_deferred",
+            "blocker": "animation_playback_deferred_for_later_bounded_slice",
+        },
+        {
+            "id": "defaultlevel_or_production_level_validation",
+            "candidate": "defaultlevel or production-level validation",
+            "kind": "unsafe_level_runtime_context",
+            "attempted": False,
+            "selected": False,
+            "result": "approved_motion_product_handler_signal_candidate_rejected_unsafe_scope",
+            "blocker": "defaultlevel_or_production_level_evidence_disallowed",
+        },
+    ]
+
+
+def _approved_motion_product_handler_signal_base_payload(engine_root: Path | None) -> Dict[str, Any]:
+    source_validated = _approved_motion_product_handler_signal_source_validated(engine_root)
+    source_refs = _approved_motion_product_handler_signal_source_refs(engine_root)
+    return {
+        "approved_motion_product_handler_signal_diagnostic_attempted": True,
+        "approved_motion_product_handler_signal_diagnostic_completed": True,
+        "approved_motion_product_handler_signal_source_validation_status": (
+            "approved_motion_product_handler_signal_source_validation_pass"
+            if source_validated
+            else "approved_motion_product_handler_signal_source_validation_inconclusive"
+        ),
+        "approved_motion_product_handler_signal_source_validation_verified": source_validated,
+        "approved_motion_product_handler_signal_found": False,
+        "approved_motion_product_handler_signal_asset_type": "",
+        "approved_motion_product_handler_signal_asset_id": "",
+        "approved_motion_product_handler_signal_classification": "",
+        "approved_motion_product_handler_signal_classification_verified": False,
+        "approved_motion_product_handler_signal_harmless_under_strict_fixture": False,
+        "approved_motion_product_handler_signal_blocker": "",
+        "approved_motion_product_handler_signal_source_files": source_refs,
+        "approved_motion_product_handler_signal_candidate_matrix": _approved_motion_product_handler_signal_candidate_matrix(
+            source_validated=source_validated,
+            signal_found=False,
+            classification_verified=False,
+            blocker="",
+        ),
+        "approved_motion_product_handler_signal_selected_strategy": "",
+        "approved_motion_product_handler_registered_in_runtime": False,
+        "approved_motion_product_handler_expected_runtime_registration": source_validated,
+        "approved_motion_product_handler_signal_log_lines": [],
+        "approved_motion_product_handler_signal_classified_log_lines": [],
+    }
+
+
+def _approved_motion_product_handler_signal_has_unregistered_after_load_line(
+    *,
+    combined_text: str,
+    asset_id: str,
+    asset_type: str,
+) -> bool:
+    lowered = combined_text.lower()
+    return (
+        "asset handler for" in lowered
+        and asset_type.lower() in lowered
+        and asset_id.lower() in lowered
+        and "is being removed" in lowered
+        and "is still loaded" in lowered
+    )
+
+
+def _approved_motion_product_handler_signal_payload(
+    *,
+    products: Sequence[Mapping[str, Any]],
+    selected_product_errors: Sequence[Mapping[str, str]],
+    combined_text: str,
+    engine_root: Path | None,
+) -> Dict[str, Any]:
+    payload = _approved_motion_product_handler_signal_base_payload(engine_root)
+    handler_errors = [
+        dict(error)
+        for error in selected_product_errors
+        if "no handler was registered" in str(error.get("line", "")).lower()
+        and RUNTIME_EMOTIONFX_MOTION_ASSET_TYPE_ID.lower() in str(error.get("line", "")).lower()
+    ]
+    if not handler_errors:
+        return payload
+
+    selected_error = handler_errors[0]
+    selected_kind = str(selected_error.get("product_kind", ""))
+    motion_product = next(
+        (
+            product
+            for product in products
+            if isinstance(product, Mapping)
+            and str(product.get("product_kind", "")) == selected_kind
+            and selected_kind == "motion"
+        ),
+        {},
+    )
+    asset_id = str(motion_product.get("asset_id", "")).strip()
+    asset_type = str(motion_product.get("asset_type_id", motion_product.get("asset_type", ""))).strip()
+    signal_lines = [str(error.get("line", "")) for error in handler_errors if str(error.get("line", "")).strip()]
+    payload.update(
+        {
+            "approved_motion_product_handler_signal_found": True,
+            "approved_motion_product_handler_signal_asset_type": asset_type,
+            "approved_motion_product_handler_signal_asset_id": asset_id,
+            "approved_motion_product_handler_signal_log_lines": signal_lines,
+            "approved_motion_product_handler_registered_in_runtime": motion_product.get("ready") is True
+            and not str(motion_product.get("error", "")).strip(),
+        }
+    )
+
+    source_validated = payload["approved_motion_product_handler_signal_source_validation_verified"] is True
+    approved_asset = _runtime_asset_id_matches(asset_id, RUNTIME_CHARACTER_APPROVED_MOTION_ASSET_ID)
+    approved_type = asset_type.lower() == RUNTIME_EMOTIONFX_MOTION_ASSET_TYPE_ID.lower()
+    product_ready = motion_product.get("ready") is True
+    product_released = (
+        str(motion_product.get("release_status", "")).strip()
+        == "runtime_character_product_load_product_released"
+    )
+    unregister_after_load = _approved_motion_product_handler_signal_has_unregistered_after_load_line(
+        combined_text=combined_text,
+        asset_id=asset_id,
+        asset_type=asset_type,
+    )
+    harmless = bool(
+        source_validated
+        and approved_asset
+        and approved_type
+        and product_ready
+        and product_released
+        and unregister_after_load
+    )
+    payload.update(
+        {
+            "approved_motion_product_handler_signal_classification": (
+                APPROVED_MOTION_PRODUCT_HANDLER_SIGNAL_CLASSIFICATION
+                if harmless
+                else "runtime_motion_product_handler_unregistered_blocking"
+            ),
+            "approved_motion_product_handler_signal_classification_verified": harmless,
+            "approved_motion_product_handler_signal_harmless_under_strict_fixture": harmless,
+            "approved_motion_product_handler_signal_blocker": ""
+            if harmless
+            else APPROVED_MOTION_PRODUCT_HANDLER_SIGNAL_BLOCKER,
+            "approved_motion_product_handler_signal_candidate_matrix": _approved_motion_product_handler_signal_candidate_matrix(
+                source_validated=source_validated,
+                signal_found=True,
+                classification_verified=harmless,
+                blocker="" if harmless else APPROVED_MOTION_PRODUCT_HANDLER_SIGNAL_BLOCKER,
+            ),
+            "approved_motion_product_handler_signal_selected_strategy": (
+                "classify_handler_unregistered_motion_signal_harmless_under_strict_fixture"
+                if harmless
+                else "treat_signal_as_real_runtime_motion_asset_handler_blocker"
+            ),
+            "approved_motion_product_handler_signal_classified_log_lines": signal_lines if harmless else [],
+        }
+    )
+    return payload
+
+
 def _runtime_character_product_load_execution_payload(
     *,
     product_evidence: Mapping[str, Any],
@@ -11266,9 +11596,32 @@ def _runtime_character_product_load_execution_payload(
         combined_text=combined_text,
     )
     selected_product_errors = _runtime_character_product_selected_product_errors(marker_products, combined_text)
+    motion_handler_signal = _approved_motion_product_handler_signal_payload(
+        products=marker_products,
+        selected_product_errors=selected_product_errors,
+        combined_text=combined_text,
+        engine_root=engine_root,
+    )
+    classified_lines = {
+        str(line)
+        for line in motion_handler_signal.get("approved_motion_product_handler_signal_classified_log_lines", [])
+    }
+    blocking_selected_product_errors = [
+        item for item in selected_product_errors if str(item.get("line", "")) not in classified_lines
+    ]
+    classified_selected_product_errors = [
+        item for item in selected_product_errors if str(item.get("line", "")) in classified_lines
+    ]
     for product in marker_products:
-        product["selected_product_log_errors"] = [
+        product_errors = [
             item for item in selected_product_errors if item.get("product_kind") == product.get("product_kind")
+        ]
+        product["selected_product_log_errors_raw"] = product_errors
+        product["selected_product_log_errors_classified"] = [
+            item for item in product_errors if str(item.get("line", "")) in classified_lines
+        ]
+        product["selected_product_log_errors"] = [
+            item for item in product_errors if str(item.get("line", "")) not in classified_lines
         ]
         if product["selected_product_log_errors"] and not product.get("error"):
             product["error"] = "selected_product_log_error"
@@ -11342,7 +11695,7 @@ def _runtime_character_product_load_execution_payload(
         blocker = "blocked_by_missing_runtime_character_products"
     elif timed_out_kinds:
         blocker = "blocked_by_runtime_character_product_load_timeout"
-    elif failed_kinds or selected_product_errors:
+    elif failed_kinds or blocking_selected_product_errors:
         blocker = "blocked_by_runtime_character_product_load_error"
     elif spawnable_required and not spawnable_ready:
         blocker = "blocked_by_runtime_character_spawnable_load_error"
@@ -11404,14 +11757,18 @@ def _runtime_character_product_load_execution_payload(
             "runtime_character_product_load_markers_observed": bool(markers_observed),
             "runtime_character_product_load_marker_summary": marker_summary,
             "runtime_character_product_load_log_scan_summary": {
-                "status": "fail" if selected_product_errors else "pass",
-                "match_count": len(selected_product_errors),
+                "status": "fail" if blocking_selected_product_errors else "pass",
+                "match_count": len(blocking_selected_product_errors),
+                "classified_match_count": len(classified_selected_product_errors),
             },
-            "runtime_character_product_load_selected_product_log_scan": selected_product_errors,
+            "runtime_character_product_load_selected_product_log_scan": blocking_selected_product_errors,
+            "runtime_character_product_load_selected_product_log_scan_raw": selected_product_errors,
+            "runtime_character_product_load_selected_product_log_scan_classified": classified_selected_product_errors,
             "runtime_character_product_load_selected_product_missing_error_scan": {
-                "status": "fail" if selected_product_errors else "pass",
-                "matches": selected_product_errors,
+                "status": "fail" if blocking_selected_product_errors else "pass",
+                "matches": blocking_selected_product_errors,
             },
+            **motion_handler_signal,
             "runtime_character_product_load_is_instantiation_proof": False,
             "runtime_runtime_character_product_load_is_instantiation_proof": False,
             "runtime_procprefab_runtime_equivalent_surface_claimed": bool(verified and spawnable_required),
@@ -14810,6 +15167,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--enable-runtime-character-animation-component-wiring-surface-fixture", action="store_true")
     parser.add_argument("--diagnose-runtime-actor-simple-motion-component-wiring-after-apb", action="store_true")
     parser.add_argument("--enable-runtime-actor-simple-motion-component-wiring-after-apb-fixture", action="store_true")
+    parser.add_argument("--diagnose-approved-motion-product-handler-unregistered-signal", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -14882,6 +15240,9 @@ def main() -> int:
         ),
         enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture=(
             args.enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture
+        ),
+        diagnose_approved_motion_product_handler_unregistered_signal=(
+            args.diagnose_approved_motion_product_handler_unregistered_signal
         ),
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
