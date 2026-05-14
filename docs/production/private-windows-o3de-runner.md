@@ -169,6 +169,15 @@ python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigge
 
 It pins the selected signal from `AssetManager.cpp`, `MotionAsset`, `EMotionFXAssetHandler`, `SystemComponent`, `AnimationModule`, and `SimpleMotionComponent`: `No handler was registered for asset of type {00494B8E-7578-4BA2-8B28-272E90680787} but it was still in the AssetManager as {794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0`. The harness may classify that line as harmless only for the bounded component-wiring proof when the approved motion product was already resolved, handler-checked, loaded ready, released, paired with the handler-unregister teardown line, and the spawned Simple Motion component read back the approved motion AssetId. A live `MAXINE_RUNTIME_PRODUCT_LOAD_ERROR ... error=asset_handler_missing`, a different motion AssetId, a missing ready/release marker, or any other selected product error remains a blocker. This classification is not animation playback proof and is not full runtime character proof.
 
+Runtime shutdown PoolAllocator assertion diagnosis is source-backed and intentionally conservative:
+
+```powershell
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-runtime-shutdown-poolallocator-assertions --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 120
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-poolallocator-signal-classification-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 240
+```
+
+The source pin is `AzCore/AzCore/Memory/PoolAllocator.cpp`: `PoolAllocation<Allocator>::~PoolAllocation()` asserts `bucket.m_pages.empty()` at line 470 before `GarbageCollect()`. A selected `PoolAllocator.cpp:470` / `PoolAllocator.cpp(470)` `Found page for bucket` line therefore remains a real runtime shutdown allocator blocker (`blocked_by_runtime_shutdown_poolallocator_assertion`) and is not classified harmless. Runtime TypeIds and assignment readback are still preserved as surface evidence, but formal component wiring must remain false when this selected shutdown assertion is present. Non-matching memory/assertion lines remain blocking under the normal selected log/error scan.
+
 Approved Editor-generated runtime animation component wiring diagnostics require the Editor smoke gates plus an explicit generation marker:
 
 ```powershell

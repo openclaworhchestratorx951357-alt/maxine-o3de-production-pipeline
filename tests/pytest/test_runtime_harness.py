@@ -356,6 +356,28 @@ def _write_animation_component_wiring_source_validation_files(engine: Path) -> N
         path.write_text(content, encoding="utf-8")
 
 
+def _write_poolallocator_source_validation_files(engine: Path) -> None:
+    source_files = {
+        "Code/Framework/AzCore/AzCore/Memory/PoolAllocator.cpp": (
+            "PoolAllocation<Allocator>::~PoolAllocation()\n"
+            "AZ_Assert(bucket.m_pages.empty(), \"Found page for bucket %p\", &bucket);\n"
+            "GarbageCollect();\n"
+        ),
+        "Code/Framework/AzCore/AzCore/Memory/PoolAllocator.h": (
+            "class PoolAllocator\n"
+            "class ThreadPoolAllocator\n"
+        ),
+        "o3de/gems/MaxineRuntimeExitFixture/Code/Source/Clients/MaxineRuntimeExitFixtureSystemComponent.cpp": (
+            "MAXINE_RUNTIME_CHARACTER_SPAWN_CLEANUP\n"
+            "MAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT\n"
+        ),
+    }
+    for relative, content in source_files.items():
+        path = engine / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+
+
 def _append_approved_character_spawnable_product(apb: Path) -> None:
     _append_apb_products(
         apb,
@@ -4860,6 +4882,272 @@ def test_runtime_harness_motion_handler_signal_diagnostic_records_source_validat
     assert report["approved_motion_product_handler_signal_found"] is False
     assert report["approved_motion_product_handler_signal_candidate_matrix"]
     assert report["runtime_character_animation_component_wiring_claimed"] is False
+    assert report["runtime_character_animation_component_wiring_verified"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_poolallocator_signal_diagnostic_records_source_validation(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_poolallocator_source_validation_files(engine)
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_runtime_shutdown_poolallocator_assertions=True,
+        strict=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "runtime_shutdown_poolallocator_assertions_diagnostic"
+    assert report["runtime_harness_status"] == "runtime_shutdown_poolallocator_signal_source_discovery"
+    assert report["runtime_execution_attempted"] is False
+    assert report["runtime_shutdown_poolallocator_signal_diagnostic_attempted"] is True
+    assert report["runtime_shutdown_poolallocator_signal_diagnostic_completed"] is True
+    assert report["runtime_shutdown_poolallocator_signal_source_validation_verified"] is True
+    assert report["runtime_shutdown_poolallocator_signal_found"] is False
+    assert report["runtime_shutdown_poolallocator_signal_harmless_under_strict_fixture"] is False
+    assert report["runtime_character_animation_component_wiring_claimed"] is False
+    assert report["runtime_character_animation_component_wiring_verified"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_poolallocator_assertion_remains_real_shutdown_blocker(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _write_poolallocator_source_validation_files(engine)
+    _enable_runtime_actor_simple_motion_after_apb_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_poolallocator_signal_classification_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+            ],
+            actor_asset_id="{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+            motion_asset_id="{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0",
+            extra_stdout_lines=[
+                "Assert: C:/src/o3de/Code/Framework/AzCore/AzCore/Memory/PoolAllocator.cpp(470): "
+                "bucket.m_pages.empty() - Found page for bucket 000001D2BEEFC0DE",
+            ],
+        ),
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["runtime_shutdown_poolallocator_signal_diagnostic_attempted"] is True
+    assert report["runtime_shutdown_poolallocator_signal_source_validation_verified"] is True
+    assert report["runtime_shutdown_poolallocator_signal_found"] is True
+    assert report["runtime_shutdown_poolallocator_signal_line"]
+    assert report["runtime_shutdown_poolallocator_signal_classification"] == (
+        "real_runtime_shutdown_poolallocator_assertion"
+    )
+    assert report["runtime_shutdown_poolallocator_signal_classification_verified"] is True
+    assert report["runtime_shutdown_poolallocator_signal_harmless_under_strict_fixture"] is False
+    assert report["runtime_shutdown_poolallocator_signal_blocker"] == (
+        "blocked_by_runtime_shutdown_poolallocator_assertion"
+    )
+    assert report["runtime_shutdown_poolallocator_signal_after_cleanup"] is True
+    assert report["runtime_shutdown_poolallocator_signal_invalidates_wiring"] is True
+    assert report["runtime_shutdown_poolallocator_signal_invalidates_playback"] is True
+    assert report["runtime_selected_log_scan_blocking_matches"]
+    assert report["runtime_selected_log_scan_classified_harmless_matches"] == []
+    assert report["runtime_character_animation_component_wiring_surface_found"] is True
+    assert report["runtime_character_animation_component_wiring_claimed"] is False
+    assert report["runtime_character_animation_component_wiring_verified"] is False
+    assert report["runtime_actor_simple_motion_component_wiring_after_apb_verified"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_verified"] is False
+    assert report["runtime_harness_status"] == "blocked_by_runtime_shutdown_poolallocator_assertion"
+
+
+def test_runtime_harness_poolallocator_fixture_flag_runs_after_apb_path(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _write_poolallocator_source_validation_files(engine)
+    _enable_runtime_actor_simple_motion_after_apb_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        pin_runtime_command=True,
+        enable_runtime_poolallocator_signal_classification_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+            ],
+            actor_asset_id="{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+            motion_asset_id="{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0",
+        ),
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["runtime_harness_mode"] == "runtime_poolallocator_signal_classification_fixture_command"
+    assert report["runtime_command_pinning"]["execution_requested"] is True
+    assert report["runtime_actor_simple_motion_component_wiring_after_apb_attempted"] is True
+    assert report["runtime_actor_simple_motion_component_wiring_after_apb_verified"] is True
+    assert report["runtime_shutdown_poolallocator_signal_diagnostic_attempted"] is True
+    assert report["runtime_shutdown_poolallocator_signal_diagnostic_completed"] is True
+    assert report["runtime_shutdown_poolallocator_signal_source_validation_verified"] is True
+    assert report["runtime_shutdown_poolallocator_signal_found"] is False
+    assert report["runtime_shutdown_poolallocator_signal_invalidates_wiring"] is False
+    assert report["runtime_character_animation_component_wiring_claimed"] is True
+    assert report["runtime_character_animation_component_wiring_verified"] is True
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_after_apb_fixture_does_not_claim_poolallocator_diagnostic(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _write_poolallocator_source_validation_files(engine)
+    _enable_runtime_actor_simple_motion_after_apb_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+            ],
+            actor_asset_id="{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+            motion_asset_id="{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0",
+        ),
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["runtime_harness_mode"] == (
+        "runtime_actor_simple_motion_component_wiring_after_apb_fixture_command"
+    )
+    assert report["runtime_shutdown_poolallocator_signal_diagnostic_attempted"] is False
+    assert report["runtime_shutdown_poolallocator_signal_diagnostic_completed"] is False
+    assert report["runtime_shutdown_poolallocator_signal_found"] is False
+    assert report["runtime_actor_simple_motion_component_wiring_after_apb_verified"] is True
+    assert report["runtime_character_animation_component_wiring_verified"] is True
+    assert report["runtime_character_animation_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_after_apb_fixture_keeps_poolallocator_generic_signal_visible(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _write_poolallocator_source_validation_files(engine)
+    _enable_runtime_actor_simple_motion_after_apb_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+            ],
+            actor_asset_id="{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+            motion_asset_id="{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0",
+            extra_stdout_lines=[
+                "Assert: C:/src/o3de/Code/Framework/AzCore/AzCore/Memory/PoolAllocator.cpp(470): "
+                "bucket.m_pages.empty() - Found page for bucket 000001D2BEEFC0DE",
+            ],
+        ),
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["runtime_harness_mode"] == (
+        "runtime_actor_simple_motion_component_wiring_after_apb_fixture_command"
+    )
+    assert report["runtime_shutdown_poolallocator_signal_diagnostic_attempted"] is False
+    assert report["runtime_shutdown_poolallocator_signal_diagnostic_completed"] is False
+    assert report["runtime_shutdown_poolallocator_signal_found"] is False
+    assert report["runtime_exit_fixture_asserts"]["status"] != "pass"
+    assert any(
+        "PoolAllocator.cpp" in line and "Found page for bucket" in line
+        for line in report["runtime_exit_fixture_asserts"]["sample_lines"]
+    )
+    assert any(
+        match.get("signal") == "runtime_assertion"
+        for match in report["runtime_exit_fixture_disqualifying_signals"]["matches"]
+    )
     assert report["runtime_character_animation_component_wiring_verified"] is False
     assert report["runtime_character_animation_verified"] is False
     assert report["runtime_character_proof_verified"] is False
