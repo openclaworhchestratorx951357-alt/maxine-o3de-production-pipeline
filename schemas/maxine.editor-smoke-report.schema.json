@@ -111,6 +111,7 @@
         "approved-prefab-save-update-route",
         "approved-source-prefab-actor-simple-motion-wiring",
         "approved-source-prefab-propagation-apply-step",
+        "approved-source-prefab-parent-link-override-apply-route",
         "full"
       ]
     },
@@ -2210,6 +2211,96 @@
     "approved_source_prefab_propagation_api_used": {
       "type": "string"
     },
+    "approved_source_prefab_parent_link_override_apply_route_attempted": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_parent_link_override_apply_route_completed": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_parent_link_override_apply_route_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_parent_link_override_apply_route_blocker": {
+      "type": "string"
+    },
+    "approved_source_prefab_parent_link_override_apply_source_validation_status": {
+      "type": "string"
+    },
+    "approved_source_prefab_parent_link_override_apply_source_validation_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_parent_link_override_apply_source_refs": {
+      "type": "array"
+    },
+    "approved_source_prefab_parent_link_override_apply_engine_source_refs_status": {
+      "type": "string"
+    },
+    "approved_source_prefab_parent_link_override_apply_engine_source_refs_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_parent_link_override_apply_engine_source_refs": {
+      "type": "array"
+    },
+    "approved_source_prefab_parent_link_override_apply_candidate_matrix": {
+      "type": "array"
+    },
+    "approved_source_prefab_parent_link_override_apply_selected_strategy": {
+      "type": "string"
+    },
+    "approved_source_prefab_entity_ownership_checked": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_entity_ownership_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_entity_owning_prefab_path": {
+      "type": "string"
+    },
+    "approved_source_prefab_entity_owning_prefab_matches_requested_path": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_component_ownership_checked": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_component_ownership_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_entity_ownership_blocker": {
+      "type": "string"
+    },
+    "approved_source_prefab_parent_focus_context_required": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_parent_focus_context_available": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_parent_focus_context_applied": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_parent_focus_context_restored": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_link_context_required": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_link_context_available": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_link_id": {
+      "type": "string"
+    },
+    "approved_source_prefab_component_override_paths_detected": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_link_overrides_applied": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_push_overrides_to_prefab_attempted": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_push_overrides_to_prefab_verified": {
+      "type": "boolean"
+    },
     "approved_source_prefab_component_overrides_detected": {
       "type": "boolean"
     },
@@ -2239,6 +2330,15 @@
     },
     "approved_source_prefab_changed_this_run": {
       "type": "boolean"
+    },
+    "approved_source_prefab_marker_presence_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_marker_persistence_verified_this_run": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_marker_persistence_blocker": {
+      "type": "string"
     },
     "approved_source_prefab_persisted_wiring_markers_verified": {
       "type": "boolean"

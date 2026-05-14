@@ -195,6 +195,15 @@ python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.p
 
 The optional `MAXINE_ALLOW_APPROVED_PREFAB_SAVE_UPDATE_ROUTE=1` marker is used only for bounded route fixture execution. The route is scratch-only: it calls `azlmbr.maxine.prefab_bridge.save_prefab_update_scratch_probe`, writes only under `<active-project>/Assets/_maxine_smoke/prefabs/` after resolving the active project root from `AZ::Utils::GetProjectPath`, rejects defaultlevel, production-level, generated product/cache, outside-project substring, other-project, unapproved absolute, and traversal paths, parses the saved prefab JSON, records the after-hash, and cleans the scratch file. It must keep the approved source prefab unmodified, leave Actor + Simple Motion persistence false, skip APB/runtime mutation verification when no approved source mutation occurred, and keep runtime component wiring, runtime animation, and full runtime character proof false.
 
+Approved source-prefab parent-focus/link-context override apply route diagnostics require the Editor smoke gates plus the explicit parent-link marker:
+
+```powershell
+$env:MAXINE_ENABLE_APPROVED_SOURCE_PREFAB_PARENT_LINK_OVERRIDE_APPLY_ROUTE="1"
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --mode local_editor_python --enable-editor-smoke --strict-integration --diagnose-approved-source-prefab-parent-link-override-apply-route --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 240
+```
+
+This diagnostic may mutate only the approved source prefab path through source-backed Editor/prefab APIs. It first verifies that the entity and Actor/Simple Motion component IDs belong to the approved source prefab, then focuses the owning prefab, switches to the parent focus/link context, applies Actor + Simple Motion component overrides, restores focus, saves the approved source prefab, and claims success only if the source prefab changed in this run and parsed source-template marker evidence finds both `ActorAsset` and `MotionAsset`. It must not hand-author unknown JSON, run APB/runtime proof without fresh persisted markers, claim runtime component wiring from Editor-only evidence, or claim animation/full-character proof.
+
 Approved runtime character prefab-source generation has a narrower gate when a repo-owned source must be staged into the live project scanfolder:
 
 ```powershell

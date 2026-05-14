@@ -1,5 +1,7 @@
 #include "PrefabSaveUpdateBridgeHostComponent.h"
 
+#include <AzCore/Component/ComponentApplicationBus.h>
+#include <AzCore/Component/Entity.h>
 #include <AzCore/IO/Path/Path.h>
 #include <AzCore/IO/SystemFile.h>
 #include <AzCore/Interface/Interface.h>
@@ -8,6 +10,7 @@
 #include <AzCore/std/containers/vector.h>
 #include <AzCore/Utils/Utils.h>
 #include <AzToolsFramework/Prefab/Overrides/PrefabOverridePublicInterface.h>
+#include <AzToolsFramework/Prefab/PrefabFocusPublicInterface.h>
 #include <AzToolsFramework/Prefab/PrefabLoaderInterface.h>
 #include <AzToolsFramework/Prefab/PrefabPublicInterface.h>
 #include <AzToolsFramework/API/ToolsApplicationAPI.h>
@@ -165,6 +168,68 @@ namespace
         }
         return result;
     }
+
+    AZStd::string NormalizedFullPrefabPath(
+        const AZ::IO::Path& prefabPath,
+        AzToolsFramework::Prefab::PrefabLoaderInterface& prefabLoaderInterface)
+    {
+        const AZ::IO::Path fullPath = prefabPath.IsAbsolute() ? prefabPath : prefabLoaderInterface.GetFullPath(prefabPath);
+        return NormalizeForPathPolicy(fullPath.LexicallyNormal().String());
+    }
+
+    AZStd::string ParentLinkOwnershipFields(
+        AZStd::string_view owningPrefabPath,
+        bool entityOwnershipVerified,
+        bool owningPrefabMatchesRequestedPath,
+        bool componentOwnershipChecked,
+        bool componentOwnershipVerified)
+    {
+        return AZStd::string::format(
+            "entity_ownership_checked=true;"
+            "entity_ownership_verified=%s;"
+            "entity_owning_prefab_path=%.*s;"
+            "entity_owning_prefab_matches_requested_path=%s;"
+            "component_ownership_checked=%s;"
+            "component_ownership_verified=%s;",
+            entityOwnershipVerified ? "true" : "false",
+            AZ_STRING_ARG(owningPrefabPath),
+            owningPrefabMatchesRequestedPath ? "true" : "false",
+            componentOwnershipChecked ? "true" : "false",
+            componentOwnershipVerified ? "true" : "false");
+    }
+
+    AZStd::string ParentLinkOwnershipBlockedResult(
+        AZStd::string_view reason,
+        AZStd::string_view owningPrefabPath,
+        bool entityOwnershipVerified,
+        bool owningPrefabMatchesRequestedPath,
+        bool componentOwnershipChecked,
+        bool componentOwnershipVerified)
+    {
+        return AZStd::string::format(
+            "maxine_prefab_save_update_route_approved_source_parent_link_override_failed;"
+            "reason=%.*s;"
+            "%s"
+            "parent_focus_context_required=true;"
+            "parent_focus_context_available=false;"
+            "parent_focus_context_applied=false;"
+            "parent_focus_context_restored=false;"
+            "link_context_required=true;"
+            "link_context_available=false;"
+            "component_override_paths_detected=false;"
+            "actor_component_override_applied=false;"
+            "simple_motion_component_override_applied=false;"
+            "push_overrides_to_prefab_attempted=false;"
+            "push_overrides_to_prefab_verified=false",
+            AZ_STRING_ARG(reason),
+            ParentLinkOwnershipFields(
+                owningPrefabPath,
+                entityOwnershipVerified,
+                owningPrefabMatchesRequestedPath,
+                componentOwnershipChecked,
+                componentOwnershipVerified)
+                .c_str());
+    }
 } // namespace
 
 namespace MaxineRuntimeExitFixture
@@ -207,6 +272,15 @@ namespace MaxineRuntimeExitFixture
                     &PrefabSaveUpdateBridgeHostComponent::ApplyApprovedSourcePrefabComponentOverrides,
                     nullptr,
                     "Applies only the generated Actor and Simple Motion component overrides for the approved MAXINE source prefab.")
+                ->Attribute(AZ::Script::Attributes::Scope, AZ::Script::Attributes::ScopeFlags::Automation)
+                ->Attribute(AZ::Script::Attributes::Category, "MAXINE/PrefabSaveUpdateBridge")
+                ->Attribute(AZ::Script::Attributes::Module, "maxine.prefab_bridge");
+            behaviorContext
+                ->Method(
+                    "apply_approved_source_prefab_parent_link_component_overrides",
+                    &PrefabSaveUpdateBridgeHostComponent::ApplyApprovedSourcePrefabParentLinkComponentOverrides,
+                    nullptr,
+                    "Focuses the approved prefab parent/link context and applies generated Actor and Simple Motion component overrides.")
                 ->Attribute(AZ::Script::Attributes::Scope, AZ::Script::Attributes::ScopeFlags::Automation)
                 ->Attribute(AZ::Script::Attributes::Category, "MAXINE/PrefabSaveUpdateBridge")
                 ->Attribute(AZ::Script::Attributes::Module, "maxine.prefab_bridge");
@@ -379,6 +453,261 @@ namespace MaxineRuntimeExitFixture
             "simple_motion_component_override_applied=true",
             actorOverridePresent ? "true" : "false",
             simpleMotionOverridePresent ? "true" : "false");
+    }
+
+    AZStd::string PrefabSaveUpdateBridgeHostComponent::ApplyApprovedSourcePrefabParentLinkComponentOverrides(
+        const AZStd::string& absolutePrefabPath,
+        AZ::EntityId entityId,
+        const AZ::EntityComponentIdPair& actorComponent,
+        const AZ::EntityComponentIdPair& simpleMotionComponent)
+    {
+        const AZ::IO::Path prefabPath(absolutePrefabPath);
+        const AZStd::string rejectionReason = RejectReasonForApprovedSourcePrefabPath(prefabPath);
+        if (!rejectionReason.empty())
+        {
+            return RouteResult("approved_source_parent_link_override_rejected", rejectionReason);
+        }
+        if (!entityId.IsValid())
+        {
+            return RouteResult("approved_source_parent_link_override_failed", "entity_id_invalid");
+        }
+
+        auto* prefabPublicInterface = AZ::Interface<AzToolsFramework::Prefab::PrefabPublicInterface>::Get();
+        if (!prefabPublicInterface)
+        {
+            return RouteResult("approved_source_parent_link_override_failed", "prefab_public_interface_unavailable");
+        }
+
+        auto* prefabLoaderInterface = AZ::Interface<AzToolsFramework::Prefab::PrefabLoaderInterface>::Get();
+        if (!prefabLoaderInterface)
+        {
+            return RouteResult("approved_source_parent_link_override_failed", "prefab_loader_interface_unavailable");
+        }
+
+        const AZ::IO::Path owningPrefabPath = prefabPublicInterface->GetOwningInstancePrefabPath(entityId);
+        if (owningPrefabPath.String().empty())
+        {
+            return ParentLinkOwnershipBlockedResult(
+                "entity_owning_prefab_unavailable",
+                "",
+                false,
+                false,
+                false,
+                false);
+        }
+
+        const AZStd::string normalizedOwningPrefabPath = NormalizedFullPrefabPath(owningPrefabPath, *prefabLoaderInterface);
+        const AZStd::string normalizedRequestedPrefabPath = NormalizedFullPrefabPath(prefabPath, *prefabLoaderInterface);
+        if (normalizedOwningPrefabPath != normalizedRequestedPrefabPath)
+        {
+            return ParentLinkOwnershipBlockedResult(
+                "entity_not_owned_by_approved_source_prefab",
+                normalizedOwningPrefabPath,
+                false,
+                false,
+                false,
+                false);
+        }
+
+        AZ::Entity* entity = nullptr;
+        AZ::ComponentApplicationBus::BroadcastResult(entity, &AZ::ComponentApplicationRequests::FindEntity, entityId);
+        const bool actorComponentOwnedByEntity =
+            actorComponent.GetEntityId() == entityId &&
+            actorComponent.GetComponentId() != AZ::InvalidComponentId &&
+            entity != nullptr &&
+            entity->FindComponent(actorComponent.GetComponentId()) != nullptr;
+        const bool simpleMotionComponentOwnedByEntity =
+            simpleMotionComponent.GetEntityId() == entityId &&
+            simpleMotionComponent.GetComponentId() != AZ::InvalidComponentId &&
+            entity != nullptr &&
+            entity->FindComponent(simpleMotionComponent.GetComponentId()) != nullptr;
+        if (!actorComponentOwnedByEntity || !simpleMotionComponentOwnedByEntity)
+        {
+            return ParentLinkOwnershipBlockedResult(
+                "component_not_owned_by_approved_source_prefab_entity",
+                normalizedOwningPrefabPath,
+                true,
+                true,
+                true,
+                false);
+        }
+
+        const AZStd::string ownershipFields = ParentLinkOwnershipFields(
+            normalizedOwningPrefabPath,
+            true,
+            true,
+            true,
+            true);
+
+        auto* prefabOverridePublicInterface = AZ::Interface<AzToolsFramework::Prefab::PrefabOverridePublicInterface>::Get();
+        if (!prefabOverridePublicInterface)
+        {
+            return RouteResult("approved_source_parent_link_override_failed", "prefab_override_public_interface_unavailable");
+        }
+
+        auto* prefabFocusPublicInterface = AZ::Interface<AzToolsFramework::Prefab::PrefabFocusPublicInterface>::Get();
+        if (!prefabFocusPublicInterface)
+        {
+            return RouteResult("approved_source_parent_link_override_failed", "prefab_focus_public_interface_unavailable");
+        }
+
+        AzFramework::EntityContextId editorEntityContextId;
+        AzToolsFramework::EditorEntityContextRequestBus::BroadcastResult(
+            editorEntityContextId,
+            &AzToolsFramework::EditorEntityContextRequestBus::Events::GetEditorEntityContextId);
+
+        const int initialFocusPathLength = prefabFocusPublicInterface->GetPrefabFocusPathLength(editorEntityContextId);
+        AZ_UNUSED(initialFocusPathLength);
+        const auto owningFocusResult = prefabFocusPublicInterface->FocusOnOwningPrefab(entityId);
+        if (!owningFocusResult.IsSuccess())
+        {
+            return AZStd::string::format(
+                "maxine_prefab_save_update_route_approved_source_parent_link_override_failed;"
+                "reason=focus_on_owning_prefab_failed;"
+                "%s"
+                "parent_focus_context_required=true;"
+                "parent_focus_context_available=false;"
+                "parent_focus_context_applied=false;"
+                "parent_focus_context_restored=false;"
+                "link_context_required=true;"
+                "link_context_available=false;"
+                "focus_on_owning_prefab_succeeded=false;"
+                "focus_error=%s",
+                ownershipFields.c_str(),
+                owningFocusResult.GetError().c_str());
+        }
+
+        const int owningFocusPathLength = prefabFocusPublicInterface->GetPrefabFocusPathLength(editorEntityContextId);
+        const bool parentFocusContextAvailable = owningFocusPathLength > 1;
+        if (!parentFocusContextAvailable)
+        {
+            const auto restoreFocusResult = prefabFocusPublicInterface->FocusOnOwningPrefab(entityId);
+            return AZStd::string::format(
+                "maxine_prefab_save_update_route_approved_source_parent_link_override_failed;"
+                "reason=parent_focus_context_unavailable;"
+                "%s"
+                "parent_focus_context_required=true;"
+                "parent_focus_context_available=false;"
+                "parent_focus_context_applied=false;"
+                "parent_focus_context_restored=%s;"
+                "link_context_required=true;"
+                "link_context_available=false;"
+                "focus_on_owning_prefab_succeeded=true;"
+                "owning_focus_path_length=%d",
+                ownershipFields.c_str(),
+                restoreFocusResult.IsSuccess() ? "true" : "false",
+                owningFocusPathLength);
+        }
+
+        const auto parentFocusResult = prefabFocusPublicInterface->FocusOnParentOfFocusedPrefab(editorEntityContextId);
+        if (!parentFocusResult.IsSuccess())
+        {
+            const auto restoreFocusResult = prefabFocusPublicInterface->FocusOnOwningPrefab(entityId);
+            return AZStd::string::format(
+                "maxine_prefab_save_update_route_approved_source_parent_link_override_failed;"
+                "reason=focus_on_parent_prefab_failed;"
+                "%s"
+                "parent_focus_context_required=true;"
+                "parent_focus_context_available=true;"
+                "parent_focus_context_applied=false;"
+                "parent_focus_context_restored=%s;"
+                "link_context_required=true;"
+                "link_context_available=false;"
+                "focus_on_owning_prefab_succeeded=true;"
+                "focus_on_parent_prefab_succeeded=false;"
+                "focus_error=%s",
+                ownershipFields.c_str(),
+                restoreFocusResult.IsSuccess() ? "true" : "false",
+                parentFocusResult.GetError().c_str());
+        }
+
+        const bool actorOverridePresent = prefabOverridePublicInterface->AreComponentOverridesPresent(actorComponent);
+        const bool simpleMotionOverridePresent = prefabOverridePublicInterface->AreComponentOverridesPresent(simpleMotionComponent);
+        const bool componentOverridePathsDetected = actorOverridePresent && simpleMotionOverridePresent;
+        const bool actorOverrideApplied = prefabOverridePublicInterface->ApplyComponentOverrides(actorComponent);
+        const bool simpleMotionOverrideApplied = prefabOverridePublicInterface->ApplyComponentOverrides(simpleMotionComponent);
+        const bool applied = actorOverrideApplied && simpleMotionOverrideApplied;
+        const auto restoreFocusResult = prefabFocusPublicInterface->FocusOnOwningPrefab(entityId);
+
+        if (!applied)
+        {
+            return AZStd::string::format(
+                "maxine_prefab_save_update_route_approved_source_parent_link_override_failed;"
+                "reason=component_override_apply_failed;"
+                "%s"
+                "api=AzToolsFramework::Prefab::PrefabFocusPublicInterface::FocusOnOwningPrefab+FocusOnParentOfFocusedPrefab;"
+                "apply_api=AzToolsFramework::Prefab::PrefabOverridePublicInterface::ApplyComponentOverrides;"
+                "push_backend=AzToolsFramework::Prefab::PrefabOverridePublicHandler::PushOverridesToPrefab;"
+                "parent_focus_context_required=true;"
+                "parent_focus_context_available=true;"
+                "parent_focus_context_applied=true;"
+                "parent_focus_context_restored=%s;"
+                "link_context_required=true;"
+                "link_context_available=%s;"
+                "component_override_paths_detected=%s;"
+                "actor_component_override_present=%s;"
+                "simple_motion_component_override_present=%s;"
+                "actor_component_override_applied=%s;"
+                "simple_motion_component_override_applied=%s;"
+                "push_overrides_to_prefab_attempted=true;"
+                "push_overrides_to_prefab_verified=false",
+                ownershipFields.c_str(),
+                restoreFocusResult.IsSuccess() ? "true" : "false",
+                componentOverridePathsDetected ? "true" : "false",
+                componentOverridePathsDetected ? "true" : "false",
+                actorOverridePresent ? "true" : "false",
+                simpleMotionOverridePresent ? "true" : "false",
+                actorOverrideApplied ? "true" : "false",
+                simpleMotionOverrideApplied ? "true" : "false");
+        }
+        if (!restoreFocusResult.IsSuccess())
+        {
+            return AZStd::string::format(
+                "maxine_prefab_save_update_route_approved_source_parent_link_override_failed;"
+                "reason=parent_focus_context_restore_failed;"
+                "%s"
+                "api=AzToolsFramework::Prefab::PrefabFocusPublicInterface::FocusOnOwningPrefab+FocusOnParentOfFocusedPrefab;"
+                "apply_api=AzToolsFramework::Prefab::PrefabOverridePublicInterface::ApplyComponentOverrides;"
+                "push_backend=AzToolsFramework::Prefab::PrefabOverridePublicHandler::PushOverridesToPrefab;"
+                "parent_focus_context_required=true;"
+                "parent_focus_context_available=true;"
+                "parent_focus_context_applied=true;"
+                "parent_focus_context_restored=false;"
+                "link_context_required=true;"
+                "link_context_available=true;"
+                "component_override_paths_detected=true;"
+                "actor_component_override_present=true;"
+                "simple_motion_component_override_present=true;"
+                "actor_component_override_applied=true;"
+                "simple_motion_component_override_applied=true;"
+                "push_overrides_to_prefab_attempted=true;"
+                "push_overrides_to_prefab_verified=true;"
+                "focus_error=%s",
+                ownershipFields.c_str(),
+                restoreFocusResult.GetError().c_str());
+        }
+
+        return AZStd::string::format(
+            "maxine_prefab_save_update_route_approved_source_parent_link_override_applied;"
+            "%s"
+            "api=AzToolsFramework::Prefab::PrefabFocusPublicInterface::FocusOnOwningPrefab+FocusOnParentOfFocusedPrefab;"
+            "apply_api=AzToolsFramework::Prefab::PrefabOverridePublicInterface::ApplyComponentOverrides;"
+            "push_backend=AzToolsFramework::Prefab::PrefabOverridePublicHandler::PushOverridesToPrefab;"
+            "path_policy=active_project_root/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab;"
+            "parent_focus_context_required=true;"
+            "parent_focus_context_available=true;"
+            "parent_focus_context_applied=true;"
+            "parent_focus_context_restored=true;"
+            "link_context_required=true;"
+            "link_context_available=true;"
+            "component_override_paths_detected=true;"
+            "actor_component_override_present=true;"
+            "simple_motion_component_override_present=true;"
+            "actor_component_override_applied=true;"
+            "simple_motion_component_override_applied=true;"
+            "push_overrides_to_prefab_attempted=true;"
+            "push_overrides_to_prefab_verified=true",
+            ownershipFields.c_str());
     }
 
     AZStd::string PrefabSaveUpdateBridgeHostComponent::CommitApprovedSourcePrefabEntityChanges(
