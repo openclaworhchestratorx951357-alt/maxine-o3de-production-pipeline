@@ -151,6 +151,16 @@ $env:MAXINE_ALLOW_RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE="1"
 
 These gates permit only a bounded, source-backed check of the approved prefab/component wiring path. The diagnostic source-validates EMotionFX Editor `Actor`, `Simple Motion`, and `Anim Graph` components, `EditorComponentAPIBus` add/property APIs, `PrefabPublicRequestBus` prefab APIs, and prefab-to-spawnable conversion surfaces. It does not hand-author unknown O3DE component JSON and does not mutate defaultlevel or production content. Until an Editor-generated approved prefab update is safely proven and the regenerated approved spawnable exposes runtime EMotionFX component TypeIds after spawn, the harness must keep `runtime_character_animation_component_wiring_claimed=false`, `runtime_character_animation_component_wiring_verified=false`, `runtime_character_animation_claimed=false`, and `runtime_character_proof_verified=false`.
 
+Runtime Actor + Simple Motion component wiring after APB requires the product-load, spawn, playback-surface, and component-wiring gates plus two explicit after-APB gates:
+
+```powershell
+$env:MAXINE_ENABLE_RUNTIME_ACTOR_SIMPLE_MOTION_COMPONENT_WIRING_AFTER_APB="1"
+$env:MAXINE_ALLOW_RUNTIME_ACTOR_SIMPLE_MOTION_COMPONENT_WIRING_AFTER_APB="1"
+python tools/o3de/runtime_harness.py --manifest examples/manifests/release_rigged.pass.example.json --enable-runtime-actor-simple-motion-component-wiring-after-apb-fixture --strict-integration --engine-root C:/src/o3de --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --apb-report <LATEST_APB_REPORT_JSON> --timeout-seconds 240
+```
+
+This proof is allowed only after live APB verifies the approved spawnable from the modified source prefab. The runtime fixture records Actor/Simple Motion assignment evidence in `MAXINE_RUNTIME_CHARACTER_SPAWN_ENTITY` markers with `actor_asset_id` and `motion_asset_id`, source-validated against `EMotionFX::Integration::ActorComponent::GetActorAsset` and `EMotionFX::Integration::SimpleMotionComponent::GetMotion`. Runtime TypeIds alone are insufficient; the harness may claim `runtime_character_animation_component_wiring_verified=true` only when APB/spawnable proof, runtime Actor and Simple Motion TypeIds, runtime Actor and Motion assignment IDs, cleanup/despawn, and selected log/error scans all pass. If a selected product log scan fails, the result must stay blocked even when TypeIds and assignment IDs are visible.
+
 Approved Editor-generated runtime animation component wiring diagnostics require the Editor smoke gates plus an explicit generation marker:
 
 ```powershell

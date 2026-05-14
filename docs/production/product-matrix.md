@@ -28,6 +28,8 @@ That resolves the release-rigged product matrix evidence for `pxmesh`; all requi
 
 The follow-up DiffuseProbeGrid slice removed the unnecessary direct `DiffuseProbeGrid` Gem enablement from the controlled `MAXINE_GoldenCorpus` project and regenerated project-specific CMake registry metadata. APB now exits `0`, the wrapper/suite pass, and the product matrix remains `pass` without weakening the release-rigged product contract.
 
+After the approved `release_rigged.prefab` source-template persisted Actor + Simple Motion wiring, live APB must preserve the normal release-rigged product matrix and find the approved character spawnable at `pc/assets/characters/maxine_goldencorpus/prefabs/release_rigged.spawnable`. That spawnable evidence is a prerequisite for runtime wiring proof, but it is not itself runtime component wiring or animation proof.
+
 ## Cache Heuristic Policy
 
 Release lanes fail with `MXN_ASSET_CACHE_HEURISTIC_FORBIDDEN` when product resolution depends only on:
