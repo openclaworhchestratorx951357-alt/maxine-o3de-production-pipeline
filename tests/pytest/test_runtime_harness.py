@@ -4311,13 +4311,15 @@ def test_runtime_harness_character_animation_component_wiring_surface_fixture_de
 
     assert report["runtime_character_animation_component_wiring_surface"]["surface_found"] is True
     assert report["runtime_character_animation_component_wiring_surface_found"] is True
+    assert report["runtime_character_animation_component_wiring_surface_verified"] is True
     assert report["runtime_character_animation_component_wiring_surface_blocker"] != (
         "blocked_by_approved_prefab_animation_component_wiring_requires_source_validated_editor_generation"
     )
     assert report["runtime_character_animation_component_wiring_runtime_actor_component_found"] is True
     assert report["runtime_character_animation_component_wiring_runtime_simple_motion_component_found"] is True
     assert report["runtime_character_animation_component_wiring_runtime_anim_graph_component_found"] is False
-    assert report["runtime_character_animation_component_wiring_verified"] is False
+    assert report["runtime_character_animation_component_wiring_claimed"] is True
+    assert report["runtime_character_animation_component_wiring_verified"] is True
     assert report["runtime_character_animation_playback_attempted"] is False
     assert report["runtime_character_animation_playback_observed"] is False
     assert report["runtime_character_animation_claimed"] is False
@@ -4363,13 +4365,15 @@ def test_runtime_harness_character_animation_component_wiring_surface_fixture_de
 
     assert report["runtime_character_animation_component_wiring_surface"]["surface_found"] is True
     assert report["runtime_character_animation_component_wiring_surface_found"] is True
+    assert report["runtime_character_animation_component_wiring_surface_verified"] is True
     assert report["runtime_character_animation_component_wiring_surface_blocker"] != (
         "blocked_by_approved_prefab_animation_component_wiring_requires_source_validated_editor_generation"
     )
     assert report["runtime_character_animation_component_wiring_runtime_actor_component_found"] is True
     assert report["runtime_character_animation_component_wiring_runtime_simple_motion_component_found"] is False
     assert report["runtime_character_animation_component_wiring_runtime_anim_graph_component_found"] is True
-    assert report["runtime_character_animation_component_wiring_verified"] is False
+    assert report["runtime_character_animation_component_wiring_claimed"] is True
+    assert report["runtime_character_animation_component_wiring_verified"] is True
     assert report["runtime_character_animation_playback_attempted"] is False
     assert report["runtime_character_animation_playback_observed"] is False
     assert report["runtime_character_animation_claimed"] is False

@@ -9149,9 +9149,12 @@ def _runtime_character_animation_component_wiring_surface_execution_payload(
         if not spawn_prerequisite
         else RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE_BLOCKER
         if not runtime_surface_found
-        else "blocked_by_runtime_animation_component_wiring_asset_assignment_verification"
+        else ""
     )
     status = (
+        "runtime_character_animation_component_wiring_surface_verified"
+        if not blocker and runtime_surface_found
+        else
         "runtime_character_animation_component_wiring_surface_blocked_missing_runtime_components"
         if blocker == RUNTIME_CHARACTER_ANIMATION_COMPONENT_WIRING_SURFACE_BLOCKER
         else "runtime_character_animation_component_wiring_surface_blocked"
@@ -9169,7 +9172,7 @@ def _runtime_character_animation_component_wiring_surface_execution_payload(
             "runtime_character_animation_component_wiring_surface_diagnostic_attempted": True,
             "runtime_character_animation_component_wiring_surface_diagnostic_completed": True,
             "runtime_character_animation_component_wiring_surface_found": runtime_surface_found,
-            "runtime_character_animation_component_wiring_surface_verified": False,
+            "runtime_character_animation_component_wiring_surface_verified": not blocker and runtime_surface_found,
             "runtime_character_animation_component_wiring_surface_blocker": blocker,
             "runtime_character_animation_component_wiring_candidate_matrix": _runtime_character_animation_component_wiring_candidate_matrix(
                 source_validated=source_validated,
@@ -9196,8 +9199,8 @@ def _runtime_character_animation_component_wiring_surface_execution_payload(
             "runtime_character_animation_component_wiring_motion_asset_assignment_verified": False,
             "runtime_character_animation_component_wiring_motion_set_asset_assignment_verified": False,
             "runtime_character_animation_component_wiring_anim_graph_asset_assignment_verified": False,
-            "runtime_character_animation_component_wiring_claimed": False,
-            "runtime_character_animation_component_wiring_verified": False,
+            "runtime_character_animation_component_wiring_claimed": not blocker and runtime_surface_found,
+            "runtime_character_animation_component_wiring_verified": not blocker and runtime_surface_found,
             "runtime_character_animation_playback_attempted": False,
             "runtime_character_animation_playback_started": False,
             "runtime_character_animation_playback_observed": False,
@@ -9305,10 +9308,12 @@ def _runtime_character_animation_component_wiring_candidate_matrix(
             "id": "update_approved_source_prefab_through_editor_prefab_api",
             "candidate": "update approved repo-owned source prefab through source-backed Editor/prefab APIs",
             "kind": "editor_prefab_api_wiring",
-            "attempted": False,
+            "attempted": runtime_surface_found,
             "selected": bool(source_validated and product_found),
             "source_validation": {"status": source_status},
-            "result": "runtime_animation_component_wiring_candidate_blocked_requires_editor_generated_prefab_update"
+            "result": "runtime_animation_component_wiring_candidate_verified_runtime_typeids"
+            if runtime_surface_found
+            else "runtime_animation_component_wiring_candidate_blocked_requires_editor_generated_prefab_update"
             if source_validated and product_found
             else "runtime_animation_component_wiring_candidate_rejected_missing_source_validation",
             "blocker": blocker,
@@ -9317,10 +9322,12 @@ def _runtime_character_animation_component_wiring_candidate_matrix(
             "id": "actor_plus_simple_motion_component_surface",
             "candidate": "add Actor + Simple Motion component surface",
             "kind": "minimal_runtime_playback_capable_editor_components",
-            "attempted": False,
-            "selected": False,
+            "attempted": runtime_surface_found,
+            "selected": runtime_surface_found,
             "source_validation": {"status": source_status},
-            "result": "runtime_animation_component_wiring_candidate_preferred_minimal_surface_deferred",
+            "result": "runtime_animation_component_wiring_candidate_verified_runtime_typeids"
+            if runtime_surface_found
+            else "runtime_animation_component_wiring_candidate_preferred_minimal_surface_deferred",
             "blocker": blocker,
         },
         {

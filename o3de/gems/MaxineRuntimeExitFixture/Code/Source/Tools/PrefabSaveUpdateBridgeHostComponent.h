@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AzCore/Component/Component.h>
+#include <AzCore/Component/EntityId.h>
 #include <AzCore/std/string/string.h>
 
 namespace MaxineRuntimeExitFixture
@@ -18,6 +19,14 @@ namespace MaxineRuntimeExitFixture
         static void GetDependentServices(AZ::ComponentDescriptor::DependencyArrayType& dependent);
         static AZStd::string GetPrefabSaveUpdateBridgeHostStatus();
         static AZStd::string SavePrefabUpdateScratchProbe(const AZStd::string& absolutePrefabPath);
+        static AZStd::string ApplyApprovedSourcePrefabComponentOverrides(
+            const AZStd::string& absolutePrefabPath,
+            const AZ::EntityComponentIdPair& actorComponent,
+            const AZ::EntityComponentIdPair& simpleMotionComponent);
+        static AZStd::string CommitApprovedSourcePrefabEntityChanges(
+            const AZStd::string& absolutePrefabPath,
+            AZ::EntityId entityId);
+        static AZStd::string SaveApprovedSourcePrefabWiring(const AZStd::string& absolutePrefabPath);
 
         void Activate() override;
         void Deactivate() override;

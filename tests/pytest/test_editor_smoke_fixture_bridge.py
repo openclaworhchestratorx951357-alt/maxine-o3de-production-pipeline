@@ -349,6 +349,77 @@ def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exi
                 "runtime_character_proof_verified": False,
             }
         )
+    if diagnostic_mode == "approved-source-prefab-actor-simple-motion-wiring":
+        binding_payload.update(
+            {
+                "approved_source_prefab_actor_simple_motion_wiring_attempted": True,
+                "approved_source_prefab_actor_simple_motion_wiring_completed": True,
+                "approved_source_prefab_actor_simple_motion_wiring_verified": True,
+                "approved_source_prefab_actor_simple_motion_wiring_blocker": "",
+                "approved_source_prefab_actor_simple_motion_wiring_source_validation_status": "pass",
+                "approved_source_prefab_actor_simple_motion_wiring_source_validation_verified": True,
+                "approved_source_prefab_actor_simple_motion_wiring_candidate_matrix": [],
+                "approved_source_prefab_actor_simple_motion_wiring_selected_strategy": "approved_source_prefab_actor_plus_simple_motion_editor_generated_update",
+                "approved_source_prefab_path": "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+                "approved_source_prefab_project_path_redacted": "%USERPROFILE%/O3DE/Projects/MAXINE_GoldenCorpus/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+                "approved_source_prefab_before_hash": "1" * 64,
+                "approved_source_prefab_after_hash": "2" * 64,
+                "approved_source_prefab_project_before_hash": "3" * 64,
+                "approved_source_prefab_project_after_hash": "4" * 64,
+                "approved_source_prefab_modified": True,
+                "approved_source_prefab_changed_this_run": True,
+                "approved_source_prefab_persisted_wiring_markers_verified": True,
+                "approved_source_prefab_project_persisted_wiring_markers_verified": True,
+                "approved_source_prefab_component_overrides_applied": True,
+                "approved_source_prefab_component_override_refs": {
+                    "actor_component_ref_status": "pass",
+                    "simple_motion_component_ref_status": "pass",
+                },
+                "approved_source_prefab_component_override_apply_status": {
+                    "attempted": True,
+                    "callable": True,
+                    "applied": True,
+                },
+                "approved_source_prefab_entity_changes_committed": True,
+                "approved_source_prefab_entity_change_commit_status": {
+                    "attempted": True,
+                    "callable": True,
+                    "committed": True,
+                },
+                "approved_source_prefab_update_route_used": "azlmbr.maxine.prefab_bridge.save_approved_source_prefab_wiring",
+                "approved_source_prefab_save_verified": True,
+                "approved_source_prefab_actor_component_added": True,
+                "approved_source_prefab_simple_motion_component_added": True,
+                "approved_source_prefab_actor_asset_assignment_verified": True,
+                "approved_source_prefab_motion_asset_assignment_verified": True,
+                "approved_source_prefab_actor_asset_id": "{11111111-1111-1111-1111-111111111111}:00000001",
+                "approved_source_prefab_motion_asset_id": "{22222222-2222-2222-2222-222222222222}:00000002",
+                "approved_source_prefab_property_readback_verified": True,
+                "approved_source_prefab_defaultlevel_mutation": False,
+                "approved_source_prefab_production_level_mutation": False,
+                "approved_source_prefab_hand_authored_unknown_json_used": False,
+                "approved_spawnable_regenerated_or_found": False,
+                "approved_runtime_animation_component_wiring_editor_generation_attempted": True,
+                "approved_runtime_animation_component_wiring_editor_generation_completed": True,
+                "approved_runtime_animation_component_wiring_editor_generation_verified": True,
+                "approved_runtime_animation_component_wiring_editor_generation_blocker": "",
+                "approved_runtime_animation_component_wiring_source_prefab_path": "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+                "approved_runtime_animation_component_wiring_source_prefab_modified": True,
+                "approved_runtime_animation_component_wiring_editor_generated_update_used": True,
+                "approved_runtime_animation_component_wiring_hand_authored_unknown_json_used": False,
+                "approved_runtime_animation_component_wiring_actor_component_added": True,
+                "approved_runtime_animation_component_wiring_simple_motion_component_added": True,
+                "approved_runtime_animation_component_wiring_actor_asset_assignment_verified": True,
+                "approved_runtime_animation_component_wiring_motion_asset_assignment_verified": True,
+                "approved_runtime_animation_component_wiring_prefab_save_verified": True,
+                "runtime_character_animation_component_wiring_claimed": False,
+                "runtime_character_animation_component_wiring_verified": False,
+                "runtime_character_animation_claimed": False,
+                "runtime_character_animation_verified": False,
+                "runtime_character_proof_claimed": False,
+                "runtime_character_proof_verified": False,
+            }
+        )
     payload.update(
         {
             "status": status,
@@ -1264,6 +1335,7 @@ def test_editor_smoke_binding_diagnostic_modes_route_to_target_scripts(tmp_path)
         "approved-prefab-save-update-bridge": "editor_approved_prefab_save_update_bridge_smoke.py",
         "approved-prefab-save-update-bridge-host": "editor_approved_prefab_save_update_bridge_host_smoke.py",
         "approved-prefab-save-update-route": "editor_approved_prefab_save_update_route_smoke.py",
+        "approved-source-prefab-actor-simple-motion-wiring": "editor_approved_source_prefab_actor_simple_motion_wiring_smoke.py",
     }
 
     for mode, script_name in expected_scripts.items():
@@ -2081,6 +2153,150 @@ def test_editor_python_prefab_save_update_route_rejection_paths_cover_outside_pr
     assert outside_project.suffix == ".prefab"
     assert project_root not in outside_project.parents
     assert project_root not in paths["other_project"].parents
+
+
+def test_editor_python_approved_source_prefab_wiring_source_validation_detects_approved_route():
+    repo_refs = [
+        ref
+        for ref in editor_python_smoke._approved_source_prefab_wiring_source_refs()
+        if "C:/src/o3de" not in str(ref.get("path", "")).replace("\\", "/")
+    ]
+    result = editor_python_smoke._source_validation_from_refs(repo_refs)
+
+    assert result["status"] == "pass"
+    assert result["verified"] is True
+    route_ref = [
+        ref
+        for ref in result["refs"]
+        if str(ref.get("path", "")).replace("\\", "/").endswith("PrefabSaveUpdateBridgeHostComponent.cpp")
+    ][0]
+    assert "save_approved_source_prefab_wiring" in route_ref["symbols"]
+    assert "apply_approved_source_prefab_component_overrides" in route_ref["symbols"]
+    assert "commit_approved_source_prefab_entity_changes" in route_ref["symbols"]
+    assert "RejectReasonForApprovedSourcePrefabPath" in route_ref["symbols"]
+    assert "GenerateRelativePath" in route_ref["symbols"]
+    assert "ApplyComponentOverrides" in route_ref["symbols"]
+    assert "GenerateUndoNodesForEntityChangeAndUpdateCache" in route_ref["symbols"]
+    assert "approved_source_save_verified=true" in route_ref["symbols"]
+    assert "hand_authored_unknown_json" in route_ref["absent_symbols"]
+
+
+def test_editor_python_approved_source_prefab_wiring_rejection_paths_are_project_anchored(tmp_path, monkeypatch):
+    project_root = tmp_path / "MAXINE_GoldenCorpus"
+    source = (
+        project_root
+        / "Assets"
+        / "Characters"
+        / "MAXINE_GoldenCorpus"
+        / "prefabs"
+        / "release_rigged.prefab"
+    )
+    monkeypatch.setenv("O3DE_PROJECT_PATH", str(project_root))
+
+    paths = editor_python_smoke._approved_source_prefab_wiring_rejection_paths(source)
+
+    assert paths["defaultlevel"].as_posix().lower().find("/levels/defaultlevel/") >= 0
+    assert paths["production_level"].as_posix().lower().find("/levels/production/") >= 0
+    assert paths["generated_product"].as_posix().lower().find("/cache/") >= 0
+    assert project_root not in paths["unapproved_absolute"].parents
+    assert project_root not in paths["other_project"].parents
+    assert ".." in paths["path_traversal"].parts
+    assert paths["non_prefab"].suffix == ".txt"
+
+
+def test_editor_smoke_approved_source_prefab_wiring_schema_and_semantics_validate():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "diagnostic_mode": "approved-source-prefab-actor-simple-motion-wiring",
+            "live_editor_execution": True,
+            "no_fake_success": True,
+            "approved_source_prefab_actor_simple_motion_wiring_attempted": True,
+            "approved_source_prefab_actor_simple_motion_wiring_completed": True,
+            "approved_source_prefab_actor_simple_motion_wiring_verified": True,
+            "approved_source_prefab_actor_simple_motion_wiring_blocker": "",
+            "approved_source_prefab_actor_simple_motion_wiring_source_validation_status": "pass",
+            "approved_source_prefab_actor_simple_motion_wiring_source_validation_verified": True,
+            "approved_source_prefab_path": "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+            "approved_source_prefab_before_hash": "1" * 64,
+            "approved_source_prefab_after_hash": "2" * 64,
+            "approved_source_prefab_project_after_hash": "3" * 64,
+            "approved_source_prefab_modified": True,
+            "approved_source_prefab_persisted_wiring_markers_verified": True,
+            "approved_source_prefab_project_persisted_wiring_markers_verified": True,
+            "approved_source_prefab_component_overrides_applied": True,
+            "approved_source_prefab_component_override_refs": {
+                "actor_component_ref_status": "pass",
+                "simple_motion_component_ref_status": "pass",
+            },
+            "approved_source_prefab_component_override_apply_status": {
+                "attempted": True,
+                "callable": True,
+                "applied": True,
+            },
+            "approved_source_prefab_entity_changes_committed": True,
+            "approved_source_prefab_entity_change_commit_status": {
+                "attempted": True,
+                "callable": True,
+                "committed": True,
+            },
+            "approved_source_prefab_save_verified": True,
+            "approved_source_prefab_actor_component_added": True,
+            "approved_source_prefab_simple_motion_component_added": True,
+            "approved_source_prefab_actor_asset_assignment_verified": True,
+            "approved_source_prefab_motion_asset_assignment_verified": True,
+            "approved_source_prefab_actor_asset_id": "{11111111-1111-1111-1111-111111111111}:00000001",
+            "approved_source_prefab_motion_asset_id": "{22222222-2222-2222-2222-222222222222}:00000002",
+            "approved_source_prefab_property_readback_verified": True,
+            "approved_source_prefab_defaultlevel_mutation": False,
+            "approved_source_prefab_production_level_mutation": False,
+            "approved_source_prefab_hand_authored_unknown_json_used": False,
+            "approved_runtime_animation_component_wiring_source_prefab_modified": True,
+            "approved_runtime_animation_component_wiring_editor_generated_update_used": True,
+            "approved_runtime_animation_component_wiring_prefab_save_verified": True,
+            "runtime_character_animation_component_wiring_claimed": False,
+            "runtime_character_animation_component_wiring_verified": False,
+            "runtime_character_animation_claimed": False,
+            "runtime_character_animation_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+        }
+    )
+
+    schema_result = schema_validate(report, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(report, strict=True)
+
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+
+
+def test_editor_smoke_approved_source_prefab_wiring_rejects_hand_authored_unknown_json():
+    report = load_json(CORPUS / "editor-smoke-live.release-rigged.pass.example.json")
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "diagnostic_mode": "approved-source-prefab-actor-simple-motion-wiring",
+            "live_editor_execution": True,
+            "no_fake_success": True,
+            "approved_source_prefab_actor_simple_motion_wiring_attempted": True,
+            "approved_source_prefab_actor_simple_motion_wiring_completed": True,
+            "approved_source_prefab_actor_simple_motion_wiring_verified": False,
+            "approved_source_prefab_actor_simple_motion_wiring_blocker": "blocked_by_editor_component_assignment_readback_failure",
+            "approved_source_prefab_actor_simple_motion_wiring_source_validation_status": "pass",
+            "approved_source_prefab_actor_simple_motion_wiring_source_validation_verified": True,
+            "approved_source_prefab_hand_authored_unknown_json_used": True,
+            "runtime_character_animation_component_wiring_claimed": False,
+            "runtime_character_animation_component_wiring_verified": False,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
 
 
 def test_editor_smoke_generation_verified_requires_source_prefab_and_spawnable_evidence():

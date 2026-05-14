@@ -1,6 +1,15 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- Persist Approved Actor + Simple Motion Source-Prefab Wiring v1 is implemented on `codex/persist-approved-actor-simple-motion-source-prefab-wiring-v1` and pending review:
+  - PR #149 was repaired, its P1 project-root scratch path policy review thread `PRRT_kwDOSS7l-86B5dw4` was resolved after validation, and PR #149 was merged into `main` at `339665167b599e12f976c0d4d804c78bf0cc6804`; this branch was created from that updated `main`
+  - this slice adds the Editor smoke diagnostic mode `approved-source-prefab-actor-simple-motion-wiring`, plus CLI aliases `--diagnose-approved-source-prefab-actor-simple-motion-wiring` and `--enable-approved-source-prefab-actor-simple-motion-wiring-fixture`
+  - the repo-owned `MaxineRuntimeExitFixture.Editor` bridge now reflects approved-source-only routes for component override application, entity-change commit, and `SavePrefab`; each route is gated to `<active-project>/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab` and rejects defaultlevel, production-level, generated product/cache, unapproved absolute, other-project, traversal, and non-prefab paths
+  - live Editor evidence confirms Actor + Simple Motion components can be added to the approved source-prefab instance and approved actor/motion AssetId assignment readback succeeds, with Actor AssetId `{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7` and Motion AssetId `{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0`
+  - the source-backed entity-change commit route and final save route are callable and return success, but the saved approved source template does not persist `ActorAsset` / `MotionAsset` markers; the selected result is the typed blocker `blocked_by_editor_generated_instance_changes_not_propagated_to_source_template`
+  - the approved repo-owned source prefab remains unchanged, Actor + Simple Motion were not persisted, APB/runtime verification after source mutation did not run, and component-wiring, runtime animation, and full runtime character proof remain unclaimed
+  - live Editor blocker evidence path: `artifacts/o3de-integration/editor-smoke/editor-smoke-20260514T001430Z/editor_smoke_live_report.json`
+  - publication remains blocked, release packaging remains blocked, production/defaultlevel mutation remains forbidden, Asset Cache deletion remains forbidden, cache heuristic release proof remains forbidden, and no production-ready release status is claimed
 - Implement Bounded Prefab Save/Update Route and Scratch Proof v1 is implemented on `codex/implement-bounded-prefab-save-update-route-scratch-proof-v1` and pending review:
   - PR #148 was repaired, its P1 machine-local source-validation review thread `PRRT_kwDOSS7l-86B3lKR` was resolved after validation, and PR #148 was merged into `main` at `8180562d4f9490e5c24fc0d8b33364cb18aa4f68`; this branch was created from that updated `main`
   - this slice adds the Editor smoke diagnostic mode `approved-prefab-save-update-route`, plus CLI aliases `--diagnose-approved-prefab-save-update-route` and `--enable-approved-prefab-save-update-route-fixture`
