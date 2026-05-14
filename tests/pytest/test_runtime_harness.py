@@ -236,6 +236,11 @@ def _write_animation_source_validation_files(engine: Path) -> None:
         "Gems/EMotionFX/Code/Source/Integration/Assets/MotionAsset.h": (
             'AZ_RTTI(MotionAsset, "{00494B8E-7578-4BA2-8B28-272E90680787}", EMotionFXAsset)\n'
         ),
+        "Gems/EMotionFX/Code/Source/Integration/Assets/AssetCommon.h": (
+            "EMotionFXAssetHandler<DataType>::Register\n"
+            "AZ::Data::AssetManager::Instance().RegisterHandler(this, azrtti_typeid<DataType>())\n"
+            "AZ::Data::AssetManager::Instance().UnregisterHandler(this)\n"
+        ),
         "Gems/EMotionFX/Code/Source/Integration/Assets/MotionSetAsset.h": (
             'AZ_RTTI(MotionSetAsset, "{1DA936A0-F766-4B2F-B89C-9F4C8E1310F9}", EMotionFXAsset)\n'
         ),
@@ -256,6 +261,15 @@ def _write_animation_source_validation_files(engine: Path) -> None:
         ),
         "Gems/EMotionFX/Code/Source/Integration/System/SystemComponent.cpp": (
             "ActorAssetHandler\nMotionAssetHandler\nMotionSetAssetHandler\nAnimGraphAssetHandler\n"
+            "RegisterAssetTypesAndHandlers\nEnableCatalogForAsset\n"
+        ),
+        "Gems/EMotionFX/Code/Source/Integration/System/AnimationModule.cpp": (
+            "SimpleMotionComponent\nSystemComponent\nGetRequiredSystemComponents\n"
+        ),
+        "Code/Framework/AzCore/AzCore/Asset/AssetManager.cpp": (
+            "No handler was registered for asset of type %s but it was still in the AssetManager as %s\n"
+            "Asset handler for %s is being removed, when assetid %s is still loaded!\n"
+            "AssetManager::UnregisterHandler\n"
         ),
     }
     for relative, content in source_files.items():
@@ -366,17 +380,26 @@ def _animation_playback_surface_fixture_runner(
     primary_entity_components: list[str] | None = None,
     actor_asset_id: str = "",
     motion_asset_id: str = "",
+    product_asset_overrides: dict[str, tuple[str, str]] | None = None,
+    extra_stdout_lines: list[str] | None = None,
 ):
     def runner(argv, **kwargs):
         marker_lines = ["MAXINE_RUNTIME_PRODUCT_LOAD_START count=8 timeout_ticks=120 require_all=true"]
         for index, product in enumerate(products):
+            asset_id, asset_type = (product_asset_overrides or {}).get(
+                product["product_kind"],
+                (
+                    f"{{11111111-1111-4111-8111-111111111111}}:{index + 1}",
+                    "{22222222-2222-4222-8222-222222222222}",
+                ),
+            )
             marker_lines.extend(
                 [
                     (
                         f"MAXINE_RUNTIME_PRODUCT_LOAD_RESOLVED index={index} kind={product['product_kind']} "
                         f"path={product['product_path']} catalog_path={product['catalog_path']} "
-                        f"asset_id={{11111111-1111-4111-8111-111111111111}}:{index + 1} "
-                        f"asset_type={{22222222-2222-4222-8222-222222222222}} asset_type_name=runtime_catalog_asset_type"
+                        f"asset_id={asset_id} "
+                        f"asset_type={asset_type} asset_type_name=runtime_catalog_asset_type"
                     ),
                     f"MAXINE_RUNTIME_PRODUCT_LOAD_READY index={index} kind={product['product_kind']} path={product['product_path']} status=ready",
                     f"MAXINE_RUNTIME_PRODUCT_LOAD_RELEASED index={index} kind={product['product_kind']} path={product['product_path']} status=released",
@@ -434,6 +457,7 @@ def _animation_playback_surface_fixture_runner(
                 "'{1BAEE536-96CA-4AEB-BA73-D5D72EE35B45}' found in 'AZStd::intrusive_ptr<ShaderStageFunction>' "
                 "is not registered with the serializer!\n"
                 + "\n".join(prefixed_marker_lines)
+                + ("\n" + "\n".join(extra_stdout_lines) if extra_stdout_lines else "")
                 + "\nMAXINE_RUNTIME_EXIT_FIXTURE_REQUESTING_EXIT ticks_observed=9\n"
             ),
             stderr="",
@@ -4597,6 +4621,247 @@ def test_runtime_harness_actor_simple_motion_after_apb_fixture_verifies_typeids_
     assert report["runtime_character_animation_claimed"] is False
     assert report["runtime_character_animation_verified"] is False
     assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_motion_handler_shutdown_signal_can_be_classified_for_approved_motion_wiring(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _enable_runtime_actor_simple_motion_after_apb_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+    motion_asset_id = "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0"
+    motion_asset_type = "{00494B8E-7578-4BA2-8B28-272E90680787}"
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+            ],
+            actor_asset_id="{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+            motion_asset_id=motion_asset_id,
+            product_asset_overrides={"motion": (motion_asset_id, motion_asset_type)},
+            extra_stdout_lines=[
+                (
+                    f"AssetManager: Asset handler for {motion_asset_type} is being removed, "
+                    f"when assetid {motion_asset_id} is still loaded!"
+                ),
+                (
+                    f"System: No handler was registered for asset of type {motion_asset_type} "
+                    f"but it was still in the AssetManager as {motion_asset_id}"
+                ),
+            ],
+        ),
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["approved_motion_product_handler_signal_diagnostic_attempted"] is True
+    assert report["approved_motion_product_handler_signal_diagnostic_completed"] is True
+    assert report["approved_motion_product_handler_signal_source_validation_verified"] is True
+    assert report["approved_motion_product_handler_signal_found"] is True
+    assert report["approved_motion_product_handler_signal_asset_type"] == motion_asset_type
+    assert report["approved_motion_product_handler_signal_asset_id"] == motion_asset_id
+    assert report["approved_motion_product_handler_signal_classification"] == (
+        "harmless_shutdown_handler_unregister_after_verified_motion_load"
+    )
+    assert report["approved_motion_product_handler_signal_classification_verified"] is True
+    assert report["approved_motion_product_handler_signal_harmless_under_strict_fixture"] is True
+    assert report["approved_motion_product_handler_signal_blocker"] == ""
+    assert report["runtime_motion_assignment_id_readback_verified"] is True
+    assert report["runtime_motion_assignment_load_verified"] is True
+    assert report["runtime_character_product_load_verified"] is True
+    assert report["runtime_character_product_load_failed_products"] == []
+    assert report["runtime_character_animation_component_wiring_claimed"] is True
+    assert report["runtime_character_animation_component_wiring_verified"] is True
+    assert report["runtime_actor_simple_motion_component_wiring_after_apb_verified"] is True
+    assert report["runtime_character_animation_playback_attempted"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_motion_handler_signal_requires_runtime_motion_readback(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _enable_runtime_actor_simple_motion_after_apb_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+    motion_asset_id = "{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0"
+    motion_asset_type = "{00494B8E-7578-4BA2-8B28-272E90680787}"
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+            ],
+            actor_asset_id="{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+            motion_asset_id="",
+            product_asset_overrides={"motion": (motion_asset_id, motion_asset_type)},
+            extra_stdout_lines=[
+                (
+                    f"AssetManager: Asset handler for {motion_asset_type} is being removed, "
+                    f"when assetid {motion_asset_id} is still loaded!"
+                ),
+                (
+                    f"System: No handler was registered for asset of type {motion_asset_type} "
+                    f"but it was still in the AssetManager as {motion_asset_id}"
+                ),
+            ],
+        ),
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["runtime_character_animation_component_wiring_runtime_simple_motion_component_found"] is True
+    assert report["runtime_motion_assignment_id_readback_verified"] is False
+    assert report["runtime_character_animation_component_wiring_runtime_motion_asset_assignment_verified"] is False
+    assert report["approved_motion_product_handler_signal_found"] is True
+    assert report["approved_motion_product_handler_signal_asset_type"] == motion_asset_type
+    assert report["approved_motion_product_handler_signal_asset_id"] == motion_asset_id
+    assert report["approved_motion_product_handler_signal_classification_verified"] is False
+    assert report["approved_motion_product_handler_signal_harmless_under_strict_fixture"] is False
+    assert report["approved_motion_product_handler_signal_blocker"] == (
+        "blocked_by_runtime_motion_assignment_readback_unverified"
+    )
+    assert report["runtime_character_product_load_verified"] is False
+    assert report["runtime_character_product_load_selected_product_log_scan"]
+    assert report["runtime_character_product_load_selected_product_log_scan_classified"] == []
+    assert report["runtime_character_animation_component_wiring_claimed"] is False
+    assert report["runtime_character_animation_component_wiring_verified"] is False
+    assert report["runtime_actor_simple_motion_component_wiring_after_apb_verified"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_motion_handler_signal_for_nonapproved_motion_remains_blocking(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _enable_runtime_actor_simple_motion_after_apb_fixture_env(env)
+    _enable_fixture_gem(project)
+    _write_defaultlevel_bootstrap(project)
+    _append_approved_character_spawnable_product(apb)
+    products = runtime_harness._runtime_character_product_load_products_from_apb(
+        runtime_harness._product_evidence_from_apb(apb),
+        project=project,
+        engine_root=engine,
+    )
+    other_motion_asset_id = "{AAAAAAAA-BBBB-5CCC-8DDD-EEEEEEEEEEEE}:ddcbe0"
+    motion_asset_type = "{00494B8E-7578-4BA2-8B28-272E90680787}"
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        enable_runtime_actor_simple_motion_component_wiring_after_apb_fixture=True,
+        strict_integration=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        command_runner=_animation_playback_surface_fixture_runner(
+            products,
+            primary_entity_components=[
+                "{22B10178-39B6-4C12-BB37-77DB45FDD3B6}",
+                "{BDC97E7F-A054-448B-A26F-EA2B5D78E377}",
+                "{DBE3C105-6FC1-418F-A8B1-D0F29FE8D5BD}",
+            ],
+            actor_asset_id="{7E3BE43C-A0C7-512B-9F3E-FA6C2A4DBDAC}:914f19b7",
+            motion_asset_id="{794D1588-3C41-5795-8A9A-EEBD6A663A60}:ddcbe0",
+            product_asset_overrides={"motion": (other_motion_asset_id, motion_asset_type)},
+            extra_stdout_lines=[
+                (
+                    f"System: No handler was registered for asset of type {motion_asset_type} "
+                    f"but it was still in the AssetManager as {other_motion_asset_id}"
+                ),
+            ],
+        ),
+        artifact_root=tmp_path / "artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["approved_motion_product_handler_signal_diagnostic_attempted"] is True
+    assert report["approved_motion_product_handler_signal_found"] is True
+    assert report["approved_motion_product_handler_signal_asset_id"] == other_motion_asset_id
+    assert report["approved_motion_product_handler_signal_classification_verified"] is False
+    assert report["approved_motion_product_handler_signal_harmless_under_strict_fixture"] is False
+    assert report["approved_motion_product_handler_signal_blocker"] == (
+        "blocked_by_runtime_motion_product_load_handler_unregistered"
+    )
+    assert report["runtime_character_product_load_verified"] is False
+    assert report["runtime_character_animation_component_wiring_surface_found"] is True
+    assert report["runtime_character_animation_component_wiring_claimed"] is False
+    assert report["runtime_character_animation_component_wiring_verified"] is False
+    assert report["runtime_actor_simple_motion_component_wiring_after_apb_verified"] is False
+    assert report["runtime_character_animation_verified"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_motion_handler_signal_diagnostic_records_source_validation(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_animation_component_wiring_source_validation_files(engine)
+    _append_approved_character_spawnable_product(apb)
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_approved_motion_product_handler_unregistered_signal=True,
+        strict=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        env=env,
+        artifact_root=tmp_path / "artifacts",
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "approved_motion_product_handler_unregistered_signal_diagnostic"
+    assert report["runtime_harness_status"] == "approved_motion_product_handler_signal_source_discovery"
+    assert report["runtime_execution_attempted"] is False
+    assert report["approved_motion_product_handler_signal_diagnostic_attempted"] is True
+    assert report["approved_motion_product_handler_signal_diagnostic_completed"] is True
+    assert report["approved_motion_product_handler_signal_source_validation_verified"] is True
+    assert report["approved_motion_product_handler_signal_found"] is False
+    assert report["approved_motion_product_handler_signal_candidate_matrix"]
+    assert report["runtime_character_animation_component_wiring_claimed"] is False
+    assert report["runtime_character_animation_component_wiring_verified"] is False
+    assert report["runtime_character_animation_verified"] is False
     assert report["runtime_character_proof_verified"] is False
 
 
