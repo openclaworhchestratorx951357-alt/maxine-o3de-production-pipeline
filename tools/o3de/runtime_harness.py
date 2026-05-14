@@ -4370,9 +4370,13 @@ def _run_runtime_exit_fixture_command(
         log_text=log_text,
         log_refs=log_refs,
     )
-    poolallocator_payload = _runtime_shutdown_poolallocator_signal_payload(
-        combined_text,
-        _runtime_engine_root_from_command(command),
+    poolallocator_payload = (
+        _runtime_shutdown_poolallocator_signal_payload(
+            combined_text,
+            _runtime_engine_root_from_command(command),
+        )
+        if poolallocator_signal_classification
+        else {}
     )
     level_loads = _runtime_level_load_events(combined_text)
     level_load_observed = bool(level_loads)
@@ -4403,7 +4407,10 @@ def _run_runtime_exit_fixture_command(
         if ap_shader_signal_classification
         else [dict(item) for item in disqualifying if isinstance(item, Mapping)]
     )
-    if poolallocator_payload.get("runtime_shutdown_poolallocator_signal_invalidates_wiring") is True:
+    if (
+        poolallocator_signal_classification
+        and poolallocator_payload.get("runtime_shutdown_poolallocator_signal_invalidates_wiring") is True
+    ):
         effective_disqualifying.append(
             {
                 "signal": "runtime_shutdown_poolallocator_assertion",
@@ -4577,7 +4584,10 @@ def _run_runtime_exit_fixture_command(
         fixture_status = "runtime_exit_fixture_verified_clean_exit"
     elif timed_out:
         fixture_status = "runtime_exit_fixture_execution_failed_timeout"
-    elif poolallocator_payload.get("runtime_shutdown_poolallocator_signal_invalidates_wiring") is True:
+    elif (
+        poolallocator_signal_classification
+        and poolallocator_payload.get("runtime_shutdown_poolallocator_signal_invalidates_wiring") is True
+    ):
         fixture_status = "runtime_exit_fixture_execution_failed_runtime_shutdown_poolallocator_assertion"
     elif diagnostics.get("runtime_exit_is_crash_like") is True:
         fixture_status = "runtime_exit_fixture_execution_failed_access_violation_like_exit"
@@ -4644,7 +4654,9 @@ def _run_runtime_exit_fixture_command(
                 "runtime_character_animation_component_wiring_surface_blocker", ""
             )
         ).strip()
-    if str(poolallocator_payload.get("runtime_shutdown_poolallocator_signal_blocker", "")).strip():
+    if poolallocator_signal_classification and str(
+        poolallocator_payload.get("runtime_shutdown_poolallocator_signal_blocker", "")
+    ).strip():
         blocked_reason = str(poolallocator_payload.get("runtime_shutdown_poolallocator_signal_blocker", "")).strip()
     report.update(
         {
