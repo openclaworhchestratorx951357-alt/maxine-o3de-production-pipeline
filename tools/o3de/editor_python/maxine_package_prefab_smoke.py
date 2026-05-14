@@ -44,6 +44,7 @@ DIAGNOSTIC_MODES = {
     "approved-prefab-save-update-bridge-host",
     "approved-prefab-save-update-route",
     "approved-source-prefab-actor-simple-motion-wiring",
+    "approved-source-prefab-propagation-apply-step",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -107,6 +108,11 @@ TYPED_BLOCKED_STATUSES = {
     "blocked_by_prefab_save_update_route_editor_call_failed",
     "blocked_by_prefab_save_update_scratch_parse_failed",
     "blocked_by_prefab_save_update_scratch_cleanup_failed",
+    "blocked_by_prefab_override_generation_unavailable",
+    "blocked_by_prefab_component_override_detection_missing",
+    "blocked_by_prefab_template_dom_update_unavailable",
+    "blocked_by_prefab_instance_to_template_propagation_requires_parent_link_context",
+    "blocked_by_prefab_instance_to_template_propagation_requires_additional_source_validation",
 }
 DIRECT_PROCPREFAB_TYPED_NONVERIFIED_STATUSES = {
     "procprefab_product_not_editor_instantiable_with_current_binding",
@@ -456,6 +462,48 @@ def main() -> int:
             "approved_source_prefab_actor_simple_motion_wiring_selected_strategy": report.get(
                 "approved_source_prefab_actor_simple_motion_wiring_selected_strategy", ""
             ),
+            "approved_source_prefab_propagation_apply_step_attempted": report.get(
+                "approved_source_prefab_propagation_apply_step_attempted", False
+            ),
+            "approved_source_prefab_propagation_apply_step_completed": report.get(
+                "approved_source_prefab_propagation_apply_step_completed", False
+            ),
+            "approved_source_prefab_propagation_apply_step_verified": report.get(
+                "approved_source_prefab_propagation_apply_step_verified", False
+            ),
+            "approved_source_prefab_propagation_apply_step_blocker": report.get(
+                "approved_source_prefab_propagation_apply_step_blocker", ""
+            ),
+            "approved_source_prefab_propagation_apply_step_source_validation_status": report.get(
+                "approved_source_prefab_propagation_apply_step_source_validation_status", ""
+            ),
+            "approved_source_prefab_propagation_apply_step_source_validation_verified": report.get(
+                "approved_source_prefab_propagation_apply_step_source_validation_verified", False
+            ),
+            "approved_source_prefab_propagation_apply_step_source_refs": report.get(
+                "approved_source_prefab_propagation_apply_step_source_refs", []
+            ),
+            "approved_source_prefab_propagation_apply_step_engine_source_refs_status": report.get(
+                "approved_source_prefab_propagation_apply_step_engine_source_refs_status", ""
+            ),
+            "approved_source_prefab_propagation_apply_step_engine_source_refs_verified": report.get(
+                "approved_source_prefab_propagation_apply_step_engine_source_refs_verified", False
+            ),
+            "approved_source_prefab_propagation_apply_step_engine_source_refs": report.get(
+                "approved_source_prefab_propagation_apply_step_engine_source_refs", []
+            ),
+            "approved_source_prefab_propagation_apply_step_candidate_matrix": report.get(
+                "approved_source_prefab_propagation_apply_step_candidate_matrix", []
+            ),
+            "approved_source_prefab_propagation_apply_step_selected_strategy": report.get(
+                "approved_source_prefab_propagation_apply_step_selected_strategy", ""
+            ),
+            "approved_source_prefab_propagation_api_used": report.get(
+                "approved_source_prefab_propagation_api_used", ""
+            ),
+            "approved_source_prefab_component_overrides_detected": report.get(
+                "approved_source_prefab_component_overrides_detected", False
+            ),
             "approved_source_prefab_path": report.get("approved_source_prefab_path", ""),
             "approved_source_prefab_project_path_redacted": report.get(
                 "approved_source_prefab_project_path_redacted", ""
@@ -706,6 +754,22 @@ def main() -> int:
             "approved_prefab_save_update_bridge_host_returned",
             str(bridge_host.get("approved_prefab_save_update_bridge_host_blocker", "returned")),
             "Approved prefab save/update bridge-host diagnostic returned.",
+        )
+
+    if not errors and diagnostic_mode == "approved-source-prefab-propagation-apply-step":
+        _write_progress_marker(
+            progress_log,
+            "approved_source_prefab_propagation_apply_step_started",
+            "started",
+            "Running approved source-prefab propagation/apply step diagnostic.",
+        )
+        propagation = _run_approved_source_prefab_propagation_apply_step_checks(report)
+        report.update(propagation)
+        _write_progress_marker(
+            progress_log,
+            "approved_source_prefab_propagation_apply_step_returned",
+            str(propagation.get("approved_source_prefab_propagation_apply_step_blocker", "returned")),
+            "Approved source-prefab propagation/apply step diagnostic returned.",
         )
 
     if not errors and needs_temp_level and general is not None:
@@ -5528,6 +5592,239 @@ def _approved_source_prefab_wiring_source_refs() -> List[Dict[str, Any]]:
     ]
 
 
+def _optional_o3de_engine_root() -> Path | None:
+    engine_root_raw = os.environ.get("O3DE_ENGINE_ROOT", "").strip()
+    if engine_root_raw:
+        configured = Path(engine_root_raw)
+        return configured if configured.exists() else None
+    candidates: List[Path] = []
+    default_engine_root = Path("C:/src/o3de")
+    if default_engine_root.exists():
+        candidates.append(default_engine_root)
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _approved_source_prefab_propagation_apply_step_repo_source_refs() -> List[Dict[str, Any]]:
+    repo_root = Path(__file__).resolve().parents[3]
+    return [
+        {
+            "path": str(
+                repo_root
+                / "o3de/gems/MaxineRuntimeExitFixture/Code/Source/Tools/PrefabSaveUpdateBridgeHostComponent.h"
+            ),
+            "symbols": [
+                "ApplyApprovedSourcePrefabComponentOverrides",
+                "CommitApprovedSourcePrefabEntityChanges",
+                "SaveApprovedSourcePrefabWiring",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": str(
+                repo_root
+                / "o3de/gems/MaxineRuntimeExitFixture/Code/Source/Tools/PrefabSaveUpdateBridgeHostComponent.cpp"
+            ),
+            "symbols": [
+                "apply_approved_source_prefab_component_overrides",
+                "commit_approved_source_prefab_entity_changes",
+                "save_approved_source_prefab_wiring",
+                "AzToolsFramework::Prefab::PrefabOverridePublicInterface",
+                "AreComponentOverridesPresent",
+                "ApplyComponentOverrides",
+                "GenerateUndoNodesForEntityChangeAndUpdateCache",
+                "AzToolsFramework::Prefab::PrefabPublicInterface::SavePrefab",
+                "RejectReasonForApprovedSourcePrefabPath",
+                "approved_source_prefab_path",
+            ],
+            "absent_symbols": [
+                "hand_authored_unknown_json",
+                "runtime_character_animation_component_wiring_verified=true",
+            ],
+        },
+        {
+            "path": str(repo_root / "tools/o3de/editor_python/maxine_package_prefab_smoke.py"),
+            "symbols": [
+                "blocked_by_editor_generated_instance_changes_not_propagated_to_source_template",
+                "_call_prefab_commit_approved_source_entity_changes",
+                "_call_prefab_apply_approved_source_component_overrides",
+                "_call_prefab_save_update_approved_source_route",
+                "ActorAsset",
+                "MotionAsset",
+            ],
+            "absent_symbols": [
+                "approved_source_prefab_actor_simple_motion_wiring_verified = True",
+            ],
+        },
+    ]
+
+
+def _approved_source_prefab_propagation_apply_step_engine_source_refs() -> List[Dict[str, Any]]:
+    engine_root = _optional_o3de_engine_root()
+    if engine_root is None:
+        return []
+    return [
+        {
+            "path": str(
+                engine_root
+                / "Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabPublicInterface.h"
+            ),
+            "symbols": [
+                "GenerateUndoNodesForEntityChangeAndUpdateCache",
+                "Store the changes between the current entity state and its last cached state",
+                "SavePrefab",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": str(
+                engine_root
+                / "Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/Overrides/PrefabOverridePublicInterface.h"
+            ),
+            "symbols": [
+                "PrefabOverridePublicInterface",
+                "AreComponentOverridesPresent",
+                "ApplyComponentOverrides",
+                "AZ::EntityComponentIdPair",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": str(
+                engine_root
+                / "Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/Overrides/PrefabOverridePublicHandler.cpp"
+            ),
+            "symbols": [
+                "ApplyComponentOverrides",
+                "GetComponentPathAndLinkIdFromFocusedPrefab",
+                "GetFocusedPrefabInstance",
+                "If the entity was owned by the focused instance, there's not much to push",
+                "return false;",
+                "GenerateEntityPathFromFocusedPrefab",
+                "PushOverridesToPrefab",
+            ],
+            "absent_symbols": [
+                '->Event("ApplyComponentOverrides"',
+            ],
+        },
+        {
+            "path": str(
+                engine_root
+                / "Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabFocusInterface.h"
+            ),
+            "symbols": [
+                "FocusOnPrefabInstanceOwningEntityId",
+                "GetFocusedPrefabTemplateId",
+                "GetFocusedPrefabInstance",
+                "IsFocusedPrefabInstanceReadOnly",
+                "PrependPathFromFocusedInstanceToPatchPaths",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": str(
+                engine_root
+                / "Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/PrefabFocusPublicInterface.h"
+            ),
+            "symbols": [
+                "PrefabFocusPublicInterface",
+                "FocusOnOwningPrefab",
+                "FocusOnParentOfFocusedPrefab",
+                "SetOwningPrefabInstanceOpenState",
+                "IsOwningPrefabBeingFocused",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": str(
+                engine_root
+                / "Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/Instance/InstanceToTemplateInterface.h"
+            ),
+            "symbols": [
+                "GeneratePatch",
+                "GeneratePatchForLink",
+                "PatchEntityInTemplate",
+                "GenerateEntityPathFromFocusedPrefab",
+                "PrependPathToPatchPaths",
+                "PatchTemplate",
+                "ApplyPatchesToInstance",
+                "GetTopMostInstanceInHierarchy",
+            ],
+            "absent_symbols": [],
+        },
+        {
+            "path": str(
+                engine_root
+                / "Code/Framework/AzToolsFramework/AzToolsFramework/Prefab/Instance/InstanceUpdateExecutorInterface.h"
+            ),
+            "symbols": [
+                "AddInstanceToQueue",
+                "AddTemplateInstancesToQueue",
+                "UpdateTemplateInstancesInQueue",
+                "SetShouldPauseInstancePropagation",
+            ],
+            "absent_symbols": [],
+        },
+    ]
+
+
+def _approved_source_prefab_propagation_apply_step_candidate_matrix() -> List[Dict[str, Any]]:
+    return [
+        {
+            "candidate": "GenerateUndoNodesForEntityChangeAndUpdateCache",
+            "outcome": "attempted_preserved_blocked",
+            "reason": "PR #150 proved the bridge route is callable, but saved source-template markers did not persist.",
+        },
+        {
+            "candidate": "PrefabOverridePublicInterface::ApplyComponentOverrides",
+            "outcome": "source_validated_blocked",
+            "reason": "O3DE applies component overrides through a focused parent/link path; owning-instance-in-focus returns false.",
+        },
+        {
+            "candidate": "source-template DOM update through source-backed prefab API",
+            "outcome": "blocked",
+            "reason": "InstanceToTemplate patch APIs exist, but this slice has no verified safe bridge sequence from Editor instance edits to approved source template DOM.",
+        },
+        {
+            "candidate": "direct hand-authored .prefab JSON edit",
+            "outcome": "rejected",
+            "reason": "The route would hand-author unknown O3DE component JSON instead of using source-backed Editor/prefab APIs.",
+        },
+        {
+            "candidate": "approved source-prefab Actor + Simple Motion mutation through verified propagation/apply route",
+            "outcome": "blocked",
+            "reason": "The missing parent-focus/link override apply sequence must be implemented before persisted marker proof can be claimed.",
+        },
+        {
+            "candidate": "Actor + Anim Graph + Motion Set mutation",
+            "outcome": "deferred",
+            "reason": "Actor + Simple Motion remains the narrow target until propagation/apply semantics are pinned.",
+        },
+        {
+            "candidate": "scratch-only route proof",
+            "outcome": "preserved_not_sufficient",
+            "reason": "PR #149 scratch save/update proof does not prove source-template propagation for approved prefab edits.",
+        },
+        {
+            "candidate": "direct runtime .procprefab load",
+            "outcome": "rejected",
+            "reason": "Direct runtime .procprefab load remains unsupported/builder-only.",
+        },
+        {
+            "candidate": "direct product-load of actor/motion products",
+            "outcome": "rejected",
+            "reason": "Product-load is not source-template propagation or component wiring proof.",
+        },
+        {
+            "candidate": "defaultlevel or production-level mutation",
+            "outcome": "rejected",
+            "reason": "This diagnostic does not mutate defaultlevel or production levels.",
+        },
+    ]
+
+
 def _approved_source_prefab_wiring_source_validation() -> Dict[str, Any]:
     return _source_validation_from_refs(_approved_source_prefab_wiring_source_refs())
 
@@ -5802,6 +6099,88 @@ def _delete_editor_entity(entity_id: Any, safe_call_results: List[Dict[str, Any]
             }
         )
         return {"status": "unsupported_by_engine_binding", "error": str(exc)}
+
+
+def _run_approved_source_prefab_propagation_apply_step_checks(report: Mapping[str, Any]) -> Dict[str, Any]:
+    repo_validation = _source_validation_from_refs(_approved_source_prefab_propagation_apply_step_repo_source_refs())
+    engine_validation = _optional_engine_source_validation_from_refs(
+        _approved_source_prefab_propagation_apply_step_engine_source_refs()
+    )
+    repo_source_path = _approved_source_prefab_repo_path()
+    before_hash = _sha256_file(repo_source_path) if repo_source_path.exists() else ""
+    blocker = "blocked_by_prefab_instance_to_template_propagation_requires_parent_link_context"
+    source_verified = repo_validation["verified"] is True
+    result: Dict[str, Any] = {
+        "approved_source_prefab_propagation_apply_step_attempted": True,
+        "approved_source_prefab_propagation_apply_step_completed": True,
+        "approved_source_prefab_propagation_apply_step_verified": False,
+        "approved_source_prefab_propagation_apply_step_blocker": blocker if source_verified else (
+            "blocked_by_prefab_instance_to_template_propagation_requires_additional_source_validation"
+        ),
+        "approved_source_prefab_propagation_apply_step_source_validation_status": repo_validation["status"],
+        "approved_source_prefab_propagation_apply_step_source_validation_verified": repo_validation["verified"],
+        "approved_source_prefab_propagation_apply_step_source_refs": repo_validation["refs"],
+        "approved_source_prefab_propagation_apply_step_engine_source_refs_status": engine_validation["status"],
+        "approved_source_prefab_propagation_apply_step_engine_source_refs_verified": engine_validation["verified"],
+        "approved_source_prefab_propagation_apply_step_engine_source_refs": engine_validation["refs"],
+        "approved_source_prefab_propagation_apply_step_candidate_matrix": (
+            _approved_source_prefab_propagation_apply_step_candidate_matrix()
+        ),
+        "approved_source_prefab_propagation_apply_step_selected_strategy": (
+            "pin_parent_focus_link_override_apply_requirement"
+        ),
+        "approved_source_prefab_propagation_api_used": (
+            "source_validation_only: PrefabOverridePublicInterface::ApplyComponentOverrides "
+            "requires a focused parent/link context before source-template DOM can be updated"
+        ),
+        "approved_source_prefab_component_overrides_detected": False,
+        "approved_source_prefab_component_overrides_applied": False,
+        "approved_source_prefab_entity_changes_committed": False,
+        "approved_source_prefab_template_dom_updated": False,
+        "approved_source_prefab_path": APPROVED_SOURCE_PREFAB_REPO_REF,
+        "approved_source_prefab_before_hash": before_hash,
+        "approved_source_prefab_after_hash": before_hash,
+        "approved_source_prefab_modified": False,
+        "approved_source_prefab_changed_this_run": False,
+        "approved_source_prefab_update_route_used": "not_run_source_validation_only",
+        "approved_source_prefab_save_verified": False,
+        "approved_source_prefab_actor_component_added": False,
+        "approved_source_prefab_simple_motion_component_added": False,
+        "approved_source_prefab_actor_asset_assignment_verified": False,
+        "approved_source_prefab_motion_asset_assignment_verified": False,
+        "approved_source_prefab_property_readback_verified": False,
+        "approved_source_prefab_actor_asset_id": "",
+        "approved_source_prefab_motion_asset_id": "",
+        "approved_source_prefab_persisted_actor_asset_marker_verified": False,
+        "approved_source_prefab_persisted_motion_asset_marker_verified": False,
+        "approved_source_prefab_persisted_wiring_markers_verified": False,
+        "approved_source_prefab_defaultlevel_mutation": False,
+        "approved_source_prefab_production_level_mutation": False,
+        "approved_source_prefab_hand_authored_unknown_json_used": False,
+        "approved_spawnable_regenerated_or_found": False,
+        "runtime_character_animation_component_wiring_surface_found": False,
+        "runtime_character_animation_component_wiring_runtime_actor_component_found": False,
+        "runtime_character_animation_component_wiring_runtime_simple_motion_component_found": False,
+        "runtime_character_animation_component_wiring_runtime_actor_asset_assignment_verified": False,
+        "runtime_character_animation_component_wiring_runtime_motion_asset_assignment_verified": False,
+        "runtime_character_animation_component_wiring_claimed": False,
+        "runtime_character_animation_component_wiring_verified": False,
+        "runtime_character_animation_playback_attempted": False,
+        "runtime_character_animation_claimed": False,
+        "runtime_character_animation_verified": False,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+        "live_publication": False,
+        "release_packaging": False,
+        "production_level_mutation": False,
+        "defaultlevel_mutation": False,
+        "asset_cache_deleted": False,
+        "cache_heuristic_used": False,
+        "fake_success": False,
+    }
+    if not source_verified:
+        result["approved_source_prefab_propagation_api_used"] = "source_validation_incomplete"
+    return result
 
 
 def _run_approved_source_prefab_actor_simple_motion_wiring_checks(

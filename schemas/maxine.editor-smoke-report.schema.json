@@ -110,6 +110,7 @@
         "approved-prefab-save-update-bridge-host",
         "approved-prefab-save-update-route",
         "approved-source-prefab-actor-simple-motion-wiring",
+        "approved-source-prefab-propagation-apply-step",
         "full"
       ]
     },
@@ -2170,6 +2171,51 @@
     "approved_source_prefab_actor_simple_motion_wiring_selected_strategy": {
       "type": "string"
     },
+    "approved_source_prefab_propagation_apply_step_attempted": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_propagation_apply_step_completed": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_propagation_apply_step_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_propagation_apply_step_blocker": {
+      "type": "string"
+    },
+    "approved_source_prefab_propagation_apply_step_source_validation_status": {
+      "type": "string"
+    },
+    "approved_source_prefab_propagation_apply_step_source_validation_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_propagation_apply_step_source_refs": {
+      "type": "array"
+    },
+    "approved_source_prefab_propagation_apply_step_engine_source_refs_status": {
+      "type": "string"
+    },
+    "approved_source_prefab_propagation_apply_step_engine_source_refs_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_propagation_apply_step_engine_source_refs": {
+      "type": "array"
+    },
+    "approved_source_prefab_propagation_apply_step_candidate_matrix": {
+      "type": "array"
+    },
+    "approved_source_prefab_propagation_apply_step_selected_strategy": {
+      "type": "string"
+    },
+    "approved_source_prefab_propagation_api_used": {
+      "type": "string"
+    },
+    "approved_source_prefab_component_overrides_detected": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_template_dom_updated": {
+      "type": "boolean"
+    },
     "approved_source_prefab_path": {
       "type": "string"
     },
@@ -2198,6 +2244,12 @@
       "type": "boolean"
     },
     "approved_source_prefab_project_persisted_wiring_markers_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_persisted_actor_asset_marker_verified": {
+      "type": "boolean"
+    },
+    "approved_source_prefab_persisted_motion_asset_marker_verified": {
       "type": "boolean"
     },
     "approved_source_prefab_component_overrides_applied": {
