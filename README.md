@@ -52,6 +52,10 @@ Get-ChildItem .\examples\jobs
 Get-ChildItem .\examples\manifests
 ```
 
+Developer comprehension note: Understand-Anything may be used as a dev-only
+onboarding aid; see `docs/developer/understand-anything-workflow.md`. It is not
+part of the O3DE production proof chain.
+
 ## Current Release-Lane Status
 
 - Active integration branch baseline: `codex/pilot-rollback-readiness-evidence-v1`

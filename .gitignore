@@ -48,3 +48,11 @@ credentials/
 # Runtime artifacts produced by pilot release-chain integration/proof commands.
 examples/sandbox/manifests/reports/*
 !examples/sandbox/manifests/reports/.gitkeep
+
+# Dev-only Understand-Anything scratch artifacts.
+.understand-anything/intermediate/
+.understand-anything/tmp/
+.understand-anything/diff-overlay.json
+.understand-anything/dashboard/
+.understand-anything/cache/
+.understand-anything/logs/
