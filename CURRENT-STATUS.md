@@ -1,7 +1,17 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Implement Non-Null Editor Render Capture Safety Envelope v1 is implemented on `codex/implement-non-null-editor-render-capture-safety-envelope-v1` and pending review:
+- Pin Non-Null Editor Visual Runner Readiness and Temp Scene Contract v1 is implemented on `codex/pin-non-null-editor-visual-runner-readiness-temp-scene-contract-v1` and pending review:
+  - PR #165 was green, review-clear, and merged into `main` at `52a0f97c31dcb332e3492d1dce2478d1c0ba40c0`; this branch was created from that updated `main`
+  - this slice adds the source-only `non-null-editor-visual-runner-readiness` Editor smoke diagnostic plus `--diagnose-non-null-editor-visual-runner-readiness` / `--diagnose-editor-temp-visual-scene-contract` / `--enable-non-null-editor-visual-runner-readiness-fixture` wrappers
+  - the existing NullRenderer-safe Editor smoke lane remains unchanged for non-visual automation, and the PR #165 non-null render/capture command envelope remains preserved without attempting a live non-null Editor launch
+  - the diagnostic source-validates the wrapper/report/schema/docs contract for visible desktop/session readiness, GPU/driver readiness, selected RHI (`dx12` by default; `vulkan` remains allowed), safe temp visual scene policy, capture artifact policy, cleanup policy, and no production/defaultlevel mutation
+  - the temp visual scene contract is pinned to `Levels/_maxine_visual_smoke`, sanitized capture artifacts are pinned to `artifacts/o3de-integration/editor-smoke`, and live launch remains blocked by `blocked_by_non_null_editor_render_capture_requires_visible_desktop_session` until runner prerequisites are proven
+  - the local source-only diagnostic passed and wrote `artifacts/o3de-integration/editor-smoke/non-null-editor-visual-runner-readiness-20260515T055910Z/non_null_editor_visual_runner_readiness_report.json`
+  - screenshot/frame capture is not requested/completed, no capture artifact exists, content/nonblank/character/material validation remains false, rendered evidence remains false, visual/material gate remains false, and full runtime character proof remains false
+  - the full-character contract mapping remains satisfied for spawn instantiation, component wiring, bounded Simple Motion playback, behavior smoke, selected log scan, and cleanup/recovery, while `visual_material` remains unsatisfied and repeated behavior scenario stability remains deferred
+  - publication remains blocked, release packaging remains blocked, production/defaultlevel mutation remains forbidden, Asset Cache deletion remains forbidden, cache heuristic release proof remains forbidden, Understand-Anything remains dev-only, and no production-ready release status is claimed
+- Implement Non-Null Editor Render Capture Safety Envelope v1 was merged through PR #165:
   - PR #164 was green, review-clear, and merged into `main` at `9c046234456ea65e49b00b08196bead60fde9146`; this branch was created from that updated `main`
   - this slice adds the `non-null-editor-render-capture-envelope` Editor smoke diagnostic plus `--diagnose-non-null-editor-render-capture-envelope` / `--enable-non-null-editor-render-capture-envelope-fixture` wrappers
   - the existing NullRenderer-safe Editor smoke envelope remains unchanged for non-visual automation; the new visual-capture envelope omits `-NullRenderer`, records a selected non-null RHI (`dx12` or `vulkan`), and pins the O3DE source boundary that `-NullRenderer` or `rhi=null` is the console/null-renderer path
