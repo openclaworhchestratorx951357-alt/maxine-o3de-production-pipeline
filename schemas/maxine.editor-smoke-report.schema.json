@@ -117,6 +117,7 @@
         "non-null-editor-render-capture-envelope",
         "non-null-editor-visual-runner-readiness",
         "non-null-editor-desktop-rhi-readiness",
+        "live-non-null-editor-launch",
         "full"
       ]
     },

@@ -134,6 +134,11 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_non_null_desktop_rhi_readiness_smoke.py",
+    "live-non-null-editor-launch": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_live_non_null_launch_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -192,6 +197,11 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
 
     diagnostic_mode = str(report.get("diagnostic_mode", "")).strip()
     source_only_diagnostic = diagnostic_mode in SOURCE_ONLY_EDITOR_DIAGNOSTIC_MODES
+    blocked_live_non_null_launch_diagnostic = (
+        diagnostic_mode == "live-non-null-editor-launch"
+        and report.get("live_editor_execution") is not True
+        and str(report.get("live_non_null_editor_launch_blocker", "")).strip()
+    )
     if report.get("live_editor_execution") is True and str(report.get("mode", "")) in {"fixture", "unavailable"}:
         result.add_error("MXN_RUNTIME_SMOKE_FAIL", "Fixture/skipped Editor smoke reports cannot claim live Editor execution.")
     if str(report.get("mode", "")) == "local_editor_python":
@@ -199,6 +209,7 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             str(report.get("status", "")) == "pass"
             and report.get("live_editor_execution") is not True
             and not source_only_diagnostic
+            and not blocked_live_non_null_launch_diagnostic
         ):
             result.add_error(
                 MXN_RUNTIME_SMOKE_FAIL,
@@ -279,6 +290,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_non_null_editor_visual_runner_readiness(report, result)
         if diagnostic_mode == "non-null-editor-desktop-rhi-readiness":
             _validate_non_null_editor_desktop_rhi_readiness(report, result)
+        if diagnostic_mode == "live-non-null-editor-launch":
+            _validate_live_non_null_editor_launch(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -2077,6 +2090,151 @@ def _validate_non_null_editor_desktop_rhi_readiness(report: Mapping[str, Any], r
         )
 
 
+def _validate_live_non_null_editor_launch(report: Mapping[str, Any], result: ValidationResult) -> None:
+    _validate_non_null_editor_desktop_rhi_readiness(report, result)
+    source_validated = report.get("live_non_null_editor_launch_source_validation_verified") is True
+    launch_attempted = report.get("live_non_null_editor_launch_attempted") is True
+    launch_blocker = str(report.get("live_non_null_editor_launch_blocker", "")).strip()
+    if not source_validated and launch_attempted:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Live non-null Editor launch must not be attempted when launch source validation is false.",
+        )
+    if not source_validated and not launch_blocker:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Unvalidated live non-null Editor launch source contract requires a precise typed blocker.",
+        )
+    if report.get("existing_nullrenderer_safe_editor_lane_preserved") is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Live non-null Editor launch must preserve the existing NullRenderer-safe Editor lane.",
+        )
+
+    selected_rhi = str(
+        report.get("live_non_null_editor_launch_selected_rhi", "")
+        or report.get("selected_rhi", "")
+        or report.get("non_null_editor_render_capture_rhi_requested", "")
+    ).strip().lower()
+    if not selected_rhi:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Live non-null Editor launch must record the selected RHI.")
+    elif selected_rhi not in NON_NULL_RENDER_CAPTURE_RHIS:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Live non-null Editor launch selected unsupported RHI '{selected_rhi}'.")
+
+    command_parts = list(report.get("command_argv_redacted", []) or []) + list(
+        report.get("live_non_null_editor_launch_command", []) or []
+    )
+    command = " ".join(str(part) for part in command_parts)
+    if (
+        report.get("live_non_null_editor_launch_null_renderer_used") is True
+        or "-NullRenderer" in command
+        or "-rhi=Null" in command
+        or "-rhi=null" in command.lower()
+    ):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "live_non_null_editor_launch_null_renderer_used must be false and command must omit NullRenderer/null RHI.",
+        )
+
+    for field, message in (
+        ("editor_temp_visual_scene_created", "Live non-null launch-only diagnostic must not create a temp visual scene."),
+        ("editor_visual_material_temp_scene_created", "Live non-null launch-only diagnostic must not create a visual scene."),
+        ("editor_visual_material_capture_requested", "Live non-null launch-only diagnostic must not request screenshot/frame capture."),
+        ("editor_visual_material_capture_completed", "Live non-null launch-only diagnostic must not claim screenshot/frame capture completion."),
+        ("visual_material_capture_readiness_verified", "Live non-null launch-only diagnostic cannot verify capture readiness."),
+        ("visual_material_rendered_evidence_gate_attempted", "Live non-null launch-only diagnostic must not attempt rendered evidence."),
+        ("visual_material_rendered_evidence_gate_verified", "Live non-null launch-only diagnostic cannot verify rendered visual/material evidence."),
+        ("visual_material_gate_verified", "Live non-null Editor launch alone cannot verify the visual/material gate."),
+        ("full_runtime_character_visual_material_gate_verified", "Live non-null Editor launch alone cannot verify the full visual/material gate."),
+        ("runtime_character_proof_claimed", "Live non-null Editor launch cannot claim full runtime character proof."),
+        ("runtime_character_proof_verified", "Live non-null Editor launch cannot verify full runtime character proof."),
+    ):
+        if report.get(field) is True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, message)
+
+    for field, message in (
+        ("editor_temp_visual_scene_defaultlevel_mutation", "Live non-null Editor launch must not mutate defaultlevel."),
+        ("editor_temp_visual_scene_production_level_mutation", "Live non-null Editor launch must not mutate production levels."),
+        ("editor_visual_material_defaultlevel_mutation", "Live non-null Editor launch must not mutate defaultlevel."),
+        ("editor_visual_material_production_level_mutation", "Live non-null Editor launch must not mutate production levels."),
+        ("defaultlevel_mutation", "Live non-null Editor launch must not mutate defaultlevel."),
+        ("production_level_mutation", "Live non-null Editor launch must not mutate production levels."),
+        ("asset_cache_deleted", "Live non-null Editor launch must not delete Asset Cache."),
+        ("cache_heuristic_used", "Live non-null Editor launch must not use cache heuristic proof."),
+    ):
+        if report.get(field) is True:
+            result.add_error(MXN_PATH_UNSAFE, message)
+
+    attempted = launch_attempted
+    completed = report.get("live_non_null_editor_launch_completed") is True
+    verified = report.get("live_non_null_editor_launch_verified") is True
+    if attempted:
+        for field, label in {
+            "visible_desktop_session_verified": "visible desktop/session readiness",
+            "gpu_or_driver_readiness_verified": "GPU/driver readiness",
+            "rhi_readiness_verified": "RHI readiness",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"live_non_null_editor_launch_attempted=true requires {field} ({label}).",
+                )
+        if report.get("live_editor_execution") is not True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "live_non_null_editor_launch_attempted=true requires live_editor_execution=true.",
+            )
+        if report.get("non_null_editor_launch_attempted") is not True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "live_non_null_editor_launch_attempted=true requires non_null_editor_launch_attempted=true.",
+            )
+    elif not str(report.get("live_non_null_editor_launch_blocker", "")).strip():
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Unattempted live non-null Editor launch requires a precise typed blocker.",
+        )
+
+    if verified:
+        for field, label in {
+            "live_non_null_editor_launch_attempted": "launch attempt",
+            "live_non_null_editor_launch_completed": "launch completion",
+            "live_non_null_editor_launch_python_wrapper_executed": "Python wrapper execution",
+            "live_non_null_editor_launch_selected_log_scan_passed": "selected log scan",
+            "non_null_editor_launch_attempted": "non-null launch attempt mirror",
+            "non_null_editor_launch_completed": "non-null launch completion mirror",
+            "non_null_editor_launch_verified": "non-null launch verification mirror",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"live_non_null_editor_launch_verified=true requires {label}.")
+        if report.get("live_non_null_editor_launch_exit_code") != 0 or report.get("non_null_editor_launch_exit_code") != 0:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "live_non_null_editor_launch_verified=true requires zero launch exit codes.",
+            )
+        if report.get("live_non_null_editor_launch_timeout") is True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "live_non_null_editor_launch_verified=true requires timeout=false.",
+            )
+        if report.get("live_non_null_editor_launch_killed") is True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "live_non_null_editor_launch_verified=true requires killed=false.",
+            )
+        blocking_matches = report.get("live_non_null_editor_launch_selected_log_blocking_matches", [])
+        if isinstance(blocking_matches, list) and blocking_matches:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "live_non_null_editor_launch_verified=true requires no selected blocking log matches.",
+            )
+    elif attempted and completed and not str(report.get("live_non_null_editor_launch_blocker", "")).strip():
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Unverified live non-null Editor launch requires a precise typed blocker.",
+        )
+
+
 def _validate_direct_procprefab_content_assertions(
     report: Mapping[str, Any],
     semantics: Mapping[str, Any],
@@ -2783,8 +2941,10 @@ def _execute_live_editor_smoke(
     temp_level_rel = f"Levels/_maxine_smoke/{temp_level_name}"
     level_name_for_editor = f"_maxine_smoke/{temp_level_name}"
     non_null_render_capture_mode = diagnostic_mode == "non-null-editor-render-capture-envelope"
+    live_non_null_editor_launch_mode = diagnostic_mode == "live-non-null-editor-launch"
     selected_render_capture_rhi = _selected_non_null_render_capture_rhi(env)
-    render_args = [f"-rhi={selected_render_capture_rhi}"] if non_null_render_capture_mode else ["-NullRenderer", "-rhi=Null"]
+    non_null_editor_mode = non_null_render_capture_mode or live_non_null_editor_launch_mode
+    render_args = [f"-rhi={selected_render_capture_rhi}"] if non_null_editor_mode else ["-NullRenderer", "-rhi=Null"]
     argv = [
         str(editor_executable),
         *render_args,
@@ -2826,6 +2986,158 @@ def _execute_live_editor_smoke(
         diagnostic_mode=diagnostic_mode,
         script_path=script_path,
     )
+    if live_non_null_editor_launch_mode:
+        previous_env = {
+            key: os.environ.get(key)
+            for key in (
+                "O3DE_ENGINE_ROOT",
+                "O3DE_PROJECT_PATH",
+                "O3DE_EDITOR_EXECUTABLE",
+                "MAXINE_EDITOR_RENDER_CAPTURE_RHI",
+            )
+        }
+        os.environ["O3DE_ENGINE_ROOT"] = str(engine_root)
+        os.environ["O3DE_PROJECT_PATH"] = str(project_path)
+        os.environ["O3DE_EDITOR_EXECUTABLE"] = str(editor_executable)
+        os.environ["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = selected_render_capture_rhi
+        try:
+            from tools.o3de.editor_python import maxine_package_prefab_smoke as editor_python_smoke
+
+            desktop_payload = editor_python_smoke._run_non_null_editor_desktop_rhi_readiness_checks(
+                template,
+                progress_log=progress_path,
+            )
+            template.update(desktop_payload)
+            launch_payload = editor_python_smoke._run_live_non_null_editor_launch_checks(
+                template,
+                progress_log=progress_path,
+                launch_attempted=False,
+                launch_completed=False,
+                launch_exit_code=None,
+                timed_out=False,
+                killed=False,
+                stdout_ref=_repo_relative(stdout_path),
+                stderr_ref=_repo_relative(stderr_path),
+                log_ref="",
+                selected_log_blocking_matches=[],
+            )
+            template.update(launch_payload)
+        finally:
+            for key, value in previous_env.items():
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value
+        if (
+            template.get("non_null_editor_desktop_rhi_readiness_verified") is not True
+            or template.get("live_non_null_editor_launch_source_validation_verified") is not True
+        ):
+            blocked_by_readiness = template.get("non_null_editor_desktop_rhi_readiness_verified") is not True
+            preflight_blocker = str(
+                template.get("non_null_editor_launch_blocker")
+                or template.get("live_non_null_editor_launch_blocker")
+                or (
+                    "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session"
+                    if blocked_by_readiness
+                    else "blocked_by_live_non_null_editor_launch_source_validation_failed"
+                )
+            )
+            template.update(
+                {
+                    "live_non_null_editor_launch_attempted": False,
+                    "live_non_null_editor_launch_completed": False,
+                    "live_non_null_editor_launch_verified": False,
+                    "live_non_null_editor_launch_blocker": preflight_blocker,
+                    "non_null_editor_launch_attempted": False,
+                    "non_null_editor_launch_completed": False,
+                    "non_null_editor_launch_verified": False,
+                    "non_null_editor_launch_exit_code": None,
+                    "non_null_editor_launch_blocker": preflight_blocker,
+                    "editor_visual_material_capture_requested": False,
+                    "editor_visual_material_capture_completed": False,
+                    "visual_material_gate_verified": False,
+                    "runtime_character_proof_verified": False,
+                }
+            )
+            finished_at = _utc_now()
+            duration_seconds = round(time.monotonic() - start_time, 3)
+            stdout_path.write_text("", encoding="utf-8")
+            stderr_path.write_text("", encoding="utf-8")
+            _write_progress_marker(
+                progress_path,
+                phase="wrapper",
+                step="live_non_null_editor_launch_preflight_blocked",
+                status="blocked",
+                started_monotonic=start_time,
+                message=(
+                    "Live non-null Editor launch was not attempted because desktop/GPU/RHI readiness regressed."
+                    if blocked_by_readiness
+                    else "Live non-null Editor launch was not attempted because launch source validation failed."
+                ),
+                error_code=MXN_RUNTIME_SMOKE_FAIL,
+            )
+            progress_markers = _load_progress_markers(progress_path)
+            report = dict(template)
+            report.update(
+                {
+                    "generated_at": finished_at,
+                    "status": "pass",
+                    "diagnostic_mode": diagnostic_mode,
+                    "live_editor_execution": False,
+                    "live_asset_processor_batch_execution": False,
+                    "live_publication": False,
+                    "release_packaging": False,
+                    "production_level_mutation": False,
+                    "defaultlevel_mutation": False,
+                    "exit_code": None,
+                    "started_at": started_at,
+                    "finished_at": finished_at,
+                    "duration_seconds": duration_seconds,
+                    "timeout_seconds": selected_timeout_seconds,
+                    "timed_out": False,
+                    "timeout_stall": False,
+                    "process_cleanup": {"attempted": False, "method": "preflight_no_process", "return_code": None},
+                    "process_tree_cleanup": {"attempted": False, "method": "preflight_no_process", "return_code": None},
+                    "stdout_log_ref": _repo_relative(stdout_path),
+                    "stderr_log_ref": _repo_relative(stderr_path),
+                    "editor_log_ref": "",
+                    "progress_log_ref": _repo_relative(progress_path),
+                    "last_progress_marker": _last_relevant_progress_marker(progress_markers),
+                    "stall_phase": "",
+                    "script_path_redacted": _redact_path(str(script_path)),
+                    "script_path_mode": "absolute",
+                    "editor_command_working_directory": _redact_path(str(project_path)),
+                    "apb_baseline_ref": _repo_relative(apb_baseline),
+                    "product_evidence_summary": product_summary,
+                    "command_preview": _redacted_argv(argv),
+                    "command_argv_redacted": _redacted_argv(argv),
+                    "errors": [],
+                    "warnings": [],
+                    "messages": _unique(
+                        list(report.get("messages", []))
+                        + [
+                            "Live non-null Editor launch was blocked before process start by readiness/source-validation preflight."
+                        ]
+                    ),
+                }
+            )
+            report["evidence_refs"] = _merge_evidence_refs(
+                report.get("evidence_refs", []),
+                [
+                    {"id": "live-non-null-editor-launch-report", "kind": "editor_smoke_report", "path": _repo_relative(report_path)},
+                    {"id": "editor-smoke-progress-log", "kind": "editor_smoke_progress_log", "path": _repo_relative(progress_path)},
+                    {"id": "apb-baseline", "kind": "asset_processor_batch_report", "path": _repo_relative(apb_baseline)},
+                ],
+            )
+            schema_result = schema_validate(report, load_json(SCHEMA_PATH))
+            semantic_result = validate_editor_smoke_report(report, strict=True)
+            if schema_result.status == "fail" or semantic_result.status == "fail":
+                report["status"] = "fail"
+                report["errors"] = _unique(schema_result.error_codes + semantic_result.error_codes)
+                report["messages"] = _unique(report.get("messages", []) + schema_result.messages + semantic_result.messages)
+            report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+            template_path.write_text(json.dumps(template, indent=2) + "\n", encoding="utf-8")
+            return report
     template_path.write_text(json.dumps(template, indent=2) + "\n", encoding="utf-8")
 
     editor_env = dict(env)
@@ -2841,6 +3153,10 @@ def _execute_live_editor_smoke(
         editor_env["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = selected_render_capture_rhi
         editor_env.setdefault("MAXINE_ENABLE_NON_NULL_EDITOR_RENDER_CAPTURE_ENVELOPE", "1")
         editor_env.setdefault("MAXINE_ALLOW_NON_NULL_EDITOR_RENDER_CAPTURE_ENVELOPE", "1")
+    if live_non_null_editor_launch_mode:
+        editor_env["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = selected_render_capture_rhi
+        editor_env.setdefault("MAXINE_ENABLE_LIVE_NON_NULL_EDITOR_LAUNCH", "1")
+        editor_env.setdefault("MAXINE_ALLOW_LIVE_NON_NULL_EDITOR_LAUNCH", "1")
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_NAME"] = level_name_for_editor
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_PATH"] = str(project_path / temp_level_rel)
     editor_env["MAXINE_EDITOR_SMOKE_ALLOW_TEMP_SANDBOX_LEVEL"] = "1"
@@ -2944,6 +3260,87 @@ def _execute_live_editor_smoke(
                 ),
                 "non_null_editor_render_capture_editor_launched": True,
                 "non_null_editor_render_capture_editor_exited_cleanly": (not timed_out and proc.returncode == 0),
+            }
+        )
+    if live_non_null_editor_launch_mode:
+        command = " ".join(argv)
+        null_renderer_used = "-NullRenderer" in command or "-rhi=Null" in command or "-rhi=null" in command.lower()
+        blocking_matches: List[Dict[str, Any]] = []
+        selected_log_scan_passed = not blocking_matches and not timed_out and proc.returncode == 0
+        python_wrapper_executed = runtime_report_found and report.get("live_non_null_editor_launch_python_wrapper_executed") is True
+        launch_completed = bool(not timed_out and runtime_report_found)
+        launch_verified = bool(
+            launch_completed
+            and proc.returncode == 0
+            and python_wrapper_executed
+            and selected_log_scan_passed
+            and not null_renderer_used
+            and report.get("visible_desktop_session_verified") is True
+            and report.get("gpu_or_driver_readiness_verified") is True
+            and report.get("rhi_readiness_verified") is True
+            and report.get("defaultlevel_mutation") is not True
+            and report.get("production_level_mutation") is not True
+            and report.get("editor_visual_material_capture_requested") is not True
+            and report.get("editor_visual_material_temp_scene_created") is not True
+        )
+        if launch_verified:
+            launch_blocker = ""
+        elif timed_out:
+            launch_blocker = "blocked_by_live_non_null_editor_launch_timeout"
+        elif proc.returncode != 0:
+            launch_blocker = "blocked_by_live_non_null_editor_exit_nonzero"
+        elif not runtime_report_found:
+            launch_blocker = "blocked_by_live_non_null_editor_python_wrapper_failed"
+        elif null_renderer_used:
+            launch_blocker = "blocked_by_editor_viewport_capture_requires_non_null_rhi"
+        elif not selected_log_scan_passed:
+            launch_blocker = "blocked_by_live_non_null_editor_selected_log_signal"
+        else:
+            launch_blocker = "blocked_by_live_non_null_editor_launch_not_verified"
+        report.update(
+            {
+                "live_non_null_editor_launch_attempted": True,
+                "live_non_null_editor_launch_completed": launch_completed,
+                "live_non_null_editor_launch_verified": launch_verified,
+                "live_non_null_editor_launch_blocker": launch_blocker,
+                "live_non_null_editor_launch_command": _redacted_argv(argv),
+                "live_non_null_editor_launch_selected_rhi": selected_render_capture_rhi,
+                "live_non_null_editor_launch_null_renderer_used": null_renderer_used,
+                "live_non_null_editor_launch_editor_executable": _redact_path(str(editor_executable)),
+                "live_non_null_editor_launch_project_path": _redact_path(str(project_path)),
+                "live_non_null_editor_launch_wrapper_path": _repo_relative(script_path),
+                "live_non_null_editor_launch_wrapper_bootstrap_verified": report.get(
+                    "live_non_null_editor_launch_wrapper_bootstrap_verified", False
+                ),
+                "live_non_null_editor_launch_python_wrapper_executed": python_wrapper_executed,
+                "live_non_null_editor_launch_exit_code": proc.returncode,
+                "live_non_null_editor_launch_exit_code_hex": f"0x{(proc.returncode or 0) & 0xFFFFFFFF:08X}",
+                "live_non_null_editor_launch_timeout": timed_out,
+                "live_non_null_editor_launch_killed": bool(process_cleanup.get("attempted")),
+                "live_non_null_editor_launch_stdout_ref": _repo_relative(stdout_path),
+                "live_non_null_editor_launch_stderr_ref": _repo_relative(stderr_path),
+                "live_non_null_editor_launch_log_ref": _find_editor_log_ref(project_path),
+                "live_non_null_editor_launch_selected_log_scan_passed": selected_log_scan_passed,
+                "live_non_null_editor_launch_selected_log_blocking_matches": blocking_matches,
+                "non_null_editor_launch_attempted": True,
+                "non_null_editor_launch_completed": launch_completed,
+                "non_null_editor_launch_verified": launch_verified,
+                "non_null_editor_launch_exit_code": proc.returncode,
+                "non_null_editor_launch_blocker": launch_blocker,
+                "non_null_editor_render_capture_editor_launched": True,
+                "non_null_editor_render_capture_editor_exited_cleanly": launch_verified,
+                "non_null_editor_render_capture_rhi_requested": selected_render_capture_rhi,
+                "non_null_editor_render_capture_null_renderer_used": null_renderer_used,
+                "editor_visual_material_capture_requested": False,
+                "editor_visual_material_capture_completed": False,
+                "visual_material_capture_readiness_verified": False,
+                "visual_material_rendered_evidence_gate_attempted": False,
+                "visual_material_rendered_evidence_gate_verified": False,
+                "visual_material_gate_claimed": False,
+                "visual_material_gate_verified": False,
+                "full_runtime_character_visual_material_gate_verified": False,
+                "runtime_character_proof_claimed": False,
+                "runtime_character_proof_verified": False,
             }
         )
     report["evidence_refs"] = _merge_evidence_refs(
@@ -3143,6 +3540,33 @@ def _live_report_template(
         "non_null_editor_launch_verified": False,
         "non_null_editor_launch_exit_code": None,
         "non_null_editor_launch_blocker": "",
+        "live_non_null_editor_launch_attempted": False,
+        "live_non_null_editor_launch_completed": False,
+        "live_non_null_editor_launch_verified": False,
+        "live_non_null_editor_launch_blocker": "",
+        "live_non_null_editor_launch_candidate_matrix": [],
+        "live_non_null_editor_launch_selected_strategy": "",
+        "live_non_null_editor_launch_source_validation_status": "",
+        "live_non_null_editor_launch_source_validation_verified": False,
+        "live_non_null_editor_launch_source_validation": {},
+        "live_non_null_editor_launch_source_files": [],
+        "live_non_null_editor_launch_command": [],
+        "live_non_null_editor_launch_selected_rhi": "",
+        "live_non_null_editor_launch_null_renderer_used": False,
+        "live_non_null_editor_launch_editor_executable": "",
+        "live_non_null_editor_launch_project_path": "",
+        "live_non_null_editor_launch_wrapper_path": "",
+        "live_non_null_editor_launch_wrapper_bootstrap_verified": False,
+        "live_non_null_editor_launch_python_wrapper_executed": False,
+        "live_non_null_editor_launch_exit_code": None,
+        "live_non_null_editor_launch_exit_code_hex": "",
+        "live_non_null_editor_launch_timeout": False,
+        "live_non_null_editor_launch_killed": False,
+        "live_non_null_editor_launch_stdout_ref": "",
+        "live_non_null_editor_launch_stderr_ref": "",
+        "live_non_null_editor_launch_log_ref": "",
+        "live_non_null_editor_launch_selected_log_scan_passed": False,
+        "live_non_null_editor_launch_selected_log_blocking_matches": [],
         "null_renderer_used": False,
         "existing_nullrenderer_safe_editor_lane_preserved": True,
         "editor_temp_visual_scene_contract_attempted": False,
@@ -4110,6 +4534,21 @@ def _parse_args() -> argparse.Namespace:
         help="Set the explicit gated marker for the non-null Editor desktop/session/GPU/RHI readiness diagnostic.",
     )
     parser.add_argument(
+        "--diagnose-live-non-null-editor-launch",
+        action="store_true",
+        help="Run the bounded live non-null Editor launch diagnostic without screenshot capture.",
+    )
+    parser.add_argument(
+        "--diagnose-non-null-editor-launch-no-screenshot",
+        action="store_true",
+        help="Alias for the bounded live non-null Editor launch diagnostic without screenshot capture.",
+    )
+    parser.add_argument(
+        "--enable-live-non-null-editor-launch-fixture",
+        action="store_true",
+        help="Set the explicit gated marker for bounded live non-null Editor launch without screenshot capture.",
+    )
+    parser.add_argument(
         "--editor-render-capture-rhi",
         choices=sorted(NON_NULL_RENDER_CAPTURE_RHIS),
         default=None,
@@ -4250,6 +4689,15 @@ def main() -> int:
         env_map["MAXINE_ENABLE_NON_NULL_EDITOR_DESKTOP_RHI_READINESS"] = "1"
     if args.enable_non_null_editor_desktop_rhi_readiness_fixture:
         env_map["MAXINE_ALLOW_NON_NULL_EDITOR_DESKTOP_RHI_READINESS"] = "1"
+    if (
+        args.diagnose_live_non_null_editor_launch
+        or args.diagnose_non_null_editor_launch_no_screenshot
+        or args.enable_live_non_null_editor_launch_fixture
+    ):
+        diagnostic_mode = "live-non-null-editor-launch"
+        env_map["MAXINE_ENABLE_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+    if args.enable_live_non_null_editor_launch_fixture:
+        env_map["MAXINE_ALLOW_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
     if args.editor_render_capture_rhi:
         env_map["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = args.editor_render_capture_rhi
     result = run_editor_smoke_corpus(
