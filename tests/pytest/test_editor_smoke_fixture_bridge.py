@@ -4770,6 +4770,118 @@ def test_live_non_null_editor_launch_mode_uses_non_null_rhi_without_screenshot_o
     assert result["runtime_character_proof_verified"] is False
 
 
+def test_live_non_null_editor_launch_source_validation_failure_blocks_before_process(tmp_path, monkeypatch):
+    env = _live_env(tmp_path)
+    _write_non_null_desktop_rhi_source_files(Path(env["O3DE_ENGINE_ROOT"]))
+
+    def fail_launch_source_validation(engine_root):
+        return {
+            "status": "live_non_null_editor_launch_source_validation_inconclusive",
+            "blocker": "blocked_by_live_non_null_editor_launch_required_symbol_missing",
+            "files": [
+                {
+                    "path": "tools/o3de/editor_python/editor_live_non_null_launch_smoke.py",
+                    "status": "fail",
+                    "missing_symbols": ["from tools.o3de.editor_python import maxine_package_prefab_smoke"],
+                }
+            ],
+            "missing": [
+                {
+                    "path": "tools/o3de/editor_python/editor_live_non_null_launch_smoke.py",
+                    "status": "fail",
+                }
+            ],
+        }
+
+    monkeypatch.setattr(editor_python_smoke, "_live_non_null_editor_launch_source_validation", fail_launch_source_validation)
+
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        raise AssertionError("launch source-validation failure must block before spawning Editor")
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=env,
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="live-non-null-editor-launch",
+    )
+
+    semantic_result = validate_editor_smoke_report(result, strict=True)
+
+    assert result["status"] == "pass"
+    assert semantic_result.status == "pass", semantic_result.messages
+    assert result["non_null_editor_desktop_rhi_readiness_verified"] is True
+    assert result["live_non_null_editor_launch_source_validation_verified"] is False
+    assert result["live_non_null_editor_launch_blocker"] == (
+        "blocked_by_live_non_null_editor_launch_required_symbol_missing"
+    )
+    assert result["live_editor_execution"] is False
+    assert result["live_non_null_editor_launch_attempted"] is False
+    assert result["live_non_null_editor_launch_completed"] is False
+    assert result["live_non_null_editor_launch_verified"] is False
+    assert result["non_null_editor_launch_attempted"] is False
+    assert result["non_null_editor_launch_completed"] is False
+    assert result["non_null_editor_launch_verified"] is False
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["editor_visual_material_capture_completed"] is False
+    assert result["visual_material_gate_verified"] is False
+    assert result["runtime_character_proof_verified"] is False
+
+
+def test_live_non_null_editor_launch_readiness_failure_still_blocks_before_process(tmp_path, monkeypatch):
+    env = _live_env(tmp_path)
+    _write_non_null_desktop_rhi_source_files(Path(env["O3DE_ENGINE_ROOT"]))
+
+    def fail_visible_desktop():
+        return {
+            "visible_desktop_session_check_attempted": True,
+            "visible_desktop_session_check_method": (
+                "ProcessIdToSessionId+WTSGetActiveConsoleSessionId+OpenInputDesktop"
+            ),
+            "visible_desktop_session_verified": False,
+            "visible_desktop_session_state": "service_session",
+            "visible_desktop_session_blocker": (
+                "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session"
+            ),
+            "windows_session_id": 0,
+            "windows_session_type": "service",
+            "windows_session_interactive": False,
+        }
+
+    monkeypatch.setattr(editor_python_smoke, "_detect_visible_desktop_session_readiness", fail_visible_desktop)
+
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        raise AssertionError("desktop/session readiness failure must block before spawning Editor")
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=env,
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="live-non-null-editor-launch",
+    )
+
+    semantic_result = validate_editor_smoke_report(result, strict=True)
+
+    assert result["status"] == "pass"
+    assert semantic_result.status == "pass", semantic_result.messages
+    assert result["non_null_editor_desktop_rhi_readiness_verified"] is False
+    assert result["live_non_null_editor_launch_source_validation_verified"] is True
+    assert result["live_non_null_editor_launch_blocker"] == (
+        "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session"
+    )
+    assert result["live_editor_execution"] is False
+    assert result["live_non_null_editor_launch_attempted"] is False
+    assert result["live_non_null_editor_launch_completed"] is False
+    assert result["live_non_null_editor_launch_verified"] is False
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["runtime_character_proof_verified"] is False
+
+
 def test_live_non_null_editor_launch_validation_rejects_nullrenderer_command():
     report = _fixture("release_rigged.fixture.report.json")
     report.update(_live_non_null_editor_launch_verified_payload())

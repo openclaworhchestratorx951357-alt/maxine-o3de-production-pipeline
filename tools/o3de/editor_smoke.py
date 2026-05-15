@@ -2092,10 +2092,18 @@ def _validate_non_null_editor_desktop_rhi_readiness(report: Mapping[str, Any], r
 
 def _validate_live_non_null_editor_launch(report: Mapping[str, Any], result: ValidationResult) -> None:
     _validate_non_null_editor_desktop_rhi_readiness(report, result)
-    if report.get("live_non_null_editor_launch_source_validation_verified") is not True:
+    source_validated = report.get("live_non_null_editor_launch_source_validation_verified") is True
+    launch_attempted = report.get("live_non_null_editor_launch_attempted") is True
+    launch_blocker = str(report.get("live_non_null_editor_launch_blocker", "")).strip()
+    if not source_validated and launch_attempted:
         result.add_error(
             MXN_RUNTIME_SMOKE_FAIL,
-            "Live non-null Editor launch diagnostic requires source validation.",
+            "Live non-null Editor launch must not be attempted when launch source validation is false.",
+        )
+    if not source_validated and not launch_blocker:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Unvalidated live non-null Editor launch source contract requires a precise typed blocker.",
         )
     if report.get("existing_nullrenderer_safe_editor_lane_preserved") is not True:
         result.add_error(
@@ -2157,7 +2165,7 @@ def _validate_live_non_null_editor_launch(report: Mapping[str, Any], result: Val
         if report.get(field) is True:
             result.add_error(MXN_PATH_UNSAFE, message)
 
-    attempted = report.get("live_non_null_editor_launch_attempted") is True
+    attempted = launch_attempted
     completed = report.get("live_non_null_editor_launch_completed") is True
     verified = report.get("live_non_null_editor_launch_verified") is True
     if attempted:
@@ -3020,7 +3028,37 @@ def _execute_live_editor_smoke(
                     os.environ.pop(key, None)
                 else:
                     os.environ[key] = value
-        if template.get("non_null_editor_desktop_rhi_readiness_verified") is not True:
+        if (
+            template.get("non_null_editor_desktop_rhi_readiness_verified") is not True
+            or template.get("live_non_null_editor_launch_source_validation_verified") is not True
+        ):
+            blocked_by_readiness = template.get("non_null_editor_desktop_rhi_readiness_verified") is not True
+            preflight_blocker = str(
+                template.get("non_null_editor_launch_blocker")
+                or template.get("live_non_null_editor_launch_blocker")
+                or (
+                    "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session"
+                    if blocked_by_readiness
+                    else "blocked_by_live_non_null_editor_launch_source_validation_failed"
+                )
+            )
+            template.update(
+                {
+                    "live_non_null_editor_launch_attempted": False,
+                    "live_non_null_editor_launch_completed": False,
+                    "live_non_null_editor_launch_verified": False,
+                    "live_non_null_editor_launch_blocker": preflight_blocker,
+                    "non_null_editor_launch_attempted": False,
+                    "non_null_editor_launch_completed": False,
+                    "non_null_editor_launch_verified": False,
+                    "non_null_editor_launch_exit_code": None,
+                    "non_null_editor_launch_blocker": preflight_blocker,
+                    "editor_visual_material_capture_requested": False,
+                    "editor_visual_material_capture_completed": False,
+                    "visual_material_gate_verified": False,
+                    "runtime_character_proof_verified": False,
+                }
+            )
             finished_at = _utc_now()
             duration_seconds = round(time.monotonic() - start_time, 3)
             stdout_path.write_text("", encoding="utf-8")
@@ -3031,7 +3069,11 @@ def _execute_live_editor_smoke(
                 step="live_non_null_editor_launch_preflight_blocked",
                 status="blocked",
                 started_monotonic=start_time,
-                message="Live non-null Editor launch was not attempted because desktop/GPU/RHI readiness regressed.",
+                message=(
+                    "Live non-null Editor launch was not attempted because desktop/GPU/RHI readiness regressed."
+                    if blocked_by_readiness
+                    else "Live non-null Editor launch was not attempted because launch source validation failed."
+                ),
                 error_code=MXN_RUNTIME_SMOKE_FAIL,
             )
             progress_markers = _load_progress_markers(progress_path)
@@ -3073,7 +3115,9 @@ def _execute_live_editor_smoke(
                     "warnings": [],
                     "messages": _unique(
                         list(report.get("messages", []))
-                        + ["Live non-null Editor launch was blocked before process start by readiness preflight."]
+                        + [
+                            "Live non-null Editor launch was blocked before process start by readiness/source-validation preflight."
+                        ]
                     ),
                 }
             )

@@ -143,7 +143,10 @@ TYPED_BLOCKED_STATUSES = {
     "blocked_by_editor_visual_material_proof_requires_temp_level_contract",
     "blocked_by_editor_temp_visual_scene_contract_requires_additional_source_validation",
     "blocked_by_non_null_editor_visual_runner_readiness_requires_additional_source_validation",
+    "blocked_by_live_non_null_editor_launch_source_validation_failed",
     "blocked_by_live_non_null_editor_launch_requires_additional_source_validation",
+    "blocked_by_live_non_null_editor_launch_wrapper_contract_unvalidated",
+    "blocked_by_live_non_null_editor_launch_required_symbol_missing",
     "blocked_by_live_non_null_editor_launch_timeout",
     "blocked_by_live_non_null_editor_launch_crash",
     "blocked_by_live_non_null_editor_python_wrapper_failed",
@@ -3631,6 +3634,9 @@ def _run_live_non_null_editor_launch_checks(
     )
     source_validation = _live_non_null_editor_launch_source_validation(engine_root)
     source_validated = source_validation.get("status") == "live_non_null_editor_launch_source_validation_pass"
+    source_validation_blocker = str(
+        source_validation.get("blocker") or "blocked_by_live_non_null_editor_launch_source_validation_failed"
+    )
     selected_rhi = str(report.get("selected_rhi", "") or _command_requested_rhi(report)).strip().lower() or "dx12"
     visible_verified = report.get("visible_desktop_session_verified") is True
     gpu_verified = report.get("gpu_or_driver_readiness_verified") is True
@@ -3659,7 +3665,7 @@ def _run_live_non_null_editor_launch_checks(
         and selected_log_scan_passed
     )
     if not source_validated:
-        blocker = "blocked_by_live_non_null_editor_launch_requires_additional_source_validation"
+        blocker = source_validation_blocker
     elif not visible_verified:
         blocker = str(
             report.get("visible_desktop_session_blocker")
