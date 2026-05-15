@@ -1,7 +1,15 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Implement Editor Viewport Visual / Material Evidence Capture v1 is implemented on `codex/implement-editor-viewport-visual-material-evidence-capture-v1` and pending review:
+- Implement Non-Null Editor Render Capture Safety Envelope v1 is implemented on `codex/implement-non-null-editor-render-capture-safety-envelope-v1` and pending review:
+  - PR #164 was green, review-clear, and merged into `main` at `9c046234456ea65e49b00b08196bead60fde9146`; this branch was created from that updated `main`
+  - this slice adds the `non-null-editor-render-capture-envelope` Editor smoke diagnostic plus `--diagnose-non-null-editor-render-capture-envelope` / `--enable-non-null-editor-render-capture-envelope-fixture` wrappers
+  - the existing NullRenderer-safe Editor smoke envelope remains unchanged for non-visual automation; the new visual-capture envelope omits `-NullRenderer`, records a selected non-null RHI (`dx12` or `vulkan`), and pins the O3DE source boundary that `-NullRenderer` or `rhi=null` is the console/null-renderer path
+  - source validation pins `GameApplication.cpp` command-line RHI handling, Atom `FrameCaptureRequestBus` screenshot APIs, Editor screenshot helper preparation, and DX12/Vulkan RHI module presence, but live capture/content execution remains blocked by visible desktop/GPU/RHI/temp-scene readiness
+  - the diagnostic records the typed blocker `blocked_by_non_null_editor_render_capture_requires_visible_desktop_session`, screenshot/frame capture not requested/completed, no capture artifact, content/nonblank/character/material validation false, rendered evidence false, visual/material gate false, and full runtime character proof false
+  - the full-character contract mapping remains satisfied for spawn instantiation, component wiring, bounded Simple Motion playback, behavior smoke, selected log scan, and cleanup/recovery, while `visual_material` remains unsatisfied and repeated behavior scenario stability remains deferred
+  - publication remains blocked, release packaging remains blocked, production/defaultlevel mutation remains forbidden, Asset Cache deletion remains forbidden, cache heuristic release proof remains forbidden, Understand-Anything remains dev-only, and no production-ready release status is claimed
+- Implement Editor Viewport Visual / Material Evidence Capture v1 was merged through PR #164:
   - PR #163 was green, review-clear, and merged into `main` at `ee681694fde54e13b20d25bc462eea279d0fe8a7`; this branch was created from that updated `main`
   - this slice adds the `editor-viewport-visual-material-evidence` Editor smoke diagnostic plus `--diagnose-editor-viewport-visual-material-evidence` / `--enable-editor-viewport-visual-material-evidence-fixture` wrappers
   - source validation pins Atom `FrameCaptureRequestBus::CanCapture`, `CaptureScreenshot`, `CaptureScreenshotForWindow`, screenshot helper viewport preparation, and Editor viewport camera framing surfaces, while preserving that the current Editor smoke command still uses `-NullRenderer` / `-rhi=Null`
