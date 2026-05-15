@@ -179,6 +179,7 @@ TYPED_BLOCKED_STATUSES = {
     "blocked_by_visual_material_content_validation_deferred_after_capture_readiness",
     "blocked_by_editor_active_viewport_requires_additional_source_validation",
     "blocked_by_editor_active_viewport_api_unavailable",
+    "blocked_by_editor_default_viewport_camera_context_unavailable",
     "blocked_by_editor_active_viewport_window_handle_unavailable",
     "blocked_by_editor_active_viewport_not_render_ready",
     "blocked_by_editor_temp_visual_scene_cleanup_policy_unverified",
@@ -5853,6 +5854,9 @@ def _check_active_default_viewport_probe(general: Any) -> Dict[str, Any]:
     camera_position = {"available": False}
     camera_rotation = {"available": False}
     allow_python_viewport_probe = os.environ.get("MAXINE_ALLOW_EDITOR_ACTIVE_VIEWPORT_PYTHON_PROBE") == "1"
+    active_attempted = active.get("attempted") is True
+    active_verified = active.get("verified") is True
+    active_blocker = str(active.get("blocker", "blocked_by_editor_active_viewport_api_unavailable"))
     if not allow_python_viewport_probe:
         return {
             "attempted": True,
@@ -5860,24 +5864,32 @@ def _check_active_default_viewport_probe(general: Any) -> Dict[str, Any]:
             "state": str(active.get("state", "active_viewport_python_probe_deferred_without_explicit_gate")),
             "blocker": str(active.get("blocker", "blocked_by_editor_active_viewport_window_handle_unavailable")),
             "active_viewport": active,
+            "active_viewport_attempted": active_attempted,
+            "active_viewport_verified": active_verified,
+            "active_viewport_blocker": active_blocker,
             "camera_position": camera_position,
             "camera_rotation": camera_rotation,
+            "camera_context_attempted": False,
+            "camera_context_verified": False,
+            "camera_context_blocker": "blocked_by_editor_default_viewport_camera_context_unavailable",
             "window_handle_attempted": True,
             "window_handle_verified": False,
             "window_handle_blocker": "blocked_by_editor_active_viewport_window_handle_unavailable",
         }
+    camera_attempted = False
     if general is not None and hasattr(general, "get_current_view_position"):
+        camera_attempted = True
         try:
             camera_position = _vector_probe(general.get_current_view_position())
         except Exception as exc:
             camera_position = {"available": False, "error": str(exc)}
     if general is not None and hasattr(general, "get_current_view_rotation"):
+        camera_attempted = True
         try:
             camera_rotation = _vector_probe(general.get_current_view_rotation())
         except Exception as exc:
             camera_rotation = {"available": False, "error": str(exc)}
     camera_verified = camera_position.get("available") is True and camera_rotation.get("available") is True
-    active_verified = active.get("verified") is True
     verified = bool(active_verified or camera_verified)
     if active_verified and camera_verified:
         state = "default_viewport_context_and_active_viewport_metrics_readback_verified"
@@ -5894,8 +5906,16 @@ def _check_active_default_viewport_probe(general: Any) -> Dict[str, Any]:
         "state": state,
         "blocker": blocker,
         "active_viewport": active,
+        "active_viewport_attempted": active_attempted,
+        "active_viewport_verified": active_verified,
+        "active_viewport_blocker": active_blocker,
         "camera_position": camera_position,
         "camera_rotation": camera_rotation,
+        "camera_context_attempted": camera_attempted,
+        "camera_context_verified": camera_verified,
+        "camera_context_blocker": ""
+        if camera_verified
+        else "blocked_by_editor_default_viewport_camera_context_unavailable",
         "window_handle_attempted": True,
         "window_handle_verified": False,
         "window_handle_blocker": "blocked_by_editor_active_viewport_window_handle_unavailable",
@@ -6072,6 +6092,17 @@ def _run_editor_nonblocking_viewport_swapchain_readiness_checks(
         "screenshot_capture_requested": False,
     }
     active_default_verified = active_default_probe.get("verified") is True
+    active_viewport_strategy_verified = active_default_probe.get("active_viewport_verified") is True
+    active_viewport_strategy_blocker = str(
+        active_default_probe.get("active_viewport_blocker", "blocked_by_editor_active_viewport_api_unavailable")
+    )
+    camera_context_strategy_verified = active_default_probe.get("camera_context_verified") is True
+    camera_context_strategy_blocker = str(
+        active_default_probe.get(
+            "camera_context_blocker",
+            "blocked_by_editor_default_viewport_camera_context_unavailable",
+        )
+    )
     window_handle_verified = active_default_probe.get("window_handle_verified") is True
     swapchain_verified = False
     framecapture_target_verified = bool(window_handle_verified and swapchain_verified)
@@ -6088,18 +6119,18 @@ def _run_editor_nonblocking_viewport_swapchain_readiness_checks(
     strategies = [
         _nonblocking_probe_strategy(
             strategy_id="editor_python_active_viewport_api",
-            attempted=bool(active_default_probe.get("attempted")),
+            attempted=bool(active_default_probe.get("active_viewport_attempted")),
             source_validated=source_validated,
-            verified=active_default_verified,
-            blocker=str(active_default_probe.get("blocker", "blocked_by_editor_active_viewport_api_unavailable")),
+            verified=active_viewport_strategy_verified,
+            blocker=active_viewport_strategy_blocker,
             evidence_summary=str(active_default_probe.get("state", "")),
         ),
         _nonblocking_probe_strategy(
             strategy_id="editor_python_default_viewport_camera_context",
-            attempted=bool(active_default_probe.get("attempted")),
+            attempted=bool(active_default_probe.get("camera_context_attempted")),
             source_validated=source_validated,
-            verified=active_default_verified,
-            blocker=str(active_default_probe.get("blocker", "blocked_by_editor_active_viewport_api_unavailable")),
+            verified=camera_context_strategy_verified,
+            blocker=camera_context_strategy_blocker,
             evidence_summary="default viewport camera readback attempted without window-handle access",
         ),
         _nonblocking_probe_strategy(

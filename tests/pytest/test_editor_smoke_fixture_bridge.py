@@ -6119,6 +6119,84 @@ def test_nonblocking_viewport_swapchain_probe_records_window_handle_blocker(monk
     assert result["runtime_character_proof_verified"] is False
 
 
+def test_nonblocking_viewport_swapchain_probe_keeps_strategy_verification_separate(monkeypatch, tmp_path):
+    env = _live_env(tmp_path)
+    project = Path(env["O3DE_PROJECT_PATH"])
+    monkeypatch.setenv("O3DE_ENGINE_ROOT", env["O3DE_ENGINE_ROOT"])
+    monkeypatch.setenv("O3DE_PROJECT_PATH", str(project))
+    monkeypatch.setenv(
+        "MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_NAME",
+        "_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/test_run",
+    )
+    monkeypatch.setenv("MAXINE_ALLOW_EDITOR_ACTIVE_VIEWPORT_PYTHON_PROBE", "1")
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_editor_nonblocking_viewport_swapchain_readiness_source_validation",
+        lambda _engine_root: {
+            "status": "editor_nonblocking_viewport_swapchain_readiness_source_validation_pass",
+            "blocker": "",
+            "files": [],
+            "surfaces": {},
+        },
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_editor_safe_temp_visual_scene_display_context_source_validation",
+        lambda _engine_root: {
+            "status": "editor_safe_temp_visual_scene_display_context_source_validation_pass",
+            "blocker": "",
+            "files": [],
+        },
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_live_non_null_editor_launch_source_validation",
+        lambda _engine_root: {"status": "live_non_null_editor_launch_source_validation_pass"},
+    )
+
+    class General:
+        def create_level_no_prompt(self, template, level_name, heightmap, unit_size, texture_size, use_terrain):
+            target = project / "Levels" / level_name
+            target.mkdir(parents=True)
+            (target / "test_run.prefab").write_text("{}", encoding="utf-8")
+            return 0
+
+        def update_viewport(self):
+            return None
+
+        def get_viewport_count(self):
+            return 0
+
+        def get_active_viewport(self):
+            return -1
+
+        def get_viewport_size(self):
+            return (0, 0)
+
+        def get_current_view_position(self):
+            return (0.0, 0.0, 10.0)
+
+        def get_current_view_rotation(self):
+            return (0.0, 0.0, 0.0)
+
+    result = editor_python_smoke._run_editor_nonblocking_viewport_swapchain_readiness_checks(
+        _live_non_null_editor_launch_verified_payload(),
+        progress_log=None,
+        general=General(),
+    )
+    strategies = {strategy["id"]: strategy for strategy in result["nonblocking_viewport_swapchain_probe_strategies"]}
+
+    assert result["active_default_viewport_probe_verified"] is True
+    assert strategies["editor_python_active_viewport_api"]["verified"] is False
+    assert strategies["editor_python_active_viewport_api"]["blocker"] == (
+        "blocked_by_editor_active_viewport_not_render_ready"
+    )
+    assert strategies["editor_python_default_viewport_camera_context"]["verified"] is True
+    assert strategies["editor_python_default_viewport_camera_context"]["blocker"] == ""
+    assert result["framecapture_target_readiness_verified"] is False
+    assert result["editor_visual_material_capture_requested"] is False
+
+
 def test_nonblocking_viewport_swapchain_probe_defers_unbounded_active_viewport_calls(monkeypatch):
     monkeypatch.delenv("MAXINE_ALLOW_EDITOR_ACTIVE_VIEWPORT_PYTHON_PROBE", raising=False)
 
