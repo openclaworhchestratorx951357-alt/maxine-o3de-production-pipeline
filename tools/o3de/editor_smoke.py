@@ -139,6 +139,11 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_live_non_null_launch_smoke.py",
+    "editor-screenshot-capture-artifact-readiness": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_screenshot_capture_artifact_readiness_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -202,6 +207,11 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
         and report.get("live_editor_execution") is not True
         and str(report.get("live_non_null_editor_launch_blocker", "")).strip()
     )
+    blocked_editor_screenshot_capture_diagnostic = (
+        diagnostic_mode == "editor-screenshot-capture-artifact-readiness"
+        and report.get("live_editor_execution") is not True
+        and str(report.get("editor_screenshot_capture_artifact_readiness_blocker", "")).strip()
+    )
     if report.get("live_editor_execution") is True and str(report.get("mode", "")) in {"fixture", "unavailable"}:
         result.add_error("MXN_RUNTIME_SMOKE_FAIL", "Fixture/skipped Editor smoke reports cannot claim live Editor execution.")
     if str(report.get("mode", "")) == "local_editor_python":
@@ -210,6 +220,7 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             and report.get("live_editor_execution") is not True
             and not source_only_diagnostic
             and not blocked_live_non_null_launch_diagnostic
+            and not blocked_editor_screenshot_capture_diagnostic
         ):
             result.add_error(
                 MXN_RUNTIME_SMOKE_FAIL,
@@ -292,6 +303,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_non_null_editor_desktop_rhi_readiness(report, result)
         if diagnostic_mode == "live-non-null-editor-launch":
             _validate_live_non_null_editor_launch(report, result)
+        if diagnostic_mode == "editor-screenshot-capture-artifact-readiness":
+            _validate_editor_screenshot_capture_artifact_readiness(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -2235,6 +2248,162 @@ def _validate_live_non_null_editor_launch(report: Mapping[str, Any], result: Val
         )
 
 
+def _validate_editor_screenshot_capture_artifact_readiness(
+    report: Mapping[str, Any],
+    result: ValidationResult,
+) -> None:
+    source_validated = report.get("editor_screenshot_capture_artifact_readiness_source_validation_verified") is True
+    attempted = report.get("editor_screenshot_capture_artifact_readiness_attempted") is True
+    completed = report.get("editor_screenshot_capture_artifact_readiness_completed") is True
+    verified = report.get("editor_screenshot_capture_artifact_readiness_verified") is True
+    blocker = str(report.get("editor_screenshot_capture_artifact_readiness_blocker", "")).strip()
+
+    if report.get("existing_nullrenderer_safe_editor_lane_preserved") is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Editor screenshot capture artifact readiness must preserve the existing NullRenderer-safe Editor lane.",
+        )
+    if attempted and not source_validated:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Editor screenshot capture artifact readiness must not be attempted when source validation is false.",
+        )
+    if not source_validated and not blocker:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Unvalidated Editor screenshot capture artifact readiness requires a precise typed blocker.",
+        )
+
+    selected_rhi = str(
+        report.get("live_non_null_editor_launch_selected_rhi", "")
+        or report.get("selected_rhi", "")
+        or report.get("non_null_editor_render_capture_rhi_requested", "")
+    ).strip().lower()
+    if not selected_rhi:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor screenshot capture artifact readiness must record selected RHI.")
+    elif selected_rhi not in NON_NULL_RENDER_CAPTURE_RHIS:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            f"Editor screenshot capture artifact readiness selected unsupported RHI '{selected_rhi}'.",
+        )
+
+    command_parts = list(report.get("command_argv_redacted", []) or []) + list(
+        report.get("live_non_null_editor_launch_command", []) or []
+    )
+    command = " ".join(str(part) for part in command_parts)
+    if (
+        report.get("live_non_null_editor_launch_null_renderer_used") is True
+        or report.get("non_null_editor_render_capture_null_renderer_used") is True
+        or "-NullRenderer" in command
+        or "-rhi=Null" in command
+        or "-rhi=null" in command.lower()
+    ):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Editor screenshot capture artifact readiness command must omit NullRenderer/null RHI.",
+        )
+
+    for field, message in (
+        ("editor_temp_visual_scene_created", "Screenshot artifact readiness slice must not create a temp visual scene."),
+        ("editor_visual_material_temp_scene_created", "Screenshot artifact readiness slice must not create a visual scene."),
+        ("visual_material_rendered_evidence_gate_verified", "visual_material_rendered_evidence_gate_verified=true is not allowed from screenshot artifact readiness alone."),
+        ("visual_material_gate_claimed", "visual_material_gate_claimed=true is not allowed from screenshot artifact readiness alone."),
+        ("visual_material_gate_verified", "visual_material_gate_verified=true is not allowed from screenshot artifact readiness alone."),
+        ("full_runtime_character_visual_material_gate_verified", "full_runtime_character_visual_material_gate_verified=true is not allowed from screenshot artifact readiness alone."),
+        ("runtime_character_proof_claimed", "Screenshot artifact readiness cannot claim full runtime character proof."),
+        ("runtime_character_proof_verified", "Screenshot artifact readiness cannot verify full runtime character proof."),
+        ("editor_visual_material_capture_content_validation_verified", "Screenshot artifact readiness does not verify capture content."),
+        ("editor_visual_material_nonblank_validation_verified", "Screenshot artifact readiness does not verify nonblank content unless a later content gate passes."),
+        ("editor_visual_material_character_presence_validation_verified", "Screenshot artifact readiness does not verify character presence."),
+        ("editor_visual_material_material_presence_validation_verified", "Screenshot artifact readiness does not verify material presence."),
+    ):
+        if report.get(field) is True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, message)
+
+    for field, message in (
+        ("editor_temp_visual_scene_defaultlevel_mutation", "Screenshot artifact readiness must not mutate defaultlevel."),
+        ("editor_temp_visual_scene_production_level_mutation", "Screenshot artifact readiness must not mutate production levels."),
+        ("editor_visual_material_defaultlevel_mutation", "Screenshot artifact readiness must not mutate defaultlevel."),
+        ("editor_visual_material_production_level_mutation", "Screenshot artifact readiness must not mutate production levels."),
+        ("defaultlevel_mutation", "Screenshot artifact readiness must not mutate defaultlevel."),
+        ("production_level_mutation", "Screenshot artifact readiness must not mutate production levels."),
+        ("asset_cache_deleted", "Screenshot artifact readiness must not delete Asset Cache."),
+        ("cache_heuristic_used", "Screenshot artifact readiness must not use cache heuristic proof."),
+    ):
+        if report.get(field) is True:
+            result.add_error(MXN_PATH_UNSAFE, message)
+
+    if attempted:
+        for field, label in {
+            "visible_desktop_session_verified": "visible desktop/session readiness",
+            "gpu_or_driver_readiness_verified": "GPU/driver readiness",
+            "rhi_readiness_verified": "RHI readiness",
+            "live_non_null_editor_launch_source_validation_verified": "live launch source validation",
+            "live_non_null_editor_launch_verified": "live non-null Editor launch verification",
+            "live_non_null_editor_launch_python_wrapper_executed": "Editor Python wrapper execution",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"editor_screenshot_capture_artifact_readiness_attempted=true requires {field} ({label}).",
+                )
+        if report.get("live_editor_execution") is not True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "editor_screenshot_capture_artifact_readiness_attempted=true requires live_editor_execution=true.",
+            )
+    elif not blocker:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Unattempted Editor screenshot capture artifact readiness requires a precise typed blocker.",
+        )
+
+    capture_readiness = report.get("visual_material_capture_readiness_verified") is True
+    if verified or capture_readiness:
+        required_true = {
+            "editor_screenshot_capture_artifact_readiness_attempted": "capture readiness attempt",
+            "editor_screenshot_capture_artifact_readiness_completed": "capture readiness completion",
+            "editor_visual_material_capture_api_found": "capture API source",
+            "editor_visual_material_capture_api_available_under_non_null_rhi": "capture API availability under non-null RHI",
+            "editor_visual_material_capture_requested": "capture request",
+            "editor_visual_material_capture_request_accepted": "capture request acceptance",
+            "editor_visual_material_capture_completed": "capture completion",
+            "editor_visual_material_capture_artifact_exists": "capture artifact existence",
+            "editor_visual_material_selected_log_scan_passed": "selected log scan",
+        }
+        for field, label in required_true.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"editor_screenshot_capture_artifact_readiness_verified=true requires {field} ({label}).",
+                )
+        if not completed:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "visual_material_capture_readiness_verified=true requires screenshot artifact readiness completion.",
+            )
+        width = int(report.get("editor_visual_material_capture_artifact_width", 0) or 0)
+        height = int(report.get("editor_visual_material_capture_artifact_height", 0) or 0)
+        size_bytes = int(report.get("editor_visual_material_capture_artifact_size_bytes", 0) or 0)
+        artifact_format = str(report.get("editor_visual_material_capture_artifact_format", "")).strip().lower()
+        sha256 = str(report.get("editor_visual_material_capture_artifact_sha256", "")).strip()
+        if artifact_format != "png" or width <= 0 or height <= 0 or size_bytes <= 0 or len(sha256) != 64:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Screenshot capture artifact readiness requires png artifact format, positive dimensions/size, and sha256.",
+            )
+        if blocker:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Verified screenshot capture artifact readiness must not carry a blocker.",
+            )
+    elif attempted and not blocker:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Unverified screenshot capture artifact readiness requires a precise typed blocker.",
+        )
+
+
 def _validate_direct_procprefab_content_assertions(
     report: Mapping[str, Any],
     semantics: Mapping[str, Any],
@@ -2942,8 +3111,12 @@ def _execute_live_editor_smoke(
     level_name_for_editor = f"_maxine_smoke/{temp_level_name}"
     non_null_render_capture_mode = diagnostic_mode == "non-null-editor-render-capture-envelope"
     live_non_null_editor_launch_mode = diagnostic_mode == "live-non-null-editor-launch"
+    screenshot_capture_artifact_readiness_mode = diagnostic_mode == "editor-screenshot-capture-artifact-readiness"
     selected_render_capture_rhi = _selected_non_null_render_capture_rhi(env)
-    non_null_editor_mode = non_null_render_capture_mode or live_non_null_editor_launch_mode
+    non_null_editor_mode = (
+        non_null_render_capture_mode or live_non_null_editor_launch_mode or screenshot_capture_artifact_readiness_mode
+    )
+    live_non_null_process_mode = live_non_null_editor_launch_mode or screenshot_capture_artifact_readiness_mode
     render_args = [f"-rhi={selected_render_capture_rhi}"] if non_null_editor_mode else ["-NullRenderer", "-rhi=Null"]
     argv = [
         str(editor_executable),
@@ -2986,7 +3159,7 @@ def _execute_live_editor_smoke(
         diagnostic_mode=diagnostic_mode,
         script_path=script_path,
     )
-    if live_non_null_editor_launch_mode:
+    if live_non_null_process_mode:
         previous_env = {
             key: os.environ.get(key)
             for key in (
@@ -2994,12 +3167,19 @@ def _execute_live_editor_smoke(
                 "O3DE_PROJECT_PATH",
                 "O3DE_EDITOR_EXECUTABLE",
                 "MAXINE_EDITOR_RENDER_CAPTURE_RHI",
+                "MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH",
+                "MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_ROOT",
             )
         }
         os.environ["O3DE_ENGINE_ROOT"] = str(engine_root)
         os.environ["O3DE_PROJECT_PATH"] = str(project_path)
         os.environ["O3DE_EDITOR_EXECUTABLE"] = str(editor_executable)
         os.environ["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = selected_render_capture_rhi
+        if screenshot_capture_artifact_readiness_mode:
+            os.environ["MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_ROOT"] = str(output_dir)
+            os.environ["MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH"] = str(
+                output_dir / "editor_screenshot_capture_artifact_readiness.png"
+            )
         try:
             from tools.o3de.editor_python import maxine_package_prefab_smoke as editor_python_smoke
 
@@ -3022,24 +3202,82 @@ def _execute_live_editor_smoke(
                 selected_log_blocking_matches=[],
             )
             template.update(launch_payload)
+            if screenshot_capture_artifact_readiness_mode:
+                capture_source_validation = editor_python_smoke._editor_screenshot_capture_artifact_readiness_source_validation(
+                    engine_root
+                )
+                capture_source_validated = (
+                    capture_source_validation.get("status")
+                    == "editor_screenshot_capture_artifact_readiness_source_validation_pass"
+                )
+                capture_source_blocker = str(
+                    capture_source_validation.get("blocker")
+                    or "blocked_by_editor_screenshot_capture_requires_additional_source_validation"
+                )
+                template.update(
+                    {
+                        "editor_screenshot_capture_artifact_readiness_attempted": False,
+                        "editor_screenshot_capture_artifact_readiness_completed": False,
+                        "editor_screenshot_capture_artifact_readiness_verified": False,
+                        "editor_screenshot_capture_artifact_readiness_blocker": ""
+                        if capture_source_validated
+                        else capture_source_blocker,
+                        "editor_screenshot_capture_artifact_readiness_candidate_matrix": (
+                            editor_python_smoke._editor_screenshot_capture_artifact_readiness_candidate_matrix(
+                                source_validated=capture_source_validated,
+                                selected_rhi=selected_render_capture_rhi,
+                                capture_requested=False,
+                                capture_verified=False,
+                                blocker="" if capture_source_validated else capture_source_blocker,
+                            )
+                        ),
+                        "editor_screenshot_capture_artifact_readiness_selected_strategy": (
+                            "bounded_live_editor_screenshot_capture_artifact_readiness"
+                        ),
+                        "editor_screenshot_capture_artifact_readiness_source_validation_status": (
+                            capture_source_validation.get("status", "")
+                        ),
+                        "editor_screenshot_capture_artifact_readiness_source_validation_verified": capture_source_validated,
+                        "editor_screenshot_capture_artifact_readiness_source_validation": capture_source_validation,
+                        "editor_screenshot_capture_artifact_readiness_source_files": [
+                            str(spec["path"])
+                            for spec in editor_python_smoke._editor_screenshot_capture_artifact_readiness_source_specs(
+                                engine_root
+                            )
+                        ],
+                    }
+                )
         finally:
             for key, value in previous_env.items():
                 if value is None:
                     os.environ.pop(key, None)
                 else:
                     os.environ[key] = value
+        capture_source_blocked = (
+            screenshot_capture_artifact_readiness_mode
+            and template.get("editor_screenshot_capture_artifact_readiness_source_validation_verified") is not True
+        )
         if (
             template.get("non_null_editor_desktop_rhi_readiness_verified") is not True
             or template.get("live_non_null_editor_launch_source_validation_verified") is not True
+            or capture_source_blocked
         ):
             blocked_by_readiness = template.get("non_null_editor_desktop_rhi_readiness_verified") is not True
+            blocked_by_launch_source = template.get("live_non_null_editor_launch_source_validation_verified") is not True
             preflight_blocker = str(
-                template.get("non_null_editor_launch_blocker")
+                (
+                    template.get("editor_screenshot_capture_artifact_readiness_blocker")
+                    if capture_source_blocked
+                    else ""
+                )
+                or template.get("non_null_editor_launch_blocker")
                 or template.get("live_non_null_editor_launch_blocker")
                 or (
                     "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session"
                     if blocked_by_readiness
                     else "blocked_by_live_non_null_editor_launch_source_validation_failed"
+                    if blocked_by_launch_source
+                    else "blocked_by_editor_screenshot_capture_requires_additional_source_validation"
                 )
             )
             template.update(
@@ -3053,8 +3291,14 @@ def _execute_live_editor_smoke(
                     "non_null_editor_launch_verified": False,
                     "non_null_editor_launch_exit_code": None,
                     "non_null_editor_launch_blocker": preflight_blocker,
+                    "editor_screenshot_capture_artifact_readiness_attempted": False,
+                    "editor_screenshot_capture_artifact_readiness_completed": False,
+                    "editor_screenshot_capture_artifact_readiness_verified": False,
+                    "editor_screenshot_capture_artifact_readiness_blocker": preflight_blocker,
                     "editor_visual_material_capture_requested": False,
+                    "editor_visual_material_capture_request_accepted": False,
                     "editor_visual_material_capture_completed": False,
+                    "visual_material_capture_readiness_verified": False,
                     "visual_material_gate_verified": False,
                     "runtime_character_proof_verified": False,
                 }
@@ -3073,6 +3317,8 @@ def _execute_live_editor_smoke(
                     "Live non-null Editor launch was not attempted because desktop/GPU/RHI readiness regressed."
                     if blocked_by_readiness
                     else "Live non-null Editor launch was not attempted because launch source validation failed."
+                    if blocked_by_launch_source
+                    else "Editor screenshot capture was not attempted because capture source validation failed."
                 ),
                 error_code=MXN_RUNTIME_SMOKE_FAIL,
             )
@@ -3157,6 +3403,16 @@ def _execute_live_editor_smoke(
         editor_env["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = selected_render_capture_rhi
         editor_env.setdefault("MAXINE_ENABLE_LIVE_NON_NULL_EDITOR_LAUNCH", "1")
         editor_env.setdefault("MAXINE_ALLOW_LIVE_NON_NULL_EDITOR_LAUNCH", "1")
+    if screenshot_capture_artifact_readiness_mode:
+        editor_env["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = selected_render_capture_rhi
+        editor_env["MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_ROOT"] = str(output_dir)
+        editor_env["MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH"] = str(
+            output_dir / "editor_screenshot_capture_artifact_readiness.png"
+        )
+        editor_env.setdefault("MAXINE_ENABLE_LIVE_NON_NULL_EDITOR_LAUNCH", "1")
+        editor_env.setdefault("MAXINE_ALLOW_LIVE_NON_NULL_EDITOR_LAUNCH", "1")
+        editor_env.setdefault("MAXINE_ENABLE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_READINESS", "1")
+        editor_env.setdefault("MAXINE_ALLOW_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_READINESS", "1")
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_NAME"] = level_name_for_editor
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_PATH"] = str(project_path / temp_level_rel)
     editor_env["MAXINE_EDITOR_SMOKE_ALLOW_TEMP_SANDBOX_LEVEL"] = "1"
@@ -3334,6 +3590,92 @@ def _execute_live_editor_smoke(
                 "editor_visual_material_capture_requested": False,
                 "editor_visual_material_capture_completed": False,
                 "visual_material_capture_readiness_verified": False,
+                "visual_material_rendered_evidence_gate_attempted": False,
+                "visual_material_rendered_evidence_gate_verified": False,
+                "visual_material_gate_claimed": False,
+                "visual_material_gate_verified": False,
+                "full_runtime_character_visual_material_gate_verified": False,
+                "runtime_character_proof_claimed": False,
+                "runtime_character_proof_verified": False,
+            }
+        )
+    if screenshot_capture_artifact_readiness_mode:
+        command = " ".join(argv)
+        null_renderer_used = "-NullRenderer" in command or "-rhi=Null" in command or "-rhi=null" in command.lower()
+        blocking_matches = []
+        selected_log_scan_passed = not blocking_matches and not timed_out and proc.returncode == 0
+        python_wrapper_executed = runtime_report_found and report.get("live_non_null_editor_launch_python_wrapper_executed") is True
+        launch_completed = bool(not timed_out and runtime_report_found)
+        launch_verified = bool(
+            launch_completed
+            and proc.returncode == 0
+            and python_wrapper_executed
+            and selected_log_scan_passed
+            and not null_renderer_used
+            and report.get("visible_desktop_session_verified") is True
+            and report.get("gpu_or_driver_readiness_verified") is True
+            and report.get("rhi_readiness_verified") is True
+            and report.get("defaultlevel_mutation") is not True
+            and report.get("production_level_mutation") is not True
+            and report.get("editor_visual_material_temp_scene_created") is not True
+        )
+        capture_verified = report.get("editor_screenshot_capture_artifact_readiness_verified") is True
+        if launch_verified and capture_verified:
+            capture_blocker = ""
+        elif timed_out:
+            capture_blocker = "blocked_by_live_non_null_editor_launch_timeout"
+        elif proc.returncode != 0:
+            capture_blocker = "blocked_by_editor_screenshot_capture_exit_nonzero"
+        elif not runtime_report_found:
+            capture_blocker = "blocked_by_live_non_null_editor_python_wrapper_failed"
+        elif null_renderer_used:
+            capture_blocker = "blocked_by_editor_viewport_capture_requires_non_null_rhi"
+        elif not selected_log_scan_passed:
+            capture_blocker = "blocked_by_editor_screenshot_capture_selected_log_signal"
+        elif str(report.get("editor_screenshot_capture_artifact_readiness_blocker", "")).strip():
+            capture_blocker = str(report.get("editor_screenshot_capture_artifact_readiness_blocker", "")).strip()
+        else:
+            capture_blocker = "blocked_by_editor_screenshot_capture_completion_not_observed"
+        report.update(
+            {
+                "live_non_null_editor_launch_attempted": True,
+                "live_non_null_editor_launch_completed": launch_completed,
+                "live_non_null_editor_launch_verified": launch_verified,
+                "live_non_null_editor_launch_blocker": "" if launch_verified else capture_blocker,
+                "live_non_null_editor_launch_command": _redacted_argv(argv),
+                "live_non_null_editor_launch_selected_rhi": selected_render_capture_rhi,
+                "live_non_null_editor_launch_null_renderer_used": null_renderer_used,
+                "live_non_null_editor_launch_editor_executable": _redact_path(str(editor_executable)),
+                "live_non_null_editor_launch_project_path": _redact_path(str(project_path)),
+                "live_non_null_editor_launch_wrapper_path": _repo_relative(script_path),
+                "live_non_null_editor_launch_wrapper_bootstrap_verified": report.get(
+                    "live_non_null_editor_launch_wrapper_bootstrap_verified", False
+                ),
+                "live_non_null_editor_launch_python_wrapper_executed": python_wrapper_executed,
+                "live_non_null_editor_launch_exit_code": proc.returncode,
+                "live_non_null_editor_launch_exit_code_hex": f"0x{(proc.returncode or 0) & 0xFFFFFFFF:08X}",
+                "live_non_null_editor_launch_timeout": timed_out,
+                "live_non_null_editor_launch_killed": bool(process_cleanup.get("attempted")),
+                "live_non_null_editor_launch_stdout_ref": _repo_relative(stdout_path),
+                "live_non_null_editor_launch_stderr_ref": _repo_relative(stderr_path),
+                "live_non_null_editor_launch_log_ref": _find_editor_log_ref(project_path),
+                "live_non_null_editor_launch_selected_log_scan_passed": selected_log_scan_passed,
+                "live_non_null_editor_launch_selected_log_blocking_matches": blocking_matches,
+                "non_null_editor_launch_attempted": True,
+                "non_null_editor_launch_completed": launch_completed,
+                "non_null_editor_launch_verified": launch_verified,
+                "non_null_editor_launch_exit_code": proc.returncode,
+                "non_null_editor_launch_blocker": "" if launch_verified else capture_blocker,
+                "non_null_editor_render_capture_editor_launched": True,
+                "non_null_editor_render_capture_editor_exited_cleanly": launch_verified,
+                "non_null_editor_render_capture_rhi_requested": selected_render_capture_rhi,
+                "non_null_editor_render_capture_null_renderer_used": null_renderer_used,
+                "editor_screenshot_capture_artifact_readiness_verified": bool(capture_verified and launch_verified),
+                "editor_screenshot_capture_artifact_readiness_blocker": ""
+                if capture_verified and launch_verified
+                else capture_blocker,
+                "editor_visual_material_selected_log_scan_passed": selected_log_scan_passed,
+                "visual_material_capture_readiness_verified": bool(capture_verified and launch_verified),
                 "visual_material_rendered_evidence_gate_attempted": False,
                 "visual_material_rendered_evidence_gate_verified": False,
                 "visual_material_gate_claimed": False,
@@ -3567,6 +3909,16 @@ def _live_report_template(
         "live_non_null_editor_launch_log_ref": "",
         "live_non_null_editor_launch_selected_log_scan_passed": False,
         "live_non_null_editor_launch_selected_log_blocking_matches": [],
+        "editor_screenshot_capture_artifact_readiness_attempted": False,
+        "editor_screenshot_capture_artifact_readiness_completed": False,
+        "editor_screenshot_capture_artifact_readiness_verified": False,
+        "editor_screenshot_capture_artifact_readiness_blocker": "",
+        "editor_screenshot_capture_artifact_readiness_candidate_matrix": [],
+        "editor_screenshot_capture_artifact_readiness_selected_strategy": "",
+        "editor_screenshot_capture_artifact_readiness_source_validation_status": "",
+        "editor_screenshot_capture_artifact_readiness_source_validation_verified": False,
+        "editor_screenshot_capture_artifact_readiness_source_validation": {},
+        "editor_screenshot_capture_artifact_readiness_source_files": [],
         "null_renderer_used": False,
         "existing_nullrenderer_safe_editor_lane_preserved": True,
         "editor_temp_visual_scene_contract_attempted": False,
@@ -3592,15 +3944,19 @@ def _live_report_template(
         "editor_visual_material_capture_api_found": False,
         "editor_visual_material_capture_api_used": "",
         "editor_visual_material_capture_requested": False,
+        "editor_visual_material_capture_request_accepted": False,
         "editor_visual_material_capture_completed": False,
+        "editor_visual_material_capture_completion_source": "",
         "editor_visual_material_capture_artifact_path": "",
         "editor_visual_material_capture_artifact_exists": False,
         "editor_visual_material_capture_artifact_format": "",
         "editor_visual_material_capture_artifact_width": 0,
         "editor_visual_material_capture_artifact_height": 0,
         "editor_visual_material_capture_artifact_size_bytes": 0,
+        "editor_visual_material_capture_artifact_sha256": "",
         "editor_visual_material_capture_content_validation_attempted": False,
         "editor_visual_material_capture_content_validation_verified": False,
+        "editor_visual_material_nonblank_validation_attempted": False,
         "editor_visual_material_nonblank_validation_verified": False,
         "editor_visual_material_character_presence_validation_verified": False,
         "editor_visual_material_material_presence_validation_verified": False,
@@ -4549,6 +4905,21 @@ def _parse_args() -> argparse.Namespace:
         help="Set the explicit gated marker for bounded live non-null Editor launch without screenshot capture.",
     )
     parser.add_argument(
+        "--diagnose-editor-screenshot-capture-artifact-readiness",
+        action="store_true",
+        help="Run the bounded Editor screenshot capture artifact readiness diagnostic.",
+    )
+    parser.add_argument(
+        "--diagnose-bounded-editor-screenshot-capture",
+        action="store_true",
+        help="Alias for the bounded Editor screenshot capture artifact readiness diagnostic.",
+    )
+    parser.add_argument(
+        "--enable-editor-screenshot-capture-artifact-readiness-fixture",
+        action="store_true",
+        help="Set the explicit gated marker for bounded Editor screenshot capture artifact readiness.",
+    )
+    parser.add_argument(
         "--editor-render-capture-rhi",
         choices=sorted(NON_NULL_RENDER_CAPTURE_RHIS),
         default=None,
@@ -4698,6 +5069,17 @@ def main() -> int:
         env_map["MAXINE_ENABLE_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
     if args.enable_live_non_null_editor_launch_fixture:
         env_map["MAXINE_ALLOW_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+    if (
+        args.diagnose_editor_screenshot_capture_artifact_readiness
+        or args.diagnose_bounded_editor_screenshot_capture
+        or args.enable_editor_screenshot_capture_artifact_readiness_fixture
+    ):
+        diagnostic_mode = "editor-screenshot-capture-artifact-readiness"
+        env_map["MAXINE_ENABLE_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_READINESS"] = "1"
+    if args.enable_editor_screenshot_capture_artifact_readiness_fixture:
+        env_map["MAXINE_ALLOW_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_READINESS"] = "1"
     if args.editor_render_capture_rhi:
         env_map["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = args.editor_render_capture_rhi
     result = run_editor_smoke_corpus(

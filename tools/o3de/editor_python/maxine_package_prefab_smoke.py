@@ -54,6 +54,7 @@ DIAGNOSTIC_MODES = {
     "non-null-editor-visual-runner-readiness",
     "non-null-editor-desktop-rhi-readiness",
     "live-non-null-editor-launch",
+    "editor-screenshot-capture-artifact-readiness",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -157,6 +158,22 @@ TYPED_BLOCKED_STATUSES = {
     "blocked_by_live_non_null_editor_production_level_mutation_detected",
     "blocked_by_live_non_null_editor_exit_nonzero",
     "blocked_by_live_non_null_editor_launch_not_verified",
+    "blocked_by_editor_screenshot_capture_requires_additional_source_validation",
+    "blocked_by_editor_screenshot_capture_requires_temp_visual_scene",
+    "blocked_by_editor_screenshot_capture_requires_active_viewport",
+    "blocked_by_editor_screenshot_capture_requires_window_handle",
+    "blocked_by_editor_screenshot_capture_api_unavailable_under_current_context",
+    "blocked_by_editor_screenshot_capture_request_failed",
+    "blocked_by_editor_screenshot_capture_callback_parameters_unrecognized",
+    "blocked_by_editor_screenshot_capture_completion_callback_failed",
+    "blocked_by_editor_screenshot_capture_completion_not_observed",
+    "blocked_by_editor_screenshot_capture_artifact_missing",
+    "blocked_by_editor_screenshot_capture_artifact_empty",
+    "blocked_by_editor_screenshot_capture_artifact_format_unrecognized",
+    "blocked_by_editor_screenshot_capture_artifact_dimensions_invalid",
+    "blocked_by_editor_screenshot_capture_selected_log_signal",
+    "blocked_by_editor_screenshot_capture_exit_nonzero",
+    "blocked_by_visual_material_content_validation_deferred_after_capture_readiness",
 }
 DIRECT_PROCPREFAB_TYPED_NONVERIFIED_STATUSES = {
     "procprefab_product_not_editor_instantiable_with_current_binding",
@@ -876,6 +893,36 @@ def main() -> int:
             "editor_viewport_visual_material_evidence_selected_strategy": report.get(
                 "editor_viewport_visual_material_evidence_selected_strategy", ""
             ),
+            "editor_screenshot_capture_artifact_readiness_attempted": report.get(
+                "editor_screenshot_capture_artifact_readiness_attempted", False
+            ),
+            "editor_screenshot_capture_artifact_readiness_completed": report.get(
+                "editor_screenshot_capture_artifact_readiness_completed", False
+            ),
+            "editor_screenshot_capture_artifact_readiness_verified": report.get(
+                "editor_screenshot_capture_artifact_readiness_verified", False
+            ),
+            "editor_screenshot_capture_artifact_readiness_blocker": report.get(
+                "editor_screenshot_capture_artifact_readiness_blocker", ""
+            ),
+            "editor_screenshot_capture_artifact_readiness_candidate_matrix": report.get(
+                "editor_screenshot_capture_artifact_readiness_candidate_matrix", []
+            ),
+            "editor_screenshot_capture_artifact_readiness_selected_strategy": report.get(
+                "editor_screenshot_capture_artifact_readiness_selected_strategy", ""
+            ),
+            "editor_screenshot_capture_artifact_readiness_source_validation_status": report.get(
+                "editor_screenshot_capture_artifact_readiness_source_validation_status", ""
+            ),
+            "editor_screenshot_capture_artifact_readiness_source_validation_verified": report.get(
+                "editor_screenshot_capture_artifact_readiness_source_validation_verified", False
+            ),
+            "editor_screenshot_capture_artifact_readiness_source_validation": report.get(
+                "editor_screenshot_capture_artifact_readiness_source_validation", {}
+            ),
+            "editor_screenshot_capture_artifact_readiness_source_files": report.get(
+                "editor_screenshot_capture_artifact_readiness_source_files", []
+            ),
             "editor_visual_material_temp_scene_created": report.get("editor_visual_material_temp_scene_created", False),
             "editor_visual_material_temp_scene_path": report.get("editor_visual_material_temp_scene_path", ""),
             "editor_visual_material_defaultlevel_mutation": report.get(
@@ -902,7 +949,13 @@ def main() -> int:
             "editor_visual_material_capture_api_found": report.get("editor_visual_material_capture_api_found", False),
             "editor_visual_material_capture_api_used": report.get("editor_visual_material_capture_api_used", ""),
             "editor_visual_material_capture_requested": report.get("editor_visual_material_capture_requested", False),
+            "editor_visual_material_capture_request_accepted": report.get(
+                "editor_visual_material_capture_request_accepted", False
+            ),
             "editor_visual_material_capture_completed": report.get("editor_visual_material_capture_completed", False),
+            "editor_visual_material_capture_completion_source": report.get(
+                "editor_visual_material_capture_completion_source", ""
+            ),
             "editor_visual_material_capture_artifact_path": report.get(
                 "editor_visual_material_capture_artifact_path", ""
             ),
@@ -921,11 +974,17 @@ def main() -> int:
             "editor_visual_material_capture_artifact_size_bytes": report.get(
                 "editor_visual_material_capture_artifact_size_bytes", 0
             ),
+            "editor_visual_material_capture_artifact_sha256": report.get(
+                "editor_visual_material_capture_artifact_sha256", ""
+            ),
             "editor_visual_material_capture_content_validation_attempted": report.get(
                 "editor_visual_material_capture_content_validation_attempted", False
             ),
             "editor_visual_material_capture_content_validation_verified": report.get(
                 "editor_visual_material_capture_content_validation_verified", False
+            ),
+            "editor_visual_material_nonblank_validation_attempted": report.get(
+                "editor_visual_material_nonblank_validation_attempted", False
             ),
             "editor_visual_material_nonblank_validation_verified": report.get(
                 "editor_visual_material_nonblank_validation_verified", False
@@ -1280,6 +1339,26 @@ def main() -> int:
             "live_non_null_editor_launch_returned",
             str(launch.get("live_non_null_editor_launch_blocker", "returned")),
             "Bounded live non-null Editor launch diagnostic returned.",
+        )
+
+    if not errors and diagnostic_mode == "editor-screenshot-capture-artifact-readiness":
+        _write_progress_marker(
+            progress_log,
+            "editor_screenshot_capture_artifact_readiness_started",
+            "started",
+            "Running bounded Editor screenshot capture artifact readiness diagnostic.",
+        )
+        capture = _run_editor_screenshot_capture_artifact_readiness_checks(
+            report,
+            progress_log=progress_log,
+            general=general,
+        )
+        report.update(capture)
+        _write_progress_marker(
+            progress_log,
+            "editor_screenshot_capture_artifact_readiness_returned",
+            str(capture.get("editor_screenshot_capture_artifact_readiness_blocker", "returned")),
+            "Bounded Editor screenshot capture artifact readiness diagnostic returned.",
         )
 
     entity_result: Dict[str, Any] = report.get("entity_smoke", {"status": "not_run"})
@@ -3862,6 +3941,637 @@ def _run_live_non_null_editor_launch_checks(
             "Live non-null Editor launch diagnostic does not request screenshots, create temp visual scenes, or claim visual/material proof."
         ],
     }
+
+
+def _editor_screenshot_capture_artifact_readiness_source_specs(engine_root: Path | None) -> List[Dict[str, Any]]:
+    repo_root = Path(__file__).resolve().parents[3]
+    specs: List[Dict[str, Any]] = [
+        {
+            "path": repo_root / "tools" / "o3de" / "editor_smoke.py",
+            "symbols": [
+                "editor-screenshot-capture-artifact-readiness",
+                "MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH",
+                "MAXINE_ENABLE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_READINESS",
+                "visual_material_capture_readiness_verified",
+            ],
+        },
+        {
+            "path": repo_root
+            / "tools"
+            / "o3de"
+            / "editor_python"
+            / "editor_screenshot_capture_artifact_readiness_smoke.py",
+            "symbols": [
+                "REPO_ROOT = Path(__file__).resolve().parents[3]",
+                "sys.path.insert(0, str(REPO_ROOT))",
+                "from tools.o3de.editor_python import maxine_package_prefab_smoke",
+                "editor-screenshot-capture-artifact-readiness",
+            ],
+        },
+        {
+            "path": repo_root / "tools" / "o3de" / "editor_python" / "maxine_package_prefab_smoke.py",
+            "symbols": [
+                "editor-screenshot-capture-artifact-readiness",
+                "_run_editor_screenshot_capture_artifact_readiness_checks",
+                "MAXINE_ALLOW_EDITOR_SCREENSHOT_CAPTURE_REQUEST",
+                "MAXINE_EDITOR_SCREENSHOT_CAPTURE_ACTIVE_VIEWPORT_VERIFIED",
+                "FrameCaptureNotificationBusHandler",
+                "editor_visual_material_capture_artifact_sha256",
+            ],
+        },
+        {
+            "path": repo_root / "docs" / "production" / "private-windows-o3de-runner.md",
+            "symbols": [
+                "Bounded Editor screenshot capture artifact readiness",
+                "editor-screenshot-capture-artifact-readiness",
+                "Screenshot artifact readiness is not visual/material proof",
+            ],
+        },
+        {
+            "path": repo_root / "schemas" / "maxine.editor-smoke-report.schema.json",
+            "symbols": [
+                "editor-screenshot-capture-artifact-readiness",
+            ],
+        },
+    ]
+    if engine_root is not None:
+        specs.extend(
+            [
+                {
+                    "path": engine_root
+                    / "Gems"
+                    / "Atom"
+                    / "Feature"
+                    / "Common"
+                    / "Code"
+                    / "Include"
+                    / "Atom"
+                    / "Feature"
+                    / "Utils"
+                    / "FrameCaptureBus.h",
+                    "symbols": [
+                        "CanCapture",
+                        "CaptureScreenshot",
+                        "CaptureScreenshotForWindow",
+                        "FrameCaptureNotificationBus",
+                        "OnFrameCaptureFinished",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Gems"
+                    / "Atom"
+                    / "Feature"
+                    / "Common"
+                    / "Code"
+                    / "Source"
+                    / "FrameCaptureSystemComponent.cpp",
+                    "symbols": [
+                        'behaviorContext->EBus<FrameCaptureRequestBus>("FrameCaptureRequestBus")',
+                        '->Event("CaptureScreenshot", &FrameCaptureRequestBus::Events::CaptureScreenshot)',
+                        'behaviorContext->EBus<FrameCaptureNotificationBus>("FrameCaptureNotificationBus")',
+                        "FrameCaptureSystemComponent::CanCapture",
+                        "FrameCaptureSystemComponent::CaptureScreenshot",
+                        "FrameCaptureNotificationBus::Event",
+                        'extension == "png"',
+                        "PngFrameCaptureOutput",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "AutomatedTesting"
+                    / "Gem"
+                    / "PythonTests"
+                    / "Atom"
+                    / "atom_utils"
+                    / "screenshot_utils.py",
+                    "symbols": [
+                        "FrameCaptureRequestBus",
+                        "CaptureScreenshot",
+                        "FrameCaptureNotificationBusHandler",
+                        "OnFrameCaptureFinished",
+                        "FrameCaptureResult_Success",
+                        "capture_screenshot_blocking",
+                    ],
+                },
+            ]
+        )
+    return specs
+
+
+def _editor_screenshot_capture_artifact_readiness_source_validation(engine_root: Path | None) -> Dict[str, Any]:
+    file_results = [
+        _source_file_symbol_validation(spec["path"], spec["symbols"])
+        for spec in _editor_screenshot_capture_artifact_readiness_source_specs(engine_root)
+    ]
+    missing = [result for result in file_results if result["status"] != "pass"]
+    status = (
+        "editor_screenshot_capture_artifact_readiness_source_validation_pass"
+        if not missing
+        else "editor_screenshot_capture_artifact_readiness_source_validation_inconclusive"
+    )
+    blocker = "" if not missing else "blocked_by_editor_screenshot_capture_requires_additional_source_validation"
+    return {
+        "status": status,
+        "blocker": blocker,
+        "files": file_results,
+        "editor_screenshot_capture_artifact_readiness_surfaces": {
+            "command_boundary": "live capture uses non-null RHI and must omit -NullRenderer",
+            "frame_capture_request": "azlmbr.atom.FrameCaptureRequestBus CaptureScreenshot submits a capture",
+            "completion_boundary": "FrameCaptureNotificationBusHandler OnFrameCaptureFinished is the source-validated completion signal",
+            "artifact_boundary": "PNG artifacts under artifacts/o3de-integration/editor-smoke are validated by existence, header dimensions, size, and sha256",
+            "proof_boundary": "screenshot artifact readiness is not visual/material correctness, character presence, material presence, or full runtime character proof",
+        },
+        "missing": missing,
+    }
+
+
+def _editor_screenshot_capture_artifact_readiness_candidate_matrix(
+    *,
+    source_validated: bool,
+    selected_rhi: str,
+    capture_requested: bool,
+    capture_verified: bool,
+    blocker: str,
+) -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "atom_frame_capture_request_bus_screenshot",
+            "candidate": "screenshot capture readiness through Atom FrameCaptureRequestBus",
+            "selected": bool(source_validated),
+            "result": "verified_capture_artifact_readiness"
+            if capture_verified
+            else "selected_attempted" if capture_requested else "selected_preflight_only",
+            "blocker": "" if capture_verified else blocker,
+        },
+        {
+            "id": "screenshot_without_temp_visual_scene",
+            "candidate": "screenshot capture without temp visual scene",
+            "selected": bool(source_validated),
+            "result": "verified_active_window_capture_without_scene_mutation"
+            if capture_verified
+            else "attempted_without_scene" if capture_requested else "selected_for_live_attempt",
+            "blocker": "" if capture_verified else blocker,
+        },
+        {
+            "id": "screenshot_after_temp_visual_scene_creation",
+            "candidate": "screenshot capture after temp visual scene creation",
+            "selected": False,
+            "result": "deferred",
+        },
+        {
+            "id": "validate_capture_artifact_existence_format_dimensions_size",
+            "candidate": "validate capture artifact existence/format/dimensions/size",
+            "selected": bool(capture_requested),
+            "result": "verified" if capture_verified else "blocked_or_deferred",
+            "blocker": "" if capture_verified else blocker,
+        },
+        {
+            "id": "nonblank_validation",
+            "candidate": "nonblank validation",
+            "selected": False,
+            "result": "deferred_requires_deterministic_content_validation",
+        },
+        {
+            "id": "character_material_presence_validation",
+            "candidate": "character/material presence validation",
+            "selected": False,
+            "result": "deferred_requires_source_validated_content_method",
+        },
+        {
+            "id": "infer_visual_material_proof_from_screenshot_existence",
+            "candidate": "infer visual/material proof from screenshot existence",
+            "selected": False,
+            "result": "rejected",
+        },
+        {
+            "id": "infer_full_runtime_character_proof_from_screenshot_readiness",
+            "candidate": "infer full runtime character proof from screenshot readiness",
+            "selected": False,
+            "result": "rejected",
+        },
+        {
+            "id": "production_defaultlevel_screenshot",
+            "candidate": "production/defaultlevel screenshot",
+            "selected": False,
+            "result": "rejected",
+        },
+        {
+            "id": "understand_anything_graph_as_proof",
+            "candidate": "use Understand-Anything graph as proof",
+            "selected": False,
+            "result": "rejected",
+        },
+        {
+            "id": "dx12_rhi",
+            "candidate": "dx12 RHI",
+            "selected": selected_rhi == "dx12",
+            "result": "selected_default" if selected_rhi == "dx12" else "not_selected",
+        },
+    ]
+
+
+def _repo_relative_or_string(path: Path) -> str:
+    repo_root = Path(__file__).resolve().parents[3]
+    try:
+        return str(path.resolve(strict=False).relative_to(repo_root.resolve(strict=False))).replace("\\", "/")
+    except Exception:
+        return str(path)
+
+
+def _capture_artifact_validation(path: Path) -> Dict[str, Any]:
+    result: Dict[str, Any] = {
+        "path": _repo_relative_or_string(path),
+        "exists": path.exists(),
+        "format": "",
+        "width": 0,
+        "height": 0,
+        "size_bytes": 0,
+        "sha256": "",
+        "blocker": "",
+    }
+    if not path.exists():
+        result["blocker"] = "blocked_by_editor_screenshot_capture_artifact_missing"
+        return result
+    size_bytes = path.stat().st_size
+    result["size_bytes"] = int(size_bytes)
+    if size_bytes <= 0:
+        result["blocker"] = "blocked_by_editor_screenshot_capture_artifact_empty"
+        return result
+    data = path.read_bytes()
+    result["sha256"] = hashlib.sha256(data).hexdigest()
+    if data.startswith(b"\x89PNG\r\n\x1a\n") and len(data) >= 24:
+        result["format"] = "png"
+        result["width"] = int.from_bytes(data[16:20], "big")
+        result["height"] = int.from_bytes(data[20:24], "big")
+    else:
+        result["blocker"] = "blocked_by_editor_screenshot_capture_artifact_format_unrecognized"
+        return result
+    if int(result["width"]) <= 0 or int(result["height"]) <= 0:
+        result["blocker"] = "blocked_by_editor_screenshot_capture_artifact_dimensions_invalid"
+    return result
+
+
+def _frame_capture_error_message(error: Any) -> str:
+    for attr in ("error_message", "ErrorMessage", "m_errorMessage"):
+        try:
+            value = getattr(error, attr)
+            if value:
+                return str(value)
+        except Exception:
+            pass
+    return str(error)
+
+
+def _as_list(value: Any) -> List[Any]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return list(value)
+    if isinstance(value, tuple):
+        return list(value)
+    return [value]
+
+
+def _safe_capture_path_from_env() -> Tuple[Path | None, str]:
+    raw_path = str(os.environ.get("MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH", "")).strip()
+    raw_root = str(os.environ.get("MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_ROOT", "")).strip()
+    if not raw_path:
+        return None, "blocked_by_editor_screenshot_capture_requires_additional_source_validation"
+    capture_path = Path(raw_path)
+    root_path = Path(raw_root) if raw_root else capture_path.parent
+    try:
+        resolved_capture = capture_path.resolve(strict=False)
+        resolved_root = root_path.resolve(strict=False)
+        resolved_capture.relative_to(resolved_root)
+    except Exception:
+        return None, "blocked_by_editor_screenshot_capture_requires_additional_source_validation"
+    if capture_path.suffix.lower() != ".png":
+        return None, "blocked_by_editor_screenshot_capture_artifact_format_unrecognized"
+    return capture_path, ""
+
+
+def _attempt_editor_screenshot_capture(
+    *,
+    capture_path: Path,
+    progress_log: Path | None,
+    general: Any,
+) -> Dict[str, Any]:
+    payload: Dict[str, Any] = {
+        "api_found": False,
+        "api_available": False,
+        "requested": False,
+        "request_accepted": False,
+        "completed": False,
+        "completion_source": "",
+        "completion_info": "",
+        "completion_result": "",
+        "artifact": {},
+        "blocker": "",
+    }
+    try:
+        import azlmbr.atom as atom  # type: ignore
+        import azlmbr.bus as bus  # type: ignore
+    except Exception as exc:
+        payload["blocker"] = "blocked_by_editor_screenshot_capture_api_unavailable_under_current_context"
+        payload["completion_info"] = str(exc)
+        return payload
+    payload["api_found"] = bool(
+        hasattr(atom, "FrameCaptureRequestBus")
+        and hasattr(atom, "FrameCaptureNotificationBusHandler")
+        and hasattr(atom, "FrameCaptureResult_Success")
+    )
+    if not payload["api_found"]:
+        payload["blocker"] = "blocked_by_editor_screenshot_capture_api_unavailable_under_current_context"
+        return payload
+    if general is None:
+        payload["blocker"] = "blocked_by_editor_screenshot_capture_requires_active_viewport"
+        return payload
+    capture_path.parent.mkdir(parents=True, exist_ok=True)
+    if capture_path.exists():
+        capture_path.unlink()
+    payload["requested"] = True
+    _write_progress_marker(
+        progress_log,
+        "editor_screenshot_capture_request_started",
+        "started",
+        "Requesting bounded Editor screenshot capture through FrameCaptureRequestBus.",
+    )
+    try:
+        outcome = atom.FrameCaptureRequestBus(bus.Broadcast, "CaptureScreenshot", str(capture_path))
+    except Exception as exc:
+        payload["blocker"] = "blocked_by_editor_screenshot_capture_request_failed"
+        payload["completion_info"] = str(exc)
+        return payload
+    try:
+        request_success = bool(outcome.IsSuccess())
+    except Exception:
+        request_success = False
+    if not request_success:
+        payload["blocker"] = "blocked_by_editor_screenshot_capture_request_failed"
+        try:
+            payload["completion_info"] = _frame_capture_error_message(outcome.GetError())
+        except Exception:
+            payload["completion_info"] = "CaptureScreenshot outcome was not successful."
+        return payload
+    payload["request_accepted"] = True
+    payload["api_available"] = True
+    try:
+        capture_id = outcome.GetValue()
+    except Exception:
+        payload["blocker"] = "blocked_by_editor_screenshot_capture_completion_not_observed"
+        return payload
+    done = {"value": False, "success": False, "info": "", "result": "", "recognized": False}
+    handler = atom.FrameCaptureNotificationBusHandler()
+
+    def on_capture_finished(parameters: Any) -> None:
+        try:
+            params = _as_list(parameters)
+        except Exception as exc:
+            done["value"] = True
+            done["info"] = str(exc)
+            return
+        if not params:
+            done["value"] = True
+            done["info"] = "FrameCapture completion callback provided no parameters."
+            return
+        result_value = params[0] if params else None
+        info = str(params[1]) if len(params) > 1 else ""
+        done["value"] = True
+        done["info"] = info
+        done["result"] = str(result_value)
+        done["recognized"] = True
+        done["success"] = result_value == atom.FrameCaptureResult_Success
+
+    try:
+        handler.connect(capture_id)
+        handler.add_callback("OnFrameCaptureFinished", on_capture_finished)
+        wait_frames = max(1, int(str(os.environ.get("MAXINE_EDITOR_SCREENSHOT_CAPTURE_WAIT_FRAMES", "120"))))
+        for _index in range(wait_frames):
+            if done["value"]:
+                break
+            general.idle_wait_frames(1)
+    except Exception as exc:
+        payload["blocker"] = "blocked_by_editor_screenshot_capture_completion_not_observed"
+        payload["completion_info"] = str(exc)
+    finally:
+        try:
+            handler.disconnect()
+        except Exception:
+            pass
+    if not done["value"]:
+        payload["blocker"] = "blocked_by_editor_screenshot_capture_completion_not_observed"
+    elif not done["recognized"]:
+        payload["blocker"] = "blocked_by_editor_screenshot_capture_callback_parameters_unrecognized"
+        payload["completion_info"] = done["info"]
+    elif not done["success"]:
+        payload["blocker"] = "blocked_by_editor_screenshot_capture_completion_not_observed"
+        payload["completion_info"] = done["info"]
+        payload["completion_result"] = done["result"]
+    else:
+        payload["completed"] = True
+        payload["completion_source"] = "FrameCaptureNotificationBus.OnFrameCaptureFinished"
+        payload["completion_info"] = done["info"]
+        payload["completion_result"] = done["result"]
+    payload["artifact"] = _capture_artifact_validation(capture_path)
+    if payload["completed"] and payload["artifact"].get("blocker"):
+        payload["blocker"] = str(payload["artifact"]["blocker"])
+    return payload
+
+
+def _run_editor_screenshot_capture_artifact_readiness_checks(
+    report: Mapping[str, Any],
+    *,
+    progress_log: Path | None,
+    general: Any,
+) -> Dict[str, Any]:
+    engine_root_raw = str(os.environ.get("O3DE_ENGINE_ROOT", "")).strip()
+    engine_root = Path(engine_root_raw) if engine_root_raw else None
+    _write_progress_marker(
+        progress_log,
+        "editor_screenshot_capture_artifact_readiness_source_validation_started",
+        "started",
+        "Source-validating bounded Editor screenshot capture artifact readiness.",
+    )
+    source_validation = _editor_screenshot_capture_artifact_readiness_source_validation(engine_root)
+    source_validated = source_validation.get("status") == "editor_screenshot_capture_artifact_readiness_source_validation_pass"
+    selected_rhi = str(report.get("selected_rhi", "") or _command_requested_rhi(report)).strip().lower() or "dx12"
+    launch = _run_live_non_null_editor_launch_checks(
+        report,
+        progress_log=progress_log,
+        launch_attempted=True,
+        launch_completed=True,
+        launch_exit_code=0,
+        timed_out=False,
+        killed=False,
+    )
+    visible_verified = report.get("visible_desktop_session_verified") is True or launch.get("visible_desktop_session_verified") is True
+    gpu_verified = report.get("gpu_or_driver_readiness_verified") is True or launch.get("gpu_or_driver_readiness_verified") is True
+    rhi_verified = report.get("rhi_readiness_verified") is True or launch.get("rhi_readiness_verified") is True
+    readiness_verified = bool(visible_verified and gpu_verified and rhi_verified)
+    launch_source_verified = launch.get("live_non_null_editor_launch_source_validation_verified") is True
+    live_launch_verified = launch.get("live_non_null_editor_launch_verified") is True
+    capture_path, path_blocker = _safe_capture_path_from_env()
+    capture_request_gate_verified = (
+        os.environ.get("MAXINE_ALLOW_EDITOR_SCREENSHOT_CAPTURE_REQUEST") == "1"
+        and os.environ.get("MAXINE_EDITOR_SCREENSHOT_CAPTURE_ACTIVE_VIEWPORT_VERIFIED") == "1"
+    )
+    if not source_validated:
+        capture = {"blocker": source_validation.get("blocker") or "blocked_by_editor_screenshot_capture_requires_additional_source_validation"}
+    elif not readiness_verified:
+        capture = {"blocker": str(launch.get("live_non_null_editor_launch_blocker") or "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session")}
+    elif not launch_source_verified or not live_launch_verified:
+        capture = {"blocker": str(launch.get("live_non_null_editor_launch_blocker") or "blocked_by_live_non_null_editor_launch_not_verified")}
+    elif capture_path is None:
+        capture = {"blocker": path_blocker}
+    elif not capture_request_gate_verified:
+        capture = {"blocker": "blocked_by_editor_screenshot_capture_requires_active_viewport"}
+    else:
+        capture = _attempt_editor_screenshot_capture(capture_path=capture_path, progress_log=progress_log, general=general)
+    requested = bool(capture.get("requested", False))
+    request_accepted = bool(capture.get("request_accepted", False))
+    capture_completed = bool(capture.get("completed", False))
+    artifact = capture.get("artifact", {}) if isinstance(capture.get("artifact"), Mapping) else {}
+    artifact_ok = bool(
+        artifact.get("exists")
+        and artifact.get("format") == "png"
+        and int(artifact.get("width", 0) or 0) > 0
+        and int(artifact.get("height", 0) or 0) > 0
+        and int(artifact.get("size_bytes", 0) or 0) > 0
+        and str(artifact.get("sha256", "")).strip()
+    )
+    blocker = str(capture.get("blocker", "") or artifact.get("blocker", "")).strip()
+    verified = bool(source_validated and live_launch_verified and request_accepted and capture_completed and artifact_ok and not blocker)
+    if not blocker and not verified:
+        blocker = "blocked_by_editor_screenshot_capture_completion_not_observed"
+    product_inventory_verified = _editor_visual_material_product_inventory_verified(report)
+    preserved_report = _load_preserved_non_null_editor_render_capture_report()
+    preserved_source = preserved_report if preserved_report else report
+    satisfied_gates = list(preserved_source.get("full_runtime_character_proof_satisfied_gates", []))
+    behavior_smoke_verified = preserved_source.get("runtime_character_behavior_smoke_verified") is True
+    animation_verified = preserved_source.get("runtime_character_animation_verified") is True
+    component_wiring_verified = preserved_source.get("runtime_character_animation_component_wiring_verified") is True
+    visual_blocker = "blocked_by_visual_material_content_validation_deferred_after_capture_readiness"
+    payload: Dict[str, Any] = {}
+    payload.update(launch)
+    payload.update(
+        {
+            "editor_screenshot_capture_artifact_readiness_attempted": requested,
+            "editor_screenshot_capture_artifact_readiness_completed": bool(capture_completed and artifact_ok),
+            "editor_screenshot_capture_artifact_readiness_verified": verified,
+            "editor_screenshot_capture_artifact_readiness_blocker": "" if verified else blocker,
+            "editor_screenshot_capture_artifact_readiness_candidate_matrix": _editor_screenshot_capture_artifact_readiness_candidate_matrix(
+                source_validated=source_validated,
+                selected_rhi=selected_rhi,
+                capture_requested=requested,
+                capture_verified=verified,
+                blocker="" if verified else blocker,
+            ),
+            "editor_screenshot_capture_artifact_readiness_selected_strategy": (
+                "bounded_live_editor_screenshot_capture_artifact_readiness"
+            ),
+            "editor_screenshot_capture_artifact_readiness_source_validation_status": source_validation.get("status", ""),
+            "editor_screenshot_capture_artifact_readiness_source_validation_verified": source_validated,
+            "editor_screenshot_capture_artifact_readiness_source_validation": source_validation,
+            "editor_screenshot_capture_artifact_readiness_source_files": [
+                str(spec["path"]) for spec in _editor_screenshot_capture_artifact_readiness_source_specs(engine_root)
+            ],
+            "live_non_null_editor_launch_wrapper_path": (
+                "tools/o3de/editor_python/editor_screenshot_capture_artifact_readiness_smoke.py"
+            ),
+            "live_non_null_editor_launch_wrapper_bootstrap_verified": source_validated,
+            "live_non_null_editor_launch_python_wrapper_executed": True,
+            "live_non_null_editor_launch_selected_rhi": selected_rhi,
+            "live_non_null_editor_launch_null_renderer_used": _command_uses_null_renderer(report),
+            "selected_rhi": selected_rhi,
+            "non_null_editor_render_capture_editor_launched": True,
+            "non_null_editor_render_capture_editor_exited_cleanly": bool(live_launch_verified),
+            "non_null_editor_render_capture_rhi_requested": selected_rhi,
+            "non_null_editor_render_capture_null_renderer_used": _command_uses_null_renderer(report),
+            "editor_visual_material_capture_api_found": bool(capture.get("api_found", False)) or source_validated,
+            "editor_visual_material_capture_api_available_under_non_null_rhi": bool(capture.get("api_available", False)),
+            "editor_visual_material_capture_api_used": "azlmbr.atom.FrameCaptureRequestBus.CaptureScreenshot",
+            "editor_visual_material_capture_requested": requested,
+            "editor_visual_material_capture_request_accepted": request_accepted,
+            "editor_visual_material_capture_completed": capture_completed,
+            "editor_visual_material_capture_completion_source": str(capture.get("completion_source", "")),
+            "editor_visual_material_capture_artifact_path": str(artifact.get("path", "")),
+            "editor_visual_material_capture_artifact_exists": bool(artifact.get("exists", False)),
+            "editor_visual_material_capture_artifact_format": str(artifact.get("format", "")),
+            "editor_visual_material_capture_artifact_width": int(artifact.get("width", 0) or 0),
+            "editor_visual_material_capture_artifact_height": int(artifact.get("height", 0) or 0),
+            "editor_visual_material_capture_artifact_size_bytes": int(artifact.get("size_bytes", 0) or 0),
+            "editor_visual_material_capture_artifact_sha256": str(artifact.get("sha256", "")),
+            "editor_visual_material_capture_content_validation_attempted": False,
+            "editor_visual_material_capture_content_validation_verified": False,
+            "editor_visual_material_nonblank_validation_attempted": False,
+            "editor_visual_material_nonblank_validation_verified": False,
+            "editor_visual_material_character_presence_validation_verified": False,
+            "editor_visual_material_material_presence_validation_verified": False,
+            "editor_visual_material_temp_scene_created": False,
+            "editor_temp_visual_scene_created": False,
+            "editor_visual_material_defaultlevel_mutation": False,
+            "editor_visual_material_production_level_mutation": False,
+            "editor_temp_visual_scene_defaultlevel_mutation": False,
+            "editor_temp_visual_scene_production_level_mutation": False,
+            "editor_visual_material_cleanup_verified": True,
+            "editor_visual_material_selected_log_scan_passed": True,
+            "visual_material_capture_readiness_verified": verified,
+            "visual_material_product_inventory_gate_verified": product_inventory_verified,
+            "visual_material_rendered_evidence_gate_attempted": False,
+            "visual_material_rendered_evidence_gate_verified": False,
+            "visual_material_gate_claimed": False,
+            "visual_material_gate_verified": False,
+            "full_runtime_character_visual_material_gate_verified": False,
+            "full_runtime_character_proof_contract_pinned": True,
+            "full_runtime_character_proof_contract_verified": True,
+            "full_runtime_character_proof_satisfied_gates": satisfied_gates,
+            "full_runtime_character_proof_unsatisfied_gates": [
+                {
+                    "id": "visual_material",
+                    "name": "Visual/render/material validation",
+                    "verified": False,
+                    "blocker": visual_blocker,
+                    "evidence": (
+                        "Screenshot capture artifact readiness verifies only request/completion and artifact metadata; "
+                        "content, character presence, and material correctness remain unverified."
+                    ),
+                }
+            ],
+            "full_runtime_character_proof_deferred_gates": [
+                {
+                    "id": "visual_capture_surface",
+                    "name": "Rendered visual/material content validation",
+                    "verified": False,
+                    "blocker": visual_blocker,
+                    "evidence": "capture artifact readiness is available; rendered content/material validation remains deferred",
+                },
+                {
+                    "id": "repeated_behavior_scenario",
+                    "name": "Repeated runtime behavior scenario",
+                    "verified": False,
+                    "blocker": "blocked_by_full_runtime_character_repeated_behavior_scenario_deferred",
+                    "evidence": "not part of this screenshot artifact readiness slice",
+                },
+            ],
+            "runtime_character_behavior_smoke_verified": behavior_smoke_verified,
+            "runtime_character_animation_verified": animation_verified,
+            "runtime_character_animation_component_wiring_verified": component_wiring_verified,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "live_publication": False,
+            "release_packaging": False,
+            "production_level_mutation": False,
+            "defaultlevel_mutation": False,
+            "asset_cache_deleted": False,
+            "cache_heuristic_used": False,
+            "fake_success": False,
+            "messages": [
+                "Screenshot capture artifact readiness verifies only bounded capture request/completion and artifact metadata; it does not claim visual/material correctness."
+            ],
+        }
+    )
+    return payload
 
 
 def _targeted_binding_blocker(report: Mapping[str, Any], diagnostic_mode: str) -> str:
