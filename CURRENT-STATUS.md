@@ -1,7 +1,16 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Pin Full Runtime Character Proof Contract v1 is implemented on `codex/pin-full-runtime-character-proof-contract-v1` and pending review:
+- Pin Visual / Material Proof Surface v1 is implemented on `codex/pin-visual-material-proof-surface-v1` and pending review:
+  - PR #162 was green, review-clear, and merged into `main` at `3952cd3f4b2e7b0600c355fe94994cb0fa64cec3`; this branch was created from that updated `main`
+  - this slice adds `--diagnose-visual-material-proof-surface` to source-validate where visual/material proof must happen and to keep the no-defaultlevel runtime behavior lane separate from rendered visual evidence
+  - source validation pins the existing no-defaultlevel runtime envelope as NullRenderer/console-mode only, Atom `FrameCaptureRequestBus`/`CanCapture` as the capture availability boundary, Editor screenshot helper surfaces as a deferred capture candidate, and Atom material/model surfaces through `AZ::RPI::MaterialAsset`, `MaterialComponentController`, and `MeshComponentController`
+  - `visual_material_proof_surface_pinned=true` and `visual_material_proof_surface_contract_verified=true` mean the visual/material proof surface is source-validated; they do not mean rendered visual evidence was captured
+  - APB product inventory readiness is admitted only as a sub-gate: ready `azmodel`, `actor`, and `azmaterial` products can set `visual_material_product_inventory_gate_verified=true`, but APB inventory is not full visual proof
+  - the diagnostic records NullRenderer visual proof as blocked, runtime renderer and Editor viewport/screenshot proof surfaces as deferred, `visual_material_rendered_evidence_gate_verified=false`, `visual_material_gate_verified=false`, `full_runtime_character_visual_material_gate_verified=false`, `runtime_character_proof_claimed=false`, and `runtime_character_proof_verified=false`
+  - behavior-smoke, bounded playback, component wiring, selected-log-scan, and cleanup/recovery proof gates remain preserved through the PR #162 full-character contract mapping, while full runtime character proof remains blocked by visual/material rendered evidence and deferred repeated behavior scenario stability
+  - publication remains blocked, release packaging remains blocked, production/defaultlevel mutation remains forbidden, Asset Cache deletion remains forbidden, cache heuristic release proof remains forbidden, Understand-Anything remains dev-only, and no production-ready release status is claimed
+- Pin Full Runtime Character Proof Contract v1 was merged through PR #162:
   - PR #161 was repaired, its behavior-smoke pre-observation entity-state review gate `PRRT_kwDOSS7l-86CNDjs` was resolved after validation, and PR #161 was merged into `main` at `5c60123c6f2ef06188557d60579d3c1b2c176262`; this branch was created from that updated `main`
   - this slice adds `--diagnose-full-runtime-character-proof-contract` to source-validate and pin the machine-readable contract that governs when `runtime_character_proof_claimed=true` or `runtime_character_proof_verified=true` may ever be set
   - the contract maps the already verified proof taxonomy into explicit gates: runtime spawn/instantiation, Actor + Simple Motion component wiring, bounded Simple Motion playback, broader runtime character behavior smoke, selected log/error scanning, cleanup/despawn smoke recovery, visual/render/material validation, locomotion/controller validation, collision/physics validation, and repeated behavior stability

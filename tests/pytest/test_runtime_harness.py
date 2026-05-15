@@ -452,6 +452,49 @@ def _write_poolallocator_source_validation_files(engine: Path) -> None:
         path.write_text(content, encoding="utf-8")
 
 
+def _write_visual_material_source_validation_files(engine: Path) -> None:
+    _write_animation_component_wiring_source_validation_files(engine)
+    source_files = {
+        "Code/Framework/AzGameFramework/AzGameFramework/Application/GameApplication.cpp": (
+            "commandSwitchNullRenderer\n"
+            "commandSwitchRhi\n"
+            "isConsoleMode = true\n"
+        ),
+        "Gems/Atom/Feature/Common/Code/Include/Atom/Feature/Utils/FrameCaptureBus.h": (
+            "CanCapture\n"
+            "It may return false if null renderer is used\n"
+            "CaptureScreenshot\n"
+            "CaptureScreenshotForWindow\n"
+        ),
+        "AutomatedTesting/Gem/PythonTests/Atom/atom_utils/screenshot_utils.py": (
+            "FrameCaptureRequestBus\n"
+            "CaptureScreenshot\n"
+            "capture_screenshot_blocking\n"
+            "prepare_viewport_for_screenshot\n"
+        ),
+        "Gems/Atom/RPI/Code/Include/Atom/RPI.Reflect/Material/MaterialAsset.h": (
+            "class ATOM_RPI_REFLECT_API MaterialAsset\n"
+            "Extension{ \"azmaterial\" }\n"
+            "GetPropertyValues\n"
+        ),
+        "Gems/AtomLyIntegration/CommonFeatures/Code/Source/Material/MaterialComponentController.h": (
+            "MaterialComponentRequestBus::Handler\n"
+            "GetMaterialAssetId\n"
+            "IsMaterialAssetReady\n"
+            "LoadMaterials\n"
+        ),
+        "Gems/AtomLyIntegration/CommonFeatures/Code/Source/Mesh/MeshComponentController.h": (
+            "Data::Asset<RPI::ModelAsset>\n"
+            "GetModelAssetId\n"
+            "GetModel\n"
+        ),
+    }
+    for relative, content in source_files.items():
+        path = engine / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+
+
 def _append_approved_character_spawnable_product(apb: Path) -> None:
     _append_apb_products(
         apb,
@@ -6497,6 +6540,153 @@ def test_runtime_harness_full_runtime_character_contract_never_claims_full_proof
     )
     assert report["runtime_character_proof_claimed"] is False
     assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_visual_material_surface_pins_renderer_contract(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_visual_material_source_validation_files(engine)
+    _append_approved_character_spawnable_product(apb)
+    behavior_report = _write_behavior_smoke_contract_report(tmp_path / "behavior-smoke-report.json")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_visual_material_proof_surface=True,
+        strict=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        runtime_character_behavior_smoke_report=behavior_report,
+        env=env,
+        artifact_root=tmp_path / "runtime-artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["status"] == "pass"
+    assert report["runtime_harness_mode"] == "visual_material_proof_surface_diagnostic"
+    assert report["visual_material_proof_surface_source_validation_verified"] is True
+    assert report["visual_material_proof_surface_pinned"] is True
+    assert report["visual_material_proof_surface_contract_verified"] is True
+    assert report["visual_material_nullrenderer_visual_proof_supported"] is False
+    assert report["visual_material_runtime_renderer_surface_available"] == "deferred"
+    assert report["visual_material_editor_viewport_surface_available"] == "available_deferred"
+    assert report["visual_material_screenshot_capture_surface_available"] == "available_deferred"
+    assert report["visual_material_product_inventory_gate_attempted"] is True
+    assert report["visual_material_product_inventory_gate_verified"] is True
+    assert report["visual_material_rendered_evidence_gate_attempted"] is False
+    assert report["visual_material_rendered_evidence_gate_verified"] is False
+    assert report["visual_material_gate_claimed"] is False
+    assert report["visual_material_gate_verified"] is False
+    assert report["full_runtime_character_visual_material_gate_verified"] is False
+    assert report["runtime_character_proof_claimed"] is False
+    assert report["runtime_character_proof_verified"] is False
+    assert report["visual_material_proof_surface_blocker"] == (
+        "blocked_by_visual_material_proof_requires_rendered_evidence_capture"
+    )
+
+    matrix = {candidate["id"]: candidate for candidate in report["visual_material_proof_surface_candidate_matrix"]}
+    assert matrix["treat_behavior_smoke_as_visual_material_proof"]["selected"] is False
+    assert matrix["apb_material_product_inventory_as_full_visual_proof"]["selected"] is False
+    assert matrix["apb_material_product_inventory_readiness_gate"]["selected"] is True
+    assert matrix["no_defaultlevel_nullrenderer_runtime_visual_proof"]["selected"] is False
+    assert matrix["editor_viewport_screenshot_harness"]["result"] == "deferred_safe_surface_available_not_attempted"
+    assert matrix["production_defaultlevel_screenshots"]["selected"] is False
+    assert matrix["use_understand_anything_graph_as_visual_material_proof"]["selected"] is False
+    assert matrix["claim_full_runtime_character_proof_after_surface_pinning"]["selected"] is False
+
+
+def test_runtime_harness_visual_material_inventory_readiness_is_not_rendered_proof(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_visual_material_source_validation_files(engine)
+    _append_approved_character_spawnable_product(apb)
+    behavior_report = _write_behavior_smoke_contract_report(tmp_path / "behavior-smoke-report.json")
+
+    report = runtime_harness.run_runtime_harness(
+        manifest=runtime_harness.DEFAULT_MANIFEST,
+        diagnose_visual_material_proof_surface=True,
+        strict=True,
+        engine_root=engine,
+        project=project,
+        apb_report=apb,
+        runtime_character_behavior_smoke_report=behavior_report,
+        env=env,
+        artifact_root=tmp_path / "runtime-artifacts",
+        timeout_seconds=180,
+    )
+
+    assert report["visual_material_product_inventory_gate_verified"] is True
+    assert {"azmodel", "actor", "azmaterial"}.issubset(
+        set(report["visual_material_product_inventory_required_products"])
+    )
+    assert report["visual_material_product_inventory_missing_products"] == []
+    assert report["visual_material_rendered_evidence_gate_verified"] is False
+    assert report["visual_material_gate_verified"] is False
+    assert report["full_runtime_character_visual_material_gate_verified"] is False
+
+
+def test_runtime_harness_visual_material_surface_missing_inventory_remains_blocked(
+    tmp_path: Path,
+) -> None:
+    env, engine, project, apb = _runtime_env(tmp_path, gates=True)
+    _write_visual_material_source_validation_files(engine)
+    behavior_report = _write_behavior_smoke_contract_report(tmp_path / "behavior-smoke-report.json")
+    product_evidence = runtime_harness._product_evidence_from_apb(apb)
+    product_evidence = {
+        **product_evidence,
+        "product_evidence_complete": True,
+        "produced_products": [
+            product
+            for product in product_evidence["produced_products"]
+            if product.get("product_type") != "azmaterial"
+        ],
+    }
+
+    report = runtime_harness._visual_material_proof_surface_payload(
+        product_evidence=product_evidence,
+        engine_root=engine,
+        project=project,
+        timeout_seconds=180,
+        artifact_dir=tmp_path / "runtime-artifacts",
+        behavior_smoke_report_path=behavior_report,
+    )
+
+    assert report["visual_material_proof_surface_pinned"] is True
+    assert report["visual_material_product_inventory_gate_verified"] is False
+    assert report["visual_material_product_inventory_missing_products"] == ["azmaterial"]
+    assert report["visual_material_proof_surface_blocker"] == (
+        "blocked_by_visual_material_product_inventory_missing_required_products"
+    )
+    assert report["visual_material_rendered_evidence_gate_verified"] is False
+    assert report["visual_material_gate_verified"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_runtime_harness_validation_rejects_visual_material_verified_without_rendered_evidence() -> None:
+    report = runtime_harness.fixture_runtime_harness_report()
+    report.update(
+        {
+            "visual_material_proof_surface_source_validation_verified": True,
+            "visual_material_product_inventory_gate_verified": True,
+            "visual_material_rendered_evidence_gate_attempted": False,
+            "visual_material_rendered_evidence_gate_verified": False,
+            "visual_material_gate_claimed": True,
+            "visual_material_gate_verified": True,
+            "full_runtime_character_visual_material_gate_verified": True,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+        }
+    )
+
+    result = runtime_harness.validate_runtime_harness_report(report)
+
+    assert not result.ok
+    assert any(
+        "visual_material_gate_verified=true requires rendered visual/material evidence" in message
+        for message in result.messages
+    )
 
 
 def test_runtime_harness_character_behavior_smoke_diagnostic_records_source_validation(

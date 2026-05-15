@@ -212,6 +212,10 @@ RUNTIME_CHARACTER_BEHAVIOR_SMOKE_SELECTED_LOG_BLOCKER = (
 FULL_RUNTIME_CHARACTER_PROOF_CONTRACT_SELECTED = (
     "explicit_full_runtime_character_proof_contract_with_deferred_unmet_gates"
 )
+VISUAL_MATERIAL_PROOF_SURFACE_SELECTED = (
+    "source_validated_visual_material_surface_with_apb_inventory_readiness_and_render_capture_deferred"
+)
+VISUAL_MATERIAL_PRODUCT_INVENTORY_REQUIRED_PRODUCTS = ("azmodel", "actor", "azmaterial")
 RUNTIME_PROCPREFAB_ASSET_TYPE = "{9B7C8459-471E-4EAD-A363-7990CC4065A9}"
 RUNTIME_PROCPREFAB_ASSET_CLASS = "AZ::Prefab::ProceduralPrefabAsset"
 RUNTIME_PROCPREFAB_HANDLER_MODULE = "Gem::PrefabBuilder.Builders"
@@ -357,6 +361,7 @@ def run_runtime_harness(
     diagnose_runtime_character_behavior_smoke_gate: bool = False,
     enable_runtime_character_behavior_smoke_fixture: bool = False,
     diagnose_full_runtime_character_proof_contract: bool = False,
+    diagnose_visual_material_proof_surface: bool = False,
     strict: bool = False,
     enable_runtime_harness: bool = False,
     strict_integration: bool = False,
@@ -420,6 +425,7 @@ def run_runtime_harness(
         and not diagnose_runtime_character_behavior_smoke_gate
         and not enable_runtime_character_behavior_smoke_fixture
         and not diagnose_full_runtime_character_proof_contract
+        and not diagnose_visual_material_proof_surface
         and not enable_runtime_harness
     ):
         return fixture_runtime_harness_report()
@@ -487,6 +493,7 @@ def run_runtime_harness(
             and not diagnose_runtime_character_behavior_smoke_gate
             and not enable_runtime_character_behavior_smoke_fixture
             and not diagnose_full_runtime_character_proof_contract
+            and not diagnose_visual_material_proof_surface
             else "runtime_quit_variant_diagnostic"
             if diagnose_runtime_quit_variants
             else "runtime_exit_strategy_diagnostic"
@@ -579,6 +586,8 @@ def run_runtime_harness(
             if enable_runtime_character_behavior_smoke_fixture
             else "full_runtime_character_proof_contract_diagnostic"
             if diagnose_full_runtime_character_proof_contract
+            else "visual_material_proof_surface_diagnostic"
+            if diagnose_visual_material_proof_surface
             else "live_bounded_command",
             "runtime_command_timeout_seconds": int(timeout_seconds),
             "runtime_timeout_seconds": int(timeout_seconds),
@@ -697,6 +706,7 @@ def run_runtime_harness(
         and not diagnose_runtime_character_behavior_smoke_gate
         and not enable_runtime_character_behavior_smoke_fixture
         and not diagnose_full_runtime_character_proof_contract
+        and not diagnose_visual_material_proof_surface
     ):
         command = _select_runtime_command(report, artifact_dir=artifact_dir, timeout_seconds=timeout_seconds)
         if not command["selected"]:
@@ -975,6 +985,17 @@ def run_runtime_harness(
             behavior_smoke_report_path=_resolve_optional_path(runtime_character_behavior_smoke_report),
         )
 
+    if diagnose_visual_material_proof_surface:
+        return _run_visual_material_proof_surface_diagnostic(
+            report,
+            product_evidence=product_evidence,
+            engine_root=selected_engine,
+            project=selected_project,
+            timeout_seconds=timeout_seconds,
+            artifact_dir=artifact_dir,
+            behavior_smoke_report_path=_resolve_optional_path(runtime_character_behavior_smoke_report),
+        )
+
     gate_status = _runtime_gate_status(env_map)
     if gate_status["status"] != "pass":
         report.update(
@@ -1199,6 +1220,35 @@ def validate_runtime_harness_report(report: Mapping[str, Any], *, strict: bool =
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime harness readiness cannot be counted as runtime character proof.")
     if report.get("runtime_character_proof_claimed") is True and not report.get("runtime_character_proof_verified"):
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Runtime character proof cannot be claimed without verified character evidence.")
+    if report.get("visual_material_gate_verified") is True:
+        if report.get("visual_material_gate_claimed") is not True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "visual_material_gate_verified=true requires visual_material_gate_claimed=true.",
+            )
+        if report.get("visual_material_proof_surface_source_validation_verified") is not True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "visual_material_gate_verified=true requires source-validated visual/material proof surface.",
+            )
+        if report.get("visual_material_product_inventory_gate_verified") is not True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "visual_material_gate_verified=true requires APB/material product inventory readiness.",
+            )
+        if report.get("visual_material_rendered_evidence_gate_verified") is not True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "visual_material_gate_verified=true requires rendered visual/material evidence.",
+            )
+    if (
+        report.get("full_runtime_character_visual_material_gate_verified") is True
+        and report.get("visual_material_gate_verified") is not True
+    ):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "full runtime character visual/material gate cannot pass without visual_material_gate_verified=true.",
+        )
     if report.get("runtime_safer_variant_verified") is True:
         if report.get("runtime_execution_verified") is not True:
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, "runtime_safer_variant_verified=true requires verified runtime execution.")
@@ -2696,6 +2746,32 @@ def _base_report(*, mode: str, status: str) -> Dict[str, Any]:
         "full_runtime_character_collision_physics_gate_verified": False,
         "full_runtime_character_cleanup_recovery_gate_verified": False,
         "full_runtime_character_selected_log_scan_gate_verified": False,
+        "visual_material_proof_surface_attempted": False,
+        "visual_material_proof_surface_completed": False,
+        "visual_material_proof_surface_source_validation_status": "",
+        "visual_material_proof_surface_source_validation_verified": False,
+        "visual_material_proof_surface_source_validation": {},
+        "visual_material_proof_surface_source_files": [],
+        "visual_material_proof_surface_pinned": False,
+        "visual_material_proof_surface_contract_verified": False,
+        "visual_material_proof_surface_blocker": "",
+        "visual_material_proof_surface_candidate_matrix": [],
+        "visual_material_proof_surface_selected_strategy": "",
+        "visual_material_proof_surface_evidence_refs": {},
+        "visual_material_nullrenderer_visual_proof_supported": False,
+        "visual_material_runtime_renderer_surface_available": "",
+        "visual_material_editor_viewport_surface_available": "",
+        "visual_material_screenshot_capture_surface_available": "",
+        "visual_material_product_inventory_gate_attempted": False,
+        "visual_material_product_inventory_gate_verified": False,
+        "visual_material_product_inventory_required_products": [],
+        "visual_material_product_inventory_missing_products": [],
+        "visual_material_product_inventory_products": [],
+        "visual_material_product_inventory_blocker": "",
+        "visual_material_rendered_evidence_gate_attempted": False,
+        "visual_material_rendered_evidence_gate_verified": False,
+        "visual_material_gate_claimed": False,
+        "visual_material_gate_verified": False,
         "runtime_animation_playback_observation_samples": [],
         "runtime_character_animation_component_wiring_surface": {
                 "status": "runtime_character_animation_component_wiring_surface_not_attempted"
@@ -12987,6 +13063,435 @@ def _run_full_runtime_character_proof_contract_diagnostic(
     return _finalize_report(report)
 
 
+def _visual_material_proof_surface_source_specs(root: Path) -> List[Dict[str, Any]]:
+    return _full_runtime_character_proof_contract_source_specs(root) + [
+        {
+            "path": Path(__file__),
+            "symbols": [
+                "visual_material_proof_surface",
+                "visual_material_nullrenderer_visual_proof_supported",
+                "visual_material_product_inventory_gate_verified",
+                "visual_material_rendered_evidence_gate_verified",
+                "runtime_character_proof_verified",
+            ],
+        },
+        {
+            "path": REPO_ROOT / "docs" / "production" / "private-windows-o3de-runner.md",
+            "symbols": [
+                "Visual/material proof-surface diagnostics pin the authorized proof lane",
+                "APB material inventory is a readiness sub-gate",
+                "NullRenderer is not visual proof",
+            ],
+        },
+        {
+            "path": REPO_ROOT / "CURRENT-STATUS.md",
+            "symbols": [
+                "visual_material_proof_surface_pinned=true",
+                "visual_material_gate_verified=false",
+                "runtime_character_proof_verified=false",
+            ],
+        },
+        {
+            "path": root
+            / "Code"
+            / "Framework"
+            / "AzGameFramework"
+            / "AzGameFramework"
+            / "Application"
+            / "GameApplication.cpp",
+            "symbols": [
+                "commandSwitchNullRenderer",
+                "commandSwitchRhi",
+                "isConsoleMode = true",
+            ],
+        },
+        {
+            "path": root
+            / "Gems"
+            / "Atom"
+            / "Feature"
+            / "Common"
+            / "Code"
+            / "Include"
+            / "Atom"
+            / "Feature"
+            / "Utils"
+            / "FrameCaptureBus.h",
+            "symbols": [
+                "CanCapture",
+                "It may return false if null renderer is used",
+                "CaptureScreenshot",
+                "CaptureScreenshotForWindow",
+            ],
+        },
+        {
+            "path": root
+            / "AutomatedTesting"
+            / "Gem"
+            / "PythonTests"
+            / "Atom"
+            / "atom_utils"
+            / "screenshot_utils.py",
+            "symbols": [
+                "FrameCaptureRequestBus",
+                "CaptureScreenshot",
+                "capture_screenshot_blocking",
+                "prepare_viewport_for_screenshot",
+            ],
+        },
+        {
+            "path": root
+            / "Gems"
+            / "Atom"
+            / "RPI"
+            / "Code"
+            / "Include"
+            / "Atom"
+            / "RPI.Reflect"
+            / "Material"
+            / "MaterialAsset.h",
+            "symbols": [
+                "class ATOM_RPI_REFLECT_API MaterialAsset",
+                'Extension{ "azmaterial" }',
+                "GetPropertyValues",
+            ],
+        },
+        {
+            "path": root
+            / "Gems"
+            / "AtomLyIntegration"
+            / "CommonFeatures"
+            / "Code"
+            / "Source"
+            / "Material"
+            / "MaterialComponentController.h",
+            "symbols": [
+                "MaterialComponentRequestBus::Handler",
+                "GetMaterialAssetId",
+                "IsMaterialAssetReady",
+                "LoadMaterials",
+            ],
+        },
+        {
+            "path": root
+            / "Gems"
+            / "AtomLyIntegration"
+            / "CommonFeatures"
+            / "Code"
+            / "Source"
+            / "Mesh"
+            / "MeshComponentController.h",
+            "symbols": [
+                "Data::Asset<RPI::ModelAsset>",
+                "GetModelAssetId",
+                "GetModel",
+            ],
+        },
+    ]
+
+
+def _visual_material_proof_surface_source_refs(engine_root: Path | None) -> List[str]:
+    root = engine_root or Path("<engine-root>")
+    return [str(spec["path"]) for spec in _visual_material_proof_surface_source_specs(root)]
+
+
+def _visual_material_proof_surface_source_validation(engine_root: Path | None) -> Dict[str, Any]:
+    specs = _visual_material_proof_surface_source_specs(engine_root or Path(""))
+    file_results = [_source_file_symbol_validation(spec["path"], spec["symbols"]) for spec in specs]
+    missing = [result for result in file_results if result["status"] != "pass"]
+    return {
+        "status": "visual_material_proof_surface_source_validation_pass"
+        if not missing
+        else "visual_material_proof_surface_source_validation_inconclusive",
+        "files": file_results,
+        "visual_material_surfaces": {
+            "nullrenderer_console_mode": "GameApplication.cpp treats -NullRenderer and rhi=null as console mode.",
+            "nullrenderer_visual_capture": "FrameCaptureBus::CanCapture may be false under null renderer.",
+            "editor_viewport_capture": "Atom screenshot utilities call FrameCaptureRequestBus CaptureScreenshot after viewport setup.",
+            "material_product": "AZ::RPI::MaterialAsset Extension is azmaterial.",
+            "material_runtime_readiness": "MaterialComponentController exposes material asset readback/readiness and loads materials.",
+            "mesh_runtime_readiness": "MeshComponentController exposes model asset readback and model instance access.",
+            "proof_boundary": "APB/material inventory is readiness only; rendered evidence remains required for visual/material proof.",
+        },
+        "missing": missing,
+    }
+
+
+def _visual_material_product_inventory(product_evidence: Mapping[str, Any]) -> Dict[str, Any]:
+    products = [product for product in product_evidence.get("produced_products", []) if isinstance(product, Mapping)]
+    ready_by_kind: Dict[str, Dict[str, Any]] = {}
+    for product in products:
+        status = str(product.get("status", "ready")).strip().lower()
+        if status != "ready":
+            continue
+        kind = str(product.get("product_type", product.get("product_kind", ""))).strip()
+        if not kind or kind in ready_by_kind:
+            continue
+        ready_by_kind[kind] = {
+            "product_type": kind,
+            "product_path": product.get("product_path", ""),
+            "asset_id": product.get("asset_id", ""),
+            "asset_type_id": product.get("asset_type_id", ""),
+            "status": product.get("status", "ready"),
+        }
+    missing = [kind for kind in VISUAL_MATERIAL_PRODUCT_INVENTORY_REQUIRED_PRODUCTS if kind not in ready_by_kind]
+    cache_heuristic_used = bool(product_evidence.get("cache_heuristic_used", False))
+    product_evidence_complete = bool(product_evidence.get("product_evidence_complete", False))
+    verified = product_evidence_complete and not missing and not cache_heuristic_used
+    blocker = ""
+    if missing:
+        blocker = "blocked_by_visual_material_product_inventory_missing_required_products"
+    elif cache_heuristic_used:
+        blocker = "blocked_by_visual_material_product_inventory_cache_heuristic_used"
+    elif not product_evidence_complete:
+        blocker = "blocked_by_visual_material_product_inventory_requires_complete_apb_evidence"
+    return {
+        "attempted": True,
+        "verified": verified,
+        "required_products": list(VISUAL_MATERIAL_PRODUCT_INVENTORY_REQUIRED_PRODUCTS),
+        "missing_products": missing,
+        "products": [ready_by_kind[kind] for kind in VISUAL_MATERIAL_PRODUCT_INVENTORY_REQUIRED_PRODUCTS if kind in ready_by_kind],
+        "blocker": blocker,
+    }
+
+
+def _visual_material_proof_surface_candidate_matrix(
+    *,
+    source_validated: bool,
+    product_inventory_verified: bool,
+) -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "treat_behavior_smoke_as_visual_material_proof",
+            "candidate": "Treat behavior smoke as visual/material proof",
+            "selected": False,
+            "result": "rejected_behavior_smoke_has_no_rendered_visual_or_material_evidence",
+        },
+        {
+            "id": "apb_material_product_inventory_as_full_visual_proof",
+            "candidate": "Treat APB material product inventory as full visual proof",
+            "selected": False,
+            "result": "rejected_inventory_is_readiness_only_not_rendered_evidence",
+        },
+        {
+            "id": "apb_material_product_inventory_readiness_gate",
+            "candidate": "APB/material product inventory readiness gate",
+            "selected": bool(source_validated),
+            "result": "selected_ready_products_found"
+            if product_inventory_verified
+            else "selected_but_blocked_by_missing_or_incomplete_product_inventory",
+        },
+        {
+            "id": "no_defaultlevel_nullrenderer_runtime_visual_proof",
+            "candidate": "No-defaultlevel NullRenderer runtime visual proof",
+            "selected": False,
+            "result": "blocked_nullrenderer_can_disable_frame_capture_visual_evidence",
+            "blocker": "blocked_by_nullrenderer_visual_proof_unavailable",
+        },
+        {
+            "id": "non_null_runtime_renderer_harness",
+            "candidate": "Non-null runtime renderer harness",
+            "selected": False,
+            "result": "deferred_requires_safe_renderer_harness_without_defaultlevel_or_production_level_mutation",
+        },
+        {
+            "id": "editor_viewport_screenshot_harness",
+            "candidate": "Editor viewport/screenshot harness",
+            "selected": False,
+            "result": "deferred_safe_surface_available_not_attempted",
+        },
+        {
+            "id": "atom_material_editor_or_viewport_tooling",
+            "candidate": "Atom/Material Editor or Atom viewport tooling lane",
+            "selected": False,
+            "result": "deferred_requires_narrow_editor_or_atom_tooling_slice",
+        },
+        {
+            "id": "production_defaultlevel_screenshots",
+            "candidate": "Use screenshots from production/defaultlevel",
+            "selected": False,
+            "result": "rejected_production_defaultlevel_mutation_forbidden",
+        },
+        {
+            "id": "use_understand_anything_graph_as_visual_material_proof",
+            "candidate": "Use Understand-Anything graph as proof",
+            "selected": False,
+            "result": "rejected_developer_comprehension_only_not_o3de_rendering_evidence",
+        },
+        {
+            "id": "claim_full_runtime_character_proof_after_surface_pinning",
+            "candidate": "Claim full runtime character proof after visual surface pinning only",
+            "selected": False,
+            "result": "rejected_full_character_proof_requires_all_contract_gates",
+        },
+    ]
+
+
+def _replace_gate_blocker(
+    gates: Sequence[Mapping[str, Any]],
+    gate_id: str,
+    *,
+    blocker: str,
+    evidence: str,
+) -> List[Dict[str, Any]]:
+    updated: List[Dict[str, Any]] = []
+    for gate in gates:
+        item = dict(gate)
+        if item.get("id") == gate_id:
+            item["verified"] = False
+            item["blocker"] = blocker
+            item["evidence"] = evidence
+        updated.append(item)
+    return updated
+
+
+def _visual_material_proof_surface_payload(
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+    behavior_smoke_report_path: Path | None,
+) -> Dict[str, Any]:
+    contract_payload = _full_runtime_character_proof_contract_payload(
+        product_evidence=product_evidence,
+        engine_root=engine_root,
+        project=project,
+        timeout_seconds=timeout_seconds,
+        artifact_dir=artifact_dir,
+        behavior_smoke_report_path=behavior_smoke_report_path,
+    )
+    source_validation = _visual_material_proof_surface_source_validation(engine_root)
+    source_validated = source_validation.get("status") == "visual_material_proof_surface_source_validation_pass"
+    inventory = _visual_material_product_inventory(product_evidence)
+    inventory_verified = inventory["verified"] is True
+    visual_blocker = "blocked_by_visual_material_proof_requires_rendered_evidence_capture"
+    if not source_validated:
+        blocker = "blocked_by_visual_material_proof_surface_requires_additional_source_validation"
+    elif not inventory_verified:
+        blocker = str(inventory.get("blocker", "")) or visual_blocker
+    else:
+        blocker = visual_blocker
+    unsatisfied_gates = _replace_gate_blocker(
+        contract_payload.get("full_runtime_character_proof_unsatisfied_gates", []),
+        "visual_material",
+        blocker=blocker,
+        evidence="visual_material_surface_pinned_product_inventory_readiness_only_rendered_evidence_deferred",
+    )
+    required_gates = _replace_gate_blocker(
+        contract_payload.get("full_runtime_character_proof_required_gates", []),
+        "visual_material",
+        blocker=blocker,
+        evidence="visual_material_surface_pinned_product_inventory_readiness_only_rendered_evidence_deferred",
+    )
+    payload = {
+        **contract_payload,
+        "full_runtime_character_proof_contract_blocker": blocker,
+        "full_runtime_character_proof_required_gates": required_gates,
+        "full_runtime_character_proof_unsatisfied_gates": unsatisfied_gates,
+        "full_runtime_character_visual_material_gate_verified": False,
+        "visual_material_proof_surface_attempted": True,
+        "visual_material_proof_surface_completed": True,
+        "visual_material_proof_surface_source_validation_status": source_validation.get("status", ""),
+        "visual_material_proof_surface_source_validation_verified": source_validated,
+        "visual_material_proof_surface_source_validation": source_validation,
+        "visual_material_proof_surface_source_files": _visual_material_proof_surface_source_refs(engine_root),
+        "visual_material_proof_surface_pinned": source_validated,
+        "visual_material_proof_surface_contract_verified": source_validated,
+        "visual_material_proof_surface_blocker": blocker,
+        "visual_material_proof_surface_candidate_matrix": _visual_material_proof_surface_candidate_matrix(
+            source_validated=source_validated,
+            product_inventory_verified=inventory_verified,
+        ),
+        "visual_material_proof_surface_selected_strategy": (
+            VISUAL_MATERIAL_PROOF_SURFACE_SELECTED if source_validated else ""
+        ),
+        "visual_material_proof_surface_evidence_refs": {
+            "behavior_smoke_report": _repo_relative(behavior_smoke_report_path) if behavior_smoke_report_path else "",
+            "apb_report_loaded": bool(product_evidence.get("produced_products", [])),
+            "rendered_evidence": "",
+        },
+        "visual_material_nullrenderer_visual_proof_supported": False,
+        "visual_material_runtime_renderer_surface_available": "deferred",
+        "visual_material_editor_viewport_surface_available": "available_deferred",
+        "visual_material_screenshot_capture_surface_available": "available_deferred",
+        "visual_material_product_inventory_gate_attempted": inventory["attempted"],
+        "visual_material_product_inventory_gate_verified": inventory_verified,
+        "visual_material_product_inventory_required_products": inventory["required_products"],
+        "visual_material_product_inventory_missing_products": inventory["missing_products"],
+        "visual_material_product_inventory_products": inventory["products"],
+        "visual_material_product_inventory_blocker": inventory["blocker"],
+        "visual_material_rendered_evidence_gate_attempted": False,
+        "visual_material_rendered_evidence_gate_verified": False,
+        "visual_material_gate_claimed": False,
+        "visual_material_gate_verified": False,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+        "live_publication": False,
+        "release_packaging": False,
+        "production_level_mutation": False,
+        "defaultlevel_mutation": False,
+        "asset_cache_deleted": False,
+        "cache_heuristic_used": False,
+        "fake_success": False,
+    }
+    return payload
+
+
+def _run_visual_material_proof_surface_diagnostic(
+    report: Dict[str, Any],
+    *,
+    product_evidence: Mapping[str, Any],
+    engine_root: Path | None,
+    project: Path | None,
+    timeout_seconds: int,
+    artifact_dir: Path,
+    behavior_smoke_report_path: Path | None,
+) -> Dict[str, Any]:
+    payload = _visual_material_proof_surface_payload(
+        product_evidence=product_evidence,
+        engine_root=engine_root,
+        project=project,
+        timeout_seconds=timeout_seconds,
+        artifact_dir=artifact_dir,
+        behavior_smoke_report_path=behavior_smoke_report_path,
+    )
+    source_validated = payload.get("visual_material_proof_surface_source_validation_verified") is True
+    report.update(payload)
+    report.update(
+        {
+            "status": "pass" if source_validated else "fail",
+            "runtime_harness_status": "visual_material_proof_surface_pinned"
+            if source_validated
+            else "blocked_by_visual_material_proof_surface_source_validation",
+            "runtime_harness_mode": "visual_material_proof_surface_diagnostic",
+            "runtime_execution_attempted": False,
+            "runtime_execution_completed": False,
+            "runtime_execution_verified": False,
+            "runtime_harness_proof_is_character_proof": False,
+            "required_runtime_harness_assertions_passed": [
+                "visual_material_proof_surface_source_validation",
+                "visual_material_proof_surface_pinned",
+                "visual_material_rendered_evidence_not_claimed",
+                "runtime_character_proof_not_claimed",
+            ]
+            if source_validated
+            else [],
+            "required_runtime_harness_assertions_failed": []
+            if source_validated
+            else ["visual_material_proof_surface_source_validation"],
+            "runtime_harness_assertion_informational": [
+                "nullrenderer_visual_proof_blocked",
+                "apb_material_inventory_is_readiness_only",
+                "rendered_visual_material_evidence_deferred",
+                "full_runtime_character_proof_remains_false",
+            ],
+        }
+    )
+    return _finalize_report(report)
+
+
 def _runtime_animation_playback_execution_fixture_passed(report: Mapping[str, Any]) -> bool:
     return (
         _runtime_animation_playback_execution_source_validated(report)
@@ -18496,6 +19001,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--diagnose-runtime-character-behavior-smoke-gate", action="store_true")
     parser.add_argument("--enable-runtime-character-behavior-smoke-fixture", action="store_true")
     parser.add_argument("--diagnose-full-runtime-character-proof-contract", action="store_true")
+    parser.add_argument("--diagnose-visual-material-proof-surface", action="store_true")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--enable-runtime-harness", action="store_true")
     parser.add_argument("--strict-integration", action="store_true")
@@ -18604,6 +19110,7 @@ def main() -> int:
         diagnose_full_runtime_character_proof_contract=(
             args.diagnose_full_runtime_character_proof_contract
         ),
+        diagnose_visual_material_proof_surface=args.diagnose_visual_material_proof_surface,
         strict=args.strict,
         enable_runtime_harness=args.enable_runtime_harness,
         strict_integration=args.strict_integration,
