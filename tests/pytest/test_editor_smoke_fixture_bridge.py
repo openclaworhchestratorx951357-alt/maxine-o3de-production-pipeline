@@ -669,6 +669,154 @@ def _non_null_desktop_rhi_readiness_contract_payload() -> dict:
     return payload
 
 
+def _live_non_null_editor_launch_verified_payload() -> dict:
+    payload = _non_null_desktop_rhi_readiness_contract_payload()
+    payload.update(
+        {
+            "diagnostic_mode": "live-non-null-editor-launch",
+            "live_editor_execution": True,
+            "live_non_null_editor_launch_attempted": True,
+            "live_non_null_editor_launch_completed": True,
+            "live_non_null_editor_launch_verified": True,
+            "live_non_null_editor_launch_blocker": "",
+            "live_non_null_editor_launch_candidate_matrix": [
+                {
+                    "id": "live_non_null_editor_launch_without_screenshot",
+                    "selected": True,
+                    "result": "selected_launch_only_no_screenshot",
+                },
+                {
+                    "id": "live_non_null_editor_launch_with_screenshot",
+                    "selected": False,
+                    "result": "deferred_not_this_slice",
+                },
+                {
+                    "id": "temp_visual_scene_creation",
+                    "selected": False,
+                    "result": "deferred_not_this_slice",
+                },
+                {
+                    "id": "preserve_nullrenderer_safe_editor_lane",
+                    "selected": True,
+                    "result": "selected_required",
+                },
+                {
+                    "id": "dx12_rhi",
+                    "selected": True,
+                    "result": "selected_default",
+                },
+                {
+                    "id": "vulkan_fallback",
+                    "selected": False,
+                    "result": "deferred_unless_dx12_blocks",
+                },
+                {
+                    "id": "use_production_defaultlevel_for_launch_proof",
+                    "selected": False,
+                    "result": "rejected",
+                },
+                {
+                    "id": "infer_visual_proof_from_non_null_launch",
+                    "selected": False,
+                    "result": "rejected",
+                },
+                {
+                    "id": "understand_anything_graph_as_proof",
+                    "selected": False,
+                    "result": "rejected",
+                },
+                {
+                    "id": "claim_full_runtime_character_proof_from_launch_readiness",
+                    "selected": False,
+                    "result": "rejected",
+                },
+            ],
+            "live_non_null_editor_launch_selected_strategy": "bounded_live_non_null_editor_launch_no_screenshot",
+            "live_non_null_editor_launch_source_validation_status": "live_non_null_editor_launch_source_validation_pass",
+            "live_non_null_editor_launch_source_validation_verified": True,
+            "live_non_null_editor_launch_command": [
+                "Editor.exe",
+                "-rhi=dx12",
+                "--skipWelcomeScreenDialog",
+                "--autotest_mode",
+                "--project-path",
+                "<project>",
+                "--runpython",
+                "editor_live_non_null_launch_smoke.py",
+            ],
+            "live_non_null_editor_launch_selected_rhi": "dx12",
+            "live_non_null_editor_launch_null_renderer_used": False,
+            "live_non_null_editor_launch_editor_executable": "<editor>",
+            "live_non_null_editor_launch_project_path": "<project>",
+            "live_non_null_editor_launch_wrapper_path": "tools/o3de/editor_python/editor_live_non_null_launch_smoke.py",
+            "live_non_null_editor_launch_wrapper_bootstrap_verified": True,
+            "live_non_null_editor_launch_python_wrapper_executed": True,
+            "live_non_null_editor_launch_exit_code": 0,
+            "live_non_null_editor_launch_exit_code_hex": "0x00000000",
+            "live_non_null_editor_launch_timeout": False,
+            "live_non_null_editor_launch_killed": False,
+            "live_non_null_editor_launch_stdout_ref": "artifacts/o3de-integration/editor-smoke/stdout.txt",
+            "live_non_null_editor_launch_stderr_ref": "artifacts/o3de-integration/editor-smoke/stderr.txt",
+            "live_non_null_editor_launch_log_ref": "",
+            "live_non_null_editor_launch_selected_log_scan_passed": True,
+            "live_non_null_editor_launch_selected_log_blocking_matches": [],
+            "non_null_editor_desktop_rhi_readiness_verified": True,
+            "non_null_editor_desktop_rhi_readiness_blocker": "",
+            "visible_desktop_session_verified": True,
+            "visible_desktop_session_state": "available_console_input_desktop",
+            "windows_session_type": "console",
+            "windows_session_interactive": True,
+            "gpu_or_driver_readiness_verified": True,
+            "gpu_adapter_count": 2,
+            "gpu_adapter_summary": [{"name": "Adapter A", "driver_version": "1.2.3", "status": "OK"}],
+            "rhi_readiness_verified": True,
+            "selected_rhi": "dx12",
+            "rhi_fallback_considered": True,
+            "rhi_fallback_selected": False,
+            "non_null_editor_launch_attempted": True,
+            "non_null_editor_launch_completed": True,
+            "non_null_editor_launch_verified": True,
+            "non_null_editor_launch_exit_code": 0,
+            "non_null_editor_launch_blocker": "",
+            "non_null_editor_render_capture_envelope_blocker": "blocked_by_visual_material_proof_requires_rendered_evidence_capture",
+            "non_null_editor_render_capture_editor_launched": True,
+            "non_null_editor_render_capture_editor_exited_cleanly": True,
+            "editor_temp_visual_scene_contract_pinned": True,
+            "editor_temp_visual_scene_contract_verified": True,
+            "editor_temp_visual_scene_created": False,
+            "editor_visual_material_temp_scene_created": False,
+            "editor_visual_material_capture_requested": False,
+            "editor_visual_material_capture_completed": False,
+            "visual_material_capture_readiness_verified": False,
+            "visual_material_rendered_evidence_gate_attempted": False,
+            "visual_material_rendered_evidence_gate_verified": False,
+            "visual_material_gate_claimed": False,
+            "visual_material_gate_verified": False,
+            "full_runtime_character_visual_material_gate_verified": False,
+            "full_runtime_character_proof_unsatisfied_gates": [
+                {
+                    "id": "visual_material",
+                    "verified": False,
+                    "blocker": "blocked_by_visual_material_proof_requires_rendered_evidence_capture",
+                }
+            ],
+            "full_runtime_character_proof_deferred_gates": [
+                {
+                    "id": "visual_capture_surface",
+                    "verified": False,
+                    "blocker": "blocked_by_visual_material_proof_requires_rendered_evidence_capture",
+                },
+                {
+                    "id": "repeated_behavior_scenario",
+                    "verified": False,
+                    "blocker": "blocked_by_full_runtime_character_repeated_behavior_scenario_deferred",
+                },
+            ],
+        }
+    )
+    return payload
+
+
 def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exit_code: int = 0) -> subprocess.CompletedProcess[str]:
     report_out = Path(env["MAXINE_EDITOR_SMOKE_REPORT_OUT"])
     payload = json.loads(Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).read_text(encoding="utf-8"))
@@ -4557,6 +4705,120 @@ def test_non_null_desktop_rhi_readiness_contract_does_not_verify_visual_gate():
     assert "visual_material_gate_verified" in " ".join(result.messages)
 
 
+def test_live_non_null_editor_launch_mode_uses_non_null_rhi_without_screenshot_or_temp_scene(tmp_path):
+    env = _live_env(tmp_path)
+    _write_non_null_desktop_rhi_source_files(Path(env["O3DE_ENGINE_ROOT"]))
+
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        assert "editor_live_non_null_launch_smoke.py" in argv[-1].replace("\\", "/")
+        assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == "live-non-null-editor-launch"
+        assert env["MAXINE_ENABLE_LIVE_NON_NULL_EDITOR_LAUNCH"] == "1"
+        assert env["MAXINE_ALLOW_LIVE_NON_NULL_EDITOR_LAUNCH"] == "1"
+        assert env["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] == "dx12"
+        command = " ".join(argv)
+        assert "-NullRenderer" not in command
+        assert "-rhi=Null" not in command
+        assert "-rhi=dx12" in command
+        assert "--runpython" in argv
+        payload = json.loads(Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).read_text(encoding="utf-8"))
+        payload.update(_live_non_null_editor_launch_verified_payload())
+        Path(env["MAXINE_EDITOR_SMOKE_REPORT_OUT"]).write_text(json.dumps(payload), encoding="utf-8")
+        return subprocess.CompletedProcess(args=argv, returncode=0, stdout="", stderr="")
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=env,
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="live-non-null-editor-launch",
+    )
+
+    schema_result = schema_validate(result, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(result, strict=True)
+
+    assert result["status"] == "pass"
+    assert result["diagnostic_mode"] == "live-non-null-editor-launch"
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+    assert result["live_non_null_editor_launch_source_validation_verified"] is True
+    assert result["visible_desktop_session_verified"] is True
+    assert result["gpu_or_driver_readiness_verified"] is True
+    assert result["rhi_readiness_verified"] is True
+    assert result["live_non_null_editor_launch_attempted"] is True
+    assert result["live_non_null_editor_launch_completed"] is True
+    assert result["live_non_null_editor_launch_verified"] is True
+    assert result["non_null_editor_launch_attempted"] is True
+    assert result["non_null_editor_launch_completed"] is True
+    assert result["non_null_editor_launch_verified"] is True
+    assert result["live_non_null_editor_launch_selected_rhi"] == "dx12"
+    assert result["live_non_null_editor_launch_null_renderer_used"] is False
+    assert result["live_non_null_editor_launch_python_wrapper_executed"] is True
+    assert result["live_non_null_editor_launch_exit_code"] == 0
+    assert result["live_non_null_editor_launch_timeout"] is False
+    assert result["live_non_null_editor_launch_killed"] is False
+    assert result["live_non_null_editor_launch_selected_log_scan_passed"] is True
+    assert result["existing_nullrenderer_safe_editor_lane_preserved"] is True
+    assert result["editor_temp_visual_scene_contract_pinned"] is True
+    assert result["editor_temp_visual_scene_created"] is False
+    assert result["editor_visual_material_temp_scene_created"] is False
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["editor_visual_material_capture_completed"] is False
+    assert result["visual_material_capture_readiness_verified"] is False
+    assert result["visual_material_gate_verified"] is False
+    assert result["runtime_character_proof_verified"] is False
+
+
+def test_live_non_null_editor_launch_validation_rejects_nullrenderer_command():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_live_non_null_editor_launch_verified_payload())
+    report.update(
+        {
+            "command_argv_redacted": [
+                "Editor.exe",
+                "-NullRenderer",
+                "-rhi=Null",
+                "--runpython",
+                "editor_live_non_null_launch_smoke.py",
+            ],
+            "live_non_null_editor_launch_command": [
+                "Editor.exe",
+                "-NullRenderer",
+                "-rhi=Null",
+                "--runpython",
+                "editor_live_non_null_launch_smoke.py",
+            ],
+            "live_non_null_editor_launch_null_renderer_used": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+    assert "live_non_null_editor_launch_null_renderer_used" in " ".join(result.messages)
+
+
+def test_live_non_null_editor_launch_does_not_verify_visual_gate():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_live_non_null_editor_launch_verified_payload())
+    report.update(
+        {
+            "visual_material_gate_claimed": True,
+            "visual_material_gate_verified": True,
+            "visual_material_rendered_evidence_gate_verified": True,
+            "full_runtime_character_visual_material_gate_verified": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+    assert "visual_material_gate_verified" in " ".join(result.messages)
+
+
 def test_editor_smoke_timeout_classifies_last_script_progress_marker(tmp_path):
     def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
         progress_path = Path(env["MAXINE_EDITOR_SMOKE_PROGRESS_LOG"])
@@ -4677,6 +4939,22 @@ def test_non_null_visual_runner_wrapper_bootstraps_repo_root_before_package_impo
 
 def test_non_null_desktop_rhi_wrapper_bootstraps_repo_root_before_package_import():
     wrapper = REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_non_null_desktop_rhi_readiness_smoke.py"
+
+    text = wrapper.read_text(encoding="utf-8-sig")
+
+    assert "import sys" in text
+    assert "from pathlib import Path" in text
+    assert "REPO_ROOT = Path(__file__).resolve().parents[3]" in text
+    assert "sys.path.insert(0, str(REPO_ROOT))" in text
+    assert "from tools.o3de.editor_python import maxine_package_prefab_smoke" in text
+    assert "import maxine_package_prefab_smoke" not in {line.strip() for line in text.splitlines()}
+    assert text.index("sys.path.insert(0, str(REPO_ROOT))") < text.index(
+        "from tools.o3de.editor_python import maxine_package_prefab_smoke"
+    )
+
+
+def test_live_non_null_editor_launch_wrapper_bootstraps_repo_root_before_package_import():
+    wrapper = REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_live_non_null_launch_smoke.py"
 
     text = wrapper.read_text(encoding="utf-8-sig")
 
