@@ -1,7 +1,15 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Pin Visual / Material Proof Surface v1 is implemented on `codex/pin-visual-material-proof-surface-v1` and pending review:
+- Implement Editor Viewport Visual / Material Evidence Capture v1 is implemented on `codex/implement-editor-viewport-visual-material-evidence-capture-v1` and pending review:
+  - PR #163 was green, review-clear, and merged into `main` at `ee681694fde54e13b20d25bc462eea279d0fe8a7`; this branch was created from that updated `main`
+  - this slice adds the `editor-viewport-visual-material-evidence` Editor smoke diagnostic plus `--diagnose-editor-viewport-visual-material-evidence` / `--enable-editor-viewport-visual-material-evidence-fixture` wrappers
+  - source validation pins Atom `FrameCaptureRequestBus::CanCapture`, `CaptureScreenshot`, `CaptureScreenshotForWindow`, screenshot helper viewport preparation, and Editor viewport camera framing surfaces, while preserving that the current Editor smoke command still uses `-NullRenderer` / `-rhi=Null`
+  - under the current safe Editor smoke envelope, screenshot/frame capture is not requested because NullRenderer/null RHI cannot be used as rendered visual proof; the typed blocker is `blocked_by_editor_viewport_capture_requires_non_null_rhi`
+  - the diagnostic records capture API found/source-validated, safe temp visual scene not created, approved character not instantiated/displayed, capture not requested/completed, content/nonblank/character/material validation false, rendered evidence false, visual/material gate false, and full runtime character proof false
+  - the full-character contract mapping remains satisfied for spawn instantiation, component wiring, bounded Simple Motion playback, behavior smoke, selected log scan, and cleanup/recovery, while `visual_material` remains unsatisfied and non-null rendered capture execution remains deferred
+  - publication remains blocked, release packaging remains blocked, production/defaultlevel mutation remains forbidden, Asset Cache deletion remains forbidden, cache heuristic release proof remains forbidden, Understand-Anything remains dev-only, and no production-ready release status is claimed
+- Pin Visual / Material Proof Surface v1 was merged through PR #163:
   - PR #162 was green, review-clear, and merged into `main` at `3952cd3f4b2e7b0600c355fe94994cb0fa64cec3`; this branch was created from that updated `main`
   - this slice adds `--diagnose-visual-material-proof-surface` to source-validate where visual/material proof must happen and to keep the no-defaultlevel runtime behavior lane separate from rendered visual evidence
   - source validation pins the existing no-defaultlevel runtime envelope as NullRenderer/console-mode only, Atom `FrameCaptureRequestBus`/`CanCapture` as the capture availability boundary, Editor screenshot helper surfaces as a deferred capture candidate, and Atom material/model surfaces through `AZ::RPI::MaterialAsset`, `MaterialComponentController`, and `MeshComponentController`
