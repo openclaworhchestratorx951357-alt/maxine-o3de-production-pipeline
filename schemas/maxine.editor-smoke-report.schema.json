@@ -115,6 +115,7 @@
         "approved-source-prefab-override-path-generation-template-update",
         "editor-viewport-visual-material-evidence",
         "non-null-editor-render-capture-envelope",
+        "non-null-editor-visual-runner-readiness",
         "full"
       ]
     },

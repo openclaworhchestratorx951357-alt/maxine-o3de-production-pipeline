@@ -124,9 +124,15 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_non_null_render_capture_envelope_smoke.py",
+    "non-null-editor-visual-runner-readiness": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_non_null_visual_runner_readiness_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
+SOURCE_ONLY_EDITOR_DIAGNOSTIC_MODES = {"non-null-editor-visual-runner-readiness"}
 NON_NULL_RENDER_CAPTURE_RHIS = {"dx12", "vulkan"}
 DIRECT_PROCPREFAB_TYPED_NONVERIFIED_STATUSES = {
     "procprefab_product_not_editor_instantiable_with_current_binding",
@@ -176,10 +182,16 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
         )
     )
 
+    diagnostic_mode = str(report.get("diagnostic_mode", "")).strip()
+    source_only_diagnostic = diagnostic_mode in SOURCE_ONLY_EDITOR_DIAGNOSTIC_MODES
     if report.get("live_editor_execution") is True and str(report.get("mode", "")) in {"fixture", "unavailable"}:
         result.add_error("MXN_RUNTIME_SMOKE_FAIL", "Fixture/skipped Editor smoke reports cannot claim live Editor execution.")
     if str(report.get("mode", "")) == "local_editor_python":
-        if str(report.get("status", "")) == "pass" and report.get("live_editor_execution") is not True:
+        if (
+            str(report.get("status", "")) == "pass"
+            and report.get("live_editor_execution") is not True
+            and not source_only_diagnostic
+        ):
             result.add_error(
                 MXN_RUNTIME_SMOKE_FAIL,
                 "Local Editor Python smoke cannot pass unless live_editor_execution is true.",
@@ -198,7 +210,6 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
         temp_path = str(report.get("temp_level_path_redacted", "")).replace("\\", "/")
         if temp_path and not temp_path.startswith("Levels/_maxine_smoke/"):
             result.add_error(MXN_PATH_UNSAFE, "Editor smoke temp level path must stay under Levels/_maxine_smoke.")
-        diagnostic_mode = str(report.get("diagnostic_mode", "")).strip()
         targeted_binding_fields = {
             "component-binding": "component_binding_checks",
             "actor-binding": "actor_binding_checks",
@@ -256,6 +267,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_editor_viewport_visual_material_evidence(report, result)
         if diagnostic_mode == "non-null-editor-render-capture-envelope":
             _validate_non_null_editor_render_capture_envelope(report, result)
+        if diagnostic_mode == "non-null-editor-visual-runner-readiness":
+            _validate_non_null_editor_visual_runner_readiness(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -1778,6 +1791,207 @@ def _validate_non_null_editor_render_capture_envelope(report: Mapping[str, Any],
         )
 
 
+def _validate_non_null_editor_visual_runner_readiness(report: Mapping[str, Any], result: ValidationResult) -> None:
+    if report.get("non_null_editor_visual_runner_readiness_attempted") is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Non-null Editor visual runner readiness diagnostic must record attempted=true.",
+        )
+    if report.get("non_null_editor_visual_runner_readiness_completed") is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Non-null Editor visual runner readiness diagnostic must record completed=true.",
+        )
+    if report.get("non_null_editor_visual_runner_readiness_source_validation_verified") is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Non-null Editor visual runner readiness requires source validation.",
+        )
+    if report.get("existing_nullrenderer_safe_editor_lane_preserved") is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Non-null visual readiness must preserve the existing NullRenderer-safe Editor lane.",
+        )
+    if report.get("null_renderer_used") is True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "null_renderer_used must be false for the non-null visual runner readiness envelope.",
+        )
+
+    selected_rhi = str(report.get("selected_rhi", "") or report.get("non_null_editor_render_capture_rhi_requested", "")).strip().lower()
+    if not selected_rhi:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Non-null visual runner readiness must record selected_rhi.")
+    elif selected_rhi not in NON_NULL_RENDER_CAPTURE_RHIS:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Non-null visual runner readiness selected unsupported RHI '{selected_rhi}'.")
+
+    for field, message in (
+        ("editor_temp_visual_scene_defaultlevel_mutation", "temp visual scene contract must not mutate defaultlevel."),
+        ("editor_temp_visual_scene_production_level_mutation", "temp visual scene contract must not mutate production levels."),
+        ("editor_visual_material_defaultlevel_mutation", "Editor visual/material readiness must not mutate defaultlevel."),
+        ("editor_visual_material_production_level_mutation", "Editor visual/material readiness must not mutate production levels."),
+        ("defaultlevel_mutation", "Editor visual/material readiness must not mutate defaultlevel."),
+        ("production_level_mutation", "Editor visual/material readiness must not mutate production levels."),
+    ):
+        if report.get(field) is True:
+            result.add_error(MXN_PATH_UNSAFE, message)
+    if report.get("asset_cache_deleted") is True:
+        result.add_error(MXN_PATH_UNSAFE, "Non-null visual runner readiness must not delete Asset Cache.")
+    if report.get("cache_heuristic_used") is True:
+        result.add_error(
+            "MXN_ASSET_CACHE_HEURISTIC_FORBIDDEN",
+            "Non-null visual runner readiness must not use cache heuristic proof.",
+        )
+
+    temp_contract_verified = report.get("editor_temp_visual_scene_contract_verified") is True
+    temp_root = str(report.get("editor_temp_visual_scene_approved_root", "")).replace("\\", "/").strip()
+    if report.get("editor_temp_visual_scene_contract_pinned") is True or temp_contract_verified:
+        if report.get("editor_temp_visual_scene_contract_attempted") is not True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "temp visual scene contract cannot be pinned without attempted=true.",
+            )
+        if not temp_root or not temp_root.startswith("Levels/_maxine_visual_smoke"):
+            result.add_error(
+                MXN_PATH_UNSAFE,
+                "temp visual scene contract requires approved root under Levels/_maxine_visual_smoke.",
+            )
+        lowered_root = temp_root.lower()
+        if "defaultlevel" in lowered_root or "/production" in lowered_root or "production/" in lowered_root:
+            result.add_error(
+                MXN_PATH_UNSAFE,
+                "temp visual scene contract root must not target defaultlevel or production levels.",
+            )
+        if report.get("editor_temp_visual_scene_cleanup_policy_verified") is not True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "temp visual scene contract requires verified cleanup policy.",
+            )
+        if report.get("editor_temp_visual_scene_defaultlevel_mutation") is not False:
+            result.add_error(
+                MXN_PATH_UNSAFE,
+                "temp visual scene contract must explicitly record editor_temp_visual_scene_defaultlevel_mutation=false.",
+            )
+        if report.get("editor_temp_visual_scene_production_level_mutation") is not False:
+            result.add_error(
+                MXN_PATH_UNSAFE,
+                "temp visual scene contract must explicitly record editor_temp_visual_scene_production_level_mutation=false.",
+            )
+    elif not str(report.get("editor_temp_visual_scene_contract_blocker", "")).strip():
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Unverified temp visual scene contract requires a precise typed blocker.",
+        )
+
+    artifact_root = str(report.get("editor_visual_material_capture_artifact_root", "")).replace("\\", "/").strip()
+    if report.get("editor_visual_material_capture_artifact_policy_verified") is True:
+        if artifact_root != "artifacts/o3de-integration/editor-smoke":
+            result.add_error(
+                MXN_PATH_UNSAFE,
+                "capture artifact policy requires artifacts/o3de-integration/editor-smoke root.",
+            )
+    elif report.get("editor_temp_visual_scene_contract_pinned") is True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Pinned temp visual scene contract requires a verified capture artifact policy.",
+        )
+
+    visible_verified = report.get("visible_desktop_session_verified") is True
+    gpu_verified = report.get("gpu_or_driver_readiness_verified") is True
+    rhi_verified = report.get("rhi_readiness_verified") is True
+    readiness_verified = report.get("non_null_editor_visual_runner_readiness_verified") is True
+    launch_attempted = report.get("non_null_editor_launch_attempted") is True
+    launch_verified = report.get("non_null_editor_launch_verified") is True
+    if readiness_verified:
+        for field, label in {
+            "visible_desktop_session_verified": "visible desktop/session readiness",
+            "gpu_or_driver_readiness_verified": "GPU/driver readiness",
+            "rhi_readiness_verified": "RHI readiness",
+            "editor_temp_visual_scene_contract_verified": "temp visual scene contract",
+            "editor_visual_material_capture_artifact_policy_verified": "capture artifact policy",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"non_null_editor_visual_runner_readiness_verified=true requires {field} ({label}).",
+                )
+    elif not str(report.get("non_null_editor_visual_runner_readiness_blocker", "")).strip():
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Unverified non-null Editor visual runner readiness requires a precise typed blocker.",
+        )
+
+    if launch_attempted and not visible_verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "non_null_editor_launch_attempted=true requires visible_desktop_session_verified=true.",
+        )
+    if launch_attempted and not gpu_verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "non_null_editor_launch_attempted=true requires gpu_or_driver_readiness_verified=true.",
+        )
+    if launch_attempted and not rhi_verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "non_null_editor_launch_attempted=true requires rhi_readiness_verified=true.",
+        )
+    if launch_verified:
+        if not launch_attempted or report.get("non_null_editor_launch_completed") is not True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "non_null_editor_launch_verified=true requires launch attempted/completed evidence.",
+            )
+        if report.get("non_null_editor_launch_exit_code") != 0:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "non_null_editor_launch_verified=true requires non_null_editor_launch_exit_code=0.",
+            )
+
+    capture_requested = report.get("editor_visual_material_capture_requested") is True
+    if capture_requested and not readiness_verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "editor_visual_material_capture_requested=true requires non_null_editor_visual_runner_readiness_verified=true.",
+        )
+    if report.get("visual_material_capture_readiness_verified") is True:
+        for field, label in {
+            "non_null_editor_visual_runner_readiness_verified": "visual runner readiness",
+            "editor_visual_material_capture_requested": "capture request",
+            "editor_visual_material_capture_completed": "capture completion",
+            "editor_visual_material_capture_artifact_exists": "capture artifact existence",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"visual_material_capture_readiness_verified=true requires {field} ({label}).",
+                )
+
+    gate_verified = report.get("visual_material_gate_verified") is True
+    rendered_verified = report.get("visual_material_rendered_evidence_gate_verified") is True
+    if report.get("visual_material_gate_claimed") is True and not gate_verified:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "visual_material_gate_claimed=true requires visual_material_gate_verified=true.")
+    if report.get("full_runtime_character_visual_material_gate_verified") is True and not gate_verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "full_runtime_character_visual_material_gate_verified=true requires visual_material_gate_verified=true.",
+        )
+    if gate_verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "visual_material_gate_verified=true is not allowed from readiness/temp-scene contract evidence alone.",
+        )
+    if rendered_verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "visual_material_rendered_evidence_gate_verified=true is not allowed from readiness/temp-scene contract evidence alone.",
+        )
+    if report.get("runtime_character_proof_claimed") is True or report.get("runtime_character_proof_verified") is True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Non-null Editor visual runner readiness cannot claim full runtime character proof.",
+        )
+
+
 def _validate_direct_procprefab_content_assertions(
     report: Mapping[str, Any],
     semantics: Mapping[str, Any],
@@ -1904,6 +2118,20 @@ def run_editor_smoke_corpus(
                 readiness=readiness,
                 missing_prerequisites=missing_prerequisites,
             )
+        normalized_diagnostic_mode = _normalize_diagnostic_mode(diagnostic_mode)
+        if normalized_diagnostic_mode in SOURCE_ONLY_EDITOR_DIAGNOSTIC_MODES:
+            return _execute_source_only_editor_visual_runner_readiness(
+                manifest=manifest,
+                readiness=readiness,
+                strict_integration=strict_integration,
+                platform=platform,
+                env=env,
+                artifact_root=_resolve_path(artifact_root),
+                golden_project_fixture=_resolve_path(golden_project_fixture),
+                diagnostic_mode=normalized_diagnostic_mode,
+                timeout_seconds=timeout_seconds,
+                progress_log=_resolve_path(progress_log) if progress_log else None,
+            )
         return _execute_live_editor_smoke(
             manifest=manifest,
             readiness=readiness,
@@ -1913,7 +2141,7 @@ def run_editor_smoke_corpus(
             command_runner=command_runner,
             artifact_root=_resolve_path(artifact_root),
             golden_project_fixture=_resolve_path(golden_project_fixture),
-            diagnostic_mode=_normalize_diagnostic_mode(diagnostic_mode),
+            diagnostic_mode=normalized_diagnostic_mode,
             timeout_seconds=timeout_seconds,
             progress_log=_resolve_path(progress_log) if progress_log else None,
         )
@@ -2162,6 +2390,226 @@ def _missing_live_editor_prerequisites(
     if readiness.get("release_packaging_allowed"):
         missing.append("MAXINE_ENABLE_RELEASE_PACKAGING_must_be_0")
     return _unique(missing)
+
+
+def _execute_source_only_editor_visual_runner_readiness(
+    *,
+    manifest: Path | str,
+    readiness: Mapping[str, Any],
+    strict_integration: bool,
+    platform: str,
+    env: Mapping[str, str],
+    artifact_root: Path,
+    golden_project_fixture: Path,
+    diagnostic_mode: str,
+    timeout_seconds: int | None,
+    progress_log: Path | None,
+) -> Dict[str, Any]:
+    started_at = _utc_now()
+    start_time = time.monotonic()
+    run_id = "non-null-editor-visual-runner-readiness-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    output_dir = artifact_root / run_id
+    output_dir.mkdir(parents=True, exist_ok=True)
+    stdout_path = output_dir / "stdout.txt"
+    stderr_path = output_dir / "stderr.txt"
+    report_path = output_dir / "non_null_editor_visual_runner_readiness_report.json"
+    template_path = output_dir / "editor_smoke_report.template.json"
+    progress_path = progress_log or (output_dir / "progress.jsonl")
+
+    engine_root = Path(str(readiness["engine_root"]["path"]))
+    project_path = Path(str(readiness["project_path"]["path"]))
+    editor_executable = Path(str(readiness["editor_executable"]["path"]))
+    selected_timeout_seconds = timeout_seconds if timeout_seconds is not None else _editor_timeout_seconds(env)
+    selected_render_capture_rhi = _selected_non_null_render_capture_rhi(env)
+    apb_baseline = _select_apb_baseline_report(env)
+    manifest_path = _resolve_path(manifest)
+    apb_payload = _load_json_if_present(apb_baseline)
+    product_summary = _product_evidence_summary(apb_payload)
+    expected_products = _expected_products_from_manifest(manifest_path, product_summary)
+    missing_products = [product for product in expected_products if product not in product_summary["produced_products"]]
+
+    if not apb_baseline or not apb_payload or product_summary["status"] != "pass" or missing_products or product_summary["cache_heuristic_used"]:
+        messages = []
+        if not apb_baseline:
+            messages.append("No APB baseline report was found for the Editor visual runner readiness contract.")
+        if product_summary["status"] != "pass":
+            messages.append("APB baseline report is not pass.")
+        if missing_products:
+            messages.append("APB baseline is missing expected products: " + ", ".join(missing_products) + ".")
+        if product_summary["cache_heuristic_used"]:
+            messages.append("APB baseline used cache heuristic evidence.")
+        return _unavailable_integration_report(
+            manifest=manifest,
+            strict_integration=True,
+            platform=platform,
+            env=env,
+            readiness=readiness,
+            missing_prerequisites=["APB_BASELINE_PRODUCT_EVIDENCE"],
+        ) | {"messages": messages, "product_evidence_summary": product_summary}
+
+    script_path = _editor_script_for_diagnostic_mode(diagnostic_mode)
+    argv = [
+        str(editor_executable),
+        f"-rhi={selected_render_capture_rhi}",
+        "--skipWelcomeScreenDialog",
+        "--autotest_mode",
+        "--project-path",
+        str(project_path),
+        "--runpython",
+        str(script_path),
+    ]
+    _write_progress_marker(
+        progress_path,
+        phase="wrapper",
+        step="source_only_contract_start",
+        status="started",
+        started_monotonic=start_time,
+        message="Building source-only non-null Editor visual runner readiness/temp-scene contract.",
+        report_path=report_path,
+    )
+    template = _live_report_template(
+        run_id=run_id,
+        manifest=manifest_path,
+        readiness=readiness,
+        platform=platform,
+        strict_integration=strict_integration,
+        argv=argv,
+        timeout_seconds=selected_timeout_seconds,
+        stdout_path=stdout_path,
+        stderr_path=stderr_path,
+        report_path=report_path,
+        progress_path=progress_path,
+        apb_baseline=apb_baseline,
+        product_summary=product_summary,
+        expected_products=expected_products,
+        temp_level_rel="",
+        started_at=started_at,
+        golden_project_fixture=golden_project_fixture,
+        diagnostic_mode=diagnostic_mode,
+        script_path=script_path,
+    )
+    template.update(
+        {
+            "status": "pass",
+            "level_strategy": "source_validated_visual_runner_contract",
+            "live_editor_execution": False,
+            "live_asset_processor_batch_execution": False,
+            "exit_code": None,
+            "temp_level_path_redacted": "",
+            "non_null_editor_render_capture_rhi_requested": selected_render_capture_rhi,
+            "non_null_editor_render_capture_null_renderer_used": False,
+            "null_renderer_used": False,
+        }
+    )
+    template_path.write_text(json.dumps(template, indent=2) + "\n", encoding="utf-8")
+
+    previous_env = {key: os.environ.get(key) for key in ("O3DE_ENGINE_ROOT", "O3DE_PROJECT_PATH", "O3DE_EDITOR_EXECUTABLE")}
+    os.environ["O3DE_ENGINE_ROOT"] = str(engine_root)
+    os.environ["O3DE_PROJECT_PATH"] = str(project_path)
+    os.environ["O3DE_EDITOR_EXECUTABLE"] = str(editor_executable)
+    try:
+        from tools.o3de.editor_python import maxine_package_prefab_smoke as editor_python_smoke
+
+        contract_payload = editor_python_smoke._run_non_null_editor_visual_runner_readiness_checks(
+            template,
+            progress_log=progress_path,
+        )
+    finally:
+        for key, value in previous_env.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+    finished_at = _utc_now()
+    duration_seconds = round(time.monotonic() - start_time, 3)
+    stdout_path.write_text("", encoding="utf-8")
+    stderr_path.write_text("", encoding="utf-8")
+    _write_progress_marker(
+        progress_path,
+        phase="wrapper",
+        step="source_only_contract_final_status",
+        status="completed",
+        started_monotonic=start_time,
+        message="Finalized source-only non-null Editor visual runner readiness/temp-scene contract.",
+        report_path=report_path,
+    )
+    progress_markers = _load_progress_markers(progress_path)
+
+    report = dict(template)
+    report.update(contract_payload)
+    report.update(
+        {
+            "generated_at": finished_at,
+            "status": "pass",
+            "diagnostic_mode": diagnostic_mode,
+            "live_editor_execution": False,
+            "live_asset_processor_batch_execution": False,
+            "live_publication": False,
+            "release_packaging": False,
+            "production_level_mutation": False,
+            "defaultlevel_mutation": False,
+            "exit_code": None,
+            "started_at": started_at,
+            "finished_at": finished_at,
+            "duration_seconds": duration_seconds,
+            "timeout_seconds": selected_timeout_seconds,
+            "timed_out": False,
+            "timeout_stall": False,
+            "process_cleanup": {"attempted": False, "method": "source_only_no_process", "return_code": None},
+            "process_tree_cleanup": {"attempted": False, "method": "source_only_no_process", "return_code": None},
+            "stdout_log_ref": _repo_relative(stdout_path),
+            "stderr_log_ref": _repo_relative(stderr_path),
+            "editor_log_ref": "",
+            "progress_log_ref": _repo_relative(progress_path),
+            "last_progress_marker": _last_relevant_progress_marker(progress_markers),
+            "stall_phase": "",
+            "script_path_redacted": _redact_path(str(script_path)),
+            "script_path_mode": "absolute",
+            "editor_command_working_directory": _redact_path(str(project_path)),
+            "apb_baseline_ref": _repo_relative(apb_baseline),
+            "product_evidence_summary": product_summary,
+            "command_preview": _redacted_argv(argv),
+            "command_argv_redacted": _redacted_argv(argv),
+            "errors": [],
+            "warnings": [],
+            "messages": _unique(
+                list(contract_payload.get("messages", []))
+                + [
+                    "Non-null Editor visual runner readiness/temp-scene contract is source-validated; live non-null launch and screenshot capture were not attempted.",
+                ]
+            ),
+        }
+    )
+    report["evidence_refs"] = _merge_evidence_refs(
+        report.get("evidence_refs", []),
+        [
+            {"id": "non-null-editor-visual-runner-readiness-report", "kind": "editor_smoke_report", "path": _repo_relative(report_path)},
+            {"id": "editor-smoke-progress-log", "kind": "editor_smoke_progress_log", "path": _repo_relative(progress_path)},
+            {"id": "apb-baseline", "kind": "asset_processor_batch_report", "path": _repo_relative(apb_baseline)},
+        ],
+    )
+    preserved_ref = str(report.get("preserved_non_null_editor_render_capture_report_ref", "")).strip()
+    if preserved_ref:
+        report["evidence_refs"] = _merge_evidence_refs(
+            report.get("evidence_refs", []),
+            [
+                {
+                    "id": "preserved-non-null-editor-render-capture-envelope-report",
+                    "kind": "editor_smoke_report",
+                    "path": preserved_ref,
+                }
+            ],
+        )
+
+    schema_result = schema_validate(report, load_json(SCHEMA_PATH))
+    semantic_result = validate_editor_smoke_report(report, strict=True)
+    if schema_result.status == "fail" or semantic_result.status == "fail":
+        report["status"] = "fail"
+        report["errors"] = _unique(schema_result.error_codes + semantic_result.error_codes)
+        report["messages"] = _unique(report.get("messages", []) + schema_result.messages + semantic_result.messages)
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    return report
 
 
 def _execute_live_editor_smoke(
@@ -2559,6 +3007,43 @@ def _live_report_template(
         "non_null_editor_render_capture_editor_exited_cleanly": False,
         "non_null_editor_render_capture_requires_visible_desktop": False,
         "non_null_editor_render_capture_gpu_or_driver_ready": None,
+        "non_null_editor_visual_runner_readiness_attempted": False,
+        "non_null_editor_visual_runner_readiness_completed": False,
+        "non_null_editor_visual_runner_readiness_source_validation_status": "",
+        "non_null_editor_visual_runner_readiness_source_validation_verified": False,
+        "non_null_editor_visual_runner_readiness_source_validation": {},
+        "non_null_editor_visual_runner_readiness_source_files": [],
+        "non_null_editor_visual_runner_readiness_verified": False,
+        "non_null_editor_visual_runner_readiness_blocker": "",
+        "non_null_editor_visual_runner_readiness_candidate_matrix": [],
+        "non_null_editor_visual_runner_readiness_selected_strategy": "",
+        "visible_desktop_session_check_attempted": False,
+        "visible_desktop_session_verified": False,
+        "visible_desktop_session_blocker": "",
+        "gpu_or_driver_readiness_check_attempted": False,
+        "gpu_or_driver_readiness_verified": False,
+        "gpu_or_driver_readiness_blocker": "",
+        "selected_rhi": "",
+        "rhi_readiness_check_attempted": False,
+        "rhi_readiness_verified": False,
+        "rhi_readiness_blocker": "",
+        "non_null_editor_launch_attempted": False,
+        "non_null_editor_launch_completed": False,
+        "non_null_editor_launch_verified": False,
+        "non_null_editor_launch_exit_code": None,
+        "non_null_editor_launch_blocker": "",
+        "null_renderer_used": False,
+        "existing_nullrenderer_safe_editor_lane_preserved": True,
+        "editor_temp_visual_scene_contract_attempted": False,
+        "editor_temp_visual_scene_contract_pinned": False,
+        "editor_temp_visual_scene_contract_verified": False,
+        "editor_temp_visual_scene_contract_blocker": "",
+        "editor_temp_visual_scene_approved_root": "",
+        "editor_temp_visual_scene_defaultlevel_mutation": False,
+        "editor_temp_visual_scene_production_level_mutation": False,
+        "editor_temp_visual_scene_cleanup_policy_verified": False,
+        "editor_visual_material_capture_artifact_root": "",
+        "editor_visual_material_capture_artifact_policy_verified": False,
         "editor_visual_material_capture_api_available_under_non_null_rhi": False,
         "editor_visual_material_temp_scene_created": False,
         "editor_visual_material_temp_scene_path": "",
@@ -3489,6 +3974,21 @@ def _parse_args() -> argparse.Namespace:
         help="Set the explicit gated enablement marker for the non-null Editor render/capture envelope.",
     )
     parser.add_argument(
+        "--diagnose-non-null-editor-visual-runner-readiness",
+        action="store_true",
+        help="Build the source-only non-null Editor visual runner readiness/temp-scene contract diagnostic.",
+    )
+    parser.add_argument(
+        "--diagnose-editor-temp-visual-scene-contract",
+        action="store_true",
+        help="Alias for the source-only non-null Editor visual runner readiness/temp-scene contract diagnostic.",
+    )
+    parser.add_argument(
+        "--enable-non-null-editor-visual-runner-readiness-fixture",
+        action="store_true",
+        help="Set the explicit gated marker for the non-null Editor visual runner readiness/temp-scene contract.",
+    )
+    parser.add_argument(
         "--editor-render-capture-rhi",
         choices=sorted(NON_NULL_RENDER_CAPTURE_RHIS),
         default=None,
@@ -3612,6 +4112,15 @@ def main() -> int:
         env_map["MAXINE_ENABLE_NON_NULL_EDITOR_RENDER_CAPTURE_ENVELOPE"] = "1"
     if args.enable_non_null_editor_render_capture_envelope_fixture:
         env_map["MAXINE_ALLOW_NON_NULL_EDITOR_RENDER_CAPTURE_ENVELOPE"] = "1"
+    if (
+        args.diagnose_non_null_editor_visual_runner_readiness
+        or args.diagnose_editor_temp_visual_scene_contract
+        or args.enable_non_null_editor_visual_runner_readiness_fixture
+    ):
+        diagnostic_mode = "non-null-editor-visual-runner-readiness"
+        env_map["MAXINE_ENABLE_NON_NULL_EDITOR_VISUAL_RUNNER_READINESS"] = "1"
+    if args.enable_non_null_editor_visual_runner_readiness_fixture:
+        env_map["MAXINE_ALLOW_NON_NULL_EDITOR_VISUAL_RUNNER_READINESS"] = "1"
     if args.editor_render_capture_rhi:
         env_map["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = args.editor_render_capture_rhi
     result = run_editor_smoke_corpus(

@@ -324,6 +324,14 @@ python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.p
 
 The NullRenderer-safe Editor smoke envelope remains unchanged for non-visual automation. The non-null capture diagnostic uses a separate mode and selected RHI (`dx12` or `vulkan`), omits `-NullRenderer`, records `non_null_editor_render_capture_null_renderer_used=false`, and source-validates the O3DE command-line boundary through `GameApplication.cpp` (`commandSwitchNullRenderer`, `commandSwitchRhi`, and the `rhi=null` console/null-renderer branch). It also reuses the Atom `FrameCaptureRequestBus` source pins from the viewport proof-surface slice and records DX12/Vulkan RHI module availability from the local engine source. This is a command envelope, not rendered visual/material proof: launch/RHI readiness or screenshot API availability may at most prove capture readiness. The visual/material gate remains false until a safe temp visual context is created, the approved character is displayed/framed, capture is requested and completed, artifact format/dimensions/size are validated, content/nonblank/character/material presence checks pass, cleanup/log scans pass, and no production/defaultlevel/Asset Cache/cache-heuristic safety violation occurs.
 
+Non-null Editor visual runner readiness diagnostics pin the next safety boundary without launching Editor:
+
+```powershell
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --mode local_editor_python --enable-editor-smoke --strict-integration --diagnose-non-null-editor-visual-runner-readiness
+```
+
+This mode is a readiness contract, not rendered visual/material proof. It source-validates the wrapper/report/schema/docs contract, preserves the PR #165 non-null render/capture command envelope, keeps the existing NullRenderer-safe Editor smoke lane unchanged, records `selected_rhi=dx12` by default (`vulkan` remains schema-routed), and blocks live launch with `blocked_by_non_null_editor_render_capture_requires_visible_desktop_session` until visible desktop/session and GPU/driver readiness are proven by the runner. It pins the future temp visual scene root to `Levels/_maxine_visual_smoke`, forbids defaultlevel and production-level mutation, requires cleanup policy verification, and pins sanitized capture artifacts under `artifacts/o3de-integration/editor-smoke`. Screenshot capture, character display, content validation, rendered visual/material evidence, the visual/material gate, and full runtime character proof all remain false until a later live non-null visual capture slice actually satisfies those gates.
+
 Approved Editor-generated runtime animation component wiring diagnostics require the Editor smoke gates plus an explicit generation marker:
 
 ```powershell
