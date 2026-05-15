@@ -146,7 +146,12 @@ def _write_non_null_desktop_rhi_source_files(engine: Path) -> None:
                 'behaviorContext->EBus<FrameCaptureNotificationBus>("FrameCaptureNotificationBus")',
                 '->Handler<FrameCaptureNotificationBusHandler>()',
                 "bool FrameCaptureSystemComponent::CanCapture() const { return !AZ::RHI::IsNullRHI(); }",
+                "return !AZ::RHI::IsNullRHI();",
                 "FrameCaptureOutcome FrameCaptureSystemComponent::CaptureScreenshot(const AZStd::string& filePath)",
+                "AZ::RPI::ViewportContextRequests::Get()->GetDefaultViewportContext()->GetWindowHandle();",
+                'error.m_errorMessage = "No valid window for the capture.";',
+                "AZ::RPI::PassSystemInterface::Get()->FindSwapChainPass(windowHandle);",
+                'error.m_errorMessage = "Failed to find SwapChainPass for the window.";',
                 "FrameCaptureNotificationBus::Event(captureHandle.GetCaptureStateIndex(), &FrameCaptureNotificationBus::Events::OnFrameCaptureFinished, capture->m_result, capture->m_latestCaptureInfo.c_str());",
                 'else if (extension == "png")',
                 "PngFrameCaptureOutput(capture->m_outputFilePath, readbackResult)",
@@ -167,7 +172,62 @@ def _write_non_null_desktop_rhi_source_files(engine: Path) -> None:
                 "self.handler.connect(outcome.GetValue())",
                 "self.handler.add_callback('OnFrameCaptureFinished', self.on_screenshot_captured)",
                 "def capture_screenshot_blocking(): pass",
+                "general.get_viewport_size()",
+                "general.set_viewport_size(frame_width, frame_height)",
+                "general.update_viewport()",
                 "def prepare_viewport_for_screenshot(): pass",
+            ]
+        ),
+        engine
+        / "Code"
+        / "Editor"
+        / "ViewPane.cpp": "\n".join(
+            [
+                'behaviorContext->Method("get_viewport_size", PyGetViewPortSize, nullptr, "Get the width and height of the active viewport.")',
+                'behaviorContext->Method("set_viewport_size", PySetViewPortSize, nullptr, "Set the width and height of the active viewport.")',
+                'behaviorContext->Method("update_viewport", PyUpdateViewPort, nullptr, "Update all visible SDK viewports.")',
+                'behaviorContext->Method("get_viewport_count", PyGetViewportCount, nullptr, "Get the total number of viewports.")',
+                'behaviorContext->Method("get_active_viewport", PyGetActiveViewport, nullptr, "Get the active viewport index.")',
+                'behaviorContext->Method("set_active_viewport", PySetActiveViewport, nullptr, "Set the active viewport by index.")',
+                "SetFocusToViewport();",
+            ]
+        ),
+        engine
+        / "Code"
+        / "Editor"
+        / "Lib"
+        / "Tests"
+        / "test_ViewPanePythonBindings.cpp": "\n".join(
+            [
+                'EXPECT_TRUE(behaviorContext->m_methods.find("get_viewport_size") != behaviorContext->m_methods.end());',
+                'EXPECT_TRUE(behaviorContext->m_methods.find("get_viewport_count") != behaviorContext->m_methods.end());',
+                'EXPECT_TRUE(behaviorContext->m_methods.find("get_active_viewport") != behaviorContext->m_methods.end());',
+                'EXPECT_TRUE(behaviorContext->m_methods.find("set_active_viewport") != behaviorContext->m_methods.end());',
+            ]
+        ),
+        engine
+        / "Code"
+        / "Editor"
+        / "CryEditPy.cpp": "\n".join(
+            [
+                'behaviorContext->Method("open_level_no_prompt", ::PyOpenLevelNoPrompt, nullptr, "Opens a level. Doesn\'t prompt user about saving a modified level.")',
+                'behaviorContext->Method("create_level_no_prompt", ::PyCreateLevelNoPrompt, nullptr, "Creates a level with the parameters of \'templateName\',\'levelName\', \'resolution\', \'unitSize\' and \'bUseTerrain\'.")',
+                'behaviorContext->Method("get_current_level_name", PyGetCurrentLevelName, nullptr, "Gets the name of the current level.")',
+                'behaviorContext->Method("get_current_level_path", PyGetCurrentLevelPath, nullptr, "Gets the fully specified path of the current level.")',
+            ]
+        ),
+        engine
+        / "AutomatedTesting"
+        / "Gem"
+        / "PythonTests"
+        / "EditorPythonTestTools"
+        / "editor_python_test_tools"
+        / "utils.py": "\n".join(
+            [
+                'template_name = "Prefabs/Default_Level.prefab"',
+                "result = general.create_level_no_prompt(template_name, level_name, heightmap_resolution, heightmap_meters_per_pixel, terrain_texture_resolution, use_terrain)",
+                "success = general.open_level_no_prompt(os.path.join(directory, level))",
+                "general.idle_wait_frames(200)",
             ]
         ),
         engine
@@ -988,6 +1048,155 @@ def _editor_screenshot_capture_artifact_readiness_verified_payload() -> dict:
                     "blocker": "blocked_by_full_runtime_character_repeated_behavior_scenario_deferred",
                 },
             ],
+        }
+    )
+    return payload
+
+
+def _active_viewport_temp_scene_readiness_payload() -> dict:
+    payload = _live_non_null_editor_launch_verified_payload()
+    satisfied_gates = list(payload.get("full_runtime_character_proof_satisfied_gates", []))
+    if "visual_capture_surface" not in satisfied_gates:
+        satisfied_gates.append("visual_capture_surface")
+    payload.update(
+        {
+            "diagnostic_mode": "editor-active-viewport-temp-scene-readiness",
+            "editor_active_viewport_temp_scene_readiness_attempted": True,
+            "editor_active_viewport_temp_scene_readiness_completed": True,
+            "editor_active_viewport_temp_scene_readiness_verified": True,
+            "editor_active_viewport_temp_scene_readiness_blocker": "",
+            "editor_active_viewport_temp_scene_readiness_candidate_matrix": [
+                {
+                    "id": "active_editor_viewport_window_readiness_under_live_non_null_launch",
+                    "selected": True,
+                    "result": "blocked_window_handle_unverified",
+                    "blocker": "blocked_by_editor_active_viewport_window_handle_unavailable",
+                },
+                {
+                    "id": "frame_capture_default_viewport_window_capture_target",
+                    "selected": True,
+                    "result": "blocked_default_window_handle_unverified",
+                    "blocker": "blocked_by_editor_active_viewport_window_handle_unavailable",
+                },
+                {
+                    "id": "temp_visual_scene_display_context_levels_maxine_visual_smoke",
+                    "selected": True,
+                    "result": "verified_source_validated_contract",
+                },
+                {
+                    "id": "create_temp_visual_scene_this_slice",
+                    "selected": False,
+                    "result": "deferred_contract_only_no_scene_mutation",
+                },
+                {
+                    "id": "screenshot_capture_request_this_slice",
+                    "selected": False,
+                    "result": "deferred_until_capture_target_window_handle_ready",
+                },
+                {
+                    "id": "approved_character_display_this_slice",
+                    "selected": False,
+                    "result": "deferred",
+                },
+                {
+                    "id": "infer_visual_material_proof_from_viewport_readiness",
+                    "selected": False,
+                    "result": "rejected",
+                },
+                {
+                    "id": "infer_visual_material_proof_from_temp_scene_readiness",
+                    "selected": False,
+                    "result": "rejected",
+                },
+                {
+                    "id": "production_defaultlevel_viewport_or_screenshot",
+                    "selected": False,
+                    "result": "rejected",
+                },
+                {
+                    "id": "understand_anything_graph_as_proof",
+                    "selected": False,
+                    "result": "rejected",
+                },
+            ],
+            "editor_active_viewport_temp_scene_readiness_selected_strategy": (
+                "source_validated_temp_visual_scene_contract_no_capture"
+            ),
+            "editor_active_viewport_temp_scene_readiness_source_validation_status": (
+                "editor_active_viewport_temp_scene_readiness_source_validation_pass"
+            ),
+            "editor_active_viewport_temp_scene_readiness_source_validation_verified": True,
+            "live_non_null_editor_launch_command": [
+                "Editor.exe",
+                "-rhi=dx12",
+                "--skipWelcomeScreenDialog",
+                "--autotest_mode",
+                "--project-path",
+                "<project>",
+                "--runpython",
+                "editor_active_viewport_temp_scene_readiness_smoke.py",
+            ],
+            "live_non_null_editor_launch_wrapper_path": (
+                "tools/o3de/editor_python/editor_active_viewport_temp_scene_readiness_smoke.py"
+            ),
+            "editor_active_viewport_readiness_attempted": True,
+            "editor_active_viewport_readiness_verified": False,
+            "editor_active_viewport_check_method": (
+                "azlmbr.legacy.general.get_viewport_count/get_active_viewport/get_viewport_size/update_viewport"
+            ),
+            "editor_active_viewport_state": "not_verified_no_safe_python_window_handle_probe",
+            "editor_active_viewport_blocker": "blocked_by_editor_active_viewport_window_handle_unavailable",
+            "editor_active_viewport_window_handle_available": False,
+            "editor_active_viewport_render_ready": False,
+            "editor_frame_capture_target_readiness_attempted": True,
+            "editor_frame_capture_target_readiness_verified": False,
+            "editor_frame_capture_target_blocker": "blocked_by_editor_active_viewport_window_handle_unavailable",
+            "editor_temp_visual_scene_readiness_attempted": True,
+            "editor_temp_visual_scene_readiness_verified": True,
+            "editor_temp_visual_scene_contract_pinned": True,
+            "editor_temp_visual_scene_contract_verified": True,
+            "editor_temp_visual_scene_approved_root": "Levels/_maxine_visual_smoke",
+            "editor_temp_visual_scene_path": "Levels/_maxine_visual_smoke/editor_active_viewport_temp_scene_readiness",
+            "editor_temp_visual_scene_created": False,
+            "editor_temp_visual_scene_cleanup_verified": True,
+            "editor_temp_visual_scene_cleanup_policy_verified": True,
+            "editor_temp_visual_scene_defaultlevel_mutation": False,
+            "editor_temp_visual_scene_production_level_mutation": False,
+            "editor_visual_material_capture_target_readiness_verified": True,
+            "editor_visual_material_capture_artifact_root": "artifacts/o3de-integration/editor-smoke",
+            "editor_visual_material_capture_requested": False,
+            "editor_visual_material_capture_request_accepted": False,
+            "editor_visual_material_capture_completed": False,
+            "visual_material_capture_readiness_verified": False,
+            "visual_material_rendered_evidence_gate_attempted": False,
+            "visual_material_rendered_evidence_gate_verified": False,
+            "visual_material_gate_claimed": False,
+            "visual_material_gate_verified": False,
+            "full_runtime_character_visual_material_gate_verified": False,
+            "full_runtime_character_proof_satisfied_gates": satisfied_gates,
+            "full_runtime_character_proof_unsatisfied_gates": [
+                {
+                    "id": "visual_material",
+                    "verified": False,
+                    "blocker": "blocked_by_visual_material_proof_requires_rendered_evidence_capture",
+                }
+            ],
+            "full_runtime_character_proof_deferred_gates": [
+                {
+                    "id": "repeated_behavior_scenario",
+                    "verified": False,
+                    "blocker": "blocked_by_full_runtime_character_repeated_behavior_scenario_deferred",
+                }
+            ],
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "live_publication": False,
+            "release_packaging": False,
+            "production_level_mutation": False,
+            "defaultlevel_mutation": False,
+            "asset_cache_deleted": False,
+            "cache_heuristic_used": False,
+            "fake_success": False,
         }
     )
     return payload
@@ -5272,6 +5481,129 @@ def test_editor_screenshot_capture_artifact_readiness_does_not_verify_visual_gat
     assert "visual_material_gate_verified" in " ".join(result.messages)
 
 
+def test_active_viewport_temp_scene_readiness_mode_keeps_capture_off(tmp_path):
+    env = _live_env(tmp_path)
+    _write_non_null_desktop_rhi_source_files(Path(env["O3DE_ENGINE_ROOT"]))
+
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        assert "editor_active_viewport_temp_scene_readiness_smoke.py" in argv[-1].replace("\\", "/")
+        assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == "editor-active-viewport-temp-scene-readiness"
+        assert env["MAXINE_ENABLE_EDITOR_ACTIVE_VIEWPORT_TEMP_SCENE_READINESS"] == "1"
+        assert env["MAXINE_ALLOW_EDITOR_ACTIVE_VIEWPORT_TEMP_SCENE_READINESS"] == "1"
+        assert env["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] == "dx12"
+        assert "MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH" not in env
+        command = " ".join(argv)
+        assert "-NullRenderer" not in command
+        assert "-rhi=Null" not in command
+        assert "-rhi=dx12" in command
+        payload = json.loads(Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).read_text(encoding="utf-8"))
+        payload.update(_active_viewport_temp_scene_readiness_payload())
+        Path(env["MAXINE_EDITOR_SMOKE_REPORT_OUT"]).write_text(json.dumps(payload), encoding="utf-8")
+        return subprocess.CompletedProcess(args=argv, returncode=0, stdout="", stderr="")
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=env,
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="editor-active-viewport-temp-scene-readiness",
+    )
+
+    schema_result = schema_validate(result, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(result, strict=True)
+
+    assert result["status"] == "pass"
+    assert result["diagnostic_mode"] == "editor-active-viewport-temp-scene-readiness"
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+    assert result["editor_active_viewport_temp_scene_readiness_source_validation_verified"] is True
+    assert result["visible_desktop_session_verified"] is True
+    assert result["gpu_or_driver_readiness_verified"] is True
+    assert result["rhi_readiness_verified"] is True
+    assert result["live_non_null_editor_launch_verified"] is True
+    assert result["live_non_null_editor_launch_null_renderer_used"] is False
+    assert result["live_non_null_editor_launch_python_wrapper_executed"] is True
+    assert result["editor_active_viewport_readiness_attempted"] is True
+    assert result["editor_active_viewport_readiness_verified"] is False
+    assert result["editor_active_viewport_window_handle_available"] is False
+    assert result["editor_frame_capture_target_readiness_attempted"] is True
+    assert result["editor_frame_capture_target_readiness_verified"] is False
+    assert result["editor_temp_visual_scene_readiness_attempted"] is True
+    assert result["editor_temp_visual_scene_readiness_verified"] is True
+    assert result["editor_temp_visual_scene_approved_root"] == "Levels/_maxine_visual_smoke"
+    assert result["editor_temp_visual_scene_created"] is False
+    assert result["editor_temp_visual_scene_cleanup_verified"] is True
+    assert result["editor_temp_visual_scene_defaultlevel_mutation"] is False
+    assert result["editor_temp_visual_scene_production_level_mutation"] is False
+    assert result["editor_visual_material_capture_target_readiness_verified"] is True
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["editor_visual_material_capture_completed"] is False
+    assert result["visual_material_capture_readiness_verified"] is False
+    assert result["visual_material_rendered_evidence_gate_verified"] is False
+    assert result["visual_material_gate_verified"] is False
+    assert result["runtime_character_proof_verified"] is False
+
+
+def test_active_viewport_temp_scene_readiness_records_blocker_without_capture(monkeypatch):
+    monkeypatch.setenv("O3DE_ENGINE_ROOT", "")
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_editor_active_viewport_temp_scene_readiness_source_validation",
+        lambda _engine_root: {
+            "status": "editor_active_viewport_temp_scene_readiness_source_validation_pass",
+            "blocker": "",
+        },
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_live_non_null_editor_launch_source_validation",
+        lambda _engine_root: {"status": "live_non_null_editor_launch_source_validation_pass"},
+    )
+
+    result = editor_python_smoke._run_editor_active_viewport_temp_scene_readiness_checks(
+        _live_non_null_editor_launch_verified_payload(),
+        progress_log=None,
+        general=None,
+    )
+
+    assert result["editor_active_viewport_temp_scene_readiness_source_validation_verified"] is True
+    assert result["live_non_null_editor_launch_verified"] is True
+    assert result["editor_active_viewport_readiness_attempted"] is True
+    assert result["editor_active_viewport_readiness_verified"] is False
+    assert result["editor_active_viewport_blocker"] == "blocked_by_editor_active_viewport_api_unavailable"
+    assert result["editor_frame_capture_target_readiness_verified"] is False
+    assert result["editor_temp_visual_scene_readiness_verified"] is True
+    assert result["editor_visual_material_capture_target_readiness_verified"] is True
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["editor_visual_material_capture_completed"] is False
+    assert result["visual_material_capture_readiness_verified"] is False
+    assert result["visual_material_gate_verified"] is False
+    assert result["runtime_character_proof_verified"] is False
+
+
+def test_active_viewport_temp_scene_readiness_does_not_verify_visual_gate():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_active_viewport_temp_scene_readiness_payload())
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "visual_material_gate_claimed": True,
+            "visual_material_gate_verified": True,
+            "visual_material_rendered_evidence_gate_verified": True,
+            "full_runtime_character_visual_material_gate_verified": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+    assert "visual_material_gate_verified" in " ".join(result.messages)
+
+
 def _install_fake_frame_capture_modules(monkeypatch, *, callback_parameters, success_value="success"):
     azlmbr_module = types.ModuleType("azlmbr")
     azlmbr_module.__path__ = []
@@ -5570,6 +5902,22 @@ def test_live_non_null_editor_launch_wrapper_bootstraps_repo_root_before_package
 
 def test_editor_screenshot_capture_artifact_wrapper_bootstraps_repo_root_before_package_import():
     wrapper = REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_screenshot_capture_artifact_readiness_smoke.py"
+
+    text = wrapper.read_text(encoding="utf-8-sig")
+
+    assert "import sys" in text
+    assert "from pathlib import Path" in text
+    assert "REPO_ROOT = Path(__file__).resolve().parents[3]" in text
+    assert "sys.path.insert(0, str(REPO_ROOT))" in text
+    assert "from tools.o3de.editor_python import maxine_package_prefab_smoke" in text
+    assert "import maxine_package_prefab_smoke" not in {line.strip() for line in text.splitlines()}
+    assert text.index("sys.path.insert(0, str(REPO_ROOT))") < text.index(
+        "from tools.o3de.editor_python import maxine_package_prefab_smoke"
+    )
+
+
+def test_active_viewport_temp_scene_readiness_wrapper_bootstraps_repo_root_before_package_import():
+    wrapper = REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_active_viewport_temp_scene_readiness_smoke.py"
 
     text = wrapper.read_text(encoding="utf-8-sig")
 
