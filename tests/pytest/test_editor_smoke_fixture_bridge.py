@@ -4363,6 +4363,22 @@ def test_editor_python_bridge_script_is_integration_ready_not_executed():
     assert "No live publication" in text
 
 
+def test_non_null_visual_runner_wrapper_bootstraps_repo_root_before_package_import():
+    wrapper = REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_non_null_visual_runner_readiness_smoke.py"
+
+    text = wrapper.read_text(encoding="utf-8-sig")
+
+    assert "import sys" in text
+    assert "from pathlib import Path" in text
+    assert "REPO_ROOT = Path(__file__).resolve().parents[3]" in text
+    assert "sys.path.insert(0, str(REPO_ROOT))" in text
+    assert "from tools.o3de.editor_python import maxine_package_prefab_smoke" in text
+    assert "import maxine_package_prefab_smoke" not in {line.strip() for line in text.splitlines()}
+    assert text.index("sys.path.insert(0, str(REPO_ROOT))") < text.index(
+        "from tools.o3de.editor_python import maxine_package_prefab_smoke"
+    )
+
+
 def test_editor_python_bridge_script_writes_safe_failure_report_outside_editor(tmp_path):
     script = REPO_ROOT / "tools" / "o3de" / "editor_python" / "maxine_package_prefab_smoke.py"
     template = _fixture("release_rigged.fixture.report.json")
