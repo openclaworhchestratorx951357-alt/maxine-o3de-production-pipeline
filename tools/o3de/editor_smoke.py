@@ -129,10 +129,18 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_non_null_visual_runner_readiness_smoke.py",
+    "non-null-editor-desktop-rhi-readiness": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_non_null_desktop_rhi_readiness_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
-SOURCE_ONLY_EDITOR_DIAGNOSTIC_MODES = {"non-null-editor-visual-runner-readiness"}
+SOURCE_ONLY_EDITOR_DIAGNOSTIC_MODES = {
+    "non-null-editor-visual-runner-readiness",
+    "non-null-editor-desktop-rhi-readiness",
+}
 NON_NULL_RENDER_CAPTURE_RHIS = {"dx12", "vulkan"}
 DIRECT_PROCPREFAB_TYPED_NONVERIFIED_STATUSES = {
     "procprefab_product_not_editor_instantiable_with_current_binding",
@@ -269,6 +277,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_non_null_editor_render_capture_envelope(report, result)
         if diagnostic_mode == "non-null-editor-visual-runner-readiness":
             _validate_non_null_editor_visual_runner_readiness(report, result)
+        if diagnostic_mode == "non-null-editor-desktop-rhi-readiness":
+            _validate_non_null_editor_desktop_rhi_readiness(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -1992,6 +2002,81 @@ def _validate_non_null_editor_visual_runner_readiness(report: Mapping[str, Any],
         )
 
 
+def _validate_non_null_editor_desktop_rhi_readiness(report: Mapping[str, Any], result: ValidationResult) -> None:
+    _validate_non_null_editor_visual_runner_readiness(report, result)
+    if report.get("non_null_editor_desktop_rhi_readiness_attempted") is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Non-null Editor desktop/RHI readiness diagnostic must record attempted=true.",
+        )
+    if report.get("non_null_editor_desktop_rhi_readiness_completed") is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Non-null Editor desktop/RHI readiness diagnostic must record completed=true.",
+        )
+    if report.get("non_null_editor_desktop_rhi_readiness_source_validation_verified") is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Non-null Editor desktop/RHI readiness requires source validation.",
+        )
+    for field in (
+        "visible_desktop_session_check_attempted",
+        "gpu_or_driver_readiness_check_attempted",
+        "rhi_readiness_check_attempted",
+    ):
+        if report.get(field) is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Desktop/RHI readiness requires {field}=true.")
+    for field in (
+        "visible_desktop_session_check_method",
+        "gpu_or_driver_readiness_check_method",
+        "rhi_readiness_check_method",
+        "visible_desktop_session_state",
+        "windows_session_type",
+    ):
+        if not str(report.get(field, "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Desktop/RHI readiness must record {field}.")
+    if not isinstance(report.get("gpu_adapter_summary"), list):
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Desktop/RHI readiness must record gpu_adapter_summary as a list.")
+    if report.get("rhi_fallback_considered") is not True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Desktop/RHI readiness must record rhi_fallback_considered=true.")
+
+    desktop_rhi_verified = report.get("non_null_editor_desktop_rhi_readiness_verified") is True
+    if desktop_rhi_verified:
+        for field, label in {
+            "visible_desktop_session_verified": "visible desktop/session readiness",
+            "gpu_or_driver_readiness_verified": "GPU/driver readiness",
+            "rhi_readiness_verified": "selected RHI readiness",
+            "editor_temp_visual_scene_contract_verified": "temp visual scene contract",
+            "editor_visual_material_capture_artifact_policy_verified": "capture artifact policy",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"non_null_editor_desktop_rhi_readiness_verified=true requires {field} ({label}).",
+                )
+    elif not str(report.get("non_null_editor_desktop_rhi_readiness_blocker", "")).strip():
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Unverified non-null Editor desktop/RHI readiness requires a precise typed blocker.",
+        )
+
+    if report.get("editor_visual_material_capture_requested") is True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Desktop/RHI readiness diagnostic must not request screenshot/frame capture.",
+        )
+    if report.get("editor_visual_material_capture_completed") is True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Desktop/RHI readiness diagnostic must not claim screenshot/frame capture completion.",
+        )
+    if report.get("visual_material_capture_readiness_verified") is True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Desktop/RHI readiness alone cannot verify visual/material capture readiness.",
+        )
+
+
 def _validate_direct_procprefab_content_assertions(
     report: Mapping[str, Any],
     semantics: Mapping[str, Any],
@@ -2407,12 +2492,34 @@ def _execute_source_only_editor_visual_runner_readiness(
 ) -> Dict[str, Any]:
     started_at = _utc_now()
     start_time = time.monotonic()
-    run_id = "non-null-editor-visual-runner-readiness-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    if diagnostic_mode == "non-null-editor-desktop-rhi-readiness":
+        run_slug = "non-null-editor-desktop-rhi-readiness"
+        report_filename = "non_null_editor_desktop_rhi_readiness_report.json"
+        evidence_report_id = "non-null-editor-desktop-rhi-readiness-report"
+        source_start_message = "Building source-only non-null Editor desktop/RHI readiness diagnostic."
+        source_finish_message = "Finalized source-only non-null Editor desktop/RHI readiness diagnostic."
+        level_strategy = "source_validated_desktop_rhi_readiness"
+        final_message = (
+            "Non-null Editor desktop/RHI readiness diagnostic is source-validated; "
+            "live non-null launch and screenshot capture were not attempted."
+        )
+    else:
+        run_slug = "non-null-editor-visual-runner-readiness"
+        report_filename = "non_null_editor_visual_runner_readiness_report.json"
+        evidence_report_id = "non-null-editor-visual-runner-readiness-report"
+        source_start_message = "Building source-only non-null Editor visual runner readiness/temp-scene contract."
+        source_finish_message = "Finalized source-only non-null Editor visual runner readiness/temp-scene contract."
+        level_strategy = "source_validated_visual_runner_contract"
+        final_message = (
+            "Non-null Editor visual runner readiness/temp-scene contract is source-validated; "
+            "live non-null launch and screenshot capture were not attempted."
+        )
+    run_id = run_slug + "-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     output_dir = artifact_root / run_id
     output_dir.mkdir(parents=True, exist_ok=True)
     stdout_path = output_dir / "stdout.txt"
     stderr_path = output_dir / "stderr.txt"
-    report_path = output_dir / "non_null_editor_visual_runner_readiness_report.json"
+    report_path = output_dir / report_filename
     template_path = output_dir / "editor_smoke_report.template.json"
     progress_path = progress_log or (output_dir / "progress.jsonl")
 
@@ -2464,7 +2571,7 @@ def _execute_source_only_editor_visual_runner_readiness(
         step="source_only_contract_start",
         status="started",
         started_monotonic=start_time,
-        message="Building source-only non-null Editor visual runner readiness/temp-scene contract.",
+        message=source_start_message,
         report_path=report_path,
     )
     template = _live_report_template(
@@ -2491,7 +2598,7 @@ def _execute_source_only_editor_visual_runner_readiness(
     template.update(
         {
             "status": "pass",
-            "level_strategy": "source_validated_visual_runner_contract",
+            "level_strategy": level_strategy,
             "live_editor_execution": False,
             "live_asset_processor_batch_execution": False,
             "exit_code": None,
@@ -2510,10 +2617,16 @@ def _execute_source_only_editor_visual_runner_readiness(
     try:
         from tools.o3de.editor_python import maxine_package_prefab_smoke as editor_python_smoke
 
-        contract_payload = editor_python_smoke._run_non_null_editor_visual_runner_readiness_checks(
-            template,
-            progress_log=progress_path,
-        )
+        if diagnostic_mode == "non-null-editor-desktop-rhi-readiness":
+            contract_payload = editor_python_smoke._run_non_null_editor_desktop_rhi_readiness_checks(
+                template,
+                progress_log=progress_path,
+            )
+        else:
+            contract_payload = editor_python_smoke._run_non_null_editor_visual_runner_readiness_checks(
+                template,
+                progress_log=progress_path,
+            )
     finally:
         for key, value in previous_env.items():
             if value is None:
@@ -2531,7 +2644,7 @@ def _execute_source_only_editor_visual_runner_readiness(
         step="source_only_contract_final_status",
         status="completed",
         started_monotonic=start_time,
-        message="Finalized source-only non-null Editor visual runner readiness/temp-scene contract.",
+        message=source_finish_message,
         report_path=report_path,
     )
     progress_markers = _load_progress_markers(progress_path)
@@ -2575,16 +2688,14 @@ def _execute_source_only_editor_visual_runner_readiness(
             "warnings": [],
             "messages": _unique(
                 list(contract_payload.get("messages", []))
-                + [
-                    "Non-null Editor visual runner readiness/temp-scene contract is source-validated; live non-null launch and screenshot capture were not attempted.",
-                ]
+                + [final_message]
             ),
         }
     )
     report["evidence_refs"] = _merge_evidence_refs(
         report.get("evidence_refs", []),
         [
-            {"id": "non-null-editor-visual-runner-readiness-report", "kind": "editor_smoke_report", "path": _repo_relative(report_path)},
+            {"id": evidence_report_id, "kind": "editor_smoke_report", "path": _repo_relative(report_path)},
             {"id": "editor-smoke-progress-log", "kind": "editor_smoke_progress_log", "path": _repo_relative(progress_path)},
             {"id": "apb-baseline", "kind": "asset_processor_batch_report", "path": _repo_relative(apb_baseline)},
         ],
@@ -3989,6 +4100,16 @@ def _parse_args() -> argparse.Namespace:
         help="Set the explicit gated marker for the non-null Editor visual runner readiness/temp-scene contract.",
     )
     parser.add_argument(
+        "--diagnose-non-null-editor-desktop-rhi-readiness",
+        action="store_true",
+        help="Build the source-only non-null Editor desktop/session/GPU/RHI readiness diagnostic.",
+    )
+    parser.add_argument(
+        "--enable-non-null-editor-desktop-rhi-readiness-fixture",
+        action="store_true",
+        help="Set the explicit gated marker for the non-null Editor desktop/session/GPU/RHI readiness diagnostic.",
+    )
+    parser.add_argument(
         "--editor-render-capture-rhi",
         choices=sorted(NON_NULL_RENDER_CAPTURE_RHIS),
         default=None,
@@ -4121,6 +4242,14 @@ def main() -> int:
         env_map["MAXINE_ENABLE_NON_NULL_EDITOR_VISUAL_RUNNER_READINESS"] = "1"
     if args.enable_non_null_editor_visual_runner_readiness_fixture:
         env_map["MAXINE_ALLOW_NON_NULL_EDITOR_VISUAL_RUNNER_READINESS"] = "1"
+    if (
+        args.diagnose_non_null_editor_desktop_rhi_readiness
+        or args.enable_non_null_editor_desktop_rhi_readiness_fixture
+    ):
+        diagnostic_mode = "non-null-editor-desktop-rhi-readiness"
+        env_map["MAXINE_ENABLE_NON_NULL_EDITOR_DESKTOP_RHI_READINESS"] = "1"
+    if args.enable_non_null_editor_desktop_rhi_readiness_fixture:
+        env_map["MAXINE_ALLOW_NON_NULL_EDITOR_DESKTOP_RHI_READINESS"] = "1"
     if args.editor_render_capture_rhi:
         env_map["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = args.editor_render_capture_rhi
     result = run_editor_smoke_corpus(
