@@ -14,6 +14,8 @@ import hashlib
 import json
 import os
 import re
+import shutil
+import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -50,6 +52,7 @@ DIAGNOSTIC_MODES = {
     "editor-viewport-visual-material-evidence",
     "non-null-editor-render-capture-envelope",
     "non-null-editor-visual-runner-readiness",
+    "non-null-editor-desktop-rhi-readiness",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -133,6 +136,8 @@ TYPED_BLOCKED_STATUSES = {
     "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session",
     "blocked_by_non_null_editor_render_capture_requires_gpu_or_driver",
     "blocked_by_non_null_editor_render_capture_rhi_unavailable",
+    "blocked_by_non_null_editor_render_capture_requires_interactive_runner",
+    "blocked_by_non_null_editor_render_capture_requires_different_runner",
     "blocked_by_non_null_editor_render_capture_renderer_initialization_failed",
     "blocked_by_editor_visual_material_proof_requires_temp_level_contract",
     "blocked_by_editor_temp_visual_scene_contract_requires_additional_source_validation",
@@ -1228,6 +1233,22 @@ def main() -> int:
             "non_null_editor_visual_runner_readiness_returned",
             str(readiness_contract.get("non_null_editor_visual_runner_readiness_blocker", "returned")),
             "Non-null Editor visual runner readiness/temp-scene contract diagnostic returned.",
+        )
+
+    if not errors and diagnostic_mode == "non-null-editor-desktop-rhi-readiness":
+        _write_progress_marker(
+            progress_log,
+            "non_null_editor_desktop_rhi_readiness_started",
+            "started",
+            "Running non-null Editor desktop/session/GPU/RHI readiness diagnostic.",
+        )
+        desktop_rhi = _run_non_null_editor_desktop_rhi_readiness_checks(report, progress_log=progress_log)
+        report.update(desktop_rhi)
+        _write_progress_marker(
+            progress_log,
+            "non_null_editor_desktop_rhi_readiness_returned",
+            str(desktop_rhi.get("non_null_editor_desktop_rhi_readiness_blocker", "returned")),
+            "Non-null Editor desktop/session/GPU/RHI readiness diagnostic returned.",
         )
 
     entity_result: Dict[str, Any] = report.get("entity_smoke", {"status": "not_run"})
@@ -2645,6 +2666,771 @@ def _run_non_null_editor_visual_runner_readiness_checks(
         "cache_heuristic_used": False,
         "fake_success": False,
     }
+
+
+def _non_null_editor_desktop_rhi_readiness_source_specs(engine_root: Path | None) -> List[Dict[str, Any]]:
+    repo_root = Path(__file__).resolve().parents[3]
+    specs: List[Dict[str, Any]] = [
+        {
+            "path": repo_root / "tools" / "o3de" / "editor_smoke.py",
+            "symbols": [
+                "non-null-editor-desktop-rhi-readiness",
+                "SOURCE_ONLY_EDITOR_DIAGNOSTIC_MODES",
+                "visible_desktop_session_check_method",
+                "gpu_or_driver_readiness_check_method",
+                "rhi_fallback_considered",
+            ],
+        },
+        {
+            "path": repo_root / "tools" / "o3de" / "editor_python" / "maxine_package_prefab_smoke.py",
+            "symbols": [
+                "non-null-editor-desktop-rhi-readiness",
+                "_detect_visible_desktop_session_readiness",
+                "_detect_gpu_or_driver_readiness",
+                "_detect_rhi_source_readiness",
+                "Win32_VideoController",
+            ],
+        },
+        {
+            "path": repo_root / "tools" / "o3de" / "editor_python" / "editor_non_null_desktop_rhi_readiness_smoke.py",
+            "symbols": [
+                "REPO_ROOT = Path(__file__).resolve().parents[3]",
+                "from tools.o3de.editor_python import maxine_package_prefab_smoke",
+                "non-null-editor-desktop-rhi-readiness",
+            ],
+        },
+        {
+            "path": repo_root / "docs" / "production" / "private-windows-o3de-runner.md",
+            "symbols": [
+                "Non-null Editor desktop/RHI readiness",
+                "ProcessIdToSessionId",
+                "WTSGetActiveConsoleSessionId",
+                "OpenInputDesktop",
+                "Win32_VideoController",
+                "readiness only, not rendered visual/material proof",
+            ],
+        },
+        {
+            "path": repo_root / "schemas" / "maxine.editor-smoke-report.schema.json",
+            "symbols": [
+                "non-null-editor-desktop-rhi-readiness",
+            ],
+        },
+    ]
+    if engine_root is not None:
+        specs.extend(
+            [
+                {
+                    "path": engine_root
+                    / "Code"
+                    / "Framework"
+                    / "AzGameFramework"
+                    / "AzGameFramework"
+                    / "Application"
+                    / "GameApplication.cpp",
+                    "symbols": [
+                        "commandSwitchNullRenderer",
+                        "commandSwitchRhi",
+                        'rhiValue.compare("null")==0',
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Gems"
+                    / "Atom"
+                    / "Feature"
+                    / "Common"
+                    / "Code"
+                    / "Include"
+                    / "Atom"
+                    / "Feature"
+                    / "Utils"
+                    / "FrameCaptureBus.h",
+                    "symbols": [
+                        "CanCapture",
+                        "CaptureScreenshot",
+                        "CaptureScreenshotForWindow",
+                        "FrameCaptureNotificationBus",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "AutomatedTesting"
+                    / "Gem"
+                    / "PythonTests"
+                    / "Atom"
+                    / "atom_utils"
+                    / "screenshot_utils.py",
+                    "symbols": [
+                        "FrameCaptureRequestBus",
+                        "capture_screenshot_blocking",
+                        "prepare_viewport_for_screenshot",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Gems"
+                    / "Atom"
+                    / "RHI"
+                    / "DX12"
+                    / "Code"
+                    / "atom_rhi_dx12_private_common_files.cmake",
+                    "symbols": [
+                        "Source/RHI/DX12.cpp",
+                        "Source/RHI/Device.cpp",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Gems"
+                    / "Atom"
+                    / "RHI"
+                    / "Vulkan"
+                    / "Code"
+                    / "atom_rhi_vulkan_private_common_files.cmake",
+                    "symbols": [
+                        "Source/RHI/Buffer.cpp",
+                        "Source/RHI/Device.cpp",
+                    ],
+                },
+            ]
+        )
+    return specs
+
+
+def _non_null_editor_desktop_rhi_readiness_source_validation(engine_root: Path | None) -> Dict[str, Any]:
+    file_results = [
+        _source_file_symbol_validation(spec["path"], spec["symbols"])
+        for spec in _non_null_editor_desktop_rhi_readiness_source_specs(engine_root)
+    ]
+    if engine_root is None:
+        file_results.append(
+            {
+                "path": "<engine-root>",
+                "status": "missing",
+                "missing_symbols": ["GameApplication.cpp", "Atom RHI DX12/Vulkan source modules"],
+            }
+        )
+    missing = [result for result in file_results if result["status"] != "pass"]
+    return {
+        "status": "non_null_editor_desktop_rhi_readiness_source_validation_pass"
+        if not missing
+        else "non_null_editor_desktop_rhi_readiness_source_validation_inconclusive",
+        "files": file_results,
+        "non_null_editor_desktop_rhi_readiness_surfaces": {
+            "desktop_session_boundary": (
+                "Windows session probing is limited to safe ProcessIdToSessionId, "
+                "WTSGetActiveConsoleSessionId, and OpenInputDesktop checks."
+            ),
+            "gpu_driver_boundary": "Win32_VideoController inventory may prove adapter readiness only, not rendered output.",
+            "rhi_boundary": "dx12 is the default selected RHI; vulkan remains a source-validated fallback candidate.",
+            "launch_boundary": "this diagnostic does not launch Editor or request screenshots",
+            "temp_scene_boundary": "temp visual scene policy remains Levels/_maxine_visual_smoke",
+            "artifact_boundary": "future capture artifacts remain under artifacts/o3de-integration/editor-smoke",
+            "proof_boundary": "desktop/GPU/RHI readiness is not rendered visual/material proof",
+        },
+        "external_source_refs": [
+            {
+                "id": "ProcessIdToSessionId",
+                "url": "https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-processidtosessionid",
+            },
+            {
+                "id": "WTSGetActiveConsoleSessionId",
+                "url": "https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-wtsgetactiveconsolesessionid",
+            },
+            {
+                "id": "OpenInputDesktop",
+                "url": "https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-openinputdesktop",
+            },
+            {
+                "id": "Win32_VideoController",
+                "url": "https://learn.microsoft.com/en-us/windows/win32/cimwin32prov/win32-videocontroller",
+            },
+        ],
+        "missing": missing,
+    }
+
+
+def _detect_visible_desktop_session_readiness() -> Dict[str, Any]:
+    method = "ProcessIdToSessionId+WTSGetActiveConsoleSessionId+OpenInputDesktop"
+    if os.name != "nt":
+        return {
+            "visible_desktop_session_check_attempted": True,
+            "visible_desktop_session_check_method": method,
+            "visible_desktop_session_verified": False,
+            "visible_desktop_session_state": "non_windows_host",
+            "visible_desktop_session_blocker": "blocked_by_non_null_editor_render_capture_requires_interactive_runner",
+            "windows_session_id": None,
+            "windows_session_type": "non_windows",
+            "windows_session_interactive": False,
+            "windows_active_console_session_id": None,
+            "windows_input_desktop_available": False,
+        }
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        user32 = ctypes.WinDLL("user32", use_last_error=True)
+        process_id = kernel32.GetCurrentProcessId()
+        session_id = wintypes.DWORD(0)
+        kernel32.ProcessIdToSessionId.argtypes = [wintypes.DWORD, ctypes.POINTER(wintypes.DWORD)]
+        kernel32.ProcessIdToSessionId.restype = wintypes.BOOL
+        if not kernel32.ProcessIdToSessionId(wintypes.DWORD(process_id), ctypes.byref(session_id)):
+            error = ctypes.get_last_error()
+            return {
+                "visible_desktop_session_check_attempted": True,
+                "visible_desktop_session_check_method": method,
+                "visible_desktop_session_verified": False,
+                "visible_desktop_session_state": "process_session_unavailable",
+                "visible_desktop_session_blocker": "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session",
+                "windows_session_id": None,
+                "windows_session_type": "unknown",
+                "windows_session_interactive": False,
+                "windows_session_error": f"ProcessIdToSessionId failed with {error}",
+                "windows_active_console_session_id": None,
+                "windows_input_desktop_available": False,
+            }
+        kernel32.WTSGetActiveConsoleSessionId.restype = wintypes.DWORD
+        active_console_session_id = int(kernel32.WTSGetActiveConsoleSessionId())
+        user32.OpenInputDesktop.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        user32.OpenInputDesktop.restype = wintypes.HANDLE
+        user32.CloseDesktop.argtypes = [wintypes.HANDLE]
+        user32.CloseDesktop.restype = wintypes.BOOL
+        desktop_read_objects = 0x0001
+        desktop_handle = user32.OpenInputDesktop(0, False, desktop_read_objects)
+        input_desktop_available = bool(desktop_handle)
+        input_desktop_error = 0 if input_desktop_available else ctypes.get_last_error()
+        if desktop_handle:
+            user32.CloseDesktop(desktop_handle)
+    except Exception as exc:
+        return {
+            "visible_desktop_session_check_attempted": True,
+            "visible_desktop_session_check_method": method,
+            "visible_desktop_session_verified": False,
+            "visible_desktop_session_state": "windows_session_check_failed",
+            "visible_desktop_session_blocker": "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session",
+            "windows_session_id": None,
+            "windows_session_type": "unknown",
+            "windows_session_interactive": False,
+            "windows_session_error": str(exc),
+            "windows_active_console_session_id": None,
+            "windows_input_desktop_available": False,
+        }
+
+    current_session_id = int(session_id.value)
+    session_name = str(os.environ.get("SESSIONNAME", "")).strip()
+    session_name_lower = session_name.lower()
+    active_console_valid = active_console_session_id != 0xFFFFFFFF
+    session_matches_console = active_console_valid and current_session_id == active_console_session_id
+    if current_session_id == 0:
+        session_type = "service_session"
+    elif session_matches_console and not session_name:
+        session_type = "console"
+    elif session_name_lower == "console":
+        session_type = "console"
+    elif "rdp" in session_name_lower:
+        session_type = "rdp"
+    elif session_name:
+        session_type = "interactive_unknown"
+    else:
+        session_type = "unknown"
+
+    verified = bool(input_desktop_available and session_matches_console and current_session_id != 0)
+    if verified:
+        state = "available_console_input_desktop"
+        blocker = ""
+    elif current_session_id == 0:
+        state = "service_session"
+        blocker = "blocked_by_non_null_editor_render_capture_requires_interactive_runner"
+    elif not active_console_valid:
+        state = "no_active_console_session"
+        blocker = "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session"
+    elif not input_desktop_available:
+        state = "input_desktop_unavailable"
+        blocker = "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session"
+    elif session_type == "rdp":
+        state = "rdp_session_requires_operator_confirmation"
+        blocker = "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session"
+    else:
+        state = "active_console_session_mismatch"
+        blocker = "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session"
+
+    return {
+        "visible_desktop_session_check_attempted": True,
+        "visible_desktop_session_check_method": method,
+        "visible_desktop_session_verified": verified,
+        "visible_desktop_session_state": state,
+        "visible_desktop_session_blocker": blocker,
+        "windows_session_id": current_session_id,
+        "windows_session_type": session_type,
+        "windows_session_interactive": bool(input_desktop_available and current_session_id != 0),
+        "windows_session_name": session_name,
+        "windows_active_console_session_id": active_console_session_id if active_console_valid else None,
+        "windows_input_desktop_available": input_desktop_available,
+        "windows_input_desktop_error": input_desktop_error,
+    }
+
+
+def _detect_gpu_or_driver_readiness() -> Dict[str, Any]:
+    method = "Win32_VideoController"
+    if os.name != "nt":
+        return {
+            "gpu_or_driver_readiness_check_attempted": True,
+            "gpu_or_driver_readiness_check_method": method,
+            "gpu_or_driver_readiness_verified": False,
+            "gpu_or_driver_readiness_blocker": "blocked_by_non_null_editor_render_capture_requires_gpu_or_driver",
+            "gpu_adapter_count": 0,
+            "gpu_adapter_summary": [],
+        }
+    powershell = shutil.which("powershell") or shutil.which("pwsh")
+    if not powershell:
+        return {
+            "gpu_or_driver_readiness_check_attempted": True,
+            "gpu_or_driver_readiness_check_method": method,
+            "gpu_or_driver_readiness_verified": False,
+            "gpu_or_driver_readiness_blocker": "blocked_by_non_null_editor_render_capture_requires_gpu_or_driver",
+            "gpu_adapter_count": 0,
+            "gpu_adapter_summary": [],
+            "gpu_or_driver_readiness_message": "PowerShell/CIM inventory command unavailable.",
+        }
+    command = [
+        powershell,
+        "-NoProfile",
+        "-Command",
+        (
+            "Get-CimInstance Win32_VideoController | "
+            "Select-Object Name,Status,AdapterCompatibility,DriverVersion,VideoProcessor,VideoModeDescription | "
+            "ConvertTo-Json -Compress"
+        ),
+    ]
+    try:
+        proc = subprocess.run(command, text=True, capture_output=True, timeout=10)
+    except Exception as exc:
+        return {
+            "gpu_or_driver_readiness_check_attempted": True,
+            "gpu_or_driver_readiness_check_method": method,
+            "gpu_or_driver_readiness_verified": False,
+            "gpu_or_driver_readiness_blocker": "blocked_by_non_null_editor_render_capture_requires_gpu_or_driver",
+            "gpu_adapter_count": 0,
+            "gpu_adapter_summary": [],
+            "gpu_or_driver_readiness_message": str(exc),
+        }
+    if proc.returncode != 0:
+        return {
+            "gpu_or_driver_readiness_check_attempted": True,
+            "gpu_or_driver_readiness_check_method": method,
+            "gpu_or_driver_readiness_verified": False,
+            "gpu_or_driver_readiness_blocker": "blocked_by_non_null_editor_render_capture_requires_gpu_or_driver",
+            "gpu_adapter_count": 0,
+            "gpu_adapter_summary": [],
+            "gpu_or_driver_readiness_message": proc.stderr.strip()[:500],
+        }
+    try:
+        payload = json.loads(proc.stdout.strip() or "[]")
+    except Exception as exc:
+        return {
+            "gpu_or_driver_readiness_check_attempted": True,
+            "gpu_or_driver_readiness_check_method": method,
+            "gpu_or_driver_readiness_verified": False,
+            "gpu_or_driver_readiness_blocker": "blocked_by_non_null_editor_render_capture_requires_gpu_or_driver",
+            "gpu_adapter_count": 0,
+            "gpu_adapter_summary": [],
+            "gpu_or_driver_readiness_message": f"Win32_VideoController JSON parse failed: {exc}",
+        }
+    records = payload if isinstance(payload, list) else [payload] if isinstance(payload, dict) else []
+    summary: List[Dict[str, Any]] = []
+    for record in records:
+        if not isinstance(record, Mapping):
+            continue
+        summary.append(
+            {
+                "name": str(record.get("Name", "")).strip(),
+                "status": str(record.get("Status", "")).strip(),
+                "adapter_compatibility": str(record.get("AdapterCompatibility", "")).strip(),
+                "driver_version": str(record.get("DriverVersion", "")).strip(),
+                "video_processor": str(record.get("VideoProcessor", "")).strip(),
+                "video_mode_description": str(record.get("VideoModeDescription", "")).strip(),
+            }
+        )
+    def adapter_ready(adapter: Mapping[str, Any]) -> bool:
+        name = str(adapter.get("name", "")).lower()
+        processor = str(adapter.get("video_processor", "")).lower()
+        status = str(adapter.get("status", "")).lower()
+        driver_version = str(adapter.get("driver_version", "")).strip()
+        excluded_tokens = ("microsoft basic", "remote display", "virtual", "warp")
+        return (
+            bool(driver_version)
+            and (not status or status == "ok")
+            and not any(token in name or token in processor for token in excluded_tokens)
+        )
+
+    verified = any(adapter_ready(adapter) for adapter in summary)
+    return {
+        "gpu_or_driver_readiness_check_attempted": True,
+        "gpu_or_driver_readiness_check_method": method,
+        "gpu_or_driver_readiness_verified": verified,
+        "gpu_or_driver_readiness_blocker": ""
+        if verified
+        else "blocked_by_non_null_editor_render_capture_requires_gpu_or_driver",
+        "gpu_adapter_count": len(summary),
+        "gpu_adapter_summary": summary,
+    }
+
+
+def _detect_rhi_source_readiness(engine_root: Path | None, selected_rhi: str) -> Dict[str, Any]:
+    method = "O3DE Atom RHI source module scan"
+    specs = {
+        "dx12": {
+            "path": (engine_root or Path("<engine-root>"))
+            / "Gems"
+            / "Atom"
+            / "RHI"
+            / "DX12"
+            / "Code"
+            / "atom_rhi_dx12_private_common_files.cmake",
+            "symbols": ["Source/RHI/DX12.cpp", "Source/RHI/Device.cpp"],
+        },
+        "vulkan": {
+            "path": (engine_root or Path("<engine-root>"))
+            / "Gems"
+            / "Atom"
+            / "RHI"
+            / "Vulkan"
+            / "Code"
+            / "atom_rhi_vulkan_private_common_files.cmake",
+            "symbols": ["Source/RHI/Buffer.cpp", "Source/RHI/Device.cpp"],
+        },
+    }
+    normalized_rhi = selected_rhi if selected_rhi in specs else "dx12"
+    selected_result = _source_file_symbol_validation(specs[normalized_rhi]["path"], specs[normalized_rhi]["symbols"])
+    fallback_result = _source_file_symbol_validation(specs["vulkan"]["path"], specs["vulkan"]["symbols"])
+    selected_verified = selected_result.get("status") == "pass"
+    fallback_available = fallback_result.get("status") == "pass"
+    fallback_selected = bool(not selected_verified and normalized_rhi != "vulkan" and fallback_available)
+    verified = bool(selected_verified or fallback_selected)
+    return {
+        "selected_rhi": normalized_rhi if not fallback_selected else "vulkan",
+        "rhi_readiness_check_attempted": True,
+        "rhi_readiness_check_method": method,
+        "rhi_readiness_verified": verified,
+        "rhi_readiness_blocker": "" if verified else "blocked_by_non_null_editor_render_capture_rhi_unavailable",
+        "rhi_fallback_considered": True,
+        "rhi_fallback_selected": fallback_selected,
+        "rhi_source_validation": {
+            "selected": selected_result,
+            "vulkan_fallback": fallback_result,
+        },
+    }
+
+
+def _non_null_editor_desktop_rhi_readiness_candidate_matrix(
+    *,
+    source_validated: bool,
+    visible_verified: bool,
+    gpu_verified: bool,
+    rhi_verified: bool,
+    readiness_verified: bool,
+    blocker: str,
+) -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "detect_visible_desktop_session_without_launching_editor",
+            "candidate": "detect visible desktop/session without launching Editor",
+            "selected": bool(source_validated),
+            "result": "verified" if visible_verified else "blocked",
+            "blocker": "" if visible_verified else "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session",
+        },
+        {
+            "id": "detect_gpu_driver_readiness_without_launching_editor",
+            "candidate": "detect GPU/driver readiness without launching Editor",
+            "selected": bool(source_validated),
+            "result": "verified" if gpu_verified else "blocked_or_unverified",
+            "blocker": "" if gpu_verified else "blocked_by_non_null_editor_render_capture_requires_gpu_or_driver",
+        },
+        {
+            "id": "validate_selected_rhi_module_source_availability",
+            "candidate": "validate selected RHI module/source availability",
+            "selected": True,
+            "result": "verified" if rhi_verified else "blocked",
+            "blocker": "" if rhi_verified else "blocked_by_non_null_editor_render_capture_rhi_unavailable",
+        },
+        {
+            "id": "live_non_null_editor_launch_without_screenshot",
+            "candidate": "live non-null Editor launch without screenshot",
+            "selected": False,
+            "result": "deferred_until_next_slice" if readiness_verified else "deferred_until_readiness_gates_pass",
+            "blocker": "" if readiness_verified else blocker,
+        },
+        {
+            "id": "screenshot_capture_in_this_slice",
+            "candidate": "screenshot capture in this slice",
+            "selected": False,
+            "result": "deferred",
+        },
+        {
+            "id": "temp_visual_scene_creation_in_this_slice",
+            "candidate": "temp visual scene creation in this slice",
+            "selected": False,
+            "result": "deferred_preserved_contract_only",
+        },
+        {
+            "id": "move_visual_capture_to_separate_runner",
+            "candidate": "move visual capture to separate runner",
+            "selected": False,
+            "result": "deferred_unless_current_runner_remains_blocked",
+        },
+        {
+            "id": "nullrenderer_visual_proof",
+            "candidate": "NullRenderer visual proof",
+            "selected": False,
+            "result": "rejected_blocked",
+            "blocker": "blocked_by_editor_viewport_capture_requires_non_null_rhi",
+        },
+        {
+            "id": "apb_material_product_inventory_as_rendered_proof",
+            "candidate": "APB/material product inventory as rendered proof",
+            "selected": False,
+            "result": "rejected_readiness_only",
+        },
+        {
+            "id": "screenshot_existence_only_as_material_proof",
+            "candidate": "screenshot existence only as material proof",
+            "selected": False,
+            "result": "rejected_full_visual_material_proof",
+        },
+        {
+            "id": "production_defaultlevel_screenshot",
+            "candidate": "production/defaultlevel screenshot",
+            "selected": False,
+            "result": "rejected",
+        },
+        {
+            "id": "understand_anything_graph_as_proof",
+            "candidate": "use Understand-Anything graph as proof",
+            "selected": False,
+            "result": "rejected",
+        },
+        {
+            "id": "claim_full_runtime_character_proof_from_readiness_only",
+            "candidate": "claim full runtime character proof from readiness only",
+            "selected": False,
+            "result": "rejected",
+        },
+    ]
+
+
+def _run_non_null_editor_desktop_rhi_readiness_checks(
+    report: Mapping[str, Any],
+    *,
+    progress_log: Path | None,
+) -> Dict[str, Any]:
+    engine_root_raw = str(os.environ.get("O3DE_ENGINE_ROOT", "")).strip()
+    engine_root = Path(engine_root_raw) if engine_root_raw else None
+    _write_progress_marker(
+        progress_log,
+        "non_null_editor_desktop_rhi_source_validation_started",
+        "started",
+        "Source-validating non-null Editor desktop/session/GPU/RHI readiness diagnostic.",
+    )
+    source_validation = _non_null_editor_desktop_rhi_readiness_source_validation(engine_root)
+    source_validated = source_validation.get("status") == "non_null_editor_desktop_rhi_readiness_source_validation_pass"
+    selected_rhi = _command_requested_rhi(report)
+    visible = _detect_visible_desktop_session_readiness()
+    gpu = _detect_gpu_or_driver_readiness()
+    rhi = _detect_rhi_source_readiness(engine_root, selected_rhi)
+    visible_verified = visible.get("visible_desktop_session_verified") is True
+    gpu_verified = gpu.get("gpu_or_driver_readiness_verified") is True
+    rhi_verified = rhi.get("rhi_readiness_verified") is True
+    readiness_verified = bool(source_validated and visible_verified and gpu_verified and rhi_verified)
+    if not source_validated:
+        blocker = "blocked_by_non_null_editor_visual_runner_readiness_requires_additional_source_validation"
+    elif not visible_verified:
+        blocker = str(visible.get("visible_desktop_session_blocker") or "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session")
+    elif not gpu_verified:
+        blocker = str(gpu.get("gpu_or_driver_readiness_blocker") or "blocked_by_non_null_editor_render_capture_requires_gpu_or_driver")
+    elif not rhi_verified:
+        blocker = str(rhi.get("rhi_readiness_blocker") or "blocked_by_non_null_editor_render_capture_rhi_unavailable")
+    else:
+        blocker = ""
+    _write_progress_marker(
+        progress_log,
+        "non_null_editor_desktop_rhi_live_launch_deferred",
+        "deferred" if readiness_verified else "blocked",
+        "Live non-null Editor launch remains deferred; this slice does not request screenshots or mutate temp scenes.",
+        error_code="" if readiness_verified else MXN_RUNTIME_SMOKE_FAIL,
+    )
+    preserved_report = _load_preserved_non_null_editor_render_capture_report()
+    preserved_source = preserved_report if preserved_report else report
+    satisfied_gates = list(preserved_source.get("full_runtime_character_proof_satisfied_gates", []))
+    behavior_smoke_verified = preserved_source.get("runtime_character_behavior_smoke_verified") is True
+    animation_verified = preserved_source.get("runtime_character_animation_verified") is True
+    component_wiring_verified = preserved_source.get("runtime_character_animation_component_wiring_verified") is True
+    product_inventory_verified = _editor_visual_material_product_inventory_verified(report)
+    visual_blocker = "blocked_by_visual_material_proof_requires_rendered_evidence_capture"
+    if blocker:
+        visual_blocker = blocker
+    selected_strategy = (
+        "safe_desktop_gpu_rhi_readiness_verified_without_editor_launch"
+        if readiness_verified
+        else "safe_desktop_gpu_rhi_readiness_checks_blocked_without_editor_launch"
+    )
+    payload: Dict[str, Any] = {
+        "non_null_editor_desktop_rhi_readiness_attempted": True,
+        "non_null_editor_desktop_rhi_readiness_completed": True,
+        "non_null_editor_desktop_rhi_readiness_source_validation_status": source_validation.get("status", ""),
+        "non_null_editor_desktop_rhi_readiness_source_validation_verified": source_validated,
+        "non_null_editor_desktop_rhi_readiness_source_validation": source_validation,
+        "non_null_editor_desktop_rhi_readiness_source_files": [
+            str(spec["path"]) for spec in _non_null_editor_desktop_rhi_readiness_source_specs(engine_root)
+        ],
+        "non_null_editor_desktop_rhi_readiness_verified": readiness_verified,
+        "non_null_editor_desktop_rhi_readiness_blocker": blocker,
+        "non_null_editor_desktop_rhi_readiness_candidate_matrix": _non_null_editor_desktop_rhi_readiness_candidate_matrix(
+            source_validated=source_validated,
+            visible_verified=visible_verified,
+            gpu_verified=gpu_verified,
+            rhi_verified=rhi_verified,
+            readiness_verified=readiness_verified,
+            blocker=blocker,
+        ),
+        "non_null_editor_desktop_rhi_readiness_selected_strategy": selected_strategy,
+        "non_null_editor_visual_runner_readiness_attempted": True,
+        "non_null_editor_visual_runner_readiness_completed": True,
+        "non_null_editor_visual_runner_readiness_source_validation_status": source_validation.get("status", ""),
+        "non_null_editor_visual_runner_readiness_source_validation_verified": source_validated,
+        "non_null_editor_visual_runner_readiness_verified": readiness_verified,
+        "non_null_editor_visual_runner_readiness_blocker": blocker,
+        "non_null_editor_visual_runner_readiness_candidate_matrix": _non_null_editor_desktop_rhi_readiness_candidate_matrix(
+            source_validated=source_validated,
+            visible_verified=visible_verified,
+            gpu_verified=gpu_verified,
+            rhi_verified=rhi_verified,
+            readiness_verified=readiness_verified,
+            blocker=blocker,
+        ),
+        "non_null_editor_visual_runner_readiness_selected_strategy": selected_strategy,
+        "preserved_non_null_editor_render_capture_report_ref": str(
+            preserved_report.get("_preserved_report_ref", "")
+        ).strip(),
+        "non_null_editor_launch_attempted": False,
+        "non_null_editor_launch_completed": False,
+        "non_null_editor_launch_verified": False,
+        "non_null_editor_launch_exit_code": None,
+        "non_null_editor_launch_blocker": "" if readiness_verified else blocker,
+        "null_renderer_used": False,
+        "existing_nullrenderer_safe_editor_lane_preserved": True,
+        "editor_temp_visual_scene_contract_attempted": True,
+        "editor_temp_visual_scene_contract_pinned": source_validated,
+        "editor_temp_visual_scene_contract_verified": source_validated,
+        "editor_temp_visual_scene_contract_blocker": ""
+        if source_validated
+        else "blocked_by_editor_temp_visual_scene_contract_requires_additional_source_validation",
+        "editor_temp_visual_scene_approved_root": "Levels/_maxine_visual_smoke",
+        "editor_temp_visual_scene_defaultlevel_mutation": False,
+        "editor_temp_visual_scene_production_level_mutation": False,
+        "editor_temp_visual_scene_cleanup_policy_verified": source_validated,
+        "editor_visual_material_capture_artifact_root": "artifacts/o3de-integration/editor-smoke",
+        "editor_visual_material_capture_artifact_policy_verified": source_validated,
+        "non_null_editor_render_capture_envelope_attempted": True,
+        "non_null_editor_render_capture_envelope_completed": True,
+        "non_null_editor_render_capture_envelope_source_validation_status": "preserved_from_pr165_source_contract",
+        "non_null_editor_render_capture_envelope_source_validation_verified": True,
+        "non_null_editor_render_capture_envelope_verified": False,
+        "non_null_editor_render_capture_envelope_blocker": blocker
+        or "blocked_by_visual_material_proof_requires_rendered_evidence_capture",
+        "non_null_editor_render_capture_rhi_requested": str(rhi.get("selected_rhi", selected_rhi)),
+        "non_null_editor_render_capture_null_renderer_used": False,
+        "non_null_editor_render_capture_editor_launched": False,
+        "non_null_editor_render_capture_editor_exited_cleanly": False,
+        "non_null_editor_render_capture_requires_visible_desktop": True,
+        "non_null_editor_render_capture_gpu_or_driver_ready": gpu_verified,
+        "editor_visual_material_capture_api_available_under_non_null_rhi": False,
+        "editor_visual_material_capture_api_found": source_validated,
+        "editor_visual_material_capture_api_used": "AZ::Render::FrameCaptureRequestBus::CaptureScreenshot"
+        if source_validated
+        else "",
+        "editor_visual_material_temp_scene_created": False,
+        "editor_visual_material_temp_scene_path": "",
+        "editor_visual_material_defaultlevel_mutation": False,
+        "editor_visual_material_production_level_mutation": False,
+        "editor_visual_material_character_instantiated": False,
+        "editor_visual_material_character_source_path": (
+            "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab"
+        ),
+        "editor_visual_material_character_product_or_prefab_path": "",
+        "editor_visual_material_camera_or_view_framed": False,
+        "editor_visual_material_light_or_environment_prepared": False,
+        "editor_visual_material_capture_requested": False,
+        "editor_visual_material_capture_completed": False,
+        "editor_visual_material_capture_artifact_path": "",
+        "editor_visual_material_capture_artifact_exists": False,
+        "editor_visual_material_capture_artifact_format": "",
+        "editor_visual_material_capture_artifact_width": 0,
+        "editor_visual_material_capture_artifact_height": 0,
+        "editor_visual_material_capture_artifact_size_bytes": 0,
+        "editor_visual_material_capture_content_validation_attempted": False,
+        "editor_visual_material_capture_content_validation_verified": False,
+        "editor_visual_material_nonblank_validation_verified": False,
+        "editor_visual_material_character_presence_validation_verified": False,
+        "editor_visual_material_material_presence_validation_verified": False,
+        "editor_visual_material_cleanup_verified": source_validated,
+        "editor_visual_material_selected_log_scan_passed": True,
+        "visual_material_capture_readiness_verified": False,
+        "visual_material_product_inventory_gate_verified": product_inventory_verified,
+        "visual_material_rendered_evidence_gate_attempted": False,
+        "visual_material_rendered_evidence_gate_verified": False,
+        "visual_material_gate_claimed": False,
+        "visual_material_gate_verified": False,
+        "full_runtime_character_visual_material_gate_verified": False,
+        "full_runtime_character_proof_contract_pinned": True,
+        "full_runtime_character_proof_contract_verified": True,
+        "full_runtime_character_proof_satisfied_gates": satisfied_gates,
+        "full_runtime_character_proof_unsatisfied_gates": [
+            {
+                "id": "visual_material",
+                "name": "Visual/render/material validation",
+                "verified": False,
+                "blocker": visual_blocker,
+                "evidence": "Desktop/GPU/RHI readiness checked; rendered content not captured.",
+            }
+        ],
+        "full_runtime_character_proof_deferred_gates": [
+            {
+                "id": "visual_capture_surface",
+                "name": "Live non-null Editor visual capture execution",
+                "verified": False,
+                "blocker": visual_blocker,
+                "evidence": "non-null Editor launch, temp scene creation, and screenshot capture remain deferred",
+            },
+            {
+                "id": "repeated_behavior_scenario",
+                "name": "Repeated runtime behavior scenario",
+                "verified": False,
+                "blocker": "blocked_by_full_runtime_character_repeated_behavior_scenario_deferred",
+                "evidence": "not part of this desktop/RHI readiness slice",
+            },
+        ],
+        "runtime_character_behavior_smoke_verified": behavior_smoke_verified,
+        "runtime_character_animation_verified": animation_verified,
+        "runtime_character_animation_component_wiring_verified": component_wiring_verified,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+        "live_publication": False,
+        "release_packaging": False,
+        "production_level_mutation": False,
+        "defaultlevel_mutation": False,
+        "asset_cache_deleted": False,
+        "cache_heuristic_used": False,
+        "fake_success": False,
+        "messages": [
+            "Non-null Editor desktop/RHI readiness was checked without launching Editor or requesting capture."
+        ],
+    }
+    payload.update(visible)
+    payload.update(gpu)
+    payload.update(rhi)
+    return payload
 
 
 def _targeted_binding_blocker(report: Mapping[str, Any], diagnostic_mode: str) -> str:

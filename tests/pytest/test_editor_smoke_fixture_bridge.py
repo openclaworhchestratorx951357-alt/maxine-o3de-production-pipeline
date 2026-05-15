@@ -98,6 +98,82 @@ def _live_env(tmp_path: Path, *, allow_editor: bool = True) -> dict:
     return env
 
 
+def _write_non_null_desktop_rhi_source_files(engine: Path) -> None:
+    source_files = {
+        engine
+        / "Code"
+        / "Framework"
+        / "AzGameFramework"
+        / "AzGameFramework"
+        / "Application"
+        / "GameApplication.cpp": "\n".join(
+            [
+                "const char* commandSwitchNullRenderer = \"NullRenderer\";",
+                "const char* commandSwitchRhi = \"rhi\";",
+                'if (rhiValue.compare("null")==0) {}',
+            ]
+        ),
+        engine
+        / "Gems"
+        / "Atom"
+        / "Feature"
+        / "Common"
+        / "Code"
+        / "Include"
+        / "Atom"
+        / "Feature"
+        / "Utils"
+        / "FrameCaptureBus.h": "\n".join(
+            [
+                "class FrameCaptureNotificationBus {};",
+                "bool CanCapture();",
+                "void CaptureScreenshot();",
+                "void CaptureScreenshotForWindow();",
+            ]
+        ),
+        engine
+        / "AutomatedTesting"
+        / "Gem"
+        / "PythonTests"
+        / "Atom"
+        / "atom_utils"
+        / "screenshot_utils.py": "\n".join(
+            [
+                "FrameCaptureRequestBus = object()",
+                "def capture_screenshot_blocking(): pass",
+                "def prepare_viewport_for_screenshot(): pass",
+            ]
+        ),
+        engine
+        / "Gems"
+        / "Atom"
+        / "RHI"
+        / "DX12"
+        / "Code"
+        / "atom_rhi_dx12_private_common_files.cmake": "\n".join(
+            [
+                "Source/RHI/DX12.cpp",
+                "Source/RHI/Device.cpp",
+            ]
+        ),
+        engine
+        / "Gems"
+        / "Atom"
+        / "RHI"
+        / "Vulkan"
+        / "Code"
+        / "atom_rhi_vulkan_private_common_files.cmake": "\n".join(
+            [
+                "Source/RHI/Buffer.cpp",
+                "Source/RHI/Device.cpp",
+            ]
+        ),
+    }
+    for path, text in source_files.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text + "\n", encoding="utf-8")
+
+
 def _editor_viewport_visual_material_blocked_payload() -> dict:
     return {
         "mode": "local_editor_python",
@@ -485,6 +561,109 @@ def _non_null_visual_runner_readiness_contract_payload() -> dict:
             "full_runtime_character_visual_material_gate_verified": False,
             "runtime_character_proof_claimed": False,
             "runtime_character_proof_verified": False,
+        }
+    )
+    return payload
+
+
+def _non_null_desktop_rhi_readiness_contract_payload() -> dict:
+    payload = _non_null_visual_runner_readiness_contract_payload()
+    payload.update(
+        {
+            "diagnostic_mode": "non-null-editor-desktop-rhi-readiness",
+            "non_null_editor_desktop_rhi_readiness_attempted": True,
+            "non_null_editor_desktop_rhi_readiness_completed": True,
+            "non_null_editor_desktop_rhi_readiness_source_validation_status": (
+                "non_null_editor_desktop_rhi_readiness_source_validation_pass"
+            ),
+            "non_null_editor_desktop_rhi_readiness_source_validation_verified": True,
+            "non_null_editor_desktop_rhi_readiness_verified": False,
+            "non_null_editor_desktop_rhi_readiness_blocker": (
+                "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session"
+            ),
+            "non_null_editor_desktop_rhi_readiness_candidate_matrix": [
+                {
+                    "id": "detect_visible_desktop_session_without_launching_editor",
+                    "selected": True,
+                    "result": "selected_safe_check",
+                },
+                {
+                    "id": "detect_gpu_driver_readiness_without_launching_editor",
+                    "selected": True,
+                    "result": "selected_safe_check",
+                },
+                {
+                    "id": "validate_selected_rhi_module_source_availability",
+                    "selected": True,
+                    "result": "selected_source_check",
+                },
+                {
+                    "id": "live_non_null_editor_launch_without_screenshot",
+                    "selected": False,
+                    "result": "deferred_until_desktop_gpu_rhi_readiness_pass",
+                },
+                {
+                    "id": "screenshot_capture_in_this_slice",
+                    "selected": False,
+                    "result": "deferred",
+                },
+                {
+                    "id": "temp_visual_scene_creation_in_this_slice",
+                    "selected": False,
+                    "result": "deferred",
+                },
+                {
+                    "id": "move_visual_capture_to_separate_runner",
+                    "selected": False,
+                    "result": "deferred_unless_current_runner_blocks",
+                },
+                {
+                    "id": "nullrenderer_visual_proof",
+                    "selected": False,
+                    "result": "rejected_blocked",
+                },
+                {
+                    "id": "apb_material_product_inventory_as_rendered_proof",
+                    "selected": False,
+                    "result": "rejected_readiness_only",
+                },
+                {
+                    "id": "screenshot_existence_only_as_material_proof",
+                    "selected": False,
+                    "result": "rejected_full_visual_material_proof",
+                },
+                {
+                    "id": "production_defaultlevel_screenshot",
+                    "selected": False,
+                    "result": "rejected",
+                },
+                {
+                    "id": "understand_anything_graph_as_proof",
+                    "selected": False,
+                    "result": "rejected",
+                },
+                {
+                    "id": "claim_full_runtime_character_proof_from_readiness_only",
+                    "selected": False,
+                    "result": "rejected",
+                },
+            ],
+            "non_null_editor_desktop_rhi_readiness_selected_strategy": (
+                "safe_desktop_gpu_rhi_readiness_checks_without_editor_launch"
+            ),
+            "visible_desktop_session_check_method": (
+                "ProcessIdToSessionId+WTSGetActiveConsoleSessionId+OpenInputDesktop"
+            ),
+            "visible_desktop_session_state": "unknown_or_unverified",
+            "windows_session_id": None,
+            "windows_session_type": "unknown",
+            "windows_session_interactive": False,
+            "gpu_or_driver_readiness_check_method": "Win32_VideoController",
+            "gpu_adapter_count": 0,
+            "gpu_adapter_summary": [],
+            "rhi_readiness_check_method": "O3DE Atom RHI source module scan",
+            "rhi_fallback_considered": True,
+            "rhi_fallback_selected": False,
         }
     )
     return payload
@@ -4261,6 +4440,123 @@ def test_non_null_visual_runner_readiness_contract_does_not_verify_visual_gate()
     assert "visual_material_gate_verified" in " ".join(result.messages)
 
 
+def test_non_null_desktop_rhi_readiness_mode_runs_safe_checks_without_launching_editor(tmp_path):
+    env = _live_env(tmp_path)
+    _write_non_null_desktop_rhi_source_files(Path(env["O3DE_ENGINE_ROOT"]))
+
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        raise AssertionError("desktop/RHI readiness diagnostic must not launch Editor")
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=env,
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="non-null-editor-desktop-rhi-readiness",
+    )
+
+    schema_result = schema_validate(result, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(result, strict=True)
+
+    assert result["status"] == "pass"
+    assert result["diagnostic_mode"] == "non-null-editor-desktop-rhi-readiness"
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+    assert result["non_null_editor_desktop_rhi_readiness_attempted"] is True
+    assert result["non_null_editor_desktop_rhi_readiness_completed"] is True
+    assert result["non_null_editor_desktop_rhi_readiness_source_validation_verified"] is True
+    assert result["visible_desktop_session_check_attempted"] is True
+    assert result["visible_desktop_session_check_method"]
+    assert "visible_desktop_session_state" in result
+    assert "windows_session_type" in result
+    assert "windows_session_interactive" in result
+    assert result["gpu_or_driver_readiness_check_attempted"] is True
+    assert result["gpu_or_driver_readiness_check_method"]
+    assert "gpu_adapter_count" in result
+    assert isinstance(result["gpu_adapter_summary"], list)
+    assert result["rhi_readiness_check_attempted"] is True
+    assert result["rhi_readiness_check_method"]
+    assert result["rhi_readiness_verified"] is True
+    assert result["selected_rhi"] == "dx12"
+    assert result["rhi_fallback_considered"] is True
+    assert result["rhi_fallback_selected"] is False
+    assert result["non_null_editor_launch_attempted"] is False
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["editor_visual_material_capture_completed"] is False
+    assert result["visual_material_capture_readiness_verified"] is False
+    assert result["visual_material_rendered_evidence_gate_verified"] is False
+    assert result["visual_material_gate_verified"] is False
+    assert result["runtime_character_proof_verified"] is False
+
+
+def test_non_null_desktop_rhi_readiness_validation_requires_all_readiness_gates():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_non_null_desktop_rhi_readiness_contract_payload())
+    report.update(
+        {
+            "status": "pass",
+            "non_null_editor_desktop_rhi_readiness_verified": True,
+            "non_null_editor_desktop_rhi_readiness_blocker": "",
+            "visible_desktop_session_verified": True,
+            "gpu_or_driver_readiness_verified": False,
+            "rhi_readiness_verified": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+    assert "gpu_or_driver_readiness_verified" in " ".join(result.messages)
+
+
+def test_non_null_desktop_rhi_readiness_validation_rejects_launch_without_verified_readiness():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_non_null_desktop_rhi_readiness_contract_payload())
+    report.update(
+        {
+            "status": "pass",
+            "non_null_editor_launch_attempted": True,
+            "non_null_editor_launch_completed": True,
+            "non_null_editor_launch_verified": True,
+            "non_null_editor_launch_exit_code": 0,
+            "visible_desktop_session_verified": False,
+            "gpu_or_driver_readiness_verified": True,
+            "rhi_readiness_verified": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+    assert "non_null_editor_launch_attempted=true requires visible_desktop_session_verified=true" in " ".join(
+        result.messages
+    )
+
+
+def test_non_null_desktop_rhi_readiness_contract_does_not_verify_visual_gate():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_non_null_desktop_rhi_readiness_contract_payload())
+    report.update(
+        {
+            "status": "pass",
+            "visual_material_gate_claimed": True,
+            "visual_material_gate_verified": True,
+            "visual_material_rendered_evidence_gate_verified": True,
+            "full_runtime_character_visual_material_gate_verified": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+    assert "visual_material_gate_verified" in " ".join(result.messages)
+
+
 def test_editor_smoke_timeout_classifies_last_script_progress_marker(tmp_path):
     def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
         progress_path = Path(env["MAXINE_EDITOR_SMOKE_PROGRESS_LOG"])
@@ -4365,6 +4661,22 @@ def test_editor_python_bridge_script_is_integration_ready_not_executed():
 
 def test_non_null_visual_runner_wrapper_bootstraps_repo_root_before_package_import():
     wrapper = REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_non_null_visual_runner_readiness_smoke.py"
+
+    text = wrapper.read_text(encoding="utf-8-sig")
+
+    assert "import sys" in text
+    assert "from pathlib import Path" in text
+    assert "REPO_ROOT = Path(__file__).resolve().parents[3]" in text
+    assert "sys.path.insert(0, str(REPO_ROOT))" in text
+    assert "from tools.o3de.editor_python import maxine_package_prefab_smoke" in text
+    assert "import maxine_package_prefab_smoke" not in {line.strip() for line in text.splitlines()}
+    assert text.index("sys.path.insert(0, str(REPO_ROOT))") < text.index(
+        "from tools.o3de.editor_python import maxine_package_prefab_smoke"
+    )
+
+
+def test_non_null_desktop_rhi_wrapper_bootstraps_repo_root_before_package_import():
+    wrapper = REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_non_null_desktop_rhi_readiness_smoke.py"
 
     text = wrapper.read_text(encoding="utf-8-sig")
 
