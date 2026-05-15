@@ -119,6 +119,7 @@
         "non-null-editor-desktop-rhi-readiness",
         "live-non-null-editor-launch",
         "editor-screenshot-capture-artifact-readiness",
+        "editor-active-viewport-temp-scene-readiness",
         "full"
       ]
     },
