@@ -114,6 +114,7 @@
         "approved-source-prefab-parent-link-override-apply-route",
         "approved-source-prefab-override-path-generation-template-update",
         "editor-viewport-visual-material-evidence",
+        "non-null-editor-render-capture-envelope",
         "full"
       ]
     },

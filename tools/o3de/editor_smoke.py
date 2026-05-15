@@ -119,9 +119,15 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_viewport_visual_material_evidence_smoke.py",
+    "non-null-editor-render-capture-envelope": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_non_null_render_capture_envelope_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
+NON_NULL_RENDER_CAPTURE_RHIS = {"dx12", "vulkan"}
 DIRECT_PROCPREFAB_TYPED_NONVERIFIED_STATUSES = {
     "procprefab_product_not_editor_instantiable_with_current_binding",
     "procprefab_product_requires_runtime_spawnable_path",
@@ -248,6 +254,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_approved_source_prefab_override_path_generation_template_update(report, result)
         if diagnostic_mode == "editor-viewport-visual-material-evidence":
             _validate_editor_viewport_visual_material_evidence(report, result)
+        if diagnostic_mode == "non-null-editor-render-capture-envelope":
+            _validate_non_null_editor_render_capture_envelope(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -1629,6 +1637,147 @@ def _validate_editor_viewport_visual_material_evidence(report: Mapping[str, Any]
         )
 
 
+def _validate_non_null_editor_render_capture_envelope(report: Mapping[str, Any], result: ValidationResult) -> None:
+    if report.get("non_null_editor_render_capture_envelope_attempted") is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Non-null Editor render/capture envelope diagnostic must record attempted=true.",
+        )
+    if report.get("non_null_editor_render_capture_envelope_completed") is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Non-null Editor render/capture envelope diagnostic must record completed=true.",
+        )
+    if report.get("non_null_editor_render_capture_envelope_source_validation_verified") is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Non-null Editor render/capture envelope diagnostic requires source validation.",
+        )
+    if report.get("non_null_editor_render_capture_null_renderer_used") is True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "non_null_editor_render_capture_null_renderer_used must be false for the non-null render/capture envelope.",
+        )
+    rhi_requested = str(report.get("non_null_editor_render_capture_rhi_requested", "")).strip().lower()
+    if not rhi_requested:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Non-null Editor render/capture envelope must record the requested RHI.",
+        )
+    elif rhi_requested not in NON_NULL_RENDER_CAPTURE_RHIS:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            f"Non-null Editor render/capture envelope requested unsupported RHI '{rhi_requested}'.",
+        )
+    if report.get("editor_visual_material_defaultlevel_mutation") is True or report.get("defaultlevel_mutation") is True:
+        result.add_error(MXN_PATH_UNSAFE, "Non-null Editor render/capture envelope must not mutate defaultlevel.")
+    if (
+        report.get("editor_visual_material_production_level_mutation") is True
+        or report.get("production_level_mutation") is True
+    ):
+        result.add_error(MXN_PATH_UNSAFE, "Non-null Editor render/capture envelope must not mutate production levels.")
+    if report.get("asset_cache_deleted") is True:
+        result.add_error(MXN_PATH_UNSAFE, "Non-null Editor render/capture envelope must not delete Asset Cache.")
+    if report.get("cache_heuristic_used") is True:
+        result.add_error(
+            "MXN_ASSET_CACHE_HEURISTIC_FORBIDDEN",
+            "Non-null Editor render/capture envelope must not use cache heuristic proof.",
+        )
+
+    envelope_verified = report.get("non_null_editor_render_capture_envelope_verified") is True
+    capture_readiness = report.get("visual_material_capture_readiness_verified") is True
+    gate_verified = report.get("visual_material_gate_verified") is True
+    rendered_verified = report.get("visual_material_rendered_evidence_gate_verified") is True
+    if envelope_verified:
+        for field, label in {
+            "non_null_editor_render_capture_editor_launched": "Editor launch",
+            "non_null_editor_render_capture_editor_exited_cleanly": "clean Editor exit",
+            "editor_visual_material_capture_api_available_under_non_null_rhi": "capture API under non-null RHI",
+            "editor_visual_material_cleanup_verified": "cleanup",
+            "editor_visual_material_selected_log_scan_passed": "selected log scan",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"non_null_editor_render_capture_envelope_verified=true requires {label}.",
+                )
+    elif not str(report.get("non_null_editor_render_capture_envelope_blocker", "")).strip():
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Unverified non-null Editor render/capture envelope requires a precise typed blocker.",
+        )
+
+    if capture_readiness:
+        for field, label in {
+            "editor_visual_material_capture_requested": "capture request",
+            "editor_visual_material_capture_completed": "capture completion",
+            "editor_visual_material_capture_artifact_exists": "capture artifact existence",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"visual_material_capture_readiness_verified=true requires {label}.",
+                )
+        try:
+            width = int(report.get("editor_visual_material_capture_artifact_width", 0) or 0)
+            height = int(report.get("editor_visual_material_capture_artifact_height", 0) or 0)
+            size_bytes = int(report.get("editor_visual_material_capture_artifact_size_bytes", 0) or 0)
+        except (TypeError, ValueError):
+            width = height = size_bytes = 0
+        if width <= 0 or height <= 0 or size_bytes <= 0:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "visual_material_capture_readiness_verified=true requires captured artifact dimensions and size.",
+            )
+
+    if report.get("full_runtime_character_visual_material_gate_verified") is True and not gate_verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Full runtime character visual/material gate cannot pass without visual_material_gate_verified=true.",
+        )
+    if report.get("visual_material_gate_claimed") is True and not gate_verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "visual_material_gate_claimed=true requires visual_material_gate_verified=true.",
+        )
+    if report.get("runtime_character_proof_claimed") is True or report.get("runtime_character_proof_verified") is True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Non-null Editor render/capture envelope cannot claim full runtime character proof.",
+        )
+    if gate_verified:
+        for field, label in {
+            "visual_material_gate_claimed": "visual/material claim",
+            "visual_material_product_inventory_gate_verified": "APB/material inventory readiness",
+            "visual_material_rendered_evidence_gate_attempted": "rendered evidence attempt",
+            "visual_material_rendered_evidence_gate_verified": "rendered visual/material evidence",
+            "editor_visual_material_capture_api_found": "source-validated capture API",
+            "editor_visual_material_temp_scene_created": "safe temp visual scene",
+            "editor_visual_material_character_instantiated": "approved character instantiation/display",
+            "editor_visual_material_camera_or_view_framed": "camera or viewport framing",
+            "editor_visual_material_capture_requested": "screenshot/frame capture request",
+            "editor_visual_material_capture_completed": "screenshot/frame capture completion",
+            "editor_visual_material_capture_artifact_exists": "captured artifact existence",
+            "editor_visual_material_capture_content_validation_attempted": "capture content validation attempt",
+            "editor_visual_material_capture_content_validation_verified": "capture content validation",
+            "editor_visual_material_nonblank_validation_verified": "nonblank image validation",
+            "editor_visual_material_character_presence_validation_verified": "character-presence validation",
+            "editor_visual_material_material_presence_validation_verified": "material-presence validation",
+            "editor_visual_material_cleanup_verified": "cleanup verification",
+            "editor_visual_material_selected_log_scan_passed": "selected log scan",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"visual_material_gate_verified=true requires {label}.",
+                )
+    elif rendered_verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Rendered visual/material evidence cannot be verified while visual_material_gate_verified is false.",
+        )
+
+
 def _validate_direct_procprefab_content_assertions(
     report: Mapping[str, Any],
     semantics: Mapping[str, Any],
@@ -2074,10 +2223,12 @@ def _execute_live_editor_smoke(
     temp_level_name = "maxine_smoke_" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     temp_level_rel = f"Levels/_maxine_smoke/{temp_level_name}"
     level_name_for_editor = f"_maxine_smoke/{temp_level_name}"
+    non_null_render_capture_mode = diagnostic_mode == "non-null-editor-render-capture-envelope"
+    selected_render_capture_rhi = _selected_non_null_render_capture_rhi(env)
+    render_args = [f"-rhi={selected_render_capture_rhi}"] if non_null_render_capture_mode else ["-NullRenderer", "-rhi=Null"]
     argv = [
         str(editor_executable),
-        "-NullRenderer",
-        "-rhi=Null",
+        *render_args,
         "--skipWelcomeScreenDialog",
         "--autotest_mode",
         "--project-path",
@@ -2127,6 +2278,10 @@ def _execute_live_editor_smoke(
     editor_env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"] = str(template_path)
     editor_env["MAXINE_EDITOR_SMOKE_PROGRESS_LOG"] = str(progress_path)
     editor_env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] = diagnostic_mode
+    if non_null_render_capture_mode:
+        editor_env["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = selected_render_capture_rhi
+        editor_env.setdefault("MAXINE_ENABLE_NON_NULL_EDITOR_RENDER_CAPTURE_ENVELOPE", "1")
+        editor_env.setdefault("MAXINE_ALLOW_NON_NULL_EDITOR_RENDER_CAPTURE_ENVELOPE", "1")
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_NAME"] = level_name_for_editor
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_PATH"] = str(project_path / temp_level_rel)
     editor_env["MAXINE_EDITOR_SMOKE_ALLOW_TEMP_SANDBOX_LEVEL"] = "1"
@@ -2220,6 +2375,18 @@ def _execute_live_editor_smoke(
             "messages": _unique(messages),
         }
     )
+    if non_null_render_capture_mode:
+        command = " ".join(argv)
+        report.update(
+            {
+                "non_null_editor_render_capture_rhi_requested": selected_render_capture_rhi,
+                "non_null_editor_render_capture_null_renderer_used": (
+                    "-NullRenderer" in command or "-rhi=Null" in command or "-rhi=null" in command.lower()
+                ),
+                "non_null_editor_render_capture_editor_launched": True,
+                "non_null_editor_render_capture_editor_exited_cleanly": (not timed_out and proc.returncode == 0),
+            }
+        )
     report["evidence_refs"] = _merge_evidence_refs(
         report.get("evidence_refs", []),
         [
@@ -2376,6 +2543,23 @@ def _live_report_template(
         "editor_viewport_visual_material_evidence_blocker": "",
         "editor_viewport_visual_material_evidence_candidate_matrix": [],
         "editor_viewport_visual_material_evidence_selected_strategy": "",
+        "non_null_editor_render_capture_envelope_attempted": False,
+        "non_null_editor_render_capture_envelope_completed": False,
+        "non_null_editor_render_capture_envelope_source_validation_status": "",
+        "non_null_editor_render_capture_envelope_source_validation_verified": False,
+        "non_null_editor_render_capture_envelope_source_validation": {},
+        "non_null_editor_render_capture_envelope_source_files": [],
+        "non_null_editor_render_capture_envelope_verified": False,
+        "non_null_editor_render_capture_envelope_blocker": "",
+        "non_null_editor_render_capture_envelope_candidate_matrix": [],
+        "non_null_editor_render_capture_envelope_selected_strategy": "",
+        "non_null_editor_render_capture_rhi_requested": "",
+        "non_null_editor_render_capture_null_renderer_used": False,
+        "non_null_editor_render_capture_editor_launched": False,
+        "non_null_editor_render_capture_editor_exited_cleanly": False,
+        "non_null_editor_render_capture_requires_visible_desktop": False,
+        "non_null_editor_render_capture_gpu_or_driver_ready": None,
+        "editor_visual_material_capture_api_available_under_non_null_rhi": False,
         "editor_visual_material_temp_scene_created": False,
         "editor_visual_material_temp_scene_path": "",
         "editor_visual_material_defaultlevel_mutation": False,
@@ -2402,6 +2586,7 @@ def _live_report_template(
         "editor_visual_material_material_presence_validation_verified": False,
         "editor_visual_material_cleanup_verified": False,
         "editor_visual_material_selected_log_scan_passed": False,
+        "visual_material_capture_readiness_verified": False,
         "visual_material_product_inventory_gate_verified": False,
         "visual_material_rendered_evidence_gate_attempted": False,
         "visual_material_rendered_evidence_gate_verified": False,
@@ -2649,6 +2834,11 @@ def _normalize_diagnostic_mode(value: str | None) -> str:
     return mode if mode in DIAGNOSTIC_EDITOR_SCRIPTS else "full"
 
 
+def _selected_non_null_render_capture_rhi(env: Mapping[str, str]) -> str:
+    requested = str(env.get("MAXINE_EDITOR_RENDER_CAPTURE_RHI", "dx12")).strip().lower()
+    return requested if requested in NON_NULL_RENDER_CAPTURE_RHIS else "dx12"
+
+
 def _editor_script_for_diagnostic_mode(mode: str) -> Path:
     return DIAGNOSTIC_EDITOR_SCRIPTS[_normalize_diagnostic_mode(mode)]
 
@@ -2759,6 +2949,12 @@ def _classify_stall_phase(marker: Mapping[str, Any]) -> str:
         return "editor_viewport_visual_material_source_validation_stall"
     if step == "editor_viewport_visual_material_capture_blocked":
         return "editor_viewport_visual_material_capture_blocked"
+    if step == "non_null_editor_render_capture_envelope_started":
+        return "non_null_editor_render_capture_envelope_stall"
+    if step == "non_null_editor_render_capture_source_validation_started":
+        return "non_null_editor_render_capture_source_validation_stall"
+    if step == "non_null_editor_render_capture_live_blocked":
+        return "non_null_editor_render_capture_live_blocked"
     if step == "report_write_started":
         return "report_write_stall"
     if status in {"started", "running"}:
@@ -3282,6 +3478,22 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Set the explicit gated enablement marker for Editor viewport visual/material evidence fixture proof.",
     )
+    parser.add_argument(
+        "--diagnose-non-null-editor-render-capture-envelope",
+        action="store_true",
+        help="Run the bounded non-null Editor render/capture safety-envelope diagnostic.",
+    )
+    parser.add_argument(
+        "--enable-non-null-editor-render-capture-envelope-fixture",
+        action="store_true",
+        help="Set the explicit gated enablement marker for the non-null Editor render/capture envelope.",
+    )
+    parser.add_argument(
+        "--editor-render-capture-rhi",
+        choices=sorted(NON_NULL_RENDER_CAPTURE_RHIS),
+        default=None,
+        help="Requested non-null Editor render/capture RHI for the visual-capture envelope.",
+    )
     parser.add_argument("--timeout-seconds", type=int, help="Bounded live Editor smoke timeout in seconds.")
     parser.add_argument("--progress-log", help="Optional JSONL progress log path for live Editor smoke diagnostics.")
     parser.add_argument("--apb-report", help="Explicit APB baseline report path for live Editor smoke product evidence.")
@@ -3392,6 +3604,16 @@ def main() -> int:
         env_map["MAXINE_ENABLE_EDITOR_VIEWPORT_VISUAL_MATERIAL_EVIDENCE"] = "1"
     if args.enable_editor_viewport_visual_material_evidence_fixture:
         env_map["MAXINE_ALLOW_EDITOR_VIEWPORT_VISUAL_MATERIAL_EVIDENCE"] = "1"
+    if (
+        args.diagnose_non_null_editor_render_capture_envelope
+        or args.enable_non_null_editor_render_capture_envelope_fixture
+    ):
+        diagnostic_mode = "non-null-editor-render-capture-envelope"
+        env_map["MAXINE_ENABLE_NON_NULL_EDITOR_RENDER_CAPTURE_ENVELOPE"] = "1"
+    if args.enable_non_null_editor_render_capture_envelope_fixture:
+        env_map["MAXINE_ALLOW_NON_NULL_EDITOR_RENDER_CAPTURE_ENVELOPE"] = "1"
+    if args.editor_render_capture_rhi:
+        env_map["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = args.editor_render_capture_rhi
     result = run_editor_smoke_corpus(
         args.corpus,
         mode=args.mode,

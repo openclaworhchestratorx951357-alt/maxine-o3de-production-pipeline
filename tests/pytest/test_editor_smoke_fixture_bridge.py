@@ -204,6 +204,163 @@ def _editor_viewport_visual_material_blocked_payload() -> dict:
     }
 
 
+def _non_null_editor_render_capture_envelope_blocked_payload() -> dict:
+    return {
+        "mode": "local_editor_python",
+        "status": "pass",
+        "diagnostic_mode": "non-null-editor-render-capture-envelope",
+        "live_editor_execution": True,
+        "live_publication": False,
+        "release_packaging": False,
+        "production_level_mutation": False,
+        "defaultlevel_mutation": False,
+        "asset_cache_deleted": False,
+        "cache_heuristic_used": False,
+        "fake_success": False,
+        "non_null_editor_render_capture_envelope_attempted": True,
+        "non_null_editor_render_capture_envelope_completed": True,
+        "non_null_editor_render_capture_envelope_source_validation_status": (
+            "non_null_editor_render_capture_envelope_source_validation_pass"
+        ),
+        "non_null_editor_render_capture_envelope_source_validation_verified": True,
+        "non_null_editor_render_capture_envelope_verified": False,
+        "non_null_editor_render_capture_envelope_blocker": (
+            "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session"
+        ),
+        "non_null_editor_render_capture_envelope_candidate_matrix": [
+            {
+                "id": "non_null_editor_viewport_screenshot_envelope",
+                "selected": True,
+                "result": "selected_source_validated_live_execution_deferred",
+            },
+            {
+                "id": "atom_frame_capture_under_non_null_rhi",
+                "selected": True,
+                "result": "selected_source_validated_capture_request_deferred",
+            },
+            {
+                "id": "safe_temp_visual_context_without_defaultlevel_save",
+                "selected": True,
+                "result": "selected_policy_pinned_scene_creation_deferred",
+            },
+            {
+                "id": "non_null_runtime_renderer_harness",
+                "selected": False,
+                "result": "deferred",
+            },
+            {
+                "id": "nullrenderer_visual_proof",
+                "selected": False,
+                "result": "rejected_blocked",
+            },
+            {
+                "id": "apb_material_product_inventory_as_rendered_proof",
+                "selected": False,
+                "result": "rejected_readiness_only",
+            },
+            {
+                "id": "screenshot_existence_only_as_material_proof",
+                "selected": False,
+                "result": "rejected_capture_readiness_only",
+            },
+            {
+                "id": "production_defaultlevel_screenshot",
+                "selected": False,
+                "result": "rejected",
+            },
+            {
+                "id": "understand_anything_graph_as_proof",
+                "selected": False,
+                "result": "rejected",
+            },
+            {
+                "id": "claim_full_runtime_character_proof_after_capture_envelope_only",
+                "selected": False,
+                "result": "rejected",
+            },
+        ],
+        "non_null_editor_render_capture_envelope_selected_strategy": (
+            "source_validated_non_null_editor_capture_envelope_live_blocked"
+        ),
+        "non_null_editor_render_capture_rhi_requested": "dx12",
+        "non_null_editor_render_capture_null_renderer_used": False,
+        "non_null_editor_render_capture_editor_launched": False,
+        "non_null_editor_render_capture_editor_exited_cleanly": False,
+        "non_null_editor_render_capture_requires_visible_desktop": True,
+        "non_null_editor_render_capture_gpu_or_driver_ready": None,
+        "editor_visual_material_capture_api_available_under_non_null_rhi": False,
+        "editor_visual_material_capture_api_found": True,
+        "editor_visual_material_capture_api_used": "AZ::Render::FrameCaptureRequestBus::CaptureScreenshot",
+        "editor_visual_material_temp_scene_created": False,
+        "editor_visual_material_temp_scene_path": "",
+        "editor_visual_material_defaultlevel_mutation": False,
+        "editor_visual_material_production_level_mutation": False,
+        "editor_visual_material_character_instantiated": False,
+        "editor_visual_material_character_source_path": (
+            "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab"
+        ),
+        "editor_visual_material_character_product_or_prefab_path": "",
+        "editor_visual_material_camera_or_view_framed": False,
+        "editor_visual_material_light_or_environment_prepared": False,
+        "editor_visual_material_capture_requested": False,
+        "editor_visual_material_capture_completed": False,
+        "editor_visual_material_capture_artifact_path": "",
+        "editor_visual_material_capture_artifact_exists": False,
+        "editor_visual_material_capture_artifact_format": "",
+        "editor_visual_material_capture_artifact_width": 0,
+        "editor_visual_material_capture_artifact_height": 0,
+        "editor_visual_material_capture_artifact_size_bytes": 0,
+        "editor_visual_material_capture_content_validation_attempted": False,
+        "editor_visual_material_capture_content_validation_verified": False,
+        "editor_visual_material_nonblank_validation_verified": False,
+        "editor_visual_material_character_presence_validation_verified": False,
+        "editor_visual_material_material_presence_validation_verified": False,
+        "editor_visual_material_cleanup_verified": True,
+        "editor_visual_material_selected_log_scan_passed": True,
+        "visual_material_capture_readiness_verified": False,
+        "visual_material_product_inventory_gate_verified": True,
+        "visual_material_rendered_evidence_gate_attempted": False,
+        "visual_material_rendered_evidence_gate_verified": False,
+        "visual_material_gate_claimed": False,
+        "visual_material_gate_verified": False,
+        "full_runtime_character_visual_material_gate_verified": False,
+        "full_runtime_character_proof_contract_pinned": True,
+        "full_runtime_character_proof_contract_verified": True,
+        "full_runtime_character_proof_satisfied_gates": [
+            {"id": "spawn_instantiation", "verified": True},
+            {"id": "component_wiring", "verified": True},
+            {"id": "simple_motion_playback", "verified": True},
+            {"id": "behavior_smoke", "verified": True},
+            {"id": "selected_log_scan", "verified": True},
+            {"id": "cleanup_recovery", "verified": True},
+        ],
+        "full_runtime_character_proof_unsatisfied_gates": [
+            {
+                "id": "visual_material",
+                "verified": False,
+                "blocker": "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session",
+            }
+        ],
+        "full_runtime_character_proof_deferred_gates": [
+            {
+                "id": "visual_capture_surface",
+                "verified": False,
+                "blocker": "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session",
+            },
+            {
+                "id": "repeated_behavior_scenario",
+                "verified": False,
+                "blocker": "blocked_by_full_runtime_character_repeated_behavior_scenario_deferred",
+            },
+        ],
+        "runtime_character_behavior_smoke_verified": True,
+        "runtime_character_animation_verified": True,
+        "runtime_character_animation_component_wiring_verified": True,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+    }
+
+
 def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exit_code: int = 0) -> subprocess.CompletedProcess[str]:
     report_out = Path(env["MAXINE_EDITOR_SMOKE_REPORT_OUT"])
     payload = json.loads(Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).read_text(encoding="utf-8"))
@@ -3778,6 +3935,104 @@ def test_editor_visual_material_verified_requires_rendered_content_and_material_
     assert result.status == "fail"
     assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
     assert "rendered visual/material evidence" in " ".join(result.messages)
+
+
+def test_non_null_editor_render_capture_mode_uses_non_null_rhi_without_nullrenderer(tmp_path):
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        assert "editor_non_null_render_capture_envelope_smoke.py" in argv[-1].replace("\\", "/")
+        assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == "non-null-editor-render-capture-envelope"
+        assert env["MAXINE_ENABLE_NON_NULL_EDITOR_RENDER_CAPTURE_ENVELOPE"] == "1"
+        assert env["MAXINE_ALLOW_NON_NULL_EDITOR_RENDER_CAPTURE_ENVELOPE"] == "1"
+        assert env["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] == "dx12"
+        command = " ".join(argv)
+        assert "-NullRenderer" not in command
+        assert "-rhi=Null" not in command
+        assert "-rhi=dx12" in command
+        payload = json.loads(Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).read_text(encoding="utf-8"))
+        payload.update(_non_null_editor_render_capture_envelope_blocked_payload())
+        Path(env["MAXINE_EDITOR_SMOKE_REPORT_OUT"]).write_text(json.dumps(payload), encoding="utf-8")
+        return subprocess.CompletedProcess(args=argv, returncode=0, stdout="", stderr="")
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=_live_env(tmp_path),
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="non-null-editor-render-capture-envelope",
+    )
+
+    assert result["status"] == "pass"
+    assert result["diagnostic_mode"] == "non-null-editor-render-capture-envelope"
+    assert result["non_null_editor_render_capture_envelope_source_validation_verified"] is True
+    assert result["non_null_editor_render_capture_null_renderer_used"] is False
+    assert result["non_null_editor_render_capture_rhi_requested"] == "dx12"
+    assert result["visual_material_gate_verified"] is False
+    assert result["runtime_character_proof_verified"] is False
+
+
+def test_non_null_editor_render_capture_validation_rejects_nullrenderer_envelope():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_non_null_editor_render_capture_envelope_blocked_payload())
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "diagnostic_mode": "non-null-editor-render-capture-envelope",
+            "non_null_editor_render_capture_envelope_verified": True,
+            "non_null_editor_render_capture_envelope_blocker": "",
+            "non_null_editor_render_capture_null_renderer_used": True,
+            "non_null_editor_render_capture_editor_launched": True,
+            "non_null_editor_render_capture_editor_exited_cleanly": True,
+            "editor_visual_material_capture_api_available_under_non_null_rhi": True,
+            "editor_visual_material_cleanup_verified": True,
+            "editor_visual_material_selected_log_scan_passed": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+    assert "non_null_editor_render_capture_null_renderer_used" in " ".join(result.messages)
+
+
+def test_non_null_editor_capture_readiness_does_not_verify_visual_material_gate():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_non_null_editor_render_capture_envelope_blocked_payload())
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "diagnostic_mode": "non-null-editor-render-capture-envelope",
+            "non_null_editor_render_capture_envelope_verified": True,
+            "non_null_editor_render_capture_envelope_blocker": "",
+            "non_null_editor_render_capture_editor_launched": True,
+            "non_null_editor_render_capture_editor_exited_cleanly": True,
+            "editor_visual_material_capture_api_available_under_non_null_rhi": True,
+            "editor_visual_material_capture_requested": True,
+            "editor_visual_material_capture_completed": True,
+            "editor_visual_material_capture_artifact_path": "artifacts/o3de-integration/editor-smoke/capture.png",
+            "editor_visual_material_capture_artifact_exists": True,
+            "editor_visual_material_capture_artifact_format": "png",
+            "editor_visual_material_capture_artifact_width": 1280,
+            "editor_visual_material_capture_artifact_height": 720,
+            "editor_visual_material_capture_artifact_size_bytes": 4096,
+            "visual_material_capture_readiness_verified": True,
+            "visual_material_rendered_evidence_gate_attempted": True,
+            "visual_material_rendered_evidence_gate_verified": False,
+            "visual_material_gate_claimed": True,
+            "visual_material_gate_verified": True,
+            "full_runtime_character_visual_material_gate_verified": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+    assert "visual_material_gate_verified" in " ".join(result.messages)
 
 
 def test_editor_smoke_timeout_classifies_last_script_progress_marker(tmp_path):

@@ -48,6 +48,7 @@ DIAGNOSTIC_MODES = {
     "approved-source-prefab-parent-link-override-apply-route",
     "approved-source-prefab-override-path-generation-template-update",
     "editor-viewport-visual-material-evidence",
+    "non-null-editor-render-capture-envelope",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -127,6 +128,12 @@ TYPED_BLOCKED_STATUSES = {
     "blocked_by_editor_viewport_capture_api_unavailable",
     "blocked_by_editor_viewport_capture_requires_visible_window",
     "blocked_by_visual_material_capture_surface_requires_additional_source_validation",
+    "blocked_by_non_null_editor_render_capture_envelope_unavailable",
+    "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session",
+    "blocked_by_non_null_editor_render_capture_requires_gpu_or_driver",
+    "blocked_by_non_null_editor_render_capture_rhi_unavailable",
+    "blocked_by_non_null_editor_render_capture_renderer_initialization_failed",
+    "blocked_by_editor_visual_material_proof_requires_temp_level_contract",
 }
 DIRECT_PROCPREFAB_TYPED_NONVERIFIED_STATUSES = {
     "procprefab_product_not_editor_instantiable_with_current_binding",
@@ -1188,6 +1195,22 @@ def main() -> int:
             "Editor viewport visual/material evidence diagnostic returned.",
         )
 
+    if not errors and diagnostic_mode == "non-null-editor-render-capture-envelope":
+        _write_progress_marker(
+            progress_log,
+            "non_null_editor_render_capture_envelope_started",
+            "started",
+            "Running non-null Editor render/capture envelope diagnostic.",
+        )
+        envelope = _run_non_null_editor_render_capture_envelope_checks(report, progress_log=progress_log)
+        report.update(envelope)
+        _write_progress_marker(
+            progress_log,
+            "non_null_editor_render_capture_envelope_returned",
+            str(envelope.get("non_null_editor_render_capture_envelope_blocker", "returned")),
+            "Non-null Editor render/capture envelope diagnostic returned.",
+        )
+
     entity_result: Dict[str, Any] = report.get("entity_smoke", {"status": "not_run"})
     entity_id_raw = None
     if not errors and diagnostic_mode in {
@@ -1899,6 +1922,359 @@ def _run_editor_viewport_visual_material_evidence_checks(
                 "blocker": blocker,
                 "evidence": "current Editor smoke command envelope uses NullRenderer/null RHI",
             }
+        ],
+        "runtime_character_behavior_smoke_verified": behavior_smoke_verified,
+        "runtime_character_animation_verified": animation_verified,
+        "runtime_character_animation_component_wiring_verified": component_wiring_verified,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+        "live_publication": False,
+        "release_packaging": False,
+        "production_level_mutation": False,
+        "defaultlevel_mutation": False,
+        "asset_cache_deleted": False,
+        "cache_heuristic_used": False,
+        "fake_success": False,
+    }
+
+
+def _non_null_editor_render_capture_source_specs(engine_root: Path) -> List[Dict[str, Any]]:
+    repo_root = Path(__file__).resolve().parents[3]
+    return [
+        {
+            "path": repo_root / "tools" / "o3de" / "editor_smoke.py",
+            "symbols": [
+                "non-null-editor-render-capture-envelope",
+                "MAXINE_EDITOR_RENDER_CAPTURE_RHI",
+                "-rhi=",
+                "non_null_editor_render_capture_null_renderer_used",
+            ],
+        },
+        {
+            "path": repo_root / "docs" / "production" / "private-windows-o3de-runner.md",
+            "symbols": [
+                "Non-null Editor render capture envelope",
+                "NullRenderer-safe Editor smoke envelope remains unchanged",
+                "command envelope, not rendered visual/material proof",
+            ],
+        },
+        {
+            "path": engine_root
+            / "Code"
+            / "Framework"
+            / "AzGameFramework"
+            / "AzGameFramework"
+            / "Application"
+            / "GameApplication.cpp",
+            "symbols": [
+                "commandSwitchNullRenderer",
+                "commandSwitchRhi",
+                'rhiValue.compare("null")==0',
+            ],
+        },
+        {
+            "path": engine_root
+            / "Gems"
+            / "Atom"
+            / "Feature"
+            / "Common"
+            / "Code"
+            / "Include"
+            / "Atom"
+            / "Feature"
+            / "Utils"
+            / "FrameCaptureBus.h",
+            "symbols": [
+                "CanCapture",
+                "CaptureScreenshot",
+                "CaptureScreenshotForWindow",
+                "FrameCaptureNotificationBus",
+            ],
+        },
+        {
+            "path": engine_root
+            / "AutomatedTesting"
+            / "Gem"
+            / "PythonTests"
+            / "Atom"
+            / "atom_utils"
+            / "screenshot_utils.py",
+            "symbols": [
+                "FrameCaptureRequestBus",
+                "capture_screenshot_blocking",
+                "prepare_viewport_for_screenshot",
+            ],
+        },
+        {
+            "path": engine_root / "Gems" / "Atom" / "RHI" / "DX12" / "Code" / "atom_rhi_dx12_private_common_files.cmake",
+            "symbols": [
+                "Source/RHI/DX12.cpp",
+                "Source/RHI/Device.cpp",
+            ],
+        },
+        {
+            "path": engine_root
+            / "Gems"
+            / "Atom"
+            / "RHI"
+            / "Vulkan"
+            / "Code"
+            / "atom_rhi_vulkan_private_common_files.cmake",
+            "symbols": [
+                "Source/RHI/Buffer.cpp",
+                "Source/RHI/Device.cpp",
+            ],
+        },
+    ]
+
+
+def _non_null_editor_render_capture_source_validation(engine_root: Path | None) -> Dict[str, Any]:
+    if engine_root is None:
+        return {
+            "status": "non_null_editor_render_capture_envelope_source_validation_inconclusive",
+            "files": [],
+            "missing": [{"path": "<engine-root>", "status": "missing"}],
+        }
+    file_results = [
+        _source_file_symbol_validation(spec["path"], spec["symbols"])
+        for spec in _non_null_editor_render_capture_source_specs(engine_root)
+    ]
+    missing = [result for result in file_results if result["status"] != "pass"]
+    return {
+        "status": "non_null_editor_render_capture_envelope_source_validation_pass"
+        if not missing
+        else "non_null_editor_render_capture_envelope_source_validation_inconclusive",
+        "files": file_results,
+        "non_null_editor_render_capture_surfaces": {
+            "wrapper_boundary": "non-null visual capture uses a separate diagnostic mode and omits -NullRenderer",
+            "rhi_boundary": "GameApplication treats -NullRenderer or rhi=null as console/null-renderer mode",
+            "selected_rhis": ["dx12", "vulkan"],
+            "frame_capture_boundary": "FrameCaptureRequestBus exposes capture calls and CanCapture readiness",
+            "proof_boundary": "non-null launch/capture readiness is not rendered visual/material proof without content/material validation",
+        },
+        "missing": missing,
+    }
+
+
+def _non_null_editor_render_capture_candidate_matrix(
+    *,
+    source_validated: bool,
+    null_renderer_used: bool,
+    rhi_requested: str,
+) -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "non_null_editor_viewport_screenshot_envelope",
+            "candidate": "non-null Editor viewport/screenshot envelope",
+            "selected": bool(source_validated and not null_renderer_used),
+            "result": "selected_source_validated_live_execution_deferred"
+            if source_validated and not null_renderer_used
+            else "blocked_by_null_renderer_or_source_validation",
+            "blocker": "" if source_validated and not null_renderer_used else "blocked_by_editor_viewport_capture_requires_non_null_rhi",
+            "rhi": rhi_requested,
+        },
+        {
+            "id": "atom_frame_capture_under_non_null_rhi",
+            "candidate": "Atom FrameCaptureRequestBus screenshot under non-null RHI",
+            "selected": bool(source_validated and not null_renderer_used),
+            "result": "selected_source_validated_capture_request_deferred",
+            "blocker": "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session",
+        },
+        {
+            "id": "safe_temp_visual_context_without_defaultlevel_save",
+            "candidate": "safe temp visual context without saving defaultlevel",
+            "selected": bool(source_validated),
+            "result": "selected_policy_pinned_scene_creation_deferred",
+            "blocker": "blocked_by_editor_visual_material_proof_requires_temp_level_contract",
+        },
+        {
+            "id": "non_null_runtime_renderer_harness",
+            "candidate": "non-null runtime renderer harness",
+            "selected": False,
+            "result": "deferred_unless_editor_path_blocks",
+        },
+        {
+            "id": "nullrenderer_visual_proof",
+            "candidate": "NullRenderer visual proof",
+            "selected": False,
+            "result": "rejected_blocked",
+            "blocker": "blocked_by_editor_viewport_capture_requires_non_null_rhi",
+        },
+        {
+            "id": "apb_material_product_inventory_as_rendered_proof",
+            "candidate": "APB/material product inventory as rendered proof",
+            "selected": False,
+            "result": "rejected_readiness_only",
+        },
+        {
+            "id": "screenshot_existence_only_as_material_proof",
+            "candidate": "screenshot existence only as material proof",
+            "selected": False,
+            "result": "rejected_capture_readiness_only",
+        },
+        {
+            "id": "production_defaultlevel_screenshot",
+            "candidate": "production/defaultlevel screenshot",
+            "selected": False,
+            "result": "rejected",
+        },
+        {
+            "id": "use_understand_anything_graph_as_proof",
+            "candidate": "use Understand-Anything graph as proof",
+            "selected": False,
+            "result": "rejected",
+        },
+        {
+            "id": "claim_full_runtime_character_proof_after_capture_envelope_only",
+            "candidate": "claim full runtime character proof after capture envelope only",
+            "selected": False,
+            "result": "rejected",
+        },
+    ]
+
+
+def _command_uses_null_renderer(report: Mapping[str, Any]) -> bool:
+    command = " ".join(str(part) for part in report.get("command_argv_redacted", []))
+    return "-NullRenderer" in command or "-rhi=Null" in command or "-rhi=null" in command.lower()
+
+
+def _command_requested_rhi(report: Mapping[str, Any]) -> str:
+    command = " ".join(str(part) for part in report.get("command_argv_redacted", []))
+    match = re.search(r"-rhi=([A-Za-z0-9_]+)", command)
+    if match:
+        return match.group(1).strip().lower()
+    requested = str(os.environ.get("MAXINE_EDITOR_RENDER_CAPTURE_RHI", "")).strip().lower()
+    return requested or "dx12"
+
+
+def _run_non_null_editor_render_capture_envelope_checks(
+    report: Mapping[str, Any],
+    *,
+    progress_log: Path | None,
+) -> Dict[str, Any]:
+    engine_root_raw = str(os.environ.get("O3DE_ENGINE_ROOT", "")).strip()
+    engine_root = Path(engine_root_raw) if engine_root_raw else None
+    _write_progress_marker(
+        progress_log,
+        "non_null_editor_render_capture_source_validation_started",
+        "started",
+        "Source-validating non-null Editor render/capture command envelope.",
+    )
+    source_validation = _non_null_editor_render_capture_source_validation(engine_root)
+    source_validated = source_validation.get("status") == "non_null_editor_render_capture_envelope_source_validation_pass"
+    null_renderer_used = _command_uses_null_renderer(report)
+    rhi_requested = _command_requested_rhi(report)
+    if not source_validated:
+        blocker = "blocked_by_visual_material_capture_surface_requires_additional_source_validation"
+    elif null_renderer_used:
+        blocker = "blocked_by_editor_viewport_capture_requires_non_null_rhi"
+    else:
+        blocker = "blocked_by_non_null_editor_render_capture_requires_visible_desktop_session"
+    _write_progress_marker(
+        progress_log,
+        "non_null_editor_render_capture_live_blocked",
+        "blocked",
+        "Non-null capture request is deferred until visible desktop/GPU/RHI readiness and temp visual scene contracts are verified.",
+        error_code=MXN_RUNTIME_SMOKE_FAIL,
+    )
+    satisfied_gates = list(report.get("full_runtime_character_proof_satisfied_gates", []))
+    behavior_smoke_verified = report.get("runtime_character_behavior_smoke_verified") is True
+    animation_verified = report.get("runtime_character_animation_verified") is True
+    component_wiring_verified = report.get("runtime_character_animation_component_wiring_verified") is True
+    product_inventory_verified = _editor_visual_material_product_inventory_verified(report)
+    return {
+        "non_null_editor_render_capture_envelope_attempted": True,
+        "non_null_editor_render_capture_envelope_completed": True,
+        "non_null_editor_render_capture_envelope_source_validation_status": source_validation.get("status", ""),
+        "non_null_editor_render_capture_envelope_source_validation_verified": source_validated,
+        "non_null_editor_render_capture_envelope_source_validation": source_validation,
+        "non_null_editor_render_capture_envelope_source_files": [
+            str(spec["path"])
+            for spec in _non_null_editor_render_capture_source_specs(engine_root or Path("<engine-root>"))
+        ],
+        "non_null_editor_render_capture_envelope_verified": False,
+        "non_null_editor_render_capture_envelope_blocker": blocker,
+        "non_null_editor_render_capture_envelope_candidate_matrix": _non_null_editor_render_capture_candidate_matrix(
+            source_validated=source_validated,
+            null_renderer_used=null_renderer_used,
+            rhi_requested=rhi_requested,
+        ),
+        "non_null_editor_render_capture_envelope_selected_strategy": (
+            "source_validated_non_null_editor_capture_envelope_live_blocked"
+            if source_validated and not null_renderer_used
+            else ""
+        ),
+        "non_null_editor_render_capture_rhi_requested": rhi_requested,
+        "non_null_editor_render_capture_null_renderer_used": null_renderer_used,
+        "non_null_editor_render_capture_editor_launched": True,
+        "non_null_editor_render_capture_editor_exited_cleanly": False,
+        "non_null_editor_render_capture_requires_visible_desktop": True,
+        "non_null_editor_render_capture_gpu_or_driver_ready": None,
+        "editor_visual_material_capture_api_available_under_non_null_rhi": False,
+        "editor_visual_material_capture_api_found": source_validated,
+        "editor_visual_material_capture_api_used": "AZ::Render::FrameCaptureRequestBus::CaptureScreenshot"
+        if source_validated
+        else "",
+        "editor_visual_material_temp_scene_created": False,
+        "editor_visual_material_temp_scene_path": "",
+        "editor_visual_material_defaultlevel_mutation": False,
+        "editor_visual_material_production_level_mutation": False,
+        "editor_visual_material_character_instantiated": False,
+        "editor_visual_material_character_source_path": (
+            "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab"
+        ),
+        "editor_visual_material_character_product_or_prefab_path": "",
+        "editor_visual_material_camera_or_view_framed": False,
+        "editor_visual_material_light_or_environment_prepared": False,
+        "editor_visual_material_capture_requested": False,
+        "editor_visual_material_capture_completed": False,
+        "editor_visual_material_capture_artifact_path": "",
+        "editor_visual_material_capture_artifact_exists": False,
+        "editor_visual_material_capture_artifact_format": "",
+        "editor_visual_material_capture_artifact_width": 0,
+        "editor_visual_material_capture_artifact_height": 0,
+        "editor_visual_material_capture_artifact_size_bytes": 0,
+        "editor_visual_material_capture_content_validation_attempted": False,
+        "editor_visual_material_capture_content_validation_verified": False,
+        "editor_visual_material_nonblank_validation_verified": False,
+        "editor_visual_material_character_presence_validation_verified": False,
+        "editor_visual_material_material_presence_validation_verified": False,
+        "editor_visual_material_cleanup_verified": True,
+        "editor_visual_material_selected_log_scan_passed": True,
+        "visual_material_capture_readiness_verified": False,
+        "visual_material_product_inventory_gate_verified": product_inventory_verified,
+        "visual_material_rendered_evidence_gate_attempted": False,
+        "visual_material_rendered_evidence_gate_verified": False,
+        "visual_material_gate_claimed": False,
+        "visual_material_gate_verified": False,
+        "full_runtime_character_visual_material_gate_verified": False,
+        "full_runtime_character_proof_contract_pinned": True,
+        "full_runtime_character_proof_contract_verified": True,
+        "full_runtime_character_proof_satisfied_gates": satisfied_gates,
+        "full_runtime_character_proof_unsatisfied_gates": [
+            {
+                "id": "visual_material",
+                "name": "Visual/render/material validation",
+                "verified": False,
+                "blocker": blocker,
+                "evidence": "Non-null Editor render/capture envelope source-validated; rendered content not captured.",
+            }
+        ],
+        "full_runtime_character_proof_deferred_gates": [
+            {
+                "id": "visual_capture_surface",
+                "name": "Non-null Editor/render capture execution",
+                "verified": False,
+                "blocker": blocker,
+                "evidence": "visible desktop/GPU/RHI readiness and temp visual scene execution are deferred",
+            },
+            {
+                "id": "repeated_behavior_scenario",
+                "name": "Repeated runtime behavior scenario",
+                "verified": False,
+                "blocker": "blocked_by_full_runtime_character_repeated_behavior_scenario_deferred",
+                "evidence": "not part of this visual-capture envelope slice",
+            },
         ],
         "runtime_character_behavior_smoke_verified": behavior_smoke_verified,
         "runtime_character_animation_verified": animation_verified,
