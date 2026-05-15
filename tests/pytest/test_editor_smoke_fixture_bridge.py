@@ -217,6 +217,29 @@ def _write_non_null_desktop_rhi_source_files(engine: Path) -> None:
             ]
         ),
         engine
+        / "Code"
+        / "Editor"
+        / "CryEdit.h": "\n".join(
+            [
+                "enum ECreateLevelResult",
+                "ECLR_OK = 0",
+                "ECLR_ALREADY_EXISTS",
+                "ECLR_DIR_CREATION_FAILED",
+                "ECLR_MAX_PATH_EXCEEDED",
+            ]
+        ),
+        engine
+        / "Code"
+        / "Editor"
+        / "CryEdit.cpp": "\n".join(
+            [
+                "CCryEditApp::CreateLevel",
+                "GetIEditor()->GetDocument()->Save()",
+                "CreateDefaultLevelAssets",
+                "AddToRecentFileList",
+            ]
+        ),
+        engine
         / "AutomatedTesting"
         / "Gem"
         / "PythonTests"
@@ -5604,6 +5627,291 @@ def test_active_viewport_temp_scene_readiness_does_not_verify_visual_gate():
     assert "visual_material_gate_verified" in " ".join(result.messages)
 
 
+def _safe_temp_visual_scene_context_payload(*, created: bool = True, cleanup_completed: bool = True) -> dict:
+    payload = _active_viewport_temp_scene_readiness_payload()
+    payload.update(
+        {
+            "diagnostic_mode": "editor-safe-temp-visual-scene-display-context",
+            "temp_visual_scene_context_exercise_attempted": True,
+            "temp_visual_scene_context_exercise_completed": True,
+            "temp_visual_scene_context_exercise_verified": bool(created and cleanup_completed),
+            "temp_visual_scene_context_exercise_blocker": "" if created and cleanup_completed else "failed_safe_cleanup_incomplete",
+            "temp_visual_scene_source_validated": True,
+            "temp_visual_scene_source_validation_status": "editor_safe_temp_visual_scene_display_context_source_validation_pass",
+            "temp_visual_scene_path": (
+                "Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/"
+                "editor_safe_temp_visual_scene_display_context_test"
+            ),
+            "temp_visual_scene_created": created,
+            "temp_visual_scene_opened": created,
+            "temp_visual_scene_saved": created,
+            "temp_visual_scene_cleanup_attempted": True,
+            "temp_visual_scene_cleanup_completed": cleanup_completed,
+            "temp_visual_scene_cleanup_policy": "post_editor_exit_run_owned_temp_root_cleanup",
+            "temp_visual_scene_blocker": "" if created and cleanup_completed else "failed_safe_cleanup_incomplete",
+            "defaultlevel_mutation_checked": True,
+            "defaultlevel_mutation_detected": False,
+            "production_level_mutation_checked": True,
+            "production_level_mutation_detected": False,
+            "production_character_asset_mutation_checked": True,
+            "production_character_asset_mutation_detected": False,
+            "active_viewport_after_temp_context_attempted": True,
+            "active_viewport_after_temp_context_verified": False,
+            "active_viewport_after_temp_context_state": "active_viewport_python_probe_deferred_without_explicit_gate",
+            "active_viewport_after_temp_context_blocker": "blocked_by_editor_active_viewport_window_handle_unavailable",
+            "framecapture_target_after_temp_context_attempted": True,
+            "framecapture_target_after_temp_context_verified": False,
+            "framecapture_target_after_temp_context_blocker": "blocked_by_active_viewport_window_handle_unavailable",
+            "editor_temp_visual_scene_path": (
+                "Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/"
+                "editor_safe_temp_visual_scene_display_context_test"
+            ),
+            "editor_temp_visual_scene_created": created,
+            "editor_temp_visual_scene_cleanup_verified": cleanup_completed,
+            "editor_visual_material_temp_scene_created": created,
+            "editor_visual_material_temp_scene_path": (
+                "Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/"
+                "editor_safe_temp_visual_scene_display_context_test"
+            ),
+            "editor_visual_material_capture_target_readiness_verified": bool(created and cleanup_completed),
+            "proof_claims": [
+                "Safe temp visual scene/display context exercised and cleaned up under Levels/_maxine_visual_smoke.",
+                "No defaultlevel or production-level mutation was detected.",
+            ],
+            "proof_limits": [
+                "No screenshot request/completion.",
+                "No rendered visual/material evidence.",
+                "No full runtime character proof.",
+            ],
+            "editor_visual_material_capture_requested": False,
+            "editor_visual_material_capture_request_accepted": False,
+            "editor_visual_material_capture_completed": False,
+            "visual_material_capture_readiness_verified": False,
+            "visual_material_rendered_evidence_gate_attempted": False,
+            "visual_material_rendered_evidence_gate_verified": False,
+            "visual_material_gate_claimed": False,
+            "visual_material_gate_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+        }
+    )
+    return payload
+
+
+def test_safe_temp_visual_scene_source_validation_success_and_blocked(tmp_path):
+    env = _live_env(tmp_path)
+    engine = Path(env["O3DE_ENGINE_ROOT"])
+    _write_non_null_desktop_rhi_source_files(engine)
+
+    success = editor_python_smoke._editor_safe_temp_visual_scene_display_context_source_validation(engine)
+    assert success["status"] == "editor_safe_temp_visual_scene_display_context_source_validation_pass"
+    assert success["blocker"] == ""
+
+    missing_engine = tmp_path / "missing-engine"
+    blocked = editor_python_smoke._editor_safe_temp_visual_scene_display_context_source_validation(missing_engine)
+    assert blocked["status"] == "editor_safe_temp_visual_scene_display_context_source_validation_inconclusive"
+    assert blocked["blocker"] == "blocked_by_temp_visual_scene_source_validation_unavailable"
+
+
+def test_safe_temp_visual_scene_policy_rejects_unsafe_paths():
+    accepted = editor_python_smoke._safe_temp_visual_scene_path_policy(
+        "Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/run-001"
+    )
+    assert accepted["verified"] is True
+
+    for candidate in (
+        "Levels/defaultlevel/editor_safe_temp_visual_scene_display_context",
+        "Levels/production/editor_safe_temp_visual_scene_display_context",
+        "../Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context",
+        "Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab",
+    ):
+        result = editor_python_smoke._safe_temp_visual_scene_path_policy(candidate)
+        assert result["verified"] is False
+        assert result["blocker"] == "blocked_by_mutation_policy"
+
+
+def test_safe_temp_visual_scene_context_exercise_verified_with_cleanup(tmp_path, monkeypatch):
+    env = _live_env(tmp_path)
+    project = Path(env["O3DE_PROJECT_PATH"])
+    monkeypatch.setenv("O3DE_ENGINE_ROOT", env["O3DE_ENGINE_ROOT"])
+    monkeypatch.setenv("O3DE_PROJECT_PATH", str(project))
+    monkeypatch.setenv(
+        "MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_NAME",
+        "_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/test_run",
+    )
+    monkeypatch.setenv(
+        "MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_PATH",
+        str(project / "Levels" / "_maxine_visual_smoke" / "editor_safe_temp_visual_scene_display_context" / "test_run"),
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_editor_safe_temp_visual_scene_display_context_source_validation",
+        lambda _engine_root: {
+            "status": "editor_safe_temp_visual_scene_display_context_source_validation_pass",
+            "blocker": "",
+            "files": [],
+        },
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_live_non_null_editor_launch_source_validation",
+        lambda _engine_root: {"status": "live_non_null_editor_launch_source_validation_pass"},
+    )
+
+    class General:
+        def create_level_no_prompt(self, template, level_name, heightmap, unit_size, texture_size, use_terrain):
+            target = project / "Levels" / level_name
+            target.mkdir(parents=True)
+            (target / "test_run.prefab").write_text("{}", encoding="utf-8")
+            self.created_args = (template, level_name, heightmap, unit_size, texture_size, use_terrain)
+            return 0
+
+    general = General()
+    result = editor_python_smoke._run_editor_safe_temp_visual_scene_display_context_checks(
+        _live_non_null_editor_launch_verified_payload(),
+        progress_log=None,
+        general=general,
+    )
+
+    assert result["temp_visual_scene_context_exercise_verified"] is True
+    assert result["temp_visual_scene_source_validated"] is True
+    assert result["temp_visual_scene_created"] is True
+    assert result["temp_visual_scene_opened"] is True
+    assert result["temp_visual_scene_saved"] is True
+    assert result["temp_visual_scene_cleanup_attempted"] is False
+    assert result["temp_visual_scene_cleanup_completed"] is False
+    assert result["temp_visual_scene_cleanup_policy"] == "post_editor_exit_run_owned_temp_root_cleanup"
+    assert result["temp_visual_scene_path"].startswith("Levels/_maxine_visual_smoke/")
+    assert result["defaultlevel_mutation_checked"] is True
+    assert result["defaultlevel_mutation_detected"] is False
+    assert result["production_level_mutation_checked"] is True
+    assert result["production_level_mutation_detected"] is False
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["visual_material_gate_verified"] is False
+    assert result["runtime_character_proof_verified"] is False
+    assert general.created_args == (
+        "Prefabs/Default_Level.prefab",
+        "_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/test_run",
+        1024,
+        1,
+        4096,
+        False,
+    )
+
+
+def test_safe_temp_visual_scene_context_create_blocked_does_not_fake_success(monkeypatch):
+    monkeypatch.setenv("O3DE_ENGINE_ROOT", "")
+    monkeypatch.setenv("O3DE_PROJECT_PATH", "")
+    monkeypatch.setenv(
+        "MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_NAME",
+        "_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/test_run",
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_editor_safe_temp_visual_scene_display_context_source_validation",
+        lambda _engine_root: {
+            "status": "editor_safe_temp_visual_scene_display_context_source_validation_pass",
+            "blocker": "",
+            "files": [],
+        },
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_live_non_null_editor_launch_source_validation",
+        lambda _engine_root: {"status": "live_non_null_editor_launch_source_validation_pass"},
+    )
+
+    class General:
+        def create_level_no_prompt(self, *args):
+            return 2
+
+    result = editor_python_smoke._run_editor_safe_temp_visual_scene_display_context_checks(
+        _live_non_null_editor_launch_verified_payload(),
+        progress_log=None,
+        general=General(),
+    )
+
+    assert result["temp_visual_scene_context_exercise_verified"] is False
+    assert result["temp_visual_scene_blocker"] == "blocked_by_temp_scene_create_or_open"
+    assert result["temp_visual_scene_created"] is False
+    assert result["temp_visual_scene_cleanup_attempted"] is True
+    assert result["temp_visual_scene_cleanup_completed"] is True
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["visual_material_gate_verified"] is False
+    assert result["runtime_character_proof_verified"] is False
+
+
+def test_safe_temp_visual_scene_context_mode_cleans_after_editor_exit(tmp_path):
+    env = _live_env(tmp_path)
+    _write_non_null_desktop_rhi_source_files(Path(env["O3DE_ENGINE_ROOT"]))
+
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        assert "editor_safe_temp_visual_scene_display_context_smoke.py" in argv[-1].replace("\\", "/")
+        assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == "editor-safe-temp-visual-scene-display-context"
+        assert env["MAXINE_ENABLE_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] == "1"
+        assert env["MAXINE_ALLOW_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] == "1"
+        assert "MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH" not in env
+        temp_path = Path(env["MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_PATH"])
+        temp_path.mkdir(parents=True)
+        (temp_path / "test.prefab").write_text("{}", encoding="utf-8")
+        payload = json.loads(Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).read_text(encoding="utf-8"))
+        payload.update(_safe_temp_visual_scene_context_payload(created=True, cleanup_completed=False))
+        payload["temp_visual_scene_path"] = "Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/test"
+        payload["editor_temp_visual_scene_path"] = payload["temp_visual_scene_path"]
+        payload["editor_visual_material_temp_scene_path"] = payload["temp_visual_scene_path"]
+        Path(env["MAXINE_EDITOR_SMOKE_REPORT_OUT"]).write_text(json.dumps(payload), encoding="utf-8")
+        return subprocess.CompletedProcess(args=argv, returncode=0, stdout="", stderr="")
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=env,
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="editor-safe-temp-visual-scene-display-context",
+    )
+
+    assert result["status"] == "pass"
+    assert result["temp_visual_scene_cleanup_attempted"] is True
+    assert result["temp_visual_scene_cleanup_completed"] is True
+    assert result["temp_visual_scene_context_exercise_verified"] is True
+    assert Path(result["temp_visual_scene_cleanup_path_abs"]).exists() is False
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["visual_material_gate_verified"] is False
+
+
+def test_safe_temp_visual_scene_context_validation_rejects_overclaims():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_safe_temp_visual_scene_context_payload())
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "editor_visual_material_capture_requested": True,
+            "visual_material_gate_verified": True,
+            "runtime_character_proof_verified": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+    assert "screenshot/frame capture" in " ".join(result.messages)
+
+
+def test_safe_temp_visual_scene_context_schema_accepts_fields():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_safe_temp_visual_scene_context_payload())
+    report["mode"] = "local_editor_python"
+    report["status"] = "pass"
+
+    result = schema_validate(report, load_json(SCHEMA))
+
+    assert result.status == "pass", result.messages
+
+
 def _install_fake_frame_capture_modules(monkeypatch, *, callback_parameters, success_value="success"):
     azlmbr_module = types.ModuleType("azlmbr")
     azlmbr_module.__path__ = []
@@ -5927,6 +6235,23 @@ def test_active_viewport_temp_scene_readiness_wrapper_bootstraps_repo_root_befor
     assert "sys.path.insert(0, str(REPO_ROOT))" in text
     assert "from tools.o3de.editor_python import maxine_package_prefab_smoke" in text
     assert "import maxine_package_prefab_smoke" not in {line.strip() for line in text.splitlines()}
+    assert text.index("sys.path.insert(0, str(REPO_ROOT))") < text.index(
+        "from tools.o3de.editor_python import maxine_package_prefab_smoke"
+    )
+
+
+def test_safe_temp_visual_scene_display_context_wrapper_bootstraps_repo_root_before_package_import():
+    wrapper = REPO_ROOT / "tools" / "o3de" / "editor_python" / "editor_safe_temp_visual_scene_display_context_smoke.py"
+
+    text = wrapper.read_text(encoding="utf-8-sig")
+
+    assert "import sys" in text
+    assert "from pathlib import Path" in text
+    assert "REPO_ROOT = Path(__file__).resolve().parents[3]" in text
+    assert "sys.path.insert(0, str(REPO_ROOT))" in text
+    assert "from tools.o3de.editor_python import maxine_package_prefab_smoke" in text
+    assert "import maxine_package_prefab_smoke" not in {line.strip() for line in text.splitlines()}
+    assert "editor-safe-temp-visual-scene-display-context" in text
     assert text.index("sys.path.insert(0, str(REPO_ROOT))") < text.index(
         "from tools.o3de.editor_python import maxine_package_prefab_smoke"
     )

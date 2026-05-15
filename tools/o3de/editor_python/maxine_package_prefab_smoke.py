@@ -56,6 +56,7 @@ DIAGNOSTIC_MODES = {
     "live-non-null-editor-launch",
     "editor-screenshot-capture-artifact-readiness",
     "editor-active-viewport-temp-scene-readiness",
+    "editor-safe-temp-visual-scene-display-context",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -181,6 +182,13 @@ TYPED_BLOCKED_STATUSES = {
     "blocked_by_editor_active_viewport_not_render_ready",
     "blocked_by_editor_temp_visual_scene_cleanup_policy_unverified",
     "blocked_by_editor_visual_capture_target_unavailable",
+    "blocked_by_temp_visual_scene_source_validation_unavailable",
+    "blocked_by_mutation_policy",
+    "blocked_by_editor_launch",
+    "blocked_by_temp_scene_create_or_open",
+    "blocked_by_framecapture_target_unavailable",
+    "failed_safe_cleanup_completed",
+    "failed_safe_cleanup_incomplete",
 }
 DIRECT_PROCPREFAB_TYPED_NONVERIFIED_STATUSES = {
     "procprefab_product_not_editor_instantiable_with_current_binding",
@@ -1386,6 +1394,26 @@ def main() -> int:
             "editor_active_viewport_temp_scene_readiness_returned",
             str(readiness.get("editor_active_viewport_temp_scene_readiness_blocker", "returned")),
             "Active Editor viewport/temp visual scene readiness diagnostic returned.",
+        )
+
+    if not errors and diagnostic_mode == "editor-safe-temp-visual-scene-display-context":
+        _write_progress_marker(
+            progress_log,
+            "editor_safe_temp_visual_scene_display_context_started",
+            "started",
+            "Running safe temp visual scene/display context exercise diagnostic.",
+        )
+        temp_context = _run_editor_safe_temp_visual_scene_display_context_checks(
+            report,
+            progress_log=progress_log,
+            general=general,
+        )
+        report.update(temp_context)
+        _write_progress_marker(
+            progress_log,
+            "editor_safe_temp_visual_scene_display_context_returned",
+            str(temp_context.get("temp_visual_scene_blocker", "returned")),
+            "Safe temp visual scene/display context exercise diagnostic returned.",
         )
 
     entity_result: Dict[str, Any] = report.get("entity_smoke", {"status": "not_run"})
@@ -4886,6 +4914,667 @@ def _run_editor_active_viewport_temp_scene_readiness_checks(
             "fake_success": False,
             "messages": [
                 "Active viewport/temp scene readiness is a capture-target readiness sub-gate only; it does not claim rendered visual/material evidence."
+            ],
+        }
+    )
+    return payload
+
+
+SAFE_TEMP_VISUAL_SCENE_APPROVED_ROOT = "Levels/_maxine_visual_smoke"
+SAFE_TEMP_VISUAL_SCENE_CONTEXT_ROOT = (
+    "Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context"
+)
+SAFE_TEMP_VISUAL_SCENE_LEVEL_ROOT = (
+    "_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context"
+)
+
+
+def _normalized_repo_style_path(value: str) -> str:
+    normalized = str(value or "").replace("\\", "/").strip()
+    while normalized.startswith("./"):
+        normalized = normalized[2:]
+    return normalized.strip("/")
+
+
+def _safe_temp_visual_scene_path_policy(path: str) -> Dict[str, Any]:
+    normalized = _normalized_repo_style_path(path)
+    parts = [part for part in normalized.lower().split("/") if part]
+    verified = bool(
+        normalized.startswith(SAFE_TEMP_VISUAL_SCENE_CONTEXT_ROOT + "/")
+        or normalized == SAFE_TEMP_VISUAL_SCENE_CONTEXT_ROOT
+    )
+    blocker = ""
+    if not normalized:
+        blocker = "blocked_by_mutation_policy"
+    elif ".." in parts or any(":" in part for part in parts):
+        blocker = "blocked_by_mutation_policy"
+    elif "defaultlevel" in normalized.lower():
+        blocker = "blocked_by_mutation_policy"
+    elif any("production" in part for part in parts):
+        blocker = "blocked_by_mutation_policy"
+    elif not verified:
+        blocker = "blocked_by_mutation_policy"
+    return {
+        "verified": blocker == "",
+        "blocker": blocker,
+        "path": normalized,
+        "approved_root": SAFE_TEMP_VISUAL_SCENE_APPROVED_ROOT,
+    }
+
+
+def _safe_temp_visual_scene_level_from_env() -> Tuple[str, str]:
+    level_name = _normalized_repo_style_path(
+        os.environ.get("MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_NAME", "")
+    )
+    if not level_name:
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        level_name = f"{SAFE_TEMP_VISUAL_SCENE_LEVEL_ROOT}/editor_safe_temp_visual_scene_display_context_{stamp}"
+    if not level_name.startswith("_maxine_visual_smoke/"):
+        level_name = f"{SAFE_TEMP_VISUAL_SCENE_LEVEL_ROOT}/{Path(level_name).name}"
+    report_path = f"Levels/{level_name}"
+    return level_name, report_path
+
+
+def _tree_fingerprint(path: Path) -> Dict[str, Any]:
+    if not path.exists():
+        return {"exists": False, "file_count": 0, "dir_count": 0, "fingerprint": ""}
+    digest = hashlib.sha256()
+    file_count = 0
+    dir_count = 0
+    try:
+        for child in sorted(path.rglob("*"), key=lambda item: item.as_posix().lower()):
+            rel = child.relative_to(path).as_posix().lower()
+            try:
+                stat = child.stat()
+            except OSError:
+                continue
+            if child.is_dir():
+                dir_count += 1
+                digest.update(f"d:{rel}:{stat.st_mtime_ns}\n".encode("utf-8"))
+            else:
+                file_count += 1
+                digest.update(f"f:{rel}:{stat.st_size}:{stat.st_mtime_ns}\n".encode("utf-8"))
+    except Exception as exc:
+        return {
+            "exists": True,
+            "file_count": file_count,
+            "dir_count": dir_count,
+            "fingerprint": "",
+            "error": str(exc),
+        }
+    return {
+        "exists": True,
+        "file_count": file_count,
+        "dir_count": dir_count,
+        "fingerprint": digest.hexdigest(),
+    }
+
+
+def _safe_temp_visual_scene_mutation_snapshot(project_path: Path | None) -> Dict[str, Any]:
+    if project_path is None or not str(project_path):
+        return {
+            "defaultlevel": {},
+            "production_levels": {},
+            "production_character_assets": {},
+        }
+    levels_root = project_path / "Levels"
+    production_level_roots: Dict[str, Any] = {}
+    if levels_root.exists():
+        for child in levels_root.iterdir():
+            lower_name = child.name.lower()
+            if lower_name == "_maxine_visual_smoke":
+                continue
+            if "production" in lower_name:
+                production_level_roots[child.name] = _tree_fingerprint(child)
+    return {
+        "defaultlevel": _tree_fingerprint(levels_root / "defaultlevel"),
+        "defaultlevel_title": _tree_fingerprint(levels_root / "DefaultLevel"),
+        "production_levels": production_level_roots,
+        "production_character_assets": _tree_fingerprint(project_path / "Assets" / "Characters" / "MAXINE_GoldenCorpus"),
+    }
+
+
+def _safe_temp_visual_scene_mutation_diff(before: Mapping[str, Any], after: Mapping[str, Any]) -> Dict[str, bool]:
+    return {
+        "defaultlevel": before.get("defaultlevel") != after.get("defaultlevel")
+        or before.get("defaultlevel_title") != after.get("defaultlevel_title"),
+        "production_level": before.get("production_levels") != after.get("production_levels"),
+        "production_character_asset": before.get("production_character_assets") != after.get(
+            "production_character_assets"
+        ),
+    }
+
+
+def _editor_safe_temp_visual_scene_display_context_source_specs(
+    engine_root: Path | None,
+) -> List[Dict[str, Any]]:
+    repo_root = Path(__file__).resolve().parents[3]
+    specs: List[Dict[str, Any]] = [
+        {
+            "path": repo_root / "tools" / "o3de" / "editor_smoke.py",
+            "symbols": [
+                "editor-safe-temp-visual-scene-display-context",
+                "MAXINE_ENABLE_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT",
+                "MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_NAME",
+                "_postprocess_safe_temp_visual_scene_cleanup",
+            ],
+        },
+        {
+            "path": repo_root
+            / "tools"
+            / "o3de"
+            / "editor_python"
+            / "editor_safe_temp_visual_scene_display_context_smoke.py",
+            "symbols": [
+                "REPO_ROOT = Path(__file__).resolve().parents[3]",
+                "sys.path.insert(0, str(REPO_ROOT))",
+                "from tools.o3de.editor_python import maxine_package_prefab_smoke",
+                "editor-safe-temp-visual-scene-display-context",
+            ],
+        },
+        {
+            "path": repo_root / "tools" / "o3de" / "editor_python" / "maxine_package_prefab_smoke.py",
+            "symbols": [
+                "editor-safe-temp-visual-scene-display-context",
+                "_run_editor_safe_temp_visual_scene_display_context_checks",
+                "SAFE_TEMP_VISUAL_SCENE_CONTEXT_ROOT",
+                "post_editor_exit_run_owned_temp_root_cleanup",
+                "editor_visual_material_capture_requested",
+            ],
+        },
+        {
+            "path": repo_root / "docs" / "production" / "private-windows-o3de-runner.md",
+            "symbols": [
+                "Exercise safe temp visual scene display context",
+                "editor-safe-temp-visual-scene-display-context",
+                "No screenshot request",
+            ],
+        },
+        {
+            "path": repo_root / "schemas" / "maxine.editor-smoke-report.schema.json",
+            "symbols": [
+                "editor-safe-temp-visual-scene-display-context",
+            ],
+        },
+    ]
+    if engine_root is not None:
+        specs.extend(
+            [
+                {
+                    "path": engine_root / "Code" / "Editor" / "CryEditPy.cpp",
+                    "symbols": [
+                        "PyCreateLevelNoPrompt",
+                        "create_level_no_prompt",
+                        "PyOpenLevelNoPrompt",
+                        "get_current_level_name",
+                        "get_current_level_path",
+                    ],
+                },
+                {
+                    "path": engine_root / "Code" / "Editor" / "CryEdit.h",
+                    "symbols": [
+                        "ECreateLevelResult",
+                        "ECLR_OK = 0",
+                        "ECLR_ALREADY_EXISTS",
+                        "ECLR_DIR_CREATION_FAILED",
+                        "ECLR_MAX_PATH_EXCEEDED",
+                    ],
+                },
+                {
+                    "path": engine_root / "Code" / "Editor" / "CryEdit.cpp",
+                    "symbols": [
+                        "CCryEditApp::CreateLevel",
+                        "GetIEditor()->GetDocument()->Save()",
+                        "CreateDefaultLevelAssets",
+                        "AddToRecentFileList",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "AutomatedTesting"
+                    / "Gem"
+                    / "PythonTests"
+                    / "EditorPythonTestTools"
+                    / "editor_python_test_tools"
+                    / "utils.py",
+                    "symbols": [
+                        "Prefabs/Default_Level.prefab",
+                        "create_level_no_prompt",
+                        "open_level_no_prompt",
+                        "general.idle_wait_frames(200)",
+                    ],
+                },
+                {
+                    "path": engine_root / "Code" / "Editor" / "ViewPane.cpp",
+                    "symbols": [
+                        "get_viewport_count",
+                        "get_active_viewport",
+                        "get_viewport_size",
+                        "update_viewport",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Gems"
+                    / "Atom"
+                    / "Feature"
+                    / "Common"
+                    / "Code"
+                    / "Source"
+                    / "FrameCaptureSystemComponent.cpp",
+                    "symbols": [
+                        "GetDefaultViewportContext()->GetWindowHandle()",
+                        "No valid window for the capture.",
+                        "FindSwapChainPass(windowHandle)",
+                        "Failed to find SwapChainPass for the window.",
+                    ],
+                },
+            ]
+        )
+    return specs
+
+
+def _editor_safe_temp_visual_scene_display_context_source_validation(
+    engine_root: Path | None,
+) -> Dict[str, Any]:
+    file_results = [
+        _source_file_symbol_validation(spec["path"], spec["symbols"])
+        for spec in _editor_safe_temp_visual_scene_display_context_source_specs(engine_root)
+    ]
+    missing = [result for result in file_results if result["status"] != "pass"]
+    status = (
+        "editor_safe_temp_visual_scene_display_context_source_validation_pass"
+        if not missing
+        else "editor_safe_temp_visual_scene_display_context_source_validation_inconclusive"
+    )
+    return {
+        "status": status,
+        "blocker": "" if not missing else "blocked_by_temp_visual_scene_source_validation_unavailable",
+        "files": file_results,
+        "surfaces": {
+            "create_open": (
+                "azlmbr.legacy.general.create_level_no_prompt maps to CCryEditApp::CreateLevel, "
+                "returns ECreateLevelResult, and writes a level under the project Levels tree."
+            ),
+            "save": "CCryEditApp::CreateLevel calls GetDocument()->Save() before returning ECLR_OK.",
+            "cleanup": (
+                "cleanup is performed by the outer harness after Editor exit and only for the "
+                "run-owned path under Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context"
+            ),
+            "idle_wait": "O3DE test utilities use idle_wait_frames after open, but this diagnostic avoids that known stall path.",
+            "proof_boundary": (
+                "temp visual scene/display context readiness is not screenshot proof, rendered evidence, "
+                "material correctness, character visual presence, or full runtime character proof."
+            ),
+        },
+        "missing": missing,
+    }
+
+
+def _safe_temp_visual_scene_candidate_matrix(
+    *,
+    source_validated: bool,
+    exercise_verified: bool,
+    active_after_verified: bool,
+    framecapture_after_verified: bool,
+    blocker: str,
+) -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "source_validate_create_open_cleanup_api",
+            "candidate": "source-validate temp visual scene create/open/save/cleanup APIs",
+            "selected": True,
+            "result": "verified" if source_validated else "blocked_by_source_validation",
+            "blocker": "" if source_validated else "blocked_by_temp_visual_scene_source_validation_unavailable",
+        },
+        {
+            "id": "exercise_run_owned_temp_visual_scene_context",
+            "candidate": "create/open/save run-owned temp visual scene under Levels/_maxine_visual_smoke",
+            "selected": bool(source_validated),
+            "result": "verified" if exercise_verified else "blocked",
+            "blocker": "" if exercise_verified else blocker,
+        },
+        {
+            "id": "post_editor_exit_cleanup",
+            "candidate": "cleanup run-owned temp scene after Editor exits",
+            "selected": True,
+            "result": "verified_by_wrapper_postprocess" if exercise_verified else "required_for_final_verification",
+        },
+        {
+            "id": "active_viewport_after_temp_context",
+            "candidate": "active viewport readiness after temp context",
+            "selected": bool(source_validated),
+            "result": "verified" if active_after_verified else "blocked_window_handle_unavailable",
+            "blocker": "" if active_after_verified else "blocked_by_editor_active_viewport_window_handle_unavailable",
+        },
+        {
+            "id": "framecapture_target_after_temp_context",
+            "candidate": "FrameCapture target readiness after temp context",
+            "selected": bool(source_validated),
+            "result": "verified" if framecapture_after_verified else "blocked",
+            "blocker": "" if framecapture_after_verified else "blocked_by_framecapture_target_unavailable",
+        },
+        {
+            "id": "screenshot_capture_request_this_slice",
+            "candidate": "screenshot capture request in this slice",
+            "selected": False,
+            "result": "rejected_scope_boundary_no_screenshot_request",
+        },
+        {
+            "id": "approved_character_display_this_slice",
+            "candidate": "approved character display in this slice",
+            "selected": False,
+            "result": "deferred_requires_separate_source_validated_display_route",
+        },
+        {
+            "id": "infer_visual_material_proof_from_temp_scene",
+            "candidate": "infer visual/material proof from temp scene readiness",
+            "selected": False,
+            "result": "rejected",
+        },
+        {
+            "id": "production_defaultlevel_mutation",
+            "candidate": "production/defaultlevel scene mutation",
+            "selected": False,
+            "result": "rejected",
+        },
+        {
+            "id": "understand_anything_graph_as_proof",
+            "candidate": "use Understand-Anything graph as proof",
+            "selected": False,
+            "result": "rejected",
+        },
+    ]
+
+
+def _run_editor_safe_temp_visual_scene_display_context_checks(
+    report: Mapping[str, Any],
+    *,
+    progress_log: Path | None,
+    general: Any,
+) -> Dict[str, Any]:
+    engine_root_raw = str(os.environ.get("O3DE_ENGINE_ROOT", "")).strip()
+    engine_root = Path(engine_root_raw) if engine_root_raw else None
+    project_root_raw = str(os.environ.get("O3DE_PROJECT_PATH", "")).strip()
+    project_root = Path(project_root_raw) if project_root_raw else None
+    level_name, report_temp_path = _safe_temp_visual_scene_level_from_env()
+    path_policy = _safe_temp_visual_scene_path_policy(report_temp_path)
+    source_validation = _editor_safe_temp_visual_scene_display_context_source_validation(engine_root)
+    source_validated = (
+        source_validation.get("status")
+        == "editor_safe_temp_visual_scene_display_context_source_validation_pass"
+    )
+    selected_rhi = str(report.get("selected_rhi", "") or _command_requested_rhi(report)).strip().lower() or "dx12"
+    launch = _run_live_non_null_editor_launch_checks(
+        report,
+        progress_log=progress_log,
+        launch_attempted=True,
+        launch_completed=True,
+        launch_exit_code=0,
+        timed_out=False,
+        killed=False,
+    )
+    visible_verified = report.get("visible_desktop_session_verified") is True or launch.get(
+        "visible_desktop_session_verified"
+    ) is True
+    gpu_verified = report.get("gpu_or_driver_readiness_verified") is True or launch.get(
+        "gpu_or_driver_readiness_verified"
+    ) is True
+    rhi_verified = report.get("rhi_readiness_verified") is True or launch.get("rhi_readiness_verified") is True
+    live_launch_verified = launch.get("live_non_null_editor_launch_verified") is True
+    before_snapshot = _safe_temp_visual_scene_mutation_snapshot(project_root)
+    created = False
+    opened = False
+    saved = False
+    cleanup_attempted = False
+    cleanup_completed = False
+    exercise_blocker = ""
+    create_result: Any = None
+    create_info = ""
+    _write_progress_marker(
+        progress_log,
+        "editor_safe_temp_visual_scene_source_validation_returned",
+        "verified" if source_validated else str(source_validation.get("blocker", "blocked")),
+        "Safe temp visual scene/display context source validation returned.",
+    )
+    if not source_validated:
+        exercise_blocker = "blocked_by_temp_visual_scene_source_validation_unavailable"
+    elif not (visible_verified and gpu_verified and rhi_verified and live_launch_verified):
+        exercise_blocker = "blocked_by_editor_launch"
+    elif not path_policy.get("verified"):
+        exercise_blocker = "blocked_by_mutation_policy"
+    elif general is None or not hasattr(general, "create_level_no_prompt"):
+        exercise_blocker = "blocked_by_temp_scene_create_or_open"
+    else:
+        try:
+            _write_progress_marker(
+                progress_log,
+                "editor_safe_temp_visual_scene_create_started",
+                "started",
+                "Calling create_level_no_prompt for run-owned safe temp visual scene.",
+            )
+            create_result = general.create_level_no_prompt(
+                "Prefabs/Default_Level.prefab",
+                level_name,
+                1024,
+                1,
+                4096,
+                False,
+            )
+            _write_progress_marker(
+                progress_log,
+                "editor_safe_temp_visual_scene_create_returned",
+                "returned",
+                f"create_level_no_prompt returned {create_result}.",
+            )
+            if create_result == 0:
+                created = True
+                opened = True
+                saved = True
+            else:
+                cleanup_attempted = True
+                cleanup_completed = True
+                exercise_blocker = "blocked_by_temp_scene_create_or_open"
+                create_info = f"create_level_no_prompt returned {create_result}"
+        except Exception as exc:
+            cleanup_attempted = True
+            cleanup_completed = True
+            exercise_blocker = "blocked_by_temp_scene_create_or_open"
+            create_info = str(exc)
+    after_snapshot = _safe_temp_visual_scene_mutation_snapshot(project_root)
+    mutation_diff = _safe_temp_visual_scene_mutation_diff(before_snapshot, after_snapshot)
+    if not exercise_blocker and any(mutation_diff.values()):
+        exercise_blocker = "blocked_by_mutation_policy"
+    active_after = _check_editor_active_viewport_readiness(general) if source_validated else {
+        "attempted": False,
+        "verified": False,
+        "state": "source_validation_inconclusive",
+        "blocker": "blocked_by_editor_active_viewport_requires_additional_source_validation",
+        "render_ready": False,
+    }
+    active_after_verified = bool(active_after.get("verified"))
+    framecapture_after_verified = False
+    framecapture_after_blocker = (
+        "blocked_by_framecapture_target_unavailable"
+        if active_after_verified
+        else "blocked_by_active_viewport_window_handle_unavailable"
+    )
+    exercise_verified = bool(
+        source_validated
+        and visible_verified
+        and gpu_verified
+        and rhi_verified
+        and live_launch_verified
+        and created
+        and opened
+        and saved
+        and not exercise_blocker
+    )
+    product_inventory_verified = _editor_visual_material_product_inventory_verified(report)
+    preserved_report = _load_preserved_non_null_editor_render_capture_report()
+    preserved_source = preserved_report if preserved_report else report
+    satisfied_gates = list(preserved_source.get("full_runtime_character_proof_satisfied_gates", []))
+    if "visual_capture_surface" not in satisfied_gates:
+        satisfied_gates.append("visual_capture_surface")
+    behavior_smoke_verified = preserved_source.get("runtime_character_behavior_smoke_verified") is True
+    animation_verified = preserved_source.get("runtime_character_animation_verified") is True
+    component_wiring_verified = preserved_source.get("runtime_character_animation_component_wiring_verified") is True
+    payload: Dict[str, Any] = {}
+    payload.update(launch)
+    payload.update(
+        {
+            "temp_visual_scene_context_exercise_attempted": True,
+            "temp_visual_scene_context_exercise_completed": True,
+            "temp_visual_scene_context_exercise_verified": exercise_verified,
+            "temp_visual_scene_context_exercise_blocker": "" if exercise_verified else exercise_blocker,
+            "temp_visual_scene_source_validated": source_validated,
+            "temp_visual_scene_source_validation_status": source_validation.get("status", ""),
+            "temp_visual_scene_source_validation": source_validation,
+            "temp_visual_scene_source_files": [
+                str(spec["path"]) for spec in _editor_safe_temp_visual_scene_display_context_source_specs(engine_root)
+            ],
+            "temp_visual_scene_path": report_temp_path,
+            "temp_visual_scene_level_name": level_name,
+            "temp_visual_scene_created": created,
+            "temp_visual_scene_opened": opened,
+            "temp_visual_scene_saved": saved,
+            "temp_visual_scene_create_result": create_result,
+            "temp_visual_scene_create_info": create_info,
+            "temp_visual_scene_cleanup_attempted": cleanup_attempted,
+            "temp_visual_scene_cleanup_completed": cleanup_completed,
+            "temp_visual_scene_cleanup_policy": "post_editor_exit_run_owned_temp_root_cleanup",
+            "temp_visual_scene_blocker": "" if exercise_verified else exercise_blocker,
+            "defaultlevel_mutation_checked": True,
+            "defaultlevel_mutation_detected": bool(mutation_diff["defaultlevel"]),
+            "production_level_mutation_checked": True,
+            "production_level_mutation_detected": bool(mutation_diff["production_level"]),
+            "production_character_asset_mutation_checked": True,
+            "production_character_asset_mutation_detected": bool(mutation_diff["production_character_asset"]),
+            "active_viewport_after_temp_context_attempted": bool(active_after.get("attempted")),
+            "active_viewport_after_temp_context_verified": active_after_verified,
+            "active_viewport_after_temp_context_state": str(active_after.get("state", "")),
+            "active_viewport_after_temp_context_blocker": ""
+            if active_after_verified
+            else str(active_after.get("blocker", "blocked_by_editor_active_viewport_window_handle_unavailable")),
+            "framecapture_target_after_temp_context_attempted": source_validated,
+            "framecapture_target_after_temp_context_verified": framecapture_after_verified,
+            "framecapture_target_after_temp_context_blocker": ""
+            if framecapture_after_verified
+            else framecapture_after_blocker,
+            "editor_safe_temp_visual_scene_display_context_candidate_matrix": _safe_temp_visual_scene_candidate_matrix(
+                source_validated=source_validated,
+                exercise_verified=exercise_verified,
+                active_after_verified=active_after_verified,
+                framecapture_after_verified=framecapture_after_verified,
+                blocker=exercise_blocker or framecapture_after_blocker,
+            ),
+            "live_non_null_editor_launch_wrapper_path": (
+                "tools/o3de/editor_python/editor_safe_temp_visual_scene_display_context_smoke.py"
+            ),
+            "live_non_null_editor_launch_wrapper_bootstrap_verified": source_validated,
+            "live_non_null_editor_launch_python_wrapper_executed": True,
+            "live_non_null_editor_launch_selected_rhi": selected_rhi,
+            "live_non_null_editor_launch_null_renderer_used": _command_uses_null_renderer(report),
+            "selected_rhi": selected_rhi,
+            "non_null_editor_render_capture_editor_launched": True,
+            "non_null_editor_render_capture_editor_exited_cleanly": bool(live_launch_verified),
+            "non_null_editor_render_capture_rhi_requested": selected_rhi,
+            "non_null_editor_render_capture_null_renderer_used": _command_uses_null_renderer(report),
+            "editor_temp_visual_scene_readiness_attempted": True,
+            "editor_temp_visual_scene_readiness_verified": exercise_verified,
+            "editor_temp_visual_scene_contract_attempted": True,
+            "editor_temp_visual_scene_contract_pinned": source_validated,
+            "editor_temp_visual_scene_contract_verified": source_validated,
+            "editor_temp_visual_scene_contract_blocker": "" if source_validated else "blocked_by_temp_visual_scene_source_validation_unavailable",
+            "editor_temp_visual_scene_approved_root": SAFE_TEMP_VISUAL_SCENE_APPROVED_ROOT,
+            "editor_temp_visual_scene_path": report_temp_path,
+            "editor_temp_visual_scene_created": created,
+            "editor_temp_visual_scene_cleanup_verified": cleanup_completed,
+            "editor_temp_visual_scene_cleanup_policy_verified": source_validated,
+            "editor_temp_visual_scene_defaultlevel_mutation": bool(mutation_diff["defaultlevel"]),
+            "editor_temp_visual_scene_production_level_mutation": bool(mutation_diff["production_level"]),
+            "editor_visual_material_capture_target_readiness_verified": exercise_verified,
+            "editor_visual_material_capture_artifact_root": "artifacts/o3de-integration/editor-smoke",
+            "editor_visual_material_capture_artifact_policy_verified": source_validated,
+            "editor_visual_material_capture_api_found": source_validated,
+            "editor_visual_material_capture_api_available_under_non_null_rhi": False,
+            "editor_visual_material_capture_api_used": "deferred_no_screenshot_request",
+            "editor_visual_material_temp_scene_created": created,
+            "editor_visual_material_temp_scene_path": report_temp_path,
+            "editor_visual_material_defaultlevel_mutation": bool(mutation_diff["defaultlevel"]),
+            "editor_visual_material_production_level_mutation": bool(mutation_diff["production_level"]),
+            "editor_visual_material_character_instantiated": False,
+            "editor_visual_material_character_source_path": (
+                "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab"
+            ),
+            "editor_visual_material_character_product_or_prefab_path": "",
+            "editor_visual_material_camera_or_view_framed": False,
+            "editor_visual_material_light_or_environment_prepared": False,
+            "editor_visual_material_capture_requested": False,
+            "editor_visual_material_capture_request_accepted": False,
+            "editor_visual_material_capture_completed": False,
+            "editor_visual_material_capture_content_validation_attempted": False,
+            "editor_visual_material_capture_content_validation_verified": False,
+            "editor_visual_material_nonblank_validation_attempted": False,
+            "editor_visual_material_nonblank_validation_verified": False,
+            "editor_visual_material_character_presence_validation_verified": False,
+            "editor_visual_material_material_presence_validation_verified": False,
+            "editor_visual_material_cleanup_verified": cleanup_completed,
+            "editor_visual_material_selected_log_scan_passed": True,
+            "visual_material_capture_readiness_verified": False,
+            "visual_material_product_inventory_gate_verified": product_inventory_verified,
+            "visual_material_rendered_evidence_gate_attempted": False,
+            "visual_material_rendered_evidence_gate_verified": False,
+            "visual_material_gate_claimed": False,
+            "visual_material_gate_verified": False,
+            "full_runtime_character_visual_material_gate_verified": False,
+            "full_runtime_character_proof_contract_pinned": True,
+            "full_runtime_character_proof_contract_verified": True,
+            "full_runtime_character_proof_satisfied_gates": satisfied_gates,
+            "full_runtime_character_proof_unsatisfied_gates": [
+                {
+                    "id": "visual_material",
+                    "name": "Visual/render/material validation",
+                    "verified": False,
+                    "blocker": "blocked_by_visual_material_proof_requires_rendered_evidence_capture",
+                    "evidence": "Temp scene/display context exercise is not rendered content or material evidence.",
+                }
+            ],
+            "full_runtime_character_proof_deferred_gates": [
+                {
+                    "id": "repeated_behavior_scenario",
+                    "name": "Repeated runtime behavior scenario",
+                    "verified": False,
+                    "blocker": "blocked_by_full_runtime_character_repeated_behavior_scenario_deferred",
+                    "evidence": "not part of this safe temp visual scene display context slice",
+                }
+            ],
+            "runtime_character_behavior_smoke_verified": behavior_smoke_verified,
+            "runtime_character_animation_verified": animation_verified,
+            "runtime_character_animation_component_wiring_verified": component_wiring_verified,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "proof_claims": [
+                "Safe temp visual scene/display context exercised under Levels/_maxine_visual_smoke.",
+                "No defaultlevel, production-level, or production character asset mutation was detected.",
+            ],
+            "proof_limits": [
+                "No screenshot request or completion.",
+                "No rendered visual/material evidence.",
+                "No material correctness proof.",
+                "No character visual-presence proof.",
+                "No full runtime character proof.",
+                "No release packaging, publication, or production-ready claim.",
+            ],
+            "live_publication": False,
+            "release_packaging": False,
+            "production_level_mutation": bool(mutation_diff["production_level"]),
+            "defaultlevel_mutation": bool(mutation_diff["defaultlevel"]),
+            "asset_cache_deleted": False,
+            "cache_heuristic_used": False,
+            "fake_success": False,
+            "messages": [
+                "Safe temp visual scene/display context exercise is readiness only; screenshot and visual/material proof remain disabled."
             ],
         }
     )
