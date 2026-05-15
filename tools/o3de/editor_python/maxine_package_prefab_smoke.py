@@ -164,6 +164,8 @@ TYPED_BLOCKED_STATUSES = {
     "blocked_by_editor_screenshot_capture_requires_window_handle",
     "blocked_by_editor_screenshot_capture_api_unavailable_under_current_context",
     "blocked_by_editor_screenshot_capture_request_failed",
+    "blocked_by_editor_screenshot_capture_callback_parameters_unrecognized",
+    "blocked_by_editor_screenshot_capture_completion_callback_failed",
     "blocked_by_editor_screenshot_capture_completion_not_observed",
     "blocked_by_editor_screenshot_capture_artifact_missing",
     "blocked_by_editor_screenshot_capture_artifact_empty",
@@ -4221,6 +4223,16 @@ def _frame_capture_error_message(error: Any) -> str:
     return str(error)
 
 
+def _as_list(value: Any) -> List[Any]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return list(value)
+    if isinstance(value, tuple):
+        return list(value)
+    return [value]
+
+
 def _safe_capture_path_from_env() -> Tuple[Path | None, str]:
     raw_path = str(os.environ.get("MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH", "")).strip()
     raw_root = str(os.environ.get("MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_ROOT", "")).strip()
@@ -4309,16 +4321,26 @@ def _attempt_editor_screenshot_capture(
     except Exception:
         payload["blocker"] = "blocked_by_editor_screenshot_capture_completion_not_observed"
         return payload
-    done = {"value": False, "success": False, "info": "", "result": ""}
+    done = {"value": False, "success": False, "info": "", "result": "", "recognized": False}
     handler = atom.FrameCaptureNotificationBusHandler()
 
     def on_capture_finished(parameters: Any) -> None:
-        params = _as_list(parameters)
+        try:
+            params = _as_list(parameters)
+        except Exception as exc:
+            done["value"] = True
+            done["info"] = str(exc)
+            return
+        if not params:
+            done["value"] = True
+            done["info"] = "FrameCapture completion callback provided no parameters."
+            return
         result_value = params[0] if params else None
         info = str(params[1]) if len(params) > 1 else ""
         done["value"] = True
         done["info"] = info
         done["result"] = str(result_value)
+        done["recognized"] = True
         done["success"] = result_value == atom.FrameCaptureResult_Success
 
     try:
@@ -4339,6 +4361,9 @@ def _attempt_editor_screenshot_capture(
             pass
     if not done["value"]:
         payload["blocker"] = "blocked_by_editor_screenshot_capture_completion_not_observed"
+    elif not done["recognized"]:
+        payload["blocker"] = "blocked_by_editor_screenshot_capture_callback_parameters_unrecognized"
+        payload["completion_info"] = done["info"]
     elif not done["success"]:
         payload["blocker"] = "blocked_by_editor_screenshot_capture_completion_not_observed"
         payload["completion_info"] = done["info"]

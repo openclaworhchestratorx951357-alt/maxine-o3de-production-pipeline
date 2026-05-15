@@ -5272,6 +5272,152 @@ def test_editor_screenshot_capture_artifact_readiness_does_not_verify_visual_gat
     assert "visual_material_gate_verified" in " ".join(result.messages)
 
 
+def _install_fake_frame_capture_modules(monkeypatch, *, callback_parameters, success_value="success"):
+    azlmbr_module = types.ModuleType("azlmbr")
+    azlmbr_module.__path__ = []
+    atom_module = types.ModuleType("azlmbr.atom")
+    bus_module = types.ModuleType("azlmbr.bus")
+    bus_module.Broadcast = object()
+    atom_module.FrameCaptureResult_Success = success_value
+
+    class FakeOutcome:
+        def IsSuccess(self):
+            return True
+
+        def GetValue(self):
+            return "capture-id"
+
+    class FakeFrameCaptureNotificationBusHandler:
+        def connect(self, capture_id):
+            assert capture_id == "capture-id"
+
+        def add_callback(self, callback_name, callback):
+            assert callback_name == "OnFrameCaptureFinished"
+            callback(callback_parameters)
+
+        def disconnect(self):
+            return None
+
+    atom_module.FrameCaptureRequestBus = lambda *_args: FakeOutcome()
+    atom_module.FrameCaptureNotificationBusHandler = FakeFrameCaptureNotificationBusHandler
+    azlmbr_module.atom = atom_module
+    azlmbr_module.bus = bus_module
+
+    monkeypatch.setitem(sys.modules, "azlmbr", azlmbr_module)
+    monkeypatch.setitem(sys.modules, "azlmbr.atom", atom_module)
+    monkeypatch.setitem(sys.modules, "azlmbr.bus", bus_module)
+    return atom_module
+
+
+def test_screenshot_completion_callback_parameter_helper_handles_common_shapes():
+    assert editor_python_smoke._as_list(None) == []
+    assert editor_python_smoke._as_list(("success", "done")) == ["success", "done"]
+    assert editor_python_smoke._as_list(["success", "done"]) == ["success", "done"]
+    assert editor_python_smoke._as_list({"result": "success", "info": "done"}) == [
+        {"result": "success", "info": "done"}
+    ]
+    assert editor_python_smoke._as_list("success") == ["success"]
+
+
+def test_screenshot_completion_callback_marks_success_without_nameerror(tmp_path, monkeypatch):
+    _install_fake_frame_capture_modules(monkeypatch, callback_parameters=("success", "frame complete"))
+
+    class FakeGeneral:
+        def idle_wait_frames(self, _frames):
+            raise AssertionError("callback should complete before polling waits")
+
+    result = editor_python_smoke._attempt_editor_screenshot_capture(
+        capture_path=tmp_path / "missing.png",
+        progress_log=None,
+        general=FakeGeneral(),
+    )
+
+    assert result["request_accepted"] is True
+    assert result["completed"] is True
+    assert result["completion_source"] == "FrameCaptureNotificationBus.OnFrameCaptureFinished"
+    assert result["completion_info"] == "frame complete"
+    assert result["completion_result"] == "success"
+    assert result["blocker"] == "blocked_by_editor_screenshot_capture_artifact_missing"
+    assert result["artifact"]["exists"] is False
+
+
+def test_screenshot_completion_callback_rejects_unrecognized_parameters(tmp_path, monkeypatch):
+    _install_fake_frame_capture_modules(monkeypatch, callback_parameters=None)
+
+    class FakeGeneral:
+        def idle_wait_frames(self, _frames):
+            return None
+
+    result = editor_python_smoke._attempt_editor_screenshot_capture(
+        capture_path=tmp_path / "missing.png",
+        progress_log=None,
+        general=FakeGeneral(),
+    )
+
+    assert result["request_accepted"] is True
+    assert result["completed"] is False
+    assert result["blocker"] == "blocked_by_editor_screenshot_capture_callback_parameters_unrecognized"
+    assert result["artifact"]["exists"] is False
+
+
+def test_screenshot_readiness_keeps_no_active_viewport_gate_blocked(tmp_path, monkeypatch):
+    monkeypatch.setenv("O3DE_ENGINE_ROOT", str(tmp_path / "o3de"))
+    monkeypatch.setenv("MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_ROOT", str(tmp_path))
+    monkeypatch.setenv("MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH", str(tmp_path / "capture.png"))
+    monkeypatch.delenv("MAXINE_ALLOW_EDITOR_SCREENSHOT_CAPTURE_REQUEST", raising=False)
+    monkeypatch.delenv("MAXINE_EDITOR_SCREENSHOT_CAPTURE_ACTIVE_VIEWPORT_VERIFIED", raising=False)
+
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_editor_screenshot_capture_artifact_readiness_source_validation",
+        lambda _engine_root: {"status": "editor_screenshot_capture_artifact_readiness_source_validation_pass"},
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_live_non_null_editor_launch_source_validation",
+        lambda _engine_root: {"status": "live_non_null_editor_launch_source_validation_pass"},
+    )
+
+    result = editor_python_smoke._run_editor_screenshot_capture_artifact_readiness_checks(
+        _live_non_null_editor_launch_verified_payload(),
+        progress_log=None,
+        general=object(),
+    )
+
+    assert result["editor_screenshot_capture_artifact_readiness_source_validation_verified"] is True
+    assert result["live_non_null_editor_launch_verified"] is True
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["editor_visual_material_capture_completed"] is False
+    assert result["visual_material_capture_readiness_verified"] is False
+    assert result["editor_screenshot_capture_artifact_readiness_blocker"] == (
+        "blocked_by_editor_screenshot_capture_requires_active_viewport"
+    )
+    assert result["editor_visual_material_temp_scene_created"] is False
+    assert result["editor_temp_visual_scene_created"] is False
+    assert result["visual_material_gate_verified"] is False
+    assert result["runtime_character_proof_verified"] is False
+
+
+def test_screenshot_artifact_validation_records_precise_metadata_blockers(tmp_path):
+    empty = tmp_path / "empty.png"
+    empty.write_bytes(b"")
+    assert editor_python_smoke._capture_artifact_validation(empty)["blocker"] == (
+        "blocked_by_editor_screenshot_capture_artifact_empty"
+    )
+
+    text_file = tmp_path / "not-png.png"
+    text_file.write_text("not a png", encoding="utf-8")
+    assert editor_python_smoke._capture_artifact_validation(text_file)["blocker"] == (
+        "blocked_by_editor_screenshot_capture_artifact_format_unrecognized"
+    )
+
+    invalid_dimensions = tmp_path / "invalid-dimensions.png"
+    invalid_dimensions.write_bytes(b"\x89PNG\r\n\x1a\n" + (b"\x00" * 16))
+    assert editor_python_smoke._capture_artifact_validation(invalid_dimensions)["blocker"] == (
+        "blocked_by_editor_screenshot_capture_artifact_dimensions_invalid"
+    )
+
+
 def test_editor_smoke_timeout_classifies_last_script_progress_marker(tmp_path):
     def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
         progress_path = Path(env["MAXINE_EDITOR_SMOKE_PROGRESS_LOG"])
