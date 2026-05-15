@@ -57,6 +57,7 @@ DIAGNOSTIC_MODES = {
     "editor-screenshot-capture-artifact-readiness",
     "editor-active-viewport-temp-scene-readiness",
     "editor-safe-temp-visual-scene-display-context",
+    "editor-nonblocking-viewport-swapchain-readiness",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -178,6 +179,7 @@ TYPED_BLOCKED_STATUSES = {
     "blocked_by_visual_material_content_validation_deferred_after_capture_readiness",
     "blocked_by_editor_active_viewport_requires_additional_source_validation",
     "blocked_by_editor_active_viewport_api_unavailable",
+    "blocked_by_editor_default_viewport_camera_context_unavailable",
     "blocked_by_editor_active_viewport_window_handle_unavailable",
     "blocked_by_editor_active_viewport_not_render_ready",
     "blocked_by_editor_temp_visual_scene_cleanup_policy_unverified",
@@ -185,8 +187,14 @@ TYPED_BLOCKED_STATUSES = {
     "blocked_by_temp_visual_scene_source_validation_unavailable",
     "blocked_by_mutation_policy",
     "blocked_by_editor_launch",
+    "blocked_by_temp_scene_context_unavailable",
     "blocked_by_temp_scene_create_or_open",
     "blocked_by_framecapture_target_unavailable",
+    "blocked_by_nonblocking_viewport_or_swapchain_probe_source_validation_unavailable",
+    "blocked_by_python_binding_unavailable",
+    "blocked_by_qt_viewport_widget_unavailable",
+    "blocked_by_swapchain_probe_unavailable",
+    "blocked_by_active_viewport_window_handle_unavailable",
     "failed_safe_cleanup_completed",
     "failed_safe_cleanup_incomplete",
 }
@@ -1414,6 +1422,26 @@ def main() -> int:
             "editor_safe_temp_visual_scene_display_context_returned",
             str(temp_context.get("temp_visual_scene_blocker", "returned")),
             "Safe temp visual scene/display context exercise diagnostic returned.",
+        )
+
+    if not errors and diagnostic_mode == "editor-nonblocking-viewport-swapchain-readiness":
+        _write_progress_marker(
+            progress_log,
+            "editor_nonblocking_viewport_swapchain_readiness_started",
+            "started",
+            "Running bounded non-blocking viewport/SwapChain readiness probe diagnostic.",
+        )
+        readiness = _run_editor_nonblocking_viewport_swapchain_readiness_checks(
+            report,
+            progress_log=progress_log,
+            general=general,
+        )
+        report.update(readiness)
+        _write_progress_marker(
+            progress_log,
+            "editor_nonblocking_viewport_swapchain_readiness_returned",
+            str(readiness.get("nonblocking_viewport_swapchain_probe_blocker", "returned")),
+            "Bounded non-blocking viewport/SwapChain readiness probe diagnostic returned.",
         )
 
     entity_result: Dict[str, Any] = report.get("entity_smoke", {"status": "not_run"})
@@ -5576,6 +5604,638 @@ def _run_editor_safe_temp_visual_scene_display_context_checks(
             "messages": [
                 "Safe temp visual scene/display context exercise is readiness only; screenshot and visual/material proof remain disabled."
             ],
+        }
+    )
+    return payload
+
+
+def _editor_nonblocking_viewport_swapchain_readiness_source_specs(
+    engine_root: Path | None,
+) -> List[Dict[str, Any]]:
+    repo_root = Path(__file__).resolve().parents[3]
+    specs: List[Dict[str, Any]] = [
+        {
+            "path": repo_root / "tools" / "o3de" / "editor_smoke.py",
+            "symbols": [
+                "editor-nonblocking-viewport-swapchain-readiness",
+                "MAXINE_ENABLE_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS",
+                "MAXINE_ALLOW_EDITOR_ACTIVE_VIEWPORT_PYTHON_PROBE",
+                "_validate_editor_nonblocking_viewport_swapchain_readiness",
+            ],
+        },
+        {
+            "path": repo_root
+            / "tools"
+            / "o3de"
+            / "editor_python"
+            / "editor_nonblocking_viewport_swapchain_readiness_smoke.py",
+            "symbols": [
+                "REPO_ROOT = Path(__file__).resolve().parents[3]",
+                "sys.path.insert(0, str(REPO_ROOT))",
+                "from tools.o3de.editor_python import maxine_package_prefab_smoke",
+                "editor-nonblocking-viewport-swapchain-readiness",
+            ],
+        },
+        {
+            "path": repo_root / "tools" / "o3de" / "editor_python" / "maxine_package_prefab_smoke.py",
+            "symbols": [
+                "editor-nonblocking-viewport-swapchain-readiness",
+                "_run_editor_nonblocking_viewport_swapchain_readiness_checks",
+                "blocked_by_active_viewport_window_handle_unavailable",
+                "blocked_by_swapchain_probe_unavailable",
+                "editor_visual_material_capture_requested",
+            ],
+        },
+        {
+            "path": repo_root / "docs" / "production" / "private-windows-o3de-runner.md",
+            "symbols": [
+                "Source-validate nonblocking viewport or SwapChain readiness probe",
+                "editor-nonblocking-viewport-swapchain-readiness",
+                "No screenshot request",
+            ],
+        },
+        {
+            "path": repo_root / "schemas" / "maxine.editor-smoke-report.schema.json",
+            "symbols": [
+                "editor-nonblocking-viewport-swapchain-readiness",
+            ],
+        },
+    ]
+    if engine_root is not None:
+        specs.extend(
+            [
+                {
+                    "path": engine_root / "Code" / "Editor" / "ViewPane.cpp",
+                    "symbols": [
+                        "get_viewport_count",
+                        "get_active_viewport",
+                        "get_viewport_size",
+                        "update_viewport",
+                        "SetFocusToViewport",
+                    ],
+                },
+                {
+                    "path": engine_root / "Code" / "Editor" / "CryEditPy.cpp",
+                    "symbols": [
+                        "get_current_view_position",
+                        "get_current_view_rotation",
+                        "GetDefaultViewportContext",
+                        "GetCameraTransform",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Gems"
+                    / "Atom"
+                    / "Feature"
+                    / "Common"
+                    / "Code"
+                    / "Include"
+                    / "Atom"
+                    / "Feature"
+                    / "Utils"
+                    / "FrameCaptureBus.h",
+                    "symbols": [
+                        "CanCapture",
+                        "CaptureScreenshotForWindow",
+                        "CaptureScreenshot",
+                        "FrameCaptureNotificationBus",
+                        "OnFrameCaptureFinished",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Gems"
+                    / "Atom"
+                    / "Feature"
+                    / "Common"
+                    / "Code"
+                    / "Source"
+                    / "FrameCaptureSystemComponent.cpp",
+                    "symbols": [
+                        'behaviorContext->EBus<FrameCaptureRequestBus>("FrameCaptureRequestBus")',
+                        '->Event("CaptureScreenshot", &FrameCaptureRequestBus::Events::CaptureScreenshot)',
+                        "FrameCaptureSystemComponent::CanCapture",
+                        "GetDefaultViewportContext()->GetWindowHandle()",
+                        "No valid window for the capture.",
+                        "FindSwapChainPass(windowHandle)",
+                        "Failed to find SwapChainPass for the window.",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Code"
+                    / "Framework"
+                    / "AzFramework"
+                    / "AzFramework"
+                    / "Windowing"
+                    / "WindowBus.h",
+                    "symbols": [
+                        "NativeWindowHandle",
+                        "GetDefaultWindowHandle",
+                        "WindowSystemRequestBus",
+                    ],
+                },
+            ]
+        )
+    return specs
+
+
+def _framecapture_python_reflection_surface(engine_root: Path | None) -> Dict[str, Any]:
+    if engine_root is None:
+        return {
+            "source_file_found": False,
+            "capture_screenshot_reflected": False,
+            "capture_screenshot_for_window_reflected": False,
+            "can_capture_reflected": False,
+        }
+    source_path = (
+        engine_root
+        / "Gems"
+        / "Atom"
+        / "Feature"
+        / "Common"
+        / "Code"
+        / "Source"
+        / "FrameCaptureSystemComponent.cpp"
+    )
+    try:
+        text = source_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return {
+            "source_file_found": False,
+            "capture_screenshot_reflected": False,
+            "capture_screenshot_for_window_reflected": False,
+            "can_capture_reflected": False,
+        }
+    return {
+        "source_file_found": True,
+        "capture_screenshot_reflected": '->Event("CaptureScreenshot", &FrameCaptureRequestBus::Events::CaptureScreenshot)' in text,
+        "capture_screenshot_for_window_reflected": '->Event("CaptureScreenshotForWindow"' in text,
+        "can_capture_reflected": '->Event("CanCapture"' in text,
+        "capture_screenshot_with_preview_reflected": '->Event("CaptureScreenshotWithPreview"' in text,
+        "capture_pass_attachment_reflected": '->Event("CapturePassAttachment"' in text,
+    }
+
+
+def _editor_nonblocking_viewport_swapchain_readiness_source_validation(
+    engine_root: Path | None,
+) -> Dict[str, Any]:
+    file_results = [
+        _source_file_symbol_validation(spec["path"], spec["symbols"])
+        for spec in _editor_nonblocking_viewport_swapchain_readiness_source_specs(engine_root)
+    ]
+    missing = [result for result in file_results if result["status"] != "pass"]
+    status = (
+        "editor_nonblocking_viewport_swapchain_readiness_source_validation_pass"
+        if not missing
+        else "editor_nonblocking_viewport_swapchain_readiness_source_validation_inconclusive"
+    )
+    reflection = _framecapture_python_reflection_surface(engine_root)
+    return {
+        "status": status,
+        "blocker": ""
+        if not missing
+        else "blocked_by_nonblocking_viewport_or_swapchain_probe_source_validation_unavailable",
+        "files": file_results,
+        "surfaces": {
+            "active_viewport_python_boundary": (
+                "azlmbr.legacy.general source-validates get_viewport_count/get_active_viewport/"
+                "get_viewport_size/update_viewport as viewport metric probes, but the live diagnostic "
+                "keeps those C++ calls deferred unless MAXINE_ALLOW_EDITOR_ACTIVE_VIEWPORT_PYTHON_PROBE=1."
+            ),
+            "default_viewport_context_boundary": (
+                "azlmbr.legacy.general source-validates get_current_view_position/get_current_view_rotation "
+                "through AZ::RPI::ViewportContextRequests::GetDefaultViewportContext camera readback; live camera "
+                "readback is kept behind the same explicit active-viewport Python probe gate."
+            ),
+            "framecapture_python_boundary": (
+                "FrameCaptureRequestBus reflects CaptureScreenshot to Python, but the source does not reflect "
+                "CanCapture or CaptureScreenshotForWindow as Python events in this build."
+            ),
+            "window_handle_boundary": (
+                "No source-validated Editor Python API exposes the default viewport NativeWindowHandle; "
+                "CaptureScreenshot obtains it internally and then requires a matching SwapChainPass."
+            ),
+            "swapchain_boundary": (
+                "FrameCapture InternalCaptureScreenshot fails before capture if the window handle is missing "
+                "or PassSystemInterface::FindSwapChainPass(windowHandle) returns null."
+            ),
+            "proof_boundary": (
+                "Non-blocking viewport/SwapChain readiness probes do not request screenshot capture and are not "
+                "rendered visual/material evidence, material correctness, character presence, or full runtime proof."
+            ),
+        },
+        "framecapture_python_reflection": reflection,
+        "missing": missing,
+    }
+
+
+def _vector_probe(value: Any) -> Dict[str, Any]:
+    components: List[float] = []
+    for name, index in (("x", 0), ("y", 1), ("z", 2)):
+        component: Any = None
+        try:
+            component = getattr(value, name)
+        except Exception:
+            try:
+                component = value[index]
+            except Exception:
+                component = None
+        try:
+            components.append(float(component))
+        except Exception:
+            return {"available": False, "component_count": len(components)}
+    return {"available": True, "component_count": len(components), "components": components}
+
+
+def _check_active_default_viewport_probe(general: Any) -> Dict[str, Any]:
+    active = _check_editor_active_viewport_readiness(general)
+    camera_position = {"available": False}
+    camera_rotation = {"available": False}
+    allow_python_viewport_probe = os.environ.get("MAXINE_ALLOW_EDITOR_ACTIVE_VIEWPORT_PYTHON_PROBE") == "1"
+    active_attempted = active.get("attempted") is True
+    active_verified = active.get("verified") is True
+    active_blocker = str(active.get("blocker", "blocked_by_editor_active_viewport_api_unavailable"))
+    if not allow_python_viewport_probe:
+        return {
+            "attempted": True,
+            "verified": False,
+            "state": str(active.get("state", "active_viewport_python_probe_deferred_without_explicit_gate")),
+            "blocker": str(active.get("blocker", "blocked_by_editor_active_viewport_window_handle_unavailable")),
+            "active_viewport": active,
+            "active_viewport_attempted": active_attempted,
+            "active_viewport_verified": active_verified,
+            "active_viewport_blocker": active_blocker,
+            "camera_position": camera_position,
+            "camera_rotation": camera_rotation,
+            "camera_context_attempted": False,
+            "camera_context_verified": False,
+            "camera_context_blocker": "blocked_by_editor_default_viewport_camera_context_unavailable",
+            "window_handle_attempted": True,
+            "window_handle_verified": False,
+            "window_handle_blocker": "blocked_by_editor_active_viewport_window_handle_unavailable",
+        }
+    camera_attempted = False
+    if general is not None and hasattr(general, "get_current_view_position"):
+        camera_attempted = True
+        try:
+            camera_position = _vector_probe(general.get_current_view_position())
+        except Exception as exc:
+            camera_position = {"available": False, "error": str(exc)}
+    if general is not None and hasattr(general, "get_current_view_rotation"):
+        camera_attempted = True
+        try:
+            camera_rotation = _vector_probe(general.get_current_view_rotation())
+        except Exception as exc:
+            camera_rotation = {"available": False, "error": str(exc)}
+    camera_verified = camera_position.get("available") is True and camera_rotation.get("available") is True
+    verified = bool(active_verified or camera_verified)
+    if active_verified and camera_verified:
+        state = "default_viewport_context_and_active_viewport_metrics_readback_verified"
+    elif active_verified:
+        state = "active_viewport_metrics_readback_verified_default_context_camera_unavailable"
+    elif camera_verified:
+        state = "default_viewport_context_camera_readback_verified_active_metrics_unavailable"
+    else:
+        state = str(active.get("state", "active_default_viewport_probe_unavailable"))
+    blocker = "" if verified else str(active.get("blocker", "blocked_by_editor_active_viewport_api_unavailable"))
+    return {
+        "attempted": True,
+        "verified": verified,
+        "state": state,
+        "blocker": blocker,
+        "active_viewport": active,
+        "active_viewport_attempted": active_attempted,
+        "active_viewport_verified": active_verified,
+        "active_viewport_blocker": active_blocker,
+        "camera_position": camera_position,
+        "camera_rotation": camera_rotation,
+        "camera_context_attempted": camera_attempted,
+        "camera_context_verified": camera_verified,
+        "camera_context_blocker": ""
+        if camera_verified
+        else "blocked_by_editor_default_viewport_camera_context_unavailable",
+        "window_handle_attempted": True,
+        "window_handle_verified": False,
+        "window_handle_blocker": "blocked_by_editor_active_viewport_window_handle_unavailable",
+    }
+
+
+def _probe_qt_viewport_widget_inventory() -> Dict[str, Any]:
+    try:
+        from PySide2 import QtWidgets  # type: ignore
+    except Exception as exc:
+        return {
+            "attempted": True,
+            "verified": False,
+            "blocker": "blocked_by_qt_viewport_widget_unavailable",
+            "evidence_summary": f"PySide2 QtWidgets unavailable: {type(exc).__name__}",
+            "viewport_widget_count": 0,
+        }
+    app = QtWidgets.QApplication.instance()
+    if app is None:
+        return {
+            "attempted": True,
+            "verified": False,
+            "blocker": "blocked_by_qt_viewport_widget_unavailable",
+            "evidence_summary": "QApplication instance unavailable",
+            "viewport_widget_count": 0,
+        }
+    viewport_widget_count = 0
+    try:
+        widgets = list(app.allWidgets())
+        for widget in widgets[:1000]:
+            class_name = type(widget).__name__.lower()
+            object_name = str(getattr(widget, "objectName", lambda: "")()).lower()
+            if "viewport" in class_name or "viewport" in object_name:
+                viewport_widget_count += 1
+    except Exception as exc:
+        return {
+            "attempted": True,
+            "verified": False,
+            "blocker": "blocked_by_qt_viewport_widget_unavailable",
+            "evidence_summary": f"Qt widget inventory failed: {type(exc).__name__}",
+            "viewport_widget_count": 0,
+        }
+    return {
+        "attempted": True,
+        "verified": False,
+        "blocker": "blocked_by_editor_active_viewport_window_handle_unavailable"
+        if viewport_widget_count
+        else "blocked_by_qt_viewport_widget_unavailable",
+        "evidence_summary": (
+            "viewport-like Qt widgets observed without reading native handles"
+            if viewport_widget_count
+            else "no viewport-like Qt widgets observed without native-handle access"
+        ),
+        "viewport_widget_count": viewport_widget_count,
+    }
+
+
+def _probe_atom_framecapture_binding_surface(source_validated: bool) -> Dict[str, Any]:
+    try:
+        import azlmbr.atom as atom  # type: ignore
+    except Exception as exc:
+        return {
+            "attempted": True,
+            "verified": False,
+            "source_validated": source_validated,
+            "blocker": "blocked_by_python_binding_unavailable",
+            "binding_available": False,
+            "evidence_summary": f"azlmbr.atom unavailable: {type(exc).__name__}",
+            "screenshot_capture_requested": False,
+        }
+    request_bus_available = hasattr(atom, "FrameCaptureRequestBus")
+    return {
+        "attempted": True,
+        "verified": False,
+        "source_validated": source_validated,
+        "blocker": "blocked_by_swapchain_probe_unavailable"
+        if request_bus_available
+        else "blocked_by_python_binding_unavailable",
+        "binding_available": request_bus_available,
+        "evidence_summary": (
+            "FrameCaptureRequestBus binding present, but no non-capture Python event exposes "
+            "default viewport window-handle or SwapChainPass readiness"
+            if request_bus_available
+            else "FrameCaptureRequestBus binding unavailable"
+        ),
+        "screenshot_capture_requested": False,
+    }
+
+
+def _nonblocking_probe_strategy(
+    *,
+    strategy_id: str,
+    attempted: bool,
+    source_validated: bool,
+    verified: bool,
+    blocker: str,
+    evidence_summary: str,
+) -> Dict[str, Any]:
+    return {
+        "id": strategy_id,
+        "attempted": attempted,
+        "source_validated": source_validated,
+        "verified": verified,
+        "blocker": "" if verified else blocker,
+        "timeout_seconds": 2,
+        "readiness_only": True,
+        "screenshot_capture_requested": False,
+        "evidence_summary": evidence_summary,
+    }
+
+
+def _run_editor_nonblocking_viewport_swapchain_readiness_checks(
+    report: Mapping[str, Any],
+    *,
+    progress_log: Path | None,
+    general: Any,
+) -> Dict[str, Any]:
+    engine_root_raw = str(os.environ.get("O3DE_ENGINE_ROOT", "")).strip()
+    engine_root = Path(engine_root_raw) if engine_root_raw else None
+    _write_progress_marker(
+        progress_log,
+        "editor_nonblocking_viewport_swapchain_source_validation_started",
+        "started",
+        "Source-validating non-blocking viewport/SwapChain readiness probe.",
+    )
+    source_validation = _editor_nonblocking_viewport_swapchain_readiness_source_validation(engine_root)
+    source_validated = (
+        source_validation.get("status")
+        == "editor_nonblocking_viewport_swapchain_readiness_source_validation_pass"
+    )
+    _write_progress_marker(
+        progress_log,
+        "editor_nonblocking_viewport_swapchain_source_validation_returned",
+        "verified" if source_validated else str(source_validation.get("blocker", "blocked")),
+        "Non-blocking viewport/SwapChain source validation returned.",
+    )
+    temp_context = _run_editor_safe_temp_visual_scene_display_context_checks(
+        report,
+        progress_log=progress_log,
+        general=general,
+    )
+    temp_context_verified = temp_context.get("temp_visual_scene_context_exercise_verified") is True
+    active_default_probe = (
+        _check_active_default_viewport_probe(general)
+        if source_validated and temp_context_verified
+        else {
+            "attempted": bool(source_validated),
+            "verified": False,
+            "state": "temp_scene_context_unavailable" if source_validated else "source_validation_inconclusive",
+            "blocker": "blocked_by_temp_scene_context_unavailable"
+            if source_validated
+            else "blocked_by_nonblocking_viewport_or_swapchain_probe_source_validation_unavailable",
+            "window_handle_attempted": bool(source_validated),
+            "window_handle_verified": False,
+            "window_handle_blocker": "blocked_by_editor_active_viewport_window_handle_unavailable",
+        }
+    )
+    qt_probe = _probe_qt_viewport_widget_inventory() if source_validated and temp_context_verified else {
+        "attempted": False,
+        "verified": False,
+        "blocker": "not_selected_source_validation_or_temp_context_unavailable",
+        "evidence_summary": "",
+        "viewport_widget_count": 0,
+    }
+    atom_probe = _probe_atom_framecapture_binding_surface(source_validated) if source_validated and temp_context_verified else {
+        "attempted": bool(source_validated),
+        "verified": False,
+        "source_validated": source_validated,
+        "blocker": "blocked_by_temp_scene_context_unavailable"
+        if source_validated
+        else "blocked_by_nonblocking_viewport_or_swapchain_probe_source_validation_unavailable",
+        "binding_available": False,
+        "evidence_summary": "",
+        "screenshot_capture_requested": False,
+    }
+    active_default_verified = active_default_probe.get("verified") is True
+    active_viewport_strategy_verified = active_default_probe.get("active_viewport_verified") is True
+    active_viewport_strategy_blocker = str(
+        active_default_probe.get("active_viewport_blocker", "blocked_by_editor_active_viewport_api_unavailable")
+    )
+    camera_context_strategy_verified = active_default_probe.get("camera_context_verified") is True
+    camera_context_strategy_blocker = str(
+        active_default_probe.get(
+            "camera_context_blocker",
+            "blocked_by_editor_default_viewport_camera_context_unavailable",
+        )
+    )
+    window_handle_verified = active_default_probe.get("window_handle_verified") is True
+    swapchain_verified = False
+    framecapture_target_verified = bool(window_handle_verified and swapchain_verified)
+    if not source_validated:
+        probe_blocker = "blocked_by_nonblocking_viewport_or_swapchain_probe_source_validation_unavailable"
+    elif not temp_context_verified:
+        probe_blocker = "blocked_by_temp_scene_context_unavailable"
+    elif not window_handle_verified:
+        probe_blocker = "blocked_by_active_viewport_window_handle_unavailable"
+    elif not swapchain_verified:
+        probe_blocker = "blocked_by_swapchain_probe_unavailable"
+    else:
+        probe_blocker = ""
+    strategies = [
+        _nonblocking_probe_strategy(
+            strategy_id="editor_python_active_viewport_api",
+            attempted=bool(active_default_probe.get("active_viewport_attempted")),
+            source_validated=source_validated,
+            verified=active_viewport_strategy_verified,
+            blocker=active_viewport_strategy_blocker,
+            evidence_summary=str(active_default_probe.get("state", "")),
+        ),
+        _nonblocking_probe_strategy(
+            strategy_id="editor_python_default_viewport_camera_context",
+            attempted=bool(active_default_probe.get("camera_context_attempted")),
+            source_validated=source_validated,
+            verified=camera_context_strategy_verified,
+            blocker=camera_context_strategy_blocker,
+            evidence_summary="default viewport camera readback attempted without window-handle access",
+        ),
+        _nonblocking_probe_strategy(
+            strategy_id="editor_python_qt_viewport_widget",
+            attempted=bool(qt_probe.get("attempted")),
+            source_validated=source_validated,
+            verified=bool(qt_probe.get("verified")),
+            blocker=str(qt_probe.get("blocker", "blocked_by_qt_viewport_widget_unavailable")),
+            evidence_summary=str(qt_probe.get("evidence_summary", "")),
+        ),
+        _nonblocking_probe_strategy(
+            strategy_id="atom_rhi_swapchain_readiness",
+            attempted=bool(atom_probe.get("attempted")),
+            source_validated=source_validated,
+            verified=swapchain_verified,
+            blocker="blocked_by_swapchain_probe_unavailable",
+            evidence_summary=str(atom_probe.get("evidence_summary", "")),
+        ),
+        _nonblocking_probe_strategy(
+            strategy_id="framecapture_target_readiness_without_request",
+            attempted=source_validated and temp_context_verified,
+            source_validated=source_validated,
+            verified=framecapture_target_verified,
+            blocker=probe_blocker or "blocked_by_framecapture_target_unavailable",
+            evidence_summary="FrameCapture target requires a source-validated window handle and SwapChainPass before capture.",
+        ),
+    ]
+    payload: Dict[str, Any] = {}
+    payload.update(temp_context)
+    payload.update(
+        {
+            "nonblocking_viewport_swapchain_probe_attempted": True,
+            "nonblocking_viewport_swapchain_probe_verified": framecapture_target_verified,
+            "nonblocking_viewport_swapchain_probe_source_validated": source_validated,
+            "nonblocking_viewport_swapchain_probe_source_validation_status": source_validation.get("status", ""),
+            "nonblocking_viewport_swapchain_probe_source_validation": source_validation,
+            "nonblocking_viewport_swapchain_probe_source_files": [
+                str(spec["path"])
+                for spec in _editor_nonblocking_viewport_swapchain_readiness_source_specs(engine_root)
+            ],
+            "nonblocking_viewport_swapchain_probe_blocker": "" if framecapture_target_verified else probe_blocker,
+            "nonblocking_viewport_swapchain_probe_strategies": strategies,
+            "active_default_viewport_probe_attempted": bool(active_default_probe.get("attempted")),
+            "active_default_viewport_probe_verified": active_default_verified,
+            "active_default_viewport_probe_state": str(active_default_probe.get("state", "")),
+            "active_default_viewport_probe_blocker": ""
+            if active_default_verified
+            else str(active_default_probe.get("blocker", "blocked_by_editor_active_viewport_api_unavailable")),
+            "active_default_viewport_probe_evidence": active_default_probe,
+            "active_default_viewport_window_handle_attempted": bool(active_default_probe.get("window_handle_attempted")),
+            "active_default_viewport_window_handle_verified": window_handle_verified,
+            "active_default_viewport_window_handle_source_validated": source_validated,
+            "active_default_viewport_window_handle_blocker": ""
+            if window_handle_verified
+            else str(active_default_probe.get("window_handle_blocker", "blocked_by_editor_active_viewport_window_handle_unavailable")),
+            "qt_viewport_widget_probe_attempted": bool(qt_probe.get("attempted")),
+            "qt_viewport_widget_probe_verified": bool(qt_probe.get("verified")),
+            "qt_viewport_widget_probe_blocker": ""
+            if qt_probe.get("verified") is True
+            else str(qt_probe.get("blocker", "blocked_by_qt_viewport_widget_unavailable")),
+            "qt_viewport_widget_probe_evidence": qt_probe,
+            "os_process_window_inventory_attempted": False,
+            "os_process_window_inventory_verified": False,
+            "os_process_window_inventory_blocker": "not_selected_source_validated_editor_python_probe_preferred",
+            "atom_swapchain_readiness_probe_attempted": bool(atom_probe.get("attempted")),
+            "atom_swapchain_readiness_probe_verified": swapchain_verified,
+            "atom_swapchain_readiness_probe_source_validated": source_validated,
+            "atom_swapchain_readiness_probe_blocker": "" if swapchain_verified else "blocked_by_swapchain_probe_unavailable",
+            "atom_swapchain_readiness_probe_evidence": atom_probe,
+            "framecapture_target_readiness_attempted": source_validated and temp_context_verified,
+            "framecapture_target_readiness_verified": framecapture_target_verified,
+            "framecapture_target_readiness_source_validated": source_validated,
+            "framecapture_target_readiness_blocker": "" if framecapture_target_verified else probe_blocker,
+            "safe_temp_visual_scene_context_preserved": temp_context_verified,
+            "editor_visual_material_capture_target_readiness_verified": framecapture_target_verified,
+            "editor_visual_material_capture_requested": False,
+            "editor_visual_material_capture_request_accepted": False,
+            "editor_visual_material_capture_completed": False,
+            "visual_material_capture_readiness_verified": False,
+            "visual_material_rendered_evidence_gate_attempted": False,
+            "visual_material_rendered_evidence_gate_verified": False,
+            "visual_material_gate_claimed": False,
+            "visual_material_gate_verified": False,
+            "full_runtime_character_visual_material_gate_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "proof_claims": [
+                "Source-validated and exercised readiness-only non-blocking viewport/FrameCapture target probe classification after safe temp visual scene context.",
+                "No defaultlevel, production-level, or production character asset mutation was detected.",
+            ],
+            "proof_limits": [
+                "No screenshot request or completion.",
+                "No rendered visual/material evidence.",
+                "No material correctness proof.",
+                "No character visual-presence proof.",
+                "No visual_material gate verification.",
+                "No full runtime character proof.",
+                "No release packaging, publication, or production-ready claim.",
+            ],
+            "messages": _unique(
+                list(payload.get("messages", []))
+                + [
+                    "Non-blocking viewport/SwapChain readiness probing is readiness only; screenshot and visual/material proof remain disabled."
+                ]
+            ),
         }
     )
     return payload

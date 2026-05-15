@@ -155,6 +155,11 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_safe_temp_visual_scene_display_context_smoke.py",
+    "editor-nonblocking-viewport-swapchain-readiness": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_nonblocking_viewport_swapchain_readiness_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -223,6 +228,11 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
         and report.get("live_editor_execution") is not True
         and str(report.get("editor_screenshot_capture_artifact_readiness_blocker", "")).strip()
     )
+    blocked_nonblocking_viewport_swapchain_diagnostic = (
+        diagnostic_mode == "editor-nonblocking-viewport-swapchain-readiness"
+        and report.get("live_editor_execution") is not True
+        and str(report.get("nonblocking_viewport_swapchain_probe_blocker", "")).strip()
+    )
     if report.get("live_editor_execution") is True and str(report.get("mode", "")) in {"fixture", "unavailable"}:
         result.add_error("MXN_RUNTIME_SMOKE_FAIL", "Fixture/skipped Editor smoke reports cannot claim live Editor execution.")
     if str(report.get("mode", "")) == "local_editor_python":
@@ -232,6 +242,7 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             and not source_only_diagnostic
             and not blocked_live_non_null_launch_diagnostic
             and not blocked_editor_screenshot_capture_diagnostic
+            and not blocked_nonblocking_viewport_swapchain_diagnostic
         ):
             result.add_error(
                 MXN_RUNTIME_SMOKE_FAIL,
@@ -320,6 +331,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_editor_active_viewport_temp_scene_readiness(report, result)
         if diagnostic_mode == "editor-safe-temp-visual-scene-display-context":
             _validate_editor_safe_temp_visual_scene_display_context(report, result)
+        if diagnostic_mode == "editor-nonblocking-viewport-swapchain-readiness":
+            _validate_editor_nonblocking_viewport_swapchain_readiness(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -2668,6 +2681,126 @@ def _validate_editor_safe_temp_visual_scene_display_context(
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Unverified FrameCapture target after temp context requires a blocker.")
 
 
+def _validate_editor_nonblocking_viewport_swapchain_readiness(
+    report: Mapping[str, Any],
+    result: ValidationResult,
+) -> None:
+    attempted = report.get("nonblocking_viewport_swapchain_probe_attempted") is True
+    verified = report.get("nonblocking_viewport_swapchain_probe_verified") is True
+    source_validated = report.get("nonblocking_viewport_swapchain_probe_source_validated") is True
+    blocker = str(report.get("nonblocking_viewport_swapchain_probe_blocker", "")).strip()
+    strategies = report.get("nonblocking_viewport_swapchain_probe_strategies", [])
+
+    for field, label in {
+        "live_non_null_editor_launch_attempted": "live non-null Editor launch attempted",
+        "live_non_null_editor_launch_completed": "live non-null Editor launch completed",
+        "live_non_null_editor_launch_verified": "live non-null Editor launch verified",
+        "live_non_null_editor_launch_python_wrapper_executed": "Editor Python wrapper executed",
+        "visible_desktop_session_verified": "visible desktop/session readiness",
+        "gpu_or_driver_readiness_verified": "GPU/driver readiness",
+        "rhi_readiness_verified": "RHI readiness",
+        "temp_visual_scene_context_exercise_verified": "safe temp visual scene context exercise",
+        "temp_visual_scene_cleanup_attempted": "temp scene cleanup attempted",
+        "temp_visual_scene_cleanup_completed": "temp scene cleanup completed",
+        "safe_temp_visual_scene_context_preserved": "safe temp visual scene context preservation",
+    }.items():
+        if report.get(field) is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Non-blocking viewport/SwapChain readiness requires {label}.")
+    if report.get("live_non_null_editor_launch_null_renderer_used") is True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Non-blocking viewport/SwapChain readiness must omit NullRenderer.")
+
+    if not attempted:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Non-blocking viewport/SwapChain readiness must record attempted=true.")
+    if not source_validated and attempted:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Non-blocking viewport/SwapChain readiness cannot proceed without source validation.",
+        )
+    if not source_validated and not blocker:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Unvalidated non-blocking viewport/SwapChain readiness requires a blocker.")
+
+    if not isinstance(strategies, list) or not strategies:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Non-blocking viewport/SwapChain readiness requires strategy evidence.")
+    else:
+        for strategy in strategies:
+            if not isinstance(strategy, Mapping):
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Probe strategy entries must be objects.")
+                continue
+            if not str(strategy.get("id", "")).strip():
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Probe strategy entries require an id.")
+            if strategy.get("screenshot_capture_requested") is True:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Probe strategies must not request screenshot/frame capture.")
+            if strategy.get("readiness_only") is not True:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Probe strategies must be explicitly readiness-only.")
+            if strategy.get("attempted") is True and strategy.get("source_validated") is not True:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Attempted probe strategies require source_validated=true.")
+            if strategy.get("verified") is not True and not str(strategy.get("blocker", "")).strip():
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Unverified probe strategies require typed blockers.")
+
+    for field, message in (
+        ("editor_visual_material_capture_requested", "Non-blocking viewport/SwapChain readiness must not request screenshot/frame capture."),
+        ("editor_visual_material_capture_request_accepted", "Non-blocking viewport/SwapChain readiness must not accept screenshot/frame capture."),
+        ("editor_visual_material_capture_completed", "Non-blocking viewport/SwapChain readiness must not claim screenshot/frame capture completion."),
+        ("visual_material_capture_readiness_verified", "Non-blocking viewport/SwapChain readiness cannot verify screenshot artifact readiness."),
+        ("visual_material_rendered_evidence_gate_attempted", "Non-blocking viewport/SwapChain readiness must not attempt rendered visual evidence."),
+        ("visual_material_rendered_evidence_gate_verified", "Non-blocking viewport/SwapChain readiness cannot verify rendered visual evidence."),
+        ("visual_material_gate_claimed", "Non-blocking viewport/SwapChain readiness cannot claim visual/material proof."),
+        ("visual_material_gate_verified", "Non-blocking viewport/SwapChain readiness cannot verify visual/material proof."),
+        ("runtime_character_proof_claimed", "Non-blocking viewport/SwapChain readiness cannot claim full runtime character proof."),
+        ("runtime_character_proof_verified", "Non-blocking viewport/SwapChain readiness cannot verify full runtime character proof."),
+    ):
+        if report.get(field) is True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, message)
+
+    for field, message in (
+        ("defaultlevel_mutation", "Non-blocking viewport/SwapChain readiness must not mutate defaultlevel."),
+        ("production_level_mutation", "Non-blocking viewport/SwapChain readiness must not mutate production levels."),
+        ("editor_temp_visual_scene_defaultlevel_mutation", "Non-blocking viewport/SwapChain readiness must not mutate defaultlevel."),
+        ("editor_temp_visual_scene_production_level_mutation", "Non-blocking viewport/SwapChain readiness must not mutate production levels."),
+        ("defaultlevel_mutation_detected", "Non-blocking viewport/SwapChain readiness must not detect defaultlevel mutation."),
+        ("production_level_mutation_detected", "Non-blocking viewport/SwapChain readiness must not detect production-level mutation."),
+        ("production_character_asset_mutation_detected", "Non-blocking viewport/SwapChain readiness must not detect production character asset mutation."),
+        ("asset_cache_deleted", "Non-blocking viewport/SwapChain readiness must not delete Asset Cache."),
+        ("cache_heuristic_used", "Non-blocking viewport/SwapChain readiness must not use cache heuristic proof."),
+    ):
+        if report.get(field) is True:
+            result.add_error(MXN_PATH_UNSAFE, message)
+
+    temp_path = str(report.get("temp_visual_scene_path", "") or report.get("editor_temp_visual_scene_path", ""))
+    normalized_temp_path = temp_path.replace("\\", "/").strip()
+    if not normalized_temp_path.startswith("Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context"):
+        result.add_error(
+            MXN_PATH_UNSAFE,
+            "Non-blocking viewport/SwapChain readiness temp path must remain under Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context.",
+        )
+    if "defaultlevel" in normalized_temp_path.lower() or "production" in normalized_temp_path.lower():
+        result.add_error(MXN_PATH_UNSAFE, "Non-blocking viewport/SwapChain readiness temp path cannot include defaultlevel or production names.")
+
+    for field, label in {
+        "active_default_viewport_probe_attempted": "active/default viewport probe attempted",
+        "active_default_viewport_window_handle_attempted": "window-handle probe attempted",
+        "active_default_viewport_window_handle_source_validated": "window-handle source validation",
+        "atom_swapchain_readiness_probe_attempted": "Atom SwapChain probe attempted",
+        "atom_swapchain_readiness_probe_source_validated": "Atom SwapChain source validation",
+        "framecapture_target_readiness_attempted": "FrameCapture target probe attempted",
+        "framecapture_target_readiness_source_validated": "FrameCapture target source validation",
+    }.items():
+        if source_validated and report.get(field) is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Source-validated non-blocking probe requires {field} ({label}).")
+
+    if verified:
+        if report.get("active_default_viewport_window_handle_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Verified non-blocking probe requires source-validated window-handle readiness.")
+        if report.get("atom_swapchain_readiness_probe_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Verified non-blocking probe requires SwapChain readiness.")
+        if report.get("framecapture_target_readiness_verified") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Verified non-blocking probe requires FrameCapture target readiness.")
+        if blocker:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Verified non-blocking probe must not carry a blocker.")
+    elif not blocker:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Unverified non-blocking viewport/SwapChain readiness requires a precise typed blocker.")
+
+
 def _validate_direct_procprefab_content_assertions(
     report: Mapping[str, Any],
     semantics: Mapping[str, Any],
@@ -3384,19 +3517,23 @@ def _execute_live_editor_smoke(
     screenshot_capture_artifact_readiness_mode = diagnostic_mode == "editor-screenshot-capture-artifact-readiness"
     active_viewport_temp_scene_readiness_mode = diagnostic_mode == "editor-active-viewport-temp-scene-readiness"
     safe_temp_visual_scene_context_mode = diagnostic_mode == "editor-safe-temp-visual-scene-display-context"
+    nonblocking_viewport_swapchain_readiness_mode = (
+        diagnostic_mode == "editor-nonblocking-viewport-swapchain-readiness"
+    )
+    safe_temp_scene_exercise_mode = safe_temp_visual_scene_context_mode or nonblocking_viewport_swapchain_readiness_mode
     selected_render_capture_rhi = _selected_non_null_render_capture_rhi(env)
     non_null_editor_mode = (
         non_null_render_capture_mode
         or live_non_null_editor_launch_mode
         or screenshot_capture_artifact_readiness_mode
         or active_viewport_temp_scene_readiness_mode
-        or safe_temp_visual_scene_context_mode
+        or safe_temp_scene_exercise_mode
     )
     live_non_null_process_mode = (
         live_non_null_editor_launch_mode
         or screenshot_capture_artifact_readiness_mode
         or active_viewport_temp_scene_readiness_mode
-        or safe_temp_visual_scene_context_mode
+        or safe_temp_scene_exercise_mode
     )
     render_args = [f"-rhi={selected_render_capture_rhi}"] if non_null_editor_mode else ["-NullRenderer", "-rhi=Null"]
     argv = [
@@ -3452,13 +3589,14 @@ def _execute_live_editor_smoke(
                 "MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_ROOT",
                 "MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_NAME",
                 "MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_PATH",
+                "MAXINE_ALLOW_EDITOR_ACTIVE_VIEWPORT_PYTHON_PROBE",
             )
         }
         os.environ["O3DE_ENGINE_ROOT"] = str(engine_root)
         os.environ["O3DE_PROJECT_PATH"] = str(project_path)
         os.environ["O3DE_EDITOR_EXECUTABLE"] = str(editor_executable)
         os.environ["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = selected_render_capture_rhi
-        if safe_temp_visual_scene_context_mode:
+        if safe_temp_scene_exercise_mode:
             os.environ["MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_NAME"] = safe_temp_scene_level_name
             os.environ["MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_PATH"] = str(safe_temp_scene_abs)
         if screenshot_capture_artifact_readiness_mode:
@@ -3581,7 +3719,7 @@ def _execute_live_editor_smoke(
                         ],
                     }
                 )
-            if safe_temp_visual_scene_context_mode:
+            if safe_temp_scene_exercise_mode:
                 temp_context_source_validation = (
                     editor_python_smoke._editor_safe_temp_visual_scene_display_context_source_validation(engine_root)
                 )
@@ -3615,6 +3753,39 @@ def _execute_live_editor_smoke(
                         "editor_temp_visual_scene_approved_root": "Levels/_maxine_visual_smoke",
                     }
                 )
+            if nonblocking_viewport_swapchain_readiness_mode:
+                nonblocking_source_validation = (
+                    editor_python_smoke._editor_nonblocking_viewport_swapchain_readiness_source_validation(engine_root)
+                )
+                nonblocking_source_validated = (
+                    nonblocking_source_validation.get("status")
+                    == "editor_nonblocking_viewport_swapchain_readiness_source_validation_pass"
+                )
+                nonblocking_source_blocker = str(
+                    nonblocking_source_validation.get("blocker")
+                    or "blocked_by_nonblocking_viewport_or_swapchain_probe_source_validation_unavailable"
+                )
+                template.update(
+                    {
+                        "nonblocking_viewport_swapchain_probe_attempted": False,
+                        "nonblocking_viewport_swapchain_probe_verified": False,
+                        "nonblocking_viewport_swapchain_probe_source_validated": nonblocking_source_validated,
+                        "nonblocking_viewport_swapchain_probe_source_validation_status": (
+                            nonblocking_source_validation.get("status", "")
+                        ),
+                        "nonblocking_viewport_swapchain_probe_source_validation": nonblocking_source_validation,
+                        "nonblocking_viewport_swapchain_probe_source_files": [
+                            str(spec["path"])
+                            for spec in editor_python_smoke._editor_nonblocking_viewport_swapchain_readiness_source_specs(
+                                engine_root
+                            )
+                        ],
+                        "nonblocking_viewport_swapchain_probe_blocker": ""
+                        if nonblocking_source_validated
+                        else nonblocking_source_blocker,
+                        "nonblocking_viewport_swapchain_probe_strategies": [],
+                    }
+                )
         finally:
             for key, value in previous_env.items():
                 if value is None:
@@ -3630,8 +3801,12 @@ def _execute_live_editor_smoke(
             and template.get("editor_active_viewport_temp_scene_readiness_source_validation_verified") is not True
         )
         temp_context_source_blocked = (
-            safe_temp_visual_scene_context_mode
+            safe_temp_scene_exercise_mode
             and template.get("temp_visual_scene_source_validated") is not True
+        )
+        nonblocking_source_blocked = (
+            nonblocking_viewport_swapchain_readiness_mode
+            and template.get("nonblocking_viewport_swapchain_probe_source_validated") is not True
         )
         if (
             template.get("non_null_editor_desktop_rhi_readiness_verified") is not True
@@ -3639,6 +3814,7 @@ def _execute_live_editor_smoke(
             or capture_source_blocked
             or viewport_source_blocked
             or temp_context_source_blocked
+            or nonblocking_source_blocked
         ):
             blocked_by_readiness = template.get("non_null_editor_desktop_rhi_readiness_verified") is not True
             blocked_by_launch_source = template.get("live_non_null_editor_launch_source_validation_verified") is not True
@@ -3658,6 +3834,11 @@ def _execute_live_editor_smoke(
                     if temp_context_source_blocked
                     else ""
                 )
+                or (
+                    template.get("nonblocking_viewport_swapchain_probe_blocker")
+                    if nonblocking_source_blocked
+                    else ""
+                )
                 or template.get("non_null_editor_launch_blocker")
                 or template.get("live_non_null_editor_launch_blocker")
                 or (
@@ -3669,6 +3850,8 @@ def _execute_live_editor_smoke(
                     if viewport_source_blocked
                     else "blocked_by_temp_visual_scene_source_validation_unavailable"
                     if temp_context_source_blocked
+                    else "blocked_by_nonblocking_viewport_or_swapchain_probe_source_validation_unavailable"
+                    if nonblocking_source_blocked
                     else "blocked_by_editor_screenshot_capture_requires_additional_source_validation"
                 )
             )
@@ -3696,6 +3879,9 @@ def _execute_live_editor_smoke(
                     "temp_visual_scene_context_exercise_verified": False,
                     "temp_visual_scene_context_exercise_blocker": preflight_blocker,
                     "temp_visual_scene_blocker": preflight_blocker,
+                    "nonblocking_viewport_swapchain_probe_attempted": False,
+                    "nonblocking_viewport_swapchain_probe_verified": False,
+                    "nonblocking_viewport_swapchain_probe_blocker": preflight_blocker,
                     "editor_visual_material_capture_requested": False,
                     "editor_visual_material_capture_request_accepted": False,
                     "editor_visual_material_capture_completed": False,
@@ -3723,6 +3909,8 @@ def _execute_live_editor_smoke(
                     if viewport_source_blocked
                     else "Safe temp visual scene context exercise was not attempted because source validation failed."
                     if temp_context_source_blocked
+                    else "Non-blocking viewport/SwapChain readiness probe was not attempted because source validation failed."
+                    if nonblocking_source_blocked
                     else "Editor screenshot capture was not attempted because capture source validation failed."
                 ),
                 error_code=MXN_RUNTIME_SMOKE_FAIL,
@@ -3824,7 +4012,7 @@ def _execute_live_editor_smoke(
         editor_env.setdefault("MAXINE_ALLOW_LIVE_NON_NULL_EDITOR_LAUNCH", "1")
         editor_env.setdefault("MAXINE_ENABLE_EDITOR_ACTIVE_VIEWPORT_TEMP_SCENE_READINESS", "1")
         editor_env.setdefault("MAXINE_ALLOW_EDITOR_ACTIVE_VIEWPORT_TEMP_SCENE_READINESS", "1")
-    if safe_temp_visual_scene_context_mode:
+    if safe_temp_scene_exercise_mode:
         editor_env["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = selected_render_capture_rhi
         editor_env["MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_NAME"] = safe_temp_scene_level_name
         editor_env["MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_PATH"] = str(safe_temp_scene_abs)
@@ -3832,6 +4020,9 @@ def _execute_live_editor_smoke(
         editor_env.setdefault("MAXINE_ALLOW_LIVE_NON_NULL_EDITOR_LAUNCH", "1")
         editor_env.setdefault("MAXINE_ENABLE_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT", "1")
         editor_env.setdefault("MAXINE_ALLOW_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT", "1")
+    if nonblocking_viewport_swapchain_readiness_mode:
+        editor_env.setdefault("MAXINE_ENABLE_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS", "1")
+        editor_env.setdefault("MAXINE_ALLOW_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS", "1")
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_NAME"] = level_name_for_editor
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_PATH"] = str(project_path / temp_level_rel)
     editor_env["MAXINE_EDITOR_SMOKE_ALLOW_TEMP_SANDBOX_LEVEL"] = "1"
@@ -3840,7 +4031,7 @@ def _execute_live_editor_smoke(
     editor_env.setdefault("PYTHONIOENCODING", "utf-8")
 
     safe_temp_scene_mutation_before = (
-        _safe_temp_visual_scene_mutation_snapshot(project_path) if safe_temp_visual_scene_context_mode else {}
+        _safe_temp_visual_scene_mutation_snapshot(project_path) if safe_temp_scene_exercise_mode else {}
     )
     proc, timed_out, process_cleanup = _run_live_editor_command(
         argv,
@@ -4107,7 +4298,7 @@ def _execute_live_editor_smoke(
                 "runtime_character_proof_verified": False,
             }
         )
-    if safe_temp_visual_scene_context_mode:
+    if safe_temp_scene_exercise_mode:
         command = " ".join(argv)
         null_renderer_used = "-NullRenderer" in command or "-rhi=Null" in command or "-rhi=null" in command.lower()
         blocking_matches = []
@@ -4193,6 +4384,25 @@ def _execute_live_editor_smoke(
             temp_scene_abs=safe_temp_scene_abs,
             mutation_before=safe_temp_scene_mutation_before,
         )
+        if nonblocking_viewport_swapchain_readiness_mode:
+            framecapture_target_verified = report.get("framecapture_target_readiness_verified") is True
+            report.update(
+                {
+                    "safe_temp_visual_scene_context_preserved": report.get(
+                        "temp_visual_scene_context_exercise_verified"
+                    )
+                    is True,
+                    "editor_visual_material_capture_target_readiness_verified": framecapture_target_verified,
+                    "visual_material_capture_readiness_verified": False,
+                    "visual_material_rendered_evidence_gate_attempted": False,
+                    "visual_material_rendered_evidence_gate_verified": False,
+                    "visual_material_gate_claimed": False,
+                    "visual_material_gate_verified": False,
+                    "full_runtime_character_visual_material_gate_verified": False,
+                    "runtime_character_proof_claimed": False,
+                    "runtime_character_proof_verified": False,
+                }
+            )
     report["evidence_refs"] = _merge_evidence_refs(
         report.get("evidence_refs", []),
         [
@@ -4593,6 +4803,63 @@ def _live_report_template(
         "editor_temp_visual_scene_defaultlevel_mutation": False,
         "editor_temp_visual_scene_production_level_mutation": False,
         "editor_temp_visual_scene_cleanup_policy_verified": False,
+        "temp_visual_scene_context_exercise_attempted": False,
+        "temp_visual_scene_context_exercise_completed": False,
+        "temp_visual_scene_context_exercise_verified": False,
+        "temp_visual_scene_context_exercise_blocker": "",
+        "temp_visual_scene_source_validated": False,
+        "temp_visual_scene_path": "",
+        "temp_visual_scene_created": False,
+        "temp_visual_scene_opened": False,
+        "temp_visual_scene_saved": False,
+        "temp_visual_scene_cleanup_attempted": False,
+        "temp_visual_scene_cleanup_completed": False,
+        "temp_visual_scene_cleanup_policy": "",
+        "temp_visual_scene_blocker": "",
+        "active_viewport_after_temp_context_attempted": False,
+        "active_viewport_after_temp_context_verified": False,
+        "active_viewport_after_temp_context_state": "",
+        "active_viewport_after_temp_context_blocker": "",
+        "framecapture_target_after_temp_context_attempted": False,
+        "framecapture_target_after_temp_context_verified": False,
+        "framecapture_target_after_temp_context_blocker": "",
+        "nonblocking_viewport_swapchain_probe_attempted": False,
+        "nonblocking_viewport_swapchain_probe_verified": False,
+        "nonblocking_viewport_swapchain_probe_source_validated": False,
+        "nonblocking_viewport_swapchain_probe_source_validation_status": "",
+        "nonblocking_viewport_swapchain_probe_source_validation": {},
+        "nonblocking_viewport_swapchain_probe_source_files": [],
+        "nonblocking_viewport_swapchain_probe_blocker": "",
+        "nonblocking_viewport_swapchain_probe_strategies": [],
+        "active_default_viewport_probe_attempted": False,
+        "active_default_viewport_probe_verified": False,
+        "active_default_viewport_probe_state": "",
+        "active_default_viewport_probe_blocker": "",
+        "active_default_viewport_window_handle_attempted": False,
+        "active_default_viewport_window_handle_verified": False,
+        "active_default_viewport_window_handle_source_validated": False,
+        "active_default_viewport_window_handle_blocker": "",
+        "qt_viewport_widget_probe_attempted": False,
+        "qt_viewport_widget_probe_verified": False,
+        "qt_viewport_widget_probe_blocker": "",
+        "os_process_window_inventory_attempted": False,
+        "os_process_window_inventory_verified": False,
+        "os_process_window_inventory_blocker": "",
+        "atom_swapchain_readiness_probe_attempted": False,
+        "atom_swapchain_readiness_probe_verified": False,
+        "atom_swapchain_readiness_probe_source_validated": False,
+        "atom_swapchain_readiness_probe_blocker": "",
+        "framecapture_target_readiness_attempted": False,
+        "framecapture_target_readiness_verified": False,
+        "framecapture_target_readiness_source_validated": False,
+        "framecapture_target_readiness_blocker": "",
+        "safe_temp_visual_scene_context_preserved": False,
+        "defaultlevel_mutation_checked": False,
+        "defaultlevel_mutation_detected": False,
+        "production_level_mutation_checked": False,
+        "production_level_mutation_detected": False,
+        "production_character_asset_mutation_checked": False,
+        "production_character_asset_mutation_detected": False,
         "editor_visual_material_capture_artifact_root": "",
         "editor_visual_material_capture_artifact_policy_verified": False,
         "editor_visual_material_capture_api_available_under_non_null_rhi": False,
@@ -5614,6 +5881,21 @@ def _parse_args() -> argparse.Namespace:
         help="Set the explicit gated marker for safe temp visual scene/display context exercise.",
     )
     parser.add_argument(
+        "--diagnose-editor-nonblocking-viewport-swapchain-readiness",
+        action="store_true",
+        help="Run the bounded non-blocking active/default viewport or SwapChain readiness probe diagnostic.",
+    )
+    parser.add_argument(
+        "--diagnose-nonblocking-viewport-swapchain-readiness",
+        action="store_true",
+        help="Alias for the bounded non-blocking viewport/SwapChain readiness probe diagnostic.",
+    )
+    parser.add_argument(
+        "--enable-editor-nonblocking-viewport-swapchain-readiness-fixture",
+        action="store_true",
+        help="Set the explicit gated marker for non-blocking viewport/SwapChain readiness probing.",
+    )
+    parser.add_argument(
         "--editor-render-capture-rhi",
         choices=sorted(NON_NULL_RENDER_CAPTURE_RHIS),
         default=None,
@@ -5796,6 +6078,19 @@ def main() -> int:
     if args.enable_editor_safe_temp_visual_scene_display_context_fixture:
         env_map["MAXINE_ALLOW_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
         env_map["MAXINE_ALLOW_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
+    if (
+        args.diagnose_editor_nonblocking_viewport_swapchain_readiness
+        or args.diagnose_nonblocking_viewport_swapchain_readiness
+        or args.enable_editor_nonblocking_viewport_swapchain_readiness_fixture
+    ):
+        diagnostic_mode = "editor-nonblocking-viewport-swapchain-readiness"
+        env_map["MAXINE_ENABLE_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
+    if args.enable_editor_nonblocking_viewport_swapchain_readiness_fixture:
+        env_map["MAXINE_ALLOW_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
     if args.editor_render_capture_rhi:
         env_map["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = args.editor_render_capture_rhi
     result = run_editor_smoke_corpus(

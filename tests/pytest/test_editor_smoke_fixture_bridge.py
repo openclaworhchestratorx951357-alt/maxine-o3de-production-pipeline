@@ -143,6 +143,8 @@ def _write_non_null_desktop_rhi_source_files(engine: Path) -> None:
             [
                 'behaviorContext->EBus<FrameCaptureRequestBus>("FrameCaptureRequestBus")',
                 '->Event("CaptureScreenshot", &FrameCaptureRequestBus::Events::CaptureScreenshot)',
+                '->Event("CaptureScreenshotWithPreview", &FrameCaptureRequestBus::Events::CaptureScreenshotWithPreview)',
+                '->Event("CapturePassAttachment", &FrameCaptureRequestBus::Events::CapturePassAttachment)',
                 'behaviorContext->EBus<FrameCaptureNotificationBus>("FrameCaptureNotificationBus")',
                 '->Handler<FrameCaptureNotificationBusHandler>()',
                 "bool FrameCaptureSystemComponent::CanCapture() const { return !AZ::RHI::IsNullRHI(); }",
@@ -214,6 +216,23 @@ def _write_non_null_desktop_rhi_source_files(engine: Path) -> None:
                 'behaviorContext->Method("create_level_no_prompt", ::PyCreateLevelNoPrompt, nullptr, "Creates a level with the parameters of \'templateName\',\'levelName\', \'resolution\', \'unitSize\' and \'bUseTerrain\'.")',
                 'behaviorContext->Method("get_current_level_name", PyGetCurrentLevelName, nullptr, "Gets the name of the current level.")',
                 'behaviorContext->Method("get_current_level_path", PyGetCurrentLevelPath, nullptr, "Gets the fully specified path of the current level.")',
+                'behaviorContext->Method("get_current_view_position", PyGetCurrentViewPosition, nullptr, "Gets the current viewport camera position.")',
+                'behaviorContext->Method("get_current_view_rotation", PyGetCurrentViewRotation, nullptr, "Gets the current viewport camera rotation.")',
+                "auto defaultViewportContext = AZ::RPI::ViewportContextRequests::Get()->GetDefaultViewportContext();",
+                "defaultViewportContext->GetCameraTransform();",
+            ]
+        ),
+        engine
+        / "Code"
+        / "Framework"
+        / "AzFramework"
+        / "AzFramework"
+        / "Windowing"
+        / "WindowBus.h": "\n".join(
+            [
+                "using NativeWindowHandle = void*;",
+                "NativeWindowHandle GetDefaultWindowHandle();",
+                "class WindowSystemRequestBus {};",
             ]
         ),
         engine
@@ -5910,6 +5929,372 @@ def test_safe_temp_visual_scene_context_schema_accepts_fields():
     result = schema_validate(report, load_json(SCHEMA))
 
     assert result.status == "pass", result.messages
+
+
+def _nonblocking_viewport_swapchain_probe_payload(*, target_verified: bool = False) -> dict:
+    payload = _safe_temp_visual_scene_context_payload()
+    blocker = "" if target_verified else "blocked_by_active_viewport_window_handle_unavailable"
+    payload.update(
+        {
+            "diagnostic_mode": "editor-nonblocking-viewport-swapchain-readiness",
+            "nonblocking_viewport_swapchain_probe_attempted": True,
+            "nonblocking_viewport_swapchain_probe_verified": target_verified,
+            "nonblocking_viewport_swapchain_probe_source_validated": True,
+            "nonblocking_viewport_swapchain_probe_blocker": blocker,
+            "nonblocking_viewport_swapchain_probe_strategies": [
+                {
+                    "id": "editor_python_active_viewport_api",
+                    "attempted": True,
+                    "source_validated": True,
+                    "verified": True,
+                    "blocker": "",
+                    "timeout_seconds": 2,
+                    "readiness_only": True,
+                    "screenshot_capture_requested": False,
+                    "evidence_summary": "viewport count/index/size readback completed",
+                },
+                {
+                    "id": "framecapture_target_readiness_without_request",
+                    "attempted": True,
+                    "source_validated": True,
+                    "verified": target_verified,
+                    "blocker": blocker,
+                    "timeout_seconds": 2,
+                    "readiness_only": True,
+                    "screenshot_capture_requested": False,
+                    "evidence_summary": "FrameCapture target remains gated on a window handle and SwapChainPass",
+                },
+            ],
+            "active_default_viewport_probe_attempted": True,
+            "active_default_viewport_probe_verified": True,
+            "active_default_viewport_probe_state": "default_viewport_context_and_active_viewport_metrics_readback_verified",
+            "active_default_viewport_probe_blocker": "",
+            "active_default_viewport_window_handle_attempted": True,
+            "active_default_viewport_window_handle_verified": target_verified,
+            "active_default_viewport_window_handle_source_validated": True,
+            "active_default_viewport_window_handle_blocker": blocker,
+            "qt_viewport_widget_probe_attempted": True,
+            "qt_viewport_widget_probe_verified": False,
+            "qt_viewport_widget_probe_blocker": "blocked_by_qt_viewport_widget_unavailable",
+            "os_process_window_inventory_attempted": False,
+            "os_process_window_inventory_verified": False,
+            "os_process_window_inventory_blocker": "not_selected_source_validated_editor_python_probe_preferred",
+            "atom_swapchain_readiness_probe_attempted": True,
+            "atom_swapchain_readiness_probe_verified": target_verified,
+            "atom_swapchain_readiness_probe_source_validated": True,
+            "atom_swapchain_readiness_probe_blocker": "" if target_verified else "blocked_by_swapchain_probe_unavailable",
+            "framecapture_target_readiness_attempted": True,
+            "framecapture_target_readiness_verified": target_verified,
+            "framecapture_target_readiness_source_validated": True,
+            "framecapture_target_readiness_blocker": blocker,
+            "safe_temp_visual_scene_context_preserved": True,
+            "temp_visual_scene_context_exercise_verified": True,
+            "temp_visual_scene_cleanup_completed": True,
+            "editor_visual_material_capture_target_readiness_verified": target_verified,
+            "editor_visual_material_capture_requested": False,
+            "editor_visual_material_capture_request_accepted": False,
+            "editor_visual_material_capture_completed": False,
+            "visual_material_capture_readiness_verified": False,
+            "visual_material_rendered_evidence_gate_attempted": False,
+            "visual_material_rendered_evidence_gate_verified": False,
+            "visual_material_gate_claimed": False,
+            "visual_material_gate_verified": False,
+            "full_runtime_character_visual_material_gate_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "no_fake_success": True,
+            "proof_claims": [
+                "Source-validated and exercised readiness-only non-blocking viewport/FrameCapture target probe classification after safe temp visual scene context.",
+                "No defaultlevel or production-level mutation was detected.",
+            ],
+            "proof_limits": [
+                "No screenshot request/completion.",
+                "No rendered visual/material evidence.",
+                "No visual_material gate verification.",
+                "No full runtime character proof.",
+            ],
+        }
+    )
+    return payload
+
+
+def test_nonblocking_viewport_swapchain_source_validation_success_and_blocked(tmp_path):
+    env = _live_env(tmp_path)
+    engine = Path(env["O3DE_ENGINE_ROOT"])
+    _write_non_null_desktop_rhi_source_files(engine)
+
+    success = editor_python_smoke._editor_nonblocking_viewport_swapchain_readiness_source_validation(engine)
+    assert success["status"] == "editor_nonblocking_viewport_swapchain_readiness_source_validation_pass"
+    assert success["blocker"] == ""
+    assert success["surfaces"]["framecapture_python_boundary"].startswith("FrameCaptureRequestBus")
+    assert success["surfaces"]["window_handle_boundary"].startswith("No source-validated")
+
+    blocked = editor_python_smoke._editor_nonblocking_viewport_swapchain_readiness_source_validation(
+        tmp_path / "missing-engine"
+    )
+    assert blocked["status"] == "editor_nonblocking_viewport_swapchain_readiness_source_validation_inconclusive"
+    assert blocked["blocker"] == "blocked_by_nonblocking_viewport_or_swapchain_probe_source_validation_unavailable"
+
+
+def test_nonblocking_viewport_swapchain_probe_records_window_handle_blocker(monkeypatch, tmp_path):
+    env = _live_env(tmp_path)
+    project = Path(env["O3DE_PROJECT_PATH"])
+    monkeypatch.setenv("O3DE_ENGINE_ROOT", env["O3DE_ENGINE_ROOT"])
+    monkeypatch.setenv("O3DE_PROJECT_PATH", str(project))
+    monkeypatch.setenv(
+        "MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_NAME",
+        "_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/test_run",
+    )
+    monkeypatch.setenv("MAXINE_ALLOW_EDITOR_ACTIVE_VIEWPORT_PYTHON_PROBE", "1")
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_editor_nonblocking_viewport_swapchain_readiness_source_validation",
+        lambda _engine_root: {
+            "status": "editor_nonblocking_viewport_swapchain_readiness_source_validation_pass",
+            "blocker": "",
+            "files": [],
+            "surfaces": {},
+        },
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_editor_safe_temp_visual_scene_display_context_source_validation",
+        lambda _engine_root: {
+            "status": "editor_safe_temp_visual_scene_display_context_source_validation_pass",
+            "blocker": "",
+            "files": [],
+        },
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_live_non_null_editor_launch_source_validation",
+        lambda _engine_root: {"status": "live_non_null_editor_launch_source_validation_pass"},
+    )
+
+    class General:
+        def create_level_no_prompt(self, template, level_name, heightmap, unit_size, texture_size, use_terrain):
+            target = project / "Levels" / level_name
+            target.mkdir(parents=True)
+            (target / "test_run.prefab").write_text("{}", encoding="utf-8")
+            return 0
+
+        def update_viewport(self):
+            return None
+
+        def get_viewport_count(self):
+            return 1
+
+        def get_active_viewport(self):
+            return 0
+
+        def get_viewport_size(self):
+            return (1280, 720)
+
+        def get_current_view_position(self):
+            return (0.0, 0.0, 10.0)
+
+        def get_current_view_rotation(self):
+            return (0.0, 0.0, 0.0)
+
+    result = editor_python_smoke._run_editor_nonblocking_viewport_swapchain_readiness_checks(
+        _live_non_null_editor_launch_verified_payload(),
+        progress_log=None,
+        general=General(),
+    )
+
+    assert result["nonblocking_viewport_swapchain_probe_attempted"] is True
+    assert result["nonblocking_viewport_swapchain_probe_source_validated"] is True
+    assert result["active_default_viewport_probe_verified"] is True
+    assert result["active_default_viewport_window_handle_verified"] is False
+    assert result["active_default_viewport_window_handle_blocker"] == (
+        "blocked_by_editor_active_viewport_window_handle_unavailable"
+    )
+    assert result["atom_swapchain_readiness_probe_verified"] is False
+    assert result["framecapture_target_readiness_verified"] is False
+    assert result["framecapture_target_readiness_blocker"] == "blocked_by_active_viewport_window_handle_unavailable"
+    assert result["temp_visual_scene_context_exercise_verified"] is True
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["editor_visual_material_capture_completed"] is False
+    assert result["visual_material_gate_verified"] is False
+    assert result["runtime_character_proof_verified"] is False
+
+
+def test_nonblocking_viewport_swapchain_probe_keeps_strategy_verification_separate(monkeypatch, tmp_path):
+    env = _live_env(tmp_path)
+    project = Path(env["O3DE_PROJECT_PATH"])
+    monkeypatch.setenv("O3DE_ENGINE_ROOT", env["O3DE_ENGINE_ROOT"])
+    monkeypatch.setenv("O3DE_PROJECT_PATH", str(project))
+    monkeypatch.setenv(
+        "MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_NAME",
+        "_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/test_run",
+    )
+    monkeypatch.setenv("MAXINE_ALLOW_EDITOR_ACTIVE_VIEWPORT_PYTHON_PROBE", "1")
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_editor_nonblocking_viewport_swapchain_readiness_source_validation",
+        lambda _engine_root: {
+            "status": "editor_nonblocking_viewport_swapchain_readiness_source_validation_pass",
+            "blocker": "",
+            "files": [],
+            "surfaces": {},
+        },
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_editor_safe_temp_visual_scene_display_context_source_validation",
+        lambda _engine_root: {
+            "status": "editor_safe_temp_visual_scene_display_context_source_validation_pass",
+            "blocker": "",
+            "files": [],
+        },
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_live_non_null_editor_launch_source_validation",
+        lambda _engine_root: {"status": "live_non_null_editor_launch_source_validation_pass"},
+    )
+
+    class General:
+        def create_level_no_prompt(self, template, level_name, heightmap, unit_size, texture_size, use_terrain):
+            target = project / "Levels" / level_name
+            target.mkdir(parents=True)
+            (target / "test_run.prefab").write_text("{}", encoding="utf-8")
+            return 0
+
+        def update_viewport(self):
+            return None
+
+        def get_viewport_count(self):
+            return 0
+
+        def get_active_viewport(self):
+            return -1
+
+        def get_viewport_size(self):
+            return (0, 0)
+
+        def get_current_view_position(self):
+            return (0.0, 0.0, 10.0)
+
+        def get_current_view_rotation(self):
+            return (0.0, 0.0, 0.0)
+
+    result = editor_python_smoke._run_editor_nonblocking_viewport_swapchain_readiness_checks(
+        _live_non_null_editor_launch_verified_payload(),
+        progress_log=None,
+        general=General(),
+    )
+    strategies = {strategy["id"]: strategy for strategy in result["nonblocking_viewport_swapchain_probe_strategies"]}
+
+    assert result["active_default_viewport_probe_verified"] is True
+    assert strategies["editor_python_active_viewport_api"]["verified"] is False
+    assert strategies["editor_python_active_viewport_api"]["blocker"] == (
+        "blocked_by_editor_active_viewport_not_render_ready"
+    )
+    assert strategies["editor_python_default_viewport_camera_context"]["verified"] is True
+    assert strategies["editor_python_default_viewport_camera_context"]["blocker"] == ""
+    assert result["framecapture_target_readiness_verified"] is False
+    assert result["editor_visual_material_capture_requested"] is False
+
+
+def test_nonblocking_viewport_swapchain_probe_defers_unbounded_active_viewport_calls(monkeypatch):
+    monkeypatch.delenv("MAXINE_ALLOW_EDITOR_ACTIVE_VIEWPORT_PYTHON_PROBE", raising=False)
+
+    class General:
+        def update_viewport(self):
+            raise AssertionError("active viewport update must stay deferred without explicit gate")
+
+        def get_viewport_count(self):
+            raise AssertionError("active viewport count must stay deferred without explicit gate")
+
+        def get_active_viewport(self):
+            raise AssertionError("active viewport index must stay deferred without explicit gate")
+
+        def get_viewport_size(self):
+            raise AssertionError("active viewport size must stay deferred without explicit gate")
+
+    result = editor_python_smoke._check_active_default_viewport_probe(General())
+
+    assert result["attempted"] is True
+    assert result["verified"] is False
+    assert result["state"] == "active_viewport_python_probe_deferred_without_explicit_gate"
+    assert result["window_handle_verified"] is False
+    assert result["window_handle_blocker"] == "blocked_by_editor_active_viewport_window_handle_unavailable"
+
+
+def test_nonblocking_viewport_swapchain_schema_and_semantics_accept_blocked_probe():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_nonblocking_viewport_swapchain_probe_payload(target_verified=False))
+    report["mode"] = "local_editor_python"
+    report["status"] = "pass"
+
+    schema_result = schema_validate(report, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(report, strict=True)
+
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+
+
+def test_nonblocking_viewport_swapchain_validation_rejects_proof_overclaims():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_nonblocking_viewport_swapchain_probe_payload(target_verified=False))
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "editor_visual_material_capture_requested": True,
+            "visual_material_gate_verified": True,
+            "runtime_character_proof_verified": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+    assert "must not request screenshot/frame capture" in " ".join(result.messages)
+
+
+def test_nonblocking_viewport_swapchain_mode_uses_safe_temp_context_and_no_capture(tmp_path):
+    env = _live_env(tmp_path)
+    _write_non_null_desktop_rhi_source_files(Path(env["O3DE_ENGINE_ROOT"]))
+
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        assert "editor_nonblocking_viewport_swapchain_readiness_smoke.py" in argv[-1].replace("\\", "/")
+        assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == "editor-nonblocking-viewport-swapchain-readiness"
+        assert env["MAXINE_ENABLE_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] == "1"
+        assert env["MAXINE_ENABLE_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] == "1"
+        assert env.get("MAXINE_ALLOW_EDITOR_ACTIVE_VIEWPORT_PYTHON_PROBE") != "1"
+        assert "MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH" not in env
+        temp_path = Path(env["MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_PATH"])
+        temp_path.mkdir(parents=True)
+        (temp_path / "test.prefab").write_text("{}", encoding="utf-8")
+        payload = json.loads(Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).read_text(encoding="utf-8"))
+        payload.update(_nonblocking_viewport_swapchain_probe_payload(target_verified=False))
+        payload["temp_visual_scene_path"] = "Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/test"
+        payload["editor_temp_visual_scene_path"] = payload["temp_visual_scene_path"]
+        payload["editor_visual_material_temp_scene_path"] = payload["temp_visual_scene_path"]
+        Path(env["MAXINE_EDITOR_SMOKE_REPORT_OUT"]).write_text(json.dumps(payload), encoding="utf-8")
+        return subprocess.CompletedProcess(args=argv, returncode=0, stdout="", stderr="")
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=env,
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="editor-nonblocking-viewport-swapchain-readiness",
+    )
+
+    assert result["status"] == "pass"
+    assert result["nonblocking_viewport_swapchain_probe_attempted"] is True
+    assert result["temp_visual_scene_cleanup_attempted"] is True
+    assert result["temp_visual_scene_cleanup_completed"] is True
+    assert Path(result["temp_visual_scene_cleanup_path_abs"]).exists() is False
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["editor_visual_material_capture_completed"] is False
+    assert result["visual_material_gate_verified"] is False
 
 
 def _install_fake_frame_capture_modules(monkeypatch, *, callback_parameters, success_value="success"):

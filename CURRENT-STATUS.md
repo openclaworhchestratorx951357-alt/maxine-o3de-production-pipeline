@@ -1,7 +1,17 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Exercise Safe Temp Visual Scene Display Context v1 is implemented on `codex/exercise-safe-temp-visual-scene-display-context-v1` and pending review:
+- Source-Validate Nonblocking Viewport or SwapChain Readiness Probe v1 is implemented on `codex/source-validate-nonblocking-viewport-swapchain-readiness-v1` and pending review:
+  - PR #171 was merged into `main` at `d643b84a5fe653c63dbd3e76a78c6e0726fa0051`; this branch was created from that updated `main`
+  - this slice adds the live `editor-nonblocking-viewport-swapchain-readiness` Editor smoke diagnostic plus `--diagnose-editor-nonblocking-viewport-swapchain-readiness` / `--diagnose-nonblocking-viewport-swapchain-readiness` / `--enable-editor-nonblocking-viewport-swapchain-readiness-fixture` and the bootstrapped `editor_nonblocking_viewport_swapchain_readiness_smoke.py` wrapper
+  - the diagnostic source-validates and exercises readiness-only, non-blocking active/default viewport window-handle and SwapChain/FrameCapture target probe classification after the PR #171 safe temp visual scene/display context
+  - live evidence passed at `artifacts/o3de-integration/editor-smoke/editor-smoke-20260515T230944Z/editor_smoke_live_report.json`: selected RHI `dx12`, visible desktop/session verified, GPU/driver readiness verified, RHI readiness verified, live non-null Editor launch verified, temp scene created/opened/saved and cleaned up under `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/editor_safe_temp_visual_scene_display_context_20260515t230944z`, and no defaultlevel/production/production-character mutation was detected
+  - active/default viewport probe source validation passed but the live Python viewport readback remains deferred without the explicit active-viewport probe gate; active/default viewport window-handle readiness remains unverified with `blocked_by_editor_active_viewport_window_handle_unavailable`
+  - Atom SwapChain readiness remains unverified with `blocked_by_swapchain_probe_unavailable`; FrameCapture target readiness remains unverified with `blocked_by_active_viewport_window_handle_unavailable`
+  - it reuses only the approved temp root `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context`, preserves cleanup, and keeps defaultlevel mutation, production-level mutation, and production character asset mutation false
+  - screenshot/frame capture remains not requested/completed, the approved character is not instantiated/displayed, rendered visual/material evidence is not claimed or verified, material correctness and character visual presence are not verified, `visual_material` remains unsatisfied, and full runtime character proof remains false
+  - release packaging, publication, and production-ready claims remain false; Lane B / Understand-Anything remains dev-only and is not used as O3DE/APB/runtime/rendering proof
+- Exercise Safe Temp Visual Scene Display Context v1 was merged through PR #171:
   - PR #170 was merged into `main` at `b614f9ac0a13e2bf360592fd91c90fb122676193`; this branch was created from that updated `main`
   - this slice adds the live `editor-safe-temp-visual-scene-display-context` Editor smoke diagnostic plus `--diagnose-editor-safe-temp-visual-scene-display-context` / `--diagnose-editor-temp-visual-scene-context-exercise` / `--enable-editor-safe-temp-visual-scene-display-context-fixture` and the bootstrapped `editor_safe_temp_visual_scene_display_context_smoke.py` wrapper
   - the diagnostic source-validates `create_level_no_prompt` / `open_level_no_prompt`, `CCryEditApp::CreateLevel` save semantics, viewport after-temp-context probes, FrameCapture target blockers, and the harness-owned post-Editor-exit cleanup contract

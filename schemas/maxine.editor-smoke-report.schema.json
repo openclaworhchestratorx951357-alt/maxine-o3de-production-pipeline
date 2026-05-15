@@ -121,6 +121,7 @@
         "editor-screenshot-capture-artifact-readiness",
         "editor-active-viewport-temp-scene-readiness",
         "editor-safe-temp-visual-scene-display-context",
+        "editor-nonblocking-viewport-swapchain-readiness",
         "full"
       ]
     },
