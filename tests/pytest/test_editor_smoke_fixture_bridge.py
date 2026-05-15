@@ -98,6 +98,112 @@ def _live_env(tmp_path: Path, *, allow_editor: bool = True) -> dict:
     return env
 
 
+def _editor_viewport_visual_material_blocked_payload() -> dict:
+    return {
+        "mode": "local_editor_python",
+        "status": "pass",
+        "diagnostic_mode": "editor-viewport-visual-material-evidence",
+        "live_editor_execution": True,
+        "live_publication": False,
+        "release_packaging": False,
+        "production_level_mutation": False,
+        "defaultlevel_mutation": False,
+        "asset_cache_deleted": False,
+        "cache_heuristic_used": False,
+        "fake_success": False,
+        "editor_viewport_visual_material_evidence_attempted": True,
+        "editor_viewport_visual_material_evidence_completed": True,
+        "editor_viewport_visual_material_evidence_source_validation_status": (
+            "editor_viewport_visual_material_evidence_source_validation_pass"
+        ),
+        "editor_viewport_visual_material_evidence_source_validation_verified": True,
+        "editor_viewport_visual_material_evidence_blocker": "blocked_by_editor_viewport_capture_requires_non_null_rhi",
+        "editor_viewport_visual_material_evidence_candidate_matrix": [
+            {
+                "id": "editor_viewport_screenshot_harness",
+                "selected": True,
+                "result": "selected_but_blocked_by_current_null_rhi_editor_command",
+            },
+            {
+                "id": "nullrenderer_visual_proof",
+                "selected": False,
+                "result": "rejected_nullrenderer_is_not_visual_proof",
+            },
+            {
+                "id": "apb_material_product_inventory_as_rendered_proof",
+                "selected": False,
+                "result": "rejected_inventory_is_readiness_only_not_rendered_evidence",
+            },
+        ],
+        "editor_viewport_visual_material_evidence_selected_strategy": (
+            "editor_viewport_screenshot_capture_surface_blocked_by_current_null_rhi_envelope"
+        ),
+        "editor_visual_material_temp_scene_created": False,
+        "editor_visual_material_temp_scene_path": "",
+        "editor_visual_material_defaultlevel_mutation": False,
+        "editor_visual_material_production_level_mutation": False,
+        "editor_visual_material_character_instantiated": False,
+        "editor_visual_material_character_source_path": (
+            "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab"
+        ),
+        "editor_visual_material_character_product_or_prefab_path": "",
+        "editor_visual_material_camera_or_view_framed": False,
+        "editor_visual_material_light_or_environment_prepared": False,
+        "editor_visual_material_capture_api_found": True,
+        "editor_visual_material_capture_api_used": "AZ::Render::FrameCaptureRequestBus::CaptureScreenshot",
+        "editor_visual_material_capture_requested": False,
+        "editor_visual_material_capture_completed": False,
+        "editor_visual_material_capture_artifact_path": "",
+        "editor_visual_material_capture_artifact_exists": False,
+        "editor_visual_material_capture_artifact_format": "",
+        "editor_visual_material_capture_artifact_width": 0,
+        "editor_visual_material_capture_artifact_height": 0,
+        "editor_visual_material_capture_artifact_size_bytes": 0,
+        "editor_visual_material_capture_content_validation_attempted": False,
+        "editor_visual_material_capture_content_validation_verified": False,
+        "editor_visual_material_nonblank_validation_verified": False,
+        "editor_visual_material_character_presence_validation_verified": False,
+        "editor_visual_material_material_presence_validation_verified": False,
+        "editor_visual_material_cleanup_verified": True,
+        "editor_visual_material_selected_log_scan_passed": True,
+        "visual_material_product_inventory_gate_verified": True,
+        "visual_material_rendered_evidence_gate_attempted": False,
+        "visual_material_rendered_evidence_gate_verified": False,
+        "visual_material_gate_claimed": False,
+        "visual_material_gate_verified": False,
+        "full_runtime_character_visual_material_gate_verified": False,
+        "full_runtime_character_proof_contract_pinned": True,
+        "full_runtime_character_proof_contract_verified": True,
+        "full_runtime_character_proof_satisfied_gates": [
+            {"id": "spawn_instantiation", "verified": True},
+            {"id": "component_wiring", "verified": True},
+            {"id": "simple_motion_playback", "verified": True},
+            {"id": "behavior_smoke", "verified": True},
+            {"id": "selected_log_scan", "verified": True},
+            {"id": "cleanup_recovery", "verified": True},
+        ],
+        "full_runtime_character_proof_unsatisfied_gates": [
+            {
+                "id": "visual_material",
+                "verified": False,
+                "blocker": "blocked_by_editor_viewport_capture_requires_non_null_rhi",
+            }
+        ],
+        "full_runtime_character_proof_deferred_gates": [
+            {
+                "id": "visual_capture_surface",
+                "verified": False,
+                "blocker": "blocked_by_visual_material_rendered_evidence_capture_deferred",
+            }
+        ],
+        "runtime_character_behavior_smoke_verified": True,
+        "runtime_character_animation_verified": True,
+        "runtime_character_animation_component_wiring_verified": True,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+    }
+
+
 def _write_in_editor_report(env: Mapping[str, str], *, status: str = "pass", exit_code: int = 0) -> subprocess.CompletedProcess[str]:
     report_out = Path(env["MAXINE_EDITOR_SMOKE_REPORT_OUT"])
     payload = json.loads(Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).read_text(encoding="utf-8"))
@@ -3605,6 +3711,73 @@ def test_editor_smoke_diagnostic_hello_uses_hello_script_and_progress_log(tmp_pa
     assert result["status"] == "pass"
     assert result["diagnostic_mode"] == "hello"
     assert result["progress_log_ref"].endswith("progress.jsonl")
+
+
+def test_editor_viewport_visual_material_mode_blocks_capture_under_null_renderer(tmp_path):
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        assert "editor_viewport_visual_material_evidence_smoke.py" in argv[-1].replace("\\", "/")
+        assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == "editor-viewport-visual-material-evidence"
+        assert "-NullRenderer" in argv
+        assert "-rhi=Null" in argv
+        payload = json.loads(Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).read_text(encoding="utf-8"))
+        payload.update(_editor_viewport_visual_material_blocked_payload())
+        Path(env["MAXINE_EDITOR_SMOKE_REPORT_OUT"]).write_text(json.dumps(payload), encoding="utf-8")
+        return subprocess.CompletedProcess(args=argv, returncode=0, stdout="", stderr="")
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=_live_env(tmp_path),
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="editor-viewport-visual-material-evidence",
+    )
+
+    assert result["status"] == "pass"
+    assert result["diagnostic_mode"] == "editor-viewport-visual-material-evidence"
+    assert result["editor_viewport_visual_material_evidence_source_validation_verified"] is True
+    assert result["editor_visual_material_capture_api_found"] is True
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["editor_visual_material_capture_completed"] is False
+    assert result["editor_viewport_visual_material_evidence_blocker"] == (
+        "blocked_by_editor_viewport_capture_requires_non_null_rhi"
+    )
+    assert result["visual_material_rendered_evidence_gate_verified"] is False
+    assert result["visual_material_gate_verified"] is False
+    assert result["runtime_character_proof_verified"] is False
+
+
+def test_editor_visual_material_verified_requires_rendered_content_and_material_evidence():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_editor_viewport_visual_material_blocked_payload())
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "diagnostic_mode": "editor-viewport-visual-material-evidence",
+            "live_editor_execution": True,
+            "editor_visual_material_capture_requested": True,
+            "editor_visual_material_capture_completed": True,
+            "editor_visual_material_capture_artifact_exists": True,
+            "editor_visual_material_capture_content_validation_attempted": True,
+            "editor_visual_material_capture_content_validation_verified": False,
+            "editor_visual_material_nonblank_validation_verified": False,
+            "editor_visual_material_character_presence_validation_verified": False,
+            "editor_visual_material_material_presence_validation_verified": False,
+            "visual_material_rendered_evidence_gate_attempted": True,
+            "visual_material_rendered_evidence_gate_verified": False,
+            "visual_material_gate_claimed": True,
+            "visual_material_gate_verified": True,
+            "full_runtime_character_visual_material_gate_verified": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+    assert "rendered visual/material evidence" in " ".join(result.messages)
 
 
 def test_editor_smoke_timeout_classifies_last_script_progress_marker(tmp_path):

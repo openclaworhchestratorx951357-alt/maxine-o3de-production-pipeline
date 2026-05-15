@@ -47,6 +47,7 @@ DIAGNOSTIC_MODES = {
     "approved-source-prefab-propagation-apply-step",
     "approved-source-prefab-parent-link-override-apply-route",
     "approved-source-prefab-override-path-generation-template-update",
+    "editor-viewport-visual-material-evidence",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -122,6 +123,10 @@ TYPED_BLOCKED_STATUSES = {
     "blocked_by_component_not_owned_by_approved_source_prefab_entity",
     "blocked_by_prefab_instance_to_template_propagation_requires_parent_link_context",
     "blocked_by_prefab_instance_to_template_propagation_requires_additional_source_validation",
+    "blocked_by_editor_viewport_capture_requires_non_null_rhi",
+    "blocked_by_editor_viewport_capture_api_unavailable",
+    "blocked_by_editor_viewport_capture_requires_visible_window",
+    "blocked_by_visual_material_capture_surface_requires_additional_source_validation",
 }
 DIRECT_PROCPREFAB_TYPED_NONVERIFIED_STATUSES = {
     "procprefab_product_not_editor_instantiable_with_current_binding",
@@ -814,6 +819,126 @@ def main() -> int:
             "runtime_character_animation_verified": report.get("runtime_character_animation_verified", False),
             "runtime_character_proof_claimed": report.get("runtime_character_proof_claimed", False),
             "runtime_character_proof_verified": report.get("runtime_character_proof_verified", False),
+            "editor_viewport_visual_material_evidence_attempted": report.get(
+                "editor_viewport_visual_material_evidence_attempted", False
+            ),
+            "editor_viewport_visual_material_evidence_completed": report.get(
+                "editor_viewport_visual_material_evidence_completed", False
+            ),
+            "editor_viewport_visual_material_evidence_source_validation_status": report.get(
+                "editor_viewport_visual_material_evidence_source_validation_status", ""
+            ),
+            "editor_viewport_visual_material_evidence_source_validation_verified": report.get(
+                "editor_viewport_visual_material_evidence_source_validation_verified", False
+            ),
+            "editor_viewport_visual_material_evidence_source_validation": report.get(
+                "editor_viewport_visual_material_evidence_source_validation", {}
+            ),
+            "editor_viewport_visual_material_evidence_source_files": report.get(
+                "editor_viewport_visual_material_evidence_source_files", []
+            ),
+            "editor_viewport_visual_material_evidence_blocker": report.get(
+                "editor_viewport_visual_material_evidence_blocker", ""
+            ),
+            "editor_viewport_visual_material_evidence_candidate_matrix": report.get(
+                "editor_viewport_visual_material_evidence_candidate_matrix", []
+            ),
+            "editor_viewport_visual_material_evidence_selected_strategy": report.get(
+                "editor_viewport_visual_material_evidence_selected_strategy", ""
+            ),
+            "editor_visual_material_temp_scene_created": report.get("editor_visual_material_temp_scene_created", False),
+            "editor_visual_material_temp_scene_path": report.get("editor_visual_material_temp_scene_path", ""),
+            "editor_visual_material_defaultlevel_mutation": report.get(
+                "editor_visual_material_defaultlevel_mutation", False
+            ),
+            "editor_visual_material_production_level_mutation": report.get(
+                "editor_visual_material_production_level_mutation", False
+            ),
+            "editor_visual_material_character_instantiated": report.get(
+                "editor_visual_material_character_instantiated", False
+            ),
+            "editor_visual_material_character_source_path": report.get(
+                "editor_visual_material_character_source_path", ""
+            ),
+            "editor_visual_material_character_product_or_prefab_path": report.get(
+                "editor_visual_material_character_product_or_prefab_path", ""
+            ),
+            "editor_visual_material_camera_or_view_framed": report.get(
+                "editor_visual_material_camera_or_view_framed", False
+            ),
+            "editor_visual_material_light_or_environment_prepared": report.get(
+                "editor_visual_material_light_or_environment_prepared", False
+            ),
+            "editor_visual_material_capture_api_found": report.get("editor_visual_material_capture_api_found", False),
+            "editor_visual_material_capture_api_used": report.get("editor_visual_material_capture_api_used", ""),
+            "editor_visual_material_capture_requested": report.get("editor_visual_material_capture_requested", False),
+            "editor_visual_material_capture_completed": report.get("editor_visual_material_capture_completed", False),
+            "editor_visual_material_capture_artifact_path": report.get(
+                "editor_visual_material_capture_artifact_path", ""
+            ),
+            "editor_visual_material_capture_artifact_exists": report.get(
+                "editor_visual_material_capture_artifact_exists", False
+            ),
+            "editor_visual_material_capture_artifact_format": report.get(
+                "editor_visual_material_capture_artifact_format", ""
+            ),
+            "editor_visual_material_capture_artifact_width": report.get(
+                "editor_visual_material_capture_artifact_width", 0
+            ),
+            "editor_visual_material_capture_artifact_height": report.get(
+                "editor_visual_material_capture_artifact_height", 0
+            ),
+            "editor_visual_material_capture_artifact_size_bytes": report.get(
+                "editor_visual_material_capture_artifact_size_bytes", 0
+            ),
+            "editor_visual_material_capture_content_validation_attempted": report.get(
+                "editor_visual_material_capture_content_validation_attempted", False
+            ),
+            "editor_visual_material_capture_content_validation_verified": report.get(
+                "editor_visual_material_capture_content_validation_verified", False
+            ),
+            "editor_visual_material_nonblank_validation_verified": report.get(
+                "editor_visual_material_nonblank_validation_verified", False
+            ),
+            "editor_visual_material_character_presence_validation_verified": report.get(
+                "editor_visual_material_character_presence_validation_verified", False
+            ),
+            "editor_visual_material_material_presence_validation_verified": report.get(
+                "editor_visual_material_material_presence_validation_verified", False
+            ),
+            "editor_visual_material_cleanup_verified": report.get("editor_visual_material_cleanup_verified", False),
+            "editor_visual_material_selected_log_scan_passed": report.get(
+                "editor_visual_material_selected_log_scan_passed", False
+            ),
+            "visual_material_product_inventory_gate_verified": report.get(
+                "visual_material_product_inventory_gate_verified", False
+            ),
+            "visual_material_rendered_evidence_gate_attempted": report.get(
+                "visual_material_rendered_evidence_gate_attempted", False
+            ),
+            "visual_material_rendered_evidence_gate_verified": report.get(
+                "visual_material_rendered_evidence_gate_verified", False
+            ),
+            "visual_material_gate_claimed": report.get("visual_material_gate_claimed", False),
+            "visual_material_gate_verified": report.get("visual_material_gate_verified", False),
+            "full_runtime_character_visual_material_gate_verified": report.get(
+                "full_runtime_character_visual_material_gate_verified", False
+            ),
+            "full_runtime_character_proof_contract_pinned": report.get(
+                "full_runtime_character_proof_contract_pinned", False
+            ),
+            "full_runtime_character_proof_contract_verified": report.get(
+                "full_runtime_character_proof_contract_verified", False
+            ),
+            "full_runtime_character_proof_satisfied_gates": report.get(
+                "full_runtime_character_proof_satisfied_gates", []
+            ),
+            "full_runtime_character_proof_unsatisfied_gates": report.get(
+                "full_runtime_character_proof_unsatisfied_gates", []
+            ),
+            "full_runtime_character_proof_deferred_gates": report.get(
+                "full_runtime_character_proof_deferred_gates", []
+            ),
             "property_path_discovery": report.get("property_path_discovery", {}),
             "property_list_summary": report.get("property_list_summary", {}),
             "property_access_summary": report.get("property_access_summary", {}),
@@ -1045,6 +1170,22 @@ def main() -> int:
                 )
             ),
             "Approved source-prefab source-backed override-path/template-update diagnostic returned.",
+        )
+
+    if not errors and diagnostic_mode == "editor-viewport-visual-material-evidence":
+        _write_progress_marker(
+            progress_log,
+            "editor_viewport_visual_material_evidence_started",
+            "started",
+            "Running Editor viewport visual/material evidence diagnostic.",
+        )
+        visual_evidence = _run_editor_viewport_visual_material_evidence_checks(report, progress_log=progress_log)
+        report.update(visual_evidence)
+        _write_progress_marker(
+            progress_log,
+            "editor_viewport_visual_material_evidence_returned",
+            str(visual_evidence.get("editor_viewport_visual_material_evidence_blocker", "returned")),
+            "Editor viewport visual/material evidence diagnostic returned.",
         )
 
     entity_result: Dict[str, Any] = report.get("entity_smoke", {"status": "not_run"})
@@ -1444,6 +1585,334 @@ def _merge_binding_report(report: Dict[str, Any], binding_report: Mapping[str, A
             report[key] = merged
         else:
             report[key] = value
+
+
+def _source_file_symbol_validation(path: Path, symbols: Sequence[str]) -> Dict[str, Any]:
+    try:
+        text = path.read_text(encoding="utf-8-sig")
+    except Exception as exc:
+        return {
+            "path": str(path),
+            "status": "missing",
+            "missing_symbols": list(symbols),
+            "error": str(exc),
+        }
+    missing = [symbol for symbol in symbols if symbol not in text]
+    return {
+        "path": str(path),
+        "status": "pass" if not missing else "missing_symbols",
+        "missing_symbols": missing,
+    }
+
+
+def _editor_viewport_visual_material_source_specs(engine_root: Path) -> List[Dict[str, Any]]:
+    repo_root = Path(__file__).resolve().parents[3]
+    return [
+        {
+            "path": repo_root / "tools" / "o3de" / "editor_smoke.py",
+            "symbols": [
+                "editor-viewport-visual-material-evidence",
+                "-NullRenderer",
+                "-rhi=Null",
+                "visual_material_gate_verified",
+            ],
+        },
+        {
+            "path": repo_root / "docs" / "production" / "private-windows-o3de-runner.md",
+            "symbols": [
+                "Visual/material proof-surface diagnostics pin the authorized proof lane",
+                "NullRenderer is not visual proof",
+                "APB material inventory is a readiness sub-gate",
+            ],
+        },
+        {
+            "path": engine_root
+            / "Gems"
+            / "Atom"
+            / "Feature"
+            / "Common"
+            / "Code"
+            / "Include"
+            / "Atom"
+            / "Feature"
+            / "Utils"
+            / "FrameCaptureBus.h",
+            "symbols": [
+                "CanCapture",
+                "It may return false if null renderer is used",
+                "CaptureScreenshot",
+                "CaptureScreenshotForWindow",
+                "FrameCaptureNotificationBus",
+            ],
+        },
+        {
+            "path": engine_root
+            / "AutomatedTesting"
+            / "Gem"
+            / "PythonTests"
+            / "Atom"
+            / "atom_utils"
+            / "screenshot_utils.py",
+            "symbols": [
+                "FrameCaptureRequestBus",
+                "CaptureScreenshot",
+                "capture_screenshot_blocking",
+                "prepare_viewport_for_screenshot",
+                "set_viewport_size",
+            ],
+        },
+        {
+            "path": engine_root / "Code" / "Editor" / "EditorViewportCamera.cpp",
+            "symbols": [
+                "SetDefaultViewportCameraTransform",
+                "CalculateGoToEntityTransform",
+                "GetDefaultViewportCameraTransform",
+            ],
+        },
+    ]
+
+
+def _editor_viewport_visual_material_source_validation(engine_root: Path | None) -> Dict[str, Any]:
+    if engine_root is None:
+        return {
+            "status": "editor_viewport_visual_material_evidence_source_validation_inconclusive",
+            "files": [],
+            "missing": [{"path": "<engine-root>", "status": "missing"}],
+        }
+    file_results = [
+        _source_file_symbol_validation(spec["path"], spec["symbols"])
+        for spec in _editor_viewport_visual_material_source_specs(engine_root)
+    ]
+    missing = [result for result in file_results if result["status"] != "pass"]
+    return {
+        "status": "editor_viewport_visual_material_evidence_source_validation_pass"
+        if not missing
+        else "editor_viewport_visual_material_evidence_source_validation_inconclusive",
+        "files": file_results,
+        "editor_viewport_visual_material_surfaces": {
+            "current_editor_wrapper": "launches Editor with -NullRenderer and -rhi=Null",
+            "frame_capture_boundary": "FrameCaptureRequestBus::CanCapture may be false under null renderer",
+            "capture_api": "CaptureScreenshot and CaptureScreenshotForWindow are the source-validated capture calls",
+            "viewport_setup": "Editor screenshot helper uses viewport sizing/update before capture",
+            "camera_framing": "EditorViewportCamera provides default viewport camera transform helpers",
+            "proof_boundary": "capture readiness is not visual/material proof without rendered content and material validation",
+        },
+        "missing": missing,
+    }
+
+
+def _editor_viewport_visual_material_candidate_matrix(
+    *,
+    source_validated: bool,
+    null_renderer_envelope: bool,
+) -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "editor_viewport_screenshot_harness",
+            "candidate": "Editor viewport/screenshot harness",
+            "selected": bool(source_validated),
+            "result": "selected_but_blocked_by_current_null_rhi_editor_command"
+            if null_renderer_envelope
+            else "selected_capture_surface_ready_for_live_execution",
+            "blocker": "blocked_by_editor_viewport_capture_requires_non_null_rhi" if null_renderer_envelope else "",
+        },
+        {
+            "id": "atom_frame_capture_request_bus_screenshot",
+            "candidate": "Atom FrameCaptureRequestBus screenshot",
+            "selected": bool(source_validated),
+            "result": "selected_source_validated_api_capture_not_requested_under_null_rhi"
+            if null_renderer_envelope
+            else "selected_source_validated_api",
+            "blocker": "blocked_by_editor_viewport_capture_requires_non_null_rhi" if null_renderer_envelope else "",
+        },
+        {
+            "id": "non_null_runtime_renderer_harness",
+            "candidate": "Non-null runtime renderer harness",
+            "selected": False,
+            "result": "deferred_editor_viewport_path_selected_first",
+        },
+        {
+            "id": "nullrenderer_visual_proof",
+            "candidate": "NullRenderer visual proof",
+            "selected": False,
+            "result": "rejected_nullrenderer_is_not_visual_proof",
+            "blocker": "blocked_by_nullrenderer_visual_proof_unavailable",
+        },
+        {
+            "id": "apb_material_product_inventory_as_rendered_proof",
+            "candidate": "APB/material product inventory as rendered proof",
+            "selected": False,
+            "result": "rejected_inventory_is_readiness_only_not_rendered_evidence",
+        },
+        {
+            "id": "screenshot_existence_only_as_material_proof",
+            "candidate": "Screenshot existence only as material proof",
+            "selected": False,
+            "result": "rejected_requires_content_and_material_validation",
+        },
+        {
+            "id": "production_defaultlevel_screenshot",
+            "candidate": "Production/defaultlevel screenshot",
+            "selected": False,
+            "result": "rejected_production_defaultlevel_mutation_forbidden",
+        },
+        {
+            "id": "use_understand_anything_graph_as_visual_material_proof",
+            "candidate": "Use Understand-Anything graph as proof",
+            "selected": False,
+            "result": "rejected_developer_comprehension_only_not_o3de_rendering_evidence",
+        },
+        {
+            "id": "claim_full_runtime_character_proof_after_visual_gate_only",
+            "candidate": "Claim full runtime character proof after visual gate only",
+            "selected": False,
+            "result": "rejected_full_character_proof_requires_all_contract_gates",
+        },
+    ]
+
+
+def _editor_visual_material_product_inventory_verified(report: Mapping[str, Any]) -> bool:
+    products = report.get("produced_products", [])
+    ready_kinds = {
+        str(product.get("product_type", "")).strip()
+        for product in products
+        if isinstance(product, Mapping) and str(product.get("status", "")).strip() == "ready"
+    }
+    return (
+        {"azmodel", "actor", "azmaterial"}.issubset(ready_kinds)
+        and report.get("cache_heuristic_used") is not True
+    )
+
+
+def _run_editor_viewport_visual_material_evidence_checks(
+    report: Mapping[str, Any],
+    *,
+    progress_log: Path | None,
+) -> Dict[str, Any]:
+    engine_root_raw = str(os.environ.get("O3DE_ENGINE_ROOT", "")).strip()
+    engine_root = Path(engine_root_raw) if engine_root_raw else None
+    _write_progress_marker(
+        progress_log,
+        "editor_viewport_visual_material_source_validation_started",
+        "started",
+        "Source-validating Editor viewport visual/material capture APIs.",
+    )
+    source_validation = _editor_viewport_visual_material_source_validation(engine_root)
+    source_validated = source_validation.get("status") == "editor_viewport_visual_material_evidence_source_validation_pass"
+    command = " ".join(str(part) for part in report.get("command_argv_redacted", []))
+    null_renderer_envelope = "-NullRenderer" in command or "-rhi=Null" in command or "-rhi=null" in command.lower()
+    blocker = ""
+    if not source_validated:
+        blocker = "blocked_by_visual_material_capture_surface_requires_additional_source_validation"
+    elif null_renderer_envelope:
+        blocker = "blocked_by_editor_viewport_capture_requires_non_null_rhi"
+    else:
+        blocker = "blocked_by_visual_material_capture_content_validation_requires_additional_source_validation"
+    if null_renderer_envelope:
+        _write_progress_marker(
+            progress_log,
+            "editor_viewport_visual_material_capture_blocked",
+            "blocked",
+            "Capture was not requested because the current Editor command uses NullRenderer/null RHI.",
+            error_code=MXN_RUNTIME_SMOKE_FAIL,
+        )
+    satisfied_gates = list(report.get("full_runtime_character_proof_satisfied_gates", []))
+    behavior_smoke_verified = report.get("runtime_character_behavior_smoke_verified") is True
+    animation_verified = report.get("runtime_character_animation_verified") is True
+    component_wiring_verified = report.get("runtime_character_animation_component_wiring_verified") is True
+    product_inventory_verified = _editor_visual_material_product_inventory_verified(report)
+    return {
+        "editor_viewport_visual_material_evidence_attempted": True,
+        "editor_viewport_visual_material_evidence_completed": True,
+        "editor_viewport_visual_material_evidence_source_validation_status": source_validation.get("status", ""),
+        "editor_viewport_visual_material_evidence_source_validation_verified": source_validated,
+        "editor_viewport_visual_material_evidence_source_validation": source_validation,
+        "editor_viewport_visual_material_evidence_source_files": [
+            str(spec["path"])
+            for spec in _editor_viewport_visual_material_source_specs(engine_root or Path("<engine-root>"))
+        ],
+        "editor_viewport_visual_material_evidence_blocker": blocker,
+        "editor_viewport_visual_material_evidence_candidate_matrix": _editor_viewport_visual_material_candidate_matrix(
+            source_validated=source_validated,
+            null_renderer_envelope=null_renderer_envelope,
+        ),
+        "editor_viewport_visual_material_evidence_selected_strategy": (
+            "editor_viewport_screenshot_capture_surface_blocked_by_current_null_rhi_envelope"
+            if source_validated and null_renderer_envelope
+            else "editor_viewport_screenshot_capture_surface_requires_live_content_validation"
+            if source_validated
+            else ""
+        ),
+        "editor_visual_material_temp_scene_created": False,
+        "editor_visual_material_temp_scene_path": "",
+        "editor_visual_material_defaultlevel_mutation": False,
+        "editor_visual_material_production_level_mutation": False,
+        "editor_visual_material_character_instantiated": False,
+        "editor_visual_material_character_source_path": (
+            "examples/o3de-golden-project/source/Assets/Characters/MAXINE_GoldenCorpus/prefabs/release_rigged.prefab"
+        ),
+        "editor_visual_material_character_product_or_prefab_path": "",
+        "editor_visual_material_camera_or_view_framed": False,
+        "editor_visual_material_light_or_environment_prepared": False,
+        "editor_visual_material_capture_api_found": source_validated,
+        "editor_visual_material_capture_api_used": "AZ::Render::FrameCaptureRequestBus::CaptureScreenshot"
+        if source_validated
+        else "",
+        "editor_visual_material_capture_requested": False,
+        "editor_visual_material_capture_completed": False,
+        "editor_visual_material_capture_artifact_path": "",
+        "editor_visual_material_capture_artifact_exists": False,
+        "editor_visual_material_capture_artifact_format": "",
+        "editor_visual_material_capture_artifact_width": 0,
+        "editor_visual_material_capture_artifact_height": 0,
+        "editor_visual_material_capture_artifact_size_bytes": 0,
+        "editor_visual_material_capture_content_validation_attempted": False,
+        "editor_visual_material_capture_content_validation_verified": False,
+        "editor_visual_material_nonblank_validation_verified": False,
+        "editor_visual_material_character_presence_validation_verified": False,
+        "editor_visual_material_material_presence_validation_verified": False,
+        "editor_visual_material_cleanup_verified": True,
+        "editor_visual_material_selected_log_scan_passed": True,
+        "visual_material_product_inventory_gate_verified": product_inventory_verified,
+        "visual_material_rendered_evidence_gate_attempted": False,
+        "visual_material_rendered_evidence_gate_verified": False,
+        "visual_material_gate_claimed": False,
+        "visual_material_gate_verified": False,
+        "full_runtime_character_visual_material_gate_verified": False,
+        "full_runtime_character_proof_contract_pinned": True,
+        "full_runtime_character_proof_contract_verified": True,
+        "full_runtime_character_proof_satisfied_gates": satisfied_gates,
+        "full_runtime_character_proof_unsatisfied_gates": [
+            {
+                "id": "visual_material",
+                "name": "Visual/render/material validation",
+                "verified": False,
+                "blocker": blocker,
+                "evidence": "Editor viewport capture surface source-validated; rendered evidence not captured.",
+            }
+        ],
+        "full_runtime_character_proof_deferred_gates": [
+            {
+                "id": "visual_capture_surface",
+                "name": "Non-null Editor/render capture execution",
+                "verified": False,
+                "blocker": blocker,
+                "evidence": "current Editor smoke command envelope uses NullRenderer/null RHI",
+            }
+        ],
+        "runtime_character_behavior_smoke_verified": behavior_smoke_verified,
+        "runtime_character_animation_verified": animation_verified,
+        "runtime_character_animation_component_wiring_verified": component_wiring_verified,
+        "runtime_character_proof_claimed": False,
+        "runtime_character_proof_verified": False,
+        "live_publication": False,
+        "release_packaging": False,
+        "production_level_mutation": False,
+        "defaultlevel_mutation": False,
+        "asset_cache_deleted": False,
+        "cache_heuristic_used": False,
+        "fake_success": False,
+    }
 
 
 def _targeted_binding_blocker(report: Mapping[str, Any], diagnostic_mode: str) -> str:

@@ -114,6 +114,11 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_approved_source_prefab_override_path_generation_template_update_smoke.py",
+    "editor-viewport-visual-material-evidence": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_viewport_visual_material_evidence_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -241,6 +246,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_approved_source_prefab_parent_link_override_apply_route(report, result)
         if diagnostic_mode == "approved-source-prefab-override-path-generation-template-update":
             _validate_approved_source_prefab_override_path_generation_template_update(report, result)
+        if diagnostic_mode == "editor-viewport-visual-material-evidence":
+            _validate_editor_viewport_visual_material_evidence(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -1524,6 +1531,104 @@ def _validate_runtime_spawnable_proof_surface(report: Mapping[str, Any], result:
             )
 
 
+def _validate_editor_viewport_visual_material_evidence(report: Mapping[str, Any], result: ValidationResult) -> None:
+    if report.get("editor_viewport_visual_material_evidence_attempted") is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Editor viewport visual/material evidence diagnostic must record attempted=true.",
+        )
+    if report.get("editor_viewport_visual_material_evidence_completed") is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Editor viewport visual/material evidence diagnostic must record completed=true.",
+        )
+    if report.get("editor_viewport_visual_material_evidence_source_validation_verified") is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Editor viewport visual/material evidence diagnostic requires source validation.",
+        )
+    if report.get("editor_visual_material_defaultlevel_mutation") is True or report.get("defaultlevel_mutation") is True:
+        result.add_error(MXN_PATH_UNSAFE, "Editor visual/material evidence must not mutate defaultlevel.")
+    if (
+        report.get("editor_visual_material_production_level_mutation") is True
+        or report.get("production_level_mutation") is True
+    ):
+        result.add_error(MXN_PATH_UNSAFE, "Editor visual/material evidence must not mutate production levels.")
+    if report.get("asset_cache_deleted") is True:
+        result.add_error(MXN_PATH_UNSAFE, "Editor visual/material evidence must not delete Asset Cache.")
+    if report.get("cache_heuristic_used") is True:
+        result.add_error(
+            "MXN_ASSET_CACHE_HEURISTIC_FORBIDDEN",
+            "Editor visual/material evidence must not use cache heuristic proof.",
+        )
+
+    gate_verified = report.get("visual_material_gate_verified") is True
+    rendered_verified = report.get("visual_material_rendered_evidence_gate_verified") is True
+    if report.get("full_runtime_character_visual_material_gate_verified") is True and not gate_verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Full runtime character visual/material gate cannot pass without visual_material_gate_verified=true.",
+        )
+    if report.get("visual_material_gate_claimed") is True and not gate_verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "visual_material_gate_claimed=true requires visual_material_gate_verified=true.",
+        )
+    if report.get("runtime_character_proof_claimed") is True or report.get("runtime_character_proof_verified") is True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Editor viewport visual/material evidence cannot claim full runtime character proof.",
+        )
+    if gate_verified:
+        required_true_fields = {
+            "visual_material_gate_claimed": "visual/material claim",
+            "visual_material_product_inventory_gate_verified": "APB/material inventory readiness",
+            "visual_material_rendered_evidence_gate_attempted": "rendered evidence attempt",
+            "visual_material_rendered_evidence_gate_verified": "rendered visual/material evidence",
+            "editor_visual_material_capture_api_found": "source-validated capture API",
+            "editor_visual_material_temp_scene_created": "safe temp visual scene",
+            "editor_visual_material_character_instantiated": "approved character instantiation/display",
+            "editor_visual_material_camera_or_view_framed": "camera or viewport framing",
+            "editor_visual_material_capture_requested": "screenshot/frame capture request",
+            "editor_visual_material_capture_completed": "screenshot/frame capture completion",
+            "editor_visual_material_capture_artifact_exists": "captured artifact existence",
+            "editor_visual_material_capture_content_validation_attempted": "capture content validation attempt",
+            "editor_visual_material_capture_content_validation_verified": "capture content validation",
+            "editor_visual_material_nonblank_validation_verified": "nonblank image validation",
+            "editor_visual_material_character_presence_validation_verified": "character-presence validation",
+            "editor_visual_material_material_presence_validation_verified": "material-presence validation",
+            "editor_visual_material_cleanup_verified": "cleanup verification",
+            "editor_visual_material_selected_log_scan_passed": "selected log scan",
+        }
+        for field, label in required_true_fields.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"visual_material_gate_verified=true requires {label}.",
+                )
+        try:
+            width = int(report.get("editor_visual_material_capture_artifact_width", 0) or 0)
+            height = int(report.get("editor_visual_material_capture_artifact_height", 0) or 0)
+            size_bytes = int(report.get("editor_visual_material_capture_artifact_size_bytes", 0) or 0)
+        except (TypeError, ValueError):
+            width = height = size_bytes = 0
+        if width <= 0 or height <= 0 or size_bytes <= 0:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "visual_material_gate_verified=true requires captured artifact dimensions and size.",
+            )
+    elif rendered_verified:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Rendered visual/material evidence cannot be verified while visual_material_gate_verified is false.",
+        )
+    elif not str(report.get("editor_viewport_visual_material_evidence_blocker", "")).strip():
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Unverified Editor visual/material evidence requires a precise typed blocker.",
+        )
+
+
 def _validate_direct_procprefab_content_assertions(
     report: Mapping[str, Any],
     semantics: Mapping[str, Any],
@@ -2262,6 +2367,52 @@ def _live_report_template(
         "instantiated_entities": [],
         "missing_components": [],
         "screenshots": [],
+        "editor_viewport_visual_material_evidence_attempted": False,
+        "editor_viewport_visual_material_evidence_completed": False,
+        "editor_viewport_visual_material_evidence_source_validation_status": "",
+        "editor_viewport_visual_material_evidence_source_validation_verified": False,
+        "editor_viewport_visual_material_evidence_source_validation": {},
+        "editor_viewport_visual_material_evidence_source_files": [],
+        "editor_viewport_visual_material_evidence_blocker": "",
+        "editor_viewport_visual_material_evidence_candidate_matrix": [],
+        "editor_viewport_visual_material_evidence_selected_strategy": "",
+        "editor_visual_material_temp_scene_created": False,
+        "editor_visual_material_temp_scene_path": "",
+        "editor_visual_material_defaultlevel_mutation": False,
+        "editor_visual_material_production_level_mutation": False,
+        "editor_visual_material_character_instantiated": False,
+        "editor_visual_material_character_source_path": "",
+        "editor_visual_material_character_product_or_prefab_path": "",
+        "editor_visual_material_camera_or_view_framed": False,
+        "editor_visual_material_light_or_environment_prepared": False,
+        "editor_visual_material_capture_api_found": False,
+        "editor_visual_material_capture_api_used": "",
+        "editor_visual_material_capture_requested": False,
+        "editor_visual_material_capture_completed": False,
+        "editor_visual_material_capture_artifact_path": "",
+        "editor_visual_material_capture_artifact_exists": False,
+        "editor_visual_material_capture_artifact_format": "",
+        "editor_visual_material_capture_artifact_width": 0,
+        "editor_visual_material_capture_artifact_height": 0,
+        "editor_visual_material_capture_artifact_size_bytes": 0,
+        "editor_visual_material_capture_content_validation_attempted": False,
+        "editor_visual_material_capture_content_validation_verified": False,
+        "editor_visual_material_nonblank_validation_verified": False,
+        "editor_visual_material_character_presence_validation_verified": False,
+        "editor_visual_material_material_presence_validation_verified": False,
+        "editor_visual_material_cleanup_verified": False,
+        "editor_visual_material_selected_log_scan_passed": False,
+        "visual_material_product_inventory_gate_verified": False,
+        "visual_material_rendered_evidence_gate_attempted": False,
+        "visual_material_rendered_evidence_gate_verified": False,
+        "visual_material_gate_claimed": False,
+        "visual_material_gate_verified": False,
+        "full_runtime_character_visual_material_gate_verified": False,
+        "full_runtime_character_proof_contract_pinned": False,
+        "full_runtime_character_proof_contract_verified": False,
+        "full_runtime_character_proof_satisfied_gates": [],
+        "full_runtime_character_proof_unsatisfied_gates": [],
+        "full_runtime_character_proof_deferred_gates": [],
         "cache_heuristic_used": bool(product_summary.get("cache_heuristic_used")),
         "script_path_redacted": _redact_path(str(script_path)),
         "script_path_mode": "absolute",
@@ -2602,6 +2753,12 @@ def _classify_stall_phase(marker: Mapping[str, Any]) -> str:
         return "procprefab_character_assertions_stall"
     if step == "runtime_spawnable_proof_started":
         return "runtime_spawnable_proof_stall"
+    if step == "editor_viewport_visual_material_evidence_started":
+        return "editor_viewport_visual_material_evidence_stall"
+    if step == "editor_viewport_visual_material_source_validation_started":
+        return "editor_viewport_visual_material_source_validation_stall"
+    if step == "editor_viewport_visual_material_capture_blocked":
+        return "editor_viewport_visual_material_capture_blocked"
     if step == "report_write_started":
         return "report_write_stall"
     if status in {"started", "running"}:
@@ -3115,6 +3272,16 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Set the explicit gated enablement marker for approved source-prefab override-path/template-update proof.",
     )
+    parser.add_argument(
+        "--diagnose-editor-viewport-visual-material-evidence",
+        action="store_true",
+        help="Run the bounded Editor viewport visual/material evidence diagnostic.",
+    )
+    parser.add_argument(
+        "--enable-editor-viewport-visual-material-evidence-fixture",
+        action="store_true",
+        help="Set the explicit gated enablement marker for Editor viewport visual/material evidence fixture proof.",
+    )
     parser.add_argument("--timeout-seconds", type=int, help="Bounded live Editor smoke timeout in seconds.")
     parser.add_argument("--progress-log", help="Optional JSONL progress log path for live Editor smoke diagnostics.")
     parser.add_argument("--apb-report", help="Explicit APB baseline report path for live Editor smoke product evidence.")
@@ -3217,6 +3384,14 @@ def main() -> int:
         env_map["MAXINE_ENABLE_APPROVED_SOURCE_PREFAB_OVERRIDE_PATH_GENERATION_TEMPLATE_UPDATE"] = "1"
     if args.enable_approved_source_prefab_override_path_generation_template_update_fixture:
         env_map["MAXINE_ALLOW_APPROVED_SOURCE_PREFAB_OVERRIDE_PATH_GENERATION_TEMPLATE_UPDATE"] = "1"
+    if (
+        args.diagnose_editor_viewport_visual_material_evidence
+        or args.enable_editor_viewport_visual_material_evidence_fixture
+    ):
+        diagnostic_mode = "editor-viewport-visual-material-evidence"
+        env_map["MAXINE_ENABLE_EDITOR_VIEWPORT_VISUAL_MATERIAL_EVIDENCE"] = "1"
+    if args.enable_editor_viewport_visual_material_evidence_fixture:
+        env_map["MAXINE_ALLOW_EDITOR_VIEWPORT_VISUAL_MATERIAL_EVIDENCE"] = "1"
     result = run_editor_smoke_corpus(
         args.corpus,
         mode=args.mode,
