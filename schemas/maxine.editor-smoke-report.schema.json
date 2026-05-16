@@ -125,6 +125,7 @@
         "editor-ap-negotiation-viewport-materialization-readiness",
         "asset-processor-project-build-alignment-repair",
         "operator-run-ap-alignment-remediation-verification",
+        "focused-editor-viewport-activation-default-viewport-materialization",
         "full"
       ]
     },

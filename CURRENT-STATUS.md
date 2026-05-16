@@ -1,6 +1,16 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
+- Focused Editor Viewport Activation / Default Viewport Materialization v2 is active on `codex/focused-editor-viewport-activation-default-viewport-materialization-v2`:
+  - PR #176 was verified merged into `main` at `08d06fa9fcbe8331704d3fd91cc7f2e2533fc5f1`; this branch was created from that updated `main`
+  - this slice source-validates and exercises focused Editor viewport activation/default viewport materialization after verified AP alignment, preserving the operator-run AP remediation success and verified Editor/AP negotiation from PR #176
+  - it reuses the safe temp visual scene/display context proven in PR #171/#172/#173/#174/#175/#176 under `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context`
+  - live evidence: `artifacts/o3de-integration/editor-smoke/editor-smoke-20260516T062855Z/editor_smoke_live_report.json` and `artifacts/o3de-integration/editor-smoke/editor-smoke-20260516T062855Z/progress.jsonl`
+  - live result: AP alignment preserved, Editor/AP negotiation preserved, selected RHI `dx12`, non-null Editor launch verified, safe temp scene path `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/editor_safe_temp_visual_scene_display_context_20260516t062855z`, cleanup completed, and no defaultlevel/production mutation detected
+  - focused viewport materialization remains blocked at `blocked_by_editor_main_window_activation_unavailable`: sanitized Qt discovery found main-window candidates, but none were already visible, so hidden main-window show/raise/activate was not forced
+  - default viewport pane/widget activation was not selected after the main-window activation blocker; readiness-only probes still report `blocked_by_editor_active_viewport_window_handle_unavailable`, `blocked_by_swapchain_probe_unavailable`, and `blocked_by_active_viewport_window_handle_unavailable`
+  - screenshot/frame capture remains not requested/completed, no rendered visual/material evidence is claimed, material correctness and character visual presence are not verified, `visual_material` remains unsatisfied, and full runtime character proof remains false
+  - defaultlevel mutation, production-level mutation, production character asset mutation, Asset Cache deletion, AP database/cache wipe, release packaging, publication, and production-ready claims remain false
 - Rerun AP Alignment Verification After Operator Remediation v1 is recorded on `codex/rerun-ap-alignment-verification-after-operator-remediation-v1`:
   - PR #175 was merged into `main` at `021eb02461d6bed46b33902cb828c26afa03de8e`; this branch was created from that updated `main`
   - the existing PR #175 operator-remediation verification diagnostic was rerun after the operator manually closed the mismatched Asset Processor and started the target Asset Processor with the source-validated PR #174 command
