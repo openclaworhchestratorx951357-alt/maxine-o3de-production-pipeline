@@ -8758,6 +8758,28 @@ def test_layout_lifecycle_source_validation_success_and_blocked(tmp_path):
     assert blocked["blocker"] == "blocked_by_editor_layout_bootstrap_lifecycle_source_validation_unavailable"
 
 
+def test_layout_lifecycle_launch_flag_classification_uses_exact_runpython_token():
+    result = editor_python_smoke._classify_editor_launch_lifecycle_flags(
+        {
+            "command_argv_redacted": [
+                "Editor.exe",
+                "--runpythontest",
+                "%REPO_ROOT%/test.py",
+                "--autotest_mode",
+                "--skipWelcomeScreenDialog",
+                "-rhi=dx12",
+            ]
+        }
+    )
+
+    assert result["uses_runpython"] is False
+    assert result["uses_runpythontest"] is True
+    assert result["uses_autotest_mode"] is True
+    assert result["uses_skip_welcome_screen_dialog"] is True
+    assert result["selected_rhi"] == "dx12"
+    assert result["raw_command_line_emitted"] is False
+
+
 def test_layout_lifecycle_schema_and_semantics_accept_blocked_readiness():
     report = _fixture("release_rigged.fixture.report.json")
     report.update(_layout_lifecycle_payload(visible_shell=False))

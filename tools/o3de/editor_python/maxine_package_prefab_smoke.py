@@ -10051,14 +10051,18 @@ def _run_alternate_editor_window_discovery_visible_shell_checks(
 
 def _classify_editor_launch_lifecycle_flags(report: Mapping[str, Any]) -> Dict[str, Any]:
     argv = [str(part) for part in report.get("command_argv_redacted", []) if str(part).strip()]
-    joined = " ".join(argv).lower()
-    uses_runpython = any(part.lower() == "--runpython" for part in argv) or "--runpython" in joined
-    uses_runpythontest = any(part.lower() == "--runpythontest" for part in argv) or "--runpythontest" in joined
-    uses_autotest = any(part.lower() == "--autotest_mode" for part in argv) or "--autotest_mode" in joined
-    uses_skip_welcome = (
-        any(part.lower() == "--skipwelcomescreendialog" for part in argv)
-        or "--skipwelcomescreendialog" in joined
-    )
+
+    def has_flag(flag: str) -> bool:
+        needle = flag.lower()
+        return any(
+            part.lower() == needle or part.lower().startswith(f"{needle}=")
+            for part in argv
+        )
+
+    uses_runpython = has_flag("--runpython")
+    uses_runpythontest = has_flag("--runpythontest")
+    uses_autotest = has_flag("--autotest_mode")
+    uses_skip_welcome = has_flag("--skipWelcomeScreenDialog")
     uses_null_renderer = _command_uses_null_renderer(report)
     selected_rhi = _command_requested_rhi(report)
     shell_suppression_detected = bool(uses_autotest or uses_runpythontest)
