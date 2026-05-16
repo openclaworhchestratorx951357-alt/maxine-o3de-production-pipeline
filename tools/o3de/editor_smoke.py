@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import platform as platform_module
+import re
 import shutil
 import subprocess
 import sys
@@ -3041,10 +3042,29 @@ def _same_process_path(left: str | Path, right: str | Path) -> bool:
     return _normalise_process_path(left) == _normalise_process_path(right)
 
 
-def _process_command_mentions_path(command_line: str, path: Path) -> bool:
-    normalized_command = _normalise_process_path(command_line)
-    normalized_path = _normalise_process_path(path)
-    return bool(normalized_path and normalized_path in normalized_command)
+def _normalise_command_path_token(value: str | Path) -> str:
+    normalized = _normalise_process_path(str(value).strip().strip("\"'"))
+    while len(normalized) > 3 and normalized.endswith("/"):
+        normalized = normalized[:-1]
+    return normalized
+
+
+def _process_command_project_path_values(command_line: str) -> List[str]:
+    values: List[str] = []
+    for match in re.finditer(
+        r"(?i)(?:^|\s)--project-path(?:\s+|=)(?:\"([^\"]+)\"|'([^']+)'|([^\s]+))",
+        command_line,
+    ):
+        value = next((group for group in match.groups() if group), "")
+        normalized = _normalise_command_path_token(value)
+        if normalized:
+            values.append(normalized)
+    return values
+
+
+def _process_command_project_path_matches(command_line: str, path: Path) -> bool:
+    expected = _normalise_command_path_token(path)
+    return bool(expected and expected in _process_command_project_path_values(command_line))
 
 
 def _sanitized_process_entry(
@@ -3058,6 +3078,7 @@ def _sanitized_process_entry(
     command_line = str(row.get("command_line") or row.get("CommandLine") or "").strip()
     process_name = str(row.get("name") or row.get("Name") or Path(executable_path).name).strip()
     expected_build_bin = expected_editor_executable.parent
+    project_path_values = _process_command_project_path_values(command_line)
     return {
         "process_name": process_name,
         "executable_basename": Path(executable_path).name if executable_path else "",
@@ -3065,8 +3086,8 @@ def _sanitized_process_entry(
         "same_build_bin_as_editor": _same_process_path(Path(executable_path).parent, expected_build_bin)
         if executable_path
         else False,
-        "command_line_project_path_present": bool(command_line and "--project-path" in command_line.lower()),
-        "command_line_project_path_matches": _process_command_mentions_path(command_line, expected_project_path),
+        "command_line_project_path_present": bool(project_path_values),
+        "command_line_project_path_matches": _process_command_project_path_matches(command_line, expected_project_path),
         "command_line_redacted": True,
         "raw_command_line_emitted": False,
     }

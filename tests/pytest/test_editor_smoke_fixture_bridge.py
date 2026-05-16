@@ -6553,6 +6553,49 @@ def test_editor_ap_process_inventory_sanitizes_alignment_and_blocks_unowned_mism
         assert entry["raw_command_line_emitted"] is False
 
 
+def test_editor_ap_process_inventory_requires_exact_project_path_token(tmp_path):
+    engine = _engine(tmp_path)
+    project = _project(tmp_path)
+    project_backup = Path(f"{project}_backup")
+    editor_exe = engine / "build" / "windows" / "bin" / "profile" / "Editor.exe"
+    ap_exe = engine / "build" / "windows" / "bin" / "profile" / "AssetProcessor.exe"
+
+    mismatch = _classify_editor_asset_processor_process_inventory(
+        [
+            {
+                "name": "AssetProcessor.exe",
+                "executable_path": str(ap_exe),
+                "command_line": f'"{ap_exe}" --project-path "{project_backup}"',
+            }
+        ],
+        expected_project_path=project,
+        expected_editor_executable=editor_exe,
+        expected_asset_processor_executable=ap_exe,
+    )
+    mismatch_entry = mismatch["asset_processor_process_inventory_sanitized"][0]
+    assert mismatch_entry["command_line_project_path_present"] is True
+    assert mismatch_entry["command_line_project_path_matches"] is False
+    assert mismatch["editor_asset_processor_project_alignment_verified"] is False
+    assert mismatch["editor_asset_processor_project_alignment_blocker"] == "blocked_by_editor_asset_processor_project_mismatch"
+
+    exact = _classify_editor_asset_processor_process_inventory(
+        [
+            {
+                "name": "AssetProcessor.exe",
+                "executable_path": str(ap_exe),
+                "command_line": f'"{ap_exe}" --project-path={project}',
+            }
+        ],
+        expected_project_path=project,
+        expected_editor_executable=editor_exe,
+        expected_asset_processor_executable=ap_exe,
+    )
+    exact_entry = exact["asset_processor_process_inventory_sanitized"][0]
+    assert exact_entry["command_line_project_path_present"] is True
+    assert exact_entry["command_line_project_path_matches"] is True
+    assert exact["editor_asset_processor_project_alignment_verified"] is True
+
+
 def test_editor_ap_negotiation_run_records_modal_and_preserves_no_capture(monkeypatch, tmp_path):
     env = _live_env(tmp_path)
     project = Path(env["O3DE_PROJECT_PATH"])
