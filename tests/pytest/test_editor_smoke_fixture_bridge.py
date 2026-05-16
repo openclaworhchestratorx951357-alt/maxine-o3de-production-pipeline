@@ -9,6 +9,7 @@ from typing import Mapping
 from tools.o3de.editor_smoke import (
     DIAGNOSTIC_EDITOR_SCRIPTS,
     _exit_code_for_status,
+    _classify_editor_asset_processor_process_inventory,
     load_fixture_reports,
     run_editor_smoke_corpus,
     validate_editor_smoke_report,
@@ -294,6 +295,106 @@ def _write_non_null_desktop_rhi_source_files(engine: Path) -> None:
             [
                 "Source/RHI/Buffer.cpp",
                 "Source/RHI/Device.cpp",
+            ]
+        ),
+    }
+    for path, text in source_files.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text + "\n", encoding="utf-8")
+
+
+def _write_editor_ap_negotiation_source_files(engine: Path) -> None:
+    _write_non_null_desktop_rhi_source_files(engine)
+    source_files = {
+        engine / "Code" / "Editor" / "CryEdit.cpp": "\n".join(
+            [
+                "bool CCryEditApp::ConnectToAssetProcessor() const",
+                "connectionSettings.m_launchAssetProcessorOnFailedConnection = true;",
+                "connectionSettings.m_connectionDirection = AzFramework::AssetSystem::ConnectionSettings::ConnectionDirection::ConnectToAssetProcessor;",
+                "connectionSettings.m_connectionIdentifier = AzFramework::AssetSystem::ConnectionIdentifiers::Editor;",
+                "EstablishAssetProcessorConnection",
+                "Connected to Asset Processor",
+                "Failed to connect to Asset Processor",
+                "CCryEditApp::CreateLevel",
+                "GetIEditor()->GetDocument()->Save()",
+                "CreateDefaultLevelAssets",
+                "AddToRecentFileList",
+            ]
+        ),
+        engine
+        / "Code"
+        / "Framework"
+        / "AzFramework"
+        / "AzFramework"
+        / "Network"
+        / "AssetProcessorConnection.h": "\n".join(
+            [
+                "AZStd::string m_branchToken;//transmitted to ensure the ap is the one for our branch",
+                "AZStd::string m_projectName;//transmitted to ensure the ap is the one for our project",
+                "bool m_negotiationFailed = false;",
+            ]
+        ),
+        engine
+        / "Code"
+        / "Framework"
+        / "AzFramework"
+        / "AzFramework"
+        / "Network"
+        / "AssetProcessorConnection.cpp": "\n".join(
+            [
+                "engineInfo.m_identifier = m_identifier;",
+                "NegotiationInfo_BranchIndentifier",
+                "NegotiationInfo_ProjectName",
+                "isBranchIdentifierMatch",
+                "isProjectMatch",
+                "m_negotiationFailed = true;",
+                "AssetSystemConnectionNotificationsBus::Broadcast(&AssetSystemConnectionNotificationsBus::Events::NegotiationFailed);",
+            ]
+        ),
+        engine
+        / "Code"
+        / "Framework"
+        / "AzFramework"
+        / "AzFramework"
+        / "Asset"
+        / "AssetSystemComponent.cpp": "\n".join(
+            [
+                "bool AssetSystemComponent::EstablishAssetProcessorConnection(const ConnectionSettings& connectionSettings)",
+                "NegotiationWithAssetProcessorFailed()",
+                'AZ_Error(connectionSettings.m_connectionIdentifier.c_str(), false, "Negotiation with asset processor failed");',
+                "LaunchAssetProcessor()",
+                "WaitUntilAssetProcessorConnected(connectionSettings.m_launchTimeout)",
+            ]
+        ),
+        engine
+        / "Code"
+        / "Tools"
+        / "AssetProcessor"
+        / "native"
+        / "connection"
+        / "connectionworker.cpp": "\n".join(
+            [
+                "AzFramework::ApplicationRequests::Bus::Broadcast(&AzFramework::ApplicationRequests::CalculateBranchTokenForEngineRoot, azBranchToken);",
+                "QString projectName = AssetUtilities::ComputeProjectName();",
+                "myInfo.m_identifier = \"ASSETPROCESSOR\";",
+                "NegotiationInfo_BranchIndentifier",
+                "NegotiationInfo_ProjectName",
+                "AssetProcessor::MessageInfoBus::Broadcast(&AssetProcessor::MessageInfoBus::Events::NegotiationFailed);",
+            ]
+        ),
+        engine
+        / "Code"
+        / "Tools"
+        / "AssetProcessor"
+        / "native"
+        / "utilities"
+        / "GUIApplicationManager.cpp": "\n".join(
+            [
+                "void GUIApplicationManager::NegotiationFailed()",
+                "An attempt to connect to the game or editor has failed.",
+                "different folder or a different project",
+                "QString(\"Negotiation Failed\")",
+                "ShowMessageBox",
             ]
         ),
     }
@@ -6292,6 +6393,295 @@ def test_nonblocking_viewport_swapchain_mode_uses_safe_temp_context_and_no_captu
     assert result["temp_visual_scene_cleanup_attempted"] is True
     assert result["temp_visual_scene_cleanup_completed"] is True
     assert Path(result["temp_visual_scene_cleanup_path_abs"]).exists() is False
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["editor_visual_material_capture_completed"] is False
+    assert result["visual_material_gate_verified"] is False
+
+
+def _editor_ap_negotiation_viewport_materialization_payload(
+    *,
+    negotiation_verified: bool = True,
+    modal_detected: bool = False,
+) -> dict:
+    payload = _nonblocking_viewport_swapchain_probe_payload(target_verified=False)
+    blocker = "" if negotiation_verified and not modal_detected else "blocked_by_editor_asset_processor_negotiation_failed_modal"
+    payload.update(
+        {
+            "diagnostic_mode": "editor-ap-negotiation-viewport-materialization-readiness",
+            "editor_asset_processor_negotiation_preflight_attempted": True,
+            "editor_asset_processor_negotiation_preflight_verified": negotiation_verified and not modal_detected,
+            "editor_asset_processor_negotiation_source_validated": True,
+            "editor_asset_processor_negotiation_state": "verified_editor_asset_processor_negotiation_aligned"
+            if negotiation_verified and not modal_detected
+            else "blocked_by_editor_asset_processor_negotiation_failed_modal",
+            "editor_asset_processor_negotiation_blocker": blocker,
+            "editor_asset_processor_negotiation_repair_attempted": False,
+            "editor_asset_processor_negotiation_repair_verified": False,
+            "editor_asset_processor_negotiation_repair_blocker": "not_selected_process_ownership_unverified",
+            "editor_asset_processor_modal_detection_attempted": True,
+            "editor_asset_processor_negotiation_failed_modal_detected": modal_detected,
+            "editor_asset_processor_negotiation_failed_modal_blocker": blocker,
+            "editor_asset_processor_project_alignment_attempted": True,
+            "editor_asset_processor_project_alignment_verified": negotiation_verified,
+            "editor_asset_processor_project_alignment_blocker": "" if negotiation_verified else "blocked_by_editor_asset_processor_project_mismatch",
+            "editor_asset_processor_build_root_alignment_attempted": True,
+            "editor_asset_processor_build_root_alignment_verified": negotiation_verified,
+            "editor_asset_processor_build_root_alignment_blocker": "" if negotiation_verified else "blocked_by_editor_asset_processor_build_root_mismatch",
+            "editor_process_inventory_attempted": True,
+            "editor_process_inventory_sanitized": [
+                {
+                    "process_name": "Editor.exe",
+                    "expected_executable": True,
+                    "command_line_redacted": True,
+                    "raw_command_line_emitted": False,
+                }
+            ],
+            "asset_processor_process_inventory_attempted": True,
+            "asset_processor_process_inventory_sanitized": [
+                {
+                    "process_name": "AssetProcessor.exe",
+                    "expected_executable": True,
+                    "same_build_bin_as_editor": True,
+                    "command_line_project_path_matches": True,
+                    "command_line_redacted": True,
+                    "raw_command_line_emitted": False,
+                }
+            ],
+            "asset_processor_process_running": True,
+            "asset_processor_process_owner_verified": False,
+            "asset_processor_restart_attempted": False,
+            "asset_processor_restart_completed": False,
+            "asset_processor_restart_blocker": "not_selected_process_ownership_unverified",
+            "asset_processor_launch_attempted": False,
+            "asset_processor_launch_completed": False,
+            "asset_processor_launch_blocker": "not_selected_existing_process_classified",
+            "viewport_window_materialization_repair_attempted": True,
+            "viewport_window_materialization_repair_verified": False,
+            "viewport_window_materialization_state": "blocked_by_editor_active_viewport_window_handle_unavailable",
+            "viewport_window_materialization_blocker": "blocked_by_editor_active_viewport_window_handle_unavailable",
+            "active_default_viewport_after_ap_alignment_attempted": True,
+            "active_default_viewport_after_ap_alignment_verified": False,
+            "active_default_viewport_after_ap_alignment_blocker": "blocked_by_editor_active_viewport_window_handle_unavailable",
+            "framecapture_target_after_ap_alignment_attempted": True,
+            "framecapture_target_after_ap_alignment_verified": False,
+            "framecapture_target_after_ap_alignment_blocker": "blocked_by_active_viewport_window_handle_unavailable",
+            "atom_swapchain_after_ap_alignment_attempted": True,
+            "atom_swapchain_after_ap_alignment_verified": False,
+            "atom_swapchain_after_ap_alignment_blocker": "blocked_by_swapchain_probe_unavailable",
+            "editor_visual_material_capture_requested": False,
+            "editor_visual_material_capture_completed": False,
+            "visual_material_rendered_evidence_gate_verified": False,
+            "visual_material_gate_claimed": False,
+            "visual_material_gate_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "asset_cache_deleted": False,
+            "proof_claims": [
+                "Source-validated and exercised bounded Editor/Asset Processor negotiation preflight plus project/build alignment diagnostics.",
+                "Viewport/window materialization readiness remained blocked by unavailable active/default viewport window handle.",
+            ],
+            "proof_limits": [
+                "No screenshot request/completion.",
+                "No rendered visual/material evidence.",
+                "No material/character visual-presence validation.",
+                "No visual_material gate verification.",
+                "No full runtime character proof.",
+                "No release packaging, publication, or production-ready claim.",
+            ],
+        }
+    )
+    return payload
+
+
+def test_editor_ap_negotiation_source_validation_success_and_blocked(tmp_path):
+    env = _live_env(tmp_path)
+    engine = Path(env["O3DE_ENGINE_ROOT"])
+    _write_editor_ap_negotiation_source_files(engine)
+
+    success = editor_python_smoke._editor_ap_negotiation_viewport_materialization_source_validation(engine)
+    assert success["status"] == "editor_ap_negotiation_viewport_materialization_source_validation_pass"
+    assert success["blocker"] == ""
+    assert "branch token" in success["surfaces"]["negotiation_token_boundary"]
+    assert success["surfaces"]["asset_processor_modal_boundary"].startswith("Asset Processor shows")
+
+    blocked = editor_python_smoke._editor_ap_negotiation_viewport_materialization_source_validation(
+        tmp_path / "missing-engine"
+    )
+    assert blocked["status"] == "editor_ap_negotiation_viewport_materialization_source_validation_inconclusive"
+    assert blocked["blocker"] == "blocked_by_editor_asset_processor_negotiation_source_validation_unavailable"
+
+
+def test_editor_ap_process_inventory_sanitizes_alignment_and_blocks_unowned_mismatch(tmp_path):
+    engine = _engine(tmp_path)
+    project = _project(tmp_path)
+    other_project = tmp_path / "OtherProject"
+    editor_exe = engine / "build" / "windows" / "bin" / "profile" / "Editor.exe"
+    ap_exe = engine / "build" / "windows" / "bin" / "profile" / "AssetProcessor.exe"
+    ap_exe.write_text("ap placeholder", encoding="utf-8")
+
+    result = _classify_editor_asset_processor_process_inventory(
+        [
+            {
+                "process_id": 10,
+                "name": "AssetProcessor.exe",
+                "executable_path": str(ap_exe),
+                "command_line": f'"{ap_exe}" --project-path "{other_project}"',
+            },
+            {
+                "process_id": 20,
+                "name": "Editor.exe",
+                "executable_path": str(editor_exe),
+                "command_line": f'"{editor_exe}" --project-path "{project}"',
+            },
+        ],
+        expected_project_path=project,
+        expected_editor_executable=editor_exe,
+        expected_asset_processor_executable=ap_exe,
+    )
+
+    assert result["asset_processor_process_inventory_attempted"] is True
+    assert result["asset_processor_process_running"] is True
+    assert result["editor_asset_processor_project_alignment_verified"] is False
+    assert result["editor_asset_processor_project_alignment_blocker"] == "blocked_by_editor_asset_processor_project_mismatch"
+    assert result["editor_asset_processor_build_root_alignment_verified"] is True
+    assert result["asset_processor_process_owner_verified"] is False
+    assert result["asset_processor_restart_attempted"] is False
+    assert result["asset_processor_restart_blocker"] == "blocked_by_asset_processor_process_ownership_unverified"
+    for entry in result["asset_processor_process_inventory_sanitized"]:
+        assert "command_line" not in entry
+        assert entry["command_line_redacted"] is True
+        assert entry["raw_command_line_emitted"] is False
+
+
+def test_editor_ap_negotiation_run_records_modal_and_preserves_no_capture(monkeypatch, tmp_path):
+    env = _live_env(tmp_path)
+    project = Path(env["O3DE_PROJECT_PATH"])
+    monkeypatch.setenv("O3DE_ENGINE_ROOT", env["O3DE_ENGINE_ROOT"])
+    monkeypatch.setenv("O3DE_PROJECT_PATH", str(project))
+    monkeypatch.setenv(
+        "MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_NAME",
+        "_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/test_run",
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_editor_ap_negotiation_viewport_materialization_source_validation",
+        lambda _engine_root: {
+            "status": "editor_ap_negotiation_viewport_materialization_source_validation_pass",
+            "blocker": "",
+            "files": [],
+            "surfaces": {},
+        },
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_probe_editor_asset_processor_negotiation_modal",
+        lambda: {
+            "attempted": True,
+            "detected": True,
+            "blocker": "blocked_by_editor_asset_processor_negotiation_failed_modal",
+            "sanitized_windows": [{"title_match": "Negotiation Failed", "visible": True}],
+        },
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_run_editor_nonblocking_viewport_swapchain_readiness_checks",
+        lambda report, *, progress_log, general: _nonblocking_viewport_swapchain_probe_payload(target_verified=False),
+    )
+
+    result = editor_python_smoke._run_editor_ap_negotiation_viewport_materialization_checks(
+        _live_non_null_editor_launch_verified_payload(),
+        progress_log=None,
+        general=object(),
+    )
+
+    assert result["editor_asset_processor_negotiation_preflight_attempted"] is True
+    assert result["editor_asset_processor_negotiation_preflight_verified"] is False
+    assert result["editor_asset_processor_negotiation_failed_modal_detected"] is True
+    assert result["editor_asset_processor_negotiation_blocker"] == (
+        "blocked_by_editor_asset_processor_negotiation_failed_modal"
+    )
+    assert result["viewport_window_materialization_repair_attempted"] is True
+    assert result["viewport_window_materialization_repair_verified"] is False
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["editor_visual_material_capture_completed"] is False
+    assert result["visual_material_gate_verified"] is False
+    assert result["runtime_character_proof_verified"] is False
+
+
+def test_editor_ap_negotiation_schema_and_semantics_accept_blocked_materialization():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_editor_ap_negotiation_viewport_materialization_payload(negotiation_verified=True))
+    report["mode"] = "local_editor_python"
+    report["status"] = "pass"
+
+    schema_result = schema_validate(report, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(report, strict=True)
+
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+
+
+def test_editor_ap_negotiation_validation_rejects_proof_overclaims():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_editor_ap_negotiation_viewport_materialization_payload(negotiation_verified=True))
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "editor_visual_material_capture_requested": True,
+            "visual_material_gate_verified": True,
+            "runtime_character_proof_verified": True,
+            "asset_cache_deleted": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    assert "MXN_RUNTIME_SMOKE_FAIL" in result.error_codes
+    joined = " ".join(result.messages)
+    assert "must not request screenshot/frame capture" in joined
+    assert "must not delete Asset Cache" in joined
+
+
+def test_editor_ap_negotiation_mode_uses_safe_temp_context_and_no_capture(tmp_path):
+    env = _live_env(tmp_path)
+    _write_editor_ap_negotiation_source_files(Path(env["O3DE_ENGINE_ROOT"]))
+
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        assert "editor_ap_negotiation_viewport_materialization_readiness_smoke.py" in argv[-1].replace("\\", "/")
+        assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == (
+            "editor-ap-negotiation-viewport-materialization-readiness"
+        )
+        assert env["MAXINE_ENABLE_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] == "1"
+        assert env["MAXINE_ENABLE_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] == "1"
+        assert env["MAXINE_ENABLE_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] == "1"
+        assert "MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH" not in env
+        temp_path = Path(env["MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_PATH"])
+        temp_path.mkdir(parents=True)
+        (temp_path / "test.prefab").write_text("{}", encoding="utf-8")
+        payload = json.loads(Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).read_text(encoding="utf-8"))
+        payload.update(_editor_ap_negotiation_viewport_materialization_payload(negotiation_verified=True))
+        payload["temp_visual_scene_path"] = "Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/test"
+        payload["editor_temp_visual_scene_path"] = payload["temp_visual_scene_path"]
+        payload["editor_visual_material_temp_scene_path"] = payload["temp_visual_scene_path"]
+        Path(env["MAXINE_EDITOR_SMOKE_REPORT_OUT"]).write_text(json.dumps(payload), encoding="utf-8")
+        return subprocess.CompletedProcess(args=argv, returncode=0, stdout="", stderr="")
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=env,
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="editor-ap-negotiation-viewport-materialization-readiness",
+    )
+
+    assert result["status"] == "pass"
+    assert result["editor_asset_processor_negotiation_preflight_attempted"] is True
+    assert result["temp_visual_scene_cleanup_attempted"] is True
+    assert result["temp_visual_scene_cleanup_completed"] is True
     assert result["editor_visual_material_capture_requested"] is False
     assert result["editor_visual_material_capture_completed"] is False
     assert result["visual_material_gate_verified"] is False

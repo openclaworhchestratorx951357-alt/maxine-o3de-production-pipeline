@@ -872,3 +872,19 @@ On the current paired runner, `component-binding` passes with Transform and Tag 
 Skipped/unavailable is not pass. Strict mode fails with `MXN_VALIDATION_TOOL_UNAVAILABLE` when required local tools are missing.
 
 This wiring does not publish, mutate production levels, contact external services, or claim production-ready completion.
+
+## Repair Editor Asset Processor negotiation and viewport materialization readiness
+
+The Editor/AP negotiation diagnostic is invoked with:
+
+```powershell
+python tools/o3de/editor_smoke.py --manifest examples/manifests/release_rigged.pass.example.json --diagnose-editor-ap-negotiation-viewport-materialization-readiness --strict-integration --editor-render-capture-rhi dx12 --editor-executable C:/src/o3de/build/windows/bin/profile/Editor.exe --project C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus --engine-root C:/src/o3de --apb-report artifacts/o3de-integration/apb/<run>/asset_processor_batch_live_report.json
+```
+
+The diagnostic mode is `editor-ap-negotiation-viewport-materialization-readiness`. It source-validates Editor startup negotiation through `CCryEditApp::ConnectToAssetProcessor`, AzFramework `AssetProcessorConnection` branch-token/project-name matching, `AssetSystemComponent::EstablishAssetProcessorConnection`, Asset Processor `ConnectionWorker::NegotiateDirect`, and the Asset Processor `GUIApplicationManager::NegotiationFailed` message-box surface. It records sanitized process inventory only: executable basename/alignment booleans, project/build alignment booleans, and redaction markers. Raw command lines, environment dumps, secrets, and private logs must not be committed.
+
+AP restart is blocked unless ownership is source-validated. The current slice classifies project/build mismatch or the `Negotiation Failed` modal, then reuses the safe temp visual scene/display context under `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context` before re-running readiness-only viewport, SwapChain, and FrameCapture target probes. Cleanup remains run-owned and constrained to that approved temp root.
+
+The current live diagnostic evidence is `artifacts/o3de-integration/editor-smoke/editor-smoke-20260516T010146Z/editor_smoke_live_report.json`. That run verified the live non-null Editor launch and safe temp scene cleanup, detected no `Negotiation Failed` modal, and classified the AP process as not aligned with the target project/build by sanitized inventory. Expected blocked states include `blocked_by_editor_asset_processor_project_mismatch`, `blocked_by_editor_asset_processor_build_root_mismatch`, `blocked_by_asset_processor_process_ownership_unverified`, `blocked_by_editor_active_viewport_window_handle_unavailable`, `blocked_by_swapchain_probe_unavailable`, and `blocked_by_active_viewport_window_handle_unavailable`.
+
+No screenshot request is made. This diagnostic does not complete screenshot capture, does not verify rendered visual evidence, does not verify material correctness, does not verify character visual presence, does not satisfy `visual_material`, does not prove full runtime character behavior, and does not perform release packaging or publication.
