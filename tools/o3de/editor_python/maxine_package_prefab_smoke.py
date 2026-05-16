@@ -59,6 +59,7 @@ DIAGNOSTIC_MODES = {
     "editor-safe-temp-visual-scene-display-context",
     "editor-nonblocking-viewport-swapchain-readiness",
     "editor-ap-negotiation-viewport-materialization-readiness",
+    "asset-processor-project-build-alignment-repair",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -1463,6 +1464,26 @@ def main() -> int:
             "editor_ap_negotiation_viewport_materialization_returned",
             str(readiness.get("editor_asset_processor_negotiation_blocker", "returned")),
             "Editor/AP negotiation and viewport materialization readiness diagnostic returned.",
+        )
+
+    if not errors and diagnostic_mode == "asset-processor-project-build-alignment-repair":
+        _write_progress_marker(
+            progress_log,
+            "asset_processor_alignment_repair_started",
+            "started",
+            "Running Asset Processor project/build-root alignment repair or safe-block diagnostic.",
+        )
+        readiness = _run_asset_processor_project_build_alignment_repair_checks(
+            report,
+            progress_log=progress_log,
+            general=general,
+        )
+        report.update(readiness)
+        _write_progress_marker(
+            progress_log,
+            "asset_processor_alignment_repair_returned",
+            str(readiness.get("asset_processor_alignment_blocker", "returned")),
+            "Asset Processor project/build-root alignment repair or safe-block diagnostic returned.",
         )
 
     entity_result: Dict[str, Any] = report.get("entity_smoke", {"status": "not_run"})
@@ -6044,6 +6065,166 @@ def _editor_ap_negotiation_viewport_materialization_source_validation(
     }
 
 
+def _asset_processor_project_build_alignment_source_specs(
+    engine_root: Path | None,
+) -> List[Dict[str, Any]]:
+    repo_root = Path(__file__).resolve().parents[3]
+    specs = _editor_ap_negotiation_viewport_materialization_source_specs(engine_root)
+    specs.extend(
+        [
+            {
+                "path": repo_root / "tools" / "o3de" / "editor_smoke.py",
+                "symbols": [
+                    "asset-processor-project-build-alignment-repair",
+                    "_classify_asset_processor_project_build_alignment",
+                    "asset_processor_operator_remediation_command_sanitized",
+                    "asset_processor_database_wipe_attempted",
+                    "asset_cache_deletion_attempted",
+                ],
+            },
+            {
+                "path": repo_root
+                / "tools"
+                / "o3de"
+                / "editor_python"
+                / "editor_asset_processor_alignment_repair_smoke.py",
+                "symbols": [
+                    "REPO_ROOT = Path(__file__).resolve().parents[3]",
+                    "sys.path.insert(0, str(REPO_ROOT))",
+                    "from tools.o3de.editor_python import maxine_package_prefab_smoke",
+                    "asset-processor-project-build-alignment-repair",
+                ],
+            },
+            {
+                "path": repo_root / "tools" / "o3de" / "editor_python" / "maxine_package_prefab_smoke.py",
+                "symbols": [
+                    "asset-processor-project-build-alignment-repair",
+                    "_run_asset_processor_project_build_alignment_repair_checks",
+                    "_asset_processor_project_build_alignment_source_validation",
+                    "asset_processor_database_wipe_attempted",
+                ],
+            },
+            {
+                "path": repo_root / "docs" / "production" / "private-windows-o3de-runner.md",
+                "symbols": [
+                    "Repair Asset Processor project and build-root alignment",
+                    "asset-processor-project-build-alignment-repair",
+                    "No Asset Cache deletion",
+                ],
+            },
+            {
+                "path": repo_root / "schemas" / "maxine.editor-smoke-report.schema.json",
+                "symbols": [
+                    "asset-processor-project-build-alignment-repair",
+                ],
+            },
+        ]
+    )
+    if engine_root is not None:
+        specs.extend(
+            [
+                {
+                    "path": engine_root
+                    / "Code"
+                    / "Framework"
+                    / "AzFramework"
+                    / "AzFramework"
+                    / "Asset"
+                    / "AssetSystemComponentHelper.cpp",
+                    "symbols": [
+                        "bool LaunchAssetProcessor()",
+                        "GetExecutableDirectory",
+                        "FilePathKey_EngineRootFolder",
+                        "FilePathKey_ProjectPath",
+                        "Platform::LaunchAssetProcessor",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Code"
+                    / "Framework"
+                    / "AzFramework"
+                    / "Platform"
+                    / "Windows"
+                    / "AzFramework"
+                    / "Asset"
+                    / "AssetSystemComponentHelper_Windows.cpp",
+                    "symbols": [
+                        "AssetProcessor.exe",
+                        "--start-hidden",
+                        "--engine-path=",
+                        "--project-path=",
+                        "CreateProcessW",
+                        "AssetProcessorJob",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Code"
+                    / "Framework"
+                    / "AzCore"
+                    / "AzCore"
+                    / "Settings"
+                    / "SettingsRegistryMergeUtils.cpp",
+                    "symbols": [
+                        "CommandLineEngineOptionName",
+                        "CommandLineProjectOptionName",
+                        "GetCommandLineOption",
+                        "FindEngineRoot",
+                        "FindProjectRoot",
+                        "FilePathKey_ProjectPath",
+                        "FilePathKey_EngineRootFolder",
+                    ],
+                },
+            ]
+        )
+    return specs
+
+
+def _asset_processor_project_build_alignment_source_validation(
+    engine_root: Path | None,
+) -> Dict[str, Any]:
+    file_results = [
+        _source_file_symbol_validation(spec["path"], spec["symbols"])
+        for spec in _asset_processor_project_build_alignment_source_specs(engine_root)
+    ]
+    missing = [result for result in file_results if result["status"] != "pass"]
+    status = (
+        "asset_processor_project_build_alignment_source_validation_pass"
+        if not missing
+        else "asset_processor_project_build_alignment_source_validation_inconclusive"
+    )
+    return {
+        "status": status,
+        "blocker": ""
+        if not missing
+        else "blocked_by_asset_processor_alignment_repair_source_validation_unavailable",
+        "files": file_results,
+        "surfaces": {
+            "asset_processor_launch_command": (
+                "Windows AssetSystemComponentHelper source-validates AssetProcessor.exe --start-hidden "
+                "with --engine-path and --project-path arguments when launching AP from the target executable directory."
+            ),
+            "settings_registry_path_boundary": (
+                "SettingsRegistryMergeUtils source-validates --engine-path and --project-path as command-line "
+                "inputs for engine/project path resolution."
+            ),
+            "negotiation_token_boundary": (
+                "Editor/AP negotiation compares branch token and project name; this diagnostic reports branch-token "
+                "availability separately instead of inferring it from process paths."
+            ),
+            "ownership_boundary": (
+                "Process restart remains blocked unless a diagnostic-owned/source-validated ownership signal is present."
+            ),
+            "proof_boundary": (
+                "AP alignment repair is not screenshot proof, rendered visual/material proof, material correctness, "
+                "character visual-presence proof, or full runtime character proof."
+            ),
+        },
+        "missing": missing,
+    }
+
+
 def _vector_probe(value: Any) -> Dict[str, Any]:
     components: List[float] = []
     for name, index in (("x", 0), ("y", 1), ("z", 2)):
@@ -6316,6 +6497,7 @@ def _run_editor_nonblocking_viewport_swapchain_readiness_checks(
             "blocked_by_editor_default_viewport_camera_context_unavailable",
         )
     )
+
     window_handle_verified = active_default_probe.get("window_handle_verified") is True
     swapchain_verified = False
     framecapture_target_verified = bool(window_handle_verified and swapchain_verified)
@@ -6721,6 +6903,200 @@ def _run_editor_ap_negotiation_viewport_materialization_checks(
                 list(payload.get("messages", []))
                 + [
                     "Editor/AP negotiation and viewport materialization diagnostics are readiness only; screenshot and visual/material proof remain disabled."
+                ]
+            ),
+        }
+    )
+    return payload
+
+
+def _run_asset_processor_project_build_alignment_repair_checks(
+    report: Mapping[str, Any],
+    *,
+    progress_log: Path | None,
+    general: Any,
+) -> Dict[str, Any]:
+    engine_root_raw = str(os.environ.get("O3DE_ENGINE_ROOT", "")).strip()
+    engine_root = Path(engine_root_raw) if engine_root_raw else None
+    _write_progress_marker(
+        progress_log,
+        "asset_processor_alignment_source_validation_started",
+        "started",
+        "Source-validating Asset Processor project/build-root alignment repair boundaries.",
+    )
+    source_validation = _asset_processor_project_build_alignment_source_validation(engine_root)
+    source_validated = (
+        source_validation.get("status") == "asset_processor_project_build_alignment_source_validation_pass"
+    )
+    _write_progress_marker(
+        progress_log,
+        "asset_processor_alignment_source_validation_returned",
+        "verified" if source_validated else str(source_validation.get("blocker", "blocked")),
+        "Asset Processor alignment source validation returned.",
+    )
+    readiness = _run_editor_ap_negotiation_viewport_materialization_checks(
+        report,
+        progress_log=progress_log,
+        general=general,
+    )
+    alignment_verified = bool(report.get("asset_processor_alignment_repair_verified") is True and source_validated)
+    alignment_state = str(
+        report.get("asset_processor_alignment_state")
+        or (
+            "verified_asset_processor_project_build_alignment"
+            if alignment_verified
+            else "blocked_by_asset_processor_alignment_repair_source_validation_unavailable"
+        )
+    )
+    alignment_blocker = ""
+    if not alignment_verified:
+        alignment_blocker = str(
+            report.get("asset_processor_alignment_blocker")
+            or source_validation.get("blocker")
+            or "blocked_by_asset_processor_alignment_repair_source_validation_unavailable"
+        )
+    viewport_materialization_verified = readiness.get("framecapture_target_after_ap_alignment_verified") is True
+    viewport_blocker = str(
+        readiness.get("framecapture_target_after_ap_alignment_blocker")
+        or readiness.get("viewport_window_materialization_blocker")
+        or "blocked_by_framecapture_target_unavailable"
+    )
+    payload: Dict[str, Any] = dict(readiness)
+    payload.update(
+        {
+            "asset_processor_alignment_repair_attempted": True,
+            "asset_processor_alignment_repair_verified": alignment_verified,
+            "asset_processor_alignment_source_validated": source_validated,
+            "asset_processor_alignment_source_validation_status": source_validation.get("status", ""),
+            "asset_processor_alignment_source_validation": source_validation,
+            "asset_processor_alignment_state": alignment_state,
+            "asset_processor_alignment_blocker": alignment_blocker,
+            "asset_processor_target_engine_root": str(report.get("asset_processor_target_engine_root", "")),
+            "asset_processor_target_build_root": str(report.get("asset_processor_target_build_root", "")),
+            "asset_processor_target_project_path": str(report.get("asset_processor_target_project_path", "")),
+            "asset_processor_target_executable_path": str(report.get("asset_processor_target_executable_path", "")),
+            "asset_processor_target_project_name": str(report.get("asset_processor_target_project_name", "")),
+            "asset_processor_target_branch_token_available": report.get(
+                "asset_processor_target_branch_token_available"
+            )
+            is True,
+            "asset_processor_target_branch_token_sanitized": str(
+                report.get("asset_processor_target_branch_token_sanitized")
+                or "unavailable_without_runtime_negotiation_query"
+            ),
+            "asset_processor_process_inventory_attempted": report.get(
+                "asset_processor_process_inventory_attempted"
+            )
+            is True,
+            "asset_processor_process_inventory_sanitized": list(
+                report.get("asset_processor_process_inventory_sanitized", [])
+            ),
+            "asset_processor_process_count": int(report.get("asset_processor_process_count", 0) or 0),
+            "asset_processor_target_process_running": report.get("asset_processor_target_process_running") is True,
+            "asset_processor_mismatched_process_running": report.get(
+                "asset_processor_mismatched_process_running"
+            )
+            is True,
+            "asset_processor_process_owner_verified": report.get("asset_processor_process_owner_verified") is True,
+            "asset_processor_process_owner_blocker": str(
+                report.get("asset_processor_process_owner_blocker")
+                or "blocked_by_asset_processor_process_ownership_unverified"
+            ),
+            "asset_processor_executable_path_alignment_attempted": True,
+            "asset_processor_executable_path_alignment_verified": report.get(
+                "asset_processor_executable_path_alignment_verified"
+            )
+            is True,
+            "asset_processor_executable_path_alignment_blocker": str(
+                report.get("asset_processor_executable_path_alignment_blocker", "")
+            ),
+            "asset_processor_project_alignment_attempted": True,
+            "asset_processor_project_alignment_verified": report.get("asset_processor_project_alignment_verified")
+            is True,
+            "asset_processor_project_alignment_blocker": str(
+                report.get("asset_processor_project_alignment_blocker", "")
+            ),
+            "asset_processor_build_root_alignment_attempted": True,
+            "asset_processor_build_root_alignment_verified": report.get(
+                "asset_processor_build_root_alignment_verified"
+            )
+            is True,
+            "asset_processor_build_root_alignment_blocker": str(
+                report.get("asset_processor_build_root_alignment_blocker", "")
+            ),
+            "asset_processor_branch_project_token_alignment_attempted": True,
+            "asset_processor_branch_project_token_alignment_verified": report.get(
+                "asset_processor_branch_project_token_alignment_verified"
+            )
+            is True,
+            "asset_processor_branch_project_token_alignment_blocker": str(
+                report.get("asset_processor_branch_project_token_alignment_blocker")
+                or "blocked_by_asset_processor_branch_project_token_alignment_unavailable"
+            ),
+            "asset_processor_launch_attempted": report.get("asset_processor_launch_attempted") is True,
+            "asset_processor_launch_completed": report.get("asset_processor_launch_completed") is True,
+            "asset_processor_launch_blocker": str(report.get("asset_processor_launch_blocker", "")),
+            "asset_processor_restart_attempted": report.get("asset_processor_restart_attempted") is True,
+            "asset_processor_restart_completed": report.get("asset_processor_restart_completed") is True,
+            "asset_processor_restart_blocker": str(report.get("asset_processor_restart_blocker", "")),
+            "asset_processor_repair_mode": str(report.get("asset_processor_repair_mode") or "classify_only"),
+            "asset_processor_operator_remediation_available": report.get(
+                "asset_processor_operator_remediation_available"
+            )
+            is True,
+            "asset_processor_operator_remediation_command_sanitized": str(
+                report.get("asset_processor_operator_remediation_command_sanitized", "")
+            ),
+            "asset_processor_operator_remediation_reason": str(
+                report.get("asset_processor_operator_remediation_reason", "")
+            ),
+            "editor_asset_processor_negotiation_preflight_attempted": True,
+            "editor_asset_processor_negotiation_preflight_verified": bool(
+                alignment_verified and readiness.get("editor_asset_processor_negotiation_preflight_verified") is True
+            ),
+            "editor_asset_processor_negotiation_state": "verified_editor_asset_processor_negotiation_after_alignment"
+            if alignment_verified and readiness.get("editor_asset_processor_negotiation_preflight_verified") is True
+            else alignment_state,
+            "editor_asset_processor_negotiation_blocker": ""
+            if alignment_verified and readiness.get("editor_asset_processor_negotiation_preflight_verified") is True
+            else alignment_blocker or readiness.get("editor_asset_processor_negotiation_blocker", ""),
+            "viewport_window_materialization_after_ap_alignment_attempted": True,
+            "viewport_window_materialization_after_ap_alignment_verified": viewport_materialization_verified,
+            "viewport_window_materialization_after_ap_alignment_blocker": ""
+            if viewport_materialization_verified
+            else viewport_blocker,
+            "asset_cache_deletion_attempted": False,
+            "asset_processor_database_wipe_attempted": False,
+            "editor_visual_material_capture_requested": False,
+            "editor_visual_material_capture_request_accepted": False,
+            "editor_visual_material_capture_completed": False,
+            "visual_material_capture_readiness_verified": False,
+            "visual_material_rendered_evidence_gate_attempted": False,
+            "visual_material_rendered_evidence_gate_verified": False,
+            "visual_material_gate_claimed": False,
+            "visual_material_gate_verified": False,
+            "full_runtime_character_visual_material_gate_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "asset_cache_deleted": False,
+            "cache_heuristic_used": False,
+            "proof_claims": [
+                "Source-validated and exercised deterministic Asset Processor project/build-root alignment repair or safe-block classification.",
+                "Reran bounded Editor/AP negotiation and viewport/window materialization readiness without screenshot capture.",
+            ],
+            "proof_limits": [
+                "No screenshot request/completion.",
+                "No rendered visual/material evidence.",
+                "No material/character visual-presence validation.",
+                "No visual_material gate verification.",
+                "No full runtime character proof.",
+                "No Asset Cache deletion or AP database/cache wipe.",
+                "No release packaging, publication, or production-ready claim.",
+            ],
+            "messages": _unique(
+                list(payload.get("messages", []))
+                + [
+                    "Asset Processor alignment repair is readiness/classification only; screenshot and visual/material proof remain disabled."
                 ]
             ),
         }

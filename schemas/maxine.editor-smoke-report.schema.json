@@ -123,6 +123,7 @@
         "editor-safe-temp-visual-scene-display-context",
         "editor-nonblocking-viewport-swapchain-readiness",
         "editor-ap-negotiation-viewport-materialization-readiness",
+        "asset-processor-project-build-alignment-repair",
         "full"
       ]
     },
