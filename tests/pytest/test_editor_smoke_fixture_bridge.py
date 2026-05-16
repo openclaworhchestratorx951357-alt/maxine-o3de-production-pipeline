@@ -227,6 +227,8 @@ def _write_non_null_desktop_rhi_source_files(engine: Path) -> None:
                 "Editor::EditorQtApplication::instance()->EnableOnIdle(enable);",
                 "Editor::EditorQtApplication::instance()->OnIdleEnabled();",
                 "QTimer::singleShot(timeInSec * 1000, &loop, &QEventLoop::quit);",
+                'behaviorContext->Method("idle_wait", PyIdleWait, nullptr, "Waits idling for a given seconds.")',
+                'behaviorContext->Method("idle_wait_frames", PyIdleWaitFrames, nullptr, "Waits idling for frames.")',
                 "auto defaultViewportContext = AZ::RPI::ViewportContextRequests::Get()->GetDefaultViewportContext();",
                 "defaultViewportContext->GetCameraTransform();",
             ]
@@ -7572,6 +7574,128 @@ def _layout_lifecycle_payload(*, visible_shell: bool = False, blocked_preconditi
     return payload
 
 
+def _shell_ready_payload(*, synchronized: bool = False, blocked_precondition: bool = False) -> dict:
+    payload = _layout_lifecycle_payload(visible_shell=False, blocked_precondition=blocked_precondition)
+    state = (
+        "verified_editor_shell_ready_synchronization_point"
+        if synchronized
+        else "blocked_by_editor_shell_ready_synchronization_unavailable"
+    )
+    blocker = "" if synchronized else "blocked_by_editor_shell_ready_synchronization_unavailable"
+    payload.update(
+        {
+            "diagnostic_mode": "editor-bootstrap-wait-shell-ready-synchronization",
+            "editor_bootstrap_wait_shell_ready_synchronization_attempted": True,
+            "editor_bootstrap_wait_shell_ready_synchronization_verified": synchronized,
+            "editor_bootstrap_wait_shell_ready_synchronization_source_validated": True,
+            "editor_bootstrap_wait_shell_ready_synchronization_state": state,
+            "editor_bootstrap_wait_shell_ready_synchronization_blocker": blocker,
+            "editor_automation_script_timing_state": "verified_automation_script_executes_before_shell_ready",
+            "editor_deferred_diagnostic_strategy_attempted": True,
+            "editor_deferred_diagnostic_strategy_verified": False,
+            "editor_deferred_diagnostic_strategy_source_validated": True,
+            "editor_deferred_diagnostic_strategy_blocker": "blocked_by_editor_deferred_diagnostic_strategy_unavailable",
+            "editor_late_diagnostic_execution_attempted": True,
+            "editor_late_diagnostic_execution_verified": synchronized,
+            "editor_late_diagnostic_execution_blocker": "" if synchronized else "blocked_by_editor_late_diagnostic_execution_unavailable",
+            "editor_late_diagnostic_timeout_seconds": 30,
+            "editor_late_diagnostic_cleanup_completed": True,
+            "editor_qtimer_shell_ready_strategy_attempted": True,
+            "editor_qtimer_shell_ready_strategy_verified": False,
+            "editor_qtimer_shell_ready_strategy_blocker": "blocked_by_editor_qtimer_shell_ready_strategy_unavailable",
+            "editor_event_loop_posted_callback_attempted": True,
+            "editor_event_loop_posted_callback_verified": False,
+            "editor_event_loop_posted_callback_blocker": "blocked_by_editor_event_loop_posted_callback_unavailable",
+            "editor_notify_initialized_wait_attempted": True,
+            "editor_notify_initialized_wait_verified": False,
+            "editor_notify_initialized_wait_blocker": "blocked_by_editor_notify_initialized_wait_unavailable",
+            "editor_app_exec_boundary_wait_attempted": True,
+            "editor_app_exec_boundary_wait_verified": False,
+            "editor_app_exec_boundary_wait_blocker": "blocked_by_editor_app_exec_boundary_wait_unavailable",
+            "editor_shell_ready_event_wait_attempted": True,
+            "editor_shell_ready_event_wait_verified": synchronized,
+            "editor_shell_ready_event_wait_blocker": "" if synchronized else "blocked_by_editor_shell_ready_event_unavailable",
+            "editor_shell_ready_synchronization_point": "after_app_exec_unverified" if not synchronized else "after_app_exec",
+            "editor_layout_restore_state_after_shell_ready_attempted": True,
+            "editor_layout_restore_state_after_shell_ready_verified": False,
+            "editor_layout_restore_state_after_shell_ready": "blocked_by_editor_layout_restore_state_unavailable",
+            "editor_layout_restore_state_after_shell_ready_blocker": "blocked_by_editor_layout_restore_state_unavailable",
+            "visible_editor_shell_after_shell_ready_attempted": True,
+            "visible_editor_shell_after_shell_ready_verified": False,
+            "visible_editor_shell_after_shell_ready_blocker": "blocked_by_visible_editor_shell_unavailable",
+            "visible_editor_shell_materialization_after_shell_ready_attempted": False,
+            "visible_editor_shell_materialization_after_shell_ready_verified": False,
+            "visible_editor_shell_materialization_after_shell_ready_source_validated": False,
+            "visible_editor_shell_materialization_after_shell_ready_blocker": (
+                "blocked_by_visible_editor_shell_materialization_unavailable"
+            ),
+            "default_viewport_viewpane_registration_preserved": True,
+            "default_viewport_pane_discovery_after_shell_ready_attempted": True,
+            "default_viewport_pane_discovery_after_shell_ready_verified": False,
+            "default_viewport_pane_discovery_after_shell_ready_blocker": "blocked_by_default_viewport_pane_unavailable",
+            "default_viewport_pane_activation_after_shell_ready_attempted": False,
+            "default_viewport_pane_activation_after_shell_ready_verified": False,
+            "default_viewport_pane_activation_after_shell_ready_blocker": (
+                "not_selected_shell_ready_synchronization_unavailable"
+            ),
+            "default_viewport_widget_discovery_after_shell_ready_attempted": True,
+            "default_viewport_widget_discovery_after_shell_ready_verified": True,
+            "default_viewport_widget_discovery_after_shell_ready_blocker": "",
+            "active_default_viewport_after_shell_ready_attempted": True,
+            "active_default_viewport_after_shell_ready_verified": False,
+            "active_default_viewport_after_shell_ready_state": "active_viewport_python_probe_deferred_without_explicit_gate",
+            "active_default_viewport_after_shell_ready_blocker": (
+                "blocked_by_editor_active_viewport_window_handle_unavailable"
+            ),
+            "active_default_viewport_window_handle_after_shell_ready_attempted": True,
+            "active_default_viewport_window_handle_after_shell_ready_verified": False,
+            "active_default_viewport_window_handle_after_shell_ready_source_validated": True,
+            "active_default_viewport_window_handle_after_shell_ready_blocker": (
+                "blocked_by_editor_active_viewport_window_handle_unavailable"
+            ),
+            "atom_swapchain_after_shell_ready_attempted": True,
+            "atom_swapchain_after_shell_ready_verified": False,
+            "atom_swapchain_after_shell_ready_source_validated": True,
+            "atom_swapchain_after_shell_ready_blocker": "blocked_by_swapchain_probe_unavailable",
+            "framecapture_target_after_shell_ready_attempted": True,
+            "framecapture_target_after_shell_ready_verified": False,
+            "framecapture_target_after_shell_ready_source_validated": True,
+            "framecapture_target_after_shell_ready_blocker": "blocked_by_active_viewport_window_handle_unavailable",
+            "proof_claims": [
+                "Source-validated and exercised Editor bootstrap wait / shell-ready synchronization diagnostics.",
+                "Reran readiness-only viewport and capture-target probes without screenshot capture.",
+            ],
+            "proof_limits": [
+                "No screenshot request/completion.",
+                "No rendered visual/material evidence.",
+                "No material/character visual-presence validation.",
+                "No visual_material gate verification.",
+                "No full runtime character proof.",
+                "No release packaging, publication, or production-ready claim.",
+            ],
+        }
+    )
+    if blocked_precondition:
+        payload.update(
+            {
+                "ap_alignment_preserved": False,
+                "editor_bootstrap_wait_shell_ready_synchronization_state": (
+                    "blocked_by_editor_bootstrap_wait_shell_ready_preconditions_unavailable"
+                ),
+                "editor_bootstrap_wait_shell_ready_synchronization_blocker": (
+                    "blocked_by_asset_processor_project_mismatch"
+                ),
+                "editor_late_diagnostic_execution_attempted": False,
+                "visible_editor_shell_after_shell_ready_attempted": False,
+                "active_default_viewport_after_shell_ready_attempted": False,
+                "active_default_viewport_window_handle_after_shell_ready_attempted": False,
+                "atom_swapchain_after_shell_ready_attempted": False,
+                "framecapture_target_after_shell_ready_attempted": False,
+            }
+        )
+    return payload
+
+
 def test_asset_processor_alignment_source_validation_success_and_blocked(tmp_path):
     env = _live_env(tmp_path)
     engine = Path(env["O3DE_ENGINE_ROOT"])
@@ -8943,6 +9067,187 @@ def test_layout_lifecycle_mode_uses_safe_temp_context_and_no_capture(tmp_path):
     assert result["status"] == "pass"
     assert result["editor_layout_bootstrap_lifecycle_deep_dive_attempted"] is True
     assert result["editor_layout_bootstrap_lifecycle_deep_dive_verified"] is False
+    assert result["temp_visual_scene_cleanup_attempted"] is True
+    assert result["temp_visual_scene_cleanup_completed"] is True
+    assert result["screenshot_capture_requested"] is False
+    assert result["screenshot_capture_completed"] is False
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["rendered_visual_evidence_claimed"] is False
+    assert result["rendered_visual_evidence_verified"] is False
+    assert result["visual_material_gate_verified"] is False
+    assert result["full_runtime_character_proof_claimed"] is False
+    assert result["full_runtime_character_proof_verified"] is False
+    assert result["asset_cache_deletion_attempted"] is False
+    assert result["asset_processor_database_wipe_attempted"] is False
+
+
+def test_shell_ready_synchronization_source_validation_success_and_blocked(tmp_path):
+    env = _live_env(tmp_path)
+    engine = Path(env["O3DE_ENGINE_ROOT"])
+    _write_editor_ap_negotiation_source_files(engine)
+
+    success = editor_python_smoke._editor_bootstrap_wait_shell_ready_source_validation(engine)
+    assert success["status"] == "editor_bootstrap_wait_shell_ready_source_validation_pass"
+    assert success["blocker"] == ""
+    assert "QTimer" in success["surfaces"]["deferred_callback_boundary"]
+    assert "app->exec" in success["surfaces"]["app_exec_boundary"]
+    assert "readiness only" in success["surfaces"]["capture_boundary"].lower()
+
+    blocked = editor_python_smoke._editor_bootstrap_wait_shell_ready_source_validation(tmp_path / "missing")
+    assert blocked["status"] == "editor_bootstrap_wait_shell_ready_source_validation_inconclusive"
+    assert blocked["blocker"] == "blocked_by_editor_bootstrap_wait_shell_ready_source_validation_unavailable"
+
+
+def test_shell_ready_synchronization_schema_and_semantics_accept_blocked_readiness():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_shell_ready_payload(synchronized=False))
+    report["mode"] = "local_editor_python"
+    report["status"] = "pass"
+
+    schema_result = schema_validate(report, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(report, strict=True)
+
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+    assert report["editor_bootstrap_wait_shell_ready_synchronization_verified"] is False
+    assert report["editor_automation_script_timing_state"] == "verified_automation_script_executes_before_shell_ready"
+    assert report["editor_late_diagnostic_execution_verified"] is False
+    assert report["default_viewport_viewpane_registration_preserved"] is True
+    assert report["default_viewport_widget_discovery_after_shell_ready_verified"] is True
+    assert report["screenshot_capture_requested"] is False
+    assert report["screenshot_capture_completed"] is False
+    assert report["rendered_visual_evidence_claimed"] is False
+    assert report["visual_material_gate_verified"] is False
+    assert report["full_runtime_character_proof_verified"] is False
+
+
+def test_shell_ready_synchronization_validation_rejects_overclaims_and_unsanitized_launch():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_shell_ready_payload(synchronized=False))
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "editor_layout_mutation_attempted": True,
+            "editor_user_layout_mutation_attempted": True,
+            "editor_launch_command_classification_sanitized": {
+                "raw_command_line_emitted": True,
+                "environment": {"PRIVATE_TOKEN": "not_allowed"},
+            },
+            "screenshot_capture_requested": True,
+            "screenshot_capture_completed": True,
+            "rendered_visual_evidence_claimed": True,
+            "rendered_visual_evidence_verified": True,
+            "visual_material_gate_verified": True,
+            "full_runtime_character_proof_claimed": True,
+            "full_runtime_character_proof_verified": True,
+            "asset_cache_deletion_attempted": True,
+            "asset_processor_database_wipe_attempted": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    joined = " ".join(result.messages)
+    assert "must not mutate Editor layout" in joined
+    assert "must not emit raw command lines" in joined
+    assert "must not request screenshot/frame capture" in joined
+    assert "cannot claim rendered visual evidence" in joined
+    assert "cannot verify visual/material proof" in joined
+    assert "cannot claim full runtime character proof" in joined
+    assert "must not delete Asset Cache" in joined
+    assert "must not wipe AP databases" in joined
+
+
+def test_shell_ready_synchronization_precondition_block_does_not_run_viewport_or_atom_probes(monkeypatch):
+    readiness = _shell_ready_payload(blocked_precondition=True)
+
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_editor_bootstrap_wait_shell_ready_source_validation",
+        lambda engine_root: {
+            "status": "editor_bootstrap_wait_shell_ready_source_validation_pass",
+            "blocker": "",
+        },
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_run_editor_layout_bootstrap_window_lifecycle_deep_dive_checks",
+        lambda report, *, progress_log, general: dict(readiness),
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_check_active_default_viewport_probe",
+        lambda general: (_ for _ in ()).throw(
+            AssertionError("active/default viewport probe must not run when AP preconditions are blocked")
+        ),
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_probe_atom_framecapture_binding_surface",
+        lambda source_validated: (_ for _ in ()).throw(
+            AssertionError("Atom probe must not run when AP preconditions are blocked")
+        ),
+    )
+
+    result = editor_python_smoke._run_editor_bootstrap_wait_shell_ready_synchronization_checks(
+        {},
+        progress_log=None,
+        general=object(),
+    )
+
+    assert result["editor_bootstrap_wait_shell_ready_synchronization_state"] == (
+        "blocked_by_editor_bootstrap_wait_shell_ready_preconditions_unavailable"
+    )
+    assert result["editor_late_diagnostic_execution_attempted"] is False
+    assert result["active_default_viewport_after_shell_ready_attempted"] is False
+    assert result["atom_swapchain_after_shell_ready_attempted"] is False
+    assert result["framecapture_target_after_shell_ready_attempted"] is False
+    assert result["active_default_viewport_after_shell_ready_blocker"] == "blocked_by_asset_processor_project_mismatch"
+    assert result["atom_swapchain_after_shell_ready_blocker"] == "blocked_by_asset_processor_project_mismatch"
+
+
+def test_shell_ready_synchronization_mode_uses_safe_temp_context_and_no_capture(tmp_path):
+    env = _live_env(tmp_path)
+    _write_editor_ap_negotiation_source_files(Path(env["O3DE_ENGINE_ROOT"]))
+
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        assert "editor_bootstrap_wait_shell_ready_smoke.py" in argv[-1].replace("\\", "/")
+        assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == (
+            "editor-bootstrap-wait-shell-ready-synchronization"
+        )
+        assert env["MAXINE_ENABLE_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION"] == "1"
+        assert env["MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE"] == "1"
+        assert env["MAXINE_ENABLE_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL"] == "1"
+        assert env["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] == "1"
+        assert "MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH" not in env
+        temp_path = Path(env["MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_PATH"])
+        temp_path.mkdir(parents=True)
+        (temp_path / "test.prefab").write_text("{}", encoding="utf-8")
+        payload = json.loads(Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).read_text(encoding="utf-8"))
+        payload.update(_shell_ready_payload(synchronized=False))
+        payload["temp_visual_scene_path"] = (
+            "Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/test"
+        )
+        payload["editor_temp_visual_scene_path"] = payload["temp_visual_scene_path"]
+        payload["editor_visual_material_temp_scene_path"] = payload["temp_visual_scene_path"]
+        Path(env["MAXINE_EDITOR_SMOKE_REPORT_OUT"]).write_text(json.dumps(payload), encoding="utf-8")
+        return subprocess.CompletedProcess(args=argv, returncode=0, stdout="", stderr="")
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=env,
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="editor-bootstrap-wait-shell-ready-synchronization",
+    )
+
+    assert result["status"] == "pass"
+    assert result["editor_bootstrap_wait_shell_ready_synchronization_attempted"] is True
+    assert result["editor_bootstrap_wait_shell_ready_synchronization_verified"] is False
     assert result["temp_visual_scene_cleanup_attempted"] is True
     assert result["temp_visual_scene_cleanup_completed"] is True
     assert result["screenshot_capture_requested"] is False
