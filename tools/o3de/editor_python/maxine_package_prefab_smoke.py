@@ -63,6 +63,7 @@ DIAGNOSTIC_MODES = {
     "operator-run-ap-alignment-remediation-verification",
     "focused-editor-viewport-activation-default-viewport-materialization",
     "editor-main-window-activation-materialization-deep-dive",
+    "alternate-editor-window-discovery-visible-shell-materialization",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -1547,6 +1548,26 @@ def main() -> int:
             "editor_main_window_activation_deep_dive_returned",
             str(readiness.get("editor_main_window_activation_deep_dive_blocker", "returned")),
             "Editor main-window activation/materialization deep-dive diagnostic returned.",
+        )
+
+    if not errors and diagnostic_mode == "alternate-editor-window-discovery-visible-shell-materialization":
+        _write_progress_marker(
+            progress_log,
+            "alternate_editor_window_discovery_visible_shell_started",
+            "started",
+            "Running alternate Editor window discovery / visible shell materialization diagnostic.",
+        )
+        readiness = _run_alternate_editor_window_discovery_visible_shell_checks(
+            report,
+            progress_log=progress_log,
+            general=general,
+        )
+        report.update(readiness)
+        _write_progress_marker(
+            progress_log,
+            "alternate_editor_window_discovery_visible_shell_returned",
+            str(readiness.get("alternate_editor_window_discovery_blocker", "returned")),
+            "Alternate Editor window discovery / visible shell diagnostic returned.",
         )
 
     entity_result: Dict[str, Any] = report.get("entity_smoke", {"status": "not_run"})
@@ -6649,6 +6670,183 @@ def _editor_main_window_activation_deep_dive_source_validation(
     }
 
 
+def _alternate_editor_window_discovery_visible_shell_source_specs(
+    engine_root: Path | None,
+) -> List[Dict[str, Any]]:
+    repo_root = Path(__file__).resolve().parents[3]
+    specs = _editor_main_window_activation_deep_dive_source_specs(engine_root)
+    specs.extend(
+        [
+            {
+                "path": repo_root / "tools" / "o3de" / "editor_smoke.py",
+                "symbols": [
+                    "alternate-editor-window-discovery-visible-shell-materialization",
+                    "MAXINE_ENABLE_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL",
+                    "_validate_alternate_editor_window_discovery_visible_shell",
+                ],
+            },
+            {
+                "path": repo_root
+                / "tools"
+                / "o3de"
+                / "editor_python"
+                / "editor_alternate_window_shell_materialization_smoke.py",
+                "symbols": [
+                    "REPO_ROOT = Path(__file__).resolve().parents[3]",
+                    "sys.path.insert(0, str(REPO_ROOT))",
+                    "from tools.o3de.editor_python import maxine_package_prefab_smoke",
+                    "alternate-editor-window-discovery-visible-shell-materialization",
+                ],
+            },
+            {
+                "path": repo_root / "tools" / "o3de" / "editor_python" / "maxine_package_prefab_smoke.py",
+                "symbols": [
+                    "alternate-editor-window-discovery-visible-shell-materialization",
+                    "_run_alternate_editor_window_discovery_visible_shell_checks",
+                    "_alternate_editor_shell_candidate_info",
+                    "_probe_alternate_editor_window_discovery_visible_shell",
+                    "hidden_editor_shell_candidate_show_allowed",
+                ],
+            },
+            {
+                "path": repo_root / "docs" / "production" / "private-windows-o3de-runner.md",
+                "symbols": [
+                    "Discover visible Editor shell and materialization path",
+                    "alternate-editor-window-discovery-visible-shell-materialization",
+                    "No screenshot request",
+                ],
+            },
+            {
+                "path": repo_root / "schemas" / "maxine.editor-smoke-report.schema.json",
+                "symbols": [
+                    "alternate-editor-window-discovery-visible-shell-materialization",
+                ],
+            },
+        ]
+    )
+    if engine_root is not None:
+        specs.extend(
+            [
+                {
+                    "path": engine_root / "Code" / "Editor" / "MainWindow.h",
+                    "symbols": [
+                        "class MainWindow",
+                        ": public QMainWindow",
+                        "QtViewPaneManager",
+                        "CLayoutViewPane",
+                    ],
+                },
+                {
+                    "path": engine_root / "Code" / "Editor" / "MainWindow.cpp",
+                    "symbols": [
+                        "MainWindow::MainWindow",
+                        "QMainWindow(parent)",
+                        "QtViewPaneManager::instance",
+                        "SetMainWindow",
+                        "OpenPane",
+                        "GetRegisteredPanes",
+                    ],
+                },
+                {
+                    "path": engine_root / "Code" / "Editor" / "CryEdit.cpp",
+                    "symbols": [
+                        "MainWindow::instance()->show",
+                        "MainWindow::instance()->raise",
+                        "MainWindow::instance()->setFocus",
+                        "QtViewPaneManager::instance()->RestoreLayout",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Gems"
+                    / "EMotionFX"
+                    / "Code"
+                    / "EMotionFX"
+                    / "Tools"
+                    / "EMotionStudio"
+                    / "EMStudioSDK"
+                    / "Source"
+                    / "MainWindow.h",
+                    "symbols": [
+                        "namespace EMStudio",
+                        "class MainWindow",
+                        "AzQtComponents::DockMainWindow",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Gems"
+                    / "EMotionFX"
+                    / "Code"
+                    / "EMotionFX"
+                    / "Tools"
+                    / "EMotionStudio"
+                    / "EMStudioSDK"
+                    / "Source"
+                    / "MainWindow.cpp",
+                    "symbols": [
+                        "namespace EMStudio",
+                        "MainWindow::MainWindow",
+                        "AzQtComponents::DockMainWindow",
+                        "AnimationEditorActionContextIdentifier",
+                        "EMStudio::MainWindow",
+                    ],
+                },
+            ]
+        )
+    return specs
+
+
+def _alternate_editor_window_discovery_visible_shell_source_validation(
+    engine_root: Path | None,
+) -> Dict[str, Any]:
+    file_results = [
+        _source_file_symbol_validation(spec["path"], spec["symbols"])
+        for spec in _alternate_editor_window_discovery_visible_shell_source_specs(engine_root)
+    ]
+    missing = [result for result in file_results if result["status"] != "pass"]
+    status = (
+        "alternate_editor_window_discovery_visible_shell_source_validation_pass"
+        if not missing
+        else "alternate_editor_window_discovery_visible_shell_source_validation_inconclusive"
+    )
+    return {
+        "status": status,
+        "blocker": ""
+        if not missing
+        else "blocked_by_alternate_editor_window_discovery_source_validation_unavailable",
+        "files": file_results,
+        "surfaces": {
+            "editor_shell_boundary": (
+                "O3DE MainWindow.cpp/MainWindow.h and CryEdit.cpp source-validate that the Editor shell is a "
+                "QMainWindow-owned application window created separately from ViewPane-hosted tool panes."
+            ),
+            "emstudio_candidate_boundary": (
+                "EMStudio::MainWindow source lives under the EMotionFX/EMotionStudio SDK and uses the "
+                "AnimationEditor action context, so matching hidden EMStudio::MainWindow candidates are classified "
+                "as tool-shell candidates rather than O3DE Editor shell proof."
+            ),
+            "qt_inventory_boundary": (
+                "PySide2/QApplication top-level widget inventory is sanitized to class/role/count booleans only; "
+                "raw window titles, object names, command lines, environment data, and native handles are not emitted."
+            ),
+            "hidden_window_policy": (
+                "Hidden window show/raise/activate remains blocked unless source validation proves the candidate is "
+                "a visible, valid Editor shell and the action is bounded, non-destructive, and readiness only."
+            ),
+            "capture_boundary": (
+                "Alternate Editor shell discovery is readiness only: it may classify visible shell, viewport widget, "
+                "window-handle, SwapChain, and FrameCapture target availability but never requests screenshot capture."
+            ),
+            "proof_boundary": (
+                "Visible shell readiness is not viewport proof, screenshot proof, rendered visual/material evidence, "
+                "material correctness, character visual-presence proof, or full runtime character proof."
+            ),
+        },
+        "missing": missing,
+    }
+
+
 def _operator_ap_remediation_command_from_report(report: Mapping[str, Any]) -> str:
     command = str(report.get("asset_processor_operator_remediation_command_sanitized", "")).strip()
     if command:
@@ -7614,6 +7812,273 @@ def _probe_editor_main_window_activation_deep_dive() -> Dict[str, Any]:
                 "evidence_summary": f"Qt main-window activation failed: {type(exc).__name__}",
             }
         )
+    return payload
+
+
+def _alternate_editor_shell_candidate_info(widget: Any, qt_widgets: Any) -> Dict[str, Any] | None:
+    class_name = type(widget).__name__
+    meta_class_name = _qt_widget_meta_class_name(widget)
+    class_probe = f"{class_name} {meta_class_name}".lower()
+    if class_name.lower() == "qmenu" or meta_class_name.lower() == "qmenu":
+        return None
+    try:
+        is_qmainwindow = isinstance(widget, qt_widgets.QMainWindow)
+    except Exception:
+        is_qmainwindow = False
+    if not is_qmainwindow and "mainwindow" not in class_probe:
+        return None
+    try:
+        visible = bool(widget.isVisible())
+    except Exception:
+        visible = False
+    try:
+        hidden = bool(widget.isHidden())
+    except Exception:
+        hidden = not visible
+    try:
+        minimized = bool(widget.isMinimized())
+    except Exception:
+        minimized = False
+
+    likely_emstudio_tool_shell = "emstudio" in class_probe
+    likely_tool_shell = likely_emstudio_tool_shell or "animationeditor" in class_probe
+    editor_shell_identity_source_validated = bool(
+        not likely_tool_shell
+        and (
+            "editor::mainwindow" in class_probe
+            or "cryeditmainwindow" in class_probe
+            or "cryedit mainwindow" in class_probe
+            or "o3deeditormainwindow" in class_probe
+        )
+    )
+    activation_eligible = bool(
+        visible and not hidden and not minimized and editor_shell_identity_source_validated
+    )
+    materialization_eligible = activation_eligible
+    likely_editor_shell = bool(editor_shell_identity_source_validated)
+    if likely_emstudio_tool_shell:
+        validity_state = "verified_emstudio_main_window_is_tool_shell_not_editor_shell"
+    elif materialization_eligible:
+        validity_state = "verified_visible_editor_shell_candidate"
+    elif hidden or minimized:
+        validity_state = "unknown_unsafe_hidden_candidate"
+    else:
+        validity_state = "unknown_non_shell_candidate"
+
+    rank = 0 if materialization_eligible else 30
+    if visible:
+        rank -= 10
+    if likely_emstudio_tool_shell:
+        rank += 20
+    elif is_qmainwindow:
+        rank += 0
+    else:
+        rank += 5
+
+    return {
+        "widget": widget,
+        "rank": rank,
+        "class_name": meta_class_name or class_name,
+        "visible": visible,
+        "hidden": hidden,
+        "minimized": minimized,
+        "is_qmainwindow": is_qmainwindow,
+        "likely_editor_shell": likely_editor_shell,
+        "editor_shell_identity_source_validated": editor_shell_identity_source_validated,
+        "likely_tool_shell": likely_tool_shell,
+        "likely_emstudio_tool_shell": likely_emstudio_tool_shell,
+        "activation_eligible": activation_eligible,
+        "materialization_eligible": materialization_eligible,
+        "activation_unsafe": not activation_eligible,
+        "hidden_candidate_validity_state": validity_state,
+        "raw_title_emitted": False,
+        "raw_object_name_emitted": False,
+        "raw_native_handle_emitted": False,
+    }
+
+
+def _probe_alternate_editor_window_discovery_visible_shell() -> Dict[str, Any]:
+    payload: Dict[str, Any] = {
+        "attempted": True,
+        "verified": False,
+        "blocker": "blocked_by_visible_editor_shell_unavailable",
+        "visible_discovery_attempted": True,
+        "visible_discovery_verified": False,
+        "visible_discovery_blocker": "blocked_by_visible_editor_shell_unavailable",
+        "visible_candidate_count": 0,
+        "visible_candidate_classification_attempted": True,
+        "visible_candidate_classification_verified": False,
+        "visible_candidate_classification_blocker": "blocked_by_visible_editor_shell_unavailable",
+        "visible_materialization_attempted": False,
+        "visible_materialization_verified": False,
+        "visible_materialization_blocker": "blocked_by_visible_editor_shell_unavailable",
+        "hidden_classification_attempted": True,
+        "hidden_classification_verified": False,
+        "hidden_classification_blocker": "blocked_by_visible_editor_shell_unavailable",
+        "hidden_validity_state": "unknown",
+        "hidden_show_policy": "blocked_without_source_validated_visible_editor_shell",
+        "hidden_show_allowed": False,
+        "hidden_show_blocker": "blocked_by_visible_editor_shell_unavailable",
+        "emstudio_classification_attempted": True,
+        "emstudio_classification_verified": False,
+        "emstudio_classification_state": "not_detected",
+        "emstudio_classification_blocker": "not_detected",
+        "qt_inventory_attempted": True,
+        "qt_inventory_sanitized": [],
+        "qt_visible_top_level_widget_count": 0,
+        "qt_hidden_top_level_widget_count": 0,
+        "qt_main_window_candidate_count": 0,
+        "native_inventory_attempted": False,
+        "native_inventory_sanitized": [],
+        "native_visible_count": 0,
+        "native_hidden_count": 0,
+        "qt_native_correlation_attempted": False,
+        "qt_native_correlation_verified": False,
+        "qt_native_correlation_blocker": "not_selected_native_window_inventory_not_source_validated",
+        "evidence_summary": "",
+    }
+    try:
+        from PySide2 import QtWidgets  # type: ignore
+    except Exception as exc:
+        payload["blocker"] = "blocked_by_python_binding_unavailable"
+        payload["visible_discovery_blocker"] = "blocked_by_python_binding_unavailable"
+        payload["visible_candidate_classification_blocker"] = "blocked_by_python_binding_unavailable"
+        payload["visible_materialization_blocker"] = "blocked_by_python_binding_unavailable"
+        payload["hidden_classification_blocker"] = "blocked_by_python_binding_unavailable"
+        payload["hidden_show_blocker"] = "blocked_by_python_binding_unavailable"
+        payload["evidence_summary"] = f"PySide2 QtWidgets unavailable: {type(exc).__name__}"
+        return payload
+    app = QtWidgets.QApplication.instance()
+    if app is None:
+        payload["blocker"] = "blocked_by_visible_editor_shell_unavailable"
+        payload["evidence_summary"] = "QApplication instance unavailable."
+        return payload
+
+    candidates: List[Dict[str, Any]] = []
+    try:
+        for widget in list(app.topLevelWidgets())[:150]:
+            candidate = _alternate_editor_shell_candidate_info(widget, QtWidgets)
+            if candidate is not None:
+                candidates.append(candidate)
+    except Exception as exc:
+        payload["evidence_summary"] = f"Qt top-level widget inventory failed: {type(exc).__name__}"
+        return payload
+
+    sanitized: List[Dict[str, Any]] = []
+    for candidate in candidates[:75]:
+        sanitized.append(
+            {
+                "class_name": str(candidate.get("class_name", "")),
+                "visible": candidate.get("visible") is True,
+                "hidden": candidate.get("hidden") is True,
+                "minimized": candidate.get("minimized") is True,
+                "is_qmainwindow": candidate.get("is_qmainwindow") is True,
+                "likely_editor_shell": candidate.get("likely_editor_shell") is True,
+                "likely_tool_shell": candidate.get("likely_tool_shell") is True,
+                "likely_emstudio_tool_shell": candidate.get("likely_emstudio_tool_shell") is True,
+                "activation_eligible": candidate.get("activation_eligible") is True,
+                "materialization_eligible": candidate.get("materialization_eligible") is True,
+                "activation_unsafe": candidate.get("activation_unsafe") is True,
+                "hidden_candidate_validity_state": str(candidate.get("hidden_candidate_validity_state", "")),
+                "raw_title_emitted": False,
+                "raw_object_name_emitted": False,
+                "raw_native_handle_emitted": False,
+            }
+        )
+    visible_shells = [candidate for candidate in candidates if candidate.get("materialization_eligible") is True]
+    hidden_candidates = [
+        candidate
+        for candidate in candidates
+        if candidate.get("hidden") is True or candidate.get("minimized") is True
+    ]
+    emstudio_candidates = [candidate for candidate in candidates if candidate.get("likely_emstudio_tool_shell") is True]
+    unknown_hidden_candidates = [
+        candidate
+        for candidate in hidden_candidates
+        if candidate.get("hidden_candidate_validity_state") == "unknown_unsafe_hidden_candidate"
+    ]
+    hidden_validity_state = "none"
+    hidden_show_blocker = "not_selected_no_hidden_candidate"
+    if unknown_hidden_candidates:
+        hidden_validity_state = "unknown_unsafe_hidden_candidate"
+        hidden_show_blocker = "blocked_by_hidden_editor_shell_candidate_activation_unsafe"
+    elif emstudio_candidates:
+        hidden_validity_state = "verified_emstudio_main_window_is_tool_shell_not_editor_shell"
+        hidden_show_blocker = "blocked_by_hidden_editor_shell_candidate_not_valid_target"
+    elif hidden_candidates:
+        hidden_validity_state = "unknown_unsafe_hidden_candidate"
+        hidden_show_blocker = "blocked_by_hidden_editor_shell_candidate_activation_unsafe"
+
+    payload.update(
+        {
+            "verified": bool(candidates),
+            "blocker": "" if candidates else "blocked_by_visible_editor_shell_unavailable",
+            "qt_inventory_sanitized": sanitized,
+            "qt_visible_top_level_widget_count": sum(1 for candidate in candidates if candidate.get("visible") is True),
+            "qt_hidden_top_level_widget_count": sum(1 for candidate in candidates if candidate.get("hidden") is True),
+            "qt_main_window_candidate_count": len(candidates),
+            "visible_candidate_count": len(visible_shells),
+            "visible_discovery_verified": bool(visible_shells),
+            "visible_discovery_blocker": "" if visible_shells else "blocked_by_visible_editor_shell_unavailable",
+            "visible_candidate_classification_verified": bool(visible_shells),
+            "visible_candidate_classification_blocker": ""
+            if visible_shells
+            else "blocked_by_visible_editor_shell_unavailable",
+            "hidden_classification_verified": bool(hidden_candidates or emstudio_candidates or candidates),
+            "hidden_classification_blocker": "" if candidates else "blocked_by_visible_editor_shell_unavailable",
+            "hidden_validity_state": hidden_validity_state,
+            "hidden_show_blocker": hidden_show_blocker,
+            "emstudio_classification_verified": bool(emstudio_candidates),
+            "emstudio_classification_state": "verified_emstudio_main_window_is_tool_shell_not_editor_shell"
+            if emstudio_candidates
+            else "not_detected",
+            "emstudio_classification_blocker": "" if emstudio_candidates else "not_detected",
+        }
+    )
+    if not candidates:
+        payload["evidence_summary"] = "No Qt top-level main-window-shaped candidates found in sanitized inventory."
+        return payload
+
+    if not visible_shells:
+        payload["blocker"] = "blocked_by_visible_editor_shell_unavailable"
+        payload["visible_materialization_blocker"] = "blocked_by_visible_editor_shell_unavailable"
+        payload["evidence_summary"] = (
+            "Qt top-level inventory found main-window-shaped candidates, but none were visible, non-tool, and "
+            "materialization-eligible; hidden show/raise/activate remains blocked."
+        )
+        return payload
+
+    payload["visible_materialization_attempted"] = True
+    candidate_info = sorted(visible_shells, key=lambda item: int(item["rank"]))[0]
+    candidate = candidate_info["widget"]
+    try:
+        if hasattr(candidate, "raise_"):
+            candidate.raise_()
+        if hasattr(candidate, "activateWindow"):
+            candidate.activateWindow()
+        app.processEvents()
+        visible = bool(candidate.isVisible()) if hasattr(candidate, "isVisible") else True
+        hidden = bool(candidate.isHidden()) if hasattr(candidate, "isHidden") else False
+        minimized = bool(candidate.isMinimized()) if hasattr(candidate, "isMinimized") else False
+        materialized = bool(visible and not hidden and not minimized)
+        payload.update(
+            {
+                "visible_materialization_verified": materialized,
+                "visible_materialization_blocker": ""
+                if materialized
+                else "blocked_by_visible_editor_shell_materialization_unavailable",
+                "blocker": "" if materialized else "blocked_by_visible_editor_shell_materialization_unavailable",
+                "evidence_summary": (
+                    "Visible non-tool Qt Editor-shell candidate was raised/activated and remained visible."
+                    if materialized
+                    else "Visible Qt Editor-shell candidate did not remain visible after bounded activation."
+                ),
+            }
+        )
+    except Exception as exc:
+        payload["blocker"] = "blocked_by_visible_editor_shell_materialization_unavailable"
+        payload["visible_materialization_blocker"] = "blocked_by_visible_editor_shell_materialization_unavailable"
+        payload["evidence_summary"] = f"Visible Editor shell materialization failed: {type(exc).__name__}"
     return payload
 
 
@@ -8962,6 +9427,419 @@ def _run_editor_main_window_activation_deep_dive_checks(
                 list(payload.get("messages", []))
                 + [
                     "Editor main-window activation/materialization deep dive is readiness only; screenshot and visual/material proof remain disabled."
+                ]
+            ),
+        }
+    )
+    return payload
+
+
+def _run_alternate_editor_window_discovery_visible_shell_checks(
+    report: Mapping[str, Any],
+    *,
+    progress_log: Path | None,
+    general: Any,
+) -> Dict[str, Any]:
+    engine_root_raw = str(os.environ.get("O3DE_ENGINE_ROOT", "")).strip()
+    engine_root = Path(engine_root_raw) if engine_root_raw else None
+    _write_progress_marker(
+        progress_log,
+        "alternate_editor_window_discovery_visible_shell_source_validation_started",
+        "started",
+        "Source-validating alternate Editor window discovery and visible shell materialization boundaries.",
+    )
+    source_validation = _alternate_editor_window_discovery_visible_shell_source_validation(engine_root)
+    source_validated = (
+        source_validation.get("status")
+        == "alternate_editor_window_discovery_visible_shell_source_validation_pass"
+    )
+    _write_progress_marker(
+        progress_log,
+        "alternate_editor_window_discovery_visible_shell_source_validation_returned",
+        "verified" if source_validated else str(source_validation.get("blocker", "blocked")),
+        "Alternate Editor window discovery source validation returned.",
+    )
+
+    readiness = _run_editor_main_window_activation_deep_dive_checks(
+        report,
+        progress_log=progress_log,
+        general=general,
+    )
+    payload: Dict[str, Any] = dict(readiness)
+    ap_alignment_preserved = payload.get("ap_alignment_preserved") is True
+    editor_ap_negotiation_preserved = payload.get("editor_asset_processor_negotiation_preserved") is True
+    temp_context_preserved = payload.get("temp_visual_scene_context_exercise_verified") is True
+    preconditions_verified = bool(
+        ap_alignment_preserved
+        and editor_ap_negotiation_preserved
+        and temp_context_preserved
+        and payload.get("operator_ap_alignment_remediation_verification_verified") is True
+    )
+
+    modal_probe = {
+        "attempted": False,
+        "detected": False,
+        "blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "sanitized_windows": [],
+    }
+    shell_probe = {
+        "attempted": False,
+        "verified": False,
+        "blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "visible_discovery_attempted": False,
+        "visible_discovery_verified": False,
+        "visible_discovery_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "visible_candidate_count": 0,
+        "visible_candidate_classification_attempted": False,
+        "visible_candidate_classification_verified": False,
+        "visible_candidate_classification_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "visible_materialization_attempted": False,
+        "visible_materialization_verified": False,
+        "visible_materialization_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "hidden_classification_attempted": False,
+        "hidden_classification_verified": False,
+        "hidden_classification_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "hidden_validity_state": "not_selected_source_validation_or_precondition_unavailable",
+        "hidden_show_policy": "blocked_without_source_validated_visible_editor_shell",
+        "hidden_show_allowed": False,
+        "hidden_show_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "emstudio_classification_attempted": False,
+        "emstudio_classification_verified": False,
+        "emstudio_classification_state": "not_selected_source_validation_or_precondition_unavailable",
+        "emstudio_classification_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "qt_inventory_attempted": False,
+        "qt_inventory_sanitized": [],
+        "qt_visible_top_level_widget_count": 0,
+        "qt_hidden_top_level_widget_count": 0,
+        "qt_main_window_candidate_count": 0,
+        "native_inventory_attempted": False,
+        "native_inventory_sanitized": [],
+        "native_visible_count": 0,
+        "native_hidden_count": 0,
+        "qt_native_correlation_attempted": False,
+        "qt_native_correlation_verified": False,
+        "qt_native_correlation_blocker": "not_selected_native_window_inventory_not_source_validated",
+        "evidence_summary": "",
+    }
+    viewport_probe = {
+        "pane_discovery_attempted": False,
+        "pane_discovery_verified": False,
+        "pane_discovery_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "pane_activation_attempted": False,
+        "pane_activation_verified": False,
+        "pane_activation_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "widget_discovery_attempted": False,
+        "widget_discovery_verified": False,
+        "widget_discovery_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "evidence_summary": "",
+        "sanitized_widgets": [],
+    }
+    event_wait = {
+        "idle_wait_attempted": False,
+        "idle_wait_completed": False,
+        "idle_wait_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "render_tick_attempted": False,
+        "render_tick_completed": False,
+        "render_tick_blocker": "not_selected_source_validation_or_precondition_unavailable",
+    }
+
+    can_attempt_visible_shell = bool(source_validated and preconditions_verified)
+    if can_attempt_visible_shell:
+        modal_probe = _probe_editor_asset_processor_negotiation_modal()
+        _write_progress_marker(
+            progress_log,
+            "alternate_editor_window_discovery_visible_shell_modal_probe_returned",
+            "detected" if modal_probe.get("detected") else "not_detected",
+            "Alternate Editor shell modal detection returned.",
+        )
+        if modal_probe.get("detected") is not True:
+            shell_probe = _probe_alternate_editor_window_discovery_visible_shell()
+            _write_progress_marker(
+                progress_log,
+                "alternate_editor_window_discovery_visible_shell_probe_returned",
+                "verified" if shell_probe.get("visible_materialization_verified") else str(shell_probe.get("blocker", "blocked")),
+                "Alternate Editor window discovery / visible shell probe returned.",
+            )
+            viewport_probe = _probe_default_viewport_materialization(
+                allow_activation=shell_probe.get("visible_materialization_verified") is True
+            )
+            if (
+                shell_probe.get("visible_materialization_verified") is True
+                and viewport_probe.get("pane_activation_verified") is True
+            ):
+                event_wait = _run_viewport_event_loop_wait(general)
+
+    if not source_validated:
+        shell_state = "blocked_by_alternate_editor_window_discovery_source_validation_unavailable"
+        shell_blocker = "blocked_by_alternate_editor_window_discovery_source_validation_unavailable"
+    elif not preconditions_verified:
+        shell_state = "blocked_by_alternate_editor_window_discovery_preconditions_unavailable"
+        shell_blocker = str(
+            payload.get("editor_main_window_activation_deep_dive_blocker")
+            or payload.get("focused_viewport_materialization_blocker")
+            or payload.get("operator_ap_alignment_remediation_blocker")
+            or "blocked_by_temp_scene_context_unavailable"
+        )
+    elif modal_probe.get("detected") is True:
+        shell_state = "blocked_by_editor_asset_processor_negotiation_failed_modal"
+        shell_blocker = "blocked_by_editor_asset_processor_negotiation_failed_modal"
+    elif shell_probe.get("visible_materialization_verified") is True:
+        shell_state = "verified_visible_editor_shell_materialization"
+        shell_blocker = ""
+    elif shell_probe.get("visible_discovery_verified") is True:
+        shell_state = "verified_visible_editor_shell_discovery"
+        shell_blocker = str(
+            shell_probe.get("visible_materialization_blocker")
+            or "blocked_by_visible_editor_shell_materialization_unavailable"
+        )
+    elif shell_probe.get("verified") is True:
+        shell_state = str(shell_probe.get("blocker") or "blocked_by_visible_editor_shell_unavailable")
+        shell_blocker = shell_state
+    else:
+        shell_state = str(shell_probe.get("blocker") or "blocked_by_visible_editor_shell_unavailable")
+        shell_blocker = shell_state
+
+    can_attempt_readiness_probes = bool(source_validated and preconditions_verified)
+    active_default_probe = (
+        _check_active_default_viewport_probe(general)
+        if can_attempt_readiness_probes
+        else {
+            "attempted": False,
+            "verified": False,
+            "state": shell_state,
+            "blocker": shell_blocker,
+            "window_handle_attempted": False,
+            "window_handle_verified": False,
+            "window_handle_blocker": shell_blocker or "blocked_by_editor_active_viewport_window_handle_unavailable",
+        }
+    )
+    atom_probe = (
+        _probe_atom_framecapture_binding_surface(source_validated)
+        if can_attempt_readiness_probes
+        else {
+            "attempted": False,
+            "verified": False,
+            "source_validated": source_validated,
+            "blocker": shell_blocker,
+            "binding_available": False,
+            "evidence_summary": "",
+            "screenshot_capture_requested": False,
+        }
+    )
+    window_handle_verified = active_default_probe.get("window_handle_verified") is True
+    active_default_verified = active_default_probe.get("verified") is True
+    swapchain_verified = False
+    framecapture_target_verified = bool(window_handle_verified and swapchain_verified)
+    if not source_validated:
+        readiness_blocker = "blocked_by_alternate_editor_window_discovery_source_validation_unavailable"
+    elif not preconditions_verified:
+        readiness_blocker = shell_blocker or "not_selected_source_validation_or_precondition_unavailable"
+    elif not window_handle_verified:
+        readiness_blocker = "blocked_by_active_viewport_window_handle_unavailable"
+    elif not swapchain_verified:
+        readiness_blocker = "blocked_by_swapchain_probe_unavailable"
+    else:
+        readiness_blocker = ""
+
+    alternate_viewport_verified = bool(
+        viewport_probe.get("widget_discovery_verified") is True
+        and (
+            viewport_probe.get("pane_discovery_verified") is True
+            or shell_probe.get("visible_materialization_verified") is True
+        )
+    )
+    alternate_viewport_blocker = "" if alternate_viewport_verified else str(
+        viewport_probe.get("pane_discovery_blocker")
+        or viewport_probe.get("widget_discovery_blocker")
+        or shell_blocker
+    )
+
+    payload.update(
+        {
+            "alternate_editor_window_discovery_attempted": True,
+            "alternate_editor_window_discovery_verified": shell_probe.get("verified") is True,
+            "alternate_editor_window_discovery_source_validated": source_validated,
+            "alternate_editor_window_discovery_source_validation_status": source_validation.get("status", ""),
+            "alternate_editor_window_discovery_source_validation": source_validation,
+            "alternate_editor_window_discovery_source_files": [
+                str(spec["path"])
+                for spec in _alternate_editor_window_discovery_visible_shell_source_specs(engine_root)
+            ],
+            "alternate_editor_window_discovery_state": shell_state,
+            "alternate_editor_window_discovery_blocker": shell_blocker,
+            "visible_editor_shell_discovery_attempted": shell_probe.get("visible_discovery_attempted") is True,
+            "visible_editor_shell_discovery_verified": shell_probe.get("visible_discovery_verified") is True,
+            "visible_editor_shell_discovery_source_validated": source_validated,
+            "visible_editor_shell_discovery_state": shell_state,
+            "visible_editor_shell_discovery_blocker": str(shell_probe.get("visible_discovery_blocker", shell_blocker)),
+            "visible_editor_shell_candidate_count": int(shell_probe.get("visible_candidate_count", 0) or 0),
+            "visible_editor_shell_candidate_classification_attempted": (
+                shell_probe.get("visible_candidate_classification_attempted") is True
+            ),
+            "visible_editor_shell_candidate_classification_verified": (
+                shell_probe.get("visible_candidate_classification_verified") is True
+            ),
+            "visible_editor_shell_candidate_classification_blocker": str(
+                shell_probe.get("visible_candidate_classification_blocker", "")
+            ),
+            "visible_editor_shell_materialization_attempted": (
+                shell_probe.get("visible_materialization_attempted") is True
+            ),
+            "visible_editor_shell_materialization_verified": (
+                shell_probe.get("visible_materialization_verified") is True
+            ),
+            "visible_editor_shell_materialization_source_validated": source_validated,
+            "visible_editor_shell_materialization_blocker": str(
+                shell_probe.get("visible_materialization_blocker", "")
+            ),
+            "hidden_editor_shell_candidate_classification_attempted": (
+                shell_probe.get("hidden_classification_attempted") is True
+            ),
+            "hidden_editor_shell_candidate_classification_verified": (
+                shell_probe.get("hidden_classification_verified") is True
+            ),
+            "hidden_editor_shell_candidate_classification_blocker": str(
+                shell_probe.get("hidden_classification_blocker", "")
+            ),
+            "hidden_editor_shell_candidate_validity_state": str(shell_probe.get("hidden_validity_state", "")),
+            "hidden_editor_shell_candidate_show_policy": str(shell_probe.get("hidden_show_policy", "")),
+            "hidden_editor_shell_candidate_show_allowed": shell_probe.get("hidden_show_allowed") is True,
+            "hidden_editor_shell_candidate_show_blocker": str(shell_probe.get("hidden_show_blocker", "")),
+            "emstudio_main_window_candidate_classification_attempted": (
+                shell_probe.get("emstudio_classification_attempted") is True
+            ),
+            "emstudio_main_window_candidate_classification_verified": (
+                shell_probe.get("emstudio_classification_verified") is True
+            ),
+            "emstudio_main_window_candidate_classification_state": str(
+                shell_probe.get("emstudio_classification_state", "")
+            ),
+            "emstudio_main_window_candidate_classification_blocker": str(
+                shell_probe.get("emstudio_classification_blocker", "")
+            ),
+            "qt_top_level_widget_inventory_attempted": shell_probe.get("qt_inventory_attempted") is True,
+            "qt_top_level_widget_inventory_sanitized": shell_probe.get("qt_inventory_sanitized", []),
+            "qt_visible_top_level_widget_count": int(shell_probe.get("qt_visible_top_level_widget_count", 0) or 0),
+            "qt_hidden_top_level_widget_count": int(shell_probe.get("qt_hidden_top_level_widget_count", 0) or 0),
+            "qt_main_window_candidate_count": int(shell_probe.get("qt_main_window_candidate_count", 0) or 0),
+            "native_editor_window_inventory_attempted": shell_probe.get("native_inventory_attempted") is True,
+            "native_editor_window_inventory_sanitized": shell_probe.get("native_inventory_sanitized", []),
+            "native_visible_editor_window_count": int(shell_probe.get("native_visible_count", 0) or 0),
+            "native_hidden_editor_window_count": int(shell_probe.get("native_hidden_count", 0) or 0),
+            "qt_native_window_correlation_attempted": shell_probe.get("qt_native_correlation_attempted") is True,
+            "qt_native_window_correlation_verified": shell_probe.get("qt_native_correlation_verified") is True,
+            "qt_native_window_correlation_blocker": str(shell_probe.get("qt_native_correlation_blocker", "")),
+            "editor_modal_detection_attempted": modal_probe.get("attempted") is True,
+            "editor_blocking_modal_detected": modal_probe.get("detected") is True,
+            "editor_blocking_modal_blocker": str(modal_probe.get("blocker", "")),
+            "editor_negotiation_failed_modal_detected": modal_probe.get("detected") is True,
+            "alternate_viewport_materialization_path_attempted": (
+                viewport_probe.get("widget_discovery_attempted") is True
+            ),
+            "alternate_viewport_materialization_path_verified": alternate_viewport_verified,
+            "alternate_viewport_materialization_path_blocker": alternate_viewport_blocker,
+            "default_viewport_pane_discovery_after_visible_shell_attempted": (
+                viewport_probe.get("pane_discovery_attempted") is True
+            ),
+            "default_viewport_pane_discovery_after_visible_shell_verified": (
+                viewport_probe.get("pane_discovery_verified") is True
+            ),
+            "default_viewport_pane_discovery_after_visible_shell_blocker": str(
+                viewport_probe.get("pane_discovery_blocker", "")
+            ),
+            "default_viewport_pane_activation_after_visible_shell_attempted": (
+                viewport_probe.get("pane_activation_attempted") is True
+            ),
+            "default_viewport_pane_activation_after_visible_shell_verified": (
+                viewport_probe.get("pane_activation_verified") is True
+            ),
+            "default_viewport_pane_activation_after_visible_shell_blocker": str(
+                viewport_probe.get("pane_activation_blocker", "")
+            ),
+            "default_viewport_widget_discovery_after_visible_shell_attempted": (
+                viewport_probe.get("widget_discovery_attempted") is True
+            ),
+            "default_viewport_widget_discovery_after_visible_shell_verified": (
+                viewport_probe.get("widget_discovery_verified") is True
+            ),
+            "default_viewport_widget_discovery_after_visible_shell_blocker": str(
+                viewport_probe.get("widget_discovery_blocker", "")
+            ),
+            "default_viewport_materialization_after_visible_shell_evidence": viewport_probe,
+            "viewport_event_loop_idle_wait_attempted": event_wait.get("idle_wait_attempted") is True,
+            "viewport_event_loop_idle_wait_completed": event_wait.get("idle_wait_completed") is True,
+            "viewport_event_loop_idle_wait_blocker": str(event_wait.get("idle_wait_blocker", "")),
+            "viewport_render_tick_wait_attempted": event_wait.get("render_tick_attempted") is True,
+            "viewport_render_tick_wait_completed": event_wait.get("render_tick_completed") is True,
+            "viewport_render_tick_wait_blocker": str(event_wait.get("render_tick_blocker", "")),
+            "active_default_viewport_after_visible_shell_attempted": active_default_probe.get("attempted") is True,
+            "active_default_viewport_after_visible_shell_verified": active_default_verified,
+            "active_default_viewport_after_visible_shell_state": str(active_default_probe.get("state", "")),
+            "active_default_viewport_after_visible_shell_blocker": ""
+            if active_default_verified
+            else str(active_default_probe.get("blocker", readiness_blocker)),
+            "active_default_viewport_window_handle_after_visible_shell_attempted": (
+                active_default_probe.get("window_handle_attempted") is True
+            ),
+            "active_default_viewport_window_handle_after_visible_shell_verified": window_handle_verified,
+            "active_default_viewport_window_handle_after_visible_shell_source_validated": source_validated,
+            "active_default_viewport_window_handle_after_visible_shell_blocker": ""
+            if window_handle_verified
+            else str(
+                active_default_probe.get(
+                    "window_handle_blocker",
+                    "blocked_by_editor_active_viewport_window_handle_unavailable",
+                )
+            ),
+            "atom_swapchain_after_visible_shell_attempted": atom_probe.get("attempted") is True,
+            "atom_swapchain_after_visible_shell_verified": swapchain_verified,
+            "atom_swapchain_after_visible_shell_source_validated": source_validated,
+            "atom_swapchain_after_visible_shell_blocker": ""
+            if swapchain_verified
+            else str(atom_probe.get("blocker", readiness_blocker)),
+            "atom_swapchain_after_visible_shell_evidence": atom_probe,
+            "framecapture_target_after_visible_shell_attempted": can_attempt_readiness_probes,
+            "framecapture_target_after_visible_shell_verified": framecapture_target_verified,
+            "framecapture_target_after_visible_shell_source_validated": source_validated,
+            "framecapture_target_after_visible_shell_blocker": ""
+            if framecapture_target_verified
+            else readiness_blocker,
+            "alternate_editor_window_discovery_visible_shell_evidence": shell_probe,
+            "ap_alignment_preserved": ap_alignment_preserved,
+            "editor_asset_processor_negotiation_preserved": editor_ap_negotiation_preserved,
+            "safe_temp_visual_scene_context_preserved": temp_context_preserved,
+            "editor_visual_material_capture_requested": False,
+            "editor_visual_material_capture_request_accepted": False,
+            "editor_visual_material_capture_completed": False,
+            "visual_material_capture_readiness_verified": False,
+            "visual_material_rendered_evidence_gate_attempted": False,
+            "visual_material_rendered_evidence_gate_verified": False,
+            "visual_material_gate_claimed": False,
+            "visual_material_gate_verified": False,
+            "full_runtime_character_visual_material_gate_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "asset_cache_deletion_attempted": False,
+            "asset_processor_database_wipe_attempted": False,
+            "asset_cache_deleted": False,
+            "cache_heuristic_used": False,
+            "proof_claims": [
+                "Source-validated and exercised alternate Editor window discovery and visible Editor shell materialization diagnostics after verified AP alignment and safe temp visual scene context.",
+                "Classified hidden/discovered Editor-window candidates and reran readiness-only viewport/capture-target probes without screenshot capture.",
+            ],
+            "proof_limits": [
+                "No screenshot request/completion.",
+                "No rendered visual/material evidence.",
+                "No material/character visual-presence validation.",
+                "No visual_material gate verification.",
+                "No full runtime character proof.",
+                "No Asset Cache deletion or AP database/cache wipe.",
+                "No release packaging, publication, or production-ready claim.",
+            ],
+            "messages": _unique(
+                list(payload.get("messages", []))
+                + [
+                    "Alternate Editor window discovery / visible shell materialization is readiness only; screenshot and visual/material proof remain disabled."
                 ]
             ),
         }

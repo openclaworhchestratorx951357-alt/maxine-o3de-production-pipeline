@@ -127,6 +127,7 @@
         "operator-run-ap-alignment-remediation-verification",
         "focused-editor-viewport-activation-default-viewport-materialization",
         "editor-main-window-activation-materialization-deep-dive",
+        "alternate-editor-window-discovery-visible-shell-materialization",
         "full"
       ]
     },
