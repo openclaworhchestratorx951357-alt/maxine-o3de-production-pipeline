@@ -61,6 +61,7 @@ DIAGNOSTIC_MODES = {
     "editor-ap-negotiation-viewport-materialization-readiness",
     "asset-processor-project-build-alignment-repair",
     "operator-run-ap-alignment-remediation-verification",
+    "focused-editor-viewport-activation-default-viewport-materialization",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -1505,6 +1506,26 @@ def main() -> int:
             "operator_ap_alignment_remediation_verification_returned",
             str(readiness.get("operator_ap_alignment_remediation_blocker", "returned")),
             "Operator-run Asset Processor alignment remediation verification diagnostic returned.",
+        )
+
+    if not errors and diagnostic_mode == "focused-editor-viewport-activation-default-viewport-materialization":
+        _write_progress_marker(
+            progress_log,
+            "focused_editor_viewport_materialization_started",
+            "started",
+            "Running focused Editor viewport activation/default viewport materialization readiness diagnostic.",
+        )
+        readiness = _run_focused_editor_viewport_materialization_checks(
+            report,
+            progress_log=progress_log,
+            general=general,
+        )
+        report.update(readiness)
+        _write_progress_marker(
+            progress_log,
+            "focused_editor_viewport_materialization_returned",
+            str(readiness.get("focused_viewport_materialization_blocker", "returned")),
+            "Focused Editor viewport materialization readiness diagnostic returned.",
         )
 
     entity_result: Dict[str, Any] = report.get("entity_smoke", {"status": "not_run"})
@@ -6347,6 +6368,165 @@ def _operator_ap_alignment_remediation_verification_source_validation(
     }
 
 
+def _focused_editor_viewport_materialization_source_specs(
+    engine_root: Path | None,
+) -> List[Dict[str, Any]]:
+    repo_root = Path(__file__).resolve().parents[3]
+    specs = _operator_ap_alignment_remediation_verification_source_specs(engine_root)
+    specs.extend(
+        [
+            {
+                "path": repo_root / "tools" / "o3de" / "editor_smoke.py",
+                "symbols": [
+                    "focused-editor-viewport-activation-default-viewport-materialization",
+                    "MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION",
+                    "_validate_focused_editor_viewport_materialization",
+                ],
+            },
+            {
+                "path": repo_root
+                / "tools"
+                / "o3de"
+                / "editor_python"
+                / "editor_focused_viewport_materialization_smoke.py",
+                "symbols": [
+                    "REPO_ROOT = Path(__file__).resolve().parents[3]",
+                    "sys.path.insert(0, str(REPO_ROOT))",
+                    "from tools.o3de.editor_python import maxine_package_prefab_smoke",
+                    "focused-editor-viewport-activation-default-viewport-materialization",
+                ],
+            },
+            {
+                "path": repo_root / "tools" / "o3de" / "editor_python" / "maxine_package_prefab_smoke.py",
+                "symbols": [
+                    "focused-editor-viewport-activation-default-viewport-materialization",
+                    "_run_focused_editor_viewport_materialization_checks",
+                    "_probe_editor_main_window_materialization",
+                    "_probe_default_viewport_materialization",
+                    "editor_visual_material_capture_requested",
+                ],
+            },
+            {
+                "path": repo_root / "docs" / "production" / "private-windows-o3de-runner.md",
+                "symbols": [
+                    "Activate Editor viewport and materialize default viewport readiness",
+                    "focused-editor-viewport-activation-default-viewport-materialization",
+                    "No screenshot request",
+                ],
+            },
+            {
+                "path": repo_root / "schemas" / "maxine.editor-smoke-report.schema.json",
+                "symbols": [
+                    "focused-editor-viewport-activation-default-viewport-materialization",
+                ],
+            },
+        ]
+    )
+    if engine_root is not None:
+        specs.extend(
+            [
+                {
+                    "path": engine_root / "Code" / "Editor" / "ViewPane.cpp",
+                    "symbols": [
+                        "QtViewPaneManager",
+                        "EditorViewportWidget",
+                        "SetFocusToViewport",
+                        "get_viewport_count",
+                        "get_active_viewport",
+                        "set_active_viewport",
+                        "update_viewport",
+                    ],
+                },
+                {
+                    "path": engine_root / "Code" / "Editor" / "CryEditPy.cpp",
+                    "symbols": [
+                        "EditorQtApplication::instance",
+                        "EnableOnIdle",
+                        "OnIdleEnabled",
+                        "QTimer::singleShot",
+                        "GetDefaultViewportContext",
+                        "GetCameraTransform",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Code"
+                    / "Framework"
+                    / "AzToolsFramework"
+                    / "AzToolsFramework"
+                    / "API"
+                    / "ToolsApplicationAPI.h",
+                    "symbols": [
+                        "GetMainWindow",
+                        "OpenViewPane",
+                        "InstanceViewPane",
+                        "GetViewPaneWidget",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Code"
+                    / "Framework"
+                    / "AzToolsFramework"
+                    / "AzToolsFramework"
+                    / "API"
+                    / "ToolsApplicationAPI.cpp",
+                    "symbols": [
+                        "OpenViewPane",
+                        "InstanceViewPane",
+                    ],
+                },
+            ]
+        )
+    return specs
+
+
+def _focused_editor_viewport_materialization_source_validation(
+    engine_root: Path | None,
+) -> Dict[str, Any]:
+    file_results = [
+        _source_file_symbol_validation(spec["path"], spec["symbols"])
+        for spec in _focused_editor_viewport_materialization_source_specs(engine_root)
+    ]
+    missing = [result for result in file_results if result["status"] != "pass"]
+    status = (
+        "focused_editor_viewport_materialization_source_validation_pass"
+        if not missing
+        else "focused_editor_viewport_materialization_source_validation_inconclusive"
+    )
+    return {
+        "status": status,
+        "blocker": ""
+        if not missing
+        else "blocked_by_focused_viewport_materialization_source_validation_unavailable",
+        "files": file_results,
+        "surfaces": {
+            "viewport_pane_api": (
+                "ViewPane.cpp source-validates QtViewPaneManager, EditorViewportWidget, SetFocusToViewport, "
+                "and the azlmbr.legacy.general get_viewport_count/get_active_viewport/set_active_viewport/"
+                "update_viewport bindings used only as bounded readiness probes."
+            ),
+            "tools_application_api": (
+                "AzToolsFramework EditorRequests source-validates GetMainWindow, OpenViewPane, "
+                "InstanceViewPane, and GetViewPaneWidget as the C++ pane/window boundary."
+            ),
+            "qt_event_loop_boundary": (
+                "CryEditPy.cpp source-validates EditorQtApplication idle hooks and QTimer::singleShot; "
+                "the live diagnostic processes Qt events and bounded viewport updates without capture."
+            ),
+            "capture_boundary": (
+                "Focused viewport materialization is readiness only: it may classify viewport widget, "
+                "window-handle, SwapChain, and FrameCapture target availability but never requests screenshot capture."
+            ),
+            "proof_boundary": (
+                "Viewport materialization readiness is not screenshot proof, rendered visual/material evidence, "
+                "material correctness, character visual-presence proof, or full runtime character proof."
+            ),
+        },
+        "missing": missing,
+    }
+
+
 def _operator_ap_remediation_command_from_report(report: Mapping[str, Any]) -> str:
     command = str(report.get("asset_processor_operator_remediation_command_sanitized", "")).strip()
     if command:
@@ -6951,6 +7131,297 @@ def _probe_editor_asset_processor_negotiation_modal() -> Dict[str, Any]:
     return payload
 
 
+def _qt_widget_meta_class_name(widget: Any) -> str:
+    try:
+        return str(widget.metaObject().className())
+    except Exception:
+        return type(widget).__name__
+
+
+def _focused_main_window_candidate_info(widget: Any, qt_widgets: Any) -> Dict[str, Any] | None:
+    class_name = type(widget).__name__
+    meta_class_name = _qt_widget_meta_class_name(widget)
+    class_probe = f"{class_name} {meta_class_name}".lower()
+    if class_name.lower() == "qmenu" or meta_class_name.lower() == "qmenu":
+        return None
+    try:
+        is_qmainwindow = isinstance(widget, qt_widgets.QMainWindow)
+    except Exception:
+        is_qmainwindow = False
+    if not is_qmainwindow and "mainwindow" not in class_probe:
+        return None
+    try:
+        visible = bool(widget.isVisible())
+    except Exception:
+        visible = False
+    rank = 0 if visible else 10
+    if is_qmainwindow:
+        rank += 0
+    elif "editor" in class_probe and "mainwindow" in class_probe:
+        rank += 1
+    else:
+        rank += 2
+    return {
+        "widget": widget,
+        "rank": rank,
+        "class_name": meta_class_name or class_name,
+        "visible": visible,
+        "is_qmainwindow": is_qmainwindow,
+    }
+
+
+def _focused_main_window_activation_allowed(candidate_info: Mapping[str, Any]) -> bool:
+    return candidate_info.get("visible") is True
+
+
+def _focused_viewport_activation_candidate_info(widget: Any, qt_widgets: Any) -> Dict[str, Any] | None:
+    class_name = type(widget).__name__
+    meta_class_name = _qt_widget_meta_class_name(widget)
+    object_name = ""
+    try:
+        object_name = str(widget.objectName())
+    except Exception:
+        object_name = ""
+    title = ""
+    try:
+        title = str(widget.windowTitle())
+    except Exception:
+        title = ""
+    probe = f"{class_name} {meta_class_name} {object_name} {title}".lower()
+    if "viewport" not in probe:
+        return None
+    try:
+        visible = bool(widget.isVisible())
+    except Exception:
+        visible = False
+    is_dock_widget = False
+    try:
+        is_dock_widget = isinstance(widget, qt_widgets.QDockWidget)
+    except Exception:
+        is_dock_widget = False
+    class_probe = f"{class_name} {meta_class_name} {object_name}".lower()
+    is_pane = is_dock_widget or "viewpane" in class_probe
+    rank = 0
+    if "editorviewportwidget" in class_probe and visible:
+        rank = 0
+    elif visible:
+        rank = 1
+    elif is_pane:
+        rank = 2
+    else:
+        rank = 3
+    return {
+        "widget": widget,
+        "rank": rank,
+        "class_name": meta_class_name or class_name,
+        "is_dock_widget": is_dock_widget,
+        "is_pane": is_pane,
+        "visible": visible,
+    }
+
+
+def _probe_editor_main_window_materialization() -> Dict[str, Any]:
+    payload: Dict[str, Any] = {
+        "discovery_attempted": True,
+        "discovery_verified": False,
+        "discovery_blocker": "blocked_by_editor_main_window_unavailable",
+        "activation_attempted": False,
+        "activation_verified": False,
+        "activation_blocker": "blocked_by_editor_main_window_unavailable",
+        "evidence_summary": "",
+        "sanitized_windows": [],
+    }
+    try:
+        from PySide2 import QtWidgets  # type: ignore
+    except Exception as exc:
+        payload["evidence_summary"] = f"PySide2 QtWidgets unavailable: {type(exc).__name__}"
+        return payload
+    app = QtWidgets.QApplication.instance()
+    if app is None:
+        payload["evidence_summary"] = "QApplication instance unavailable"
+        return payload
+    candidates: List[Dict[str, Any]] = []
+    sanitized: List[Dict[str, Any]] = []
+    try:
+        for widget in list(app.topLevelWidgets())[:100]:
+            candidate = _focused_main_window_candidate_info(widget, QtWidgets)
+            if candidate is not None:
+                candidates.append(candidate)
+                sanitized.append(
+                    {
+                        "class_name": candidate["class_name"],
+                        "visible": bool(candidate["visible"]),
+                        "is_qmainwindow": bool(candidate["is_qmainwindow"]),
+                        "raw_title_emitted": False,
+                    }
+                )
+    except Exception as exc:
+        payload["evidence_summary"] = f"Qt top-level widget inventory failed: {type(exc).__name__}"
+        return payload
+    payload["sanitized_windows"] = sanitized
+    payload["discovery_verified"] = bool(candidates)
+    payload["discovery_blocker"] = "" if candidates else "blocked_by_editor_main_window_unavailable"
+    if not candidates:
+        payload["evidence_summary"] = "No Qt main-window candidate found without reading native handles."
+        return payload
+    payload["activation_attempted"] = True
+    candidate_info = sorted(candidates, key=lambda item: int(item["rank"]))[0]
+    if not _focused_main_window_activation_allowed(candidate_info):
+        payload["activation_blocker"] = "blocked_by_editor_main_window_activation_unavailable"
+        payload["evidence_summary"] = (
+            "Qt main-window candidates were discovered, but none were already visible; hidden main-window "
+            "show/raise/activate was left blocked to avoid unsafe Editor UI mutation."
+        )
+        return payload
+    candidate = candidate_info["widget"]
+    try:
+        if hasattr(candidate, "raise_"):
+            candidate.raise_()
+        if hasattr(candidate, "activateWindow"):
+            candidate.activateWindow()
+        app.processEvents()
+        visible = bool(candidate.isVisible()) if hasattr(candidate, "isVisible") else True
+        payload["activation_verified"] = visible
+        payload["activation_blocker"] = "" if visible else "blocked_by_editor_main_window_activation_unavailable"
+        payload["evidence_summary"] = (
+            "Visible Qt main-window candidate discovered from class/meta-class shape and raise/activateWindow processed without native handles."
+            if visible
+            else "Qt main-window candidate discovered but did not report visible after activation."
+        )
+    except Exception as exc:
+        payload["activation_blocker"] = "blocked_by_editor_main_window_activation_unavailable"
+        payload["evidence_summary"] = f"Qt main-window activation failed: {type(exc).__name__}"
+    return payload
+
+
+def _probe_default_viewport_materialization() -> Dict[str, Any]:
+    payload: Dict[str, Any] = {
+        "pane_discovery_attempted": True,
+        "pane_discovery_verified": False,
+        "pane_discovery_blocker": "blocked_by_default_viewport_pane_unavailable",
+        "pane_activation_attempted": False,
+        "pane_activation_verified": False,
+        "pane_activation_blocker": "blocked_by_default_viewport_pane_unavailable",
+        "widget_discovery_attempted": True,
+        "widget_discovery_verified": False,
+        "widget_discovery_blocker": "blocked_by_default_viewport_widget_unavailable",
+        "evidence_summary": "",
+        "sanitized_widgets": [],
+    }
+    try:
+        from PySide2 import QtWidgets  # type: ignore
+    except Exception as exc:
+        payload["pane_discovery_blocker"] = "blocked_by_qt_viewport_widget_unavailable"
+        payload["widget_discovery_blocker"] = "blocked_by_qt_viewport_widget_unavailable"
+        payload["evidence_summary"] = f"PySide2 QtWidgets unavailable: {type(exc).__name__}"
+        return payload
+    app = QtWidgets.QApplication.instance()
+    if app is None:
+        payload["pane_discovery_blocker"] = "blocked_by_qt_viewport_widget_unavailable"
+        payload["widget_discovery_blocker"] = "blocked_by_qt_viewport_widget_unavailable"
+        payload["evidence_summary"] = "QApplication instance unavailable"
+        return payload
+    viewport_widgets: List[Dict[str, Any]] = []
+    viewport_panes: List[Dict[str, Any]] = []
+    sanitized: List[Dict[str, Any]] = []
+    try:
+        for widget in list(app.allWidgets())[:1500]:
+            candidate = _focused_viewport_activation_candidate_info(widget, QtWidgets)
+            if candidate is not None:
+                viewport_widgets.append(candidate)
+                sanitized.append(
+                    {
+                        "class_name": candidate["class_name"],
+                        "is_dock_widget": bool(candidate["is_dock_widget"]),
+                        "visible": bool(candidate["visible"]),
+                        "raw_title_emitted": False,
+                        "raw_object_name_emitted": False,
+                    }
+                )
+                if candidate["is_pane"]:
+                    viewport_panes.append(candidate)
+    except Exception as exc:
+        payload["pane_discovery_blocker"] = "blocked_by_default_viewport_pane_unavailable"
+        payload["widget_discovery_blocker"] = "blocked_by_default_viewport_widget_unavailable"
+        payload["evidence_summary"] = f"Qt viewport widget inventory failed: {type(exc).__name__}"
+        return payload
+    payload["sanitized_widgets"] = sanitized[:50]
+    payload["widget_count"] = len(viewport_widgets)
+    payload["pane_count"] = len(viewport_panes)
+    payload["widget_discovery_verified"] = bool(viewport_widgets)
+    payload["widget_discovery_blocker"] = "" if viewport_widgets else "blocked_by_default_viewport_widget_unavailable"
+    payload["pane_discovery_verified"] = bool(viewport_panes)
+    payload["pane_discovery_blocker"] = "" if viewport_panes else "blocked_by_default_viewport_pane_unavailable"
+    activation_candidates = sorted(viewport_panes, key=lambda item: int(item["rank"]))
+    activation_target_info = activation_candidates[0] if activation_candidates else None
+    if activation_target_info is None:
+        payload["evidence_summary"] = (
+            "Viewport widget candidates were discovered, but no source-validated default viewport pane candidate "
+            "was found for pane activation without native-handle access."
+            if viewport_widgets
+            else "No default viewport pane/widget candidate found without native-handle access."
+        )
+        return payload
+    payload["pane_activation_attempted"] = True
+    try:
+        activation_target = activation_target_info["widget"]
+        if activation_target_info["is_dock_widget"] and hasattr(activation_target, "show"):
+            activation_target.show()
+        if activation_target_info["is_dock_widget"] and hasattr(activation_target, "raise_"):
+            activation_target.raise_()
+        if hasattr(activation_target, "setFocus"):
+            activation_target.setFocus()
+        app.processEvents()
+        visible = bool(activation_target.isVisible()) if hasattr(activation_target, "isVisible") else True
+        payload["pane_activation_verified"] = visible
+        payload["pane_activation_blocker"] = "" if visible else "blocked_by_default_viewport_pane_activation_unavailable"
+        payload["evidence_summary"] = (
+            "Default viewport pane/widget candidate discovered and bounded focus processed without native handles."
+            if visible
+            else "Default viewport pane/widget candidate discovered but did not report visible after activation."
+        )
+    except Exception as exc:
+        payload["pane_activation_blocker"] = "blocked_by_default_viewport_pane_activation_unavailable"
+        payload["evidence_summary"] = f"Qt viewport pane/widget activation failed: {type(exc).__name__}"
+    return payload
+
+
+def _run_viewport_event_loop_wait(general: Any) -> Dict[str, Any]:
+    payload: Dict[str, Any] = {
+        "idle_wait_attempted": True,
+        "idle_wait_completed": False,
+        "idle_wait_blocker": "blocked_by_qt_viewport_widget_unavailable",
+        "render_tick_attempted": True,
+        "render_tick_completed": False,
+        "render_tick_blocker": "blocked_by_editor_update_viewport_binding_unavailable",
+    }
+    try:
+        from PySide2 import QtWidgets  # type: ignore
+    except Exception:
+        return payload
+    app = QtWidgets.QApplication.instance()
+    if app is not None:
+        try:
+            deadline = time.monotonic() + 0.25
+            while time.monotonic() < deadline:
+                app.processEvents()
+                time.sleep(0.025)
+            payload["idle_wait_completed"] = True
+            payload["idle_wait_blocker"] = ""
+        except Exception as exc:
+            payload["idle_wait_blocker"] = f"blocked_by_qt_event_loop_process_events_failed:{type(exc).__name__}"
+    if general is not None and hasattr(general, "update_viewport"):
+        try:
+            general.update_viewport()
+            if app is not None:
+                app.processEvents()
+            payload["render_tick_completed"] = True
+            payload["render_tick_blocker"] = ""
+        except Exception as exc:
+            payload["render_tick_blocker"] = f"blocked_by_editor_update_viewport_failed:{type(exc).__name__}"
+    return payload
+
+
 def _run_editor_ap_negotiation_viewport_materialization_checks(
     report: Mapping[str, Any],
     *,
@@ -7466,6 +7937,327 @@ def _run_operator_ap_alignment_remediation_verification_checks(
                 list(payload.get("messages", []))
                 + [
                     "Operator-run AP alignment remediation verification is readiness/classification only; screenshot and visual/material proof remain disabled."
+                ]
+            ),
+        }
+    )
+    return payload
+
+
+def _run_focused_editor_viewport_materialization_checks(
+    report: Mapping[str, Any],
+    *,
+    progress_log: Path | None,
+    general: Any,
+) -> Dict[str, Any]:
+    engine_root_raw = str(os.environ.get("O3DE_ENGINE_ROOT", "")).strip()
+    engine_root = Path(engine_root_raw) if engine_root_raw else None
+    _write_progress_marker(
+        progress_log,
+        "focused_editor_viewport_materialization_source_validation_started",
+        "started",
+        "Source-validating focused Editor viewport materialization readiness boundaries.",
+    )
+    source_validation = _focused_editor_viewport_materialization_source_validation(engine_root)
+    source_validated = (
+        source_validation.get("status") == "focused_editor_viewport_materialization_source_validation_pass"
+    )
+    _write_progress_marker(
+        progress_log,
+        "focused_editor_viewport_materialization_source_validation_returned",
+        "verified" if source_validated else str(source_validation.get("blocker", "blocked")),
+        "Focused Editor viewport materialization source validation returned.",
+    )
+    readiness = _run_operator_ap_alignment_remediation_verification_checks(
+        report,
+        progress_log=progress_log,
+        general=general,
+    )
+    payload: Dict[str, Any] = dict(readiness)
+    ap_alignment_preserved = (
+        payload.get("operator_ap_alignment_remediation_verification_verified") is True
+        and payload.get("asset_processor_project_alignment_verified") is True
+        and payload.get("asset_processor_build_root_alignment_verified") is True
+    )
+    editor_ap_negotiation_preserved = (
+        payload.get("editor_asset_processor_negotiation_after_operator_remediation_verified") is True
+        or payload.get("editor_asset_processor_negotiation_preflight_verified") is True
+    )
+    temp_context_preserved = payload.get("temp_visual_scene_context_exercise_verified") is True
+
+    modal_probe = {
+        "attempted": False,
+        "detected": False,
+        "blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "sanitized_windows": [],
+    }
+    main_window_probe = {
+        "discovery_attempted": False,
+        "discovery_verified": False,
+        "discovery_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "activation_attempted": False,
+        "activation_verified": False,
+        "activation_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "evidence_summary": "",
+        "sanitized_windows": [],
+    }
+    viewport_probe = {
+        "pane_discovery_attempted": False,
+        "pane_discovery_verified": False,
+        "pane_discovery_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "pane_activation_attempted": False,
+        "pane_activation_verified": False,
+        "pane_activation_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "widget_discovery_attempted": False,
+        "widget_discovery_verified": False,
+        "widget_discovery_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "evidence_summary": "",
+        "sanitized_widgets": [],
+    }
+    event_wait = {
+        "idle_wait_attempted": False,
+        "idle_wait_completed": False,
+        "idle_wait_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "render_tick_attempted": False,
+        "render_tick_completed": False,
+        "render_tick_blocker": "not_selected_source_validation_or_precondition_unavailable",
+    }
+    can_attempt_materialization = (
+        source_validated and ap_alignment_preserved and editor_ap_negotiation_preserved and temp_context_preserved
+    )
+    if can_attempt_materialization:
+        modal_probe = _probe_editor_asset_processor_negotiation_modal()
+        _write_progress_marker(
+            progress_log,
+            "focused_editor_viewport_modal_probe_returned",
+            "detected" if modal_probe.get("detected") else "not_detected",
+            "Focused viewport materialization modal detection returned.",
+        )
+        if modal_probe.get("detected") is not True:
+            main_window_probe = _probe_editor_main_window_materialization()
+            if main_window_probe.get("activation_verified") is True:
+                viewport_probe = _probe_default_viewport_materialization()
+                event_wait = _run_viewport_event_loop_wait(general)
+
+    if not source_validated:
+        materialized = False
+        materialization_state = "blocked_by_focused_viewport_materialization_source_validation_unavailable"
+        materialization_blocker = "blocked_by_focused_viewport_materialization_source_validation_unavailable"
+    elif not ap_alignment_preserved:
+        materialized = False
+        materialization_state = str(payload.get("operator_ap_alignment_remediation_state") or "blocked_by_asset_processor_project_mismatch")
+        materialization_blocker = str(
+            payload.get("operator_ap_alignment_remediation_blocker")
+            or payload.get("asset_processor_alignment_blocker")
+            or "blocked_by_asset_processor_project_mismatch"
+        )
+    elif not editor_ap_negotiation_preserved:
+        materialized = False
+        materialization_state = str(
+            payload.get("editor_asset_processor_negotiation_after_operator_remediation_state")
+            or "blocked_by_editor_asset_processor_project_mismatch"
+        )
+        materialization_blocker = str(
+            payload.get("editor_asset_processor_negotiation_after_operator_remediation_blocker")
+            or "blocked_by_editor_asset_processor_project_mismatch"
+        )
+    elif not temp_context_preserved:
+        materialized = False
+        materialization_state = "blocked_by_temp_scene_context_unavailable"
+        materialization_blocker = "blocked_by_temp_scene_context_unavailable"
+    elif modal_probe.get("detected") is True:
+        materialized = False
+        materialization_state = "blocked_by_editor_asset_processor_negotiation_failed_modal"
+        materialization_blocker = "blocked_by_editor_asset_processor_negotiation_failed_modal"
+    elif main_window_probe.get("activation_verified") is not True:
+        materialized = False
+        materialization_state = str(
+            main_window_probe.get("activation_blocker")
+            or main_window_probe.get("discovery_blocker")
+            or "blocked_by_editor_main_window_activation_unavailable"
+        )
+        materialization_blocker = materialization_state
+    elif viewport_probe.get("widget_discovery_verified") is not True:
+        materialized = False
+        materialization_state = str(
+            viewport_probe.get("widget_discovery_blocker") or "blocked_by_default_viewport_widget_unavailable"
+        )
+        materialization_blocker = materialization_state
+    elif viewport_probe.get("pane_activation_verified") is not True:
+        materialized = False
+        materialization_state = str(
+            viewport_probe.get("pane_activation_blocker") or "blocked_by_default_viewport_pane_activation_unavailable"
+        )
+        materialization_blocker = materialization_state
+    elif event_wait.get("idle_wait_completed") is not True:
+        materialized = False
+        materialization_state = str(event_wait.get("idle_wait_blocker") or "blocked_by_qt_viewport_widget_unavailable")
+        materialization_blocker = materialization_state
+    else:
+        materialized = True
+        materialization_state = "verified_focused_viewport_materialization"
+        materialization_blocker = ""
+
+    active_default_probe = (
+        _check_active_default_viewport_probe(general)
+        if source_validated and temp_context_preserved
+        else {
+            "attempted": False,
+            "verified": False,
+            "state": materialization_state,
+            "blocker": materialization_blocker,
+            "window_handle_attempted": False,
+            "window_handle_verified": False,
+            "window_handle_blocker": "blocked_by_editor_active_viewport_window_handle_unavailable",
+        }
+    )
+    atom_probe = (
+        _probe_atom_framecapture_binding_surface(source_validated)
+        if source_validated and temp_context_preserved
+        else {
+            "attempted": False,
+            "verified": False,
+            "source_validated": source_validated,
+            "blocker": materialization_blocker,
+            "binding_available": False,
+            "evidence_summary": "",
+            "screenshot_capture_requested": False,
+        }
+    )
+    window_handle_verified = active_default_probe.get("window_handle_verified") is True
+    active_default_verified = active_default_probe.get("verified") is True
+    swapchain_verified = False
+    framecapture_target_verified = bool(window_handle_verified and swapchain_verified)
+    if not source_validated:
+        readiness_blocker = "blocked_by_focused_viewport_materialization_source_validation_unavailable"
+    elif not temp_context_preserved:
+        readiness_blocker = "blocked_by_temp_scene_context_unavailable"
+    elif not window_handle_verified:
+        readiness_blocker = "blocked_by_active_viewport_window_handle_unavailable"
+    elif not swapchain_verified:
+        readiness_blocker = "blocked_by_swapchain_probe_unavailable"
+    else:
+        readiness_blocker = ""
+
+    payload.update(
+        {
+            "focused_viewport_materialization_attempted": True,
+            "focused_viewport_materialization_verified": materialized,
+            "focused_viewport_materialization_source_validated": source_validated,
+            "focused_viewport_materialization_source_validation_status": source_validation.get("status", ""),
+            "focused_viewport_materialization_source_validation": source_validation,
+            "focused_viewport_materialization_source_files": [
+                str(spec["path"])
+                for spec in _focused_editor_viewport_materialization_source_specs(engine_root)
+            ],
+            "focused_viewport_materialization_state": materialization_state,
+            "focused_viewport_materialization_blocker": materialization_blocker,
+            "editor_main_window_discovery_attempted": main_window_probe.get("discovery_attempted") is True,
+            "editor_main_window_discovery_verified": main_window_probe.get("discovery_verified") is True,
+            "editor_main_window_discovery_blocker": str(main_window_probe.get("discovery_blocker", "")),
+            "editor_main_window_activation_attempted": main_window_probe.get("activation_attempted") is True,
+            "editor_main_window_activation_verified": main_window_probe.get("activation_verified") is True,
+            "editor_main_window_activation_blocker": str(main_window_probe.get("activation_blocker", "")),
+            "editor_main_window_materialization_evidence": main_window_probe,
+            "editor_modal_detection_attempted": modal_probe.get("attempted") is True,
+            "editor_blocking_modal_detected": modal_probe.get("detected") is True,
+            "editor_blocking_modal_blocker": str(modal_probe.get("blocker", "")),
+            "editor_negotiation_failed_modal_detected": modal_probe.get("detected") is True,
+            "default_viewport_pane_discovery_attempted": viewport_probe.get("pane_discovery_attempted") is True,
+            "default_viewport_pane_discovery_verified": viewport_probe.get("pane_discovery_verified") is True,
+            "default_viewport_pane_discovery_blocker": str(viewport_probe.get("pane_discovery_blocker", "")),
+            "default_viewport_pane_activation_attempted": viewport_probe.get("pane_activation_attempted") is True,
+            "default_viewport_pane_activation_verified": viewport_probe.get("pane_activation_verified") is True,
+            "default_viewport_pane_activation_blocker": str(viewport_probe.get("pane_activation_blocker", "")),
+            "default_viewport_widget_discovery_attempted": viewport_probe.get("widget_discovery_attempted") is True,
+            "default_viewport_widget_discovery_verified": viewport_probe.get("widget_discovery_verified") is True,
+            "default_viewport_widget_discovery_blocker": str(viewport_probe.get("widget_discovery_blocker", "")),
+            "default_viewport_materialization_evidence": viewport_probe,
+            "viewport_event_loop_idle_wait_attempted": event_wait.get("idle_wait_attempted") is True,
+            "viewport_event_loop_idle_wait_completed": event_wait.get("idle_wait_completed") is True,
+            "viewport_event_loop_idle_wait_blocker": str(event_wait.get("idle_wait_blocker", "")),
+            "viewport_render_tick_wait_attempted": event_wait.get("render_tick_attempted") is True,
+            "viewport_render_tick_wait_completed": event_wait.get("render_tick_completed") is True,
+            "viewport_render_tick_wait_blocker": str(event_wait.get("render_tick_blocker", "")),
+            "active_default_viewport_after_materialization_attempted": active_default_probe.get("attempted") is True,
+            "active_default_viewport_after_materialization_verified": active_default_verified,
+            "active_default_viewport_after_materialization_state": str(active_default_probe.get("state", "")),
+            "active_default_viewport_after_materialization_blocker": ""
+            if active_default_verified
+            else str(active_default_probe.get("blocker", readiness_blocker)),
+            "active_default_viewport_window_handle_after_materialization_attempted": (
+                active_default_probe.get("window_handle_attempted") is True
+            ),
+            "active_default_viewport_window_handle_after_materialization_verified": window_handle_verified,
+            "active_default_viewport_window_handle_after_materialization_source_validated": source_validated,
+            "active_default_viewport_window_handle_after_materialization_blocker": ""
+            if window_handle_verified
+            else str(active_default_probe.get("window_handle_blocker", "blocked_by_editor_active_viewport_window_handle_unavailable")),
+            "atom_swapchain_after_viewport_materialization_attempted": atom_probe.get("attempted") is True,
+            "atom_swapchain_after_viewport_materialization_verified": swapchain_verified,
+            "atom_swapchain_after_viewport_materialization_source_validated": source_validated,
+            "atom_swapchain_after_viewport_materialization_blocker": ""
+            if swapchain_verified
+            else "blocked_by_swapchain_probe_unavailable",
+            "atom_swapchain_after_viewport_materialization_evidence": atom_probe,
+            "framecapture_target_after_viewport_materialization_attempted": (
+                source_validated and temp_context_preserved
+            ),
+            "framecapture_target_after_viewport_materialization_verified": framecapture_target_verified,
+            "framecapture_target_after_viewport_materialization_source_validated": source_validated,
+            "framecapture_target_after_viewport_materialization_blocker": ""
+            if framecapture_target_verified
+            else readiness_blocker,
+            "ap_alignment_preserved": ap_alignment_preserved,
+            "editor_asset_processor_negotiation_preserved": editor_ap_negotiation_preserved,
+            "operator_ap_alignment_remediation_verification_verified": (
+                payload.get("operator_ap_alignment_remediation_verification_verified") is True
+            ),
+            "safe_temp_visual_scene_context_preserved": temp_context_preserved,
+            "desktop_gpu_rhi_readiness_preserved": bool(
+                payload.get("visible_desktop_session_verified") is True
+                and payload.get("gpu_or_driver_readiness_verified") is True
+                and payload.get("rhi_readiness_verified") is True
+            ),
+            "non_null_editor_launch_preserved": payload.get("live_non_null_editor_launch_verified") is True,
+            "rhi_selected": str(
+                payload.get("rhi_selected")
+                or payload.get("selected_rhi")
+                or payload.get("live_non_null_editor_launch_selected_rhi")
+                or ""
+            ),
+            "editor_visual_material_capture_requested": False,
+            "editor_visual_material_capture_request_accepted": False,
+            "editor_visual_material_capture_completed": False,
+            "visual_material_capture_readiness_verified": False,
+            "visual_material_rendered_evidence_gate_attempted": False,
+            "visual_material_rendered_evidence_gate_verified": False,
+            "visual_material_gate_claimed": False,
+            "visual_material_gate_verified": False,
+            "full_runtime_character_visual_material_gate_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "asset_cache_deletion_attempted": False,
+            "asset_processor_database_wipe_attempted": False,
+            "asset_cache_deleted": False,
+            "cache_heuristic_used": False,
+            "proof_claims": [
+                "Source-validated and exercised focused Editor viewport activation/default viewport materialization after verified AP alignment and safe temp visual scene context.",
+                "Reran active/default viewport, Atom SwapChain, and FrameCapture target readiness-only probes without screenshot capture.",
+            ],
+            "proof_limits": [
+                "No screenshot request/completion.",
+                "No rendered visual/material evidence.",
+                "No material/character visual-presence validation.",
+                "No visual_material gate verification.",
+                "No full runtime character proof.",
+                "No Asset Cache deletion or AP database/cache wipe.",
+                "No release packaging, publication, or production-ready claim.",
+            ],
+            "messages": _unique(
+                list(payload.get("messages", []))
+                + [
+                    "Focused viewport materialization is readiness only; screenshot and visual/material proof remain disabled."
                 ]
             ),
         }

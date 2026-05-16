@@ -176,6 +176,11 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_operator_ap_alignment_remediation_verification_smoke.py",
+    "focused-editor-viewport-activation-default-viewport-materialization": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_focused_viewport_materialization_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -254,6 +259,7 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
         in {
             "asset-processor-project-build-alignment-repair",
             "operator-run-ap-alignment-remediation-verification",
+            "focused-editor-viewport-activation-default-viewport-materialization",
         }
         and report.get("live_editor_execution") is not True
         and bool(_asset_processor_alignment_preflight_blocker(report))
@@ -365,6 +371,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_asset_processor_project_build_alignment_repair(report, result)
         if diagnostic_mode == "operator-run-ap-alignment-remediation-verification":
             _validate_operator_ap_alignment_remediation_verification(report, result)
+        if diagnostic_mode == "focused-editor-viewport-activation-default-viewport-materialization":
+            _validate_focused_editor_viewport_materialization(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -3201,6 +3209,169 @@ def _validate_operator_ap_alignment_remediation_verification(
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, message)
 
 
+def _validate_focused_editor_viewport_materialization(
+    report: Mapping[str, Any],
+    result: ValidationResult,
+) -> None:
+    _validate_operator_ap_alignment_remediation_verification(report, result)
+    source_blocked = (
+        report.get("focused_viewport_materialization_source_validated") is False
+        or str(report.get("focused_viewport_materialization_state", "")).strip()
+        == "blocked_by_focused_viewport_materialization_source_validation_unavailable"
+    )
+    preconditions_verified = (
+        report.get("ap_alignment_preserved") is True
+        and report.get("editor_asset_processor_negotiation_preserved") is True
+        and report.get("operator_ap_alignment_remediation_verification_verified") is True
+        and report.get("safe_temp_visual_scene_context_preserved") is True
+        and report.get("temp_visual_scene_context_exercise_verified") is True
+        and report.get("temp_visual_scene_cleanup_completed") is True
+    )
+    precondition_blocked = not source_blocked and not preconditions_verified
+    if not source_blocked and report.get("focused_viewport_materialization_attempted") is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Focused viewport materialization requires focused viewport materialization attempt.",
+        )
+    for field, label in {
+        "editor_modal_detection_attempted": "bounded modal detection",
+        "active_default_viewport_after_materialization_attempted": "active/default viewport after materialization",
+        "active_default_viewport_window_handle_after_materialization_attempted": (
+            "active/default viewport window-handle after materialization"
+        ),
+        "atom_swapchain_after_viewport_materialization_attempted": "Atom SwapChain after materialization",
+        "framecapture_target_after_viewport_materialization_attempted": (
+            "FrameCapture target after materialization"
+        ),
+    }.items():
+        if not source_blocked and not precondition_blocked and report.get(field) is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Focused viewport materialization requires {label}.")
+
+    if not source_blocked and not precondition_blocked:
+        for field, label in {
+            "focused_viewport_materialization_source_validated": "focused viewport source validation",
+            "ap_alignment_preserved": "AP alignment preservation",
+            "editor_asset_processor_negotiation_preserved": "Editor/AP negotiation preservation",
+            "operator_ap_alignment_remediation_verification_verified": "operator AP remediation verification",
+            "safe_temp_visual_scene_context_preserved": "safe temp visual scene preservation",
+            "temp_visual_scene_context_exercise_verified": "safe temp visual scene exercise",
+            "temp_visual_scene_cleanup_completed": "safe temp visual scene cleanup",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Focused viewport materialization requires {label}.")
+
+    if not str(report.get("focused_viewport_materialization_state", "")).strip():
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Focused viewport materialization requires a state.")
+    if (
+        report.get("focused_viewport_materialization_verified") is not True
+        and not str(report.get("focused_viewport_materialization_blocker", "")).strip()
+    ):
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Unverified focused viewport materialization requires a typed blocker.")
+
+    readiness_fields = (
+        (
+            "editor_main_window_discovery_verified",
+            "editor_main_window_discovery_blocker",
+            "Editor main-window discovery",
+        ),
+        (
+            "editor_main_window_activation_verified",
+            "editor_main_window_activation_blocker",
+            "Editor main-window activation",
+        ),
+        (
+            "default_viewport_pane_discovery_verified",
+            "default_viewport_pane_discovery_blocker",
+            "default viewport pane discovery",
+        ),
+        (
+            "default_viewport_pane_activation_verified",
+            "default_viewport_pane_activation_blocker",
+            "default viewport pane activation",
+        ),
+        (
+            "default_viewport_widget_discovery_verified",
+            "default_viewport_widget_discovery_blocker",
+            "default viewport widget discovery",
+        ),
+        (
+            "active_default_viewport_after_materialization_verified",
+            "active_default_viewport_after_materialization_blocker",
+            "active/default viewport after materialization",
+        ),
+        (
+            "active_default_viewport_window_handle_after_materialization_verified",
+            "active_default_viewport_window_handle_after_materialization_blocker",
+            "active/default viewport window handle after materialization",
+        ),
+        (
+            "atom_swapchain_after_viewport_materialization_verified",
+            "atom_swapchain_after_viewport_materialization_blocker",
+            "Atom SwapChain after viewport materialization",
+        ),
+        (
+            "framecapture_target_after_viewport_materialization_verified",
+            "framecapture_target_after_viewport_materialization_blocker",
+            "FrameCapture target after viewport materialization",
+        ),
+    )
+    if source_blocked or precondition_blocked:
+        readiness_fields = ()
+    for field, blocker_field, label in readiness_fields:
+        if report.get(field) is not True and not str(report.get(blocker_field, "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Unverified {label} requires a typed blocker.")
+
+    if report.get("focused_viewport_materialization_verified") is True:
+        for field, label in {
+            "editor_main_window_discovery_verified": "main-window discovery",
+            "editor_main_window_activation_verified": "main-window activation",
+            "default_viewport_widget_discovery_verified": "default viewport widget discovery",
+            "default_viewport_pane_activation_verified": "default viewport pane/widget activation",
+            "viewport_event_loop_idle_wait_completed": "Qt event-loop idle wait",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"Focused viewport materialization verified=true requires {label}.",
+                )
+
+    for inventory_field in (
+        "editor_main_window_materialization_evidence",
+        "default_viewport_materialization_evidence",
+        "atom_swapchain_after_viewport_materialization_evidence",
+    ):
+        evidence = report.get(inventory_field)
+        if isinstance(evidence, Mapping):
+            serialized_keys = set(evidence.keys())
+            if "command_line" in serialized_keys or "environment" in serialized_keys:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Focused viewport evidence must not emit raw command lines or environment dumps.")
+            for entry in evidence.get("sanitized_windows", []) or evidence.get("sanitized_widgets", []) or []:
+                if isinstance(entry, Mapping) and (
+                    entry.get("raw_title_emitted") is True
+                    or entry.get("raw_object_name_emitted") is True
+                    or "command_line" in entry
+                ):
+                    result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Focused viewport evidence must keep window/widget data sanitized.")
+
+    for field, message in (
+        ("asset_cache_deletion_attempted", "Focused viewport materialization must not delete Asset Cache."),
+        ("asset_processor_database_wipe_attempted", "Focused viewport materialization must not wipe AP databases."),
+        ("asset_cache_deleted", "Focused viewport materialization must not delete Asset Cache."),
+        ("editor_visual_material_capture_requested", "Focused viewport materialization must not request screenshot/frame capture."),
+        ("editor_visual_material_capture_request_accepted", "Focused viewport materialization must not accept screenshot/frame capture."),
+        ("editor_visual_material_capture_completed", "Focused viewport materialization cannot claim screenshot/frame capture completion."),
+        ("visual_material_capture_readiness_verified", "Focused viewport materialization cannot verify screenshot artifact readiness."),
+        ("visual_material_rendered_evidence_gate_attempted", "Focused viewport materialization must not attempt rendered visual evidence."),
+        ("visual_material_rendered_evidence_gate_verified", "Focused viewport materialization cannot verify rendered visual evidence."),
+        ("visual_material_gate_claimed", "Focused viewport materialization cannot claim visual/material proof."),
+        ("visual_material_gate_verified", "Focused viewport materialization cannot verify visual/material proof."),
+        ("runtime_character_proof_claimed", "Focused viewport materialization cannot claim full runtime character proof."),
+        ("runtime_character_proof_verified", "Focused viewport materialization cannot verify full runtime character proof."),
+    ):
+        if report.get(field) is True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, message)
+
+
 def _validate_direct_procprefab_content_assertions(
     report: Mapping[str, Any],
     semantics: Mapping[str, Any],
@@ -4551,8 +4722,13 @@ def _execute_live_editor_smoke(
     operator_ap_alignment_remediation_verification_mode = (
         diagnostic_mode == "operator-run-ap-alignment-remediation-verification"
     )
+    focused_viewport_materialization_mode = (
+        diagnostic_mode == "focused-editor-viewport-activation-default-viewport-materialization"
+    )
     asset_processor_alignment_family_mode = (
-        asset_processor_alignment_repair_mode or operator_ap_alignment_remediation_verification_mode
+        asset_processor_alignment_repair_mode
+        or operator_ap_alignment_remediation_verification_mode
+        or focused_viewport_materialization_mode
     )
     safe_temp_scene_exercise_mode = (
         safe_temp_visual_scene_context_mode
@@ -4637,6 +4813,7 @@ def _execute_live_editor_smoke(
                 "MAXINE_ENABLE_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS",
                 "MAXINE_ENABLE_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR",
                 "MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION",
+                "MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION",
             )
         }
         os.environ["O3DE_ENGINE_ROOT"] = str(engine_root)
@@ -4657,6 +4834,9 @@ def _execute_live_editor_smoke(
             os.environ["MAXINE_ENABLE_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] = "1"
         if operator_ap_alignment_remediation_verification_mode:
             os.environ["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+        if focused_viewport_materialization_mode:
+            os.environ["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+            os.environ["MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
         if screenshot_capture_artifact_readiness_mode:
             os.environ["MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_ROOT"] = str(output_dir)
             os.environ["MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH"] = str(
@@ -4976,6 +5156,52 @@ def _execute_live_editor_smoke(
                             }
                         )
                         template.update(_operator_ap_alignment_remediation_verification_payload(template))
+                    if focused_viewport_materialization_mode:
+                        operator_source_validation = (
+                            editor_python_smoke._operator_ap_alignment_remediation_verification_source_validation(
+                                engine_root
+                            )
+                        )
+                        operator_source_validated = (
+                            operator_source_validation.get("status")
+                            == "operator_ap_alignment_remediation_verification_source_validation_pass"
+                        )
+                        focused_source_validation = (
+                            editor_python_smoke._focused_editor_viewport_materialization_source_validation(
+                                engine_root
+                            )
+                        )
+                        focused_source_validated = (
+                            focused_source_validation.get("status")
+                            == "focused_editor_viewport_materialization_source_validation_pass"
+                        )
+                        template.update(
+                            {
+                                "operator_ap_alignment_remediation_source_validated": operator_source_validated,
+                                "operator_ap_alignment_remediation_source_validation_status": (
+                                    operator_source_validation.get("status", "")
+                                ),
+                                "operator_ap_alignment_remediation_source_validation": operator_source_validation,
+                                "operator_ap_alignment_remediation_source_files": [
+                                    str(spec["path"])
+                                    for spec in editor_python_smoke._operator_ap_alignment_remediation_verification_source_specs(
+                                        engine_root
+                                    )
+                                ],
+                                "focused_viewport_materialization_source_validated": focused_source_validated,
+                                "focused_viewport_materialization_source_validation_status": (
+                                    focused_source_validation.get("status", "")
+                                ),
+                                "focused_viewport_materialization_source_validation": focused_source_validation,
+                                "focused_viewport_materialization_source_files": [
+                                    str(spec["path"])
+                                    for spec in editor_python_smoke._focused_editor_viewport_materialization_source_specs(
+                                        engine_root
+                                    )
+                                ],
+                            }
+                        )
+                        template.update(_operator_ap_alignment_remediation_verification_payload(template))
         finally:
             for key, value in previous_env.items():
                 if value is None:
@@ -5008,8 +5234,12 @@ def _execute_live_editor_smoke(
                 template.get("editor_asset_processor_negotiation_source_validated") is not True
                 or template.get("asset_processor_alignment_source_validated") is not True
                 or (
-                    operator_ap_alignment_remediation_verification_mode
+                    (operator_ap_alignment_remediation_verification_mode or focused_viewport_materialization_mode)
                     and template.get("operator_ap_alignment_remediation_source_validated") is not True
+                )
+                or (
+                    focused_viewport_materialization_mode
+                    and template.get("focused_viewport_materialization_source_validated") is not True
                 )
             )
         )
@@ -5266,6 +5496,11 @@ def _execute_live_editor_smoke(
     if operator_ap_alignment_remediation_verification_mode:
         editor_env.setdefault("MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION", "1")
         editor_env.setdefault("MAXINE_ALLOW_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION", "1")
+    if focused_viewport_materialization_mode:
+        editor_env.setdefault("MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION", "1")
+        editor_env.setdefault("MAXINE_ALLOW_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION", "1")
+        editor_env.setdefault("MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION", "1")
+        editor_env.setdefault("MAXINE_ALLOW_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION", "1")
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_NAME"] = level_name_for_editor
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_PATH"] = str(project_path / temp_level_rel)
     editor_env["MAXINE_EDITOR_SMOKE_ALLOW_TEMP_SANDBOX_LEVEL"] = "1"
@@ -7251,6 +7486,21 @@ def _parse_args() -> argparse.Namespace:
         help="Set the explicit gated marker for operator-run AP alignment remediation verification.",
     )
     parser.add_argument(
+        "--diagnose-focused-editor-viewport-materialization",
+        action="store_true",
+        help="Run focused Editor viewport activation/default viewport materialization readiness.",
+    )
+    parser.add_argument(
+        "--diagnose-editor-viewport-materialization",
+        action="store_true",
+        help="Alias for focused Editor viewport materialization readiness.",
+    )
+    parser.add_argument(
+        "--enable-focused-editor-viewport-materialization-fixture",
+        action="store_true",
+        help="Set the explicit gated marker for focused Editor viewport materialization.",
+    )
+    parser.add_argument(
         "--editor-render-capture-rhi",
         choices=sorted(NON_NULL_RENDER_CAPTURE_RHIS),
         default=None,
@@ -7497,6 +7747,27 @@ def main() -> int:
         env_map["MAXINE_ALLOW_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] = "1"
         env_map["MAXINE_ALLOW_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] = "1"
         env_map["MAXINE_ALLOW_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+    if (
+        args.diagnose_focused_editor_viewport_materialization
+        or args.diagnose_editor_viewport_materialization
+        or args.enable_focused_editor_viewport_materialization_fixture
+    ):
+        diagnostic_mode = "focused-editor-viewport-activation-default-viewport-materialization"
+        env_map["MAXINE_ENABLE_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] = "1"
+        env_map["MAXINE_ENABLE_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] = "1"
+        env_map["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+        env_map["MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
+    if args.enable_focused_editor_viewport_materialization_fixture:
+        env_map["MAXINE_ALLOW_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] = "1"
+        env_map["MAXINE_ALLOW_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] = "1"
+        env_map["MAXINE_ALLOW_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+        env_map["MAXINE_ALLOW_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
     if args.editor_render_capture_rhi:
         env_map["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = args.editor_render_capture_rhi
     result = run_editor_smoke_corpus(
