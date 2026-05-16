@@ -181,6 +181,11 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_focused_viewport_materialization_smoke.py",
+    "editor-main-window-activation-materialization-deep-dive": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_main_window_activation_materialization_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -373,6 +378,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_operator_ap_alignment_remediation_verification(report, result)
         if diagnostic_mode == "focused-editor-viewport-activation-default-viewport-materialization":
             _validate_focused_editor_viewport_materialization(report, result)
+        if diagnostic_mode == "editor-main-window-activation-materialization-deep-dive":
+            _validate_editor_main_window_activation_deep_dive(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -3372,6 +3379,166 @@ def _validate_focused_editor_viewport_materialization(
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, message)
 
 
+def _validate_editor_main_window_activation_deep_dive(
+    report: Mapping[str, Any],
+    result: ValidationResult,
+) -> None:
+    _validate_focused_editor_viewport_materialization(report, result)
+    source_blocked = (
+        report.get("editor_main_window_activation_deep_dive_source_validated") is False
+        or str(report.get("editor_main_window_activation_deep_dive_state", "")).strip()
+        == "blocked_by_editor_main_window_activation_source_validation_unavailable"
+    )
+    preconditions_verified = (
+        report.get("ap_alignment_preserved") is True
+        and report.get("editor_asset_processor_negotiation_preserved") is True
+        and report.get("operator_ap_alignment_remediation_verification_verified") is True
+        and report.get("safe_temp_visual_scene_context_preserved") is True
+        and report.get("temp_visual_scene_context_exercise_verified") is True
+        and report.get("temp_visual_scene_cleanup_completed") is True
+    )
+    precondition_blocked = not source_blocked and not preconditions_verified
+    if not source_blocked and report.get("editor_main_window_activation_deep_dive_attempted") is not True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor main-window deep dive requires an attempted diagnostic.")
+    if not str(report.get("editor_main_window_activation_deep_dive_state", "")).strip():
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor main-window deep dive requires a state.")
+    if (
+        report.get("editor_main_window_activation_deep_dive_verified") is not True
+        and not str(report.get("editor_main_window_activation_deep_dive_blocker", "")).strip()
+    ):
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Unverified Editor main-window deep dive requires a typed blocker.")
+
+    if not source_blocked and not precondition_blocked:
+        for field, label in {
+            "editor_modal_detection_attempted": "bounded modal detection",
+            "editor_main_window_candidate_inventory_attempted": "main-window inventory",
+            "editor_main_window_candidate_classification_attempted": "main-window candidate classification",
+            "alternate_viewport_materialization_path_attempted": "alternate viewport materialization path",
+            "active_default_viewport_after_main_window_deep_dive_attempted": (
+                "active/default viewport after main-window deep dive"
+            ),
+            "active_default_viewport_window_handle_after_main_window_deep_dive_attempted": (
+                "active/default viewport window handle after main-window deep dive"
+            ),
+            "atom_swapchain_after_main_window_deep_dive_attempted": (
+                "Atom SwapChain after main-window deep dive"
+            ),
+            "framecapture_target_after_main_window_deep_dive_attempted": (
+                "FrameCapture target after main-window deep dive"
+            ),
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Editor main-window deep dive requires {label}.")
+
+    inventory = report.get("editor_main_window_candidate_inventory_sanitized", [])
+    if not source_blocked and not precondition_blocked and not isinstance(inventory, list):
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor main-window inventory must be a sanitized list.")
+    if isinstance(inventory, list):
+        for entry in inventory:
+            if not isinstance(entry, Mapping):
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor main-window inventory entries must be sanitized objects.")
+                continue
+            if (
+                entry.get("raw_title_emitted") is True
+                or entry.get("raw_object_name_emitted") is True
+                or "command_line" in entry
+                or "environment" in entry
+                or "window_title" in entry
+                or "object_name" in entry
+            ):
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor main-window inventory must not emit raw window/object/process data.")
+
+    hidden_count = int(report.get("editor_main_window_hidden_candidate_count", 0) or 0)
+    minimized_count = int(report.get("editor_main_window_minimized_candidate_count", 0) or 0)
+    eligible_count = int(report.get("editor_main_window_activation_eligible_candidate_count", 0) or 0)
+    if hidden_count + minimized_count > 0 and eligible_count == 0:
+        if report.get("editor_main_window_hidden_candidate_show_allowed") is not False:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Editor main-window deep dive must block hidden/minimized show/raise/activate without a source-validated safe path.",
+            )
+        if not str(report.get("editor_main_window_hidden_candidate_show_blocker", "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Blocked hidden main-window show policy requires a typed blocker.")
+
+    if report.get("editor_main_window_activation_deep_dive_verified") is True:
+        for field, label in {
+            "editor_main_window_candidate_classification_verified": "main-window candidate classification",
+            "editor_main_window_activation_verified": "main-window activation",
+            "editor_main_window_materialization_verified": "main-window materialization",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"Editor main-window deep dive verified=true requires {label}.",
+                )
+        if eligible_count <= 0:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Editor main-window deep dive verified=true requires an activation-eligible visible candidate.",
+            )
+
+    readiness_fields = (
+        (
+            "default_viewport_pane_discovery_after_main_window_deep_dive_verified",
+            "default_viewport_pane_discovery_after_main_window_deep_dive_blocker",
+            "default viewport pane discovery after main-window deep dive",
+        ),
+        (
+            "default_viewport_pane_activation_after_main_window_deep_dive_verified",
+            "default_viewport_pane_activation_after_main_window_deep_dive_blocker",
+            "default viewport pane activation after main-window deep dive",
+        ),
+        (
+            "default_viewport_widget_discovery_after_main_window_deep_dive_verified",
+            "default_viewport_widget_discovery_after_main_window_deep_dive_blocker",
+            "default viewport widget discovery after main-window deep dive",
+        ),
+        (
+            "active_default_viewport_after_main_window_deep_dive_verified",
+            "active_default_viewport_after_main_window_deep_dive_blocker",
+            "active/default viewport after main-window deep dive",
+        ),
+        (
+            "active_default_viewport_window_handle_after_main_window_deep_dive_verified",
+            "active_default_viewport_window_handle_after_main_window_deep_dive_blocker",
+            "active/default viewport window handle after main-window deep dive",
+        ),
+        (
+            "atom_swapchain_after_main_window_deep_dive_verified",
+            "atom_swapchain_after_main_window_deep_dive_blocker",
+            "Atom SwapChain after main-window deep dive",
+        ),
+        (
+            "framecapture_target_after_main_window_deep_dive_verified",
+            "framecapture_target_after_main_window_deep_dive_blocker",
+            "FrameCapture target after main-window deep dive",
+        ),
+    )
+    if source_blocked or precondition_blocked:
+        readiness_fields = ()
+    for field, blocker_field, label in readiness_fields:
+        if report.get(field) is not True and not str(report.get(blocker_field, "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Unverified {label} requires a typed blocker.")
+
+    for field, message in (
+        ("asset_cache_deletion_attempted", "Editor main-window deep dive must not delete Asset Cache."),
+        ("asset_processor_database_wipe_attempted", "Editor main-window deep dive must not wipe AP databases."),
+        ("asset_cache_deleted", "Editor main-window deep dive must not delete Asset Cache."),
+        ("editor_visual_material_capture_requested", "Editor main-window deep dive must not request screenshot/frame capture."),
+        ("editor_visual_material_capture_request_accepted", "Editor main-window deep dive must not accept screenshot/frame capture."),
+        ("editor_visual_material_capture_completed", "Editor main-window deep dive cannot claim screenshot/frame capture completion."),
+        ("visual_material_capture_readiness_verified", "Editor main-window deep dive cannot verify screenshot artifact readiness."),
+        ("visual_material_rendered_evidence_gate_attempted", "Editor main-window deep dive must not attempt rendered visual evidence."),
+        ("visual_material_rendered_evidence_gate_verified", "Editor main-window deep dive cannot verify rendered visual evidence."),
+        ("visual_material_gate_claimed", "Editor main-window deep dive cannot claim visual/material proof."),
+        ("visual_material_gate_verified", "Editor main-window deep dive cannot verify visual/material proof."),
+        ("runtime_character_proof_claimed", "Editor main-window deep dive cannot claim full runtime character proof."),
+        ("runtime_character_proof_verified", "Editor main-window deep dive cannot verify full runtime character proof."),
+    ):
+        if report.get(field) is True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, message)
+
+
 def _validate_direct_procprefab_content_assertions(
     report: Mapping[str, Any],
     semantics: Mapping[str, Any],
@@ -4725,10 +4892,14 @@ def _execute_live_editor_smoke(
     focused_viewport_materialization_mode = (
         diagnostic_mode == "focused-editor-viewport-activation-default-viewport-materialization"
     )
+    editor_main_window_activation_deep_dive_mode = (
+        diagnostic_mode == "editor-main-window-activation-materialization-deep-dive"
+    )
     asset_processor_alignment_family_mode = (
         asset_processor_alignment_repair_mode
         or operator_ap_alignment_remediation_verification_mode
         or focused_viewport_materialization_mode
+        or editor_main_window_activation_deep_dive_mode
     )
     safe_temp_scene_exercise_mode = (
         safe_temp_visual_scene_context_mode
@@ -4814,6 +4985,7 @@ def _execute_live_editor_smoke(
                 "MAXINE_ENABLE_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR",
                 "MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION",
                 "MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION",
+                "MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE",
             )
         }
         os.environ["O3DE_ENGINE_ROOT"] = str(engine_root)
@@ -4837,6 +5009,10 @@ def _execute_live_editor_smoke(
         if focused_viewport_materialization_mode:
             os.environ["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
             os.environ["MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
+        if editor_main_window_activation_deep_dive_mode:
+            os.environ["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+            os.environ["MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
+            os.environ["MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] = "1"
         if screenshot_capture_artifact_readiness_mode:
             os.environ["MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_ROOT"] = str(output_dir)
             os.environ["MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH"] = str(
@@ -5501,6 +5677,13 @@ def _execute_live_editor_smoke(
         editor_env.setdefault("MAXINE_ALLOW_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION", "1")
         editor_env.setdefault("MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION", "1")
         editor_env.setdefault("MAXINE_ALLOW_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION", "1")
+    if editor_main_window_activation_deep_dive_mode:
+        editor_env.setdefault("MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION", "1")
+        editor_env.setdefault("MAXINE_ALLOW_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION", "1")
+        editor_env.setdefault("MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION", "1")
+        editor_env.setdefault("MAXINE_ALLOW_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION", "1")
+        editor_env.setdefault("MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE", "1")
+        editor_env.setdefault("MAXINE_ALLOW_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE", "1")
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_NAME"] = level_name_for_editor
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_PATH"] = str(project_path / temp_level_rel)
     editor_env["MAXINE_EDITOR_SMOKE_ALLOW_TEMP_SANDBOX_LEVEL"] = "1"
@@ -7501,6 +7684,21 @@ def _parse_args() -> argparse.Namespace:
         help="Set the explicit gated marker for focused Editor viewport materialization.",
     )
     parser.add_argument(
+        "--diagnose-editor-main-window-activation-materialization",
+        action="store_true",
+        help="Run bounded Editor main-window activation/materialization deep-dive readiness.",
+    )
+    parser.add_argument(
+        "--diagnose-editor-main-window-deep-dive",
+        action="store_true",
+        help="Alias for Editor main-window activation/materialization deep-dive readiness.",
+    )
+    parser.add_argument(
+        "--enable-editor-main-window-activation-deep-dive-fixture",
+        action="store_true",
+        help="Set the explicit gated marker for Editor main-window activation/materialization deep dive.",
+    )
+    parser.add_argument(
         "--editor-render-capture-rhi",
         choices=sorted(NON_NULL_RENDER_CAPTURE_RHIS),
         default=None,
@@ -7768,6 +7966,29 @@ def main() -> int:
         env_map["MAXINE_ALLOW_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] = "1"
         env_map["MAXINE_ALLOW_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
         env_map["MAXINE_ALLOW_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
+    if (
+        args.diagnose_editor_main_window_activation_materialization
+        or args.diagnose_editor_main_window_deep_dive
+        or args.enable_editor_main_window_activation_deep_dive_fixture
+    ):
+        diagnostic_mode = "editor-main-window-activation-materialization-deep-dive"
+        env_map["MAXINE_ENABLE_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] = "1"
+        env_map["MAXINE_ENABLE_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] = "1"
+        env_map["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+        env_map["MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] = "1"
+    if args.enable_editor_main_window_activation_deep_dive_fixture:
+        env_map["MAXINE_ALLOW_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] = "1"
+        env_map["MAXINE_ALLOW_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] = "1"
+        env_map["MAXINE_ALLOW_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+        env_map["MAXINE_ALLOW_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] = "1"
     if args.editor_render_capture_rhi:
         env_map["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = args.editor_render_capture_rhi
     result = run_editor_smoke_corpus(
