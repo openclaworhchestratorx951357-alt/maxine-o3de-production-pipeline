@@ -124,6 +124,7 @@
         "editor-nonblocking-viewport-swapchain-readiness",
         "editor-ap-negotiation-viewport-materialization-readiness",
         "asset-processor-project-build-alignment-repair",
+        "operator-run-ap-alignment-remediation-verification",
         "full"
       ]
     },
