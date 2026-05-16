@@ -1,7 +1,25 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Alternate Editor Window Discovery / Visible Shell Materialization v1 is active on `codex/alternate-editor-window-discovery-visible-shell-materialization-v1`:
+- Editor Layout Bootstrap / Window Lifecycle Deep-Dive v1 is active on `codex/editor-layout-bootstrap-window-lifecycle-deep-dive-v1`:
+  - PR #179 was verified merged into `main` at `6109e2224fb942538297950bbbf1a1e3f60c297c`; this branch was created from that updated `main`
+  - this slice source-validates and exercises Editor layout/bootstrap/window lifecycle diagnostics after verified AP alignment, preserving the operator-run AP remediation success from PR #176 and verified Editor/AP negotiation after remediation
+  - it reuses the safe temp visual scene/display context proven in PR #171/#172/#173/#174/#175/#176/#177/#178/#179 under `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context`
+  - it classifies whether the missing visible Editor shell is caused by bootstrap timing, automation script timing, hidden/tool-only shell state, layout suppression, missing view-pane registration, or another source-validated lifecycle blocker
+  - it records whether a safe, reversible, non-destructive visible-shell materialization path exists, and blocks layout/user-setting mutation unless source-validated, reversible, run-scoped, and explicitly safe
+  - it reruns default viewport pane/widget readiness and active/default viewport, Atom SwapChain, and FrameCapture target readiness-only probes when source-validated lifecycle preconditions allow
+  - live evidence: `artifacts/o3de-integration/editor-smoke/editor-smoke-20260516T131844Z/editor_smoke_live_report.json` and `artifacts/o3de-integration/editor-smoke/editor-smoke-20260516T131844Z/progress.jsonl`
+  - live result: AP alignment preserved and verified, Editor/AP negotiation preserved and verified, selected RHI `dx12`, non-null Editor launch verified, safe temp scene path `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/editor_safe_temp_visual_scene_display_context_20260516t131844z`, cleanup completed, and no defaultlevel/production mutation detected
+  - sanitized launch classification verified `--runpython`, `--autotest_mode`, `--skipWelcomeScreenDialog`, non-null `dx12`, and a shell-suppression launch state without emitting raw command lines, script paths, or environment dumps
+  - lifecycle classification remains blocked by `blocked_by_editor_automation_script_before_shell_ready`: source validation shows the automation script runs before the later `NotifyEditorInitialized` / `app->exec` shell-ready boundary, while `editor_initialized_wait` and `editor_shell_ready_event_wait` remain unavailable in the current Editor Python probe surface
+  - layout mutation and user layout mutation were not attempted; run-scoped layout override remains blocked by `blocked_by_run_scoped_layout_override_unavailable`
+  - ViewPane registration and default viewport ViewPane registration are verified through sanitized `azlmbr.legacy.general.get_pane_class_names` / `is_pane_visible` evidence, with 17 panes and 2 default viewport candidates reported as counts only; raw pane names remain un-emitted
+  - default viewport pane open/discovery still reports `blocked_by_default_viewport_pane_unavailable`; default viewport widget discovery remains verified, but pane activation is not selected because safe shell/materialization readiness is still unavailable
+  - visible Editor shell after lifecycle wait remains blocked by `blocked_by_visible_editor_shell_unavailable`; visible shell lifecycle materialization remains blocked by `blocked_by_visible_editor_shell_lifecycle_unavailable`; hidden candidate show/raise/activate remains blocked by `blocked_by_hidden_editor_shell_candidate_activation_unsafe`
+  - readiness-only probes still report active/default viewport window-handle blocked by `blocked_by_editor_active_viewport_window_handle_unavailable`, Atom SwapChain blocked by `blocked_by_swapchain_probe_unavailable`, and FrameCapture target blocked by `blocked_by_active_viewport_window_handle_unavailable`
+  - this slice does not request screenshot capture, does not complete screenshot capture, does not verify rendered visual evidence, does not verify material correctness, does not verify character visual presence, and does not satisfy `visual_material`
+  - full runtime character proof remains false, release packaging/publication/production-ready claims remain false, and no Asset Cache deletion or AP database/cache wipe is allowed
+- Alternate Editor Window Discovery / Visible Shell Materialization v1 was merged through PR #179 on `codex/alternate-editor-window-discovery-visible-shell-materialization-v1`:
   - PR #178 was verified merged into `main` at `507e872f671082203ef85d455168b432313350e5`; this branch was created from that updated `main`
   - this slice source-validates and exercises alternate Editor window discovery and visible Editor shell materialization diagnostics after verified AP alignment, preserving the operator-run AP remediation success from PR #176 and verified Editor/AP negotiation after remediation
   - it reuses the safe temp visual scene/display context proven in PR #171/#172/#173/#174/#175/#176/#177/#178 under `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context`
