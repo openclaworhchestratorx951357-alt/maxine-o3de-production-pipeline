@@ -191,6 +191,11 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_alternate_window_shell_materialization_smoke.py",
+    "editor-layout-bootstrap-window-lifecycle-deep-dive": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_layout_bootstrap_window_lifecycle_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -387,6 +392,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_editor_main_window_activation_deep_dive(report, result)
         if diagnostic_mode == "alternate-editor-window-discovery-visible-shell-materialization":
             _validate_alternate_editor_window_discovery_visible_shell(report, result)
+        if diagnostic_mode == "editor-layout-bootstrap-window-lifecycle-deep-dive":
+            _validate_editor_layout_bootstrap_window_lifecycle(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -3765,6 +3772,227 @@ def _validate_alternate_editor_window_discovery_visible_shell(
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, message)
 
 
+def _validate_editor_layout_bootstrap_window_lifecycle(
+    report: Mapping[str, Any],
+    result: ValidationResult,
+) -> None:
+    _validate_alternate_editor_window_discovery_visible_shell(report, result)
+    source_blocked = (
+        report.get("editor_layout_bootstrap_lifecycle_source_validated") is False
+        or str(report.get("editor_layout_bootstrap_lifecycle_state", "")).strip()
+        == "blocked_by_editor_layout_bootstrap_lifecycle_source_validation_unavailable"
+    )
+    preconditions_verified = (
+        report.get("ap_alignment_preserved") is True
+        and report.get("editor_asset_processor_negotiation_preserved") is True
+        and report.get("operator_ap_alignment_remediation_verification_verified") is True
+        and report.get("safe_temp_visual_scene_context_preserved") is True
+        and report.get("temp_visual_scene_context_exercise_verified") is True
+        and report.get("temp_visual_scene_cleanup_completed") is True
+    )
+    precondition_blocked = not source_blocked and not preconditions_verified
+
+    if not source_blocked and report.get("editor_layout_bootstrap_lifecycle_deep_dive_attempted") is not True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor layout/bootstrap lifecycle requires an attempted diagnostic.")
+    if not str(report.get("editor_layout_bootstrap_lifecycle_state", "")).strip():
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor layout/bootstrap lifecycle requires a state.")
+    if (
+        report.get("editor_layout_bootstrap_lifecycle_deep_dive_verified") is not True
+        and not str(report.get("editor_layout_bootstrap_lifecycle_blocker", "")).strip()
+    ):
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Unverified Editor layout/bootstrap lifecycle requires a typed blocker.")
+
+    if report.get("editor_layout_mutation_attempted") is True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor layout/bootstrap lifecycle must not mutate Editor layout.")
+    if report.get("editor_user_layout_mutation_attempted") is True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor layout/bootstrap lifecycle must not mutate Editor layout or user layout settings.")
+
+    launch = report.get("editor_launch_command_classification_sanitized")
+    if not isinstance(launch, Mapping):
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor layout/bootstrap lifecycle requires sanitized launch command classification.")
+    else:
+        if (
+            launch.get("raw_command_line_emitted") is True
+            or launch.get("raw_environment_emitted") is True
+            or "command_line" in launch
+            or "environment" in launch
+        ):
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor layout/bootstrap lifecycle must not emit raw command lines or environment dumps.")
+
+    viewpane_evidence = report.get("editor_viewpane_registration_evidence")
+    if isinstance(viewpane_evidence, Mapping) and (
+        viewpane_evidence.get("raw_pane_names_emitted") is True
+        or "pane_names" in viewpane_evidence
+        or "raw_pane_names" in viewpane_evidence
+    ):
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor layout/bootstrap lifecycle must not emit raw view-pane names.")
+
+    if not source_blocked and not precondition_blocked:
+        for field, label in {
+            "editor_launch_command_classification_attempted": "launch command classification",
+            "editor_launch_visual_lane_flags_classified": "visual lane launch flag classification",
+            "editor_automation_script_timing_classification_attempted": "automation script timing classification",
+            "editor_bootstrap_stage_classification_attempted": "bootstrap stage classification",
+            "editor_initialized_wait_attempted": "Editor initialized wait classification",
+            "editor_layout_restore_state_attempted": "layout restore state classification",
+            "editor_shell_ready_event_wait_attempted": "shell-ready event wait classification",
+            "editor_viewpane_registration_attempted": "ViewPane registration classification",
+            "default_viewport_viewpane_registration_attempted": "default viewport ViewPane registration classification",
+            "default_viewport_pane_open_state_attempted": "default viewport pane open-state classification",
+            "visible_editor_shell_after_lifecycle_wait_attempted": "visible Editor shell after lifecycle wait",
+            "default_viewport_widget_discovery_after_lifecycle_attempted": "default viewport widget discovery after lifecycle",
+            "active_default_viewport_after_lifecycle_attempted": "active/default viewport after lifecycle",
+            "active_default_viewport_window_handle_after_lifecycle_attempted": (
+                "active/default viewport window handle after lifecycle"
+            ),
+            "atom_swapchain_after_lifecycle_attempted": "Atom SwapChain after lifecycle",
+            "framecapture_target_after_lifecycle_attempted": "FrameCapture target after lifecycle",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Editor layout/bootstrap lifecycle requires {label}.")
+
+    for field, blocker_field, label in (
+        (
+            "editor_initialized_wait_verified",
+            "editor_initialized_wait_blocker",
+            "Editor initialized wait",
+        ),
+        (
+            "editor_layout_restore_state_verified",
+            "editor_layout_restore_state_blocker",
+            "layout restore state",
+        ),
+        (
+            "editor_run_scoped_layout_override_verified",
+            "editor_run_scoped_layout_override_blocker",
+            "run-scoped layout override",
+        ),
+        (
+            "editor_shell_ready_event_wait_verified",
+            "editor_shell_ready_event_wait_blocker",
+            "shell-ready event wait",
+        ),
+        (
+            "editor_viewpane_registration_verified",
+            "editor_viewpane_registration_blocker",
+            "ViewPane registration",
+        ),
+        (
+            "default_viewport_viewpane_registration_verified",
+            "default_viewport_viewpane_registration_blocker",
+            "default viewport ViewPane registration",
+        ),
+        (
+            "default_viewport_pane_open_state_verified",
+            "default_viewport_pane_open_state_blocker",
+            "default viewport pane open state",
+        ),
+        (
+            "visible_editor_shell_after_lifecycle_wait_verified",
+            "visible_editor_shell_after_lifecycle_wait_blocker",
+            "visible Editor shell after lifecycle wait",
+        ),
+        (
+            "visible_editor_shell_lifecycle_materialization_verified",
+            "visible_editor_shell_lifecycle_materialization_blocker",
+            "visible Editor shell lifecycle materialization",
+        ),
+    ):
+        if source_blocked or precondition_blocked:
+            continue
+        if report.get(field) is not True and not str(report.get(blocker_field, "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Unverified {label} requires a typed blocker.")
+
+    hidden_count = int(report.get("qt_hidden_top_level_widget_count", 0) or 0)
+    if hidden_count > 0 or str(report.get("hidden_editor_shell_candidate_lifecycle_state", "")).strip():
+        if report.get("hidden_editor_shell_candidate_show_allowed") is not False:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Editor layout/bootstrap lifecycle must block hidden show/raise/activate without a source-validated safe lifecycle path.",
+            )
+        if not str(report.get("hidden_editor_shell_candidate_show_blocker", "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Blocked hidden Editor shell lifecycle policy requires a typed blocker.")
+
+    if report.get("editor_layout_bootstrap_lifecycle_deep_dive_verified") is True:
+        for field, label in {
+            "visible_editor_shell_after_lifecycle_wait_verified": "visible Editor shell after lifecycle wait",
+            "visible_editor_shell_lifecycle_materialization_verified": "visible Editor shell materialization",
+            "visible_editor_shell_lifecycle_materialization_source_validated": "visible Editor shell materialization source validation",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"Editor layout/bootstrap lifecycle verified=true requires {label}.",
+                )
+
+    readiness_fields = (
+        (
+            "default_viewport_pane_discovery_after_lifecycle_verified",
+            "default_viewport_pane_discovery_after_lifecycle_blocker",
+            "default viewport pane discovery after lifecycle",
+        ),
+        (
+            "default_viewport_pane_activation_after_lifecycle_verified",
+            "default_viewport_pane_activation_after_lifecycle_blocker",
+            "default viewport pane activation after lifecycle",
+        ),
+        (
+            "default_viewport_widget_discovery_after_lifecycle_verified",
+            "default_viewport_widget_discovery_after_lifecycle_blocker",
+            "default viewport widget discovery after lifecycle",
+        ),
+        (
+            "active_default_viewport_after_lifecycle_verified",
+            "active_default_viewport_after_lifecycle_blocker",
+            "active/default viewport after lifecycle",
+        ),
+        (
+            "active_default_viewport_window_handle_after_lifecycle_verified",
+            "active_default_viewport_window_handle_after_lifecycle_blocker",
+            "active/default viewport window handle after lifecycle",
+        ),
+        (
+            "atom_swapchain_after_lifecycle_verified",
+            "atom_swapchain_after_lifecycle_blocker",
+            "Atom SwapChain after lifecycle",
+        ),
+        (
+            "framecapture_target_after_lifecycle_verified",
+            "framecapture_target_after_lifecycle_blocker",
+            "FrameCapture target after lifecycle",
+        ),
+    )
+    if source_blocked or precondition_blocked:
+        readiness_fields = ()
+    for field, blocker_field, label in readiness_fields:
+        if report.get(field) is not True and not str(report.get(blocker_field, "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Unverified {label} requires a typed blocker.")
+
+    for field, message in (
+        ("asset_cache_deletion_attempted", "Editor layout/bootstrap lifecycle must not delete Asset Cache."),
+        ("asset_processor_database_wipe_attempted", "Editor layout/bootstrap lifecycle must not wipe AP databases."),
+        ("asset_cache_deleted", "Editor layout/bootstrap lifecycle must not delete Asset Cache."),
+        ("screenshot_capture_requested", "Editor layout/bootstrap lifecycle must not request screenshot/frame capture."),
+        ("screenshot_capture_completed", "Editor layout/bootstrap lifecycle cannot claim screenshot/frame capture completion."),
+        ("editor_visual_material_capture_requested", "Editor layout/bootstrap lifecycle must not request screenshot/frame capture."),
+        ("editor_visual_material_capture_request_accepted", "Editor layout/bootstrap lifecycle must not accept screenshot/frame capture."),
+        ("editor_visual_material_capture_completed", "Editor layout/bootstrap lifecycle cannot claim screenshot/frame capture completion."),
+        ("rendered_visual_evidence_claimed", "Editor layout/bootstrap lifecycle cannot claim rendered visual evidence."),
+        ("rendered_visual_evidence_verified", "Editor layout/bootstrap lifecycle cannot verify rendered visual evidence."),
+        ("visual_material_capture_readiness_verified", "Editor layout/bootstrap lifecycle cannot verify screenshot artifact readiness."),
+        ("visual_material_rendered_evidence_gate_attempted", "Editor layout/bootstrap lifecycle must not attempt rendered visual evidence."),
+        ("visual_material_rendered_evidence_gate_verified", "Editor layout/bootstrap lifecycle cannot verify rendered visual evidence."),
+        ("visual_material_gate_claimed", "Editor layout/bootstrap lifecycle cannot claim visual/material proof."),
+        ("visual_material_gate_verified", "Editor layout/bootstrap lifecycle cannot verify visual/material proof."),
+        ("full_runtime_character_proof_claimed", "Editor layout/bootstrap lifecycle cannot claim full runtime character proof."),
+        ("full_runtime_character_proof_verified", "Editor layout/bootstrap lifecycle cannot verify full runtime character proof."),
+        ("runtime_character_proof_claimed", "Editor layout/bootstrap lifecycle cannot claim full runtime character proof."),
+        ("runtime_character_proof_verified", "Editor layout/bootstrap lifecycle cannot verify full runtime character proof."),
+    ):
+        if report.get(field) is True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, message)
+
+
 def _validate_direct_procprefab_content_assertions(
     report: Mapping[str, Any],
     semantics: Mapping[str, Any],
@@ -5124,12 +5352,16 @@ def _execute_live_editor_smoke(
     alternate_editor_window_visible_shell_mode = (
         diagnostic_mode == "alternate-editor-window-discovery-visible-shell-materialization"
     )
+    editor_layout_bootstrap_window_lifecycle_mode = (
+        diagnostic_mode == "editor-layout-bootstrap-window-lifecycle-deep-dive"
+    )
     asset_processor_alignment_family_mode = (
         asset_processor_alignment_repair_mode
         or operator_ap_alignment_remediation_verification_mode
         or focused_viewport_materialization_mode
         or editor_main_window_activation_deep_dive_mode
         or alternate_editor_window_visible_shell_mode
+        or editor_layout_bootstrap_window_lifecycle_mode
     )
     safe_temp_scene_exercise_mode = (
         safe_temp_visual_scene_context_mode
@@ -5217,6 +5449,7 @@ def _execute_live_editor_smoke(
                 "MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION",
                 "MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE",
                 "MAXINE_ENABLE_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL",
+                "MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE",
             )
         }
         os.environ["O3DE_ENGINE_ROOT"] = str(engine_root)
@@ -5249,6 +5482,12 @@ def _execute_live_editor_smoke(
             os.environ["MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
             os.environ["MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] = "1"
             os.environ["MAXINE_ENABLE_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL"] = "1"
+        if editor_layout_bootstrap_window_lifecycle_mode:
+            os.environ["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+            os.environ["MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
+            os.environ["MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] = "1"
+            os.environ["MAXINE_ENABLE_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL"] = "1"
+            os.environ["MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE"] = "1"
         if screenshot_capture_artifact_readiness_mode:
             os.environ["MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_ROOT"] = str(output_dir)
             os.environ["MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH"] = str(
@@ -5929,6 +6168,17 @@ def _execute_live_editor_smoke(
         editor_env.setdefault("MAXINE_ALLOW_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE", "1")
         editor_env.setdefault("MAXINE_ENABLE_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL", "1")
         editor_env.setdefault("MAXINE_ALLOW_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL", "1")
+    if editor_layout_bootstrap_window_lifecycle_mode:
+        editor_env.setdefault("MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION", "1")
+        editor_env.setdefault("MAXINE_ALLOW_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION", "1")
+        editor_env.setdefault("MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION", "1")
+        editor_env.setdefault("MAXINE_ALLOW_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION", "1")
+        editor_env.setdefault("MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE", "1")
+        editor_env.setdefault("MAXINE_ALLOW_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE", "1")
+        editor_env.setdefault("MAXINE_ENABLE_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL", "1")
+        editor_env.setdefault("MAXINE_ALLOW_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL", "1")
+        editor_env.setdefault("MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE", "1")
+        editor_env.setdefault("MAXINE_ALLOW_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE", "1")
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_NAME"] = level_name_for_editor
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_PATH"] = str(project_path / temp_level_rel)
     editor_env["MAXINE_EDITOR_SMOKE_ALLOW_TEMP_SANDBOX_LEVEL"] = "1"
@@ -7959,6 +8209,21 @@ def _parse_args() -> argparse.Namespace:
         help="Set the explicit gated marker for alternate Editor window discovery / visible shell materialization.",
     )
     parser.add_argument(
+        "--diagnose-editor-layout-bootstrap-window-lifecycle",
+        action="store_true",
+        help="Run Editor layout/bootstrap/window lifecycle deep-dive readiness.",
+    )
+    parser.add_argument(
+        "--diagnose-editor-layout-lifecycle",
+        action="store_true",
+        help="Alias for Editor layout/bootstrap/window lifecycle deep-dive readiness.",
+    )
+    parser.add_argument(
+        "--enable-editor-layout-bootstrap-window-lifecycle-fixture",
+        action="store_true",
+        help="Set the explicit gated marker for Editor layout/bootstrap/window lifecycle deep dive.",
+    )
+    parser.add_argument(
         "--editor-render-capture-rhi",
         choices=sorted(NON_NULL_RENDER_CAPTURE_RHIS),
         default=None,
@@ -8274,6 +8539,33 @@ def main() -> int:
         env_map["MAXINE_ALLOW_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
         env_map["MAXINE_ALLOW_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] = "1"
         env_map["MAXINE_ALLOW_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL"] = "1"
+    if (
+        args.diagnose_editor_layout_bootstrap_window_lifecycle
+        or args.diagnose_editor_layout_lifecycle
+        or args.enable_editor_layout_bootstrap_window_lifecycle_fixture
+    ):
+        diagnostic_mode = "editor-layout-bootstrap-window-lifecycle-deep-dive"
+        env_map["MAXINE_ENABLE_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] = "1"
+        env_map["MAXINE_ENABLE_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] = "1"
+        env_map["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+        env_map["MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] = "1"
+        env_map["MAXINE_ENABLE_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE"] = "1"
+    if args.enable_editor_layout_bootstrap_window_lifecycle_fixture:
+        env_map["MAXINE_ALLOW_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] = "1"
+        env_map["MAXINE_ALLOW_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] = "1"
+        env_map["MAXINE_ALLOW_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+        env_map["MAXINE_ALLOW_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] = "1"
+        env_map["MAXINE_ALLOW_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE"] = "1"
     if args.editor_render_capture_rhi:
         env_map["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = args.editor_render_capture_rhi
     result = run_editor_smoke_corpus(
