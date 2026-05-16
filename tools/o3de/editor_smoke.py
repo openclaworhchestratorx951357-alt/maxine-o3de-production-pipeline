@@ -196,6 +196,11 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_layout_bootstrap_window_lifecycle_smoke.py",
+    "editor-bootstrap-wait-shell-ready-synchronization": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_bootstrap_wait_shell_ready_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -394,6 +399,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_alternate_editor_window_discovery_visible_shell(report, result)
         if diagnostic_mode == "editor-layout-bootstrap-window-lifecycle-deep-dive":
             _validate_editor_layout_bootstrap_window_lifecycle(report, result)
+        if diagnostic_mode == "editor-bootstrap-wait-shell-ready-synchronization":
+            _validate_editor_bootstrap_wait_shell_ready_synchronization(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -3993,6 +4000,226 @@ def _validate_editor_layout_bootstrap_window_lifecycle(
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, message)
 
 
+def _validate_editor_bootstrap_wait_shell_ready_synchronization(
+    report: Mapping[str, Any],
+    result: ValidationResult,
+) -> None:
+    _validate_editor_layout_bootstrap_window_lifecycle(report, result)
+    source_blocked = (
+        report.get("editor_bootstrap_wait_shell_ready_synchronization_source_validated") is False
+        or str(report.get("editor_bootstrap_wait_shell_ready_synchronization_state", "")).strip()
+        == "blocked_by_editor_bootstrap_wait_shell_ready_source_validation_unavailable"
+    )
+    preconditions_verified = (
+        report.get("ap_alignment_preserved") is True
+        and report.get("editor_asset_processor_negotiation_preserved") is True
+        and report.get("operator_ap_alignment_remediation_verification_verified") is True
+        and report.get("safe_temp_visual_scene_context_preserved") is True
+        and report.get("temp_visual_scene_context_exercise_verified") is True
+        and report.get("temp_visual_scene_cleanup_completed") is True
+    )
+    precondition_blocked = not source_blocked and not preconditions_verified
+
+    if not source_blocked and report.get("editor_bootstrap_wait_shell_ready_synchronization_attempted") is not True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor shell-ready synchronization requires an attempted diagnostic.")
+    if not str(report.get("editor_bootstrap_wait_shell_ready_synchronization_state", "")).strip():
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor shell-ready synchronization requires a state.")
+    if (
+        report.get("editor_bootstrap_wait_shell_ready_synchronization_verified") is not True
+        and not str(report.get("editor_bootstrap_wait_shell_ready_synchronization_blocker", "")).strip()
+    ):
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Unverified Editor shell-ready synchronization requires a typed blocker.")
+
+    if report.get("editor_layout_mutation_attempted") is True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor shell-ready synchronization must not mutate Editor layout.")
+    if report.get("editor_user_layout_mutation_attempted") is True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor shell-ready synchronization must not mutate Editor layout or user layout settings.")
+
+    launch = report.get("editor_launch_command_classification_sanitized")
+    if not isinstance(launch, Mapping):
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor shell-ready synchronization requires sanitized launch command classification.")
+    else:
+        if (
+            launch.get("raw_command_line_emitted") is True
+            or launch.get("raw_environment_emitted") is True
+            or "command_line" in launch
+            or "environment" in launch
+        ):
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor shell-ready synchronization must not emit raw command lines or environment dumps.")
+
+    if not source_blocked and not precondition_blocked:
+        for field, label in {
+            "editor_launch_command_classification_attempted": "launch command classification",
+            "editor_launch_visual_lane_flags_classified": "visual lane launch flag classification",
+            "editor_automation_script_timing_classification_attempted": "automation script timing classification",
+            "editor_deferred_diagnostic_strategy_attempted": "deferred diagnostic strategy classification",
+            "editor_late_diagnostic_execution_attempted": "late diagnostic execution classification",
+            "editor_qtimer_shell_ready_strategy_attempted": "QTimer shell-ready strategy classification",
+            "editor_event_loop_posted_callback_attempted": "event-loop posted callback classification",
+            "editor_notify_initialized_wait_attempted": "NotifyEditorInitialized wait classification",
+            "editor_app_exec_boundary_wait_attempted": "app->exec boundary wait classification",
+            "editor_shell_ready_event_wait_attempted": "shell-ready event wait classification",
+            "visible_editor_shell_after_shell_ready_attempted": "visible Editor shell after shell-ready",
+            "default_viewport_pane_discovery_after_shell_ready_attempted": "default viewport pane discovery after shell-ready",
+            "default_viewport_widget_discovery_after_shell_ready_attempted": "default viewport widget discovery after shell-ready",
+            "active_default_viewport_after_shell_ready_attempted": "active/default viewport after shell-ready",
+            "active_default_viewport_window_handle_after_shell_ready_attempted": (
+                "active/default viewport window handle after shell-ready"
+            ),
+            "atom_swapchain_after_shell_ready_attempted": "Atom SwapChain after shell-ready",
+            "framecapture_target_after_shell_ready_attempted": "FrameCapture target after shell-ready",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Editor shell-ready synchronization requires {label}.")
+
+    for field, blocker_field, label in (
+        (
+            "editor_deferred_diagnostic_strategy_verified",
+            "editor_deferred_diagnostic_strategy_blocker",
+            "deferred diagnostic strategy",
+        ),
+        (
+            "editor_late_diagnostic_execution_verified",
+            "editor_late_diagnostic_execution_blocker",
+            "late diagnostic execution",
+        ),
+        (
+            "editor_qtimer_shell_ready_strategy_verified",
+            "editor_qtimer_shell_ready_strategy_blocker",
+            "QTimer shell-ready strategy",
+        ),
+        (
+            "editor_event_loop_posted_callback_verified",
+            "editor_event_loop_posted_callback_blocker",
+            "event-loop posted callback",
+        ),
+        (
+            "editor_notify_initialized_wait_verified",
+            "editor_notify_initialized_wait_blocker",
+            "NotifyEditorInitialized wait",
+        ),
+        (
+            "editor_app_exec_boundary_wait_verified",
+            "editor_app_exec_boundary_wait_blocker",
+            "app->exec boundary wait",
+        ),
+        (
+            "editor_shell_ready_event_wait_verified",
+            "editor_shell_ready_event_wait_blocker",
+            "shell-ready event wait",
+        ),
+        (
+            "editor_layout_restore_state_after_shell_ready_verified",
+            "editor_layout_restore_state_after_shell_ready_blocker",
+            "layout restore after shell-ready",
+        ),
+        (
+            "visible_editor_shell_after_shell_ready_verified",
+            "visible_editor_shell_after_shell_ready_blocker",
+            "visible Editor shell after shell-ready",
+        ),
+        (
+            "visible_editor_shell_materialization_after_shell_ready_verified",
+            "visible_editor_shell_materialization_after_shell_ready_blocker",
+            "visible Editor shell materialization after shell-ready",
+        ),
+    ):
+        if source_blocked or precondition_blocked:
+            continue
+        if report.get(field) is not True and not str(report.get(blocker_field, "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Unverified {label} requires a typed blocker.")
+
+    if not source_blocked and not precondition_blocked:
+        if report.get("default_viewport_viewpane_registration_preserved") is not True:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "Editor shell-ready synchronization must preserve default viewport ViewPane registration evidence.",
+            )
+        if int(report.get("editor_late_diagnostic_timeout_seconds", 0) or 0) < 1:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor shell-ready synchronization requires a bounded late diagnostic timeout.")
+
+    if report.get("editor_late_diagnostic_execution_verified") is True:
+        for field, label in {
+            "editor_bootstrap_wait_shell_ready_synchronization_verified": "shell-ready synchronization verification",
+            "editor_bootstrap_wait_shell_ready_synchronization_source_validated": "shell-ready source validation",
+            "editor_late_diagnostic_cleanup_completed": "late diagnostic cleanup completion",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"Late diagnostic execution verified=true requires {label}.",
+                )
+        if not str(report.get("editor_shell_ready_synchronization_point", "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Late diagnostic execution requires a typed synchronization point.")
+
+    readiness_fields = (
+        (
+            "default_viewport_pane_discovery_after_shell_ready_verified",
+            "default_viewport_pane_discovery_after_shell_ready_blocker",
+            "default viewport pane discovery after shell-ready",
+        ),
+        (
+            "default_viewport_pane_activation_after_shell_ready_verified",
+            "default_viewport_pane_activation_after_shell_ready_blocker",
+            "default viewport pane activation after shell-ready",
+        ),
+        (
+            "default_viewport_widget_discovery_after_shell_ready_verified",
+            "default_viewport_widget_discovery_after_shell_ready_blocker",
+            "default viewport widget discovery after shell-ready",
+        ),
+        (
+            "active_default_viewport_after_shell_ready_verified",
+            "active_default_viewport_after_shell_ready_blocker",
+            "active/default viewport after shell-ready",
+        ),
+        (
+            "active_default_viewport_window_handle_after_shell_ready_verified",
+            "active_default_viewport_window_handle_after_shell_ready_blocker",
+            "active/default viewport window handle after shell-ready",
+        ),
+        (
+            "atom_swapchain_after_shell_ready_verified",
+            "atom_swapchain_after_shell_ready_blocker",
+            "Atom SwapChain after shell-ready",
+        ),
+        (
+            "framecapture_target_after_shell_ready_verified",
+            "framecapture_target_after_shell_ready_blocker",
+            "FrameCapture target after shell-ready",
+        ),
+    )
+    if source_blocked or precondition_blocked:
+        readiness_fields = ()
+    for field, blocker_field, label in readiness_fields:
+        if report.get(field) is not True and not str(report.get(blocker_field, "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Unverified {label} requires a typed blocker.")
+
+    for field, message in (
+        ("asset_cache_deletion_attempted", "Editor shell-ready synchronization must not delete Asset Cache."),
+        ("asset_processor_database_wipe_attempted", "Editor shell-ready synchronization must not wipe AP databases."),
+        ("asset_cache_deleted", "Editor shell-ready synchronization must not delete Asset Cache."),
+        ("screenshot_capture_requested", "Editor shell-ready synchronization must not request screenshot/frame capture."),
+        ("screenshot_capture_completed", "Editor shell-ready synchronization cannot claim screenshot/frame capture completion."),
+        ("editor_visual_material_capture_requested", "Editor shell-ready synchronization must not request screenshot/frame capture."),
+        ("editor_visual_material_capture_request_accepted", "Editor shell-ready synchronization must not accept screenshot/frame capture."),
+        ("editor_visual_material_capture_completed", "Editor shell-ready synchronization cannot claim screenshot/frame capture completion."),
+        ("rendered_visual_evidence_claimed", "Editor shell-ready synchronization cannot claim rendered visual evidence."),
+        ("rendered_visual_evidence_verified", "Editor shell-ready synchronization cannot verify rendered visual evidence."),
+        ("visual_material_capture_readiness_verified", "Editor shell-ready synchronization cannot verify screenshot artifact readiness."),
+        ("visual_material_rendered_evidence_gate_attempted", "Editor shell-ready synchronization must not attempt rendered visual evidence."),
+        ("visual_material_rendered_evidence_gate_verified", "Editor shell-ready synchronization cannot verify rendered visual evidence."),
+        ("visual_material_gate_claimed", "Editor shell-ready synchronization cannot claim visual/material proof."),
+        ("visual_material_gate_verified", "Editor shell-ready synchronization cannot verify visual/material proof."),
+        ("full_runtime_character_proof_claimed", "Editor shell-ready synchronization cannot claim full runtime character proof."),
+        ("full_runtime_character_proof_verified", "Editor shell-ready synchronization cannot verify full runtime character proof."),
+        ("runtime_character_proof_claimed", "Editor shell-ready synchronization cannot claim full runtime character proof."),
+        ("runtime_character_proof_verified", "Editor shell-ready synchronization cannot verify full runtime character proof."),
+    ):
+        if report.get(field) is True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, message)
+
+
 def _validate_direct_procprefab_content_assertions(
     report: Mapping[str, Any],
     semantics: Mapping[str, Any],
@@ -5355,6 +5582,9 @@ def _execute_live_editor_smoke(
     editor_layout_bootstrap_window_lifecycle_mode = (
         diagnostic_mode == "editor-layout-bootstrap-window-lifecycle-deep-dive"
     )
+    editor_bootstrap_wait_shell_ready_mode = (
+        diagnostic_mode == "editor-bootstrap-wait-shell-ready-synchronization"
+    )
     asset_processor_alignment_family_mode = (
         asset_processor_alignment_repair_mode
         or operator_ap_alignment_remediation_verification_mode
@@ -5362,6 +5592,7 @@ def _execute_live_editor_smoke(
         or editor_main_window_activation_deep_dive_mode
         or alternate_editor_window_visible_shell_mode
         or editor_layout_bootstrap_window_lifecycle_mode
+        or editor_bootstrap_wait_shell_ready_mode
     )
     safe_temp_scene_exercise_mode = (
         safe_temp_visual_scene_context_mode
@@ -5450,6 +5681,7 @@ def _execute_live_editor_smoke(
                 "MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE",
                 "MAXINE_ENABLE_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL",
                 "MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE",
+                "MAXINE_ENABLE_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION",
             )
         }
         os.environ["O3DE_ENGINE_ROOT"] = str(engine_root)
@@ -5488,6 +5720,13 @@ def _execute_live_editor_smoke(
             os.environ["MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] = "1"
             os.environ["MAXINE_ENABLE_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL"] = "1"
             os.environ["MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE"] = "1"
+        if editor_bootstrap_wait_shell_ready_mode:
+            os.environ["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+            os.environ["MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
+            os.environ["MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] = "1"
+            os.environ["MAXINE_ENABLE_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL"] = "1"
+            os.environ["MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE"] = "1"
+            os.environ["MAXINE_ENABLE_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION"] = "1"
         if screenshot_capture_artifact_readiness_mode:
             os.environ["MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_ROOT"] = str(output_dir)
             os.environ["MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH"] = str(
@@ -6179,6 +6418,19 @@ def _execute_live_editor_smoke(
         editor_env.setdefault("MAXINE_ALLOW_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL", "1")
         editor_env.setdefault("MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE", "1")
         editor_env.setdefault("MAXINE_ALLOW_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE", "1")
+    if editor_bootstrap_wait_shell_ready_mode:
+        editor_env.setdefault("MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION", "1")
+        editor_env.setdefault("MAXINE_ALLOW_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION", "1")
+        editor_env.setdefault("MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION", "1")
+        editor_env.setdefault("MAXINE_ALLOW_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION", "1")
+        editor_env.setdefault("MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE", "1")
+        editor_env.setdefault("MAXINE_ALLOW_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE", "1")
+        editor_env.setdefault("MAXINE_ENABLE_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL", "1")
+        editor_env.setdefault("MAXINE_ALLOW_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL", "1")
+        editor_env.setdefault("MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE", "1")
+        editor_env.setdefault("MAXINE_ALLOW_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE", "1")
+        editor_env.setdefault("MAXINE_ENABLE_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION", "1")
+        editor_env.setdefault("MAXINE_ALLOW_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION", "1")
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_NAME"] = level_name_for_editor
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_PATH"] = str(project_path / temp_level_rel)
     editor_env["MAXINE_EDITOR_SMOKE_ALLOW_TEMP_SANDBOX_LEVEL"] = "1"
@@ -8224,6 +8476,21 @@ def _parse_args() -> argparse.Namespace:
         help="Set the explicit gated marker for Editor layout/bootstrap/window lifecycle deep dive.",
     )
     parser.add_argument(
+        "--diagnose-editor-bootstrap-wait-shell-ready-synchronization",
+        action="store_true",
+        help="Run Editor bootstrap wait / shell-ready synchronization readiness.",
+    )
+    parser.add_argument(
+        "--diagnose-editor-shell-ready-synchronization",
+        action="store_true",
+        help="Alias for Editor bootstrap wait / shell-ready synchronization readiness.",
+    )
+    parser.add_argument(
+        "--enable-editor-bootstrap-wait-shell-ready-synchronization-fixture",
+        action="store_true",
+        help="Set the explicit gated marker for Editor bootstrap wait / shell-ready synchronization.",
+    )
+    parser.add_argument(
         "--editor-render-capture-rhi",
         choices=sorted(NON_NULL_RENDER_CAPTURE_RHIS),
         default=None,
@@ -8566,6 +8833,35 @@ def main() -> int:
         env_map["MAXINE_ALLOW_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] = "1"
         env_map["MAXINE_ALLOW_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL"] = "1"
         env_map["MAXINE_ALLOW_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE"] = "1"
+    if (
+        args.diagnose_editor_bootstrap_wait_shell_ready_synchronization
+        or args.diagnose_editor_shell_ready_synchronization
+        or args.enable_editor_bootstrap_wait_shell_ready_synchronization_fixture
+    ):
+        diagnostic_mode = "editor-bootstrap-wait-shell-ready-synchronization"
+        env_map["MAXINE_ENABLE_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] = "1"
+        env_map["MAXINE_ENABLE_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] = "1"
+        env_map["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+        env_map["MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] = "1"
+        env_map["MAXINE_ENABLE_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION"] = "1"
+    if args.enable_editor_bootstrap_wait_shell_ready_synchronization_fixture:
+        env_map["MAXINE_ALLOW_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] = "1"
+        env_map["MAXINE_ALLOW_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] = "1"
+        env_map["MAXINE_ALLOW_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+        env_map["MAXINE_ALLOW_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] = "1"
+        env_map["MAXINE_ALLOW_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION"] = "1"
     if args.editor_render_capture_rhi:
         env_map["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = args.editor_render_capture_rhi
     result = run_editor_smoke_corpus(

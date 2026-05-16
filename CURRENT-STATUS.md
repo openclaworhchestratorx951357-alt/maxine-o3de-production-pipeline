@@ -1,8 +1,28 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Editor Layout Bootstrap / Window Lifecycle Deep-Dive v1 is active on `codex/editor-layout-bootstrap-window-lifecycle-deep-dive-v1`:
-  - PR #179 was verified merged into `main` at `6109e2224fb942538297950bbbf1a1e3f60c297c`; this branch was created from that updated `main`
+- Editor Bootstrap Wait / Shell-Ready Synchronization v1 is active on `codex/editor-bootstrap-wait-shell-ready-synchronization-v1`:
+  - PR #180 was verified merged into `main` at `857aae6460ee69e96d713fea717ea887f4f3d42e`; this branch was created from that updated `main`
+  - this slice source-validates and exercises Editor bootstrap wait / shell-ready synchronization after verified AP alignment, preserving the operator-run AP remediation success from PR #176 and verified Editor/AP negotiation after remediation
+  - it preserves the safe temp visual scene/display context proven in PR #171/#172/#173/#174/#175/#176/#177/#178/#179/#180 under `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context`
+  - it preserves PR #180's lifecycle finding that the prior automation path executed before shell-ready
+  - it determines whether a bounded late-runner/deferred/shell-ready synchronization path exists beyond the `--runpython` pre-shell timing boundary
+  - it records whether late diagnostic execution after shell-ready is verified or still blocked, without treating source validation alone as shell-ready proof
+  - it blocks layout/user-setting mutation unless source-validated, reversible, run-scoped, and explicitly safe
+  - it reruns visible Editor shell, default viewport pane/widget, active/default viewport, Atom SwapChain, and FrameCapture target readiness-only probes when source-validated preconditions allow
+  - live evidence: `artifacts/o3de-integration/editor-smoke/editor-smoke-20260516T171937Z/editor_smoke_live_report.json` and `artifacts/o3de-integration/editor-smoke/editor-smoke-20260516T171937Z/progress.jsonl`
+  - live result: AP alignment preserved and verified, Editor/AP negotiation preserved and verified, selected RHI `dx12`, non-null Editor launch verified, safe temp scene path `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/editor_safe_temp_visual_scene_display_context_20260516t171937z`, cleanup completed, and no defaultlevel/production/production character mutation detected
+  - sanitized launch classification preserved exact `--runpython`, `--autotest_mode`, `--skipWelcomeScreenDialog`, non-null `dx12`, and shell-suppression state without emitting raw command lines, script paths, or environment dumps
+  - shell-ready synchronization remains blocked by `blocked_by_editor_shell_ready_synchronization_unavailable`; the prior automation timing finding is preserved as `verified_automation_script_executes_before_shell_ready`
+  - deferred diagnostic strategy remains blocked by `blocked_by_editor_deferred_diagnostic_strategy_unavailable`; late diagnostic execution was attempted and remains unverified with `blocked_by_editor_late_diagnostic_execution_unavailable`; the synchronization point is recorded as `after_app_exec_unverified`
+  - QTimer/event-loop/NotifyEditorInitialized/app->exec/shell-ready waits remain typed blocked readiness states, not shell proof
+  - default viewport ViewPane registration preservation is verified and default viewport widget discovery after shell-ready remains verified, but default viewport pane discovery still reports `blocked_by_default_viewport_pane_unavailable`
+  - visible Editor shell after shell-ready remains blocked by `blocked_by_visible_editor_shell_unavailable`; visible shell materialization after shell-ready remains blocked by `blocked_by_visible_editor_shell_materialization_unavailable`
+  - readiness-only probes still report active/default viewport window-handle blocked by `blocked_by_editor_active_viewport_window_handle_unavailable`, Atom SwapChain blocked by `blocked_by_swapchain_probe_unavailable`, and FrameCapture target blocked by `blocked_by_active_viewport_window_handle_unavailable`
+  - this slice does not request screenshot capture, does not complete screenshot capture, does not verify rendered visual evidence, does not verify material correctness, does not verify character visual presence, and does not satisfy `visual_material`
+  - full runtime character proof remains false, release packaging/publication/production-ready claims remain false, and no Asset Cache deletion or AP database/cache wipe is allowed
+- Editor Layout Bootstrap / Window Lifecycle Deep-Dive v1 was merged through PR #180 on `codex/editor-layout-bootstrap-window-lifecycle-deep-dive-v1`:
+  - PR #179 was verified merged into `main` at `6109e2224fb942538297950bbbf1a1e3f60c297c`; PR #180 merged into `main` at `857aae6460ee69e96d713fea717ea887f4f3d42e`
   - this slice source-validates and exercises Editor layout/bootstrap/window lifecycle diagnostics after verified AP alignment, preserving the operator-run AP remediation success from PR #176 and verified Editor/AP negotiation after remediation
   - it reuses the safe temp visual scene/display context proven in PR #171/#172/#173/#174/#175/#176/#177/#178/#179 under `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context`
   - it classifies whether the missing visible Editor shell is caused by bootstrap timing, automation script timing, hidden/tool-only shell state, layout suppression, missing view-pane registration, or another source-validated lifecycle blocker

@@ -129,6 +129,7 @@
         "editor-main-window-activation-materialization-deep-dive",
         "alternate-editor-window-discovery-visible-shell-materialization",
         "editor-layout-bootstrap-window-lifecycle-deep-dive",
+        "editor-bootstrap-wait-shell-ready-synchronization",
         "full"
       ]
     },

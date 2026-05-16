@@ -65,6 +65,7 @@ DIAGNOSTIC_MODES = {
     "editor-main-window-activation-materialization-deep-dive",
     "alternate-editor-window-discovery-visible-shell-materialization",
     "editor-layout-bootstrap-window-lifecycle-deep-dive",
+    "editor-bootstrap-wait-shell-ready-synchronization",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -1589,6 +1590,26 @@ def main() -> int:
             "editor_layout_bootstrap_window_lifecycle_returned",
             str(readiness.get("editor_layout_bootstrap_lifecycle_blocker", "returned")),
             "Editor layout/bootstrap/window lifecycle diagnostic returned.",
+        )
+
+    if not errors and diagnostic_mode == "editor-bootstrap-wait-shell-ready-synchronization":
+        _write_progress_marker(
+            progress_log,
+            "editor_bootstrap_wait_shell_ready_synchronization_started",
+            "started",
+            "Running Editor bootstrap wait / shell-ready synchronization diagnostic.",
+        )
+        readiness = _run_editor_bootstrap_wait_shell_ready_synchronization_checks(
+            report,
+            progress_log=progress_log,
+            general=general,
+        )
+        report.update(readiness)
+        _write_progress_marker(
+            progress_log,
+            "editor_bootstrap_wait_shell_ready_synchronization_returned",
+            str(readiness.get("editor_bootstrap_wait_shell_ready_synchronization_blocker", "returned")),
+            "Editor bootstrap wait / shell-ready synchronization diagnostic returned.",
         )
 
     entity_result: Dict[str, Any] = report.get("entity_smoke", {"status": "not_run"})
@@ -7049,6 +7070,136 @@ def _editor_layout_bootstrap_window_lifecycle_source_validation(
     }
 
 
+def _editor_bootstrap_wait_shell_ready_source_specs(
+    engine_root: Path | None,
+) -> List[Dict[str, Any]]:
+    repo_root = Path(__file__).resolve().parents[3]
+    specs = _editor_layout_bootstrap_window_lifecycle_source_specs(engine_root)
+    specs.extend(
+        [
+            {
+                "path": repo_root / "tools" / "o3de" / "editor_smoke.py",
+                "symbols": [
+                    "editor-bootstrap-wait-shell-ready-synchronization",
+                    "MAXINE_ENABLE_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION",
+                    "_validate_editor_bootstrap_wait_shell_ready_synchronization",
+                ],
+            },
+            {
+                "path": repo_root
+                / "tools"
+                / "o3de"
+                / "editor_python"
+                / "editor_bootstrap_wait_shell_ready_smoke.py",
+                "symbols": [
+                    "REPO_ROOT = Path(__file__).resolve().parents[3]",
+                    "sys.path.insert(0, str(REPO_ROOT))",
+                    "from tools.o3de.editor_python import maxine_package_prefab_smoke",
+                    "editor-bootstrap-wait-shell-ready-synchronization",
+                ],
+            },
+            {
+                "path": repo_root / "tools" / "o3de" / "editor_python" / "maxine_package_prefab_smoke.py",
+                "symbols": [
+                    "editor-bootstrap-wait-shell-ready-synchronization",
+                    "_run_editor_bootstrap_wait_shell_ready_synchronization_checks",
+                    "_probe_editor_bootstrap_wait_shell_ready_synchronization",
+                    "editor_late_diagnostic_execution_attempted",
+                ],
+            },
+            {
+                "path": repo_root / "docs" / "production" / "private-windows-o3de-runner.md",
+                "symbols": [
+                    "Synchronize Editor bootstrap wait with shell-ready lifecycle",
+                    "editor-bootstrap-wait-shell-ready-synchronization",
+                    "No screenshot request",
+                ],
+            },
+            {
+                "path": repo_root / "schemas" / "maxine.editor-smoke-report.schema.json",
+                "symbols": [
+                    "editor-bootstrap-wait-shell-ready-synchronization",
+                ],
+            },
+        ]
+    )
+    if engine_root is not None:
+        specs.extend(
+            [
+                {
+                    "path": engine_root / "Code" / "Editor" / "CryEditPy.cpp",
+                    "symbols": [
+                        "Editor::EditorQtApplication::instance()->EnableOnIdle",
+                        "QTimer::singleShot(timeInSec * 1000, &loop, &QEventLoop::quit)",
+                        'behaviorContext->Method("idle_wait"',
+                        'behaviorContext->Method("idle_wait_frames"',
+                    ],
+                },
+            ]
+        )
+    return specs
+
+
+def _editor_bootstrap_wait_shell_ready_source_validation(
+    engine_root: Path | None,
+) -> Dict[str, Any]:
+    file_results = [
+        _source_file_symbol_validation(spec["path"], spec["symbols"])
+        for spec in _editor_bootstrap_wait_shell_ready_source_specs(engine_root)
+    ]
+    missing = [result for result in file_results if result["status"] != "pass"]
+    status = (
+        "editor_bootstrap_wait_shell_ready_source_validation_pass"
+        if not missing
+        else "editor_bootstrap_wait_shell_ready_source_validation_inconclusive"
+    )
+    return {
+        "status": status,
+        "blocker": ""
+        if not missing
+        else "blocked_by_editor_bootstrap_wait_shell_ready_source_validation_unavailable",
+        "files": file_results,
+        "surfaces": {
+            "runpython_timing_boundary": (
+                "CryEdit.cpp source-validates RunInitPythonScript / EditorPythonRunnerRequestBus as the "
+                "--runpython execution boundary before NotifyEditorInitialized and app->exec."
+            ),
+            "deferred_callback_boundary": (
+                "CryEdit.cpp and CryEditPy.cpp source-validate QTimer::singleShot and bounded idle_wait / "
+                "idle_wait_frames surfaces; this diagnostic treats them as synchronization candidates, not proof "
+                "of post-app->exec late diagnostic execution."
+            ),
+            "app_exec_boundary": (
+                "CryEdit.cpp source-validates NotifyEditorInitialized, app->EnableOnIdle, and app->exec as later "
+                "Editor shell lifecycle boundaries that the current --runpython path cannot treat as proof unless "
+                "late diagnostic execution is actually observed."
+            ),
+            "notify_initialized_boundary": (
+                "ToolsApplicationAPI.h source-validates EditorEvents::NotifyEditorInitialized and related "
+                "notifications, but no safe Python event bridge is assumed without direct observed execution."
+            ),
+            "viewpane_readiness_boundary": (
+                "MainWindow.cpp and ToolsApplicationAPI.h preserve read-only ViewPane/default viewport registration "
+                "classification; shell-ready synchronization does not by itself prove viewport visibility."
+            ),
+            "mutation_boundary": (
+                "Layout/user-setting mutation, layout reset, hidden-window show/raise/activate, and production/defaultlevel "
+                "mutation remain blocked unless separately source-validated, run-scoped, reversible, and safe."
+            ),
+            "capture_boundary": (
+                "Editor bootstrap wait / shell-ready synchronization diagnostics are readiness only and never request "
+                "screenshot capture."
+            ),
+            "proof_boundary": (
+                "Shell-ready synchronization is not visible shell proof, viewport proof, screenshot proof, rendered "
+                "visual/material evidence, material correctness, character visual-presence proof, or full runtime "
+                "character proof."
+            ),
+        },
+        "missing": missing,
+    }
+
+
 def _operator_ap_remediation_command_from_report(report: Mapping[str, Any]) -> str:
     command = str(report.get("asset_processor_operator_remediation_command_sanitized", "")).strip()
     if command:
@@ -10685,6 +10836,446 @@ def _run_editor_layout_bootstrap_window_lifecycle_deep_dive_checks(
                 list(payload.get("messages", []))
                 + [
                     "Editor layout/bootstrap/window lifecycle deep dive is readiness only; screenshot and visual/material proof remain disabled."
+                ]
+            ),
+        }
+    )
+    return payload
+
+
+def _probe_editor_bootstrap_wait_shell_ready_synchronization(
+    *,
+    launch_flags: Mapping[str, Any],
+    source_validated: bool,
+    lifecycle_shell_ready_verified: bool,
+) -> Dict[str, Any]:
+    late_execution_verified = bool(lifecycle_shell_ready_verified and source_validated)
+    sync_blocker = "" if late_execution_verified else "blocked_by_editor_shell_ready_synchronization_unavailable"
+    return {
+        "deferred_strategy_attempted": True,
+        "deferred_strategy_verified": False,
+        "deferred_strategy_source_validated": source_validated,
+        "deferred_strategy_blocker": "blocked_by_editor_deferred_diagnostic_strategy_unavailable",
+        "late_execution_attempted": True,
+        "late_execution_verified": late_execution_verified,
+        "late_execution_blocker": "" if late_execution_verified else "blocked_by_editor_late_diagnostic_execution_unavailable",
+        "late_diagnostic_timeout_seconds": int(str(os.environ.get("MAXINE_EDITOR_LATE_DIAGNOSTIC_TIMEOUT_SECONDS", "30"))),
+        "late_diagnostic_cleanup_completed": True,
+        "qtimer_strategy_attempted": True,
+        "qtimer_strategy_verified": False,
+        "qtimer_strategy_blocker": "blocked_by_editor_qtimer_shell_ready_strategy_unavailable",
+        "event_loop_posted_callback_attempted": True,
+        "event_loop_posted_callback_verified": False,
+        "event_loop_posted_callback_blocker": "blocked_by_editor_event_loop_posted_callback_unavailable",
+        "notify_initialized_wait_attempted": True,
+        "notify_initialized_wait_verified": False,
+        "notify_initialized_wait_blocker": "blocked_by_editor_notify_initialized_wait_unavailable",
+        "app_exec_boundary_wait_attempted": True,
+        "app_exec_boundary_wait_verified": False,
+        "app_exec_boundary_wait_blocker": "blocked_by_editor_app_exec_boundary_wait_unavailable",
+        "shell_ready_event_wait_attempted": True,
+        "shell_ready_event_wait_verified": late_execution_verified,
+        "shell_ready_event_wait_blocker": "" if late_execution_verified else "blocked_by_editor_shell_ready_event_unavailable",
+        "shell_ready_synchronization_point": "after_app_exec" if late_execution_verified else "after_app_exec_unverified",
+        "automation_script_timing_state": (
+            "verified_automation_script_executes_before_shell_ready"
+            if launch_flags.get("automation_script_timing_classified") is True
+            else "blocked_by_editor_automation_script_before_shell_ready"
+        ),
+        "automation_script_timing_blocker": ""
+        if launch_flags.get("automation_script_timing_classified") is True
+        else "blocked_by_editor_automation_script_before_shell_ready",
+        "synchronization_state": (
+            "verified_editor_shell_ready_synchronization_point"
+            if late_execution_verified
+            else sync_blocker
+        ),
+        "synchronization_blocker": sync_blocker,
+    }
+
+
+def _run_editor_bootstrap_wait_shell_ready_synchronization_checks(
+    report: Mapping[str, Any],
+    *,
+    progress_log: Path | None,
+    general: Any,
+) -> Dict[str, Any]:
+    engine_root_raw = str(os.environ.get("O3DE_ENGINE_ROOT", "")).strip()
+    engine_root = Path(engine_root_raw) if engine_root_raw else None
+    _write_progress_marker(
+        progress_log,
+        "editor_bootstrap_wait_shell_ready_source_validation_started",
+        "started",
+        "Source-validating Editor bootstrap wait / shell-ready synchronization boundaries.",
+    )
+    source_validation = _editor_bootstrap_wait_shell_ready_source_validation(engine_root)
+    source_validated = source_validation.get("status") == "editor_bootstrap_wait_shell_ready_source_validation_pass"
+    _write_progress_marker(
+        progress_log,
+        "editor_bootstrap_wait_shell_ready_source_validation_returned",
+        "verified" if source_validated else str(source_validation.get("blocker", "blocked")),
+        "Editor bootstrap wait / shell-ready synchronization source validation returned.",
+    )
+
+    lifecycle_readiness = _run_editor_layout_bootstrap_window_lifecycle_deep_dive_checks(
+        report,
+        progress_log=progress_log,
+        general=general,
+    )
+    payload: Dict[str, Any] = dict(lifecycle_readiness)
+    ap_alignment_preserved = payload.get("ap_alignment_preserved") is True
+    editor_ap_negotiation_preserved = payload.get("editor_asset_processor_negotiation_preserved") is True
+    temp_context_preserved = payload.get("temp_visual_scene_context_exercise_verified") is True
+    preconditions_verified = bool(
+        ap_alignment_preserved
+        and editor_ap_negotiation_preserved
+        and temp_context_preserved
+        and payload.get("operator_ap_alignment_remediation_verification_verified") is True
+    )
+    launch_flags = _classify_editor_launch_lifecycle_flags(report)
+    lifecycle_shell_ready_verified = payload.get("editor_shell_ready_event_wait_verified") is True
+    sync_probe = {
+        "deferred_strategy_attempted": False,
+        "deferred_strategy_verified": False,
+        "deferred_strategy_source_validated": source_validated,
+        "deferred_strategy_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "late_execution_attempted": False,
+        "late_execution_verified": False,
+        "late_execution_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "late_diagnostic_timeout_seconds": 0,
+        "late_diagnostic_cleanup_completed": False,
+        "qtimer_strategy_attempted": False,
+        "qtimer_strategy_verified": False,
+        "qtimer_strategy_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "event_loop_posted_callback_attempted": False,
+        "event_loop_posted_callback_verified": False,
+        "event_loop_posted_callback_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "notify_initialized_wait_attempted": False,
+        "notify_initialized_wait_verified": False,
+        "notify_initialized_wait_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "app_exec_boundary_wait_attempted": False,
+        "app_exec_boundary_wait_verified": False,
+        "app_exec_boundary_wait_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "shell_ready_event_wait_attempted": False,
+        "shell_ready_event_wait_verified": False,
+        "shell_ready_event_wait_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "shell_ready_synchronization_point": "not_selected_source_validation_or_precondition_unavailable",
+        "automation_script_timing_state": "not_selected_source_validation_or_precondition_unavailable",
+        "automation_script_timing_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "synchronization_state": "not_selected_source_validation_or_precondition_unavailable",
+        "synchronization_blocker": "not_selected_source_validation_or_precondition_unavailable",
+    }
+    can_attempt_synchronization = bool(source_validated and preconditions_verified)
+    if can_attempt_synchronization:
+        sync_probe = _probe_editor_bootstrap_wait_shell_ready_synchronization(
+            launch_flags=launch_flags,
+            source_validated=source_validated,
+            lifecycle_shell_ready_verified=lifecycle_shell_ready_verified,
+        )
+        _write_progress_marker(
+            progress_log,
+            "editor_bootstrap_wait_shell_ready_probe_returned",
+            "verified"
+            if sync_probe.get("late_execution_verified")
+            else str(sync_probe.get("synchronization_blocker", "blocked")),
+            "Editor bootstrap wait / shell-ready synchronization probe returned.",
+        )
+
+    if not source_validated:
+        synchronization_state = "blocked_by_editor_bootstrap_wait_shell_ready_source_validation_unavailable"
+        synchronization_blocker = "blocked_by_editor_bootstrap_wait_shell_ready_source_validation_unavailable"
+    elif not preconditions_verified:
+        synchronization_state = "blocked_by_editor_bootstrap_wait_shell_ready_preconditions_unavailable"
+        if not ap_alignment_preserved:
+            synchronization_blocker = "blocked_by_asset_processor_project_mismatch"
+        elif not editor_ap_negotiation_preserved:
+            synchronization_blocker = str(
+                payload.get("editor_asset_processor_negotiation_blocker")
+                or "blocked_by_editor_asset_processor_negotiation_failed_modal"
+            )
+        elif not temp_context_preserved:
+            synchronization_blocker = str(
+                payload.get("temp_visual_scene_context_exercise_blocker")
+                or "blocked_by_temp_scene_context_unavailable"
+            )
+        else:
+            synchronization_blocker = str(
+                payload.get("editor_layout_bootstrap_lifecycle_blocker")
+                or "blocked_by_temp_scene_context_unavailable"
+            )
+    elif sync_probe.get("late_execution_verified") is True:
+        synchronization_state = "verified_editor_shell_ready_synchronization_point"
+        synchronization_blocker = ""
+    elif launch_flags.get("automation_script_timing_classified") is True:
+        synchronization_state = str(sync_probe.get("synchronization_state") or "blocked_by_editor_shell_ready_synchronization_unavailable")
+        synchronization_blocker = str(sync_probe.get("synchronization_blocker") or "blocked_by_editor_shell_ready_synchronization_unavailable")
+    else:
+        synchronization_state = "blocked_by_editor_automation_script_before_shell_ready"
+        synchronization_blocker = "blocked_by_editor_automation_script_before_shell_ready"
+
+    shell_ready_verified = sync_probe.get("late_execution_verified") is True
+    viewport_probe = {
+        "pane_discovery_attempted": False,
+        "pane_discovery_verified": False,
+        "pane_discovery_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "pane_activation_attempted": False,
+        "pane_activation_verified": False,
+        "pane_activation_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "widget_discovery_attempted": False,
+        "widget_discovery_verified": False,
+        "widget_discovery_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "evidence_summary": "",
+        "sanitized_widgets": [],
+    }
+    event_wait = {
+        "idle_wait_attempted": False,
+        "idle_wait_completed": False,
+        "idle_wait_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "render_tick_attempted": False,
+        "render_tick_completed": False,
+        "render_tick_blocker": "not_selected_source_validation_or_precondition_unavailable",
+    }
+    if can_attempt_synchronization:
+        viewport_probe = _probe_default_viewport_materialization(
+            allow_activation=(
+                shell_ready_verified
+                and payload.get("visible_editor_shell_after_lifecycle_wait_verified") is True
+            )
+        )
+        if shell_ready_verified and viewport_probe.get("pane_activation_verified") is True:
+            event_wait = _run_viewport_event_loop_wait(general)
+
+    can_attempt_readiness_probes = bool(source_validated and preconditions_verified)
+    active_default_probe = (
+        _check_active_default_viewport_probe(general)
+        if can_attempt_readiness_probes
+        else {
+            "attempted": False,
+            "verified": False,
+            "state": synchronization_state,
+            "blocker": synchronization_blocker,
+            "window_handle_attempted": False,
+            "window_handle_verified": False,
+            "window_handle_blocker": synchronization_blocker,
+        }
+    )
+    atom_probe = (
+        _probe_atom_framecapture_binding_surface(source_validated)
+        if can_attempt_readiness_probes
+        else {
+            "attempted": False,
+            "verified": False,
+            "source_validated": source_validated,
+            "blocker": synchronization_blocker,
+            "binding_available": False,
+            "evidence_summary": "",
+            "screenshot_capture_requested": False,
+        }
+    )
+    window_handle_verified = active_default_probe.get("window_handle_verified") is True
+    active_default_verified = active_default_probe.get("verified") is True
+    swapchain_verified = atom_probe.get("verified") is True and atom_probe.get("binding_available") is True
+    framecapture_target_verified = bool(window_handle_verified and swapchain_verified)
+    if not source_validated:
+        readiness_blocker = "blocked_by_editor_bootstrap_wait_shell_ready_source_validation_unavailable"
+    elif not preconditions_verified:
+        readiness_blocker = synchronization_blocker
+    elif not window_handle_verified:
+        readiness_blocker = "blocked_by_active_viewport_window_handle_unavailable"
+    elif not swapchain_verified:
+        readiness_blocker = "blocked_by_swapchain_probe_unavailable"
+    else:
+        readiness_blocker = ""
+
+    payload.update(
+        {
+            "editor_bootstrap_wait_shell_ready_synchronization_attempted": True,
+            "editor_bootstrap_wait_shell_ready_synchronization_verified": shell_ready_verified,
+            "editor_bootstrap_wait_shell_ready_synchronization_source_validated": source_validated,
+            "editor_bootstrap_wait_shell_ready_source_validation_status": source_validation.get("status", ""),
+            "editor_bootstrap_wait_shell_ready_source_validation": source_validation,
+            "editor_bootstrap_wait_shell_ready_source_files": [
+                str(spec["path"])
+                for spec in _editor_bootstrap_wait_shell_ready_source_specs(engine_root)
+            ],
+            "editor_bootstrap_wait_shell_ready_synchronization_state": synchronization_state,
+            "editor_bootstrap_wait_shell_ready_synchronization_blocker": synchronization_blocker,
+            "editor_launch_command_classification_attempted": True,
+            "editor_launch_command_classification_sanitized": launch_flags,
+            "editor_launch_visual_lane_flags_classified": True,
+            "editor_launch_shell_suppression_flag_detected": (
+                launch_flags.get("shell_suppression_flag_detected") is True
+            ),
+            "editor_automation_script_timing_classification_attempted": True,
+            "editor_automation_script_timing_classification_verified": (
+                launch_flags.get("automation_script_timing_classified") is True
+            ),
+            "editor_automation_script_timing_state": str(sync_probe.get("automation_script_timing_state", "")),
+            "editor_automation_script_timing_blocker": str(sync_probe.get("automation_script_timing_blocker", "")),
+            "editor_deferred_diagnostic_strategy_attempted": sync_probe.get("deferred_strategy_attempted") is True,
+            "editor_deferred_diagnostic_strategy_verified": sync_probe.get("deferred_strategy_verified") is True,
+            "editor_deferred_diagnostic_strategy_source_validated": sync_probe.get("deferred_strategy_source_validated") is True,
+            "editor_deferred_diagnostic_strategy_blocker": str(sync_probe.get("deferred_strategy_blocker", "")),
+            "editor_late_diagnostic_execution_attempted": sync_probe.get("late_execution_attempted") is True,
+            "editor_late_diagnostic_execution_verified": shell_ready_verified,
+            "editor_late_diagnostic_execution_blocker": str(sync_probe.get("late_execution_blocker", "")),
+            "editor_late_diagnostic_timeout_seconds": int(sync_probe.get("late_diagnostic_timeout_seconds", 0) or 0),
+            "editor_late_diagnostic_cleanup_completed": sync_probe.get("late_diagnostic_cleanup_completed") is True,
+            "editor_qtimer_shell_ready_strategy_attempted": sync_probe.get("qtimer_strategy_attempted") is True,
+            "editor_qtimer_shell_ready_strategy_verified": sync_probe.get("qtimer_strategy_verified") is True,
+            "editor_qtimer_shell_ready_strategy_blocker": str(sync_probe.get("qtimer_strategy_blocker", "")),
+            "editor_event_loop_posted_callback_attempted": sync_probe.get("event_loop_posted_callback_attempted") is True,
+            "editor_event_loop_posted_callback_verified": sync_probe.get("event_loop_posted_callback_verified") is True,
+            "editor_event_loop_posted_callback_blocker": str(sync_probe.get("event_loop_posted_callback_blocker", "")),
+            "editor_notify_initialized_wait_attempted": sync_probe.get("notify_initialized_wait_attempted") is True,
+            "editor_notify_initialized_wait_verified": sync_probe.get("notify_initialized_wait_verified") is True,
+            "editor_notify_initialized_wait_blocker": str(sync_probe.get("notify_initialized_wait_blocker", "")),
+            "editor_app_exec_boundary_wait_attempted": sync_probe.get("app_exec_boundary_wait_attempted") is True,
+            "editor_app_exec_boundary_wait_verified": sync_probe.get("app_exec_boundary_wait_verified") is True,
+            "editor_app_exec_boundary_wait_blocker": str(sync_probe.get("app_exec_boundary_wait_blocker", "")),
+            "editor_shell_ready_event_wait_attempted": sync_probe.get("shell_ready_event_wait_attempted") is True,
+            "editor_shell_ready_event_wait_verified": sync_probe.get("shell_ready_event_wait_verified") is True,
+            "editor_shell_ready_event_wait_blocker": str(sync_probe.get("shell_ready_event_wait_blocker", "")),
+            "editor_shell_ready_synchronization_point": str(sync_probe.get("shell_ready_synchronization_point", "")),
+            "editor_layout_restore_state_after_shell_ready_attempted": can_attempt_synchronization,
+            "editor_layout_restore_state_after_shell_ready_verified": False,
+            "editor_layout_restore_state_after_shell_ready": (
+                "blocked_by_editor_layout_restore_state_unavailable"
+                if can_attempt_synchronization
+                else "not_selected_source_validation_or_precondition_unavailable"
+            ),
+            "editor_layout_restore_state_after_shell_ready_blocker": (
+                "blocked_by_editor_layout_restore_state_unavailable"
+                if can_attempt_synchronization
+                else "not_selected_source_validation_or_precondition_unavailable"
+            ),
+            "editor_layout_mutation_attempted": False,
+            "editor_user_layout_mutation_attempted": False,
+            "editor_run_scoped_layout_override_attempted": False,
+            "editor_run_scoped_layout_override_verified": False,
+            "editor_run_scoped_layout_override_blocker": "blocked_by_run_scoped_layout_override_unavailable"
+            if can_attempt_synchronization
+            else "not_selected_source_validation_or_precondition_unavailable",
+            "visible_editor_shell_after_shell_ready_attempted": can_attempt_synchronization,
+            "visible_editor_shell_after_shell_ready_verified": False,
+            "visible_editor_shell_after_shell_ready_blocker": (
+                "blocked_by_visible_editor_shell_unavailable"
+                if can_attempt_synchronization
+                else "not_selected_source_validation_or_precondition_unavailable"
+            ),
+            "visible_editor_shell_materialization_after_shell_ready_attempted": False,
+            "visible_editor_shell_materialization_after_shell_ready_verified": False,
+            "visible_editor_shell_materialization_after_shell_ready_source_validated": False,
+            "visible_editor_shell_materialization_after_shell_ready_blocker": (
+                "blocked_by_visible_editor_shell_materialization_unavailable"
+                if can_attempt_synchronization
+                else "not_selected_source_validation_or_precondition_unavailable"
+            ),
+            "default_viewport_viewpane_registration_preserved": (
+                payload.get("default_viewport_viewpane_registration_verified") is True
+            ),
+            "default_viewport_pane_discovery_after_shell_ready_attempted": (
+                viewport_probe.get("pane_discovery_attempted") is True
+            ),
+            "default_viewport_pane_discovery_after_shell_ready_verified": (
+                viewport_probe.get("pane_discovery_verified") is True
+            ),
+            "default_viewport_pane_discovery_after_shell_ready_blocker": str(
+                viewport_probe.get("pane_discovery_blocker", "")
+            ),
+            "default_viewport_pane_activation_after_shell_ready_attempted": (
+                viewport_probe.get("pane_activation_attempted") is True
+            ),
+            "default_viewport_pane_activation_after_shell_ready_verified": (
+                viewport_probe.get("pane_activation_verified") is True
+            ),
+            "default_viewport_pane_activation_after_shell_ready_blocker": str(
+                viewport_probe.get("pane_activation_blocker", "")
+            ),
+            "default_viewport_widget_discovery_after_shell_ready_attempted": (
+                viewport_probe.get("widget_discovery_attempted") is True
+            ),
+            "default_viewport_widget_discovery_after_shell_ready_verified": (
+                viewport_probe.get("widget_discovery_verified") is True
+            ),
+            "default_viewport_widget_discovery_after_shell_ready_blocker": str(
+                viewport_probe.get("widget_discovery_blocker", "")
+            ),
+            "default_viewport_materialization_after_shell_ready_evidence": viewport_probe,
+            "viewport_event_loop_idle_wait_attempted": event_wait.get("idle_wait_attempted") is True,
+            "viewport_event_loop_idle_wait_completed": event_wait.get("idle_wait_completed") is True,
+            "viewport_event_loop_idle_wait_blocker": str(event_wait.get("idle_wait_blocker", "")),
+            "viewport_render_tick_wait_attempted": event_wait.get("render_tick_attempted") is True,
+            "viewport_render_tick_wait_completed": event_wait.get("render_tick_completed") is True,
+            "viewport_render_tick_wait_blocker": str(event_wait.get("render_tick_blocker", "")),
+            "active_default_viewport_after_shell_ready_attempted": active_default_probe.get("attempted") is True,
+            "active_default_viewport_after_shell_ready_verified": active_default_verified,
+            "active_default_viewport_after_shell_ready_state": str(active_default_probe.get("state", "")),
+            "active_default_viewport_after_shell_ready_blocker": ""
+            if active_default_verified
+            else str(active_default_probe.get("blocker", readiness_blocker)),
+            "active_default_viewport_window_handle_after_shell_ready_attempted": (
+                active_default_probe.get("window_handle_attempted") is True
+            ),
+            "active_default_viewport_window_handle_after_shell_ready_verified": window_handle_verified,
+            "active_default_viewport_window_handle_after_shell_ready_source_validated": source_validated,
+            "active_default_viewport_window_handle_after_shell_ready_blocker": ""
+            if window_handle_verified
+            else str(active_default_probe.get("window_handle_blocker", readiness_blocker)),
+            "atom_swapchain_after_shell_ready_attempted": atom_probe.get("attempted") is True,
+            "atom_swapchain_after_shell_ready_verified": swapchain_verified,
+            "atom_swapchain_after_shell_ready_source_validated": source_validated,
+            "atom_swapchain_after_shell_ready_blocker": ""
+            if swapchain_verified
+            else str(atom_probe.get("blocker", readiness_blocker)),
+            "atom_swapchain_after_shell_ready_evidence": atom_probe,
+            "framecapture_target_after_shell_ready_attempted": can_attempt_readiness_probes,
+            "framecapture_target_after_shell_ready_verified": framecapture_target_verified,
+            "framecapture_target_after_shell_ready_source_validated": source_validated,
+            "framecapture_target_after_shell_ready_blocker": ""
+            if framecapture_target_verified
+            else readiness_blocker,
+            "ap_alignment_preserved": ap_alignment_preserved,
+            "editor_asset_processor_negotiation_preserved": editor_ap_negotiation_preserved,
+            "safe_temp_visual_scene_context_preserved": temp_context_preserved,
+            "screenshot_capture_requested": False,
+            "screenshot_capture_completed": False,
+            "editor_visual_material_capture_requested": False,
+            "editor_visual_material_capture_request_accepted": False,
+            "editor_visual_material_capture_completed": False,
+            "rendered_visual_evidence_claimed": False,
+            "rendered_visual_evidence_verified": False,
+            "visual_material_capture_readiness_verified": False,
+            "visual_material_rendered_evidence_gate_attempted": False,
+            "visual_material_rendered_evidence_gate_verified": False,
+            "visual_material_gate_claimed": False,
+            "visual_material_gate_verified": False,
+            "full_runtime_character_visual_material_gate_verified": False,
+            "full_runtime_character_proof_claimed": False,
+            "full_runtime_character_proof_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "asset_cache_deletion_attempted": False,
+            "asset_processor_database_wipe_attempted": False,
+            "asset_cache_deleted": False,
+            "cache_heuristic_used": False,
+            "proof_claims": [
+                "Source-validated and exercised Editor bootstrap wait / shell-ready synchronization diagnostics after verified AP alignment and safe temp visual scene context.",
+                "Classified late-runner/deferred/shell-ready synchronization availability and reran readiness-only viewport/capture-target probes without screenshot capture when preconditions allowed.",
+            ],
+            "proof_limits": [
+                "No screenshot request/completion.",
+                "No rendered visual/material evidence.",
+                "No material/character visual-presence validation.",
+                "No visual_material gate verification.",
+                "No full runtime character proof.",
+                "No Asset Cache deletion or AP database/cache wipe.",
+                "No release packaging, publication, or production-ready claim.",
+            ],
+            "messages": _unique(
+                list(payload.get("messages", []))
+                + [
+                    "Editor bootstrap wait / shell-ready synchronization is readiness only; screenshot and visual/material proof remain disabled."
                 ]
             ),
         }
