@@ -6861,6 +6861,73 @@ def _asset_processor_alignment_payload(*, verified: bool = False, repair_blocked
     return payload
 
 
+def _operator_ap_alignment_remediation_payload(*, verified: bool = False, remediation_blocked: bool = True) -> dict:
+    payload = _asset_processor_alignment_payload(verified=verified, repair_blocked=remediation_blocked)
+    blocker = "" if verified else "blocked_by_operator_ap_remediation_not_applied"
+    payload.update(
+        {
+            "diagnostic_mode": "operator-run-ap-alignment-remediation-verification",
+            "operator_ap_alignment_remediation_verification_attempted": True,
+            "operator_ap_alignment_remediation_verification_verified": verified,
+            "operator_ap_alignment_remediation_state": "verified_operator_ap_alignment_remediation"
+            if verified
+            else "blocked_by_operator_ap_remediation_not_applied",
+            "operator_ap_alignment_remediation_blocker": blocker,
+            "operator_ap_alignment_remediation_command_available": True,
+            "operator_ap_alignment_remediation_command_sanitized": (
+                '"C:/src/o3de/build/windows/bin/profile/AssetProcessor.exe" --start-hidden '
+                '--engine-path="C:/src/o3de" --project-path="C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus"'
+            ),
+            "operator_ap_alignment_remediation_appears_applied": verified,
+            "operator_ap_alignment_remediation_not_applied_reason": ""
+            if verified
+            else "Mismatched or missing Asset Processor alignment remains unverified.",
+            "operator_ap_alignment_remediation_next_steps": []
+            if verified
+            else [
+                "Manually close the mismatched Asset Processor process from the target machine.",
+                (
+                    '"C:/src/o3de/build/windows/bin/profile/AssetProcessor.exe" --start-hidden '
+                    '--engine-path="C:/src/o3de" --project-path="C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus"'
+                ),
+                "Rerun the operator-run AP alignment remediation verification diagnostic.",
+            ],
+            "asset_processor_no_process_running": False,
+            "asset_processor_launch_if_missing_allowed": False,
+            "asset_processor_launch_if_missing_attempted": False,
+            "asset_processor_launch_if_missing_completed": False,
+            "asset_processor_launch_if_missing_blocker": "not_selected_existing_process_classification_only",
+            "editor_asset_processor_negotiation_after_operator_remediation_attempted": True,
+            "editor_asset_processor_negotiation_after_operator_remediation_verified": verified,
+            "editor_asset_processor_negotiation_after_operator_remediation_state": (
+                "verified_editor_asset_processor_negotiation_after_operator_remediation"
+                if verified
+                else "blocked_by_operator_ap_remediation_not_applied"
+            ),
+            "editor_asset_processor_negotiation_after_operator_remediation_blocker": blocker,
+            "viewport_window_materialization_after_operator_ap_remediation_attempted": True,
+            "viewport_window_materialization_after_operator_ap_remediation_verified": False,
+            "viewport_window_materialization_after_operator_ap_remediation_blocker": (
+                "blocked_by_active_viewport_window_handle_unavailable"
+            ),
+            "active_default_viewport_after_operator_ap_remediation_attempted": True,
+            "active_default_viewport_after_operator_ap_remediation_verified": False,
+            "active_default_viewport_after_operator_ap_remediation_blocker": (
+                "blocked_by_editor_active_viewport_window_handle_unavailable"
+            ),
+            "framecapture_target_after_operator_ap_remediation_attempted": True,
+            "framecapture_target_after_operator_ap_remediation_verified": False,
+            "framecapture_target_after_operator_ap_remediation_blocker": (
+                "blocked_by_active_viewport_window_handle_unavailable"
+            ),
+            "atom_swapchain_after_operator_ap_remediation_attempted": True,
+            "atom_swapchain_after_operator_ap_remediation_verified": False,
+            "atom_swapchain_after_operator_ap_remediation_blocker": "blocked_by_swapchain_probe_unavailable",
+        }
+    )
+    return payload
+
+
 def test_asset_processor_alignment_source_validation_success_and_blocked(tmp_path):
     env = _live_env(tmp_path)
     engine = Path(env["O3DE_ENGINE_ROOT"])
@@ -7140,6 +7207,136 @@ def test_asset_processor_alignment_mode_uses_safe_temp_context_and_no_capture(tm
     assert result["status"] == "pass"
     assert result["asset_processor_alignment_repair_attempted"] is True
     assert result["asset_processor_operator_remediation_available"] is True
+    assert result["temp_visual_scene_cleanup_attempted"] is True
+    assert result["temp_visual_scene_cleanup_completed"] is True
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["visual_material_gate_verified"] is False
+    assert result["asset_cache_deletion_attempted"] is False
+    assert result["asset_processor_database_wipe_attempted"] is False
+
+
+def test_operator_ap_alignment_remediation_source_validation_success_and_blocked(tmp_path):
+    env = _live_env(tmp_path)
+    engine = Path(env["O3DE_ENGINE_ROOT"])
+    _write_editor_ap_negotiation_source_files(engine)
+
+    success = editor_python_smoke._operator_ap_alignment_remediation_verification_source_validation(engine)
+    assert success["status"] == "operator_ap_alignment_remediation_verification_source_validation_pass"
+    assert success["blocker"] == ""
+    assert "operator remediation" in success["surfaces"]["verification_boundary"].lower()
+
+    blocked = editor_python_smoke._operator_ap_alignment_remediation_verification_source_validation(tmp_path / "missing")
+    assert blocked["status"] == "operator_ap_alignment_remediation_verification_source_validation_inconclusive"
+    assert blocked["blocker"] == "blocked_by_operator_ap_alignment_verification_source_validation_unavailable"
+
+
+def test_operator_ap_alignment_remediation_schema_and_semantics_accept_blocked_next_steps():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_operator_ap_alignment_remediation_payload(verified=False, remediation_blocked=True))
+    report["mode"] = "local_editor_python"
+    report["status"] = "pass"
+
+    schema_result = schema_validate(report, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(report, strict=True)
+
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+    assert report["operator_ap_alignment_remediation_verification_verified"] is False
+    assert report["operator_ap_alignment_remediation_next_steps"]
+    assert report["editor_visual_material_capture_requested"] is False
+    assert report["visual_material_gate_verified"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_operator_ap_alignment_remediation_validation_accepts_source_validation_blocked_without_command():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_operator_ap_alignment_remediation_payload(verified=False, remediation_blocked=True))
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "operator_ap_alignment_remediation_source_validated": False,
+            "operator_ap_alignment_remediation_verification_verified": False,
+            "operator_ap_alignment_remediation_state": (
+                "blocked_by_operator_ap_alignment_verification_source_validation_unavailable"
+            ),
+            "operator_ap_alignment_remediation_blocker": (
+                "blocked_by_operator_ap_alignment_verification_source_validation_unavailable"
+            ),
+            "operator_ap_alignment_remediation_command_available": False,
+            "operator_ap_alignment_remediation_command_sanitized": "",
+            "operator_ap_alignment_remediation_next_steps": [],
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "pass", result.messages
+
+
+def test_operator_ap_alignment_remediation_validation_rejects_visual_and_cache_overclaims():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_operator_ap_alignment_remediation_payload(verified=True, remediation_blocked=False))
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "editor_visual_material_capture_requested": True,
+            "visual_material_gate_verified": True,
+            "runtime_character_proof_verified": True,
+            "asset_cache_deletion_attempted": True,
+            "asset_processor_database_wipe_attempted": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    joined = " ".join(result.messages)
+    assert "must not request screenshot/frame capture" in joined
+    assert "must not delete Asset Cache" in joined
+    assert "must not wipe Asset Processor databases" in joined
+
+
+def test_operator_ap_alignment_remediation_mode_uses_safe_temp_context_and_no_capture(tmp_path):
+    env = _live_env(tmp_path)
+    _write_editor_ap_negotiation_source_files(Path(env["O3DE_ENGINE_ROOT"]))
+
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        assert "editor_operator_ap_alignment_remediation_verification_smoke.py" in argv[-1].replace("\\", "/")
+        assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == "operator-run-ap-alignment-remediation-verification"
+        assert env["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] == "1"
+        assert env["MAXINE_ENABLE_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] == "1"
+        assert env["MAXINE_ENABLE_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] == "1"
+        assert env["MAXINE_ENABLE_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] == "1"
+        assert "MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH" not in env
+        temp_path = Path(env["MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_PATH"])
+        temp_path.mkdir(parents=True)
+        (temp_path / "test.prefab").write_text("{}", encoding="utf-8")
+        payload = json.loads(Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).read_text(encoding="utf-8"))
+        payload.update(_operator_ap_alignment_remediation_payload(verified=False, remediation_blocked=True))
+        payload["temp_visual_scene_path"] = (
+            "Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/test"
+        )
+        payload["editor_temp_visual_scene_path"] = payload["temp_visual_scene_path"]
+        payload["editor_visual_material_temp_scene_path"] = payload["temp_visual_scene_path"]
+        Path(env["MAXINE_EDITOR_SMOKE_REPORT_OUT"]).write_text(json.dumps(payload), encoding="utf-8")
+        return subprocess.CompletedProcess(args=argv, returncode=0, stdout="", stderr="")
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=env,
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="operator-run-ap-alignment-remediation-verification",
+    )
+
+    assert result["status"] == "pass"
+    assert result["operator_ap_alignment_remediation_verification_attempted"] is True
+    assert result["operator_ap_alignment_remediation_verification_verified"] is False
+    assert result["operator_ap_alignment_remediation_next_steps"]
     assert result["temp_visual_scene_cleanup_attempted"] is True
     assert result["temp_visual_scene_cleanup_completed"] is True
     assert result["editor_visual_material_capture_requested"] is False
