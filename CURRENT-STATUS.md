@@ -1,7 +1,20 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Editor Main-Window Activation / Materialization Deep-Dive v1 is active on `codex/editor-main-window-activation-materialization-deep-dive-v1`:
+- Alternate Editor Window Discovery / Visible Shell Materialization v1 is active on `codex/alternate-editor-window-discovery-visible-shell-materialization-v1`:
+  - PR #178 was verified merged into `main` at `507e872f671082203ef85d455168b432313350e5`; this branch was created from that updated `main`
+  - this slice source-validates and exercises alternate Editor window discovery and visible Editor shell materialization diagnostics after verified AP alignment, preserving the operator-run AP remediation success from PR #176 and verified Editor/AP negotiation after remediation
+  - it reuses the safe temp visual scene/display context proven in PR #171/#172/#173/#174/#175/#176/#177/#178 under `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context`
+  - live evidence: `artifacts/o3de-integration/editor-smoke/editor-smoke-20260516T085217Z/editor_smoke_live_report.json` and `artifacts/o3de-integration/editor-smoke/editor-smoke-20260516T085217Z/progress.jsonl`
+  - live result: AP alignment preserved and verified, Editor/AP negotiation preserved and verified, selected RHI `dx12`, non-null Editor launch verified, safe temp scene path `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/editor_safe_temp_visual_scene_display_context_20260516t085217z`, cleanup completed, and no defaultlevel/production mutation detected
+  - alternate Qt top-level inventory and hidden candidate classification are verified: 2 sanitized hidden QMainWindow-shaped candidates were found (`EMStudio::MainWindow` and `QMainWindow` class names only), 0 visible candidates, and 0 visible-shell/materialization-eligible candidates; no raw window titles, object names, native handles, command lines, or environment dumps were emitted
+  - `EMStudio::MainWindow` is source-classified as an EMotionFX/Animation Editor tool shell, not the O3DE Editor shell; the generic hidden `QMainWindow` remains `unknown_unsafe_hidden_candidate`, so hidden show/raise/activate stays blocked by `blocked_by_hidden_editor_shell_candidate_activation_unsafe`
+  - visible Editor shell discovery/materialization remains blocked by `blocked_by_visible_editor_shell_unavailable`; native Editor window inventory and Qt/native correlation are not selected until a sanitized source-validated native path exists
+  - default viewport widget discovery remains verified, default viewport pane discovery remains blocked by `blocked_by_default_viewport_pane_unavailable`, and pane activation is not selected because visible-shell materialization remains unavailable
+  - readiness-only probes still report active/default viewport window-handle blocked by `blocked_by_editor_active_viewport_window_handle_unavailable`, Atom SwapChain blocked by `blocked_by_swapchain_probe_unavailable`, and FrameCapture target blocked by `blocked_by_active_viewport_window_handle_unavailable`
+  - this slice does not request screenshot capture, does not complete screenshot capture, does not verify rendered visual evidence, does not verify material correctness, does not verify character visual presence, and does not satisfy `visual_material`
+  - full runtime character proof remains false, release packaging/publication/production-ready claims remain false, and no Asset Cache deletion or AP database/cache wipe is allowed
+- Editor Main-Window Activation / Materialization Deep-Dive v1 was merged through PR #178 on `codex/editor-main-window-activation-materialization-deep-dive-v1`:
   - PR #177 was verified merged into `main` at `4fe373b76b188ef64f16460f5407583665b39071`; this branch was created from that updated `main`
   - this slice source-validates and exercises bounded Editor main-window activation/materialization diagnostics after verified AP alignment, preserving the operator-run AP remediation success from PR #176 and verified Editor/AP negotiation after remediation
   - it reuses the safe temp visual scene/display context proven in PR #171/#172/#173/#174/#175/#176/#177 under `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context`

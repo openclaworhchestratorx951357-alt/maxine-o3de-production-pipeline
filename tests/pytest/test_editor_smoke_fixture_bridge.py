@@ -354,6 +354,68 @@ def _write_editor_ap_negotiation_source_files(engine: Path) -> None:
                 "GetIEditor()->GetDocument()->Save()",
                 "CreateDefaultLevelAssets",
                 "AddToRecentFileList",
+                "MainWindow::instance()->show();",
+                "MainWindow::instance()->raise();",
+                "MainWindow::instance()->setFocus();",
+                "QtViewPaneManager::instance()->RestoreLayout(restoreDefaults);",
+            ]
+        ),
+        engine / "Code" / "Editor" / "MainWindow.h": "\n".join(
+            [
+                "class MainWindow",
+                ": public QMainWindow",
+                "static MainWindow* instance();",
+                "QtViewPaneManager* m_viewPaneManager;",
+                "CLayoutViewPane* m_activeView;",
+            ]
+        ),
+        engine / "Code" / "Editor" / "MainWindow.cpp": "\n".join(
+            [
+                "MainWindow::MainWindow(QWidget* parent)",
+                ": QMainWindow(parent)",
+                "m_viewPaneManager(QtViewPaneManager::instance())",
+                "m_viewPaneHost = new AzQtComponents::DockMainWindow();",
+                "m_viewPaneManager->SetMainWindow(m_viewPaneHost, &m_settings, /*unused*/ QByteArray());",
+                "QtViewPaneManager::instance()->OpenPane(viewClassName);",
+                "QtViewPaneManager::instance()->IsVisible(viewClassName);",
+                "QtViewPaneManager::instance()->GetRegisteredPanes();",
+                "QtViewPaneManager::instance()->GetPane(paneId);",
+            ]
+        ),
+        engine
+        / "Gems"
+        / "EMotionFX"
+        / "Code"
+        / "EMotionFX"
+        / "Tools"
+        / "EMotionStudio"
+        / "EMStudioSDK"
+        / "Source"
+        / "MainWindow.h": "\n".join(
+            [
+                "namespace EMStudio",
+                "class MainWindow;",
+                "class MainWindow",
+                ": public AzQtComponents::DockMainWindow",
+            ]
+        ),
+        engine
+        / "Gems"
+        / "EMotionFX"
+        / "Code"
+        / "EMotionFX"
+        / "Tools"
+        / "EMotionStudio"
+        / "EMStudioSDK"
+        / "Source"
+        / "MainWindow.cpp": "\n".join(
+            [
+                "namespace EMStudio",
+                "MainWindow::MainWindow(QWidget* parent, Qt::WindowFlags flags)",
+                ": AzQtComponents::DockMainWindow(parent, flags)",
+                'constexpr AZStd::string_view AnimationEditorActionContextIdentifier = "o3de.context.animationEditor";',
+                "EMStudio::MainWindow* mainWindow = GetManager()->GetMainWindow();",
+                "QMainWindow::showEvent(event);",
             ]
         ),
         engine
@@ -7163,6 +7225,150 @@ def _main_window_deep_dive_payload(*, verified: bool = False, hidden_blocked: bo
     return payload
 
 
+def _alternate_visible_shell_payload(*, visible_shell: bool = False) -> dict:
+    payload = _main_window_deep_dive_payload(verified=False)
+    blocker = "" if visible_shell else "blocked_by_visible_editor_shell_unavailable"
+    state = "verified_visible_editor_shell_discovery" if visible_shell else blocker
+    visible_count = 1 if visible_shell else 0
+    payload.update(
+        {
+            "diagnostic_mode": "alternate-editor-window-discovery-visible-shell-materialization",
+            "alternate_editor_window_discovery_attempted": True,
+            "alternate_editor_window_discovery_verified": True,
+            "alternate_editor_window_discovery_source_validated": True,
+            "alternate_editor_window_discovery_state": state,
+            "alternate_editor_window_discovery_blocker": blocker,
+            "visible_editor_shell_discovery_attempted": True,
+            "visible_editor_shell_discovery_verified": visible_shell,
+            "visible_editor_shell_discovery_source_validated": True,
+            "visible_editor_shell_discovery_state": state,
+            "visible_editor_shell_discovery_blocker": blocker,
+            "visible_editor_shell_candidate_count": visible_count,
+            "visible_editor_shell_candidate_classification_attempted": True,
+            "visible_editor_shell_candidate_classification_verified": visible_shell,
+            "visible_editor_shell_candidate_classification_blocker": blocker,
+            "visible_editor_shell_materialization_attempted": visible_shell,
+            "visible_editor_shell_materialization_verified": visible_shell,
+            "visible_editor_shell_materialization_source_validated": True,
+            "visible_editor_shell_materialization_blocker": blocker,
+            "hidden_editor_shell_candidate_classification_attempted": True,
+            "hidden_editor_shell_candidate_classification_verified": True,
+            "hidden_editor_shell_candidate_classification_blocker": "",
+            "hidden_editor_shell_candidate_validity_state": (
+                "verified_emstudio_main_window_is_tool_shell_not_editor_shell"
+            ),
+            "hidden_editor_shell_candidate_show_policy": "blocked_without_source_validated_visible_editor_shell",
+            "hidden_editor_shell_candidate_show_allowed": False,
+            "hidden_editor_shell_candidate_show_blocker": "blocked_by_hidden_editor_shell_candidate_not_valid_target",
+            "emstudio_main_window_candidate_classification_attempted": True,
+            "emstudio_main_window_candidate_classification_verified": True,
+            "emstudio_main_window_candidate_classification_state": (
+                "verified_emstudio_main_window_is_tool_shell_not_editor_shell"
+            ),
+            "emstudio_main_window_candidate_classification_blocker": "",
+            "qt_top_level_widget_inventory_attempted": True,
+            "qt_top_level_widget_inventory_sanitized": [
+                {
+                    "class_name": "EMStudio::MainWindow",
+                    "visible": False,
+                    "hidden": True,
+                    "minimized": False,
+                    "is_qmainwindow": True,
+                    "likely_editor_shell": False,
+                    "editor_shell_identity_source_validated": False,
+                    "likely_tool_shell": True,
+                    "likely_emstudio_tool_shell": True,
+                    "activation_eligible": False,
+                    "materialization_eligible": False,
+                    "activation_unsafe": True,
+                    "raw_title_emitted": False,
+                    "raw_object_name_emitted": False,
+                    "raw_native_handle_emitted": False,
+                },
+                {
+                    "class_name": "Editor::MainWindow" if visible_shell else "QMainWindow",
+                    "visible": visible_shell,
+                    "hidden": not visible_shell,
+                    "minimized": False,
+                    "is_qmainwindow": True,
+                    "likely_editor_shell": visible_shell,
+                    "editor_shell_identity_source_validated": visible_shell,
+                    "likely_tool_shell": False,
+                    "likely_emstudio_tool_shell": False,
+                    "activation_eligible": visible_shell,
+                    "materialization_eligible": visible_shell,
+                    "activation_unsafe": not visible_shell,
+                    "raw_title_emitted": False,
+                    "raw_object_name_emitted": False,
+                    "raw_native_handle_emitted": False,
+                },
+            ],
+            "qt_visible_top_level_widget_count": visible_count,
+            "qt_hidden_top_level_widget_count": 2 - visible_count,
+            "qt_main_window_candidate_count": 2,
+            "native_editor_window_inventory_attempted": False,
+            "native_editor_window_inventory_sanitized": [],
+            "native_visible_editor_window_count": 0,
+            "native_hidden_editor_window_count": 0,
+            "qt_native_window_correlation_attempted": False,
+            "qt_native_window_correlation_verified": False,
+            "qt_native_window_correlation_blocker": "not_selected_native_window_inventory_not_source_validated",
+            "default_viewport_pane_discovery_after_visible_shell_attempted": True,
+            "default_viewport_pane_discovery_after_visible_shell_verified": False,
+            "default_viewport_pane_discovery_after_visible_shell_blocker": (
+                "blocked_by_default_viewport_pane_unavailable"
+            ),
+            "default_viewport_pane_activation_after_visible_shell_attempted": False,
+            "default_viewport_pane_activation_after_visible_shell_verified": False,
+            "default_viewport_pane_activation_after_visible_shell_blocker": (
+                "not_selected_visible_editor_shell_materialization_unavailable"
+                if not visible_shell
+                else "blocked_by_default_viewport_pane_activation_unavailable"
+            ),
+            "default_viewport_widget_discovery_after_visible_shell_attempted": True,
+            "default_viewport_widget_discovery_after_visible_shell_verified": True,
+            "default_viewport_widget_discovery_after_visible_shell_blocker": "",
+            "active_default_viewport_after_visible_shell_attempted": True,
+            "active_default_viewport_after_visible_shell_verified": False,
+            "active_default_viewport_after_visible_shell_state": (
+                "active_viewport_python_probe_deferred_without_explicit_gate"
+            ),
+            "active_default_viewport_after_visible_shell_blocker": (
+                "blocked_by_editor_active_viewport_window_handle_unavailable"
+            ),
+            "active_default_viewport_window_handle_after_visible_shell_attempted": True,
+            "active_default_viewport_window_handle_after_visible_shell_verified": False,
+            "active_default_viewport_window_handle_after_visible_shell_source_validated": True,
+            "active_default_viewport_window_handle_after_visible_shell_blocker": (
+                "blocked_by_editor_active_viewport_window_handle_unavailable"
+            ),
+            "atom_swapchain_after_visible_shell_attempted": True,
+            "atom_swapchain_after_visible_shell_verified": False,
+            "atom_swapchain_after_visible_shell_source_validated": True,
+            "atom_swapchain_after_visible_shell_blocker": "blocked_by_swapchain_probe_unavailable",
+            "framecapture_target_after_visible_shell_attempted": True,
+            "framecapture_target_after_visible_shell_verified": False,
+            "framecapture_target_after_visible_shell_source_validated": True,
+            "framecapture_target_after_visible_shell_blocker": (
+                "blocked_by_active_viewport_window_handle_unavailable"
+            ),
+            "proof_claims": [
+                "Source-validated and exercised alternate Editor window discovery and visible Editor shell materialization diagnostics.",
+                "Reran readiness-only viewport and capture-target probes without screenshot capture.",
+            ],
+            "proof_limits": [
+                "No screenshot request/completion.",
+                "No rendered visual/material evidence.",
+                "No material/character visual-presence validation.",
+                "No visual_material gate verification.",
+                "No full runtime character proof.",
+                "No release packaging, publication, or production-ready claim.",
+            ],
+        }
+    )
+    return payload
+
+
 def test_asset_processor_alignment_source_validation_success_and_blocked(tmp_path):
     env = _live_env(tmp_path)
     engine = Path(env["O3DE_ENGINE_ROOT"])
@@ -8046,6 +8252,284 @@ def test_main_window_deep_dive_mode_uses_safe_temp_context_and_no_capture(tmp_pa
     assert result["status"] == "pass"
     assert result["editor_main_window_activation_deep_dive_attempted"] is True
     assert result["editor_main_window_activation_deep_dive_verified"] is False
+    assert result["temp_visual_scene_cleanup_attempted"] is True
+    assert result["temp_visual_scene_cleanup_completed"] is True
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["visual_material_gate_verified"] is False
+    assert result["asset_cache_deletion_attempted"] is False
+    assert result["asset_processor_database_wipe_attempted"] is False
+
+
+def test_alternate_visible_shell_source_validation_success_and_blocked(tmp_path):
+    env = _live_env(tmp_path)
+    engine = Path(env["O3DE_ENGINE_ROOT"])
+    _write_editor_ap_negotiation_source_files(engine)
+
+    success = editor_python_smoke._alternate_editor_window_discovery_visible_shell_source_validation(engine)
+    assert success["status"] == "alternate_editor_window_discovery_visible_shell_source_validation_pass"
+    assert success["blocker"] == ""
+    assert "EMStudio::MainWindow" in success["surfaces"]["emstudio_candidate_boundary"]
+    assert "readiness only" in success["surfaces"]["capture_boundary"].lower()
+
+    blocked = editor_python_smoke._alternate_editor_window_discovery_visible_shell_source_validation(tmp_path / "missing")
+    assert blocked["status"] == "alternate_editor_window_discovery_visible_shell_source_validation_inconclusive"
+    assert blocked["blocker"] == "blocked_by_alternate_editor_window_discovery_source_validation_unavailable"
+
+
+def test_alternate_visible_shell_classifies_emstudio_tool_shell_and_hidden_qmainwindow():
+    class FakeMeta:
+        def __init__(self, name):
+            self._name = name
+
+        def className(self):
+            return self._name
+
+    class FakeQMainWindow:
+        def __init__(self, meta_name, *, visible=False, hidden=True, minimized=False):
+            self._meta_name = meta_name
+            self._visible = visible
+            self._hidden = hidden
+            self._minimized = minimized
+
+        def metaObject(self):
+            return FakeMeta(self._meta_name)
+
+        def isVisible(self):
+            return self._visible
+
+        def isHidden(self):
+            return self._hidden
+
+        def isMinimized(self):
+            return self._minimized
+
+    class FakeQtWidgets:
+        QMainWindow = FakeQMainWindow
+        QDockWidget = object
+
+    emstudio = editor_python_smoke._alternate_editor_shell_candidate_info(
+        FakeQMainWindow("EMStudio::MainWindow"), FakeQtWidgets
+    )
+    generic_hidden = editor_python_smoke._alternate_editor_shell_candidate_info(
+        FakeQMainWindow("QMainWindow"), FakeQtWidgets
+    )
+    visible_generic = editor_python_smoke._alternate_editor_shell_candidate_info(
+        FakeQMainWindow("MainWindow", visible=True, hidden=False), FakeQtWidgets
+    )
+    visible_shell = editor_python_smoke._alternate_editor_shell_candidate_info(
+        FakeQMainWindow("Editor::MainWindow", visible=True, hidden=False), FakeQtWidgets
+    )
+
+    assert emstudio is not None
+    assert emstudio["likely_emstudio_tool_shell"] is True
+    assert emstudio["likely_tool_shell"] is True
+    assert emstudio["likely_editor_shell"] is False
+    assert emstudio["hidden_candidate_validity_state"] == "verified_emstudio_main_window_is_tool_shell_not_editor_shell"
+    assert emstudio["materialization_eligible"] is False
+    assert generic_hidden is not None
+    assert generic_hidden["hidden_candidate_validity_state"] == "unknown_unsafe_hidden_candidate"
+    assert generic_hidden["materialization_eligible"] is False
+    assert visible_generic is not None
+    assert visible_generic["likely_editor_shell"] is False
+    assert visible_generic["editor_shell_identity_source_validated"] is False
+    assert visible_generic["materialization_eligible"] is False
+    assert visible_shell is not None
+    assert visible_shell["likely_editor_shell"] is True
+    assert visible_shell["editor_shell_identity_source_validated"] is True
+    assert visible_shell["materialization_eligible"] is True
+
+
+def test_alternate_visible_shell_schema_and_semantics_accept_blocked_readiness():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_alternate_visible_shell_payload(visible_shell=False))
+    report["mode"] = "local_editor_python"
+    report["status"] = "pass"
+
+    schema_result = schema_validate(report, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(report, strict=True)
+
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+    assert report["visible_editor_shell_discovery_verified"] is False
+    assert report["hidden_editor_shell_candidate_show_allowed"] is False
+    assert report["default_viewport_widget_discovery_after_visible_shell_verified"] is True
+    assert report["editor_visual_material_capture_requested"] is False
+    assert report["visual_material_gate_verified"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_alternate_visible_shell_validation_rejects_unsanitized_inventory_and_overclaims():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_alternate_visible_shell_payload(visible_shell=False))
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "qt_top_level_widget_inventory_sanitized": [
+                {
+                    "class_name": "QMainWindow",
+                    "window_title": "private-title",
+                    "raw_title_emitted": True,
+                    "raw_object_name_emitted": False,
+                }
+            ],
+            "native_editor_window_inventory_sanitized": [
+                {
+                    "class_name": "QtWindow",
+                    "native_handle": "0x1234",
+                    "window_title": "private-title",
+                }
+            ],
+            "editor_visual_material_capture_requested": True,
+            "visual_material_gate_verified": True,
+            "runtime_character_proof_verified": True,
+            "asset_cache_deletion_attempted": True,
+            "asset_processor_database_wipe_attempted": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    joined = " ".join(result.messages)
+    assert "alternate Editor window inventory" in joined
+    assert "native window inventory" in joined
+    assert "must not request screenshot/frame capture" in joined
+    assert "cannot verify visual/material proof" in joined
+    assert "must not delete Asset Cache" in joined
+    assert "must not wipe AP databases" in joined
+
+
+def test_alternate_visible_shell_validation_rejects_generic_qmainwindow_as_verified_shell():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_alternate_visible_shell_payload(visible_shell=True))
+    report["mode"] = "local_editor_python"
+    report["status"] = "pass"
+    report["qt_top_level_widget_inventory_sanitized"][1].update(
+        {
+            "class_name": "QMainWindow",
+            "likely_editor_shell": True,
+            "editor_shell_identity_source_validated": False,
+            "activation_eligible": True,
+            "materialization_eligible": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    joined = " ".join(result.messages)
+    assert "source-validated Editor-shell identity" in joined
+
+
+def test_alternate_visible_shell_precondition_block_does_not_run_viewport_or_atom_probes(monkeypatch):
+    readiness = _alternate_visible_shell_payload(visible_shell=False)
+    readiness.update(
+        {
+            "ap_alignment_preserved": False,
+            "editor_asset_processor_negotiation_preserved": True,
+            "operator_ap_alignment_remediation_verification_verified": True,
+            "temp_visual_scene_context_exercise_verified": True,
+            "editor_main_window_activation_deep_dive_blocker": "blocked_by_asset_processor_project_mismatch",
+        }
+    )
+
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_alternate_editor_window_discovery_visible_shell_source_validation",
+        lambda engine_root: {
+            "status": "alternate_editor_window_discovery_visible_shell_source_validation_pass",
+            "blocker": "",
+        },
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_run_editor_main_window_activation_deep_dive_checks",
+        lambda report, *, progress_log, general: dict(readiness),
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_probe_editor_asset_processor_negotiation_modal",
+        lambda: (_ for _ in ()).throw(
+            AssertionError("modal probe must not run when AP/Editor preconditions are blocked")
+        ),
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_check_active_default_viewport_probe",
+        lambda general: (_ for _ in ()).throw(
+            AssertionError("active/default viewport probe must not run when AP preconditions are blocked")
+        ),
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_probe_atom_framecapture_binding_surface",
+        lambda source_validated: (_ for _ in ()).throw(
+            AssertionError("Atom probe must not run when AP preconditions are blocked")
+        ),
+    )
+
+    result = editor_python_smoke._run_alternate_editor_window_discovery_visible_shell_checks(
+        {},
+        progress_log=None,
+        general=object(),
+    )
+
+    assert result["alternate_editor_window_discovery_state"] == (
+        "blocked_by_alternate_editor_window_discovery_preconditions_unavailable"
+    )
+    assert result["active_default_viewport_after_visible_shell_attempted"] is False
+    assert result["atom_swapchain_after_visible_shell_attempted"] is False
+    assert result["framecapture_target_after_visible_shell_attempted"] is False
+    assert result["active_default_viewport_after_visible_shell_blocker"] == (
+        "blocked_by_asset_processor_project_mismatch"
+    )
+    assert result["atom_swapchain_after_visible_shell_blocker"] == (
+        "blocked_by_asset_processor_project_mismatch"
+    )
+
+
+def test_alternate_visible_shell_mode_uses_safe_temp_context_and_no_capture(tmp_path):
+    env = _live_env(tmp_path)
+    _write_editor_ap_negotiation_source_files(Path(env["O3DE_ENGINE_ROOT"]))
+
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        assert "editor_alternate_window_shell_materialization_smoke.py" in argv[-1].replace("\\", "/")
+        assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == (
+            "alternate-editor-window-discovery-visible-shell-materialization"
+        )
+        assert env["MAXINE_ENABLE_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL"] == "1"
+        assert env["MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] == "1"
+        assert env["MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] == "1"
+        assert env["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] == "1"
+        assert "MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH" not in env
+        temp_path = Path(env["MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_PATH"])
+        temp_path.mkdir(parents=True)
+        (temp_path / "test.prefab").write_text("{}", encoding="utf-8")
+        payload = json.loads(Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).read_text(encoding="utf-8"))
+        payload.update(_alternate_visible_shell_payload(visible_shell=False))
+        payload["temp_visual_scene_path"] = (
+            "Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/test"
+        )
+        payload["editor_temp_visual_scene_path"] = payload["temp_visual_scene_path"]
+        payload["editor_visual_material_temp_scene_path"] = payload["temp_visual_scene_path"]
+        Path(env["MAXINE_EDITOR_SMOKE_REPORT_OUT"]).write_text(json.dumps(payload), encoding="utf-8")
+        return subprocess.CompletedProcess(args=argv, returncode=0, stdout="", stderr="")
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=env,
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="alternate-editor-window-discovery-visible-shell-materialization",
+    )
+
+    assert result["status"] == "pass"
+    assert result["alternate_editor_window_discovery_attempted"] is True
+    assert result["visible_editor_shell_discovery_verified"] is False
+    assert result["hidden_editor_shell_candidate_show_allowed"] is False
     assert result["temp_visual_scene_cleanup_attempted"] is True
     assert result["temp_visual_scene_cleanup_completed"] is True
     assert result["editor_visual_material_capture_requested"] is False
