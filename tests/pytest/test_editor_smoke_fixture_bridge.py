@@ -6,10 +6,13 @@ import types
 from pathlib import Path
 from typing import Mapping
 
+from tools.o3de import editor_smoke as editor_smoke_tool
 from tools.o3de.editor_smoke import (
     DIAGNOSTIC_EDITOR_SCRIPTS,
     _exit_code_for_status,
+    _classify_asset_processor_project_build_alignment,
     _classify_editor_asset_processor_process_inventory,
+    _windows_editor_asset_processor_process_rows,
     load_fixture_reports,
     run_editor_smoke_corpus,
     validate_editor_smoke_report,
@@ -349,6 +352,57 @@ def _write_editor_ap_negotiation_source_files(engine: Path) -> None:
                 "isProjectMatch",
                 "m_negotiationFailed = true;",
                 "AssetSystemConnectionNotificationsBus::Broadcast(&AssetSystemConnectionNotificationsBus::Events::NegotiationFailed);",
+            ]
+        ),
+        engine
+        / "Code"
+        / "Framework"
+        / "AzFramework"
+        / "AzFramework"
+        / "Asset"
+        / "AssetSystemComponentHelper.cpp": "\n".join(
+            [
+                "bool LaunchAssetProcessor()",
+                "GetExecutableDirectory",
+                "FilePathKey_EngineRootFolder",
+                "FilePathKey_ProjectPath",
+                "Platform::LaunchAssetProcessor(executableDirectory, engineRootFolder, projectPath)",
+            ]
+        ),
+        engine
+        / "Code"
+        / "Framework"
+        / "AzFramework"
+        / "Platform"
+        / "Windows"
+        / "AzFramework"
+        / "Asset"
+        / "AssetSystemComponentHelper_Windows.cpp": "\n".join(
+            [
+                "bool LaunchAssetProcessor(AZStd::string_view executableDirectory, AZStd::string_view engineRoot, AZStd::string_view projectPath)",
+                "AssetProcessor.exe",
+                "--start-hidden",
+                "--engine-path=",
+                "--project-path=",
+                "CreateProcessW",
+                "AssetProcessorJob",
+            ]
+        ),
+        engine
+        / "Code"
+        / "Framework"
+        / "AzCore"
+        / "AzCore"
+        / "Settings"
+        / "SettingsRegistryMergeUtils.cpp": "\n".join(
+            [
+                "CommandLineEngineOptionName",
+                "CommandLineProjectOptionName",
+                "GetCommandLineOption",
+                "FindEngineRoot",
+                "FindProjectRoot",
+                "FilePathKey_ProjectPath",
+                "FilePathKey_EngineRootFolder",
             ]
         ),
         engine
@@ -6728,6 +6782,370 @@ def test_editor_ap_negotiation_mode_uses_safe_temp_context_and_no_capture(tmp_pa
     assert result["editor_visual_material_capture_requested"] is False
     assert result["editor_visual_material_capture_completed"] is False
     assert result["visual_material_gate_verified"] is False
+
+
+def _asset_processor_alignment_payload(*, verified: bool = False, repair_blocked: bool = True) -> dict:
+    payload = _editor_ap_negotiation_viewport_materialization_payload(negotiation_verified=verified)
+    blocker = "" if verified else "blocked_by_asset_processor_process_ownership_unverified"
+    payload.update(
+        {
+            "diagnostic_mode": "asset-processor-project-build-alignment-repair",
+            "asset_processor_alignment_repair_attempted": True,
+            "asset_processor_alignment_repair_verified": verified,
+            "asset_processor_alignment_source_validated": True,
+            "asset_processor_alignment_state": "verified_asset_processor_project_build_alignment"
+            if verified
+            else "blocked_by_asset_processor_process_ownership_unverified",
+            "asset_processor_alignment_blocker": blocker,
+            "asset_processor_target_engine_root": "C:/src/o3de",
+            "asset_processor_target_build_root": "C:/src/o3de/build/windows/bin/profile",
+            "asset_processor_target_project_path": "C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus",
+            "asset_processor_target_executable_path": "C:/src/o3de/build/windows/bin/profile/AssetProcessor.exe",
+            "asset_processor_target_project_name": "MAXINE_GoldenCorpus",
+            "asset_processor_target_branch_token_available": False,
+            "asset_processor_target_branch_token_sanitized": "unavailable_without_engine_runtime_query",
+            "asset_processor_process_count": 1,
+            "asset_processor_target_process_running": verified,
+            "asset_processor_mismatched_process_running": not verified,
+            "asset_processor_process_owner_verified": False,
+            "asset_processor_process_owner_blocker": "blocked_by_asset_processor_process_ownership_unverified",
+            "asset_processor_executable_path_alignment_attempted": True,
+            "asset_processor_executable_path_alignment_verified": verified,
+            "asset_processor_executable_path_alignment_blocker": "" if verified else "blocked_by_asset_processor_build_root_mismatch",
+            "asset_processor_project_alignment_attempted": True,
+            "asset_processor_project_alignment_verified": verified,
+            "asset_processor_project_alignment_blocker": "" if verified else "blocked_by_asset_processor_project_mismatch",
+            "asset_processor_build_root_alignment_attempted": True,
+            "asset_processor_build_root_alignment_verified": verified,
+            "asset_processor_build_root_alignment_blocker": "" if verified else "blocked_by_asset_processor_build_root_mismatch",
+            "asset_processor_branch_project_token_alignment_attempted": True,
+            "asset_processor_branch_project_token_alignment_verified": False,
+            "asset_processor_branch_project_token_alignment_blocker": "blocked_by_asset_processor_branch_project_token_alignment_unavailable",
+            "asset_processor_repair_mode": "classify_only" if verified else "dry_run_operator_repair_command",
+            "asset_processor_operator_remediation_available": repair_blocked,
+            "asset_processor_operator_remediation_command_sanitized": (
+                '"C:/src/o3de/build/windows/bin/profile/AssetProcessor.exe" --start-hidden '
+                '--engine-path="C:/src/o3de" --project-path="C:/Users/topgu/O3DE/Projects/MAXINE_GoldenCorpus"'
+                if repair_blocked
+                else ""
+            ),
+            "asset_processor_operator_remediation_reason": "Mismatched Asset Processor ownership is not verified."
+            if repair_blocked
+            else "",
+            "asset_cache_deletion_attempted": False,
+            "asset_processor_database_wipe_attempted": False,
+            "editor_asset_processor_negotiation_preflight_attempted": True,
+            "editor_asset_processor_negotiation_preflight_verified": verified,
+            "editor_asset_processor_negotiation_state": "verified_editor_asset_processor_negotiation_after_alignment"
+            if verified
+            else "blocked_by_asset_processor_process_ownership_unverified",
+            "editor_asset_processor_negotiation_blocker": blocker,
+            "viewport_window_materialization_after_ap_alignment_attempted": True,
+            "viewport_window_materialization_after_ap_alignment_verified": False,
+            "viewport_window_materialization_after_ap_alignment_blocker": "blocked_by_active_viewport_window_handle_unavailable",
+            "proof_claims": [
+                "Source-validated and exercised deterministic Asset Processor project/build-root alignment repair or safe-block classification.",
+                "Reran bounded Editor/AP negotiation and viewport/window materialization readiness without screenshot capture.",
+            ],
+            "proof_limits": [
+                "No screenshot request/completion.",
+                "No rendered visual/material evidence.",
+                "No material/character visual-presence validation.",
+                "No visual_material gate verification.",
+                "No full runtime character proof.",
+                "No Asset Cache deletion or AP database/cache wipe.",
+                "No release packaging, publication, or production-ready claim.",
+            ],
+        }
+    )
+    return payload
+
+
+def test_asset_processor_alignment_source_validation_success_and_blocked(tmp_path):
+    env = _live_env(tmp_path)
+    engine = Path(env["O3DE_ENGINE_ROOT"])
+    _write_editor_ap_negotiation_source_files(engine)
+
+    success = editor_python_smoke._asset_processor_project_build_alignment_source_validation(engine)
+    assert success["status"] == "asset_processor_project_build_alignment_source_validation_pass"
+    assert success["blocker"] == ""
+    assert "--project-path" in success["surfaces"]["asset_processor_launch_command"]
+    assert "branch token" in success["surfaces"]["negotiation_token_boundary"]
+
+    blocked = editor_python_smoke._asset_processor_project_build_alignment_source_validation(tmp_path / "missing")
+    assert blocked["status"] == "asset_processor_project_build_alignment_source_validation_inconclusive"
+    assert blocked["blocker"] == "blocked_by_asset_processor_alignment_repair_source_validation_unavailable"
+
+
+def test_asset_processor_alignment_classifies_missing_with_operator_remediation(tmp_path):
+    engine = _engine(tmp_path)
+    project = _project(tmp_path)
+    editor_exe = engine / "build" / "windows" / "bin" / "profile" / "Editor.exe"
+    ap_exe = engine / "build" / "windows" / "bin" / "profile" / "AssetProcessor.exe"
+    ap_exe.write_text("ap placeholder", encoding="utf-8")
+
+    result = _classify_asset_processor_project_build_alignment(
+        [],
+        target_engine_root=engine,
+        target_project_path=project,
+        target_editor_executable=editor_exe,
+        target_asset_processor_executable=ap_exe,
+        source_validated=True,
+    )
+
+    assert result["asset_processor_alignment_repair_attempted"] is True
+    assert result["asset_processor_alignment_repair_verified"] is False
+    assert result["asset_processor_alignment_blocker"] == "blocked_by_asset_processor_not_running"
+    assert result["asset_processor_operator_remediation_available"] is True
+    assert "--project-path" in result["asset_processor_operator_remediation_command_sanitized"]
+    assert "--engine-path" in result["asset_processor_operator_remediation_command_sanitized"]
+    assert result["asset_processor_launch_attempted"] is False
+    assert result["asset_cache_deletion_attempted"] is False
+    assert result["asset_processor_database_wipe_attempted"] is False
+
+
+def test_asset_processor_alignment_classifies_aligned_without_restart(tmp_path):
+    engine = _engine(tmp_path)
+    project = _project(tmp_path)
+    editor_exe = engine / "build" / "windows" / "bin" / "profile" / "Editor.exe"
+    ap_exe = engine / "build" / "windows" / "bin" / "profile" / "AssetProcessor.exe"
+    ap_exe.write_text("ap placeholder", encoding="utf-8")
+
+    result = _classify_asset_processor_project_build_alignment(
+        [
+            {
+                "name": "AssetProcessor.exe",
+                "executable_path": str(ap_exe),
+                "command_line": f'"{ap_exe}" --start-hidden --engine-path="{engine}" --project-path="{project}"',
+            }
+        ],
+        target_engine_root=engine,
+        target_project_path=project,
+        target_editor_executable=editor_exe,
+        target_asset_processor_executable=ap_exe,
+        source_validated=True,
+    )
+
+    assert result["asset_processor_alignment_repair_verified"] is True
+    assert result["asset_processor_alignment_state"] == "verified_asset_processor_project_build_alignment"
+    assert result["asset_processor_project_alignment_verified"] is True
+    assert result["asset_processor_build_root_alignment_verified"] is True
+    assert result["asset_processor_restart_attempted"] is False
+    assert result["asset_processor_operator_remediation_available"] is False
+
+
+def test_asset_processor_alignment_blocks_unowned_mismatch_with_operator_command(tmp_path):
+    engine = _engine(tmp_path)
+    project = _project(tmp_path)
+    other_project = tmp_path / "OtherProject"
+    editor_exe = engine / "build" / "windows" / "bin" / "profile" / "Editor.exe"
+    ap_exe = engine / "build" / "windows" / "bin" / "profile" / "AssetProcessor.exe"
+    other_ap = tmp_path / "other" / "AssetProcessor.exe"
+    other_ap.parent.mkdir()
+    ap_exe.write_text("ap placeholder", encoding="utf-8")
+    other_ap.write_text("other ap placeholder", encoding="utf-8")
+
+    result = _classify_asset_processor_project_build_alignment(
+        [
+            {
+                "process_id": 123,
+                "name": "AssetProcessor.exe",
+                "executable_path": str(other_ap),
+                "command_line": f'"{other_ap}" --project-path "{other_project}"',
+            }
+        ],
+        target_engine_root=engine,
+        target_project_path=project,
+        target_editor_executable=editor_exe,
+        target_asset_processor_executable=ap_exe,
+        source_validated=True,
+    )
+
+    assert result["asset_processor_mismatched_process_running"] is True
+    assert result["asset_processor_project_alignment_blocker"] == "blocked_by_asset_processor_project_mismatch"
+    assert result["asset_processor_build_root_alignment_blocker"] == "blocked_by_asset_processor_build_root_mismatch"
+    assert result["asset_processor_process_owner_verified"] is False
+    assert result["asset_processor_restart_attempted"] is False
+    assert result["asset_processor_restart_blocker"] == "blocked_by_asset_processor_process_ownership_unverified"
+    assert result["asset_processor_operator_remediation_available"] is True
+    for entry in result["asset_processor_process_inventory_sanitized"]:
+        assert "command_line" not in entry
+        assert entry["raw_command_line_emitted"] is False
+
+
+def test_asset_processor_alignment_owned_process_marker_enables_controlled_restart(tmp_path, monkeypatch):
+    engine = _engine(tmp_path)
+    project = _project(tmp_path)
+    other_project = tmp_path / "OtherProject"
+    editor_exe = engine / "build" / "windows" / "bin" / "profile" / "Editor.exe"
+    ap_exe = engine / "build" / "windows" / "bin" / "profile" / "AssetProcessor.exe"
+    ap_exe.write_text("ap placeholder", encoding="utf-8")
+    other_project.mkdir()
+
+    process_id = 321
+    command_line = f'"{ap_exe}" --start-hidden --engine-path="{engine}" --project-path="{other_project}"'
+    process_payload = json.dumps(
+        {
+            "ProcessId": process_id,
+            "Name": "AssetProcessor.exe",
+            "ExecutablePath": str(ap_exe),
+            "CommandLine": command_line,
+        }
+    )
+
+    def fake_run(*_args, **_kwargs):
+        return subprocess.CompletedProcess(args=[], returncode=0, stdout=process_payload, stderr="")
+
+    monkeypatch.setattr(editor_smoke_tool.platform_module, "system", lambda: "Windows")
+    monkeypatch.setattr(editor_smoke_tool.subprocess, "run", fake_run)
+
+    rows = _windows_editor_asset_processor_process_rows(
+        diagnostic_owned_process_ids={process_id},
+    )
+    assert rows[0]["owned_by_diagnostic_run"] is True
+
+    result = _classify_asset_processor_project_build_alignment(
+        rows,
+        target_engine_root=engine,
+        target_project_path=project,
+        target_editor_executable=editor_exe,
+        target_asset_processor_executable=ap_exe,
+        source_validated=True,
+    )
+
+    assert result["asset_processor_process_owner_verified"] is True
+    assert result["asset_processor_alignment_state"] == "blocked_by_asset_processor_project_mismatch"
+    assert result["asset_processor_repair_mode"] == "controlled_restart_if_owned"
+    assert result["asset_processor_operator_remediation_available"] is False
+
+
+def test_asset_processor_alignment_validation_accepts_preflight_blocked_before_post_probes():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_asset_processor_alignment_payload(verified=False, repair_blocked=True))
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "live_editor_execution": False,
+            "no_fake_success": True,
+            "live_non_null_editor_launch_attempted": False,
+            "live_non_null_editor_launch_completed": False,
+            "live_non_null_editor_launch_verified": False,
+            "live_non_null_editor_launch_blocker": "blocked_by_editor_launch",
+            "live_non_null_editor_launch_python_wrapper_executed": False,
+            "temp_visual_scene_context_exercise_verified": False,
+            "safe_temp_visual_scene_context_preserved": False,
+            "temp_visual_scene_cleanup_attempted": False,
+            "temp_visual_scene_cleanup_completed": False,
+            "temp_visual_scene_path": "",
+            "editor_temp_visual_scene_path": "",
+            "editor_asset_processor_negotiation_preflight_verified": False,
+            "editor_asset_processor_negotiation_state": "blocked_by_editor_launch",
+            "editor_asset_processor_negotiation_blocker": "blocked_by_editor_launch",
+            "viewport_window_materialization_repair_attempted": False,
+            "viewport_window_materialization_repair_verified": False,
+            "viewport_window_materialization_blocker": "",
+            "active_default_viewport_after_ap_alignment_attempted": False,
+            "active_default_viewport_after_ap_alignment_verified": False,
+            "active_default_viewport_after_ap_alignment_blocker": "",
+            "framecapture_target_after_ap_alignment_attempted": False,
+            "framecapture_target_after_ap_alignment_verified": False,
+            "framecapture_target_after_ap_alignment_blocker": "",
+            "atom_swapchain_after_ap_alignment_attempted": False,
+            "atom_swapchain_after_ap_alignment_verified": False,
+            "atom_swapchain_after_ap_alignment_blocker": "",
+            "viewport_window_materialization_after_ap_alignment_attempted": False,
+            "viewport_window_materialization_after_ap_alignment_verified": False,
+            "viewport_window_materialization_after_ap_alignment_blocker": "",
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "pass", result.messages
+    assert report["editor_visual_material_capture_requested"] is False
+    assert report["visual_material_gate_verified"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_asset_processor_alignment_schema_and_semantics_accept_safe_block():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_asset_processor_alignment_payload(verified=False, repair_blocked=True))
+    report["mode"] = "local_editor_python"
+    report["status"] = "pass"
+
+    schema_result = schema_validate(report, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(report, strict=True)
+
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+
+
+def test_asset_processor_alignment_validation_rejects_overclaims_and_cache_wipe():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_asset_processor_alignment_payload(verified=True, repair_blocked=False))
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "editor_visual_material_capture_requested": True,
+            "visual_material_gate_verified": True,
+            "runtime_character_proof_verified": True,
+            "asset_cache_deletion_attempted": True,
+            "asset_processor_database_wipe_attempted": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    joined = " ".join(result.messages)
+    assert "must not request screenshot/frame capture" in joined
+    assert "must not delete Asset Cache" in joined
+    assert "must not wipe Asset Processor databases" in joined
+
+
+def test_asset_processor_alignment_mode_uses_safe_temp_context_and_no_capture(tmp_path):
+    env = _live_env(tmp_path)
+    _write_editor_ap_negotiation_source_files(Path(env["O3DE_ENGINE_ROOT"]))
+
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        assert "editor_asset_processor_alignment_repair_smoke.py" in argv[-1].replace("\\", "/")
+        assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == "asset-processor-project-build-alignment-repair"
+        assert env["MAXINE_ENABLE_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] == "1"
+        assert env["MAXINE_ENABLE_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] == "1"
+        assert env["MAXINE_ENABLE_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] == "1"
+        assert "MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH" not in env
+        temp_path = Path(env["MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_PATH"])
+        temp_path.mkdir(parents=True)
+        (temp_path / "test.prefab").write_text("{}", encoding="utf-8")
+        payload = json.loads(Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).read_text(encoding="utf-8"))
+        payload.update(_asset_processor_alignment_payload(verified=False, repair_blocked=True))
+        payload["temp_visual_scene_path"] = "Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/test"
+        payload["editor_temp_visual_scene_path"] = payload["temp_visual_scene_path"]
+        payload["editor_visual_material_temp_scene_path"] = payload["temp_visual_scene_path"]
+        Path(env["MAXINE_EDITOR_SMOKE_REPORT_OUT"]).write_text(json.dumps(payload), encoding="utf-8")
+        return subprocess.CompletedProcess(args=argv, returncode=0, stdout="", stderr="")
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=env,
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="asset-processor-project-build-alignment-repair",
+    )
+
+    assert result["status"] == "pass"
+    assert result["asset_processor_alignment_repair_attempted"] is True
+    assert result["asset_processor_operator_remediation_available"] is True
+    assert result["temp_visual_scene_cleanup_attempted"] is True
+    assert result["temp_visual_scene_cleanup_completed"] is True
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["visual_material_gate_verified"] is False
+    assert result["asset_cache_deletion_attempted"] is False
+    assert result["asset_processor_database_wipe_attempted"] is False
 
 
 def _install_fake_frame_capture_modules(monkeypatch, *, callback_parameters, success_value="success"):

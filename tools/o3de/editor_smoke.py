@@ -166,6 +166,11 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_ap_negotiation_viewport_materialization_readiness_smoke.py",
+    "asset-processor-project-build-alignment-repair": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_asset_processor_alignment_repair_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -239,6 +244,11 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
         and report.get("live_editor_execution") is not True
         and str(report.get("nonblocking_viewport_swapchain_probe_blocker", "")).strip()
     )
+    blocked_asset_processor_alignment_diagnostic = (
+        diagnostic_mode == "asset-processor-project-build-alignment-repair"
+        and report.get("live_editor_execution") is not True
+        and bool(_asset_processor_alignment_preflight_blocker(report))
+    )
     if report.get("live_editor_execution") is True and str(report.get("mode", "")) in {"fixture", "unavailable"}:
         result.add_error("MXN_RUNTIME_SMOKE_FAIL", "Fixture/skipped Editor smoke reports cannot claim live Editor execution.")
     if str(report.get("mode", "")) == "local_editor_python":
@@ -246,10 +256,11 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             str(report.get("status", "")) == "pass"
             and report.get("live_editor_execution") is not True
             and not source_only_diagnostic
-            and not blocked_live_non_null_launch_diagnostic
-            and not blocked_editor_screenshot_capture_diagnostic
-            and not blocked_nonblocking_viewport_swapchain_diagnostic
-        ):
+                and not blocked_live_non_null_launch_diagnostic
+                and not blocked_editor_screenshot_capture_diagnostic
+                and not blocked_nonblocking_viewport_swapchain_diagnostic
+                and not blocked_asset_processor_alignment_diagnostic
+            ):
             result.add_error(
                 MXN_RUNTIME_SMOKE_FAIL,
                 "Local Editor Python smoke cannot pass unless live_editor_execution is true.",
@@ -341,6 +352,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_editor_nonblocking_viewport_swapchain_readiness(report, result)
         if diagnostic_mode == "editor-ap-negotiation-viewport-materialization-readiness":
             _validate_editor_ap_negotiation_viewport_materialization_readiness(report, result)
+        if diagnostic_mode == "asset-processor-project-build-alignment-repair":
+            _validate_asset_processor_project_build_alignment_repair(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -2809,25 +2822,53 @@ def _validate_editor_nonblocking_viewport_swapchain_readiness(
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Unverified non-blocking viewport/SwapChain readiness requires a precise typed blocker.")
 
 
+def _asset_processor_alignment_preflight_blocker(report: Mapping[str, Any]) -> str:
+    if str(report.get("diagnostic_mode", "")).strip() != "asset-processor-project-build-alignment-repair":
+        return ""
+    live_ready = (
+        report.get("live_non_null_editor_launch_verified") is True
+        and report.get("temp_visual_scene_context_exercise_verified") is True
+        and report.get("safe_temp_visual_scene_context_preserved") is True
+    )
+    if live_ready:
+        return ""
+    for field in (
+        "asset_processor_alignment_blocker",
+        "editor_asset_processor_negotiation_blocker",
+        "live_non_null_editor_launch_blocker",
+        "non_null_editor_desktop_rhi_readiness_blocker",
+        "temp_visual_scene_context_exercise_blocker",
+        "temp_visual_scene_blocker",
+    ):
+        blocker = str(report.get(field, "")).strip()
+        if blocker:
+            return blocker
+    return ""
+
+
 def _validate_editor_ap_negotiation_viewport_materialization_readiness(
     report: Mapping[str, Any],
     result: ValidationResult,
+    *,
+    allow_preflight_blocked: bool = False,
 ) -> None:
-    for field, label in {
-        "live_non_null_editor_launch_attempted": "live non-null Editor launch attempted",
-        "live_non_null_editor_launch_completed": "live non-null Editor launch completed",
-        "live_non_null_editor_launch_verified": "live non-null Editor launch verified",
-        "live_non_null_editor_launch_python_wrapper_executed": "Editor Python wrapper executed",
-        "visible_desktop_session_verified": "visible desktop/session readiness",
-        "gpu_or_driver_readiness_verified": "GPU/driver readiness",
-        "rhi_readiness_verified": "RHI readiness",
-        "temp_visual_scene_context_exercise_verified": "safe temp visual scene context exercise",
-        "temp_visual_scene_cleanup_attempted": "temp scene cleanup attempted",
-        "temp_visual_scene_cleanup_completed": "temp scene cleanup completed",
-        "safe_temp_visual_scene_context_preserved": "safe temp visual scene context preservation",
-    }.items():
-        if report.get(field) is not True:
-            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Editor/AP negotiation readiness requires {label}.")
+    preflight_blocker = _asset_processor_alignment_preflight_blocker(report) if allow_preflight_blocked else ""
+    if not preflight_blocker:
+        for field, label in {
+            "live_non_null_editor_launch_attempted": "live non-null Editor launch attempted",
+            "live_non_null_editor_launch_completed": "live non-null Editor launch completed",
+            "live_non_null_editor_launch_verified": "live non-null Editor launch verified",
+            "live_non_null_editor_launch_python_wrapper_executed": "Editor Python wrapper executed",
+            "visible_desktop_session_verified": "visible desktop/session readiness",
+            "gpu_or_driver_readiness_verified": "GPU/driver readiness",
+            "rhi_readiness_verified": "RHI readiness",
+            "temp_visual_scene_context_exercise_verified": "safe temp visual scene context exercise",
+            "temp_visual_scene_cleanup_attempted": "temp scene cleanup attempted",
+            "temp_visual_scene_cleanup_completed": "temp scene cleanup completed",
+            "safe_temp_visual_scene_context_preserved": "safe temp visual scene context preservation",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Editor/AP negotiation readiness requires {label}.")
 
     if report.get("editor_asset_processor_negotiation_preflight_attempted") is not True:
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor/AP negotiation preflight must record attempted=true.")
@@ -2841,20 +2882,26 @@ def _validate_editor_ap_negotiation_viewport_materialization_readiness(
     ):
         result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Unverified Editor/AP negotiation preflight requires a blocker.")
 
-    for field, label in {
+    required_attempt_fields = {
         "editor_asset_processor_modal_detection_attempted": "negotiation-failed modal detection",
         "editor_asset_processor_project_alignment_attempted": "AP/Editor project alignment",
         "editor_asset_processor_build_root_alignment_attempted": "AP/Editor build-root alignment",
         "asset_processor_process_inventory_attempted": "Asset Processor process inventory",
-        "viewport_window_materialization_repair_attempted": "viewport/window materialization readiness",
-        "active_default_viewport_after_ap_alignment_attempted": "active/default viewport after AP alignment",
-        "framecapture_target_after_ap_alignment_attempted": "FrameCapture target after AP alignment",
-        "atom_swapchain_after_ap_alignment_attempted": "Atom SwapChain after AP alignment",
-    }.items():
+    }
+    if not preflight_blocker:
+        required_attempt_fields.update(
+            {
+                "viewport_window_materialization_repair_attempted": "viewport/window materialization readiness",
+                "active_default_viewport_after_ap_alignment_attempted": "active/default viewport after AP alignment",
+                "framecapture_target_after_ap_alignment_attempted": "FrameCapture target after AP alignment",
+                "atom_swapchain_after_ap_alignment_attempted": "Atom SwapChain after AP alignment",
+            }
+        )
+    for field, label in required_attempt_fields.items():
         if report.get(field) is not True:
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Editor/AP negotiation readiness requires {label}.")
 
-    for field, blocker_field, label in (
+    post_alignment_blocker_fields = (
         (
             "editor_asset_processor_project_alignment_verified",
             "editor_asset_processor_project_alignment_blocker",
@@ -2885,7 +2932,10 @@ def _validate_editor_ap_negotiation_viewport_materialization_readiness(
             "atom_swapchain_after_ap_alignment_blocker",
             "Atom SwapChain after AP alignment",
         ),
-    ):
+    )
+    if preflight_blocker:
+        post_alignment_blocker_fields = post_alignment_blocker_fields[:2]
+    for field, blocker_field, label in post_alignment_blocker_fields:
         if report.get(field) is not True and not str(report.get(blocker_field, "")).strip():
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Unverified {label} requires a typed blocker.")
 
@@ -2933,13 +2983,118 @@ def _validate_editor_ap_negotiation_viewport_materialization_readiness(
 
     temp_path = str(report.get("temp_visual_scene_path", "") or report.get("editor_temp_visual_scene_path", ""))
     normalized_temp_path = temp_path.replace("\\", "/").strip()
-    if not normalized_temp_path.startswith("Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context"):
+    if normalized_temp_path and not normalized_temp_path.startswith(
+        "Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context"
+    ):
+        result.add_error(
+            MXN_PATH_UNSAFE,
+            "Editor/AP negotiation temp path must remain under Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context.",
+        )
+    if not preflight_blocker and not normalized_temp_path:
         result.add_error(
             MXN_PATH_UNSAFE,
             "Editor/AP negotiation temp path must remain under Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context.",
         )
     if "defaultlevel" in normalized_temp_path.lower() or "production" in normalized_temp_path.lower():
         result.add_error(MXN_PATH_UNSAFE, "Editor/AP negotiation temp path cannot include defaultlevel or production names.")
+
+
+def _validate_asset_processor_project_build_alignment_repair(
+    report: Mapping[str, Any],
+    result: ValidationResult,
+) -> None:
+    _validate_editor_ap_negotiation_viewport_materialization_readiness(
+        report,
+        result,
+        allow_preflight_blocked=True,
+    )
+    preflight_blocker = _asset_processor_alignment_preflight_blocker(report)
+    for field, label in {
+        "asset_processor_alignment_repair_attempted": "AP alignment repair/safe-block attempted",
+        "asset_processor_alignment_source_validated": "AP alignment source validation",
+        "asset_processor_process_inventory_attempted": "AP process inventory",
+        "asset_processor_executable_path_alignment_attempted": "AP executable path alignment",
+        "asset_processor_project_alignment_attempted": "AP project path alignment",
+        "asset_processor_build_root_alignment_attempted": "AP build-root alignment",
+        "asset_processor_branch_project_token_alignment_attempted": "AP branch/project token boundary",
+    }.items():
+        if report.get(field) is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"AP alignment repair diagnostic requires {label}.")
+    if not preflight_blocker and report.get("viewport_window_materialization_after_ap_alignment_attempted") is not True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "AP alignment repair diagnostic requires viewport/window materialization after AP alignment.",
+        )
+
+    for field in (
+        "asset_processor_alignment_state",
+        "asset_processor_target_engine_root",
+        "asset_processor_target_build_root",
+        "asset_processor_target_project_path",
+        "asset_processor_target_executable_path",
+        "asset_processor_target_project_name",
+        "asset_processor_repair_mode",
+    ):
+        if not str(report.get(field, "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"AP alignment repair diagnostic requires {field}.")
+
+    if (
+        report.get("asset_processor_alignment_repair_verified") is not True
+        and not str(report.get("asset_processor_alignment_blocker", "")).strip()
+    ):
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Unverified AP alignment repair requires a typed blocker.")
+    alignment_blocker_fields = (
+        (
+            "asset_processor_project_alignment_verified",
+            "asset_processor_project_alignment_blocker",
+            "AP project alignment",
+        ),
+        (
+            "asset_processor_build_root_alignment_verified",
+            "asset_processor_build_root_alignment_blocker",
+            "AP build-root alignment",
+        ),
+        (
+            "asset_processor_branch_project_token_alignment_verified",
+            "asset_processor_branch_project_token_alignment_blocker",
+            "AP branch/project token alignment",
+        ),
+        (
+            "viewport_window_materialization_after_ap_alignment_verified",
+            "viewport_window_materialization_after_ap_alignment_blocker",
+            "viewport/window materialization after AP alignment",
+        ),
+    )
+    if preflight_blocker:
+        alignment_blocker_fields = alignment_blocker_fields[:3]
+    for field, blocker_field, label in alignment_blocker_fields:
+        if report.get(field) is not True and not str(report.get(blocker_field, "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Unverified {label} requires a typed blocker.")
+
+    if report.get("asset_processor_operator_remediation_available") is True:
+        command = str(report.get("asset_processor_operator_remediation_command_sanitized", ""))
+        command_lower = command.lower()
+        if "--project-path" not in command_lower or "--engine-path" not in command_lower or "assetprocessor.exe" not in command_lower:
+            result.add_error(
+                MXN_RUNTIME_SMOKE_FAIL,
+                "AP alignment operator remediation must include sanitized AssetProcessor.exe, --engine-path, and --project-path.",
+            )
+    for inventory_field in ("asset_processor_process_inventory_sanitized", "editor_process_inventory_sanitized"):
+        entries = report.get(inventory_field, [])
+        if not isinstance(entries, list):
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"{inventory_field} must be a sanitized list.")
+            continue
+        for entry in entries:
+            if isinstance(entry, Mapping) and ("command_line" in entry or entry.get("raw_command_line_emitted") is True):
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, "AP alignment process inventory must not emit raw command lines.")
+
+    for field, message in (
+        ("asset_cache_deletion_attempted", "AP alignment repair must not delete Asset Cache."),
+        ("asset_processor_database_wipe_attempted", "AP alignment repair must not wipe Asset Processor databases."),
+        ("asset_cache_deleted", "AP alignment repair must not delete Asset Cache."),
+    ):
+        if report.get(field) is True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, message)
 
 
 def _validate_direct_procprefab_content_assertions(
@@ -3049,6 +3204,13 @@ def _normalise_command_path_token(value: str | Path) -> str:
     return normalized
 
 
+def _display_command_path_token(value: str | Path) -> str:
+    normalized = str(value).replace("\\", "/").strip().strip("\"'")
+    while len(normalized) > 3 and normalized.endswith("/"):
+        normalized = normalized[:-1]
+    return normalized
+
+
 def _process_command_project_path_values(command_line: str) -> List[str]:
     values: List[str] = []
     for match in re.finditer(
@@ -3065,6 +3227,24 @@ def _process_command_project_path_values(command_line: str) -> List[str]:
 def _process_command_project_path_matches(command_line: str, path: Path) -> bool:
     expected = _normalise_command_path_token(path)
     return bool(expected and expected in _process_command_project_path_values(command_line))
+
+
+def _process_command_engine_path_values(command_line: str) -> List[str]:
+    values: List[str] = []
+    for match in re.finditer(
+        r"(?i)(?:^|\s)--engine-path(?:\s+|=)(?:\"([^\"]+)\"|'([^']+)'|([^\s]+))",
+        command_line,
+    ):
+        value = next((group for group in match.groups() if group), "")
+        normalized = _normalise_command_path_token(value)
+        if normalized:
+            values.append(normalized)
+    return values
+
+
+def _process_command_engine_path_matches(command_line: str, path: Path) -> bool:
+    expected = _normalise_command_path_token(path)
+    return bool(expected and expected in _process_command_engine_path_values(command_line))
 
 
 def _sanitized_process_entry(
@@ -3199,9 +3379,256 @@ def _classify_editor_asset_processor_process_inventory(
     }
 
 
-def _windows_editor_asset_processor_process_rows(timeout_seconds: int = 5) -> List[Dict[str, Any]]:
+def _asset_processor_operator_remediation_command(
+    *,
+    target_asset_processor_executable: Path,
+    target_engine_root: Path,
+    target_project_path: Path,
+) -> str:
+    return (
+        f'"{_display_command_path_token(target_asset_processor_executable)}" --start-hidden '
+        f'--engine-path="{_display_command_path_token(target_engine_root)}" '
+        f'--project-path="{_display_command_path_token(target_project_path)}"'
+    )
+
+
+def _diagnostic_owned_asset_processor_process_ids(env: Mapping[str, str]) -> set[int]:
+    values: List[str] = []
+    for key in (
+        "MAXINE_ASSET_PROCESSOR_DIAGNOSTIC_OWNED_PIDS",
+        "MAXINE_AP_DIAGNOSTIC_OWNED_PROCESS_IDS",
+        "MAXINE_AP_DIAGNOSTIC_OWNED_PROCESS_ID",
+    ):
+        raw = str(env.get(key, "")).strip()
+        if raw:
+            values.extend(token for token in re.split(r"[,\s;]+", raw) if token)
+    process_ids: set[int] = set()
+    for value in values:
+        try:
+            parsed = int(value)
+        except ValueError:
+            continue
+        if parsed > 0:
+            process_ids.add(parsed)
+    return process_ids
+
+
+def _classify_asset_processor_project_build_alignment(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    target_engine_root: Path,
+    target_project_path: Path,
+    target_editor_executable: Path,
+    target_asset_processor_executable: Path,
+    source_validated: bool,
+) -> Dict[str, Any]:
+    process_inventory = _classify_editor_asset_processor_process_inventory(
+        rows,
+        expected_project_path=target_project_path,
+        expected_editor_executable=target_editor_executable,
+        expected_asset_processor_executable=target_asset_processor_executable,
+    )
+    ap_rows: List[Mapping[str, Any]] = []
+    for row in rows:
+        name = str(row.get("name") or row.get("Name") or "").lower()
+        executable_path = str(row.get("executable_path") or row.get("ExecutablePath") or "").lower()
+        if "assetprocessor" in name or executable_path.endswith("assetprocessor.exe"):
+            ap_rows.append(row)
+
+    sanitized_ap = list(process_inventory.get("asset_processor_process_inventory_sanitized", []))
+    ap_running = bool(sanitized_ap)
+    process_count = len(sanitized_ap)
+    target_process_running = any(entry.get("expected_executable") is True for entry in sanitized_ap)
+    mismatched_process_running = bool(
+        ap_running
+        and any(
+            entry.get("expected_executable") is not True
+            or entry.get("same_build_bin_as_editor") is not True
+            or (
+                entry.get("command_line_project_path_present") is True
+                and entry.get("command_line_project_path_matches") is not True
+            )
+            for entry in sanitized_ap
+        )
+    )
+    executable_alignment_verified = bool(target_process_running)
+    build_alignment_verified = bool(
+        target_process_running and any(entry.get("same_build_bin_as_editor") is True for entry in sanitized_ap)
+    )
+    project_alignment_verified = bool(
+        ap_running and any(entry.get("command_line_project_path_matches") is True for entry in sanitized_ap)
+    )
+    explicit_project_mismatch = any(
+        entry.get("command_line_project_path_present") is True
+        and entry.get("command_line_project_path_matches") is not True
+        for entry in sanitized_ap
+    )
+    explicit_engine_mismatch = any(
+        _process_command_engine_path_values(str(row.get("command_line") or row.get("CommandLine") or ""))
+        and not _process_command_engine_path_matches(
+            str(row.get("command_line") or row.get("CommandLine") or ""),
+            target_engine_root,
+        )
+        for row in ap_rows
+    )
+    owner_verified = any(row.get("owned_by_diagnostic_run") is True for row in ap_rows)
+    operator_remediation_command = _asset_processor_operator_remediation_command(
+        target_asset_processor_executable=target_asset_processor_executable,
+        target_engine_root=target_engine_root,
+        target_project_path=target_project_path,
+    )
+
+    if not source_validated:
+        alignment_verified = False
+        state = "blocked_by_asset_processor_alignment_repair_source_validation_unavailable"
+        blocker = "blocked_by_asset_processor_alignment_repair_source_validation_unavailable"
+        repair_mode = "classify_only"
+        remediation_available = False
+        remediation_reason = ""
+    elif not ap_running:
+        alignment_verified = False
+        state = "blocked_by_asset_processor_not_running"
+        blocker = "blocked_by_asset_processor_not_running"
+        repair_mode = "dry_run_operator_repair_command"
+        remediation_available = True
+        remediation_reason = "No running Asset Processor process was found for the target rig."
+    elif project_alignment_verified and build_alignment_verified and executable_alignment_verified:
+        alignment_verified = True
+        state = "verified_asset_processor_project_build_alignment"
+        blocker = ""
+        repair_mode = "classify_only"
+        remediation_available = False
+        remediation_reason = ""
+    elif explicit_project_mismatch:
+        alignment_verified = False
+        state = "blocked_by_asset_processor_project_mismatch"
+        blocker = (
+            "blocked_by_asset_processor_process_ownership_unverified"
+            if not owner_verified
+            else "blocked_by_asset_processor_project_mismatch"
+        )
+        repair_mode = "dry_run_operator_repair_command" if not owner_verified else "controlled_restart_if_owned"
+        remediation_available = not owner_verified
+        remediation_reason = "Mismatched Asset Processor project path is running and process ownership is not verified."
+    elif not build_alignment_verified or explicit_engine_mismatch:
+        alignment_verified = False
+        state = "blocked_by_asset_processor_build_root_mismatch"
+        blocker = (
+            "blocked_by_asset_processor_process_ownership_unverified"
+            if not owner_verified
+            else "blocked_by_asset_processor_build_root_mismatch"
+        )
+        repair_mode = "dry_run_operator_repair_command" if not owner_verified else "controlled_restart_if_owned"
+        remediation_available = not owner_verified
+        remediation_reason = "Mismatched Asset Processor build root is running and process ownership is not verified."
+    else:
+        alignment_verified = False
+        state = "blocked_by_asset_processor_project_mismatch"
+        blocker = "blocked_by_asset_processor_project_mismatch"
+        repair_mode = "dry_run_operator_repair_command"
+        remediation_available = True
+        remediation_reason = "Asset Processor project/build-root alignment could not be proven."
+
+    executable_blocker = "" if executable_alignment_verified else (
+        "blocked_by_asset_processor_not_running" if not ap_running else "blocked_by_asset_processor_build_root_mismatch"
+    )
+    project_blocker = "" if project_alignment_verified else (
+        "blocked_by_asset_processor_not_running"
+        if not ap_running
+        else "blocked_by_asset_processor_project_mismatch"
+    )
+    build_blocker = "" if build_alignment_verified and not explicit_engine_mismatch else (
+        "blocked_by_asset_processor_not_running"
+        if not ap_running
+        else "blocked_by_asset_processor_build_root_mismatch"
+    )
+    owner_blocker = "" if owner_verified else "blocked_by_asset_processor_process_ownership_unverified"
+    restart_allowed = bool(owner_verified and not alignment_verified and source_validated)
+
+    payload: Dict[str, Any] = dict(process_inventory)
+    payload.update(
+        {
+            "asset_processor_alignment_repair_attempted": True,
+            "asset_processor_alignment_repair_verified": alignment_verified,
+            "asset_processor_alignment_source_validated": source_validated,
+            "asset_processor_alignment_state": state,
+            "asset_processor_alignment_blocker": blocker,
+            "asset_processor_target_engine_root": _display_command_path_token(target_engine_root),
+            "asset_processor_target_build_root": _display_command_path_token(target_asset_processor_executable.parent),
+            "asset_processor_target_project_path": _display_command_path_token(target_project_path),
+            "asset_processor_target_executable_path": _display_command_path_token(
+                target_asset_processor_executable
+            ),
+            "asset_processor_target_project_name": target_project_path.name,
+            "asset_processor_target_branch_token_available": False,
+            "asset_processor_target_branch_token_sanitized": "unavailable_without_runtime_negotiation_query",
+            "asset_processor_process_count": process_count,
+            "asset_processor_target_process_running": target_process_running,
+            "asset_processor_mismatched_process_running": mismatched_process_running,
+            "asset_processor_process_owner_verified": owner_verified,
+            "asset_processor_process_owner_blocker": owner_blocker,
+            "asset_processor_executable_path_alignment_attempted": True,
+            "asset_processor_executable_path_alignment_verified": executable_alignment_verified,
+            "asset_processor_executable_path_alignment_blocker": executable_blocker,
+            "asset_processor_project_alignment_attempted": True,
+            "asset_processor_project_alignment_verified": project_alignment_verified,
+            "asset_processor_project_alignment_blocker": project_blocker,
+            "asset_processor_build_root_alignment_attempted": True,
+            "asset_processor_build_root_alignment_verified": bool(build_alignment_verified and not explicit_engine_mismatch),
+            "asset_processor_build_root_alignment_blocker": build_blocker,
+            "asset_processor_branch_project_token_alignment_attempted": True,
+            "asset_processor_branch_project_token_alignment_verified": False,
+            "asset_processor_branch_project_token_alignment_blocker": (
+                "blocked_by_asset_processor_branch_project_token_alignment_unavailable"
+            ),
+            "asset_processor_repair_mode": repair_mode,
+            "asset_processor_operator_remediation_available": remediation_available,
+            "asset_processor_operator_remediation_command_sanitized": (
+                operator_remediation_command if remediation_available else ""
+            ),
+            "asset_processor_operator_remediation_reason": remediation_reason,
+            "asset_processor_launch_attempted": False,
+            "asset_processor_launch_completed": False,
+            "asset_processor_launch_blocker": ""
+            if ap_running
+            else "blocked_by_asset_processor_launch_requires_explicit_operator_or_owned_harness",
+            "asset_processor_restart_attempted": False,
+            "asset_processor_restart_completed": False,
+            "asset_processor_restart_blocker": ""
+            if restart_allowed
+            else ("not_selected_alignment_verified" if alignment_verified else owner_blocker),
+            "asset_cache_deletion_attempted": False,
+            "asset_processor_database_wipe_attempted": False,
+            "editor_asset_processor_project_alignment_verified": project_alignment_verified,
+            "editor_asset_processor_project_alignment_blocker": ""
+            if project_alignment_verified
+            else "blocked_by_editor_asset_processor_project_mismatch",
+            "editor_asset_processor_build_root_alignment_verified": bool(
+                build_alignment_verified and not explicit_engine_mismatch
+            ),
+            "editor_asset_processor_build_root_alignment_blocker": ""
+            if build_alignment_verified and not explicit_engine_mismatch
+            else "blocked_by_editor_asset_processor_build_root_mismatch",
+            "editor_asset_processor_negotiation_preflight_verified": alignment_verified,
+            "editor_asset_processor_negotiation_state": "verified_editor_asset_processor_negotiation_after_alignment"
+            if alignment_verified
+            else state,
+            "editor_asset_processor_negotiation_blocker": ""
+            if alignment_verified
+            else blocker,
+        }
+    )
+    return payload
+
+
+def _windows_editor_asset_processor_process_rows(
+    timeout_seconds: int = 5,
+    *,
+    diagnostic_owned_process_ids: set[int] | None = None,
+) -> List[Dict[str, Any]]:
     if platform_module.system().lower() != "windows":
         return []
+    owned_process_ids = set(diagnostic_owned_process_ids or set())
     command = (
         "$ErrorActionPreference='SilentlyContinue'; "
         "$rows = Get-CimInstance Win32_Process | "
@@ -3231,12 +3658,18 @@ def _windows_editor_asset_processor_process_rows(timeout_seconds: int = 5) -> Li
     if isinstance(parsed, list):
         for item in parsed:
             if isinstance(item, Mapping):
+                process_id = item.get("ProcessId")
+                try:
+                    process_id_int = int(process_id)
+                except (TypeError, ValueError):
+                    process_id_int = 0
                 rows.append(
                     {
-                        "process_id": item.get("ProcessId"),
+                        "process_id": process_id,
                         "name": item.get("Name", ""),
                         "executable_path": item.get("ExecutablePath", ""),
                         "command_line": item.get("CommandLine", ""),
+                        "owned_by_diagnostic_run": process_id_int in owned_process_ids,
                     }
                 )
     return rows
@@ -3872,12 +4305,20 @@ def _execute_live_editor_smoke(
     ap_negotiation_viewport_materialization_mode = (
         diagnostic_mode == "editor-ap-negotiation-viewport-materialization-readiness"
     )
+    asset_processor_alignment_repair_mode = (
+        diagnostic_mode == "asset-processor-project-build-alignment-repair"
+    )
     safe_temp_scene_exercise_mode = (
         safe_temp_visual_scene_context_mode
         or nonblocking_viewport_swapchain_readiness_mode
         or ap_negotiation_viewport_materialization_mode
+        or asset_processor_alignment_repair_mode
     )
-    nonblocking_probe_family_mode = nonblocking_viewport_swapchain_readiness_mode or ap_negotiation_viewport_materialization_mode
+    nonblocking_probe_family_mode = (
+        nonblocking_viewport_swapchain_readiness_mode
+        or ap_negotiation_viewport_materialization_mode
+        or asset_processor_alignment_repair_mode
+    )
     selected_render_capture_rhi = _selected_non_null_render_capture_rhi(env)
     non_null_editor_mode = (
         non_null_render_capture_mode
@@ -3948,6 +4389,7 @@ def _execute_live_editor_smoke(
                 "MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_PATH",
                 "MAXINE_ALLOW_EDITOR_ACTIVE_VIEWPORT_PYTHON_PROBE",
                 "MAXINE_ENABLE_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS",
+                "MAXINE_ENABLE_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR",
             )
         }
         os.environ["O3DE_ENGINE_ROOT"] = str(engine_root)
@@ -3961,6 +4403,11 @@ def _execute_live_editor_smoke(
             os.environ["MAXINE_ENABLE_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
             os.environ["MAXINE_ENABLE_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
             os.environ["MAXINE_ENABLE_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] = "1"
+        if asset_processor_alignment_repair_mode:
+            os.environ["MAXINE_ENABLE_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
+            os.environ["MAXINE_ENABLE_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
+            os.environ["MAXINE_ENABLE_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] = "1"
+            os.environ["MAXINE_ENABLE_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] = "1"
         if screenshot_capture_artifact_readiness_mode:
             os.environ["MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_ROOT"] = str(output_dir)
             os.environ["MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH"] = str(
@@ -4148,7 +4595,7 @@ def _execute_live_editor_smoke(
                         "nonblocking_viewport_swapchain_probe_strategies": [],
                     }
                 )
-            if ap_negotiation_viewport_materialization_mode:
+            if ap_negotiation_viewport_materialization_mode or asset_processor_alignment_repair_mode:
                 ap_source_validation = (
                     editor_python_smoke._editor_ap_negotiation_viewport_materialization_source_validation(engine_root)
                 )
@@ -4160,12 +4607,34 @@ def _execute_live_editor_smoke(
                     ap_source_validation.get("blocker")
                     or "blocked_by_editor_asset_processor_negotiation_source_validation_unavailable"
                 )
-                process_inventory = _classify_editor_asset_processor_process_inventory(
-                    _windows_editor_asset_processor_process_rows(),
-                    expected_project_path=project_path,
-                    expected_editor_executable=editor_executable,
-                    expected_asset_processor_executable=editor_executable.parent / "AssetProcessor.exe",
+                process_rows = _windows_editor_asset_processor_process_rows(
+                    diagnostic_owned_process_ids=_diagnostic_owned_asset_processor_process_ids(env)
                 )
+                if asset_processor_alignment_repair_mode:
+                    alignment_source_validation = (
+                        editor_python_smoke._asset_processor_project_build_alignment_source_validation(engine_root)
+                    )
+                    alignment_source_validated = (
+                        alignment_source_validation.get("status")
+                        == "asset_processor_project_build_alignment_source_validation_pass"
+                    )
+                    process_inventory = _classify_asset_processor_project_build_alignment(
+                        process_rows,
+                        target_engine_root=engine_root,
+                        target_project_path=project_path,
+                        target_editor_executable=editor_executable,
+                        target_asset_processor_executable=editor_executable.parent / "AssetProcessor.exe",
+                        source_validated=alignment_source_validated,
+                    )
+                else:
+                    alignment_source_validation = {}
+                    alignment_source_validated = False
+                    process_inventory = _classify_editor_asset_processor_process_inventory(
+                        process_rows,
+                        expected_project_path=project_path,
+                        expected_editor_executable=editor_executable,
+                        expected_asset_processor_executable=editor_executable.parent / "AssetProcessor.exe",
+                    )
                 template.update(process_inventory)
                 template.update(
                     {
@@ -4199,6 +4668,39 @@ def _execute_live_editor_smoke(
                         "viewport_window_materialization_blocker": "",
                     }
                 )
+                if asset_processor_alignment_repair_mode:
+                    template.update(
+                        {
+                            "asset_processor_alignment_source_validated": alignment_source_validated,
+                            "asset_processor_alignment_source_validation_status": (
+                                alignment_source_validation.get("status", "")
+                            ),
+                            "asset_processor_alignment_source_validation": alignment_source_validation,
+                            "asset_processor_alignment_source_files": [
+                                str(spec["path"])
+                                for spec in editor_python_smoke._asset_processor_project_build_alignment_source_specs(
+                                    engine_root
+                                )
+                            ],
+                            "editor_asset_processor_negotiation_preflight_verified": (
+                                template.get("editor_asset_processor_negotiation_preflight_verified") is True
+                                and ap_source_validated
+                                and alignment_source_validated
+                            ),
+                            "editor_asset_processor_negotiation_blocker": ""
+                            if (
+                                template.get("editor_asset_processor_negotiation_preflight_verified") is True
+                                and ap_source_validated
+                                and alignment_source_validated
+                            )
+                            else str(
+                                template.get("editor_asset_processor_negotiation_blocker")
+                                or template.get("asset_processor_alignment_blocker")
+                                or alignment_source_validation.get("blocker")
+                                or ap_source_blocker
+                            ),
+                        }
+                    )
         finally:
             for key, value in previous_env.items():
                 if value is None:
@@ -4225,6 +4727,13 @@ def _execute_live_editor_smoke(
             ap_negotiation_viewport_materialization_mode
             and template.get("editor_asset_processor_negotiation_source_validated") is not True
         )
+        asset_processor_alignment_source_blocked = (
+            asset_processor_alignment_repair_mode
+            and (
+                template.get("editor_asset_processor_negotiation_source_validated") is not True
+                or template.get("asset_processor_alignment_source_validated") is not True
+            )
+        )
         if (
             template.get("non_null_editor_desktop_rhi_readiness_verified") is not True
             or template.get("live_non_null_editor_launch_source_validation_verified") is not True
@@ -4233,6 +4742,7 @@ def _execute_live_editor_smoke(
             or temp_context_source_blocked
             or nonblocking_source_blocked
             or ap_negotiation_source_blocked
+            or asset_processor_alignment_source_blocked
         ):
             blocked_by_readiness = template.get("non_null_editor_desktop_rhi_readiness_verified") is not True
             blocked_by_launch_source = template.get("live_non_null_editor_launch_source_validation_verified") is not True
@@ -4262,6 +4772,14 @@ def _execute_live_editor_smoke(
                     if ap_negotiation_source_blocked
                     else ""
                 )
+                or (
+                    (
+                        template.get("asset_processor_alignment_blocker")
+                        or template.get("editor_asset_processor_negotiation_blocker")
+                    )
+                    if asset_processor_alignment_source_blocked
+                    else ""
+                )
                 or template.get("non_null_editor_launch_blocker")
                 or template.get("live_non_null_editor_launch_blocker")
                 or (
@@ -4277,6 +4795,8 @@ def _execute_live_editor_smoke(
                     if nonblocking_source_blocked
                     else "blocked_by_editor_asset_processor_negotiation_source_validation_unavailable"
                     if ap_negotiation_source_blocked
+                    else "blocked_by_asset_processor_alignment_repair_source_validation_unavailable"
+                    if asset_processor_alignment_source_blocked
                     else "blocked_by_editor_screenshot_capture_requires_additional_source_validation"
                 )
             )
@@ -4457,6 +4977,11 @@ def _execute_live_editor_smoke(
     if ap_negotiation_viewport_materialization_mode:
         editor_env.setdefault("MAXINE_ENABLE_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS", "1")
         editor_env.setdefault("MAXINE_ALLOW_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS", "1")
+    if asset_processor_alignment_repair_mode:
+        editor_env.setdefault("MAXINE_ENABLE_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS", "1")
+        editor_env.setdefault("MAXINE_ALLOW_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS", "1")
+        editor_env.setdefault("MAXINE_ENABLE_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR", "1")
+        editor_env.setdefault("MAXINE_ALLOW_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR", "1")
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_NAME"] = level_name_for_editor
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_PATH"] = str(project_path / temp_level_rel)
     editor_env["MAXINE_EDITOR_SMOKE_ALLOW_TEMP_SANDBOX_LEVEL"] = "1"
@@ -4837,7 +5362,7 @@ def _execute_live_editor_smoke(
                     "runtime_character_proof_verified": False,
                 }
             )
-        if ap_negotiation_viewport_materialization_mode:
+        if ap_negotiation_viewport_materialization_mode or asset_processor_alignment_repair_mode:
             report.update(
                 {
                     "editor_visual_material_capture_requested": False,
@@ -4852,6 +5377,8 @@ def _execute_live_editor_smoke(
                     "runtime_character_proof_claimed": False,
                     "runtime_character_proof_verified": False,
                     "asset_cache_deleted": False,
+                    "asset_cache_deletion_attempted": False,
+                    "asset_processor_database_wipe_attempted": False,
                     "cache_heuristic_used": False,
                 }
             )
@@ -6408,6 +6935,21 @@ def _parse_args() -> argparse.Namespace:
         help="Set the explicit gated marker for Editor/AP negotiation and viewport materialization readiness.",
     )
     parser.add_argument(
+        "--diagnose-asset-processor-project-build-alignment-repair",
+        action="store_true",
+        help="Run deterministic Asset Processor project/build-root alignment repair or safe-block diagnostic.",
+    )
+    parser.add_argument(
+        "--diagnose-asset-processor-alignment-repair",
+        action="store_true",
+        help="Alias for the Asset Processor project/build-root alignment repair diagnostic.",
+    )
+    parser.add_argument(
+        "--enable-asset-processor-project-build-alignment-repair-fixture",
+        action="store_true",
+        help="Set the explicit gated marker for Asset Processor project/build-root alignment repair.",
+    )
+    parser.add_argument(
         "--editor-render-capture-rhi",
         choices=sorted(NON_NULL_RENDER_CAPTURE_RHIS),
         default=None,
@@ -6618,6 +7160,23 @@ def main() -> int:
         env_map["MAXINE_ALLOW_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
         env_map["MAXINE_ALLOW_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
         env_map["MAXINE_ALLOW_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] = "1"
+    if (
+        args.diagnose_asset_processor_project_build_alignment_repair
+        or args.diagnose_asset_processor_alignment_repair
+        or args.enable_asset_processor_project_build_alignment_repair_fixture
+    ):
+        diagnostic_mode = "asset-processor-project-build-alignment-repair"
+        env_map["MAXINE_ENABLE_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] = "1"
+        env_map["MAXINE_ENABLE_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] = "1"
+    if args.enable_asset_processor_project_build_alignment_repair_fixture:
+        env_map["MAXINE_ALLOW_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] = "1"
+        env_map["MAXINE_ALLOW_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] = "1"
     if args.editor_render_capture_rhi:
         env_map["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = args.editor_render_capture_rhi
     result = run_editor_smoke_corpus(
