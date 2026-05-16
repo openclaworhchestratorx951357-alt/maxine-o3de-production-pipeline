@@ -7058,6 +7058,111 @@ def _focused_viewport_materialization_payload(*, materialized: bool = True, widg
     return payload
 
 
+def _main_window_deep_dive_payload(*, verified: bool = False, hidden_blocked: bool = True) -> dict:
+    payload = _focused_viewport_materialization_payload(materialized=False, widget_blocked=True)
+    blocker = "" if verified else "blocked_by_editor_main_window_hidden_candidate_activation_unsafe"
+    state = "verified_editor_main_window_activation_deep_dive" if verified else blocker
+    payload.update(
+        {
+            "diagnostic_mode": "editor-main-window-activation-materialization-deep-dive",
+            "editor_main_window_activation_deep_dive_attempted": True,
+            "editor_main_window_activation_deep_dive_verified": verified,
+            "editor_main_window_activation_deep_dive_source_validated": True,
+            "editor_main_window_activation_deep_dive_state": state,
+            "editor_main_window_activation_deep_dive_blocker": blocker,
+            "editor_main_window_candidate_inventory_attempted": True,
+            "editor_main_window_candidate_inventory_sanitized": [
+                {
+                    "class_name": "QMainWindow",
+                    "visible": False,
+                    "hidden": hidden_blocked,
+                    "minimized": False,
+                    "is_qmainwindow": True,
+                    "likely_editor_shell": True,
+                    "activation_eligible": False,
+                    "activation_unsafe": hidden_blocked,
+                    "raw_title_emitted": False,
+                    "raw_object_name_emitted": False,
+                }
+            ],
+            "editor_main_window_candidate_count": 1,
+            "editor_main_window_candidate_classification_attempted": True,
+            "editor_main_window_candidate_classification_verified": True,
+            "editor_main_window_candidate_classification_blocker": "",
+            "editor_main_window_visible_candidate_count": 0,
+            "editor_main_window_hidden_candidate_count": 1,
+            "editor_main_window_minimized_candidate_count": 0,
+            "editor_main_window_activation_eligible_candidate_count": 0,
+            "editor_main_window_hidden_candidate_show_policy": "blocked_without_source_validated_safe_path",
+            "editor_main_window_hidden_candidate_show_allowed": False,
+            "editor_main_window_hidden_candidate_show_blocker": (
+                "blocked_by_editor_main_window_hidden_candidate_activation_unsafe"
+            ),
+            "editor_main_window_activation_attempted": True,
+            "editor_main_window_activation_verified": verified,
+            "editor_main_window_activation_blocker": blocker,
+            "editor_main_window_materialization_attempted": True,
+            "editor_main_window_materialization_verified": verified,
+            "editor_main_window_materialization_blocker": blocker,
+            "alternate_viewport_materialization_path_attempted": True,
+            "alternate_viewport_materialization_path_verified": False,
+            "alternate_viewport_materialization_path_blocker": (
+                "blocked_by_editor_main_window_hidden_candidate_activation_unsafe"
+            ),
+            "default_viewport_pane_discovery_after_main_window_deep_dive_attempted": True,
+            "default_viewport_pane_discovery_after_main_window_deep_dive_verified": False,
+            "default_viewport_pane_discovery_after_main_window_deep_dive_blocker": (
+                "blocked_by_default_viewport_pane_unavailable"
+            ),
+            "default_viewport_pane_activation_after_main_window_deep_dive_attempted": False,
+            "default_viewport_pane_activation_after_main_window_deep_dive_verified": False,
+            "default_viewport_pane_activation_after_main_window_deep_dive_blocker": (
+                "not_selected_main_window_activation_unavailable"
+            ),
+            "default_viewport_widget_discovery_after_main_window_deep_dive_attempted": True,
+            "default_viewport_widget_discovery_after_main_window_deep_dive_verified": True,
+            "default_viewport_widget_discovery_after_main_window_deep_dive_blocker": "",
+            "active_default_viewport_after_main_window_deep_dive_attempted": True,
+            "active_default_viewport_after_main_window_deep_dive_verified": False,
+            "active_default_viewport_after_main_window_deep_dive_state": (
+                "active_viewport_python_probe_deferred_without_explicit_gate"
+            ),
+            "active_default_viewport_after_main_window_deep_dive_blocker": (
+                "blocked_by_editor_active_viewport_window_handle_unavailable"
+            ),
+            "active_default_viewport_window_handle_after_main_window_deep_dive_attempted": True,
+            "active_default_viewport_window_handle_after_main_window_deep_dive_verified": False,
+            "active_default_viewport_window_handle_after_main_window_deep_dive_source_validated": True,
+            "active_default_viewport_window_handle_after_main_window_deep_dive_blocker": (
+                "blocked_by_editor_active_viewport_window_handle_unavailable"
+            ),
+            "atom_swapchain_after_main_window_deep_dive_attempted": True,
+            "atom_swapchain_after_main_window_deep_dive_verified": False,
+            "atom_swapchain_after_main_window_deep_dive_source_validated": True,
+            "atom_swapchain_after_main_window_deep_dive_blocker": "blocked_by_swapchain_probe_unavailable",
+            "framecapture_target_after_main_window_deep_dive_attempted": True,
+            "framecapture_target_after_main_window_deep_dive_verified": False,
+            "framecapture_target_after_main_window_deep_dive_source_validated": True,
+            "framecapture_target_after_main_window_deep_dive_blocker": (
+                "blocked_by_active_viewport_window_handle_unavailable"
+            ),
+            "proof_claims": [
+                "Source-validated and exercised bounded Editor main-window activation/materialization diagnostics.",
+                "Reran readiness-only viewport and capture-target probes without screenshot capture.",
+            ],
+            "proof_limits": [
+                "No screenshot request/completion.",
+                "No rendered visual/material evidence.",
+                "No material/character visual-presence validation.",
+                "No visual_material gate verification.",
+                "No full runtime character proof.",
+                "No release packaging, publication, or production-ready claim.",
+            ],
+        }
+    )
+    return payload
+
+
 def test_asset_processor_alignment_source_validation_success_and_blocked(tmp_path):
     env = _live_env(tmp_path)
     engine = Path(env["O3DE_ENGINE_ROOT"])
@@ -7780,6 +7885,167 @@ def test_focused_viewport_materialization_mode_uses_safe_temp_context_and_no_cap
     assert result["status"] == "pass"
     assert result["focused_viewport_materialization_attempted"] is True
     assert result["focused_viewport_materialization_verified"] is True
+    assert result["temp_visual_scene_cleanup_attempted"] is True
+    assert result["temp_visual_scene_cleanup_completed"] is True
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["visual_material_gate_verified"] is False
+    assert result["asset_cache_deletion_attempted"] is False
+    assert result["asset_processor_database_wipe_attempted"] is False
+
+
+def test_main_window_deep_dive_source_validation_success_and_blocked(tmp_path):
+    env = _live_env(tmp_path)
+    engine = Path(env["O3DE_ENGINE_ROOT"])
+    _write_editor_ap_negotiation_source_files(engine)
+
+    success = editor_python_smoke._editor_main_window_activation_deep_dive_source_validation(engine)
+    assert success["status"] == "editor_main_window_activation_deep_dive_source_validation_pass"
+    assert success["blocker"] == ""
+    assert "QMainWindow" in success["surfaces"]["qt_main_window_boundary"]
+    assert "readiness only" in success["surfaces"]["capture_boundary"].lower()
+
+    blocked = editor_python_smoke._editor_main_window_activation_deep_dive_source_validation(tmp_path / "missing")
+    assert blocked["status"] == "editor_main_window_activation_deep_dive_source_validation_inconclusive"
+    assert blocked["blocker"] == "blocked_by_editor_main_window_activation_source_validation_unavailable"
+
+
+def test_main_window_deep_dive_classifies_hidden_and_minimized_candidates():
+    class FakeMeta:
+        def __init__(self, name):
+            self._name = name
+
+        def className(self):
+            return self._name
+
+    class FakeQMainWindow:
+        def __init__(self, *, visible=False, hidden=True, minimized=False):
+            self._visible = visible
+            self._hidden = hidden
+            self._minimized = minimized
+
+        def metaObject(self):
+            return FakeMeta("QMainWindow")
+
+        def isVisible(self):
+            return self._visible
+
+        def isHidden(self):
+            return self._hidden
+
+        def isMinimized(self):
+            return self._minimized
+
+    class FakeQtWidgets:
+        QMainWindow = FakeQMainWindow
+        QDockWidget = object
+
+    hidden = editor_python_smoke._main_window_deep_dive_candidate_info(
+        FakeQMainWindow(visible=False, hidden=True), FakeQtWidgets
+    )
+    minimized = editor_python_smoke._main_window_deep_dive_candidate_info(
+        FakeQMainWindow(visible=True, hidden=False, minimized=True), FakeQtWidgets
+    )
+
+    assert hidden is not None
+    assert hidden["hidden"] is True
+    assert hidden["activation_eligible"] is False
+    assert hidden["activation_unsafe"] is True
+    assert minimized is not None
+    assert minimized["minimized"] is True
+    assert minimized["activation_eligible"] is False
+
+
+def test_main_window_deep_dive_schema_and_semantics_accept_blocked_readiness():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_main_window_deep_dive_payload(verified=False))
+    report["mode"] = "local_editor_python"
+    report["status"] = "pass"
+
+    schema_result = schema_validate(report, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(report, strict=True)
+
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+    assert report["editor_main_window_activation_deep_dive_verified"] is False
+    assert report["editor_main_window_hidden_candidate_show_allowed"] is False
+    assert report["default_viewport_widget_discovery_after_main_window_deep_dive_verified"] is True
+    assert report["editor_visual_material_capture_requested"] is False
+    assert report["visual_material_gate_verified"] is False
+    assert report["runtime_character_proof_verified"] is False
+
+
+def test_main_window_deep_dive_validation_rejects_unsanitized_inventory_and_overclaims():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_main_window_deep_dive_payload(verified=False))
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "editor_main_window_candidate_inventory_sanitized": [
+                {
+                    "class_name": "QMainWindow",
+                    "raw_title_emitted": True,
+                    "raw_object_name_emitted": False,
+                }
+            ],
+            "editor_visual_material_capture_requested": True,
+            "visual_material_gate_verified": True,
+            "runtime_character_proof_verified": True,
+            "asset_cache_deletion_attempted": True,
+            "asset_processor_database_wipe_attempted": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    joined = " ".join(result.messages)
+    assert "main-window inventory" in joined
+    assert "must not request screenshot/frame capture" in joined
+    assert "cannot verify visual/material proof" in joined
+    assert "must not delete Asset Cache" in joined
+    assert "must not wipe AP databases" in joined
+
+
+def test_main_window_deep_dive_mode_uses_safe_temp_context_and_no_capture(tmp_path):
+    env = _live_env(tmp_path)
+    _write_editor_ap_negotiation_source_files(Path(env["O3DE_ENGINE_ROOT"]))
+
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        assert "editor_main_window_activation_materialization_smoke.py" in argv[-1].replace("\\", "/")
+        assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == (
+            "editor-main-window-activation-materialization-deep-dive"
+        )
+        assert env["MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] == "1"
+        assert env["MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] == "1"
+        assert env["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] == "1"
+        assert "MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH" not in env
+        temp_path = Path(env["MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_PATH"])
+        temp_path.mkdir(parents=True)
+        (temp_path / "test.prefab").write_text("{}", encoding="utf-8")
+        payload = json.loads(Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).read_text(encoding="utf-8"))
+        payload.update(_main_window_deep_dive_payload(verified=False))
+        payload["temp_visual_scene_path"] = (
+            "Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/test"
+        )
+        payload["editor_temp_visual_scene_path"] = payload["temp_visual_scene_path"]
+        payload["editor_visual_material_temp_scene_path"] = payload["temp_visual_scene_path"]
+        Path(env["MAXINE_EDITOR_SMOKE_REPORT_OUT"]).write_text(json.dumps(payload), encoding="utf-8")
+        return subprocess.CompletedProcess(args=argv, returncode=0, stdout="", stderr="")
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=env,
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="editor-main-window-activation-materialization-deep-dive",
+    )
+
+    assert result["status"] == "pass"
+    assert result["editor_main_window_activation_deep_dive_attempted"] is True
+    assert result["editor_main_window_activation_deep_dive_verified"] is False
     assert result["temp_visual_scene_cleanup_attempted"] is True
     assert result["temp_visual_scene_cleanup_completed"] is True
     assert result["editor_visual_material_capture_requested"] is False

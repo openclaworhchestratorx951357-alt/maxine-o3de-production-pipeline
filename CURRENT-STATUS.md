@@ -1,7 +1,19 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Focused Editor Viewport Activation / Default Viewport Materialization v2 is active on `codex/focused-editor-viewport-activation-default-viewport-materialization-v2`:
+- Editor Main-Window Activation / Materialization Deep-Dive v1 is active on `codex/editor-main-window-activation-materialization-deep-dive-v1`:
+  - PR #177 was verified merged into `main` at `4fe373b76b188ef64f16460f5407583665b39071`; this branch was created from that updated `main`
+  - this slice source-validates and exercises bounded Editor main-window activation/materialization diagnostics after verified AP alignment, preserving the operator-run AP remediation success from PR #176 and verified Editor/AP negotiation after remediation
+  - it reuses the safe temp visual scene/display context proven in PR #171/#172/#173/#174/#175/#176/#177 under `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context`
+  - live evidence: `artifacts/o3de-integration/editor-smoke/editor-smoke-20260516T075051Z/editor_smoke_live_report.json` and `artifacts/o3de-integration/editor-smoke/editor-smoke-20260516T075051Z/progress.jsonl`
+  - live result: AP alignment preserved and verified, Editor/AP negotiation preserved and verified, selected RHI `dx12`, non-null Editor launch verified, safe temp scene path `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/editor_safe_temp_visual_scene_display_context_20260516t075051z`, cleanup completed, and no defaultlevel/production mutation detected
+  - main-window candidate inventory and classification are verified: 2 sanitized QMainWindow-shaped candidates were found (`EMStudio::MainWindow` and `QMainWindow` class names only), both hidden, none visible or activation-eligible, with no raw window titles, object names, command lines, or environment dumps emitted
+  - hidden main-window show/raise/activate policy is `blocked_without_source_validated_safe_path`; main-window activation and materialization remain blocked by `blocked_by_editor_main_window_hidden_candidate_activation_unsafe`
+  - alternate default viewport follow-up discovered a default viewport widget but not a source-validated default viewport pane; pane activation was not selected because main-window activation/materialization remained blocked
+  - readiness-only probes still report active/default viewport window-handle blocked by `blocked_by_editor_active_viewport_window_handle_unavailable`, Atom SwapChain blocked by `blocked_by_swapchain_probe_unavailable`, and FrameCapture target blocked by `blocked_by_active_viewport_window_handle_unavailable`
+  - this slice does not request screenshot capture, does not complete screenshot capture, does not verify rendered visual evidence, does not verify material correctness, does not verify character visual presence, and does not satisfy `visual_material`
+  - full runtime character proof remains false, release packaging/publication/production-ready claims remain false, and no Asset Cache deletion or AP database/cache wipe is allowed
+- Focused Editor Viewport Activation / Default Viewport Materialization v2 was merged through PR #177 on `codex/focused-editor-viewport-activation-default-viewport-materialization-v2`:
   - PR #176 was verified merged into `main` at `08d06fa9fcbe8331704d3fd91cc7f2e2533fc5f1`; this branch was created from that updated `main`
   - this slice source-validates and exercises focused Editor viewport activation/default viewport materialization after verified AP alignment, preserving the operator-run AP remediation success and verified Editor/AP negotiation from PR #176
   - it reuses the safe temp visual scene/display context proven in PR #171/#172/#173/#174/#175/#176 under `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context`

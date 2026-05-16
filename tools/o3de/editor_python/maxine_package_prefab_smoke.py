@@ -62,6 +62,7 @@ DIAGNOSTIC_MODES = {
     "asset-processor-project-build-alignment-repair",
     "operator-run-ap-alignment-remediation-verification",
     "focused-editor-viewport-activation-default-viewport-materialization",
+    "editor-main-window-activation-materialization-deep-dive",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -1526,6 +1527,26 @@ def main() -> int:
             "focused_editor_viewport_materialization_returned",
             str(readiness.get("focused_viewport_materialization_blocker", "returned")),
             "Focused Editor viewport materialization readiness diagnostic returned.",
+        )
+
+    if not errors and diagnostic_mode == "editor-main-window-activation-materialization-deep-dive":
+        _write_progress_marker(
+            progress_log,
+            "editor_main_window_activation_deep_dive_started",
+            "started",
+            "Running Editor main-window activation/materialization deep-dive diagnostic.",
+        )
+        readiness = _run_editor_main_window_activation_deep_dive_checks(
+            report,
+            progress_log=progress_log,
+            general=general,
+        )
+        report.update(readiness)
+        _write_progress_marker(
+            progress_log,
+            "editor_main_window_activation_deep_dive_returned",
+            str(readiness.get("editor_main_window_activation_deep_dive_blocker", "returned")),
+            "Editor main-window activation/materialization deep-dive diagnostic returned.",
         )
 
     entity_result: Dict[str, Any] = report.get("entity_smoke", {"status": "not_run"})
@@ -6527,6 +6548,107 @@ def _focused_editor_viewport_materialization_source_validation(
     }
 
 
+def _editor_main_window_activation_deep_dive_source_specs(
+    engine_root: Path | None,
+) -> List[Dict[str, Any]]:
+    repo_root = Path(__file__).resolve().parents[3]
+    specs = _focused_editor_viewport_materialization_source_specs(engine_root)
+    specs.extend(
+        [
+            {
+                "path": repo_root / "tools" / "o3de" / "editor_smoke.py",
+                "symbols": [
+                    "editor-main-window-activation-materialization-deep-dive",
+                    "MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE",
+                    "_validate_editor_main_window_activation_deep_dive",
+                ],
+            },
+            {
+                "path": repo_root
+                / "tools"
+                / "o3de"
+                / "editor_python"
+                / "editor_main_window_activation_materialization_smoke.py",
+                "symbols": [
+                    "REPO_ROOT = Path(__file__).resolve().parents[3]",
+                    "sys.path.insert(0, str(REPO_ROOT))",
+                    "from tools.o3de.editor_python import maxine_package_prefab_smoke",
+                    "editor-main-window-activation-materialization-deep-dive",
+                ],
+            },
+            {
+                "path": repo_root / "tools" / "o3de" / "editor_python" / "maxine_package_prefab_smoke.py",
+                "symbols": [
+                    "editor-main-window-activation-materialization-deep-dive",
+                    "_run_editor_main_window_activation_deep_dive_checks",
+                    "_main_window_deep_dive_candidate_info",
+                    "_probe_editor_main_window_activation_deep_dive",
+                    "editor_main_window_candidate_inventory_sanitized",
+                ],
+            },
+            {
+                "path": repo_root / "docs" / "production" / "private-windows-o3de-runner.md",
+                "symbols": [
+                    "Editor main-window activation and materialization readiness",
+                    "editor-main-window-activation-materialization-deep-dive",
+                    "No screenshot request",
+                ],
+            },
+            {
+                "path": repo_root / "schemas" / "maxine.editor-smoke-report.schema.json",
+                "symbols": [
+                    "editor-main-window-activation-materialization-deep-dive",
+                ],
+            },
+        ]
+    )
+    return specs
+
+
+def _editor_main_window_activation_deep_dive_source_validation(
+    engine_root: Path | None,
+) -> Dict[str, Any]:
+    file_results = [
+        _source_file_symbol_validation(spec["path"], spec["symbols"])
+        for spec in _editor_main_window_activation_deep_dive_source_specs(engine_root)
+    ]
+    missing = [result for result in file_results if result["status"] != "pass"]
+    status = (
+        "editor_main_window_activation_deep_dive_source_validation_pass"
+        if not missing
+        else "editor_main_window_activation_deep_dive_source_validation_inconclusive"
+    )
+    return {
+        "status": status,
+        "blocker": ""
+        if not missing
+        else "blocked_by_editor_main_window_activation_source_validation_unavailable",
+        "files": file_results,
+        "surfaces": {
+            "qt_main_window_boundary": (
+                "PySide2/QApplication top-level widget inventory classifies QMainWindow candidates by "
+                "visible/hidden/minimized state and records sanitized class/role evidence only."
+            ),
+            "hidden_window_policy": (
+                "Hidden main-window show/raise/activate remains blocked unless a source-validated safe path "
+                "proves the target is a valid Editor shell and does not mutate project, level, layout, or capture state."
+            ),
+            "viewport_followup_boundary": (
+                "Default viewport pane/widget discovery may be attempted independently as readiness-only inventory; "
+                "pane activation and render tick waits remain gated by source-validated main-window preconditions."
+            ),
+            "capture_boundary": (
+                "Editor main-window activation/materialization is readiness only and never requests screenshot capture."
+            ),
+            "proof_boundary": (
+                "Main-window activation readiness is not viewport proof, screenshot proof, rendered visual/material "
+                "evidence, material correctness, character visual-presence proof, or full runtime character proof."
+            ),
+        },
+        "missing": missing,
+    }
+
+
 def _operator_ap_remediation_command_from_report(report: Mapping[str, Any]) -> str:
     command = str(report.get("asset_processor_operator_remediation_command_sanitized", "")).strip()
     if command:
@@ -7174,6 +7296,57 @@ def _focused_main_window_activation_allowed(candidate_info: Mapping[str, Any]) -
     return candidate_info.get("visible") is True
 
 
+def _main_window_deep_dive_candidate_info(widget: Any, qt_widgets: Any) -> Dict[str, Any] | None:
+    class_name = type(widget).__name__
+    meta_class_name = _qt_widget_meta_class_name(widget)
+    class_probe = f"{class_name} {meta_class_name}".lower()
+    if class_name.lower() == "qmenu" or meta_class_name.lower() == "qmenu":
+        return None
+    try:
+        is_qmainwindow = isinstance(widget, qt_widgets.QMainWindow)
+    except Exception:
+        is_qmainwindow = False
+    likely_editor_shell = bool(is_qmainwindow or ("editor" in class_probe and "mainwindow" in class_probe))
+    if not likely_editor_shell and "mainwindow" not in class_probe:
+        return None
+    try:
+        visible = bool(widget.isVisible())
+    except Exception:
+        visible = False
+    try:
+        hidden = bool(widget.isHidden())
+    except Exception:
+        hidden = not visible
+    try:
+        minimized = bool(widget.isMinimized())
+    except Exception:
+        minimized = False
+    activation_eligible = bool(visible and not hidden and not minimized)
+    rank = 0 if activation_eligible else 20
+    if visible:
+        rank -= 10
+    if is_qmainwindow:
+        rank += 0
+    elif likely_editor_shell:
+        rank += 1
+    else:
+        rank += 2
+    return {
+        "widget": widget,
+        "rank": rank,
+        "class_name": meta_class_name or class_name,
+        "visible": visible,
+        "hidden": hidden,
+        "minimized": minimized,
+        "is_qmainwindow": is_qmainwindow,
+        "likely_editor_shell": likely_editor_shell,
+        "activation_eligible": activation_eligible,
+        "activation_unsafe": not activation_eligible,
+        "raw_title_emitted": False,
+        "raw_object_name_emitted": False,
+    }
+
+
 def _focused_viewport_activation_candidate_info(widget: Any, qt_widgets: Any) -> Dict[str, Any] | None:
     class_name = type(widget).__name__
     meta_class_name = _qt_widget_meta_class_name(widget)
@@ -7294,7 +7467,157 @@ def _probe_editor_main_window_materialization() -> Dict[str, Any]:
     return payload
 
 
-def _probe_default_viewport_materialization() -> Dict[str, Any]:
+def _probe_editor_main_window_activation_deep_dive() -> Dict[str, Any]:
+    payload: Dict[str, Any] = {
+        "attempted": True,
+        "verified": False,
+        "blocker": "blocked_by_editor_main_window_unavailable",
+        "candidate_inventory_attempted": True,
+        "candidate_inventory_sanitized": [],
+        "candidate_count": 0,
+        "candidate_classification_attempted": True,
+        "candidate_classification_verified": False,
+        "candidate_classification_blocker": "blocked_by_editor_main_window_unavailable",
+        "visible_candidate_count": 0,
+        "hidden_candidate_count": 0,
+        "minimized_candidate_count": 0,
+        "activation_eligible_candidate_count": 0,
+        "hidden_candidate_show_policy": "blocked_without_source_validated_safe_path",
+        "hidden_candidate_show_allowed": False,
+        "hidden_candidate_show_blocker": "",
+        "activation_attempted": False,
+        "activation_verified": False,
+        "activation_blocker": "blocked_by_editor_main_window_unavailable",
+        "materialization_attempted": False,
+        "materialization_verified": False,
+        "materialization_blocker": "blocked_by_editor_main_window_unavailable",
+        "evidence_summary": "",
+    }
+    try:
+        from PySide2 import QtWidgets  # type: ignore
+    except Exception as exc:
+        payload["evidence_summary"] = f"PySide2 QtWidgets unavailable: {type(exc).__name__}"
+        return payload
+    app = QtWidgets.QApplication.instance()
+    if app is None:
+        payload["evidence_summary"] = "QApplication instance unavailable."
+        return payload
+    candidates: List[Dict[str, Any]] = []
+    try:
+        for widget in list(app.topLevelWidgets())[:100]:
+            candidate = _main_window_deep_dive_candidate_info(widget, QtWidgets)
+            if candidate is not None:
+                candidates.append(candidate)
+    except Exception as exc:
+        payload["blocker"] = "blocked_by_editor_main_window_unavailable"
+        payload["candidate_classification_blocker"] = "blocked_by_editor_main_window_unavailable"
+        payload["evidence_summary"] = f"Qt top-level widget inventory failed: {type(exc).__name__}"
+        return payload
+
+    sanitized: List[Dict[str, Any]] = []
+    for candidate in candidates[:50]:
+        sanitized.append(
+            {
+                "class_name": str(candidate.get("class_name", "")),
+                "visible": candidate.get("visible") is True,
+                "hidden": candidate.get("hidden") is True,
+                "minimized": candidate.get("minimized") is True,
+                "is_qmainwindow": candidate.get("is_qmainwindow") is True,
+                "likely_editor_shell": candidate.get("likely_editor_shell") is True,
+                "activation_eligible": candidate.get("activation_eligible") is True,
+                "activation_unsafe": candidate.get("activation_unsafe") is True,
+                "raw_title_emitted": False,
+                "raw_object_name_emitted": False,
+            }
+        )
+    visible_count = sum(1 for candidate in candidates if candidate.get("visible") is True)
+    hidden_count = sum(1 for candidate in candidates if candidate.get("hidden") is True)
+    minimized_count = sum(1 for candidate in candidates if candidate.get("minimized") is True)
+    eligible = [candidate for candidate in candidates if candidate.get("activation_eligible") is True]
+    payload.update(
+        {
+            "candidate_inventory_sanitized": sanitized,
+            "candidate_count": len(candidates),
+            "candidate_classification_verified": bool(candidates),
+            "candidate_classification_blocker": "" if candidates else "blocked_by_editor_main_window_unavailable",
+            "visible_candidate_count": visible_count,
+            "hidden_candidate_count": hidden_count,
+            "minimized_candidate_count": minimized_count,
+            "activation_eligible_candidate_count": len(eligible),
+        }
+    )
+    if not candidates:
+        payload["evidence_summary"] = "No Qt main-window candidate found in sanitized top-level widget inventory."
+        return payload
+
+    payload["activation_attempted"] = True
+    payload["materialization_attempted"] = True
+    if not eligible:
+        blocker = (
+            "blocked_by_editor_main_window_hidden_candidate_activation_unsafe"
+            if hidden_count or minimized_count
+            else "blocked_by_editor_main_window_activation_unavailable"
+        )
+        payload.update(
+            {
+                "blocker": blocker,
+                "activation_blocker": blocker,
+                "materialization_blocker": blocker,
+                "hidden_candidate_show_blocker": blocker
+                if hidden_count or minimized_count
+                else "not_selected_no_hidden_or_minimized_candidate",
+                "evidence_summary": (
+                    "Qt main-window candidates were classified, but none were already visible and activation-eligible; "
+                    "hidden/minimized show, raise, or activation remains blocked without a source-validated safe path."
+                ),
+            }
+        )
+        return payload
+
+    candidate_info = sorted(eligible, key=lambda item: int(item["rank"]))[0]
+    candidate = candidate_info["widget"]
+    try:
+        if hasattr(candidate, "raise_"):
+            candidate.raise_()
+        if hasattr(candidate, "activateWindow"):
+            candidate.activateWindow()
+        app.processEvents()
+        visible = bool(candidate.isVisible()) if hasattr(candidate, "isVisible") else True
+        hidden = bool(candidate.isHidden()) if hasattr(candidate, "isHidden") else False
+        minimized = bool(candidate.isMinimized()) if hasattr(candidate, "isMinimized") else False
+        verified = bool(visible and not hidden and not minimized)
+        payload.update(
+            {
+                "verified": verified,
+                "blocker": "" if verified else "blocked_by_editor_main_window_activation_unavailable",
+                "activation_verified": verified,
+                "activation_blocker": "" if verified else "blocked_by_editor_main_window_activation_unavailable",
+                "materialization_verified": verified,
+                "materialization_blocker": ""
+                if verified
+                else "blocked_by_editor_main_window_materialization_unavailable",
+                "hidden_candidate_show_blocker": "not_selected_visible_candidate_used",
+                "evidence_summary": (
+                    "Visible Qt main-window candidate was activated through raise_/activateWindow and remained visible."
+                    if verified
+                    else "Visible Qt main-window candidate did not remain activation-eligible after bounded activation."
+                ),
+            }
+        )
+    except Exception as exc:
+        payload.update(
+            {
+                "blocker": "blocked_by_editor_main_window_activation_unavailable",
+                "activation_blocker": "blocked_by_editor_main_window_activation_unavailable",
+                "materialization_blocker": "blocked_by_editor_main_window_materialization_unavailable",
+                "hidden_candidate_show_blocker": "not_selected_visible_candidate_activation_failed",
+                "evidence_summary": f"Qt main-window activation failed: {type(exc).__name__}",
+            }
+        )
+    return payload
+
+
+def _probe_default_viewport_materialization(*, allow_activation: bool = True) -> Dict[str, Any]:
     payload: Dict[str, Any] = {
         "pane_discovery_attempted": True,
         "pane_discovery_verified": False,
@@ -7352,6 +7675,15 @@ def _probe_default_viewport_materialization() -> Dict[str, Any]:
     payload["widget_discovery_blocker"] = "" if viewport_widgets else "blocked_by_default_viewport_widget_unavailable"
     payload["pane_discovery_verified"] = bool(viewport_panes)
     payload["pane_discovery_blocker"] = "" if viewport_panes else "blocked_by_default_viewport_pane_unavailable"
+    if not allow_activation:
+        payload["pane_activation_attempted"] = False
+        payload["pane_activation_verified"] = False
+        payload["pane_activation_blocker"] = "not_selected_main_window_activation_unavailable"
+        payload["evidence_summary"] = (
+            "Viewport pane/widget discovery was run as readiness-only inventory; pane activation was deferred "
+            "because main-window activation/materialization was not verified."
+        )
+        return payload
     activation_candidates = sorted(viewport_panes, key=lambda item: int(item["rank"]))
     activation_target_info = activation_candidates[0] if activation_candidates else None
     if activation_target_info is None:
@@ -8258,6 +8590,378 @@ def _run_focused_editor_viewport_materialization_checks(
                 list(payload.get("messages", []))
                 + [
                     "Focused viewport materialization is readiness only; screenshot and visual/material proof remain disabled."
+                ]
+            ),
+        }
+    )
+    return payload
+
+
+def _run_editor_main_window_activation_deep_dive_checks(
+    report: Mapping[str, Any],
+    *,
+    progress_log: Path | None,
+    general: Any,
+) -> Dict[str, Any]:
+    engine_root_raw = str(os.environ.get("O3DE_ENGINE_ROOT", "")).strip()
+    engine_root = Path(engine_root_raw) if engine_root_raw else None
+    _write_progress_marker(
+        progress_log,
+        "editor_main_window_activation_deep_dive_source_validation_started",
+        "started",
+        "Source-validating Editor main-window activation/materialization deep-dive boundaries.",
+    )
+    source_validation = _editor_main_window_activation_deep_dive_source_validation(engine_root)
+    source_validated = (
+        source_validation.get("status")
+        == "editor_main_window_activation_deep_dive_source_validation_pass"
+    )
+    _write_progress_marker(
+        progress_log,
+        "editor_main_window_activation_deep_dive_source_validation_returned",
+        "verified" if source_validated else str(source_validation.get("blocker", "blocked")),
+        "Editor main-window activation/materialization deep-dive source validation returned.",
+    )
+
+    readiness = _run_focused_editor_viewport_materialization_checks(
+        report,
+        progress_log=progress_log,
+        general=general,
+    )
+    payload: Dict[str, Any] = dict(readiness)
+    ap_alignment_preserved = payload.get("ap_alignment_preserved") is True
+    editor_ap_negotiation_preserved = payload.get("editor_asset_processor_negotiation_preserved") is True
+    temp_context_preserved = payload.get("temp_visual_scene_context_exercise_verified") is True
+    preconditions_verified = bool(
+        ap_alignment_preserved
+        and editor_ap_negotiation_preserved
+        and temp_context_preserved
+        and payload.get("operator_ap_alignment_remediation_verification_verified") is True
+    )
+
+    modal_probe = {
+        "attempted": False,
+        "detected": False,
+        "blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "sanitized_windows": [],
+    }
+    deep_probe = {
+        "attempted": False,
+        "verified": False,
+        "blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "candidate_inventory_attempted": False,
+        "candidate_inventory_sanitized": [],
+        "candidate_count": 0,
+        "candidate_classification_attempted": False,
+        "candidate_classification_verified": False,
+        "candidate_classification_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "visible_candidate_count": 0,
+        "hidden_candidate_count": 0,
+        "minimized_candidate_count": 0,
+        "activation_eligible_candidate_count": 0,
+        "hidden_candidate_show_policy": "blocked_without_source_validated_safe_path",
+        "hidden_candidate_show_allowed": False,
+        "hidden_candidate_show_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "activation_attempted": False,
+        "activation_verified": False,
+        "activation_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "materialization_attempted": False,
+        "materialization_verified": False,
+        "materialization_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "evidence_summary": "",
+    }
+    viewport_probe = {
+        "pane_discovery_attempted": False,
+        "pane_discovery_verified": False,
+        "pane_discovery_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "pane_activation_attempted": False,
+        "pane_activation_verified": False,
+        "pane_activation_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "widget_discovery_attempted": False,
+        "widget_discovery_verified": False,
+        "widget_discovery_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "evidence_summary": "",
+        "sanitized_widgets": [],
+    }
+    event_wait = {
+        "idle_wait_attempted": False,
+        "idle_wait_completed": False,
+        "idle_wait_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "render_tick_attempted": False,
+        "render_tick_completed": False,
+        "render_tick_blocker": "not_selected_source_validation_or_precondition_unavailable",
+    }
+
+    can_attempt_deep_dive = bool(source_validated and preconditions_verified)
+    if can_attempt_deep_dive:
+        modal_probe = _probe_editor_asset_processor_negotiation_modal()
+        _write_progress_marker(
+            progress_log,
+            "editor_main_window_activation_deep_dive_modal_probe_returned",
+            "detected" if modal_probe.get("detected") else "not_detected",
+            "Editor main-window deep-dive modal detection returned.",
+        )
+        if modal_probe.get("detected") is not True:
+            deep_probe = _probe_editor_main_window_activation_deep_dive()
+            _write_progress_marker(
+                progress_log,
+                "editor_main_window_activation_deep_dive_probe_returned",
+                "verified" if deep_probe.get("verified") else str(deep_probe.get("blocker", "blocked")),
+                "Editor main-window activation/materialization deep-dive probe returned.",
+            )
+            viewport_probe = _probe_default_viewport_materialization(
+                allow_activation=deep_probe.get("materialization_verified") is True
+            )
+            if (
+                deep_probe.get("materialization_verified") is True
+                and viewport_probe.get("pane_activation_verified") is True
+            ):
+                event_wait = _run_viewport_event_loop_wait(general)
+
+    if not source_validated:
+        deep_state = "blocked_by_editor_main_window_activation_source_validation_unavailable"
+        deep_blocker = "blocked_by_editor_main_window_activation_source_validation_unavailable"
+    elif not preconditions_verified:
+        deep_state = "blocked_by_editor_main_window_activation_preconditions_unavailable"
+        deep_blocker = str(
+            payload.get("focused_viewport_materialization_blocker")
+            or payload.get("operator_ap_alignment_remediation_blocker")
+            or "blocked_by_temp_scene_context_unavailable"
+        )
+    elif modal_probe.get("detected") is True:
+        deep_state = "blocked_by_editor_asset_processor_negotiation_failed_modal"
+        deep_blocker = "blocked_by_editor_asset_processor_negotiation_failed_modal"
+    elif deep_probe.get("materialization_verified") is True:
+        deep_state = "verified_editor_main_window_activation_deep_dive"
+        deep_blocker = ""
+    else:
+        deep_state = str(deep_probe.get("blocker") or "blocked_by_editor_main_window_activation_unavailable")
+        deep_blocker = deep_state
+
+    active_default_probe = (
+        _check_active_default_viewport_probe(general)
+        if source_validated and temp_context_preserved
+        else {
+            "attempted": False,
+            "verified": False,
+            "state": deep_state,
+            "blocker": deep_blocker,
+            "window_handle_attempted": False,
+            "window_handle_verified": False,
+            "window_handle_blocker": "blocked_by_editor_active_viewport_window_handle_unavailable",
+        }
+    )
+    atom_probe = (
+        _probe_atom_framecapture_binding_surface(source_validated)
+        if source_validated and temp_context_preserved
+        else {
+            "attempted": False,
+            "verified": False,
+            "source_validated": source_validated,
+            "blocker": deep_blocker,
+            "binding_available": False,
+            "evidence_summary": "",
+            "screenshot_capture_requested": False,
+        }
+    )
+    window_handle_verified = active_default_probe.get("window_handle_verified") is True
+    active_default_verified = active_default_probe.get("verified") is True
+    swapchain_verified = False
+    framecapture_target_verified = bool(window_handle_verified and swapchain_verified)
+    if not source_validated:
+        readiness_blocker = "blocked_by_editor_main_window_activation_source_validation_unavailable"
+    elif not temp_context_preserved:
+        readiness_blocker = "blocked_by_temp_scene_context_unavailable"
+    elif not window_handle_verified:
+        readiness_blocker = "blocked_by_active_viewport_window_handle_unavailable"
+    elif not swapchain_verified:
+        readiness_blocker = "blocked_by_swapchain_probe_unavailable"
+    else:
+        readiness_blocker = ""
+
+    alternate_verified = bool(
+        viewport_probe.get("widget_discovery_verified") is True
+        and (viewport_probe.get("pane_discovery_verified") is True or deep_probe.get("materialization_verified") is True)
+    )
+    alternate_blocker = "" if alternate_verified else str(
+        viewport_probe.get("pane_discovery_blocker")
+        or viewport_probe.get("widget_discovery_blocker")
+        or deep_blocker
+    )
+
+    payload.update(
+        {
+            "editor_main_window_activation_deep_dive_attempted": True,
+            "editor_main_window_activation_deep_dive_verified": deep_probe.get("materialization_verified") is True,
+            "editor_main_window_activation_deep_dive_source_validated": source_validated,
+            "editor_main_window_activation_deep_dive_source_validation_status": source_validation.get("status", ""),
+            "editor_main_window_activation_deep_dive_source_validation": source_validation,
+            "editor_main_window_activation_deep_dive_source_files": [
+                str(spec["path"])
+                for spec in _editor_main_window_activation_deep_dive_source_specs(engine_root)
+            ],
+            "editor_main_window_activation_deep_dive_state": deep_state,
+            "editor_main_window_activation_deep_dive_blocker": deep_blocker,
+            "editor_main_window_candidate_inventory_attempted": deep_probe.get("candidate_inventory_attempted") is True,
+            "editor_main_window_candidate_inventory_sanitized": deep_probe.get("candidate_inventory_sanitized", []),
+            "editor_main_window_candidate_count": int(deep_probe.get("candidate_count", 0) or 0),
+            "editor_main_window_candidate_classification_attempted": (
+                deep_probe.get("candidate_classification_attempted") is True
+            ),
+            "editor_main_window_candidate_classification_verified": (
+                deep_probe.get("candidate_classification_verified") is True
+            ),
+            "editor_main_window_candidate_classification_blocker": str(
+                deep_probe.get("candidate_classification_blocker", "")
+            ),
+            "editor_main_window_visible_candidate_count": int(
+                deep_probe.get("visible_candidate_count", 0) or 0
+            ),
+            "editor_main_window_hidden_candidate_count": int(
+                deep_probe.get("hidden_candidate_count", 0) or 0
+            ),
+            "editor_main_window_minimized_candidate_count": int(
+                deep_probe.get("minimized_candidate_count", 0) or 0
+            ),
+            "editor_main_window_activation_eligible_candidate_count": int(
+                deep_probe.get("activation_eligible_candidate_count", 0) or 0
+            ),
+            "editor_main_window_hidden_candidate_show_policy": str(
+                deep_probe.get("hidden_candidate_show_policy", "blocked_without_source_validated_safe_path")
+            ),
+            "editor_main_window_hidden_candidate_show_allowed": (
+                deep_probe.get("hidden_candidate_show_allowed") is True
+            ),
+            "editor_main_window_hidden_candidate_show_blocker": str(
+                deep_probe.get("hidden_candidate_show_blocker", "")
+            ),
+            "editor_main_window_activation_attempted": deep_probe.get("activation_attempted") is True,
+            "editor_main_window_activation_verified": deep_probe.get("activation_verified") is True,
+            "editor_main_window_activation_blocker": str(deep_probe.get("activation_blocker", "")),
+            "editor_main_window_materialization_attempted": deep_probe.get("materialization_attempted") is True,
+            "editor_main_window_materialization_verified": deep_probe.get("materialization_verified") is True,
+            "editor_main_window_materialization_blocker": str(deep_probe.get("materialization_blocker", "")),
+            "editor_main_window_activation_deep_dive_evidence": deep_probe,
+            "editor_modal_detection_attempted": modal_probe.get("attempted") is True,
+            "editor_blocking_modal_detected": modal_probe.get("detected") is True,
+            "editor_blocking_modal_blocker": str(modal_probe.get("blocker", "")),
+            "editor_negotiation_failed_modal_detected": modal_probe.get("detected") is True,
+            "alternate_viewport_materialization_path_attempted": (
+                viewport_probe.get("widget_discovery_attempted") is True
+            ),
+            "alternate_viewport_materialization_path_verified": alternate_verified,
+            "alternate_viewport_materialization_path_blocker": alternate_blocker,
+            "default_viewport_pane_discovery_after_main_window_deep_dive_attempted": (
+                viewport_probe.get("pane_discovery_attempted") is True
+            ),
+            "default_viewport_pane_discovery_after_main_window_deep_dive_verified": (
+                viewport_probe.get("pane_discovery_verified") is True
+            ),
+            "default_viewport_pane_discovery_after_main_window_deep_dive_blocker": str(
+                viewport_probe.get("pane_discovery_blocker", "")
+            ),
+            "default_viewport_pane_activation_after_main_window_deep_dive_attempted": (
+                viewport_probe.get("pane_activation_attempted") is True
+            ),
+            "default_viewport_pane_activation_after_main_window_deep_dive_verified": (
+                viewport_probe.get("pane_activation_verified") is True
+            ),
+            "default_viewport_pane_activation_after_main_window_deep_dive_blocker": str(
+                viewport_probe.get("pane_activation_blocker", "")
+            ),
+            "default_viewport_widget_discovery_after_main_window_deep_dive_attempted": (
+                viewport_probe.get("widget_discovery_attempted") is True
+            ),
+            "default_viewport_widget_discovery_after_main_window_deep_dive_verified": (
+                viewport_probe.get("widget_discovery_verified") is True
+            ),
+            "default_viewport_widget_discovery_after_main_window_deep_dive_blocker": str(
+                viewport_probe.get("widget_discovery_blocker", "")
+            ),
+            "default_viewport_materialization_after_main_window_deep_dive_evidence": viewport_probe,
+            "viewport_event_loop_idle_wait_attempted": event_wait.get("idle_wait_attempted") is True,
+            "viewport_event_loop_idle_wait_completed": event_wait.get("idle_wait_completed") is True,
+            "viewport_event_loop_idle_wait_blocker": str(event_wait.get("idle_wait_blocker", "")),
+            "viewport_render_tick_wait_attempted": event_wait.get("render_tick_attempted") is True,
+            "viewport_render_tick_wait_completed": event_wait.get("render_tick_completed") is True,
+            "viewport_render_tick_wait_blocker": str(event_wait.get("render_tick_blocker", "")),
+            "active_default_viewport_after_main_window_deep_dive_attempted": (
+                active_default_probe.get("attempted") is True
+            ),
+            "active_default_viewport_after_main_window_deep_dive_verified": active_default_verified,
+            "active_default_viewport_after_main_window_deep_dive_state": str(
+                active_default_probe.get("state", "")
+            ),
+            "active_default_viewport_after_main_window_deep_dive_blocker": ""
+            if active_default_verified
+            else str(active_default_probe.get("blocker", readiness_blocker)),
+            "active_default_viewport_window_handle_after_main_window_deep_dive_attempted": (
+                active_default_probe.get("window_handle_attempted") is True
+            ),
+            "active_default_viewport_window_handle_after_main_window_deep_dive_verified": (
+                window_handle_verified
+            ),
+            "active_default_viewport_window_handle_after_main_window_deep_dive_source_validated": (
+                source_validated
+            ),
+            "active_default_viewport_window_handle_after_main_window_deep_dive_blocker": ""
+            if window_handle_verified
+            else str(
+                active_default_probe.get(
+                    "window_handle_blocker",
+                    "blocked_by_editor_active_viewport_window_handle_unavailable",
+                )
+            ),
+            "atom_swapchain_after_main_window_deep_dive_attempted": atom_probe.get("attempted") is True,
+            "atom_swapchain_after_main_window_deep_dive_verified": swapchain_verified,
+            "atom_swapchain_after_main_window_deep_dive_source_validated": source_validated,
+            "atom_swapchain_after_main_window_deep_dive_blocker": ""
+            if swapchain_verified
+            else "blocked_by_swapchain_probe_unavailable",
+            "atom_swapchain_after_main_window_deep_dive_evidence": atom_probe,
+            "framecapture_target_after_main_window_deep_dive_attempted": (
+                source_validated and temp_context_preserved
+            ),
+            "framecapture_target_after_main_window_deep_dive_verified": framecapture_target_verified,
+            "framecapture_target_after_main_window_deep_dive_source_validated": source_validated,
+            "framecapture_target_after_main_window_deep_dive_blocker": ""
+            if framecapture_target_verified
+            else readiness_blocker,
+            "ap_alignment_preserved": ap_alignment_preserved,
+            "editor_asset_processor_negotiation_preserved": editor_ap_negotiation_preserved,
+            "safe_temp_visual_scene_context_preserved": temp_context_preserved,
+            "editor_visual_material_capture_requested": False,
+            "editor_visual_material_capture_request_accepted": False,
+            "editor_visual_material_capture_completed": False,
+            "visual_material_capture_readiness_verified": False,
+            "visual_material_rendered_evidence_gate_attempted": False,
+            "visual_material_rendered_evidence_gate_verified": False,
+            "visual_material_gate_claimed": False,
+            "visual_material_gate_verified": False,
+            "full_runtime_character_visual_material_gate_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "asset_cache_deletion_attempted": False,
+            "asset_processor_database_wipe_attempted": False,
+            "asset_cache_deleted": False,
+            "cache_heuristic_used": False,
+            "proof_claims": [
+                "Source-validated and exercised bounded Editor main-window activation/materialization diagnostics after verified AP alignment and safe temp visual scene context.",
+                "Reran readiness-only default viewport pane/widget, active/default viewport, Atom SwapChain, and FrameCapture target probes without screenshot capture.",
+            ],
+            "proof_limits": [
+                "No screenshot request/completion.",
+                "No rendered visual/material evidence.",
+                "No material/character visual-presence validation.",
+                "No visual_material gate verification.",
+                "No full runtime character proof.",
+                "No Asset Cache deletion or AP database/cache wipe.",
+                "No release packaging, publication, or production-ready claim.",
+            ],
+            "messages": _unique(
+                list(payload.get("messages", []))
+                + [
+                    "Editor main-window activation/materialization deep dive is readiness only; screenshot and visual/material proof remain disabled."
                 ]
             ),
         }
