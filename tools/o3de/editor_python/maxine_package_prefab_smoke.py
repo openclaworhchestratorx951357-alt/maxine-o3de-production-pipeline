@@ -58,6 +58,7 @@ DIAGNOSTIC_MODES = {
     "editor-active-viewport-temp-scene-readiness",
     "editor-safe-temp-visual-scene-display-context",
     "editor-nonblocking-viewport-swapchain-readiness",
+    "editor-ap-negotiation-viewport-materialization-readiness",
     "full",
 }
 TYPED_BLOCKED_STATUSES = {
@@ -1442,6 +1443,26 @@ def main() -> int:
             "editor_nonblocking_viewport_swapchain_readiness_returned",
             str(readiness.get("nonblocking_viewport_swapchain_probe_blocker", "returned")),
             "Bounded non-blocking viewport/SwapChain readiness probe diagnostic returned.",
+        )
+
+    if not errors and diagnostic_mode == "editor-ap-negotiation-viewport-materialization-readiness":
+        _write_progress_marker(
+            progress_log,
+            "editor_ap_negotiation_viewport_materialization_started",
+            "started",
+            "Running Editor/AP negotiation and viewport materialization readiness diagnostic.",
+        )
+        readiness = _run_editor_ap_negotiation_viewport_materialization_checks(
+            report,
+            progress_log=progress_log,
+            general=general,
+        )
+        report.update(readiness)
+        _write_progress_marker(
+            progress_log,
+            "editor_ap_negotiation_viewport_materialization_returned",
+            str(readiness.get("editor_asset_processor_negotiation_blocker", "returned")),
+            "Editor/AP negotiation and viewport materialization readiness diagnostic returned.",
         )
 
     entity_result: Dict[str, Any] = report.get("entity_smoke", {"status": "not_run"})
@@ -5831,6 +5852,198 @@ def _editor_nonblocking_viewport_swapchain_readiness_source_validation(
     }
 
 
+def _editor_ap_negotiation_viewport_materialization_source_specs(
+    engine_root: Path | None,
+) -> List[Dict[str, Any]]:
+    repo_root = Path(__file__).resolve().parents[3]
+    specs: List[Dict[str, Any]] = [
+        {
+            "path": repo_root / "tools" / "o3de" / "editor_smoke.py",
+            "symbols": [
+                "editor-ap-negotiation-viewport-materialization-readiness",
+                "MAXINE_ENABLE_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS",
+                "_classify_editor_asset_processor_process_inventory",
+                "_validate_editor_ap_negotiation_viewport_materialization_readiness",
+            ],
+        },
+        {
+            "path": repo_root
+            / "tools"
+            / "o3de"
+            / "editor_python"
+            / "editor_ap_negotiation_viewport_materialization_readiness_smoke.py",
+            "symbols": [
+                "REPO_ROOT = Path(__file__).resolve().parents[3]",
+                "sys.path.insert(0, str(REPO_ROOT))",
+                "from tools.o3de.editor_python import maxine_package_prefab_smoke",
+                "editor-ap-negotiation-viewport-materialization-readiness",
+            ],
+        },
+        {
+            "path": repo_root / "tools" / "o3de" / "editor_python" / "maxine_package_prefab_smoke.py",
+            "symbols": [
+                "editor-ap-negotiation-viewport-materialization-readiness",
+                "_run_editor_ap_negotiation_viewport_materialization_checks",
+                "_probe_editor_asset_processor_negotiation_modal",
+                "blocked_by_editor_asset_processor_negotiation_failed_modal",
+                "editor_visual_material_capture_requested",
+            ],
+        },
+        {
+            "path": repo_root / "docs" / "production" / "private-windows-o3de-runner.md",
+            "symbols": [
+                "Repair Editor Asset Processor negotiation and viewport materialization readiness",
+                "editor-ap-negotiation-viewport-materialization-readiness",
+                "No screenshot request",
+            ],
+        },
+        {
+            "path": repo_root / "schemas" / "maxine.editor-smoke-report.schema.json",
+            "symbols": [
+                "editor-ap-negotiation-viewport-materialization-readiness",
+            ],
+        },
+    ]
+    if engine_root is not None:
+        specs.extend(
+            [
+                {
+                    "path": engine_root / "Code" / "Editor" / "CryEdit.cpp",
+                    "symbols": [
+                        "CCryEditApp::ConnectToAssetProcessor",
+                        "m_launchAssetProcessorOnFailedConnection",
+                        "ConnectionDirection::ConnectToAssetProcessor",
+                        "ConnectionIdentifiers::Editor",
+                        "EstablishAssetProcessorConnection",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Code"
+                    / "Framework"
+                    / "AzFramework"
+                    / "AzFramework"
+                    / "Network"
+                    / "AssetProcessorConnection.h",
+                    "symbols": [
+                        "m_branchToken",
+                        "m_projectName",
+                        "m_negotiationFailed",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Code"
+                    / "Framework"
+                    / "AzFramework"
+                    / "AzFramework"
+                    / "Network"
+                    / "AssetProcessorConnection.cpp",
+                    "symbols": [
+                        "NegotiationInfo_BranchIndentifier",
+                        "NegotiationInfo_ProjectName",
+                        "isBranchIdentifierMatch",
+                        "isProjectMatch",
+                        "NegotiationFailed",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Code"
+                    / "Framework"
+                    / "AzFramework"
+                    / "AzFramework"
+                    / "Asset"
+                    / "AssetSystemComponent.cpp",
+                    "symbols": [
+                        "EstablishAssetProcessorConnection",
+                        "NegotiationWithAssetProcessorFailed",
+                        "Negotiation with asset processor failed",
+                        "LaunchAssetProcessor",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Code"
+                    / "Tools"
+                    / "AssetProcessor"
+                    / "native"
+                    / "connection"
+                    / "connectionworker.cpp",
+                    "symbols": [
+                        "CalculateBranchTokenForEngineRoot",
+                        "ComputeProjectName",
+                        "myInfo.m_identifier = \"ASSETPROCESSOR\"",
+                        "NegotiationInfo_BranchIndentifier",
+                        "NegotiationInfo_ProjectName",
+                        "MessageInfoBus::Broadcast",
+                    ],
+                },
+                {
+                    "path": engine_root
+                    / "Code"
+                    / "Tools"
+                    / "AssetProcessor"
+                    / "native"
+                    / "utilities"
+                    / "GUIApplicationManager.cpp",
+                    "symbols": [
+                        "GUIApplicationManager::NegotiationFailed",
+                        "An attempt to connect to the game or editor has failed.",
+                        "different folder or a different project",
+                        "Negotiation Failed",
+                        "ShowMessageBox",
+                    ],
+                },
+            ]
+        )
+    return specs
+
+
+def _editor_ap_negotiation_viewport_materialization_source_validation(
+    engine_root: Path | None,
+) -> Dict[str, Any]:
+    file_results = [
+        _source_file_symbol_validation(spec["path"], spec["symbols"])
+        for spec in _editor_ap_negotiation_viewport_materialization_source_specs(engine_root)
+    ]
+    missing = [result for result in file_results if result["status"] != "pass"]
+    status = (
+        "editor_ap_negotiation_viewport_materialization_source_validation_pass"
+        if not missing
+        else "editor_ap_negotiation_viewport_materialization_source_validation_inconclusive"
+    )
+    return {
+        "status": status,
+        "blocker": ""
+        if not missing
+        else "blocked_by_editor_asset_processor_negotiation_source_validation_unavailable",
+        "files": file_results,
+        "surfaces": {
+            "negotiation_token_boundary": (
+                "Editor/AP negotiation source-validates branch token, project name, and identifier matching; "
+                "mismatches set negotiation failure instead of proving viewport or rendering readiness."
+            ),
+            "editor_launch_boundary": (
+                "Editor startup uses EstablishAssetProcessorConnection with launch-on-failed-connection enabled "
+                "and the Editor connection identifier."
+            ),
+            "asset_processor_modal_boundary": (
+                "Asset Processor shows a Negotiation Failed message box when branch or project negotiation fails."
+            ),
+            "repair_boundary": (
+                "This slice classifies AP process/project/build alignment and does not restart or kill AP unless "
+                "process ownership is proven."
+            ),
+            "proof_boundary": (
+                "AP negotiation and viewport materialization readiness do not request screenshot capture and are "
+                "not rendered visual/material evidence, material correctness, character presence, or full runtime proof."
+            ),
+        },
+        "missing": missing,
+    }
+
+
 def _vector_probe(value: Any) -> Dict[str, Any]:
     components: List[float] = []
     for name, index in (("x", 0), ("y", 1), ("z", 2)):
@@ -6234,6 +6447,280 @@ def _run_editor_nonblocking_viewport_swapchain_readiness_checks(
                 list(payload.get("messages", []))
                 + [
                     "Non-blocking viewport/SwapChain readiness probing is readiness only; screenshot and visual/material proof remain disabled."
+                ]
+            ),
+        }
+    )
+    return payload
+
+
+def _probe_editor_asset_processor_negotiation_modal() -> Dict[str, Any]:
+    payload: Dict[str, Any] = {
+        "attempted": True,
+        "detected": False,
+        "blocker": "",
+        "sanitized_windows": [],
+    }
+    try:
+        from PySide2 import QtWidgets  # type: ignore
+    except Exception as exc:
+        payload["blocker"] = "blocked_by_qt_viewport_widget_unavailable"
+        payload["evidence_summary"] = f"Qt widget inventory unavailable: {exc}"
+        return payload
+    app = QtWidgets.QApplication.instance()
+    if app is None:
+        payload["blocker"] = "blocked_by_qt_viewport_widget_unavailable"
+        payload["evidence_summary"] = "QApplication instance unavailable."
+        return payload
+    phrases = (
+        "negotiation failed",
+        "different folder or a different project",
+        "same project as the asset processor",
+    )
+    sanitized_windows: List[Dict[str, Any]] = []
+    for widget in app.topLevelWidgets():
+        try:
+            title = str(widget.windowTitle())
+        except Exception:
+            title = ""
+        texts: List[str] = []
+        try:
+            if hasattr(widget, "text"):
+                texts.append(str(widget.text()))
+        except Exception:
+            pass
+        try:
+            for label in widget.findChildren(QtWidgets.QLabel):
+                try:
+                    texts.append(str(label.text()))
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        combined = " ".join([title] + texts).lower()
+        matched = any(phrase in combined for phrase in phrases)
+        if matched:
+            payload["detected"] = True
+            sanitized_windows.append(
+                {
+                    "class_name": widget.metaObject().className() if hasattr(widget, "metaObject") else type(widget).__name__,
+                    "title_match": "Negotiation Failed" if "negotiation failed" in combined else "asset_processor_negotiation_message",
+                    "visible": bool(widget.isVisible()) if hasattr(widget, "isVisible") else False,
+                    "raw_text_emitted": False,
+                }
+            )
+    payload["sanitized_windows"] = sanitized_windows
+    if payload["detected"]:
+        payload["blocker"] = "blocked_by_editor_asset_processor_negotiation_failed_modal"
+        payload["evidence_summary"] = "Sanitized Qt top-level widget inventory matched the Asset Processor negotiation-failed dialog."
+    else:
+        payload["evidence_summary"] = "No Asset Processor negotiation-failed dialog matched in sanitized Qt top-level widget inventory."
+    return payload
+
+
+def _run_editor_ap_negotiation_viewport_materialization_checks(
+    report: Mapping[str, Any],
+    *,
+    progress_log: Path | None,
+    general: Any,
+) -> Dict[str, Any]:
+    engine_root_raw = str(os.environ.get("O3DE_ENGINE_ROOT", "")).strip()
+    engine_root = Path(engine_root_raw) if engine_root_raw else None
+    _write_progress_marker(
+        progress_log,
+        "editor_ap_negotiation_source_validation_started",
+        "started",
+        "Source-validating Editor/Asset Processor negotiation and viewport materialization readiness.",
+    )
+    source_validation = _editor_ap_negotiation_viewport_materialization_source_validation(engine_root)
+    source_validated = (
+        source_validation.get("status")
+        == "editor_ap_negotiation_viewport_materialization_source_validation_pass"
+    )
+    _write_progress_marker(
+        progress_log,
+        "editor_ap_negotiation_source_validation_returned",
+        "verified" if source_validated else str(source_validation.get("blocker", "blocked")),
+        "Editor/AP negotiation source validation returned.",
+    )
+    modal_probe = _probe_editor_asset_processor_negotiation_modal() if source_validated else {
+        "attempted": False,
+        "detected": False,
+        "blocker": "blocked_by_editor_asset_processor_negotiation_source_validation_unavailable",
+        "sanitized_windows": [],
+    }
+    _write_progress_marker(
+        progress_log,
+        "editor_ap_negotiation_modal_probe_returned",
+        "detected" if modal_probe.get("detected") else "not_detected",
+        "Editor/AP negotiation-failed modal detection returned.",
+    )
+    readiness = _run_editor_nonblocking_viewport_swapchain_readiness_checks(
+        report,
+        progress_log=progress_log,
+        general=general,
+    )
+    process_preflight_verified = report.get("editor_asset_processor_negotiation_preflight_verified") is True
+    project_alignment_verified = report.get("editor_asset_processor_project_alignment_verified") is True
+    build_alignment_verified = report.get("editor_asset_processor_build_root_alignment_verified") is True
+    modal_detected = modal_probe.get("detected") is True
+    if not source_validated:
+        negotiation_verified = False
+        negotiation_state = "blocked_by_editor_asset_processor_negotiation_source_validation_unavailable"
+        negotiation_blocker = "blocked_by_editor_asset_processor_negotiation_source_validation_unavailable"
+    elif modal_detected:
+        negotiation_verified = False
+        negotiation_state = "blocked_by_editor_asset_processor_negotiation_failed_modal"
+        negotiation_blocker = "blocked_by_editor_asset_processor_negotiation_failed_modal"
+    elif process_preflight_verified:
+        negotiation_verified = True
+        negotiation_state = "verified_editor_asset_processor_negotiation_aligned"
+        negotiation_blocker = ""
+    else:
+        negotiation_verified = False
+        negotiation_state = str(
+            report.get("editor_asset_processor_negotiation_state")
+            or "blocked_by_editor_asset_processor_project_alignment_unverified"
+        )
+        negotiation_blocker = str(
+            report.get("editor_asset_processor_negotiation_blocker")
+            or "blocked_by_editor_asset_processor_project_alignment_unverified"
+        )
+
+    framecapture_blocker = str(
+        readiness.get("framecapture_target_readiness_blocker")
+        or readiness.get("nonblocking_viewport_swapchain_probe_blocker")
+        or "blocked_by_framecapture_target_unavailable"
+    )
+    active_blocker = str(
+        readiness.get("active_default_viewport_window_handle_blocker")
+        or readiness.get("active_default_viewport_probe_blocker")
+        or "blocked_by_editor_active_viewport_window_handle_unavailable"
+    )
+    swapchain_blocker = str(
+        readiness.get("atom_swapchain_readiness_probe_blocker")
+        or "blocked_by_swapchain_probe_unavailable"
+    )
+    viewport_materialization_verified = readiness.get("framecapture_target_readiness_verified") is True
+    payload: Dict[str, Any] = dict(readiness)
+    payload.update(
+        {
+            "editor_asset_processor_negotiation_preflight_attempted": True,
+            "editor_asset_processor_negotiation_preflight_verified": negotiation_verified,
+            "editor_asset_processor_negotiation_source_validated": source_validated,
+            "editor_asset_processor_negotiation_source_validation_status": source_validation.get("status", ""),
+            "editor_asset_processor_negotiation_source_validation": source_validation,
+            "editor_asset_processor_negotiation_state": negotiation_state,
+            "editor_asset_processor_negotiation_blocker": negotiation_blocker,
+            "editor_asset_processor_negotiation_repair_attempted": False,
+            "editor_asset_processor_negotiation_repair_verified": False,
+            "editor_asset_processor_negotiation_repair_blocker": "blocked_by_asset_processor_process_ownership_unverified",
+            "editor_asset_processor_modal_detection_attempted": modal_probe.get("attempted") is True,
+            "editor_asset_processor_negotiation_failed_modal_detected": modal_detected,
+            "editor_asset_processor_negotiation_failed_modal_blocker": modal_probe.get("blocker", ""),
+            "editor_asset_processor_negotiation_failed_modal_evidence": modal_probe,
+            "editor_asset_processor_project_alignment_attempted": True,
+            "editor_asset_processor_project_alignment_verified": project_alignment_verified,
+            "editor_asset_processor_project_alignment_blocker": str(
+                report.get("editor_asset_processor_project_alignment_blocker")
+                or ("" if project_alignment_verified else "blocked_by_editor_asset_processor_project_alignment_unverified")
+            ),
+            "editor_asset_processor_build_root_alignment_attempted": True,
+            "editor_asset_processor_build_root_alignment_verified": build_alignment_verified,
+            "editor_asset_processor_build_root_alignment_blocker": str(
+                report.get("editor_asset_processor_build_root_alignment_blocker")
+                or ("" if build_alignment_verified else "blocked_by_editor_asset_processor_build_root_mismatch")
+            ),
+            "editor_process_inventory_attempted": report.get("editor_process_inventory_attempted") is True,
+            "editor_process_inventory_sanitized": list(report.get("editor_process_inventory_sanitized", [])),
+            "asset_processor_process_inventory_attempted": report.get("asset_processor_process_inventory_attempted") is True,
+            "asset_processor_process_inventory_sanitized": list(
+                report.get("asset_processor_process_inventory_sanitized", [])
+            ),
+            "asset_processor_process_running": report.get("asset_processor_process_running") is True,
+            "viewport_window_materialization_repair_attempted": True,
+            "viewport_window_materialization_repair_verified": viewport_materialization_verified,
+            "viewport_window_materialization_state": "verified_viewport_window_materialization_after_ap_alignment"
+            if viewport_materialization_verified
+            else (negotiation_state if modal_detected else framecapture_blocker),
+            "viewport_window_materialization_blocker": ""
+            if viewport_materialization_verified
+            else (negotiation_blocker if modal_detected else framecapture_blocker),
+            "active_default_viewport_after_ap_alignment_attempted": readiness.get(
+                "active_default_viewport_probe_attempted"
+            )
+            is True,
+            "active_default_viewport_after_ap_alignment_verified": readiness.get(
+                "active_default_viewport_window_handle_verified"
+            )
+            is True,
+            "active_default_viewport_after_ap_alignment_blocker": ""
+            if readiness.get("active_default_viewport_window_handle_verified") is True
+            else active_blocker,
+            "framecapture_target_after_ap_alignment_attempted": readiness.get(
+                "framecapture_target_readiness_attempted"
+            )
+            is True,
+            "framecapture_target_after_ap_alignment_verified": readiness.get(
+                "framecapture_target_readiness_verified"
+            )
+            is True,
+            "framecapture_target_after_ap_alignment_blocker": ""
+            if readiness.get("framecapture_target_readiness_verified") is True
+            else framecapture_blocker,
+            "atom_swapchain_after_ap_alignment_attempted": readiness.get(
+                "atom_swapchain_readiness_probe_attempted"
+            )
+            is True,
+            "atom_swapchain_after_ap_alignment_verified": readiness.get(
+                "atom_swapchain_readiness_probe_verified"
+            )
+            is True,
+            "atom_swapchain_after_ap_alignment_blocker": ""
+            if readiness.get("atom_swapchain_readiness_probe_verified") is True
+            else swapchain_blocker,
+            "asset_processor_process_owner_verified": report.get("asset_processor_process_owner_verified") is True,
+            "asset_processor_restart_attempted": False,
+            "asset_processor_restart_completed": False,
+            "asset_processor_restart_blocker": str(
+                report.get("asset_processor_restart_blocker")
+                or "blocked_by_asset_processor_process_ownership_unverified"
+            ),
+            "asset_processor_launch_attempted": False,
+            "asset_processor_launch_completed": False,
+            "asset_processor_launch_blocker": str(
+                report.get("asset_processor_launch_blocker")
+                or "not_selected_existing_process_classification_only"
+            ),
+            "editor_visual_material_capture_requested": False,
+            "editor_visual_material_capture_request_accepted": False,
+            "editor_visual_material_capture_completed": False,
+            "visual_material_capture_readiness_verified": False,
+            "visual_material_rendered_evidence_gate_attempted": False,
+            "visual_material_rendered_evidence_gate_verified": False,
+            "visual_material_gate_claimed": False,
+            "visual_material_gate_verified": False,
+            "full_runtime_character_visual_material_gate_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "asset_cache_deleted": False,
+            "cache_heuristic_used": False,
+            "proof_claims": [
+                "Source-validated and exercised bounded Editor/Asset Processor negotiation preflight plus project/build alignment diagnostics.",
+                "Attempted viewport/window materialization readiness after safe temp visual scene context without screenshot capture.",
+            ],
+            "proof_limits": [
+                "No screenshot request/completion.",
+                "No rendered visual/material evidence.",
+                "No material/character visual-presence validation.",
+                "No visual_material gate verification.",
+                "No full runtime character proof.",
+                "No release packaging, publication, or production-ready claim.",
+            ],
+            "messages": _unique(
+                list(payload.get("messages", []))
+                + [
+                    "Editor/AP negotiation and viewport materialization diagnostics are readiness only; screenshot and visual/material proof remain disabled."
                 ]
             ),
         }

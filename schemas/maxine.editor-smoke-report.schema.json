@@ -122,6 +122,7 @@
         "editor-active-viewport-temp-scene-readiness",
         "editor-safe-temp-visual-scene-display-context",
         "editor-nonblocking-viewport-swapchain-readiness",
+        "editor-ap-negotiation-viewport-materialization-readiness",
         "full"
       ]
     },
