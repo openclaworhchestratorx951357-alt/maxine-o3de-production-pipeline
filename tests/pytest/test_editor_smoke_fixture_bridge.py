@@ -7696,6 +7696,143 @@ def _shell_ready_payload(*, synchronized: bool = False, blocked_precondition: bo
     return payload
 
 
+def _deferred_execution_repair_payload(*, repaired: bool = False, blocked_precondition: bool = False) -> dict:
+    payload = _shell_ready_payload(synchronized=False, blocked_precondition=blocked_precondition)
+    repair_state = (
+        "verified_editor_deferred_diagnostic_execution_repair"
+        if repaired
+        else "blocked_by_editor_late_diagnostic_execution_unavailable"
+    )
+    repair_blocker = "" if repaired else "blocked_by_editor_late_diagnostic_execution_unavailable"
+    late_probe_blocker = "" if repaired else "blocked_by_editor_late_diagnostic_execution_unavailable"
+    marker_blocker = "" if repaired else "blocked_by_editor_late_diagnostic_completion_marker_missing"
+    progress_blocker = "" if repaired else "blocked_by_editor_late_diagnostic_progress_marker_missing"
+    after_late_blocker = "" if repaired else "not_selected_late_diagnostic_execution_unavailable"
+    payload.update(
+        {
+            "diagnostic_mode": "editor-deferred-diagnostic-execution-repair",
+            "editor_deferred_diagnostic_execution_repair_attempted": True,
+            "editor_deferred_diagnostic_execution_repair_verified": repaired,
+            "editor_deferred_diagnostic_execution_repair_source_validated": True,
+            "editor_deferred_diagnostic_execution_repair_state": repair_state,
+            "editor_deferred_diagnostic_execution_repair_blocker": repair_blocker,
+            "editor_deferred_diagnostic_strategy_attempted": True,
+            "editor_deferred_diagnostic_strategy_verified": repaired,
+            "editor_deferred_diagnostic_strategy_source_validated": True,
+            "editor_deferred_diagnostic_strategy_blocker": "" if repaired else "blocked_by_editor_deferred_diagnostic_strategy_unavailable",
+            "editor_late_diagnostic_scheduling_attempted": True,
+            "editor_late_diagnostic_scheduling_verified": repaired,
+            "editor_late_diagnostic_scheduling_blocker": "" if repaired else "blocked_by_editor_late_diagnostic_scheduling_unavailable",
+            "editor_late_diagnostic_execution_attempted": True,
+            "editor_late_diagnostic_execution_verified": repaired,
+            "editor_late_diagnostic_execution_blocker": late_probe_blocker,
+            "editor_late_diagnostic_completion_marker_attempted": True,
+            "editor_late_diagnostic_completion_marker_verified": repaired,
+            "editor_late_diagnostic_completion_marker_blocker": marker_blocker,
+            "editor_late_diagnostic_progress_marker_attempted": True,
+            "editor_late_diagnostic_progress_marker_verified": repaired,
+            "editor_late_diagnostic_progress_marker_blocker": progress_blocker,
+            "editor_late_diagnostic_timeout_seconds": 30,
+            "editor_late_diagnostic_timed_out": not repaired,
+            "editor_late_diagnostic_cleanup_completed": True,
+            "editor_late_diagnostic_run_owned_paths_sanitized": True,
+            "editor_qtimer_late_diagnostic_attempted": True,
+            "editor_qtimer_late_diagnostic_verified": False,
+            "editor_qtimer_late_diagnostic_blocker": "blocked_by_editor_qtimer_late_diagnostic_unavailable",
+            "editor_event_loop_late_callback_attempted": True,
+            "editor_event_loop_late_callback_verified": False,
+            "editor_event_loop_late_callback_blocker": "blocked_by_editor_event_loop_late_callback_unavailable",
+            "editor_idle_callback_late_diagnostic_attempted": True,
+            "editor_idle_callback_late_diagnostic_verified": False,
+            "editor_idle_callback_late_diagnostic_blocker": "blocked_by_editor_idle_callback_late_diagnostic_unavailable",
+            "editor_two_stage_diagnostic_attempted": True,
+            "editor_two_stage_diagnostic_verified": False,
+            "editor_two_stage_diagnostic_blocker": "blocked_by_editor_two_stage_diagnostic_unavailable",
+            "editor_stage1_preshell_execution_verified": True,
+            "editor_stage2_late_execution_verified": repaired,
+            "editor_stage2_late_execution_blocker": "" if repaired else "blocked_by_editor_stage2_late_execution_unavailable",
+            "editor_stage2_completion_marker_verified": repaired,
+            "editor_stage2_completion_marker_blocker": "" if repaired else "blocked_by_editor_stage2_completion_marker_missing",
+            "editor_shell_ready_synchronization_attempted": True,
+            "editor_shell_ready_synchronization_verified": False,
+            "editor_shell_ready_synchronization_blocker": "blocked_by_editor_shell_ready_synchronization_unavailable",
+            "visible_editor_shell_after_late_diagnostic_attempted": repaired,
+            "visible_editor_shell_after_late_diagnostic_verified": False,
+            "visible_editor_shell_after_late_diagnostic_blocker": (
+                "blocked_by_visible_editor_shell_unavailable" if repaired else after_late_blocker
+            ),
+            "default_viewport_pane_discovery_after_late_diagnostic_attempted": repaired,
+            "default_viewport_pane_discovery_after_late_diagnostic_verified": False,
+            "default_viewport_pane_discovery_after_late_diagnostic_blocker": (
+                "blocked_by_default_viewport_pane_unavailable" if repaired else after_late_blocker
+            ),
+            "default_viewport_pane_activation_after_late_diagnostic_attempted": False,
+            "default_viewport_pane_activation_after_late_diagnostic_verified": False,
+            "default_viewport_pane_activation_after_late_diagnostic_blocker": after_late_blocker,
+            "default_viewport_widget_discovery_after_late_diagnostic_attempted": repaired,
+            "default_viewport_widget_discovery_after_late_diagnostic_verified": repaired,
+            "default_viewport_widget_discovery_after_late_diagnostic_blocker": "" if repaired else after_late_blocker,
+            "active_default_viewport_after_late_diagnostic_attempted": repaired,
+            "active_default_viewport_after_late_diagnostic_verified": False,
+            "active_default_viewport_after_late_diagnostic_state": (
+                "active_viewport_python_probe_deferred_without_explicit_gate" if repaired else "not_selected"
+            ),
+            "active_default_viewport_after_late_diagnostic_blocker": (
+                "blocked_by_editor_active_viewport_window_handle_unavailable" if repaired else after_late_blocker
+            ),
+            "active_default_viewport_window_handle_after_late_diagnostic_attempted": repaired,
+            "active_default_viewport_window_handle_after_late_diagnostic_verified": False,
+            "active_default_viewport_window_handle_after_late_diagnostic_source_validated": True,
+            "active_default_viewport_window_handle_after_late_diagnostic_blocker": (
+                "blocked_by_editor_active_viewport_window_handle_unavailable" if repaired else after_late_blocker
+            ),
+            "atom_swapchain_after_late_diagnostic_attempted": repaired,
+            "atom_swapchain_after_late_diagnostic_verified": False,
+            "atom_swapchain_after_late_diagnostic_source_validated": True,
+            "atom_swapchain_after_late_diagnostic_blocker": (
+                "blocked_by_swapchain_probe_unavailable" if repaired else after_late_blocker
+            ),
+            "framecapture_target_after_late_diagnostic_attempted": repaired,
+            "framecapture_target_after_late_diagnostic_verified": False,
+            "framecapture_target_after_late_diagnostic_source_validated": True,
+            "framecapture_target_after_late_diagnostic_blocker": (
+                "blocked_by_active_viewport_window_handle_unavailable" if repaired else after_late_blocker
+            ),
+            "proof_claims": [
+                "Source-validated and exercised Editor deferred diagnostic execution repair attempts after verified AP alignment and safe temp visual scene context.",
+                "Classified late diagnostic execution and preserved remaining readiness-only viewport/capture-target blockers without screenshot capture.",
+            ],
+            "proof_limits": [
+                "No screenshot request/completion.",
+                "No rendered visual/material evidence.",
+                "No material/character visual-presence validation.",
+                "No visual_material gate verification.",
+                "No full runtime character proof.",
+                "No release packaging, publication, or production-ready claim.",
+            ],
+        }
+    )
+    if blocked_precondition:
+        payload.update(
+            {
+                "ap_alignment_preserved": False,
+                "editor_deferred_diagnostic_execution_repair_state": (
+                    "blocked_by_editor_deferred_diagnostic_execution_repair_preconditions_unavailable"
+                ),
+                "editor_deferred_diagnostic_execution_repair_blocker": "blocked_by_asset_processor_project_mismatch",
+                "editor_late_diagnostic_scheduling_attempted": False,
+                "editor_late_diagnostic_execution_attempted": False,
+                "editor_late_diagnostic_completion_marker_attempted": False,
+                "visible_editor_shell_after_late_diagnostic_attempted": False,
+                "active_default_viewport_after_late_diagnostic_attempted": False,
+                "active_default_viewport_window_handle_after_late_diagnostic_attempted": False,
+                "atom_swapchain_after_late_diagnostic_attempted": False,
+                "framecapture_target_after_late_diagnostic_attempted": False,
+            }
+        )
+    return payload
+
+
 def test_asset_processor_alignment_source_validation_success_and_blocked(tmp_path):
     env = _live_env(tmp_path)
     engine = Path(env["O3DE_ENGINE_ROOT"])
@@ -9248,6 +9385,243 @@ def test_shell_ready_synchronization_mode_uses_safe_temp_context_and_no_capture(
     assert result["status"] == "pass"
     assert result["editor_bootstrap_wait_shell_ready_synchronization_attempted"] is True
     assert result["editor_bootstrap_wait_shell_ready_synchronization_verified"] is False
+    assert result["temp_visual_scene_cleanup_attempted"] is True
+    assert result["temp_visual_scene_cleanup_completed"] is True
+    assert result["screenshot_capture_requested"] is False
+    assert result["screenshot_capture_completed"] is False
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["rendered_visual_evidence_claimed"] is False
+    assert result["rendered_visual_evidence_verified"] is False
+    assert result["visual_material_gate_verified"] is False
+    assert result["full_runtime_character_proof_claimed"] is False
+    assert result["full_runtime_character_proof_verified"] is False
+    assert result["asset_cache_deletion_attempted"] is False
+    assert result["asset_processor_database_wipe_attempted"] is False
+
+
+def test_deferred_diagnostic_execution_repair_source_validation_success_and_blocked(tmp_path):
+    env = _live_env(tmp_path)
+    engine = Path(env["O3DE_ENGINE_ROOT"])
+    _write_editor_ap_negotiation_source_files(engine)
+
+    success = editor_python_smoke._editor_deferred_diagnostic_execution_repair_source_validation(engine)
+    assert success["status"] == "editor_deferred_diagnostic_execution_repair_source_validation_pass"
+    assert success["blocker"] == ""
+    assert "RunInitPythonScript" in success["surfaces"]["preshell_boundary"]
+    assert "completion marker" in success["surfaces"]["run_owned_marker_boundary"]
+    assert "readiness only" in success["surfaces"]["capture_boundary"].lower()
+
+    blocked = editor_python_smoke._editor_deferred_diagnostic_execution_repair_source_validation(tmp_path / "missing")
+    assert blocked["status"] == "editor_deferred_diagnostic_execution_repair_source_validation_inconclusive"
+    assert blocked["blocker"] == "blocked_by_editor_deferred_diagnostic_execution_repair_source_validation_unavailable"
+
+
+def test_deferred_diagnostic_execution_repair_schema_and_semantics_accept_blocked_readiness():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_deferred_execution_repair_payload(repaired=False))
+    report["mode"] = "local_editor_python"
+    report["status"] = "pass"
+
+    schema_result = schema_validate(report, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(report, strict=True)
+
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+    assert report["editor_deferred_diagnostic_execution_repair_verified"] is False
+    assert report["editor_stage1_preshell_execution_verified"] is True
+    assert report["editor_stage2_late_execution_verified"] is False
+    assert report["editor_late_diagnostic_completion_marker_verified"] is False
+    assert report["editor_late_diagnostic_run_owned_paths_sanitized"] is True
+    assert report["visible_editor_shell_after_late_diagnostic_attempted"] is False
+    assert report["default_viewport_widget_discovery_after_late_diagnostic_attempted"] is False
+    assert report["screenshot_capture_requested"] is False
+    assert report["screenshot_capture_completed"] is False
+    assert report["rendered_visual_evidence_claimed"] is False
+    assert report["visual_material_gate_verified"] is False
+    assert report["full_runtime_character_proof_verified"] is False
+
+
+def test_deferred_diagnostic_execution_repair_validation_rejects_marker_overclaims_and_raw_paths():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_deferred_execution_repair_payload(repaired=False))
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "editor_deferred_diagnostic_execution_repair_verified": True,
+            "editor_late_diagnostic_completion_marker_verified": True,
+            "editor_late_diagnostic_run_owned_paths_sanitized": False,
+            "editor_launch_command_classification_sanitized": {
+                "raw_command_line_emitted": True,
+                "command_line": "Editor.exe --runpython private-script.py",
+            },
+            "screenshot_capture_requested": True,
+            "screenshot_capture_completed": True,
+            "rendered_visual_evidence_claimed": True,
+            "rendered_visual_evidence_verified": True,
+            "visual_material_gate_verified": True,
+            "full_runtime_character_proof_claimed": True,
+            "full_runtime_character_proof_verified": True,
+            "asset_cache_deletion_attempted": True,
+            "asset_processor_database_wipe_attempted": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    joined = " ".join(result.messages)
+    assert "must not emit raw command lines" in joined
+    assert "verified=true requires late diagnostic execution" in joined
+    assert "completion marker" in joined
+    assert "run-owned paths" in joined
+    assert "must not request screenshot/frame capture" in joined
+    assert "cannot claim rendered visual evidence" in joined
+    assert "cannot verify visual/material proof" in joined
+    assert "cannot claim full runtime character proof" in joined
+    assert "must not delete Asset Cache" in joined
+    assert "must not wipe AP databases" in joined
+
+
+def test_deferred_diagnostic_execution_repair_precondition_block_does_not_run_late_or_atom_probes(monkeypatch):
+    readiness = _shell_ready_payload(blocked_precondition=True)
+
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_editor_deferred_diagnostic_execution_repair_source_validation",
+        lambda engine_root: {
+            "status": "editor_deferred_diagnostic_execution_repair_source_validation_pass",
+            "blocker": "",
+        },
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_run_editor_bootstrap_wait_shell_ready_synchronization_checks",
+        lambda report, *, progress_log, general: dict(readiness),
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_check_active_default_viewport_probe",
+        lambda general: (_ for _ in ()).throw(
+            AssertionError("active/default viewport probe must not run when repair preconditions are blocked")
+        ),
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_probe_atom_framecapture_binding_surface",
+        lambda source_validated: (_ for _ in ()).throw(
+            AssertionError("Atom probe must not run when repair preconditions are blocked")
+        ),
+    )
+
+    result = editor_python_smoke._run_editor_deferred_diagnostic_execution_repair_checks(
+        {},
+        progress_log=None,
+        general=object(),
+    )
+
+    assert result["editor_deferred_diagnostic_execution_repair_state"] == (
+        "blocked_by_editor_deferred_diagnostic_execution_repair_preconditions_unavailable"
+    )
+    assert result["editor_late_diagnostic_execution_attempted"] is False
+    assert result["active_default_viewport_after_late_diagnostic_attempted"] is False
+    assert result["atom_swapchain_after_late_diagnostic_attempted"] is False
+    assert result["framecapture_target_after_late_diagnostic_attempted"] is False
+    assert result["active_default_viewport_after_late_diagnostic_blocker"] == "blocked_by_asset_processor_project_mismatch"
+    assert result["atom_swapchain_after_late_diagnostic_blocker"] == "blocked_by_asset_processor_project_mismatch"
+
+
+def test_deferred_diagnostic_execution_repair_preserves_shell_ready_probe_when_repair_source_blocked(monkeypatch):
+    readiness = _shell_ready_payload(synchronized=False)
+
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_editor_deferred_diagnostic_execution_repair_source_validation",
+        lambda engine_root: {
+            "status": "editor_deferred_diagnostic_execution_repair_source_validation_inconclusive",
+            "blocker": "blocked_by_editor_deferred_diagnostic_execution_repair_source_validation_unavailable",
+        },
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_run_editor_bootstrap_wait_shell_ready_synchronization_checks",
+        lambda report, *, progress_log, general: dict(readiness),
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_probe_editor_deferred_diagnostic_execution_repair",
+        lambda **kwargs: (_ for _ in ()).throw(
+            AssertionError("deferred repair probe must not run when repair source validation is blocked")
+        ),
+    )
+
+    result = editor_python_smoke._run_editor_deferred_diagnostic_execution_repair_checks(
+        {},
+        progress_log=None,
+        general=object(),
+    )
+
+    assert result["editor_deferred_diagnostic_execution_repair_source_validated"] is False
+    assert result["editor_deferred_diagnostic_execution_repair_state"] == (
+        "blocked_by_editor_deferred_diagnostic_execution_repair_source_validation_unavailable"
+    )
+    assert result["editor_deferred_diagnostic_strategy_attempted"] is True
+    assert result["editor_deferred_diagnostic_strategy_source_validated"] is True
+    assert result["editor_deferred_diagnostic_strategy_blocker"] == (
+        "blocked_by_editor_deferred_diagnostic_strategy_unavailable"
+    )
+    assert result["editor_late_diagnostic_execution_attempted"] is True
+    assert result["editor_late_diagnostic_execution_blocker"] == (
+        "blocked_by_editor_late_diagnostic_execution_unavailable"
+    )
+    assert result["editor_late_diagnostic_timeout_seconds"] == 30
+    assert result["editor_late_diagnostic_cleanup_completed"] is True
+    assert result["editor_late_diagnostic_scheduling_attempted"] is False
+    assert result["editor_late_diagnostic_scheduling_blocker"] == (
+        "not_selected_source_validation_or_precondition_unavailable"
+    )
+
+
+def test_deferred_diagnostic_execution_repair_mode_uses_safe_temp_context_and_no_capture(tmp_path):
+    env = _live_env(tmp_path)
+    _write_editor_ap_negotiation_source_files(Path(env["O3DE_ENGINE_ROOT"]))
+
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        assert "editor_deferred_diagnostic_execution_repair_smoke.py" in argv[-1].replace("\\", "/")
+        assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == (
+            "editor-deferred-diagnostic-execution-repair"
+        )
+        assert env["MAXINE_ENABLE_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR"] == "1"
+        assert env["MAXINE_ENABLE_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION"] == "1"
+        assert env["MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE"] == "1"
+        assert env["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] == "1"
+        assert "MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH" not in env
+        temp_path = Path(env["MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_PATH"])
+        temp_path.mkdir(parents=True)
+        (temp_path / "test.prefab").write_text("{}", encoding="utf-8")
+        payload = json.loads(Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).read_text(encoding="utf-8"))
+        payload.update(_deferred_execution_repair_payload(repaired=False))
+        payload["temp_visual_scene_path"] = (
+            "Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/test"
+        )
+        payload["editor_temp_visual_scene_path"] = payload["temp_visual_scene_path"]
+        payload["editor_visual_material_temp_scene_path"] = payload["temp_visual_scene_path"]
+        Path(env["MAXINE_EDITOR_SMOKE_REPORT_OUT"]).write_text(json.dumps(payload), encoding="utf-8")
+        return subprocess.CompletedProcess(args=argv, returncode=0, stdout="", stderr="")
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=env,
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="editor-deferred-diagnostic-execution-repair",
+    )
+
+    assert result["status"] == "pass"
+    assert result["editor_deferred_diagnostic_execution_repair_attempted"] is True
+    assert result["editor_deferred_diagnostic_execution_repair_verified"] is False
     assert result["temp_visual_scene_cleanup_attempted"] is True
     assert result["temp_visual_scene_cleanup_completed"] is True
     assert result["screenshot_capture_requested"] is False
