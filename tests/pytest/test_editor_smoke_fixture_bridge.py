@@ -7833,6 +7833,159 @@ def _deferred_execution_repair_payload(*, repaired: bool = False, blocked_precon
     return payload
 
 
+def _late_runner_mechanism_payload(*, stage2: bool = False, blocked_precondition: bool = False) -> dict:
+    payload = _deferred_execution_repair_payload(repaired=False, blocked_precondition=blocked_precondition)
+    state = (
+        "verified_editor_stage2_late_execution"
+        if stage2
+        else "blocked_by_editor_stage2_late_execution_unavailable"
+    )
+    blocker = "" if stage2 else "blocked_by_editor_stage2_late_execution_unavailable"
+    after_stage2_blocker = "" if stage2 else "not_selected_stage2_late_execution_unavailable"
+    payload.update(
+        {
+            "diagnostic_mode": "editor-late-runner-mechanism-deep-dive",
+            "editor_late_runner_mechanism_deep_dive_attempted": True,
+            "editor_late_runner_mechanism_deep_dive_verified": stage2,
+            "editor_late_runner_mechanism_source_validated": True,
+            "editor_late_runner_mechanism_state": state,
+            "editor_late_runner_mechanism_blocker": blocker,
+            "editor_late_runner_candidate_mechanisms": [
+                "qtimer_callback",
+                "event_loop_callback",
+                "idle_callback",
+                "module_global_callback_anchor",
+                "two_stage_diagnostic",
+                "run_owned_marker",
+            ],
+            "editor_late_runner_selected_mechanism": "two_stage_marker_probe",
+            "editor_late_runner_marker_paths_sanitized": True,
+            "editor_late_runner_marker_path_writability_attempted": True,
+            "editor_late_runner_marker_path_writability_verified": True,
+            "editor_late_runner_marker_path_writability_blocker": "",
+            "editor_late_runner_marker_path_visibility_attempted": True,
+            "editor_late_runner_marker_path_visibility_verified": True,
+            "editor_late_runner_marker_path_visibility_blocker": "",
+            "editor_qtimer_callback_mechanism_attempted": True,
+            "editor_qtimer_callback_mechanism_verified": False,
+            "editor_qtimer_callback_mechanism_blocker": "blocked_by_editor_qtimer_callback_mechanism_unavailable",
+            "editor_qtimer_callback_anchored": True,
+            "editor_event_loop_callback_mechanism_attempted": True,
+            "editor_event_loop_callback_mechanism_verified": False,
+            "editor_event_loop_callback_mechanism_blocker": "blocked_by_editor_event_loop_callback_mechanism_unavailable",
+            "editor_idle_callback_mechanism_attempted": True,
+            "editor_idle_callback_mechanism_verified": False,
+            "editor_idle_callback_mechanism_blocker": "blocked_by_editor_idle_callback_mechanism_unavailable",
+            "editor_module_global_callback_anchor_attempted": True,
+            "editor_module_global_callback_anchor_verified": True,
+            "editor_module_global_callback_anchor_blocker": "",
+            "editor_python_object_lifetime_classification_attempted": True,
+            "editor_python_object_lifetime_classification_verified": True,
+            "editor_python_object_lifetime_blocker": "",
+            "editor_stage1_preshell_execution_attempted": True,
+            "editor_stage1_preshell_execution_verified": True,
+            "editor_stage1_preshell_execution_blocker": "",
+            "editor_stage2_script_import_attempted": True,
+            "editor_stage2_script_import_verified": True,
+            "editor_stage2_script_import_blocker": "",
+            "editor_stage2_entrypoint_attempted": True,
+            "editor_stage2_entrypoint_verified": True,
+            "editor_stage2_entrypoint_blocker": "",
+            "editor_stage2_scheduling_attempted": True,
+            "editor_stage2_scheduling_verified": stage2,
+            "editor_stage2_scheduling_blocker": "" if stage2 else "blocked_by_editor_stage2_scheduling_unavailable",
+            "editor_stage2_late_execution_attempted": True,
+            "editor_stage2_late_execution_verified": stage2,
+            "editor_stage2_late_execution_blocker": blocker,
+            "editor_stage2_progress_marker_attempted": True,
+            "editor_stage2_progress_marker_verified": stage2,
+            "editor_stage2_progress_marker_blocker": "" if stage2 else "blocked_by_editor_stage2_progress_marker_missing",
+            "editor_stage2_completion_marker_attempted": True,
+            "editor_stage2_completion_marker_verified": stage2,
+            "editor_stage2_completion_marker_blocker": "" if stage2 else "blocked_by_editor_stage2_completion_marker_missing",
+            "editor_late_runner_editor_alive_wait_attempted": True,
+            "editor_late_runner_editor_alive_wait_verified": False,
+            "editor_late_runner_editor_alive_wait_blocker": "blocked_by_editor_late_runner_editor_alive_wait_unavailable",
+            "editor_late_runner_timeout_seconds": 30,
+            "editor_late_runner_timed_out": not stage2,
+            "editor_late_runner_cleanup_completed": True,
+            "visible_editor_shell_after_stage2_attempted": stage2,
+            "visible_editor_shell_after_stage2_verified": False,
+            "visible_editor_shell_after_stage2_blocker": (
+                "blocked_by_visible_editor_shell_unavailable" if stage2 else after_stage2_blocker
+            ),
+            "default_viewport_pane_discovery_after_stage2_attempted": stage2,
+            "default_viewport_pane_discovery_after_stage2_verified": False,
+            "default_viewport_pane_discovery_after_stage2_blocker": (
+                "blocked_by_default_viewport_pane_unavailable" if stage2 else after_stage2_blocker
+            ),
+            "default_viewport_pane_activation_after_stage2_attempted": False,
+            "default_viewport_pane_activation_after_stage2_verified": False,
+            "default_viewport_pane_activation_after_stage2_blocker": after_stage2_blocker,
+            "default_viewport_widget_discovery_after_stage2_attempted": stage2,
+            "default_viewport_widget_discovery_after_stage2_verified": stage2,
+            "default_viewport_widget_discovery_after_stage2_blocker": "" if stage2 else after_stage2_blocker,
+            "active_default_viewport_after_stage2_attempted": stage2,
+            "active_default_viewport_after_stage2_verified": False,
+            "active_default_viewport_after_stage2_state": (
+                "active_viewport_python_probe_deferred_without_explicit_gate" if stage2 else "not_selected"
+            ),
+            "active_default_viewport_after_stage2_blocker": (
+                "blocked_by_editor_active_viewport_window_handle_unavailable" if stage2 else after_stage2_blocker
+            ),
+            "active_default_viewport_window_handle_after_stage2_attempted": stage2,
+            "active_default_viewport_window_handle_after_stage2_verified": False,
+            "active_default_viewport_window_handle_after_stage2_source_validated": True,
+            "active_default_viewport_window_handle_after_stage2_blocker": (
+                "blocked_by_editor_active_viewport_window_handle_unavailable" if stage2 else after_stage2_blocker
+            ),
+            "atom_swapchain_after_stage2_attempted": stage2,
+            "atom_swapchain_after_stage2_verified": False,
+            "atom_swapchain_after_stage2_source_validated": True,
+            "atom_swapchain_after_stage2_blocker": (
+                "blocked_by_swapchain_probe_unavailable" if stage2 else after_stage2_blocker
+            ),
+            "framecapture_target_after_stage2_attempted": stage2,
+            "framecapture_target_after_stage2_verified": False,
+            "framecapture_target_after_stage2_source_validated": True,
+            "framecapture_target_after_stage2_blocker": (
+                "blocked_by_active_viewport_window_handle_unavailable" if stage2 else after_stage2_blocker
+            ),
+            "proof_claims": [
+                "Source-validated and exercised a focused Editor late-runner mechanism deep-dive after verified AP alignment and safe temp visual scene context.",
+                "Classified stage-two late diagnostic execution and preserved remaining readiness-only viewport/capture-target blockers without screenshot capture.",
+            ],
+            "proof_limits": [
+                "No screenshot request/completion.",
+                "No rendered visual/material evidence.",
+                "No material/character visual-presence validation.",
+                "No visual_material gate verification.",
+                "No full runtime character proof.",
+                "No release packaging, publication, or production-ready claim.",
+            ],
+        }
+    )
+    if blocked_precondition:
+        payload.update(
+            {
+                "ap_alignment_preserved": False,
+                "editor_late_runner_mechanism_state": (
+                    "blocked_by_editor_late_runner_mechanism_preconditions_unavailable"
+                ),
+                "editor_late_runner_mechanism_blocker": "blocked_by_asset_processor_project_mismatch",
+                "editor_stage2_scheduling_attempted": False,
+                "editor_stage2_late_execution_attempted": False,
+                "editor_stage2_completion_marker_attempted": False,
+                "visible_editor_shell_after_stage2_attempted": False,
+                "active_default_viewport_after_stage2_attempted": False,
+                "active_default_viewport_window_handle_after_stage2_attempted": False,
+                "atom_swapchain_after_stage2_attempted": False,
+                "framecapture_target_after_stage2_attempted": False,
+            }
+        )
+    return payload
+
+
 def test_asset_processor_alignment_source_validation_success_and_blocked(tmp_path):
     env = _live_env(tmp_path)
     engine = Path(env["O3DE_ENGINE_ROOT"])
@@ -9622,6 +9775,198 @@ def test_deferred_diagnostic_execution_repair_mode_uses_safe_temp_context_and_no
     assert result["status"] == "pass"
     assert result["editor_deferred_diagnostic_execution_repair_attempted"] is True
     assert result["editor_deferred_diagnostic_execution_repair_verified"] is False
+    assert result["temp_visual_scene_cleanup_attempted"] is True
+    assert result["temp_visual_scene_cleanup_completed"] is True
+    assert result["screenshot_capture_requested"] is False
+    assert result["screenshot_capture_completed"] is False
+    assert result["editor_visual_material_capture_requested"] is False
+    assert result["rendered_visual_evidence_claimed"] is False
+    assert result["rendered_visual_evidence_verified"] is False
+    assert result["visual_material_gate_verified"] is False
+    assert result["full_runtime_character_proof_claimed"] is False
+    assert result["full_runtime_character_proof_verified"] is False
+    assert result["asset_cache_deletion_attempted"] is False
+    assert result["asset_processor_database_wipe_attempted"] is False
+
+
+def test_late_runner_mechanism_source_validation_success_and_blocked(tmp_path):
+    env = _live_env(tmp_path)
+    engine = Path(env["O3DE_ENGINE_ROOT"])
+    _write_editor_ap_negotiation_source_files(engine)
+
+    success = editor_python_smoke._editor_late_runner_mechanism_source_validation(engine)
+    assert success["status"] == "editor_late_runner_mechanism_source_validation_pass"
+    assert success["blocker"] == ""
+    assert "QTimer::singleShot" in success["surfaces"]["qtimer_boundary"]
+    assert "module-global" in success["surfaces"]["object_lifetime_boundary"]
+    assert "progress and completion" in success["surfaces"]["run_owned_marker_boundary"]
+
+    blocked = editor_python_smoke._editor_late_runner_mechanism_source_validation(tmp_path / "missing")
+    assert blocked["status"] == "editor_late_runner_mechanism_source_validation_inconclusive"
+    assert blocked["blocker"] == "blocked_by_editor_late_runner_mechanism_source_validation_unavailable"
+
+
+def test_late_runner_mechanism_schema_and_semantics_accept_blocked_stage2():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_late_runner_mechanism_payload(stage2=False))
+    report["mode"] = "local_editor_python"
+    report["status"] = "pass"
+
+    schema_result = schema_validate(report, load_json(SCHEMA))
+    semantic_result = validate_editor_smoke_report(report, strict=True)
+
+    assert schema_result.status == "pass", schema_result.messages
+    assert semantic_result.status == "pass", semantic_result.messages
+    assert report["editor_late_runner_mechanism_deep_dive_verified"] is False
+    assert report["editor_late_runner_marker_path_writability_verified"] is True
+    assert report["editor_late_runner_marker_path_visibility_verified"] is True
+    assert report["editor_module_global_callback_anchor_verified"] is True
+    assert report["editor_stage1_preshell_execution_verified"] is True
+    assert report["editor_stage2_script_import_verified"] is True
+    assert report["editor_stage2_entrypoint_verified"] is True
+    assert report["editor_stage2_late_execution_verified"] is False
+    assert report["editor_stage2_completion_marker_verified"] is False
+    assert report["visible_editor_shell_after_stage2_attempted"] is False
+    assert report["default_viewport_widget_discovery_after_stage2_attempted"] is False
+    assert report["screenshot_capture_requested"] is False
+    assert report["screenshot_capture_completed"] is False
+    assert report["rendered_visual_evidence_claimed"] is False
+    assert report["visual_material_gate_verified"] is False
+    assert report["full_runtime_character_proof_verified"] is False
+
+
+def test_late_runner_mechanism_validation_rejects_stage2_overclaims_and_raw_paths():
+    report = _fixture("release_rigged.fixture.report.json")
+    report.update(_late_runner_mechanism_payload(stage2=False))
+    report.update(
+        {
+            "mode": "local_editor_python",
+            "status": "pass",
+            "editor_late_runner_mechanism_deep_dive_verified": True,
+            "editor_stage2_completion_marker_verified": True,
+            "editor_late_runner_marker_paths_sanitized": False,
+            "editor_launch_command_classification_sanitized": {
+                "raw_command_line_emitted": True,
+                "command_line": "Editor.exe --runpython private-stage-two.py",
+            },
+            "screenshot_capture_requested": True,
+            "screenshot_capture_completed": True,
+            "rendered_visual_evidence_claimed": True,
+            "rendered_visual_evidence_verified": True,
+            "visual_material_gate_verified": True,
+            "full_runtime_character_proof_claimed": True,
+            "full_runtime_character_proof_verified": True,
+            "asset_cache_deletion_attempted": True,
+            "asset_processor_database_wipe_attempted": True,
+        }
+    )
+
+    result = validate_editor_smoke_report(report, strict=True)
+
+    assert result.status == "fail"
+    joined = " ".join(result.messages)
+    assert "must not emit raw command lines" in joined
+    assert "verified=true requires stage 2 late execution" in joined
+    assert "stage 2 completion marker" in joined
+    assert "marker paths" in joined
+    assert "must not request screenshot/frame capture" in joined
+    assert "cannot claim rendered visual evidence" in joined
+    assert "cannot verify visual/material proof" in joined
+    assert "cannot claim full runtime character proof" in joined
+    assert "must not delete Asset Cache" in joined
+    assert "must not wipe AP databases" in joined
+
+
+def test_late_runner_mechanism_precondition_block_does_not_run_stage2_or_atom_probes(monkeypatch):
+    readiness = _deferred_execution_repair_payload(blocked_precondition=True)
+
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_editor_late_runner_mechanism_source_validation",
+        lambda engine_root: {
+            "status": "editor_late_runner_mechanism_source_validation_pass",
+            "blocker": "",
+        },
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_run_editor_deferred_diagnostic_execution_repair_checks",
+        lambda report, *, progress_log, general: dict(readiness),
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_check_active_default_viewport_probe",
+        lambda general: (_ for _ in ()).throw(
+            AssertionError("active/default viewport probe must not run when late-runner preconditions are blocked")
+        ),
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_probe_atom_framecapture_binding_surface",
+        lambda source_validated: (_ for _ in ()).throw(
+            AssertionError("Atom probe must not run when late-runner preconditions are blocked")
+        ),
+    )
+
+    result = editor_python_smoke._run_editor_late_runner_mechanism_deep_dive_checks(
+        {},
+        progress_log=None,
+        general=object(),
+    )
+
+    assert result["editor_late_runner_mechanism_state"] == (
+        "blocked_by_editor_late_runner_mechanism_preconditions_unavailable"
+    )
+    assert result["editor_stage2_late_execution_attempted"] is False
+    assert result["visible_editor_shell_after_stage2_attempted"] is False
+    assert result["active_default_viewport_after_stage2_attempted"] is False
+    assert result["atom_swapchain_after_stage2_attempted"] is False
+    assert result["framecapture_target_after_stage2_attempted"] is False
+    assert result["active_default_viewport_after_stage2_blocker"] == "blocked_by_asset_processor_project_mismatch"
+    assert result["atom_swapchain_after_stage2_blocker"] == "blocked_by_asset_processor_project_mismatch"
+
+
+def test_late_runner_mechanism_mode_uses_safe_temp_context_and_no_capture(tmp_path):
+    env = _live_env(tmp_path)
+    _write_editor_ap_negotiation_source_files(Path(env["O3DE_ENGINE_ROOT"]))
+
+    def fake_editor_runner(*, argv, cwd, env, timeout_seconds):
+        assert "editor_late_runner_mechanism_smoke.py" in argv[-1].replace("\\", "/")
+        assert env["MAXINE_EDITOR_SMOKE_DIAGNOSTIC_MODE"] == "editor-late-runner-mechanism-deep-dive"
+        assert env["MAXINE_ENABLE_EDITOR_LATE_RUNNER_MECHANISM_DEEP_DIVE"] == "1"
+        assert env["MAXINE_ENABLE_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR"] == "1"
+        assert env["MAXINE_ENABLE_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION"] == "1"
+        assert env["MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE"] == "1"
+        assert env["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] == "1"
+        assert "MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH" not in env
+        temp_path = Path(env["MAXINE_EDITOR_SAFE_TEMP_VISUAL_SCENE_LEVEL_PATH"])
+        temp_path.mkdir(parents=True)
+        (temp_path / "test.prefab").write_text("{}", encoding="utf-8")
+        assert Path(env["MAXINE_EDITOR_SMOKE_REPORT_TEMPLATE"]).is_file()
+        payload = _fixture("release_rigged.fixture.report.json")
+        payload.update(_late_runner_mechanism_payload(stage2=False))
+        payload["temp_visual_scene_path"] = (
+            "Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/test"
+        )
+        payload["editor_temp_visual_scene_path"] = payload["temp_visual_scene_path"]
+        payload["editor_visual_material_temp_scene_path"] = payload["temp_visual_scene_path"]
+        Path(env["MAXINE_EDITOR_SMOKE_REPORT_OUT"]).write_text(json.dumps(payload), encoding="utf-8")
+        return subprocess.CompletedProcess(args=argv, returncode=0, stdout="", stderr="")
+
+    result = run_editor_smoke_corpus(
+        CORPUS,
+        enable_editor_smoke=True,
+        strict_integration=True,
+        env=env,
+        command_runner=fake_editor_runner,
+        artifact_root=tmp_path / "editor-smoke-artifacts",
+        diagnostic_mode="editor-late-runner-mechanism-deep-dive",
+    )
+
+    assert result["status"] == "pass"
+    assert result["editor_late_runner_mechanism_deep_dive_attempted"] is True
+    assert result["editor_late_runner_mechanism_deep_dive_verified"] is False
+    assert result["editor_stage2_late_execution_verified"] is False
     assert result["temp_visual_scene_cleanup_attempted"] is True
     assert result["temp_visual_scene_cleanup_completed"] is True
     assert result["screenshot_capture_requested"] is False
