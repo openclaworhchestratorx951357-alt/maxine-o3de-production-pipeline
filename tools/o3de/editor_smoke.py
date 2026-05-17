@@ -211,6 +211,11 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_late_runner_mechanism_smoke.py",
+    "editor-stage-two-execution-repair": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_stage_two_execution_repair_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -415,6 +420,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_editor_deferred_diagnostic_execution_repair(report, result)
         if diagnostic_mode == "editor-late-runner-mechanism-deep-dive":
             _validate_editor_late_runner_mechanism_deep_dive(report, result)
+        if diagnostic_mode == "editor-stage-two-execution-repair":
+            _validate_editor_stage_two_execution_repair(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -4744,6 +4751,140 @@ def _validate_editor_late_runner_mechanism_deep_dive(
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, message)
 
 
+def _validate_editor_stage_two_execution_repair(
+    report: Mapping[str, Any],
+    result: ValidationResult,
+) -> None:
+    _validate_editor_late_runner_mechanism_deep_dive(report, result)
+
+    source_blocked = (
+        report.get("editor_stage_two_execution_repair_source_validated") is False
+        or str(report.get("editor_stage_two_execution_repair_state", "")).strip()
+        == "blocked_by_editor_stage_two_execution_repair_source_validation_unavailable"
+    )
+    preconditions_verified = (
+        report.get("ap_alignment_preserved") is True
+        and report.get("editor_asset_processor_negotiation_preserved") is True
+        and report.get("operator_ap_alignment_remediation_verification_verified") is True
+        and report.get("safe_temp_visual_scene_context_preserved") is True
+        and report.get("temp_visual_scene_context_exercise_verified") is True
+        and report.get("temp_visual_scene_cleanup_completed") is True
+    )
+    precondition_blocked = not source_blocked and not preconditions_verified
+
+    if not source_blocked and report.get("editor_stage_two_execution_repair_attempted") is not True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor stage-two execution repair requires an attempted diagnostic.")
+    if not str(report.get("editor_stage_two_execution_repair_state", "")).strip():
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor stage-two execution repair requires a state.")
+    if (
+        report.get("editor_stage_two_execution_repair_verified") is not True
+        and not str(report.get("editor_stage_two_execution_repair_blocker", "")).strip()
+    ):
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Unverified Editor stage-two execution repair requires a typed blocker.")
+    if report.get("editor_stage_two_direct_control_invocation_is_late_execution") is True:
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "Editor stage-two direct control invocation cannot be counted as late execution proof.",
+        )
+
+    if not source_blocked and not precondition_blocked:
+        for field, label in {
+            "editor_stage_two_scheduler_selection_attempted": "stage-two scheduler selection classification",
+            "editor_stage_two_callable_reference_attempted": "stage-two callable reference classification",
+            "editor_stage_two_argument_propagation_attempted": "stage-two argument propagation classification",
+            "editor_stage_two_marker_path_propagation_attempted": "stage-two marker path propagation classification",
+            "editor_stage_two_direct_control_invocation_attempted": "stage-two direct control invocation classification",
+            "editor_stage_two_scheduling_attempted": "stage-two scheduling classification",
+            "editor_stage_two_late_execution_attempted": "stage-two late execution classification",
+            "editor_stage_two_progress_marker_attempted": "stage-two progress marker classification",
+            "editor_stage_two_completion_marker_attempted": "stage-two completion marker classification",
+            "editor_stage_two_editor_alive_wait_attempted": "stage-two Editor alive wait classification",
+            "editor_stage_two_harness_wait_attempted": "stage-two harness wait classification",
+            "editor_shell_ready_synchronization_attempted": "shell-ready synchronization classification",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Editor stage-two execution repair requires {label}.")
+
+    for field, blocker_field, label in (
+        (
+            "editor_stage_two_scheduler_selection_verified",
+            "editor_stage_two_scheduler_selection_blocker",
+            "stage-two scheduler selection",
+        ),
+        (
+            "editor_stage_two_callable_reference_verified",
+            "editor_stage_two_callable_reference_blocker",
+            "stage-two callable reference",
+        ),
+        (
+            "editor_stage_two_argument_propagation_verified",
+            "editor_stage_two_argument_propagation_blocker",
+            "stage-two argument propagation",
+        ),
+        (
+            "editor_stage_two_marker_path_propagation_verified",
+            "editor_stage_two_marker_path_propagation_blocker",
+            "stage-two marker path propagation",
+        ),
+        (
+            "editor_stage_two_direct_control_invocation_verified",
+            "editor_stage_two_direct_control_invocation_blocker",
+            "stage-two direct control invocation",
+        ),
+        (
+            "editor_stage_two_scheduling_verified",
+            "editor_stage_two_scheduling_blocker",
+            "stage-two scheduling",
+        ),
+        (
+            "editor_stage_two_late_execution_verified",
+            "editor_stage_two_late_execution_blocker",
+            "stage-two late execution",
+        ),
+        (
+            "editor_stage_two_progress_marker_verified",
+            "editor_stage_two_progress_marker_blocker",
+            "stage-two progress marker",
+        ),
+        (
+            "editor_stage_two_completion_marker_verified",
+            "editor_stage_two_completion_marker_blocker",
+            "stage-two completion marker",
+        ),
+        (
+            "editor_stage_two_editor_alive_wait_verified",
+            "editor_stage_two_editor_alive_wait_blocker",
+            "stage-two Editor alive wait",
+        ),
+        (
+            "editor_stage_two_harness_wait_verified",
+            "editor_stage_two_harness_wait_blocker",
+            "stage-two harness wait",
+        ),
+    ):
+        if source_blocked or precondition_blocked:
+            continue
+        if report.get(field) is not True and not str(report.get(blocker_field, "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Unverified {label} requires a typed blocker.")
+
+    if (
+        report.get("editor_stage_two_completion_marker_verified") is True
+        and report.get("editor_stage_two_late_execution_verified") is not True
+    ):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "stage-two completion marker verified=true requires stage-two late execution.",
+        )
+    if (
+        report.get("editor_stage_two_progress_marker_verified") is True
+        and report.get("editor_stage_two_late_execution_verified") is not True
+    ):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "stage-two progress marker verified=true requires stage-two late execution.",
+        )
+
+
 def _validate_direct_procprefab_content_assertions(
     report: Mapping[str, Any],
     semantics: Mapping[str, Any],
@@ -6115,6 +6256,9 @@ def _execute_live_editor_smoke(
     editor_late_runner_mechanism_deep_dive_mode = (
         diagnostic_mode == "editor-late-runner-mechanism-deep-dive"
     )
+    editor_stage_two_execution_repair_mode = (
+        diagnostic_mode == "editor-stage-two-execution-repair"
+    )
     asset_processor_alignment_family_mode = (
         asset_processor_alignment_repair_mode
         or operator_ap_alignment_remediation_verification_mode
@@ -6125,6 +6269,7 @@ def _execute_live_editor_smoke(
         or editor_bootstrap_wait_shell_ready_mode
         or editor_deferred_diagnostic_execution_repair_mode
         or editor_late_runner_mechanism_deep_dive_mode
+        or editor_stage_two_execution_repair_mode
     )
     safe_temp_scene_exercise_mode = (
         safe_temp_visual_scene_context_mode
@@ -6997,7 +7142,7 @@ def _execute_live_editor_smoke(
         editor_env.setdefault("MAXINE_ALLOW_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION", "1")
         editor_env.setdefault("MAXINE_ENABLE_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR", "1")
         editor_env.setdefault("MAXINE_ALLOW_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR", "1")
-    if editor_late_runner_mechanism_deep_dive_mode:
+    if editor_late_runner_mechanism_deep_dive_mode or editor_stage_two_execution_repair_mode:
         editor_env.setdefault("MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION", "1")
         editor_env.setdefault("MAXINE_ALLOW_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION", "1")
         editor_env.setdefault("MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION", "1")
@@ -7012,8 +7157,14 @@ def _execute_live_editor_smoke(
         editor_env.setdefault("MAXINE_ALLOW_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION", "1")
         editor_env.setdefault("MAXINE_ENABLE_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR", "1")
         editor_env.setdefault("MAXINE_ALLOW_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR", "1")
+    if editor_late_runner_mechanism_deep_dive_mode:
         editor_env.setdefault("MAXINE_ENABLE_EDITOR_LATE_RUNNER_MECHANISM_DEEP_DIVE", "1")
         editor_env.setdefault("MAXINE_ALLOW_EDITOR_LATE_RUNNER_MECHANISM_DEEP_DIVE", "1")
+    if editor_stage_two_execution_repair_mode:
+        editor_env.setdefault("MAXINE_ENABLE_EDITOR_LATE_RUNNER_MECHANISM_DEEP_DIVE", "1")
+        editor_env.setdefault("MAXINE_ALLOW_EDITOR_LATE_RUNNER_MECHANISM_DEEP_DIVE", "1")
+        editor_env.setdefault("MAXINE_ENABLE_EDITOR_STAGE_TWO_EXECUTION_REPAIR", "1")
+        editor_env.setdefault("MAXINE_ALLOW_EDITOR_STAGE_TWO_EXECUTION_REPAIR", "1")
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_NAME"] = level_name_for_editor
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_PATH"] = str(project_path / temp_level_rel)
     editor_env["MAXINE_EDITOR_SMOKE_ALLOW_TEMP_SANDBOX_LEVEL"] = "1"
@@ -9099,6 +9250,21 @@ def _parse_args() -> argparse.Namespace:
         help="Set the explicit gated marker for Editor late-runner mechanism deep-dive.",
     )
     parser.add_argument(
+        "--diagnose-editor-stage-two-execution-repair",
+        action="store_true",
+        help="Run Editor stage-two late diagnostic execution repair.",
+    )
+    parser.add_argument(
+        "--diagnose-editor-stage2-execution-repair",
+        action="store_true",
+        help="Alias for Editor stage-two late diagnostic execution repair.",
+    )
+    parser.add_argument(
+        "--enable-editor-stage-two-execution-repair-fixture",
+        action="store_true",
+        help="Set the explicit gated marker for Editor stage-two execution repair.",
+    )
+    parser.add_argument(
         "--editor-render-capture-rhi",
         choices=sorted(NON_NULL_RENDER_CAPTURE_RHIS),
         default=None,
@@ -9533,6 +9699,41 @@ def main() -> int:
         env_map["MAXINE_ALLOW_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION"] = "1"
         env_map["MAXINE_ALLOW_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR"] = "1"
         env_map["MAXINE_ALLOW_EDITOR_LATE_RUNNER_MECHANISM_DEEP_DIVE"] = "1"
+    if (
+        args.diagnose_editor_stage_two_execution_repair
+        or args.diagnose_editor_stage2_execution_repair
+        or args.enable_editor_stage_two_execution_repair_fixture
+    ):
+        diagnostic_mode = "editor-stage-two-execution-repair"
+        env_map["MAXINE_ENABLE_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] = "1"
+        env_map["MAXINE_ENABLE_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] = "1"
+        env_map["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+        env_map["MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] = "1"
+        env_map["MAXINE_ENABLE_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_LATE_RUNNER_MECHANISM_DEEP_DIVE"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_STAGE_TWO_EXECUTION_REPAIR"] = "1"
+    if args.enable_editor_stage_two_execution_repair_fixture:
+        env_map["MAXINE_ALLOW_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] = "1"
+        env_map["MAXINE_ALLOW_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] = "1"
+        env_map["MAXINE_ALLOW_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+        env_map["MAXINE_ALLOW_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] = "1"
+        env_map["MAXINE_ALLOW_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_LATE_RUNNER_MECHANISM_DEEP_DIVE"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_STAGE_TWO_EXECUTION_REPAIR"] = "1"
     if args.editor_render_capture_rhi:
         env_map["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = args.editor_render_capture_rhi
     result = run_editor_smoke_corpus(

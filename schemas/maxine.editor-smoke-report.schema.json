@@ -132,6 +132,7 @@
         "editor-bootstrap-wait-shell-ready-synchronization",
         "editor-deferred-diagnostic-execution-repair",
         "editor-late-runner-mechanism-deep-dive",
+        "editor-stage-two-execution-repair",
         "full"
       ]
     },
