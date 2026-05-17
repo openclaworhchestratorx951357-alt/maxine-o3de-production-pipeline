@@ -131,6 +131,7 @@
         "editor-layout-bootstrap-window-lifecycle-deep-dive",
         "editor-bootstrap-wait-shell-ready-synchronization",
         "editor-deferred-diagnostic-execution-repair",
+        "editor-late-runner-mechanism-deep-dive",
         "full"
       ]
     },

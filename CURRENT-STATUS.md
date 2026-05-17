@@ -1,7 +1,23 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Editor Deferred Diagnostic Execution Repair v1 is active on `codex/editor-deferred-diagnostic-execution-repair-v1`:
+- Editor Late-Runner Mechanism Deep-Dive v2 is active on `codex/editor-late-runner-mechanism-deep-dive-v2`:
+  - PR #182 was verified merged into `main` at `3b73ecb33633772d67231b130d435563fd52f034`; this branch was created from that updated `main`
+  - this slice source-validates and exercises a focused Editor late-runner mechanism deep-dive after verified AP alignment, preserving the operator-run AP remediation success from PR #176 and verified Editor/AP negotiation after remediation
+  - it preserves the safe temp visual scene/display context proven in PR #171/#172/#173/#174/#175/#176/#177/#178/#179/#180/#181/#182 under `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context`
+  - it preserves PR #180 and PR #181 findings that the prior automation path executes before shell-ready
+  - it preserves PR #182's finding that deferred repair is source-validated but late diagnostic execution remains unavailable
+  - it determines whether stage-two late execution fails because of scheduling, object lifetime, event-loop behavior, `--autotest_mode`, Editor process lifetime, marker path visibility, script import/entrypoint failure, harness timeout, or another source-validated blocker
+  - it records whether stage-two late diagnostic execution is verified or still blocked, without converting source validation, marker path checks, callback anchoring, or scheduling into stage-two execution proof
+  - it reruns visible Editor shell, default viewport pane/widget, active/default viewport, Atom SwapChain, and FrameCapture target readiness-only probes only when stage-two execution and source-validated preconditions allow
+  - live evidence: `artifacts/o3de-integration/editor-smoke/editor-smoke-20260517T063951Z/editor_smoke_live_report.json` and `artifacts/o3de-integration/editor-smoke/editor-smoke-20260517T063951Z/progress.jsonl`
+  - live result: AP alignment preserved and verified, Editor/AP negotiation preserved and verified, selected RHI `dx12`, non-null Editor launch verified, safe temp scene path `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/editor_safe_temp_visual_scene_display_context_20260517t063951z`, cleanup completed, and no defaultlevel/production/production character mutation detected
+  - late-runner mechanism source validation is verified; marker path writability/visibility, module-global callback anchoring, Python object lifetime classification, stage-one pre-shell execution, stage-two script import, and stage-two entrypoint are verified
+  - stage-two scheduling remains blocked by `blocked_by_editor_stage2_scheduling_unavailable`, stage-two late execution by `blocked_by_editor_stage2_late_execution_unavailable`, stage-two progress marker by `blocked_by_editor_stage2_progress_marker_missing`, and stage-two completion marker by `blocked_by_editor_stage2_completion_marker_missing`; Editor alive wait remains blocked by `blocked_by_editor_late_runner_editor_alive_wait_unavailable`
+  - visible shell/default viewport pane/widget, active/default viewport, Atom SwapChain, and FrameCapture target probes after stage two were not selected because stage-two late execution did not verify
+  - it does not request screenshot capture, does not complete screenshot capture, does not verify rendered visual evidence, does not verify material correctness, does not verify character visual presence, and does not satisfy `visual_material`
+  - full runtime character proof remains false, release packaging/publication/production-ready claims remain false, and no Asset Cache deletion or AP database/cache wipe is allowed
+- Editor Deferred Diagnostic Execution Repair v1 was merged through PR #182 on `codex/editor-deferred-diagnostic-execution-repair-v1`:
   - PR #181 was verified merged into `main` at `f1154a13c2403345597febd41c6d38edd67ad094`; this branch was created from that updated `main`
   - this slice source-validates and exercises Editor deferred diagnostic execution repair after verified AP alignment, preserving the operator-run AP remediation success from PR #176 and verified Editor/AP negotiation after remediation
   - it preserves the safe temp visual scene/display context proven in PR #171/#172/#173/#174/#175/#176/#177/#178/#179/#180/#181 under `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context`

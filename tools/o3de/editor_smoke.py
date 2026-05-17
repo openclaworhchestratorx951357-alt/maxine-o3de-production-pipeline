@@ -206,6 +206,11 @@ DIAGNOSTIC_EDITOR_SCRIPTS = {
     / "o3de"
     / "editor_python"
     / "editor_deferred_diagnostic_execution_repair_smoke.py",
+    "editor-late-runner-mechanism-deep-dive": REPO_ROOT
+    / "tools"
+    / "o3de"
+    / "editor_python"
+    / "editor_late_runner_mechanism_smoke.py",
     "full": EDITOR_SCRIPT,
 }
 DIAGNOSTIC_MODES = tuple(DIAGNOSTIC_EDITOR_SCRIPTS)
@@ -408,6 +413,8 @@ def validate_editor_smoke_report(report: Mapping[str, Any], *, strict: bool = Tr
             _validate_editor_bootstrap_wait_shell_ready_synchronization(report, result)
         if diagnostic_mode == "editor-deferred-diagnostic-execution-repair":
             _validate_editor_deferred_diagnostic_execution_repair(report, result)
+        if diagnostic_mode == "editor-late-runner-mechanism-deep-dive":
+            _validate_editor_late_runner_mechanism_deep_dive(report, result)
         if str(report.get("status", "")) == "pass" and diagnostic_mode in {"prefab-instantiation", "full"}:
             prefab_checks = report.get("prefab_binding_checks", {})
             instantiation = prefab_checks.get("instantiation", {}) if isinstance(prefab_checks, Mapping) else {}
@@ -4468,6 +4475,275 @@ def _validate_editor_deferred_diagnostic_execution_repair(
             result.add_error(MXN_RUNTIME_SMOKE_FAIL, message)
 
 
+def _validate_editor_late_runner_mechanism_deep_dive(
+    report: Mapping[str, Any],
+    result: ValidationResult,
+) -> None:
+    _validate_editor_deferred_diagnostic_execution_repair(report, result)
+    source_blocked = (
+        report.get("editor_late_runner_mechanism_source_validated") is False
+        or str(report.get("editor_late_runner_mechanism_state", "")).strip()
+        == "blocked_by_editor_late_runner_mechanism_source_validation_unavailable"
+    )
+    preconditions_verified = (
+        report.get("ap_alignment_preserved") is True
+        and report.get("editor_asset_processor_negotiation_preserved") is True
+        and report.get("operator_ap_alignment_remediation_verification_verified") is True
+        and report.get("safe_temp_visual_scene_context_preserved") is True
+        and report.get("temp_visual_scene_context_exercise_verified") is True
+        and report.get("temp_visual_scene_cleanup_completed") is True
+    )
+    precondition_blocked = not source_blocked and not preconditions_verified
+
+    if not source_blocked and report.get("editor_late_runner_mechanism_deep_dive_attempted") is not True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor late-runner mechanism deep-dive requires an attempted diagnostic.")
+    if not str(report.get("editor_late_runner_mechanism_state", "")).strip():
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor late-runner mechanism deep-dive requires a state.")
+    if (
+        report.get("editor_late_runner_mechanism_deep_dive_verified") is not True
+        and not str(report.get("editor_late_runner_mechanism_blocker", "")).strip()
+    ):
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Unverified Editor late-runner mechanism deep-dive requires a typed blocker.")
+
+    launch = report.get("editor_launch_command_classification_sanitized")
+    if not isinstance(launch, Mapping):
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor late-runner mechanism deep-dive requires sanitized launch command classification.")
+    else:
+        if (
+            launch.get("raw_command_line_emitted") is True
+            or launch.get("raw_environment_emitted") is True
+            or "command_line" in launch
+            or "environment" in launch
+        ):
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor late-runner mechanism deep-dive must not emit raw command lines or environment dumps.")
+
+    if report.get("editor_layout_mutation_attempted") is True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor late-runner mechanism deep-dive must not mutate Editor layout.")
+    if report.get("editor_user_layout_mutation_attempted") is True:
+        result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor late-runner mechanism deep-dive must not mutate Editor layout or user layout settings.")
+
+    if not source_blocked and not precondition_blocked:
+        for field, label in {
+            "editor_late_runner_marker_path_writability_attempted": "marker path writability classification",
+            "editor_late_runner_marker_path_visibility_attempted": "marker path visibility classification",
+            "editor_qtimer_callback_mechanism_attempted": "QTimer callback mechanism classification",
+            "editor_event_loop_callback_mechanism_attempted": "event-loop callback mechanism classification",
+            "editor_idle_callback_mechanism_attempted": "idle callback mechanism classification",
+            "editor_module_global_callback_anchor_attempted": "module-global callback anchor classification",
+            "editor_python_object_lifetime_classification_attempted": "Python object lifetime classification",
+            "editor_stage1_preshell_execution_attempted": "stage 1 pre-shell execution classification",
+            "editor_stage2_script_import_attempted": "stage 2 script import classification",
+            "editor_stage2_entrypoint_attempted": "stage 2 entrypoint classification",
+            "editor_stage2_scheduling_attempted": "stage 2 scheduling classification",
+            "editor_stage2_late_execution_attempted": "stage 2 late execution classification",
+            "editor_stage2_progress_marker_attempted": "stage 2 progress marker classification",
+            "editor_stage2_completion_marker_attempted": "stage 2 completion marker classification",
+            "editor_late_runner_editor_alive_wait_attempted": "Editor alive wait classification",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Editor late-runner mechanism deep-dive requires {label}.")
+        if not isinstance(report.get("editor_late_runner_candidate_mechanisms"), Sequence) or isinstance(
+            report.get("editor_late_runner_candidate_mechanisms"), (str, bytes)
+        ):
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor late-runner mechanism deep-dive requires sanitized candidate mechanism names.")
+        if not str(report.get("editor_late_runner_selected_mechanism", "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor late-runner mechanism deep-dive requires a selected mechanism classification.")
+        if int(report.get("editor_late_runner_timeout_seconds", 0) or 0) < 1:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor late-runner mechanism deep-dive requires a bounded late-runner timeout.")
+        if report.get("editor_late_runner_cleanup_completed") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor late-runner mechanism deep-dive requires late-runner cleanup completion.")
+        if report.get("editor_late_runner_marker_paths_sanitized") is not True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, "Editor late-runner mechanism deep-dive requires sanitized marker paths.")
+
+    for field, blocker_field, label in (
+        (
+            "editor_late_runner_marker_path_writability_verified",
+            "editor_late_runner_marker_path_writability_blocker",
+            "late-runner marker path writability",
+        ),
+        (
+            "editor_late_runner_marker_path_visibility_verified",
+            "editor_late_runner_marker_path_visibility_blocker",
+            "late-runner marker path visibility",
+        ),
+        (
+            "editor_qtimer_callback_mechanism_verified",
+            "editor_qtimer_callback_mechanism_blocker",
+            "QTimer callback mechanism",
+        ),
+        (
+            "editor_event_loop_callback_mechanism_verified",
+            "editor_event_loop_callback_mechanism_blocker",
+            "event-loop callback mechanism",
+        ),
+        (
+            "editor_idle_callback_mechanism_verified",
+            "editor_idle_callback_mechanism_blocker",
+            "idle callback mechanism",
+        ),
+        (
+            "editor_module_global_callback_anchor_verified",
+            "editor_module_global_callback_anchor_blocker",
+            "module-global callback anchor",
+        ),
+        (
+            "editor_python_object_lifetime_classification_verified",
+            "editor_python_object_lifetime_blocker",
+            "Python object lifetime classification",
+        ),
+        (
+            "editor_stage1_preshell_execution_verified",
+            "editor_stage1_preshell_execution_blocker",
+            "stage 1 pre-shell execution",
+        ),
+        (
+            "editor_stage2_script_import_verified",
+            "editor_stage2_script_import_blocker",
+            "stage 2 script import",
+        ),
+        (
+            "editor_stage2_entrypoint_verified",
+            "editor_stage2_entrypoint_blocker",
+            "stage 2 entrypoint",
+        ),
+        (
+            "editor_stage2_scheduling_verified",
+            "editor_stage2_scheduling_blocker",
+            "stage 2 scheduling",
+        ),
+        (
+            "editor_stage2_late_execution_verified",
+            "editor_stage2_late_execution_blocker",
+            "stage 2 late execution",
+        ),
+        (
+            "editor_stage2_progress_marker_verified",
+            "editor_stage2_progress_marker_blocker",
+            "stage 2 progress marker",
+        ),
+        (
+            "editor_stage2_completion_marker_verified",
+            "editor_stage2_completion_marker_blocker",
+            "stage 2 completion marker",
+        ),
+        (
+            "editor_late_runner_editor_alive_wait_verified",
+            "editor_late_runner_editor_alive_wait_blocker",
+            "Editor alive wait",
+        ),
+        (
+            "editor_shell_ready_synchronization_verified",
+            "editor_shell_ready_synchronization_blocker",
+            "shell-ready synchronization",
+        ),
+    ):
+        if source_blocked or precondition_blocked:
+            continue
+        if report.get(field) is not True and not str(report.get(blocker_field, "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Unverified {label} requires a typed blocker.")
+
+    if report.get("editor_late_runner_mechanism_deep_dive_verified") is True:
+        for field, label in {
+            "editor_stage2_late_execution_verified": "stage 2 late execution",
+            "editor_stage2_completion_marker_verified": "stage 2 completion marker",
+            "editor_late_runner_cleanup_completed": "late-runner cleanup completion",
+            "editor_late_runner_marker_paths_sanitized": "sanitized marker paths",
+        }.items():
+            if report.get(field) is not True:
+                result.add_error(
+                    MXN_RUNTIME_SMOKE_FAIL,
+                    f"Editor late-runner mechanism deep-dive verified=true requires {label}.",
+                )
+    if (
+        report.get("editor_stage2_completion_marker_verified") is True
+        and report.get("editor_stage2_late_execution_verified") is not True
+    ):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "stage 2 completion marker verified=true requires stage 2 late execution.",
+        )
+    if (
+        report.get("editor_stage2_progress_marker_verified") is True
+        and report.get("editor_stage2_late_execution_verified") is not True
+    ):
+        result.add_error(
+            MXN_RUNTIME_SMOKE_FAIL,
+            "stage 2 progress marker verified=true requires stage 2 late execution.",
+        )
+
+    readiness_fields = (
+        (
+            "visible_editor_shell_after_stage2_verified",
+            "visible_editor_shell_after_stage2_blocker",
+            "visible Editor shell after stage 2",
+        ),
+        (
+            "default_viewport_pane_discovery_after_stage2_verified",
+            "default_viewport_pane_discovery_after_stage2_blocker",
+            "default viewport pane discovery after stage 2",
+        ),
+        (
+            "default_viewport_pane_activation_after_stage2_verified",
+            "default_viewport_pane_activation_after_stage2_blocker",
+            "default viewport pane activation after stage 2",
+        ),
+        (
+            "default_viewport_widget_discovery_after_stage2_verified",
+            "default_viewport_widget_discovery_after_stage2_blocker",
+            "default viewport widget discovery after stage 2",
+        ),
+        (
+            "active_default_viewport_after_stage2_verified",
+            "active_default_viewport_after_stage2_blocker",
+            "active/default viewport after stage 2",
+        ),
+        (
+            "active_default_viewport_window_handle_after_stage2_verified",
+            "active_default_viewport_window_handle_after_stage2_blocker",
+            "active/default viewport window handle after stage 2",
+        ),
+        (
+            "atom_swapchain_after_stage2_verified",
+            "atom_swapchain_after_stage2_blocker",
+            "Atom SwapChain after stage 2",
+        ),
+        (
+            "framecapture_target_after_stage2_verified",
+            "framecapture_target_after_stage2_blocker",
+            "FrameCapture target after stage 2",
+        ),
+    )
+    if source_blocked or precondition_blocked:
+        readiness_fields = ()
+    for field, blocker_field, label in readiness_fields:
+        if report.get(field) is not True and not str(report.get(blocker_field, "")).strip():
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, f"Unverified {label} requires a typed blocker.")
+
+    for field, message in (
+        ("asset_cache_deletion_attempted", "Editor late-runner mechanism deep-dive must not delete Asset Cache."),
+        ("asset_processor_database_wipe_attempted", "Editor late-runner mechanism deep-dive must not wipe AP databases."),
+        ("asset_cache_deleted", "Editor late-runner mechanism deep-dive must not delete Asset Cache."),
+        ("screenshot_capture_requested", "Editor late-runner mechanism deep-dive must not request screenshot/frame capture."),
+        ("screenshot_capture_completed", "Editor late-runner mechanism deep-dive cannot claim screenshot/frame capture completion."),
+        ("editor_visual_material_capture_requested", "Editor late-runner mechanism deep-dive must not request screenshot/frame capture."),
+        ("editor_visual_material_capture_request_accepted", "Editor late-runner mechanism deep-dive must not accept screenshot/frame capture."),
+        ("editor_visual_material_capture_completed", "Editor late-runner mechanism deep-dive cannot claim screenshot/frame capture completion."),
+        ("rendered_visual_evidence_claimed", "Editor late-runner mechanism deep-dive cannot claim rendered visual evidence."),
+        ("rendered_visual_evidence_verified", "Editor late-runner mechanism deep-dive cannot verify rendered visual evidence."),
+        ("visual_material_capture_readiness_verified", "Editor late-runner mechanism deep-dive cannot verify screenshot artifact readiness."),
+        ("visual_material_rendered_evidence_gate_attempted", "Editor late-runner mechanism deep-dive must not attempt rendered visual evidence."),
+        ("visual_material_rendered_evidence_gate_verified", "Editor late-runner mechanism deep-dive cannot verify rendered visual evidence."),
+        ("visual_material_gate_claimed", "Editor late-runner mechanism deep-dive cannot claim visual/material proof."),
+        ("visual_material_gate_verified", "Editor late-runner mechanism deep-dive cannot verify visual/material proof."),
+        ("full_runtime_character_proof_claimed", "Editor late-runner mechanism deep-dive cannot claim full runtime character proof."),
+        ("full_runtime_character_proof_verified", "Editor late-runner mechanism deep-dive cannot verify full runtime character proof."),
+        ("runtime_character_proof_claimed", "Editor late-runner mechanism deep-dive cannot claim full runtime character proof."),
+        ("runtime_character_proof_verified", "Editor late-runner mechanism deep-dive cannot verify full runtime character proof."),
+    ):
+        if report.get(field) is True:
+            result.add_error(MXN_RUNTIME_SMOKE_FAIL, message)
+
+
 def _validate_direct_procprefab_content_assertions(
     report: Mapping[str, Any],
     semantics: Mapping[str, Any],
@@ -5836,6 +6112,9 @@ def _execute_live_editor_smoke(
     editor_deferred_diagnostic_execution_repair_mode = (
         diagnostic_mode == "editor-deferred-diagnostic-execution-repair"
     )
+    editor_late_runner_mechanism_deep_dive_mode = (
+        diagnostic_mode == "editor-late-runner-mechanism-deep-dive"
+    )
     asset_processor_alignment_family_mode = (
         asset_processor_alignment_repair_mode
         or operator_ap_alignment_remediation_verification_mode
@@ -5845,6 +6124,7 @@ def _execute_live_editor_smoke(
         or editor_layout_bootstrap_window_lifecycle_mode
         or editor_bootstrap_wait_shell_ready_mode
         or editor_deferred_diagnostic_execution_repair_mode
+        or editor_late_runner_mechanism_deep_dive_mode
     )
     safe_temp_scene_exercise_mode = (
         safe_temp_visual_scene_context_mode
@@ -5935,6 +6215,7 @@ def _execute_live_editor_smoke(
                 "MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE",
                 "MAXINE_ENABLE_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION",
                 "MAXINE_ENABLE_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR",
+                "MAXINE_ENABLE_EDITOR_LATE_RUNNER_MECHANISM_DEEP_DIVE",
             )
         }
         os.environ["O3DE_ENGINE_ROOT"] = str(engine_root)
@@ -5988,6 +6269,15 @@ def _execute_live_editor_smoke(
             os.environ["MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE"] = "1"
             os.environ["MAXINE_ENABLE_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION"] = "1"
             os.environ["MAXINE_ENABLE_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR"] = "1"
+        if editor_late_runner_mechanism_deep_dive_mode:
+            os.environ["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+            os.environ["MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
+            os.environ["MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] = "1"
+            os.environ["MAXINE_ENABLE_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL"] = "1"
+            os.environ["MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE"] = "1"
+            os.environ["MAXINE_ENABLE_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION"] = "1"
+            os.environ["MAXINE_ENABLE_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR"] = "1"
+            os.environ["MAXINE_ENABLE_EDITOR_LATE_RUNNER_MECHANISM_DEEP_DIVE"] = "1"
         if screenshot_capture_artifact_readiness_mode:
             os.environ["MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_ROOT"] = str(output_dir)
             os.environ["MAXINE_EDITOR_SCREENSHOT_CAPTURE_ARTIFACT_PATH"] = str(
@@ -6707,6 +6997,23 @@ def _execute_live_editor_smoke(
         editor_env.setdefault("MAXINE_ALLOW_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION", "1")
         editor_env.setdefault("MAXINE_ENABLE_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR", "1")
         editor_env.setdefault("MAXINE_ALLOW_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR", "1")
+    if editor_late_runner_mechanism_deep_dive_mode:
+        editor_env.setdefault("MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION", "1")
+        editor_env.setdefault("MAXINE_ALLOW_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION", "1")
+        editor_env.setdefault("MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION", "1")
+        editor_env.setdefault("MAXINE_ALLOW_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION", "1")
+        editor_env.setdefault("MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE", "1")
+        editor_env.setdefault("MAXINE_ALLOW_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE", "1")
+        editor_env.setdefault("MAXINE_ENABLE_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL", "1")
+        editor_env.setdefault("MAXINE_ALLOW_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL", "1")
+        editor_env.setdefault("MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE", "1")
+        editor_env.setdefault("MAXINE_ALLOW_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE", "1")
+        editor_env.setdefault("MAXINE_ENABLE_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION", "1")
+        editor_env.setdefault("MAXINE_ALLOW_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION", "1")
+        editor_env.setdefault("MAXINE_ENABLE_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR", "1")
+        editor_env.setdefault("MAXINE_ALLOW_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR", "1")
+        editor_env.setdefault("MAXINE_ENABLE_EDITOR_LATE_RUNNER_MECHANISM_DEEP_DIVE", "1")
+        editor_env.setdefault("MAXINE_ALLOW_EDITOR_LATE_RUNNER_MECHANISM_DEEP_DIVE", "1")
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_NAME"] = level_name_for_editor
     editor_env["MAXINE_EDITOR_SMOKE_TEMP_LEVEL_PATH"] = str(project_path / temp_level_rel)
     editor_env["MAXINE_EDITOR_SMOKE_ALLOW_TEMP_SANDBOX_LEVEL"] = "1"
@@ -8782,6 +9089,16 @@ def _parse_args() -> argparse.Namespace:
         help="Set the explicit gated marker for Editor deferred diagnostic execution repair.",
     )
     parser.add_argument(
+        "--diagnose-editor-late-runner-mechanism-deep-dive",
+        action="store_true",
+        help="Run Editor late-runner mechanism and stage-two execution readiness.",
+    )
+    parser.add_argument(
+        "--enable-editor-late-runner-mechanism-deep-dive-fixture",
+        action="store_true",
+        help="Set the explicit gated marker for Editor late-runner mechanism deep-dive.",
+    )
+    parser.add_argument(
         "--editor-render-capture-rhi",
         choices=sorted(NON_NULL_RENDER_CAPTURE_RHIS),
         default=None,
@@ -9184,6 +9501,38 @@ def main() -> int:
         env_map["MAXINE_ALLOW_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE"] = "1"
         env_map["MAXINE_ALLOW_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION"] = "1"
         env_map["MAXINE_ALLOW_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR"] = "1"
+    if (
+        args.diagnose_editor_late_runner_mechanism_deep_dive
+        or args.enable_editor_late_runner_mechanism_deep_dive_fixture
+    ):
+        diagnostic_mode = "editor-late-runner-mechanism-deep-dive"
+        env_map["MAXINE_ENABLE_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] = "1"
+        env_map["MAXINE_ENABLE_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] = "1"
+        env_map["MAXINE_ENABLE_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+        env_map["MAXINE_ENABLE_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] = "1"
+        env_map["MAXINE_ENABLE_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR"] = "1"
+        env_map["MAXINE_ENABLE_EDITOR_LATE_RUNNER_MECHANISM_DEEP_DIVE"] = "1"
+    if args.enable_editor_late_runner_mechanism_deep_dive_fixture:
+        env_map["MAXINE_ALLOW_LIVE_NON_NULL_EDITOR_LAUNCH"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_SAFE_TEMP_VISUAL_SCENE_DISPLAY_CONTEXT"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_NONBLOCKING_VIEWPORT_SWAPCHAIN_READINESS"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_AP_NEGOTIATION_VIEWPORT_MATERIALIZATION_READINESS"] = "1"
+        env_map["MAXINE_ALLOW_ASSET_PROCESSOR_PROJECT_BUILD_ALIGNMENT_REPAIR"] = "1"
+        env_map["MAXINE_ALLOW_OPERATOR_AP_ALIGNMENT_REMEDIATION_VERIFICATION"] = "1"
+        env_map["MAXINE_ALLOW_FOCUSED_EDITOR_VIEWPORT_MATERIALIZATION"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_MAIN_WINDOW_ACTIVATION_DEEP_DIVE"] = "1"
+        env_map["MAXINE_ALLOW_ALTERNATE_EDITOR_WINDOW_DISCOVERY_VISIBLE_SHELL"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_LAYOUT_BOOTSTRAP_WINDOW_LIFECYCLE_DEEP_DIVE"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_BOOTSTRAP_WAIT_SHELL_READY_SYNCHRONIZATION"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_DEFERRED_DIAGNOSTIC_EXECUTION_REPAIR"] = "1"
+        env_map["MAXINE_ALLOW_EDITOR_LATE_RUNNER_MECHANISM_DEEP_DIVE"] = "1"
     if args.editor_render_capture_rhi:
         env_map["MAXINE_EDITOR_RENDER_CAPTURE_RHI"] = args.editor_render_capture_rhi
     result = run_editor_smoke_corpus(

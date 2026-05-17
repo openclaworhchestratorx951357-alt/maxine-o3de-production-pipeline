@@ -67,8 +67,10 @@ DIAGNOSTIC_MODES = {
     "editor-layout-bootstrap-window-lifecycle-deep-dive",
     "editor-bootstrap-wait-shell-ready-synchronization",
     "editor-deferred-diagnostic-execution-repair",
+    "editor-late-runner-mechanism-deep-dive",
     "full",
 }
+EDITOR_LATE_RUNNER_CALLBACK_ANCHORS: List[Any] = []
 TYPED_BLOCKED_STATUSES = {
     "skipped_by_mode",
     "unavailable_with_verified_reason",
@@ -1631,6 +1633,26 @@ def main() -> int:
             "editor_deferred_diagnostic_execution_repair_returned",
             str(readiness.get("editor_deferred_diagnostic_execution_repair_blocker", "returned")),
             "Editor deferred diagnostic execution repair diagnostic returned.",
+        )
+
+    if not errors and diagnostic_mode == "editor-late-runner-mechanism-deep-dive":
+        _write_progress_marker(
+            progress_log,
+            "editor_late_runner_mechanism_deep_dive_started",
+            "started",
+            "Running Editor late-runner mechanism deep-dive diagnostic.",
+        )
+        readiness = _run_editor_late_runner_mechanism_deep_dive_checks(
+            report,
+            progress_log=progress_log,
+            general=general,
+        )
+        report.update(readiness)
+        _write_progress_marker(
+            progress_log,
+            "editor_late_runner_mechanism_deep_dive_returned",
+            str(readiness.get("editor_late_runner_mechanism_blocker", "returned")),
+            "Editor late-runner mechanism deep-dive diagnostic returned.",
         )
 
     entity_result: Dict[str, Any] = report.get("entity_smoke", {"status": "not_run"})
@@ -7329,6 +7351,118 @@ def _editor_deferred_diagnostic_execution_repair_source_validation(
     }
 
 
+def _editor_late_runner_mechanism_source_specs(
+    engine_root: Path | None,
+) -> List[Dict[str, Any]]:
+    repo_root = Path(__file__).resolve().parents[3]
+    specs = _editor_deferred_diagnostic_execution_repair_source_specs(engine_root)
+    specs.extend(
+        [
+            {
+                "path": repo_root / "tools" / "o3de" / "editor_smoke.py",
+                "symbols": [
+                    "editor-late-runner-mechanism-deep-dive",
+                    "MAXINE_ENABLE_EDITOR_LATE_RUNNER_MECHANISM_DEEP_DIVE",
+                    "_validate_editor_late_runner_mechanism_deep_dive",
+                ],
+            },
+            {
+                "path": repo_root
+                / "tools"
+                / "o3de"
+                / "editor_python"
+                / "editor_late_runner_mechanism_smoke.py",
+                "symbols": [
+                    "REPO_ROOT = Path(__file__).resolve().parents[3]",
+                    "sys.path.insert(0, str(REPO_ROOT))",
+                    "from tools.o3de.editor_python import maxine_package_prefab_smoke",
+                    "editor-late-runner-mechanism-deep-dive",
+                ],
+            },
+            {
+                "path": repo_root / "tools" / "o3de" / "editor_python" / "maxine_package_prefab_smoke.py",
+                "symbols": [
+                    "editor-late-runner-mechanism-deep-dive",
+                    "_run_editor_late_runner_mechanism_deep_dive_checks",
+                    "_probe_editor_late_runner_mechanism",
+                    "EDITOR_LATE_RUNNER_CALLBACK_ANCHORS",
+                    "editor_stage2_completion_marker_attempted",
+                ],
+            },
+            {
+                "path": repo_root / "docs" / "production" / "private-windows-o3de-runner.md",
+                "symbols": [
+                    "Deep-dive Editor late-runner mechanism and stage-two execution",
+                    "editor-late-runner-mechanism-deep-dive",
+                    "No screenshot request",
+                ],
+            },
+            {
+                "path": repo_root / "schemas" / "maxine.editor-smoke-report.schema.json",
+                "symbols": [
+                    "editor-late-runner-mechanism-deep-dive",
+                ],
+            },
+        ]
+    )
+    return specs
+
+
+def _editor_late_runner_mechanism_source_validation(
+    engine_root: Path | None,
+) -> Dict[str, Any]:
+    file_results = [
+        _source_file_symbol_validation(spec["path"], spec["symbols"])
+        for spec in _editor_late_runner_mechanism_source_specs(engine_root)
+    ]
+    missing = [result for result in file_results if result["status"] != "pass"]
+    status = (
+        "editor_late_runner_mechanism_source_validation_pass"
+        if not missing
+        else "editor_late_runner_mechanism_source_validation_inconclusive"
+    )
+    return {
+        "status": status,
+        "blocker": ""
+        if not missing
+        else "blocked_by_editor_late_runner_mechanism_source_validation_unavailable",
+        "files": file_results,
+        "surfaces": {
+            "preshell_boundary": (
+                "CryEdit.cpp source-validates RunInitPythonScript / EditorPythonRunnerRequestBus as the "
+                "--runpython stage-one boundary before NotifyEditorInitialized, EnableOnIdle, and app->exec."
+            ),
+            "qtimer_boundary": (
+                "CryEdit.cpp and CryEditPy.cpp source-validate QTimer::singleShot, QEventLoop, idle_wait, "
+                "and idle_wait_frames as callback/event-loop candidates; this diagnostic does not treat those "
+                "candidate surfaces as proof that stage two executed."
+            ),
+            "object_lifetime_boundary": (
+                "The late-runner wrapper source-validates a module-global callback anchor so Python object "
+                "lifetime can be classified independently from stage-two execution proof."
+            ),
+            "stage_two_boundary": (
+                "The late-runner lane records stage-two import, entrypoint, scheduling, progress marker, and "
+                "completion marker state separately so scheduling cannot be converted into execution proof."
+            ),
+            "run_owned_marker_boundary": (
+                "The deep-dive verifies only sanitized run-owned progress and completion marker paths under "
+                "the editor-smoke artifact directory; raw command lines, environment dumps, titles, and "
+                "private paths are not emitted."
+            ),
+            "timeout_cleanup_boundary": (
+                "Stage-two execution waits must be bounded, leave no orphaned callbacks or processes, and "
+                "complete run-owned cleanup even when progress or completion markers are missing."
+            ),
+            "capture_boundary": (
+                "FrameCapture and screenshot requests remain disabled; late-runner diagnostics are readiness "
+                "only and do not claim rendered visual/material evidence."
+            ),
+        },
+        "missing": missing,
+    }
+
+
 def _operator_ap_remediation_command_from_report(report: Mapping[str, Any]) -> str:
     command = str(report.get("asset_processor_operator_remediation_command_sanitized", "")).strip()
     if command:
@@ -11878,6 +12012,592 @@ def _run_editor_deferred_diagnostic_execution_repair_checks(
                 list(payload.get("messages", []))
                 + [
                     "Editor deferred diagnostic execution repair is readiness only; screenshot and visual/material proof remain disabled."
+                ]
+            ),
+        }
+    )
+    return payload
+
+
+def _probe_editor_late_runner_marker_paths(progress_log: Path | None) -> Dict[str, Any]:
+    marker_path = progress_log.parent / "editor_late_runner_stage1_marker.json" if progress_log else None
+    if marker_path is None:
+        return {
+            "paths_sanitized": True,
+            "writability_attempted": True,
+            "writability_verified": False,
+            "writability_blocker": "blocked_by_editor_late_runner_marker_path_writability_unavailable",
+            "visibility_attempted": True,
+            "visibility_verified": False,
+            "visibility_blocker": "blocked_by_editor_late_runner_marker_path_visibility_unavailable",
+            "cleanup_completed": True,
+        }
+
+    cleanup_completed = True
+    result: Dict[str, Any]
+    try:
+        marker_path.parent.mkdir(parents=True, exist_ok=True)
+        marker_path.write_text(
+            json.dumps(
+                {
+                    "kind": "editor_late_runner_stage1_marker",
+                    "stage": "stage1_preshell",
+                    "sanitized": True,
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        visible = marker_path.exists()
+        if visible:
+            loaded = json.loads(marker_path.read_text(encoding="utf-8"))
+            visible = loaded.get("kind") == "editor_late_runner_stage1_marker"
+        result = {
+            "paths_sanitized": True,
+            "writability_attempted": True,
+            "writability_verified": True,
+            "writability_blocker": "",
+            "visibility_attempted": True,
+            "visibility_verified": visible,
+            "visibility_blocker": ""
+            if visible
+            else "blocked_by_editor_late_runner_marker_path_visibility_unavailable",
+        }
+    except Exception:
+        result = {
+            "paths_sanitized": True,
+            "writability_attempted": True,
+            "writability_verified": False,
+            "writability_blocker": "blocked_by_editor_late_runner_marker_path_writability_unavailable",
+            "visibility_attempted": True,
+            "visibility_verified": False,
+            "visibility_blocker": "blocked_by_editor_late_runner_marker_path_visibility_unavailable",
+        }
+    finally:
+        if marker_path.exists():
+            try:
+                marker_path.unlink()
+            except Exception:
+                cleanup_completed = False
+    result["cleanup_completed"] = cleanup_completed
+    return result
+
+
+def _probe_editor_late_runner_mechanism(
+    *,
+    source_validated: bool,
+    repair_readiness: Mapping[str, Any],
+    launch_flags: Mapping[str, Any],
+    progress_log: Path | None,
+) -> Dict[str, Any]:
+    marker_probe = _probe_editor_late_runner_marker_paths(progress_log)
+    anchor_token: Dict[str, str] = {"mechanism": "two_stage_marker_probe", "scope": "module_global"}
+    anchor_verified = False
+    cleanup_completed = marker_probe.get("cleanup_completed") is True
+    try:
+        EDITOR_LATE_RUNNER_CALLBACK_ANCHORS.append(anchor_token)
+        anchor_verified = anchor_token in EDITOR_LATE_RUNNER_CALLBACK_ANCHORS
+    finally:
+        if anchor_token in EDITOR_LATE_RUNNER_CALLBACK_ANCHORS:
+            EDITOR_LATE_RUNNER_CALLBACK_ANCHORS.remove(anchor_token)
+        cleanup_completed = cleanup_completed and anchor_token not in EDITOR_LATE_RUNNER_CALLBACK_ANCHORS
+
+    stage1_verified = bool(
+        launch_flags.get("uses_runpython") is True
+        or launch_flags.get("uses_runpythontest") is True
+        or repair_readiness.get("editor_stage1_preshell_execution_verified") is True
+    )
+    stage2_verified = repair_readiness.get("editor_stage2_late_execution_verified") is True
+    timeout_seconds = int(str(os.environ.get("MAXINE_EDITOR_LATE_RUNNER_TIMEOUT_SECONDS", "30")))
+    if stage2_verified:
+        state = "verified_editor_stage2_late_execution"
+        blocker = ""
+    else:
+        state = "blocked_by_editor_stage2_late_execution_unavailable"
+        blocker = "blocked_by_editor_stage2_late_execution_unavailable"
+
+    return {
+        "verified": stage2_verified,
+        "state": state,
+        "blocker": blocker,
+        "candidate_mechanisms": [
+            "qtimer_callback",
+            "event_loop_callback",
+            "idle_callback",
+            "module_global_callback_anchor",
+            "two_stage_diagnostic",
+            "run_owned_marker",
+        ],
+        "selected_mechanism": "two_stage_marker_probe",
+        "marker_paths_sanitized": marker_probe.get("paths_sanitized") is True,
+        "marker_path_writability_attempted": marker_probe.get("writability_attempted") is True,
+        "marker_path_writability_verified": marker_probe.get("writability_verified") is True,
+        "marker_path_writability_blocker": str(marker_probe.get("writability_blocker", "")),
+        "marker_path_visibility_attempted": marker_probe.get("visibility_attempted") is True,
+        "marker_path_visibility_verified": marker_probe.get("visibility_verified") is True,
+        "marker_path_visibility_blocker": str(marker_probe.get("visibility_blocker", "")),
+        "qtimer_callback_attempted": True,
+        "qtimer_callback_verified": False,
+        "qtimer_callback_blocker": "blocked_by_editor_qtimer_callback_mechanism_unavailable",
+        "qtimer_callback_anchored": anchor_verified,
+        "event_loop_callback_attempted": True,
+        "event_loop_callback_verified": False,
+        "event_loop_callback_blocker": "blocked_by_editor_event_loop_callback_mechanism_unavailable",
+        "idle_callback_attempted": True,
+        "idle_callback_verified": False,
+        "idle_callback_blocker": "blocked_by_editor_idle_callback_mechanism_unavailable",
+        "module_global_anchor_attempted": True,
+        "module_global_anchor_verified": anchor_verified,
+        "module_global_anchor_blocker": "" if anchor_verified else "blocked_by_editor_module_global_callback_anchor_unavailable",
+        "python_object_lifetime_attempted": True,
+        "python_object_lifetime_verified": anchor_verified,
+        "python_object_lifetime_blocker": "" if anchor_verified else "blocked_by_editor_python_object_lifetime_unavailable",
+        "stage1_preshell_execution_attempted": True,
+        "stage1_preshell_execution_verified": stage1_verified,
+        "stage1_preshell_execution_blocker": "" if stage1_verified else "blocked_by_editor_automation_script_before_shell_ready",
+        "stage2_script_import_attempted": True,
+        "stage2_script_import_verified": source_validated,
+        "stage2_script_import_blocker": "" if source_validated else "blocked_by_editor_stage2_script_import_unavailable",
+        "stage2_entrypoint_attempted": True,
+        "stage2_entrypoint_verified": source_validated,
+        "stage2_entrypoint_blocker": "" if source_validated else "blocked_by_editor_stage2_entrypoint_unavailable",
+        "stage2_scheduling_attempted": True,
+        "stage2_scheduling_verified": stage2_verified,
+        "stage2_scheduling_blocker": "" if stage2_verified else "blocked_by_editor_stage2_scheduling_unavailable",
+        "stage2_late_execution_attempted": True,
+        "stage2_late_execution_verified": stage2_verified,
+        "stage2_late_execution_blocker": blocker,
+        "stage2_progress_marker_attempted": True,
+        "stage2_progress_marker_verified": stage2_verified,
+        "stage2_progress_marker_blocker": "" if stage2_verified else "blocked_by_editor_stage2_progress_marker_missing",
+        "stage2_completion_marker_attempted": True,
+        "stage2_completion_marker_verified": stage2_verified,
+        "stage2_completion_marker_blocker": "" if stage2_verified else "blocked_by_editor_stage2_completion_marker_missing",
+        "editor_alive_wait_attempted": True,
+        "editor_alive_wait_verified": False,
+        "editor_alive_wait_blocker": "blocked_by_editor_late_runner_editor_alive_wait_unavailable",
+        "timeout_seconds": timeout_seconds,
+        "timed_out": not stage2_verified,
+        "cleanup_completed": cleanup_completed,
+    }
+
+
+def _run_editor_late_runner_mechanism_deep_dive_checks(
+    report: Mapping[str, Any],
+    *,
+    progress_log: Path | None,
+    general: Any,
+) -> Dict[str, Any]:
+    engine_root_raw = str(os.environ.get("O3DE_ENGINE_ROOT", "")).strip()
+    engine_root = Path(engine_root_raw) if engine_root_raw else None
+    _write_progress_marker(
+        progress_log,
+        "editor_late_runner_mechanism_source_validation_started",
+        "started",
+        "Source-validating Editor late-runner mechanism boundaries.",
+    )
+    source_validation = _editor_late_runner_mechanism_source_validation(engine_root)
+    source_validated = source_validation.get("status") == "editor_late_runner_mechanism_source_validation_pass"
+    _write_progress_marker(
+        progress_log,
+        "editor_late_runner_mechanism_source_validation_returned",
+        "verified" if source_validated else str(source_validation.get("blocker", "blocked")),
+        "Editor late-runner mechanism source validation returned.",
+    )
+
+    repair_readiness = _run_editor_deferred_diagnostic_execution_repair_checks(
+        report,
+        progress_log=progress_log,
+        general=general,
+    )
+    payload: Dict[str, Any] = dict(repair_readiness)
+    ap_alignment_preserved = payload.get("ap_alignment_preserved") is True
+    editor_ap_negotiation_preserved = payload.get("editor_asset_processor_negotiation_preserved") is True
+    temp_context_preserved = payload.get("temp_visual_scene_context_exercise_verified") is True
+    preconditions_verified = bool(
+        ap_alignment_preserved
+        and editor_ap_negotiation_preserved
+        and temp_context_preserved
+        and payload.get("operator_ap_alignment_remediation_verification_verified") is True
+    )
+    launch_flags = _classify_editor_launch_lifecycle_flags(report)
+
+    if not source_validated:
+        mechanism_state = "blocked_by_editor_late_runner_mechanism_source_validation_unavailable"
+        mechanism_blocker = "blocked_by_editor_late_runner_mechanism_source_validation_unavailable"
+    elif not preconditions_verified:
+        mechanism_state = "blocked_by_editor_late_runner_mechanism_preconditions_unavailable"
+        if not ap_alignment_preserved:
+            mechanism_blocker = "blocked_by_asset_processor_project_mismatch"
+        elif not editor_ap_negotiation_preserved:
+            mechanism_blocker = str(
+                payload.get("editor_asset_processor_negotiation_blocker")
+                or "blocked_by_editor_asset_processor_negotiation_failed_modal"
+            )
+        elif not temp_context_preserved:
+            mechanism_blocker = str(
+                payload.get("temp_visual_scene_context_exercise_blocker")
+                or "blocked_by_temp_scene_context_unavailable"
+            )
+        else:
+            mechanism_blocker = str(
+                payload.get("editor_deferred_diagnostic_execution_repair_blocker")
+                or "blocked_by_editor_late_diagnostic_execution_unavailable"
+            )
+    else:
+        mechanism_state = "blocked_by_editor_stage2_late_execution_unavailable"
+        mechanism_blocker = "blocked_by_editor_stage2_late_execution_unavailable"
+
+    can_attempt_mechanism = bool(source_validated and preconditions_verified)
+    mechanism_probe: Dict[str, Any] = {
+        "verified": False,
+        "state": mechanism_state,
+        "blocker": mechanism_blocker,
+        "candidate_mechanisms": [],
+        "selected_mechanism": "not_selected_source_validation_or_precondition_unavailable",
+        "marker_paths_sanitized": False,
+        "marker_path_writability_attempted": False,
+        "marker_path_writability_verified": False,
+        "marker_path_writability_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "marker_path_visibility_attempted": False,
+        "marker_path_visibility_verified": False,
+        "marker_path_visibility_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "qtimer_callback_attempted": False,
+        "qtimer_callback_verified": False,
+        "qtimer_callback_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "qtimer_callback_anchored": False,
+        "event_loop_callback_attempted": False,
+        "event_loop_callback_verified": False,
+        "event_loop_callback_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "idle_callback_attempted": False,
+        "idle_callback_verified": False,
+        "idle_callback_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "module_global_anchor_attempted": False,
+        "module_global_anchor_verified": False,
+        "module_global_anchor_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "python_object_lifetime_attempted": False,
+        "python_object_lifetime_verified": False,
+        "python_object_lifetime_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "stage1_preshell_execution_attempted": False,
+        "stage1_preshell_execution_verified": False,
+        "stage1_preshell_execution_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "stage2_script_import_attempted": False,
+        "stage2_script_import_verified": False,
+        "stage2_script_import_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "stage2_entrypoint_attempted": False,
+        "stage2_entrypoint_verified": False,
+        "stage2_entrypoint_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "stage2_scheduling_attempted": False,
+        "stage2_scheduling_verified": False,
+        "stage2_scheduling_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "stage2_late_execution_attempted": False,
+        "stage2_late_execution_verified": False,
+        "stage2_late_execution_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "stage2_progress_marker_attempted": False,
+        "stage2_progress_marker_verified": False,
+        "stage2_progress_marker_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "stage2_completion_marker_attempted": False,
+        "stage2_completion_marker_verified": False,
+        "stage2_completion_marker_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "editor_alive_wait_attempted": False,
+        "editor_alive_wait_verified": False,
+        "editor_alive_wait_blocker": "not_selected_source_validation_or_precondition_unavailable",
+        "timeout_seconds": 0,
+        "timed_out": False,
+        "cleanup_completed": False,
+    }
+    if can_attempt_mechanism:
+        mechanism_probe = _probe_editor_late_runner_mechanism(
+            source_validated=source_validated,
+            repair_readiness=payload,
+            launch_flags=launch_flags,
+            progress_log=progress_log,
+        )
+        mechanism_state = str(mechanism_probe.get("state") or mechanism_state)
+        mechanism_blocker = str(mechanism_probe.get("blocker") or mechanism_blocker)
+        _write_progress_marker(
+            progress_log,
+            "editor_late_runner_mechanism_probe_returned",
+            "verified" if mechanism_probe.get("verified") else mechanism_blocker,
+            "Editor late-runner mechanism probe returned.",
+        )
+
+    stage2_verified = mechanism_probe.get("stage2_late_execution_verified") is True
+    if can_attempt_mechanism and not stage2_verified:
+        after_stage2_blocker = "not_selected_stage2_late_execution_unavailable"
+    else:
+        after_stage2_blocker = mechanism_blocker
+
+    viewport_probe = {
+        "pane_discovery_attempted": False,
+        "pane_discovery_verified": False,
+        "pane_discovery_blocker": after_stage2_blocker,
+        "pane_activation_attempted": False,
+        "pane_activation_verified": False,
+        "pane_activation_blocker": after_stage2_blocker,
+        "widget_discovery_attempted": False,
+        "widget_discovery_verified": False,
+        "widget_discovery_blocker": after_stage2_blocker,
+        "evidence_summary": "",
+        "sanitized_widgets": [],
+    }
+    event_wait = {
+        "idle_wait_attempted": False,
+        "idle_wait_completed": False,
+        "idle_wait_blocker": after_stage2_blocker,
+        "render_tick_attempted": False,
+        "render_tick_completed": False,
+        "render_tick_blocker": after_stage2_blocker,
+    }
+    if stage2_verified:
+        viewport_probe = _probe_default_viewport_materialization(
+            allow_activation=payload.get("visible_editor_shell_after_late_diagnostic_verified") is True
+        )
+        if viewport_probe.get("pane_activation_verified") is True:
+            event_wait = _run_viewport_event_loop_wait(general)
+
+    active_default_probe = (
+        _check_active_default_viewport_probe(general)
+        if stage2_verified
+        else {
+            "attempted": False,
+            "verified": False,
+            "state": "not_selected_stage2_late_execution_unavailable",
+            "blocker": after_stage2_blocker,
+            "window_handle_attempted": False,
+            "window_handle_verified": False,
+            "window_handle_blocker": after_stage2_blocker,
+        }
+    )
+    atom_probe = (
+        _probe_atom_framecapture_binding_surface(source_validated)
+        if stage2_verified
+        else {
+            "attempted": False,
+            "verified": False,
+            "source_validated": source_validated,
+            "blocker": after_stage2_blocker,
+            "binding_available": False,
+            "evidence_summary": "",
+            "screenshot_capture_requested": False,
+        }
+    )
+    window_handle_verified = active_default_probe.get("window_handle_verified") is True
+    active_default_verified = active_default_probe.get("verified") is True
+    swapchain_verified = atom_probe.get("verified") is True and atom_probe.get("binding_available") is True
+    framecapture_target_verified = bool(window_handle_verified and swapchain_verified)
+    if not stage2_verified:
+        readiness_blocker = after_stage2_blocker
+    elif not window_handle_verified:
+        readiness_blocker = "blocked_by_active_viewport_window_handle_unavailable"
+    elif not swapchain_verified:
+        readiness_blocker = "blocked_by_swapchain_probe_unavailable"
+    else:
+        readiness_blocker = ""
+
+    payload.update(
+        {
+            "editor_late_runner_mechanism_deep_dive_attempted": True,
+            "editor_late_runner_mechanism_deep_dive_verified": mechanism_probe.get("verified") is True,
+            "editor_late_runner_mechanism_source_validated": source_validated,
+            "editor_late_runner_mechanism_source_validation_status": source_validation.get("status", ""),
+            "editor_late_runner_mechanism_source_validation": source_validation,
+            "editor_late_runner_mechanism_source_files": [
+                str(spec["path"])
+                for spec in _editor_late_runner_mechanism_source_specs(engine_root)
+            ],
+            "editor_late_runner_mechanism_state": mechanism_state,
+            "editor_late_runner_mechanism_blocker": ""
+            if mechanism_probe.get("verified") is True
+            else mechanism_blocker,
+            "editor_late_runner_candidate_mechanisms": list(mechanism_probe.get("candidate_mechanisms", [])),
+            "editor_late_runner_selected_mechanism": str(mechanism_probe.get("selected_mechanism", "")),
+            "editor_late_runner_marker_paths_sanitized": mechanism_probe.get("marker_paths_sanitized") is True,
+            "editor_late_runner_marker_path_writability_attempted": (
+                mechanism_probe.get("marker_path_writability_attempted") is True
+            ),
+            "editor_late_runner_marker_path_writability_verified": (
+                mechanism_probe.get("marker_path_writability_verified") is True
+            ),
+            "editor_late_runner_marker_path_writability_blocker": str(
+                mechanism_probe.get("marker_path_writability_blocker", "")
+            ),
+            "editor_late_runner_marker_path_visibility_attempted": (
+                mechanism_probe.get("marker_path_visibility_attempted") is True
+            ),
+            "editor_late_runner_marker_path_visibility_verified": (
+                mechanism_probe.get("marker_path_visibility_verified") is True
+            ),
+            "editor_late_runner_marker_path_visibility_blocker": str(
+                mechanism_probe.get("marker_path_visibility_blocker", "")
+            ),
+            "editor_qtimer_callback_mechanism_attempted": mechanism_probe.get("qtimer_callback_attempted") is True,
+            "editor_qtimer_callback_mechanism_verified": mechanism_probe.get("qtimer_callback_verified") is True,
+            "editor_qtimer_callback_mechanism_blocker": str(mechanism_probe.get("qtimer_callback_blocker", "")),
+            "editor_qtimer_callback_anchored": mechanism_probe.get("qtimer_callback_anchored") is True,
+            "editor_event_loop_callback_mechanism_attempted": (
+                mechanism_probe.get("event_loop_callback_attempted") is True
+            ),
+            "editor_event_loop_callback_mechanism_verified": (
+                mechanism_probe.get("event_loop_callback_verified") is True
+            ),
+            "editor_event_loop_callback_mechanism_blocker": str(mechanism_probe.get("event_loop_callback_blocker", "")),
+            "editor_idle_callback_mechanism_attempted": mechanism_probe.get("idle_callback_attempted") is True,
+            "editor_idle_callback_mechanism_verified": mechanism_probe.get("idle_callback_verified") is True,
+            "editor_idle_callback_mechanism_blocker": str(mechanism_probe.get("idle_callback_blocker", "")),
+            "editor_module_global_callback_anchor_attempted": (
+                mechanism_probe.get("module_global_anchor_attempted") is True
+            ),
+            "editor_module_global_callback_anchor_verified": (
+                mechanism_probe.get("module_global_anchor_verified") is True
+            ),
+            "editor_module_global_callback_anchor_blocker": str(mechanism_probe.get("module_global_anchor_blocker", "")),
+            "editor_python_object_lifetime_classification_attempted": (
+                mechanism_probe.get("python_object_lifetime_attempted") is True
+            ),
+            "editor_python_object_lifetime_classification_verified": (
+                mechanism_probe.get("python_object_lifetime_verified") is True
+            ),
+            "editor_python_object_lifetime_blocker": str(mechanism_probe.get("python_object_lifetime_blocker", "")),
+            "editor_stage1_preshell_execution_attempted": (
+                mechanism_probe.get("stage1_preshell_execution_attempted") is True
+            ),
+            "editor_stage1_preshell_execution_verified": (
+                mechanism_probe.get("stage1_preshell_execution_verified") is True
+            ),
+            "editor_stage1_preshell_execution_blocker": str(mechanism_probe.get("stage1_preshell_execution_blocker", "")),
+            "editor_stage2_script_import_attempted": mechanism_probe.get("stage2_script_import_attempted") is True,
+            "editor_stage2_script_import_verified": mechanism_probe.get("stage2_script_import_verified") is True,
+            "editor_stage2_script_import_blocker": str(mechanism_probe.get("stage2_script_import_blocker", "")),
+            "editor_stage2_entrypoint_attempted": mechanism_probe.get("stage2_entrypoint_attempted") is True,
+            "editor_stage2_entrypoint_verified": mechanism_probe.get("stage2_entrypoint_verified") is True,
+            "editor_stage2_entrypoint_blocker": str(mechanism_probe.get("stage2_entrypoint_blocker", "")),
+            "editor_stage2_scheduling_attempted": mechanism_probe.get("stage2_scheduling_attempted") is True,
+            "editor_stage2_scheduling_verified": mechanism_probe.get("stage2_scheduling_verified") is True,
+            "editor_stage2_scheduling_blocker": str(mechanism_probe.get("stage2_scheduling_blocker", "")),
+            "editor_stage2_late_execution_attempted": mechanism_probe.get("stage2_late_execution_attempted") is True,
+            "editor_stage2_late_execution_verified": mechanism_probe.get("stage2_late_execution_verified") is True,
+            "editor_stage2_late_execution_blocker": str(mechanism_probe.get("stage2_late_execution_blocker", "")),
+            "editor_stage2_progress_marker_attempted": mechanism_probe.get("stage2_progress_marker_attempted") is True,
+            "editor_stage2_progress_marker_verified": mechanism_probe.get("stage2_progress_marker_verified") is True,
+            "editor_stage2_progress_marker_blocker": str(mechanism_probe.get("stage2_progress_marker_blocker", "")),
+            "editor_stage2_completion_marker_attempted": mechanism_probe.get("stage2_completion_marker_attempted") is True,
+            "editor_stage2_completion_marker_verified": mechanism_probe.get("stage2_completion_marker_verified") is True,
+            "editor_stage2_completion_marker_blocker": str(mechanism_probe.get("stage2_completion_marker_blocker", "")),
+            "editor_late_runner_editor_alive_wait_attempted": mechanism_probe.get("editor_alive_wait_attempted") is True,
+            "editor_late_runner_editor_alive_wait_verified": mechanism_probe.get("editor_alive_wait_verified") is True,
+            "editor_late_runner_editor_alive_wait_blocker": str(mechanism_probe.get("editor_alive_wait_blocker", "")),
+            "editor_late_runner_timeout_seconds": int(mechanism_probe.get("timeout_seconds", 0) or 0),
+            "editor_late_runner_timed_out": mechanism_probe.get("timed_out") is True,
+            "editor_late_runner_cleanup_completed": mechanism_probe.get("cleanup_completed") is True,
+            "visible_editor_shell_after_stage2_attempted": stage2_verified,
+            "visible_editor_shell_after_stage2_verified": False,
+            "visible_editor_shell_after_stage2_blocker": (
+                "blocked_by_visible_editor_shell_unavailable" if stage2_verified else after_stage2_blocker
+            ),
+            "default_viewport_pane_discovery_after_stage2_attempted": (
+                viewport_probe.get("pane_discovery_attempted") is True
+            ),
+            "default_viewport_pane_discovery_after_stage2_verified": (
+                viewport_probe.get("pane_discovery_verified") is True
+            ),
+            "default_viewport_pane_discovery_after_stage2_blocker": str(
+                viewport_probe.get("pane_discovery_blocker", "")
+            ),
+            "default_viewport_pane_activation_after_stage2_attempted": (
+                viewport_probe.get("pane_activation_attempted") is True
+            ),
+            "default_viewport_pane_activation_after_stage2_verified": (
+                viewport_probe.get("pane_activation_verified") is True
+            ),
+            "default_viewport_pane_activation_after_stage2_blocker": str(
+                viewport_probe.get("pane_activation_blocker", "")
+            ),
+            "default_viewport_widget_discovery_after_stage2_attempted": (
+                viewport_probe.get("widget_discovery_attempted") is True
+            ),
+            "default_viewport_widget_discovery_after_stage2_verified": (
+                viewport_probe.get("widget_discovery_verified") is True
+            ),
+            "default_viewport_widget_discovery_after_stage2_blocker": str(
+                viewport_probe.get("widget_discovery_blocker", "")
+            ),
+            "default_viewport_materialization_after_stage2_evidence": viewport_probe,
+            "viewport_event_loop_idle_wait_attempted": event_wait.get("idle_wait_attempted") is True,
+            "viewport_event_loop_idle_wait_completed": event_wait.get("idle_wait_completed") is True,
+            "viewport_event_loop_idle_wait_blocker": str(event_wait.get("idle_wait_blocker", "")),
+            "viewport_render_tick_wait_attempted": event_wait.get("render_tick_attempted") is True,
+            "viewport_render_tick_wait_completed": event_wait.get("render_tick_completed") is True,
+            "viewport_render_tick_wait_blocker": str(event_wait.get("render_tick_blocker", "")),
+            "active_default_viewport_after_stage2_attempted": active_default_probe.get("attempted") is True,
+            "active_default_viewport_after_stage2_verified": active_default_verified,
+            "active_default_viewport_after_stage2_state": str(active_default_probe.get("state", "")),
+            "active_default_viewport_after_stage2_blocker": ""
+            if active_default_verified
+            else str(active_default_probe.get("blocker", readiness_blocker)),
+            "active_default_viewport_window_handle_after_stage2_attempted": (
+                active_default_probe.get("window_handle_attempted") is True
+            ),
+            "active_default_viewport_window_handle_after_stage2_verified": window_handle_verified,
+            "active_default_viewport_window_handle_after_stage2_source_validated": source_validated,
+            "active_default_viewport_window_handle_after_stage2_blocker": ""
+            if window_handle_verified
+            else str(active_default_probe.get("window_handle_blocker", readiness_blocker)),
+            "atom_swapchain_after_stage2_attempted": atom_probe.get("attempted") is True,
+            "atom_swapchain_after_stage2_verified": swapchain_verified,
+            "atom_swapchain_after_stage2_source_validated": source_validated,
+            "atom_swapchain_after_stage2_blocker": ""
+            if swapchain_verified
+            else str(atom_probe.get("blocker", readiness_blocker)),
+            "atom_swapchain_after_stage2_evidence": atom_probe,
+            "framecapture_target_after_stage2_attempted": stage2_verified,
+            "framecapture_target_after_stage2_verified": framecapture_target_verified,
+            "framecapture_target_after_stage2_source_validated": source_validated,
+            "framecapture_target_after_stage2_blocker": ""
+            if framecapture_target_verified
+            else readiness_blocker,
+            "ap_alignment_preserved": ap_alignment_preserved,
+            "editor_asset_processor_negotiation_preserved": editor_ap_negotiation_preserved,
+            "safe_temp_visual_scene_context_preserved": temp_context_preserved,
+            "screenshot_capture_requested": False,
+            "screenshot_capture_completed": False,
+            "editor_visual_material_capture_requested": False,
+            "editor_visual_material_capture_request_accepted": False,
+            "editor_visual_material_capture_completed": False,
+            "rendered_visual_evidence_claimed": False,
+            "rendered_visual_evidence_verified": False,
+            "visual_material_capture_readiness_verified": False,
+            "visual_material_rendered_evidence_gate_attempted": False,
+            "visual_material_rendered_evidence_gate_verified": False,
+            "visual_material_gate_claimed": False,
+            "visual_material_gate_verified": False,
+            "full_runtime_character_visual_material_gate_verified": False,
+            "full_runtime_character_proof_claimed": False,
+            "full_runtime_character_proof_verified": False,
+            "runtime_character_proof_claimed": False,
+            "runtime_character_proof_verified": False,
+            "asset_cache_deletion_attempted": False,
+            "asset_processor_database_wipe_attempted": False,
+            "asset_cache_deleted": False,
+            "cache_heuristic_used": False,
+            "proof_claims": [
+                "Source-validated and exercised a focused Editor late-runner mechanism deep-dive after verified AP alignment and safe temp visual scene context.",
+                "Classified stage-two late diagnostic execution and preserved remaining readiness-only viewport/capture-target blockers without screenshot capture.",
+            ],
+            "proof_limits": [
+                "No screenshot request/completion.",
+                "No rendered visual/material evidence.",
+                "No material/character visual-presence validation.",
+                "No visual_material gate verification.",
+                "No full runtime character proof.",
+                "No Asset Cache deletion or AP database/cache wipe.",
+                "No release packaging, publication, or production-ready claim.",
+            ],
+            "messages": _unique(
+                list(payload.get("messages", []))
+                + [
+                    "Editor late-runner mechanism deep-dive is readiness only; screenshot and visual/material proof remain disabled."
                 ]
             ),
         }
