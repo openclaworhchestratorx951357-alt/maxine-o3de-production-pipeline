@@ -10276,6 +10276,37 @@ def test_stage_two_execution_repair_precondition_block_preserves_blocked_classif
     assert result["framecapture_target_after_stage_two_attempted"] is False
 
 
+def test_stage_two_execution_repair_preserves_desktop_gpu_rhi_readiness(monkeypatch):
+    readiness = _late_runner_mechanism_payload(stage2=False, blocked_precondition=False)
+    readiness["desktop_gpu_rhi_readiness_preserved"] = False
+    readiness["non_null_editor_desktop_rhi_readiness_verified"] = True
+    readiness["non_null_editor_launch_preserved"] = False
+    readiness["live_non_null_editor_launch_verified"] = True
+
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_editor_stage_two_execution_repair_source_validation",
+        lambda engine_root: {
+            "status": "editor_stage_two_execution_repair_source_validation_pass",
+            "blocker": "",
+        },
+    )
+    monkeypatch.setattr(
+        editor_python_smoke,
+        "_run_editor_late_runner_mechanism_deep_dive_checks",
+        lambda report, *, progress_log, general: dict(readiness),
+    )
+
+    result = editor_python_smoke._run_editor_stage_two_execution_repair_checks(
+        {},
+        progress_log=None,
+        general=object(),
+    )
+
+    assert result["desktop_gpu_rhi_readiness_preserved"] is True
+    assert result["non_null_editor_launch_preserved"] is True
+
+
 def test_stage_two_execution_repair_mode_uses_safe_temp_context_and_no_capture(tmp_path):
     env = _live_env(tmp_path)
     _write_editor_ap_negotiation_source_files(Path(env["O3DE_ENGINE_ROOT"]))

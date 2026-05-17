@@ -13141,6 +13141,18 @@ def _run_editor_stage_two_execution_repair_checks(
             "ap_alignment_preserved": ap_alignment_preserved,
             "editor_asset_processor_negotiation_preserved": editor_ap_negotiation_preserved,
             "safe_temp_visual_scene_context_preserved": temp_context_preserved,
+            "desktop_gpu_rhi_readiness_preserved": bool(
+                payload.get("desktop_gpu_rhi_readiness_preserved") is True
+                or payload.get("non_null_editor_desktop_rhi_readiness_verified") is True
+                or report.get("desktop_gpu_rhi_readiness_preserved") is True
+                or report.get("non_null_editor_desktop_rhi_readiness_verified") is True
+            ),
+            "non_null_editor_launch_preserved": bool(
+                payload.get("non_null_editor_launch_preserved") is True
+                or payload.get("live_non_null_editor_launch_verified") is True
+                or report.get("non_null_editor_launch_preserved") is True
+                or report.get("live_non_null_editor_launch_verified") is True
+            ),
             "screenshot_capture_requested": False,
             "screenshot_capture_completed": False,
             "editor_visual_material_capture_requested": False,
