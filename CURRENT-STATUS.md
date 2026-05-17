@@ -1,8 +1,26 @@
 # CURRENT STATUS
 
 ## Active Implementation Slice
-- Editor Bootstrap Wait / Shell-Ready Synchronization v1 is active on `codex/editor-bootstrap-wait-shell-ready-synchronization-v1`:
-  - PR #180 was verified merged into `main` at `857aae6460ee69e96d713fea717ea887f4f3d42e`; this branch was created from that updated `main`
+- Editor Deferred Diagnostic Execution Repair v1 is active on `codex/editor-deferred-diagnostic-execution-repair-v1`:
+  - PR #181 was verified merged into `main` at `f1154a13c2403345597febd41c6d38edd67ad094`; this branch was created from that updated `main`
+  - this slice source-validates and exercises Editor deferred diagnostic execution repair after verified AP alignment, preserving the operator-run AP remediation success from PR #176 and verified Editor/AP negotiation after remediation
+  - it preserves the safe temp visual scene/display context proven in PR #171/#172/#173/#174/#175/#176/#177/#178/#179/#180/#181 under `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context`
+  - it preserves PR #180 and PR #181 findings that the prior automation path executes before shell-ready
+  - it determines whether a bounded late-runner/deferred/two-stage diagnostic execution path can actually execute and emit sanitized run-owned progress/completion markers
+  - it records whether late diagnostic execution is verified or still blocked, without treating source validation, scheduling, or callback candidates alone as late execution proof
+  - it blocks layout/user-setting mutation unless source-validated, reversible, run-scoped, and explicitly safe
+  - it reruns visible Editor shell, default viewport pane/widget, active/default viewport, Atom SwapChain, and FrameCapture target readiness-only probes only when late diagnostic execution and source-validated preconditions allow
+  - source validation pins `RunInitPythonScript` / `EditorPythonRunnerRequestBus` as the pre-shell `--runpython` boundary, `NotifyEditorInitialized` / `EnableOnIdle` / `app->exec` as later shell lifecycle boundaries, and QTimer/QEventLoop/idle waits as candidate surfaces that still require marker evidence before proof
+  - missing late diagnostic completion/progress markers remain typed blockers; timeout and cleanup are bounded and run-owned paths must remain sanitized
+  - live evidence: `artifacts/o3de-integration/editor-smoke/editor-smoke-20260517T011956Z/editor_smoke_live_report.json` and `artifacts/o3de-integration/editor-smoke/editor-smoke-20260517T011956Z/progress.jsonl`
+  - live result: AP alignment preserved and verified, Editor/AP negotiation preserved and verified, selected RHI `dx12`, non-null Editor launch verified, safe temp scene path `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context/editor_safe_temp_visual_scene_display_context_20260517t011956z`, cleanup completed, and no defaultlevel/production/production character mutation detected
+  - deferred diagnostic execution repair source validation is verified, but repair remains blocked by `blocked_by_editor_late_diagnostic_execution_unavailable`; late scheduling remains blocked by `blocked_by_editor_late_diagnostic_scheduling_unavailable`, completion marker by `blocked_by_editor_late_diagnostic_completion_marker_missing`, and progress marker by `blocked_by_editor_late_diagnostic_progress_marker_missing`
+  - late diagnostic timeout was bounded and reported, cleanup completed, and run-owned paths were sanitized; shell-ready synchronization remains blocked by `blocked_by_editor_shell_ready_synchronization_unavailable`
+  - default viewport ViewPane registration preservation remains verified, but visible shell/default viewport pane/widget, active/default viewport, Atom SwapChain, and FrameCapture target probes after late diagnostic were not selected because late diagnostic execution did not verify
+  - this slice does not request screenshot capture, does not complete screenshot capture, does not verify rendered visual evidence, does not verify material correctness, does not verify character visual presence, and does not satisfy `visual_material`
+  - full runtime character proof remains false, release packaging/publication/production-ready claims remain false, and no Asset Cache deletion or AP database/cache wipe is allowed
+- Editor Bootstrap Wait / Shell-Ready Synchronization v1 was merged through PR #181 on `codex/editor-bootstrap-wait-shell-ready-synchronization-v1`:
+  - PR #180 was verified merged into `main` at `857aae6460ee69e96d713fea717ea887f4f3d42e`; PR #181 merged into `main` at `f1154a13c2403345597febd41c6d38edd67ad094`
   - this slice source-validates and exercises Editor bootstrap wait / shell-ready synchronization after verified AP alignment, preserving the operator-run AP remediation success from PR #176 and verified Editor/AP negotiation after remediation
   - it preserves the safe temp visual scene/display context proven in PR #171/#172/#173/#174/#175/#176/#177/#178/#179/#180 under `Levels/_maxine_visual_smoke/editor_safe_temp_visual_scene_display_context`
   - it preserves PR #180's lifecycle finding that the prior automation path executed before shell-ready
